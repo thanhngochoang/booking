@@ -507,6 +507,32 @@ void main() {
     );
   });
 
+  testWidgets('the owner menu has Dịch vụ đi kèm and edit-addons opens '
+      '/me/addons', (tester) async {
+    final w = await _world(tester, role: UserRole.photographer);
+    w.profiles.add(
+      PhotographerProfile(
+        summary: fixturePhotographer(w.uid, name: 'Lan Anh'),
+        intro: const PhotographerIntro(),
+      ),
+    );
+    await tester.pumpWidget(w.app('/u/${w.uid}'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('profile-edit'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(_key('edit-addons')).dy,
+      greaterThan(tester.getTopLeft(_key('edit-packages')).dy),
+    );
+    expect(
+      tester.getTopLeft(_key('edit-addons')).dy,
+      lessThan(tester.getTopLeft(_key('edit-skills')).dy),
+    );
+    await tester.tap(_key('edit-addons'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /me/addons'), findsOneWidget);
+  });
+
   for (final b in Brightness.values) {
     testWidgets('fits 320dp at 1.3x text (${b.name})', (tester) async {
       final w = await _world(tester, width: 320);

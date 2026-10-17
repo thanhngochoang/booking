@@ -221,14 +221,17 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
                     ],
                   ),
                 ),
-                _Stepper(
+                QtyStepper(
+                  keyPrefix: 'register',
                   value: state.quantity,
-                  canDecrement: !controller.locked && state.quantity > 1,
-                  canIncrement:
-                      !controller.locked &&
-                      state.quantity < controller.maxQuantity,
-                  onDecrement: controller.decrement,
-                  onIncrement: controller.increment,
+                  max: controller.maxQuantity,
+                  enabled: !controller.locked,
+                  valueLabel: l.ticketCount(state.quantity),
+                  decrementLabel: l.registerLess,
+                  incrementLabel: l.registerMore,
+                  onChanged: (v) => v > state.quantity
+                      ? controller.increment()
+                      : controller.decrement(),
                 ),
               ],
             ),
@@ -349,61 +352,5 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
         onChanged: controller.setMethod,
       ),
     ];
-  }
-}
-
-class _Stepper extends StatelessWidget {
-  const _Stepper({
-    required this.value,
-    required this.canDecrement,
-    required this.canIncrement,
-    required this.onDecrement,
-    required this.onIncrement,
-  });
-
-  final int value;
-  final bool canDecrement;
-  final bool canIncrement;
-  final VoidCallback onDecrement;
-  final VoidCallback onIncrement;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          key: const Key('register-minus'),
-          tooltip: l.registerLess,
-          icon: const AppIcon(AppIcons.remove),
-          onPressed: canDecrement ? onDecrement : null,
-        ),
-        Semantics(
-          liveRegion: true,
-          label: l.ticketCount(value),
-          child: ExcludeSemantics(
-            child: SizedBox(
-              width: 32,
-              child: Text(
-                '$value',
-                key: const Key('register-quantity'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ),
-        IconButton(
-          key: const Key('register-plus'),
-          tooltip: l.registerMore,
-          icon: const AppIcon(AppIcons.add),
-          onPressed: canIncrement ? onIncrement : null,
-        ),
-      ],
-    );
   }
 }

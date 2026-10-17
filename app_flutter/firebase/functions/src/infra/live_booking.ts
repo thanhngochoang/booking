@@ -8,6 +8,7 @@ import {
   FakePaymentGateway,
 } from '@photobooking/domain';
 import { db } from './admin.js';
+import { FirestoreAddonCatalog } from './addon_firestore.js';
 import { FirestoreBookingStore } from './booking_firestore.js';
 import { liveBlockGate } from './live_safety.js';
 import { FirestoreCustomerContactReader, FirestoreProviderOrderGate, FirestoreServiceCatalog } from './booking_readers.js';
@@ -26,6 +27,7 @@ export function liveBookingDeps(): BookingDeps {
   return {
     store: new FirestoreBookingStore(firestore),
     services: new FirestoreServiceCatalog(firestore),
+    addons: new FirestoreAddonCatalog(firestore),
     contacts: new FirestoreCustomerContactReader(firestore),
     providers: new FirestoreProviderOrderGate(firestore),
     blocks: liveBlockGate(),

@@ -190,4 +190,93 @@ void main() {
       }
     },
   );
+
+  group('S04.01 "Thêm dịch vụ"', () {
+    const couple = ServiceSummary(
+      id: 's2',
+      photographerId: 'p1',
+      name: 'Cặp đôi nửa ngày',
+      priceVnd: 3200000,
+      durationMinutes: 240,
+      active: true,
+    );
+
+    Future<void> pumpAddons(WidgetTester tester) async {
+      await pumpBookingRoute(
+        tester,
+        packages: [bookingPortrait2h, couple],
+        addons: [addonMakeup, addonRetouch, addonTransport],
+      );
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    testWidgets('the block shows under the chosen package and the button carries the total', (
+      tester,
+    ) async {
+      await pumpAddons(tester);
+      expect(find.text('Thêm dịch vụ'), findsNothing);
+
+      await tester.tap(find.text('Chân dung 2 giờ'));
+      await tester.pump();
+      expect(find.text('Thêm dịch vụ'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const Key('addon-a_makeup-plus')));
+      await tester.tap(find.byKey(const Key('addon-a_makeup-plus')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('addon-a_makeup-plus')));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('addon-a_car-check')));
+      await tester.tap(find.byKey(const Key('addon-a_car-check')));
+      await tester.pump();
+
+      expect(find.text('Tiếp tục · 3.400.000₫'), findsOneWidget);
+    });
+
+    testWidgets('the dropped bar text is "Đã bỏ Xe đón trong nội thành vì không áp dụng cho gói này"', (
+      tester,
+    ) async {
+      await pumpAddons(tester);
+      await tester.tap(find.text('Chân dung 2 giờ'));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('addon-a_car-check')));
+      await tester.tap(find.byKey(const Key('addon-a_car-check')));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Cặp đôi nửa ngày'));
+      await tester.tap(find.text('Cặp đôi nửa ngày'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text('Đã bỏ Xe đón trong nội thành vì không áp dụng cho gói này'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('addon-a_car-check')), findsNothing);
+      expect(find.text('Tiếp tục · 3.200.000₫'), findsOneWidget);
+    });
+
+    testWidgets('one AppButton.primary', (tester) async {
+      await pumpAddons(tester);
+      await tester.tap(find.text('Chân dung 2 giờ'));
+      await tester.pump();
+      expect(find.byType(CtaSurface), findsOneWidget);
+    });
+
+    testWidgets('320 dp and 1.3× text with add-ons: no overflow', (tester) async {
+      await pumpBookingRoute(
+        tester,
+        packages: [bookingPortrait2h, couple],
+        addons: [addonMakeup, addonRetouch, addonTransport],
+        textScale: 1.3,
+        viewSize: const Size(320, 640),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('Chân dung 2 giờ'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Thêm dịch vụ'), findsOneWidget);
+    });
+  });
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
+import 'package:photobooking/features/booking/widgets/addon_pick_block.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
 class ServiceStep extends ConsumerStatefulWidget {
@@ -147,6 +148,11 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
                         ),
                         const SizedBox(height: AppSpace.s2),
                       ],
+                      AddonPickBlock(
+                        addons: state.applicableAddons,
+                        picks: state.picks,
+                        onQty: controller.setAddonQty,
+                      ),
                     ],
                   );
                 },
@@ -156,7 +162,7 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
           Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: AppButton.primary(
-              l10n.bookContinuePrice(formatMoney(state.priceVnd ?? 0)),
+              l10n.bookContinuePrice(formatMoney(state.totalVnd ?? 0)),
               onPressed: state.canContinue ? controller.next : null,
             ),
           ),

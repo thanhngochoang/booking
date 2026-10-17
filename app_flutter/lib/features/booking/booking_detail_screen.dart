@@ -22,6 +22,7 @@ import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -371,6 +372,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
           const SizedBox(height: AppSpace.s4),
+          if (b.addons.isNotEmpty || b.pickup != null) ...[
+            BookingAddonsBlock(booking: b),
+            const SizedBox(height: AppSpace.s4),
+          ],
           AsyncView<List<BookingEventRecord>>(
             value: ref.watch(bookingEventsProvider(b.id)),
             skeleton: (_) => StatusTimeline.skeleton(steps: 7),

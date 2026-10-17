@@ -2,10 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
+import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/features/addons/addon_format.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
@@ -71,7 +74,15 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
     final packagesAsync = ref.watch(profilePackagesProvider(widget.args.photographerId));
 
     final price = state.priceVnd ?? 0;
-    final payNow = depositFor(price).deposit;
+    final payNow = state.payVnd ?? 0;
+    final addonLines = <MoneyLine>[
+      for (final a in state.applicableAddons)
+        if (state.picks[a.id] case final qty?)
+          MoneyLine(
+            label: addonLineLabel(l10n, _lineOf(a, qty)),
+            vnd: a.price * qty,
+          ),
+    ];
 
     final phoneError = _phoneTouched && (phoneFromField(_phoneController.text) == null)
         ? l10n.phoneInvalid
@@ -136,7 +147,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                     children: [
                       BookingCard.skeleton(),
                       const SizedBox(height: AppSpace.s4),
-                      MoneyBreakdown.skeleton(lines: 2),
+                      MoneyBreakdown.skeleton(lines: 2 + state.picks.length),
                     ],
                   ),
                   data: (context, profile) {
@@ -149,6 +160,9 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                       start: state.start ?? '',
                       end: state.end ?? '',
                       placeName: state.placeName,
+                      extraLine: state.needsPickup
+                          ? l10n.bookPickupLine(state.pickupName.trim())
+                          : null,
                     );
 
                     return Column(
@@ -197,6 +211,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                               label: l10n.bookPackageLine(state.serviceName ?? ''),
                               vnd: price,
                             ),
+                            ...addonLines,
                             MoneyLine(
                               label: l10n.bookDepositToday,
                               vnd: payNow,
@@ -241,3 +256,14 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
     );
   }
 }
+
+/// The S04.03 row of a pick, shaped like the line the server will store.
+BookingAddonLine _lineOf(ServiceAddon a, int qty) => BookingAddonLine(
+  addonId: a.id,
+  kind: a.kind,
+  name: a.name,
+  unit: a.unit,
+  unitPrice: a.price,
+  qty: qty,
+  amount: a.price * qty,
+);

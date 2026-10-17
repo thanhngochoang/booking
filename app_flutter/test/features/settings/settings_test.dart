@@ -766,6 +766,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('profile-skills')), findsOneWidget);
       expect(skills.loadCalls, before + 1, reason: 'reloaded on return');
+      // The add-ons (#190) and verify (#135) rows push it below 800x600.
+      await tester.ensureVisible(find.byKey(const Key('profile-public')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('profile-public')));
       await tester.pumpAndSettle();
       expect(find.text('public $uid'), findsOneWidget);

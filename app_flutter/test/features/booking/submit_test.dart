@@ -494,4 +494,101 @@ void main() {
 
     expect(find.text('Thanh toán chưa mở trên máy chủ này.'), findsOneWidget);
   });
+
+  group('add-on errors', () {
+    /// S04.01 (portrait preselected) with makeup ×1 and the car → S04.03.
+    Future<BookingWorldHandles> toReviewWithCar(
+      WidgetTester tester,
+      FakeBookingRepository repo,
+    ) async {
+      final handles = await pumpBookingRoute(
+        tester,
+        bookings: repo,
+        packages: [bookingPortrait2h],
+        addons: [addonMakeup, addonTransport],
+        days: testDays,
+        now: now,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 50));
+      for (final key in ['addon-a_makeup-plus', 'addon-a_car-check']) {
+        await tester.ensureVisible(find.byKey(Key(key)));
+        await tester.tap(find.byKey(Key(key)));
+        await tester.pump();
+      }
+      Future<void> next() async {
+        final b = find.widgetWithText(AppButton, 'Tiếp tục · 2.600.000₫');
+        await tester.ensureVisible(b);
+        await tester.tap(b);
+        await tester.pumpAndSettle();
+      }
+
+      await next();
+      await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+      await tester.pumpAndSettle();
+      final slot = find.widgetWithText(AppChip, '15:30');
+      await tester.ensureVisible(slot);
+      await tester.tap(slot);
+      await tester.pumpAndSettle();
+      await next();
+      await tester.enterText(find.byType(TextField).first, 'Bến Bạch Đằng');
+      await tester.enterText(
+        find.byKey(const Key('book-pickup-field')),
+        'Ga Sài Gòn',
+      );
+      await tester.pump();
+      await next();
+      expect(find.byType(ReviewStep), findsOneWidget);
+      return handles;
+    }
+
+    testWidgets('addon_changed returns to S04.01 with a fresh list and the bar', (
+      tester,
+    ) async {
+      final repo = FakeBookingRepository()
+        ..nextError = BookingErrorCode.addonChanged;
+      final handles = await toReviewWithCar(tester, repo);
+      // The photographer turned the car off meanwhile.
+      handles.addonRepo.addons.remove('a_car');
+
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 2.600.000₫'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ServiceStep), findsOneWidget);
+      expect(
+        find.text(
+          'Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('addon-a_car-check')), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Tiếp tục · 2.300.000₫'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('pickup_required returns to S04.06 with the field error', (
+      tester,
+    ) async {
+      final repo = FakeBookingRepository()
+        ..nextError = BookingErrorCode.pickupRequired;
+      await toReviewWithCar(tester, repo);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 2.600.000₫'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(PlaceStep), findsOneWidget);
+      expect(find.text('Nhập điểm đón cho xe đưa đón'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('book-pickup-field')),
+        'Ga Sài Gòn, Quận 3',
+      );
+      await tester.pump();
+      expect(find.text('Nhập điểm đón cho xe đưa đón'), findsNothing);
+    });
+  });
 }

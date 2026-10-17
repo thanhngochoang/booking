@@ -37,6 +37,11 @@ describe('toHttpsError', () => {
       identity_in_use: 'already-exists',
       underage: 'failed-precondition',
       rate_limited: 'resource-exhausted',
+      addon_changed: 'failed-precondition',
+      addon_not_applicable: 'failed-precondition',
+      pickup_required: 'failed-precondition',
+      addon_limit: 'resource-exhausted',
+      contact_leak: 'invalid-argument',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });
@@ -67,6 +72,13 @@ describe('toHttpsError', () => {
       assert.equal(e.message, code);
       assert.deepEqual(e.details, { code });
     }
+  });
+
+  test('a domain error with a field carries details.field; without one the details stay {code}', () => {
+    const e = toHttpsError(new DomainError('contact_leak', 'name'));
+    assert.equal(e.code, 'invalid-argument');
+    assert.deepEqual(e.details, { code: 'contact_leak', field: 'name' });
+    assert.deepEqual(toHttpsError(new DomainError('addon_limit')).details, { code: 'addon_limit' });
   });
 
   test('unexpected errors become internal and leak nothing', () => {

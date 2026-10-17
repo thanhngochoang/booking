@@ -22,6 +22,11 @@ export function graphemeCount(str: string): number {
   return Array.from(str).length;
 }
 
+export interface AddonPickInput {
+  readonly addonId: string;
+  readonly qty: number;
+}
+
 export interface CreateBookingDraftInput {
   readonly customerId: string;
   readonly photographerId: string;
@@ -31,6 +36,46 @@ export interface CreateBookingDraftInput {
   readonly place: { readonly name: string; readonly point?: { readonly lat: number; readonly lng: number } };
   readonly note?: string;
   readonly expectedPrice?: number;
+  /** Add-on picks (`addonId` + `qty`); the server prices them. Absent = []. */
+  readonly addons: readonly AddonPickInput[];
+  /** Transport add-on pickup address; dropped by `requirePickup` when no transport line exists. */
+  readonly pickup?: { readonly name: string; readonly point?: { readonly lat: number; readonly lng: number } };
+  /** Staleness check on the total (package + add-ons), never a price source. */
+  readonly expectedTotal?: number;
+}
+
+/** A place-shaped value: `name` 3–120 graphemes (trimmed), optional `point {lat, lng}`. */
+function parsePlaceLike(raw: unknown): { name: string; point?: { lat: number; lng: number } } {
+  if (typeof raw !== 'object' || raw === null) {
+    throw new DomainError('invalid_argument');
+  }
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.name !== 'string') {
+    throw new DomainError('invalid_argument');
+  }
+  const name = obj.name.trim();
+  const len = graphemeCount(name);
+  if (len < MIN_PLACE_LENGTH || len > MAX_PLACE_LENGTH) {
+    throw new DomainError('invalid_argument');
+  }
+  if (obj.point && typeof obj.point === 'object') {
+    const pt = obj.point as Record<string, unknown>;
+    if (typeof pt.lat === 'number' && typeof pt.lng === 'number') {
+      return { name, point: { lat: pt.lat, lng: pt.lng } };
+    }
+  }
+  return { name };
+}
+
+function parseAddonPicks(raw: unknown): AddonPickInput[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw new DomainError('invalid_argument');
+  return raw.map((p: unknown) => {
+    if (typeof p !== 'object' || p === null) throw new DomainError('invalid_argument');
+    const { addonId, qty } = p as Record<string, unknown>;
+    if (!isId(addonId) || typeof qty !== 'number') throw new DomainError('invalid_argument');
+    return { addonId, qty };
+  });
 }
 
 export function validateCreateBookingDraftInput(
@@ -41,7 +86,7 @@ export function validateCreateBookingDraftInput(
     throw new DomainError('invalid_argument');
   }
 
-  const { customerId, photographerId, serviceId, day, start, place, note, expectedPrice } = raw as Record<string, unknown>;
+  const { customerId, photographerId, serviceId, day, start, place, note, expectedPrice, addons, pickup, expectedTotal } = raw as Record<string, unknown>;
 
   if (!isId(customerId) || !isId(photographerId) || !isId(serviceId)) {
     throw new DomainError('invalid_argument');
@@ -55,20 +100,7 @@ export function validateCreateBookingDraftInput(
     throw new DomainError('invalid_argument');
   }
 
-  if (typeof place !== 'object' || place === null) {
-    throw new DomainError('invalid_argument');
-  }
-
-  const placeObj = place as Record<string, unknown>;
-  if (typeof placeObj.name !== 'string') {
-    throw new DomainError('invalid_argument');
-  }
-
-  const placeTrimmed = placeObj.name.trim();
-  const placeLen = graphemeCount(placeTrimmed);
-  if (placeLen < MIN_PLACE_LENGTH || placeLen > MAX_PLACE_LENGTH) {
-    throw new DomainError('invalid_argument');
-  }
+  const validatedPlace = parsePlaceLike(place);
 
   let noteTrimmed: string | undefined;
   if (note !== undefined && note !== null) {
@@ -93,14 +125,6 @@ export function validateCreateBookingDraftInput(
     throw new DomainError('invalid_argument');
   }
 
-  let validatedPoint: { lat: number; lng: number } | undefined;
-  if (placeObj.point && typeof placeObj.point === 'object') {
-    const pt = placeObj.point as Record<string, unknown>;
-    if (typeof pt.lat === 'number' && typeof pt.lng === 'number') {
-      validatedPoint = { lat: pt.lat, lng: pt.lng };
-    }
-  }
-
   let validatedExpectedPrice: number | undefined;
   if (expectedPrice !== undefined && expectedPrice !== null) {
     if (typeof expectedPrice !== 'number' || !Number.isInteger(expectedPrice) || expectedPrice < 0) {
@@ -109,14 +133,25 @@ export function validateCreateBookingDraftInput(
     validatedExpectedPrice = expectedPrice;
   }
 
+  let validatedExpectedTotal: number | undefined;
+  if (expectedTotal !== undefined && expectedTotal !== null) {
+    if (typeof expectedTotal !== 'number' || !Number.isInteger(expectedTotal) || expectedTotal < 0) {
+      throw new DomainError('invalid_argument');
+    }
+    validatedExpectedTotal = expectedTotal;
+  }
+
   return {
     customerId,
     photographerId,
     serviceId,
     day,
     start,
-    place: validatedPoint ? { name: placeTrimmed, point: validatedPoint } : { name: placeTrimmed },
+    place: validatedPlace,
     note: noteTrimmed,
     expectedPrice: validatedExpectedPrice,
+    addons: parseAddonPicks(addons),
+    pickup: pickup === undefined || pickup === null ? undefined : parsePlaceLike(pickup),
+    expectedTotal: validatedExpectedTotal,
   };
 }

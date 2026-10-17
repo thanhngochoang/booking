@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
@@ -40,6 +41,9 @@ class _OrderedBookingRepository extends FakeBookingRepository {
     required BookingPlace place,
     String? note,
     int? expectedPrice,
+    List<AddonPick> addons = const [],
+    BookingPlace? pickup,
+    int? expectedTotal,
   }) {
     log.add('createBooking');
     return super.createBooking(
@@ -50,6 +54,9 @@ class _OrderedBookingRepository extends FakeBookingRepository {
       place: place,
       note: note,
       expectedPrice: expectedPrice,
+      addons: addons,
+      pickup: pickup,
+      expectedTotal: expectedTotal,
     );
   }
 
@@ -246,4 +253,79 @@ void main() {
     expect(find.widgetWithText(AppChip, '06:00'), findsOneWidget);
     expect(find.text('Tiếp tục · 1.500.000₫'), findsOneWidget);
   });
+
+  testWidgets(
+    'add-ons: makeup ×2 + car through S04.01 → S04.02 → S04.06 → S04.03 → payment',
+    (tester) async {
+      final day12 = DateTime.utc(2026, 10, 12);
+      final repo = _OrderedBookingRepository();
+      final handles = await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        bookings: repo,
+        packages: [bookingPortrait2h, bookingPackage2],
+        addons: [addonMakeup, addonRetouch, addonTransport],
+        days: {day12: AvailabilityDay(day: day12, state: DayState.free)},
+      );
+      await tester.pumpAndSettle();
+
+      // "Đặt gói này" with add-ons opens on S04.01 with the package chosen.
+      expect(find.byType(ServiceStep), findsOneWidget);
+      for (var i = 0; i < 2; i++) {
+        final plus = find.byKey(const Key('addon-a_makeup-plus'));
+        await tester.ensureVisible(plus);
+        await tester.tap(plus);
+        await tester.pump();
+      }
+      final car = find.byKey(const Key('addon-a_car-check'));
+      await tester.ensureVisible(car);
+      await tester.tap(car);
+      await tester.pump();
+      await _tapButton(tester, 'Tiếp tục · 3.400.000₫');
+      await tester.pumpAndSettle();
+
+      // S04.02.
+      expect(find.byType(DateTimeStep), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+      await tester.pumpAndSettle();
+      final slot = find.widgetWithText(AppChip, '15:30');
+      await tester.ensureVisible(slot);
+      await tester.tap(slot);
+      await tester.pumpAndSettle();
+      await _tapButton(tester, 'Tiếp tục · 3.400.000₫');
+      await tester.pumpAndSettle();
+
+      // S04.06: place and pickup.
+      expect(find.byType(PlaceStep), findsOneWidget);
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Bến Bạch Đằng, Quận 1',
+      );
+      await tester.enterText(
+        find.byKey(const Key('book-pickup-field')),
+        'Ga Sài Gòn, Quận 3',
+      );
+      await tester.pumpAndSettle();
+      await _tapButton(tester, 'Tiếp tục · 3.400.000₫');
+      await tester.pumpAndSettle();
+
+      // S04.03 → createBooking → createPayment → S04.04.
+      expect(find.byType(ReviewStep), findsOneWidget);
+      expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
+      await _tapButton(tester, 'Thanh toán 3.400.000₫');
+      await _pumpWhileWaiting(tester);
+
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+      expect(repo.log, ['createBooking', 'createPayment(bank_qr)']);
+      final created = repo.createCalls.single;
+      expect(created.serviceId, 's1');
+      expect(created.addons, const [
+        AddonPick('a_makeup', 2),
+        AddonPick('a_car', 1),
+      ]);
+      expect(created.pickup, const BookingPlace(name: 'Ga Sài Gòn, Quận 3'));
+      expect(created.expectedPrice, 1500000);
+      expect(created.expectedTotal, 3400000);
+    },
+  );
 }

@@ -97,6 +97,27 @@ Future<BookingDetailHandles> _openPhotographer(
 }
 
 void main() {
+  testWidgets('S05.03 shows the refund of the total (50% at 24–48 h → '
+      '1.700.000₫)', (tester) async {
+    final repo = RecordingBookingRepository()
+      ..seedBooking(
+        _booking().copyWith(
+          addons: const [testMakeupLine, testTransportLine],
+          deposit: 3400000,
+          remaining: 0,
+        ),
+      )
+      ..seedContact('b1', testContactSnapshot);
+    await _openCustomer(
+      tester,
+      now: _startsAt.subtract(const Duration(hours: 30)),
+      bookings: repo,
+    );
+
+    expect(_activeRow(tester), 1);
+    expect(_refundLine('1.700.000₫'), findsOneWidget);
+  });
+
   testWidgets('uses showConfirmSheet with PolicyTable, MoneyBreakdown and '
       'ReasonPicker (no hand-made sheet)', (tester) async {
     await _openCustomer(

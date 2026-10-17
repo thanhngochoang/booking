@@ -1,3 +1,5 @@
+import type { ServiceAddon } from '../../src/addon.js';
+import { MemoryAddonStore } from '../../src/memory_addon_store.js';
 import { MemoryBookingStore } from '../../src/memory_booking_store.js';
 import { FakePaymentGateway } from '../../src/fake_payment_gateway.js';
 import { FakeBlockGate } from '../../src/fake_block_gate.js';
@@ -51,6 +53,7 @@ export interface BookingWorld {
   readonly store: MemoryBookingStore;
   readonly gateway: FakePaymentGateway;
   readonly blocks: FakeBlockGate;
+  readonly addons: MemoryAddonStore;
   readonly clock: ControllableClock;
   readonly ids: SequentialIdGen;
   readonly services: Map<string, ServiceRecord>;
@@ -62,6 +65,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
   const store = new MemoryBookingStore();
   const gateway = new FakePaymentGateway();
   const blocks = new FakeBlockGate();
+  const addons = new MemoryAddonStore();
   const clock = new ControllableClock(initialDate);
   const ids = new SequentialIdGen();
 
@@ -108,6 +112,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
   const deps: BookingDeps = {
     store,
     services: serviceCatalog,
+    addons,
     providers: { acceptsOrders: async (id) => acceptsOrders(providers.get(id)) },
     blocks,
     contacts: contactReader,
@@ -125,7 +130,13 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     },
   };
 
-  return { deps, settlement, store, gateway, blocks, clock, ids, services, providers, contacts };
+  return { deps, settlement, store, gateway, blocks, addons, clock, ids, services, providers, contacts };
+}
+
+/** Seeds the provider's add-ons (each `providerId` is set to `providerId`). */
+export function withAddons(world: BookingWorld, providerId: string, addons: readonly ServiceAddon[]): BookingWorld {
+  for (const a of addons) world.addons.seedAddon({ ...a, providerId });
+  return world;
 }
 
 /** The default draft request: c1 books p1's `srv_01` (1 000 000 VND) on 2026-10-15 at 14:00. */

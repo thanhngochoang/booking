@@ -352,7 +352,7 @@ WorkDashboard workDashboard(
         done != null) {
       final v = toVn(done);
       if (v.year == vnNow.year && v.month == vnNow.month) {
-        month += b.serviceSnapshot.price;
+        month += b.totalVnd;
       }
     }
     if (_heldEscrow.contains(b.escrowStatus)) {

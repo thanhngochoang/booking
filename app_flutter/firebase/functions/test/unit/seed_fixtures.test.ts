@@ -32,6 +32,7 @@ import {
   LAN,
   MINH,
   ADMIN,
+  SEED_ADDONS,
   SEED_CREATED_AT,
   SEED_EVENT_SOON,
   SEED_PASSWORD,
@@ -68,6 +69,29 @@ describe('seed fixtures', () => {
     for (const d of seedDocuments(NOW)) {
       for (const segment of d.path.split('/')) assert.ok(isId(segment), d.path);
     }
+  });
+
+  test('An has three add-ons (makeup per_person, retouch per_item, transport per_booking only for seed-service-portrait) and Cúc one studio add-on; private/addons activeCount matches', () => {
+    const docs = seedDocuments(NOW);
+    const addonDocs = (uid: string) =>
+      docs.filter((d) => d.path.startsWith(`photographers/${uid}/addons/`)).map((d): Record<string, unknown> => ({ id: d.path.split('/').pop(), ...(d.data as Record<string, unknown>) }));
+    const an = addonDocs(AN);
+    assert.deepEqual(an.map((a) => [a.id, a.kind, a.unit]), [
+      ['seed-addon-makeup', 'makeup', 'per_person'],
+      ['seed-addon-retouch', 'retouch', 'per_item'],
+      ['seed-addon-car', 'transport', 'per_booking'],
+    ]);
+    assert.deepEqual(an.find((a) => a.id === 'seed-addon-car')?.serviceIds, ['seed-service-portrait']);
+    assert.deepEqual(an.find((a) => a.id === 'seed-addon-makeup')?.serviceIds, []);
+    assert.equal(an.find((a) => a.id === 'seed-addon-makeup')?.price, 800_000);
+    const cuc = addonDocs(CUC);
+    assert.deepEqual(cuc.map((a) => [a.id, a.kind, a.unit, a.price, a.maxQty]), [['seed-addon-outfit', 'outfit', 'per_item', 250_000, 4]]);
+    for (const [uid, list] of [[AN, an], [CUC, cuc]] as const) {
+      const lock = docs.find((d) => d.path === `photographers/${uid}/private/addons`)?.data as { activeCount: number };
+      assert.equal(lock.activeCount, list.filter((a) => a.active === true).length, uid);
+    }
+    assert.equal(SEED_ADDONS.length, 4);
+    for (const a of SEED_ADDONS) assert.ok(a.price >= 10_000 && a.price <= 50_000_000, a.id);
   });
 
   test('accounts are test-only', () => {

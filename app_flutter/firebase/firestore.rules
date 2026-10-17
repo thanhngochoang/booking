@@ -439,6 +439,13 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Service add-ons (S08.06): public while active, the owner reads all of theirs; written only by
+      // the saveAddon and deleteAddon callables (Admin SDK).
+      match /addons/{addonId} {
+        allow read: if signedIn() && (resource.data.active == true || isOwner(uid));
+        allow write: if false;
+      }
+
       match /private/{docId} {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)

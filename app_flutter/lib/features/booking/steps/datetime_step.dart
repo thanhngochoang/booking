@@ -255,7 +255,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
           Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: AppButton.primary(
-              l10n.bookContinuePrice(formatMoney(state.priceVnd ?? 0)),
+              l10n.bookContinuePrice(formatMoney(state.totalVnd ?? 0)),
               onPressed: state.canContinue ? controller.next : null,
             ),
           ),

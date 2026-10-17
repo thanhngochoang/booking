@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
@@ -32,6 +33,9 @@ class FakeBookingRepository implements BookingRepository {
           String placeName,
           String? note,
           int? expectedPrice,
+          List<AddonPick> addons,
+          BookingPlace? pickup,
+          int? expectedTotal,
         })
       >[];
   final paymentCalls = <({String bookingId, PayMethod method})>[];
@@ -87,6 +91,9 @@ class FakeBookingRepository implements BookingRepository {
       BookingErrorCode.notFound => 'not_found',
       BookingErrorCode.invalidArgument => 'invalid_argument',
       BookingErrorCode.paymentAttemptsExceeded => 'payment_attempts_exceeded',
+      BookingErrorCode.addonChanged => 'addon_changed',
+      BookingErrorCode.addonNotApplicable => 'addon_not_applicable',
+      BookingErrorCode.pickupRequired => 'pickup_required',
       BookingErrorCode.network => 'unavailable',
       BookingErrorCode.unknown => 'unknown',
     };
@@ -203,6 +210,9 @@ class FakeBookingRepository implements BookingRepository {
     required BookingPlace place,
     String? note,
     int? expectedPrice,
+    List<AddonPick> addons = const [],
+    BookingPlace? pickup,
+    int? expectedTotal,
   }) async {
     _checkNextError();
     createCalls.add((
@@ -213,6 +223,9 @@ class FakeBookingRepository implements BookingRepository {
       placeName: place.name,
       note: note,
       expectedPrice: expectedPrice,
+      addons: addons,
+      pickup: pickup,
+      expectedTotal: expectedTotal,
     ));
     final id = 'booking_${bookings.length + 1}';
     final now = DateTime.now().toUtc();

@@ -60,6 +60,7 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
   return {
     store,
     services: { getService: async () => null },
+    addons: { listAddons: async () => [] },
     contacts: { get: async () => null },
     providers: { acceptsOrders: async () => true },
     blocks: new FakeBlockGate(),

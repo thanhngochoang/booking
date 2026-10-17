@@ -36,6 +36,42 @@ Map<String, dynamic> _$BookingPlaceToJson(_BookingPlace instance) =>
       'lng': instance.lng,
     };
 
+_BookingAddonLine _$BookingAddonLineFromJson(Map<String, dynamic> json) =>
+    _BookingAddonLine(
+      addonId: json['addonId'] as String,
+      kind: $enumDecode(_$AddonKindEnumMap, json['kind']),
+      name: json['name'] as String,
+      unit: $enumDecode(_$AddonUnitEnumMap, json['unit']),
+      unitPrice: (json['unitPrice'] as num).toInt(),
+      qty: (json['qty'] as num).toInt(),
+      amount: (json['amount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$BookingAddonLineToJson(_BookingAddonLine instance) =>
+    <String, dynamic>{
+      'addonId': instance.addonId,
+      'kind': _$AddonKindEnumMap[instance.kind]!,
+      'name': instance.name,
+      'unit': _$AddonUnitEnumMap[instance.unit]!,
+      'unitPrice': instance.unitPrice,
+      'qty': instance.qty,
+      'amount': instance.amount,
+    };
+
+const _$AddonKindEnumMap = {
+  AddonKind.makeup: 'makeup',
+  AddonKind.retouch: 'retouch',
+  AddonKind.transport: 'transport',
+  AddonKind.outfit: 'outfit',
+  AddonKind.other: 'other',
+};
+
+const _$AddonUnitEnumMap = {
+  AddonUnit.perBooking: 'per_booking',
+  AddonUnit.perPerson: 'per_person',
+  AddonUnit.perItem: 'per_item',
+};
+
 _BookingCancel _$BookingCancelFromJson(Map<String, dynamic> json) =>
     _BookingCancel(
       by: json['by'] as String,
@@ -117,6 +153,14 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
   end: json['end'] as String,
   place: BookingPlace.fromJson(json['place'] as Map<String, dynamic>),
   note: json['note'] as String?,
+  addons:
+      (json['addons'] as List<dynamic>?)
+          ?.map((e) => BookingAddonLine.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <BookingAddonLine>[],
+  pickup: json['pickup'] == null
+      ? null
+      : BookingPlace.fromJson(json['pickup'] as Map<String, dynamic>),
   status: $enumDecode(_$BookingStatusEnumMap, json['status']),
   deposit: (json['deposit'] as num).toInt(),
   remaining: (json['remaining'] as num).toInt(),
@@ -161,6 +205,8 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'end': instance.end,
   'place': instance.place,
   'note': instance.note,
+  'addons': instance.addons,
+  'pickup': instance.pickup,
   'status': _$BookingStatusEnumMap[instance.status]!,
   'deposit': instance.deposit,
   'remaining': instance.remaining,

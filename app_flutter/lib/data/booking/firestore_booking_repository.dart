@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
@@ -140,6 +141,9 @@ class FirestoreBookingRepository implements BookingRepository {
     required BookingPlace place,
     String? note,
     int? expectedPrice,
+    List<AddonPick> addons = const [],
+    BookingPlace? pickup,
+    int? expectedTotal,
   }) async {
     return _call(
       'createBooking',
@@ -155,6 +159,15 @@ class FirestoreBookingRepository implements BookingRepository {
         },
         'note': ?note,
         'expectedPrice': ?expectedPrice,
+        if (addons.isNotEmpty)
+          'addons': [for (final a in addons) a.toPayload()],
+        if (pickup != null)
+          'pickup': {
+            'name': pickup.name,
+            if (pickup.lat != null && pickup.lng != null)
+              'point': {'lat': pickup.lat, 'lng': pickup.lng},
+          },
+        'expectedTotal': ?expectedTotal,
       },
       (raw) {
         final map = (raw as Map).cast<String, dynamic>();

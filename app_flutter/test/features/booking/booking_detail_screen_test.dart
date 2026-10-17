@@ -43,6 +43,13 @@ Booking _booking({
   ).copyWith(acceptDeadline: acceptDeadline, chatId: chatId);
 }
 
+Booking _withAddons({required int deposit}) => _booking().copyWith(
+  addons: const [testMakeupLine, testTransportLine],
+  pickup: testPickup,
+  deposit: deposit,
+  remaining: 0,
+);
+
 RecordingBookingRepository _repo(Booking b, {BookingContactSnapshot? copy}) {
   final repo = RecordingBookingRepository()..seedBooking(b);
   if (copy != null) repo.seedContact(b.id, copy);
@@ -75,6 +82,58 @@ List<String> primaryButtonLabels(WidgetTester tester) => [
 ];
 
 void main() {
+  testWidgets('the paid toast shows "Đã thanh toán 3.400.000₫…" and the block '
+      'lists the add-ons and the pickup', (tester) async {
+    await pumpBookingDetail(
+      tester,
+      uid: detailCustomerUid,
+      path: '/b/b1?paid=1',
+      bookings: _repo(_withAddons(deposit: 3400000)),
+    );
+    await _settle(tester);
+
+    expect(
+      find.text('Đã thanh toán 3.400.000₫, tiền được giữ an toàn.'),
+      findsOneWidget,
+    );
+    expect(find.text('Dịch vụ đi kèm'), findsOneWidget);
+    expect(find.text('2 người × 800.000₫'), findsOneWidget);
+    expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
+  });
+
+  testWidgets('the photographer sees the same block and the pickup', (
+    tester,
+  ) async {
+    await pumpBookingDetail(
+      tester,
+      uid: detailPhotographerUid,
+      bookings: _repo(
+        _withAddons(deposit: 3400000),
+        copy: testContactSnapshot,
+      ),
+    );
+    await _settle(tester);
+
+    expect(find.text('Dịch vụ đi kèm'), findsOneWidget);
+    expect(find.text('Trang điểm'), findsOneWidget);
+    expect(find.text('1.600.000₫'), findsOneWidget);
+    expect(find.text('Điểm đón'), findsNothing);
+    expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
+  });
+
+  testWidgets('a booking without add-ons shows no add-on block', (
+    tester,
+  ) async {
+    await pumpBookingDetail(
+      tester,
+      uid: detailCustomerUid,
+      bookings: _repo(_booking()),
+    );
+    await _settle(tester);
+
+    expect(find.text('Dịch vụ đi kèm'), findsNothing);
+  });
+
   testWidgets(
     'first load shows BookingCard.skeleton and StatusTimeline.skeleton',
     (tester) async {

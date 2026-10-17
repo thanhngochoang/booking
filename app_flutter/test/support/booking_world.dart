@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/data/addons/addon_providers.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/booking/booking.dart';
@@ -59,6 +61,7 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
+import 'fake_addon_repository.dart';
 import 'fake_push.dart';
 
 import 'content_fixtures.dart';
@@ -115,6 +118,72 @@ const bookingProfile = PhotographerProfile(
   ),
 );
 
+/// The mock's package for the add-on frames (`#S04.01-addons`, `#S04.03-addons`).
+const bookingPortrait2h = ServiceSummary(
+  id: 's1',
+  photographerId: 'p1',
+  name: 'Chân dung 2 giờ',
+  priceVnd: 1500000,
+  durationMinutes: 120,
+  photoCount: 40,
+  active: true,
+);
+
+/// An active add-on of photographer `p1`.
+ServiceAddon bookingAddon(
+  String id, {
+  required AddonKind kind,
+  required String name,
+  String? description,
+  required AddonUnit unit,
+  required int price,
+  int maxQty = 1,
+  List<String> serviceIds = const [],
+}) => ServiceAddon(
+  id: id,
+  providerId: 'p1',
+  kind: kind,
+  name: name,
+  description: description,
+  price: price,
+  unit: unit,
+  maxQty: maxQty,
+  serviceIds: serviceIds,
+  active: true,
+  createdAt: DateTime.utc(2026, 10),
+  updatedAt: DateTime.utc(2026, 10),
+);
+
+/// Mock `#S04.01-addons`: makeup per person (≤ 4), retouch per photo (≤ 10),
+/// and a car that only applies to package `s1`.
+final addonMakeup = bookingAddon(
+  'a_makeup',
+  kind: AddonKind.makeup,
+  name: 'Trang điểm',
+  description: 'Trang điểm tự nhiên, làm tóc cơ bản',
+  unit: AddonUnit.perPerson,
+  price: 800000,
+  maxQty: 4,
+);
+final addonRetouch = bookingAddon(
+  'a_retouch',
+  kind: AddonKind.retouch,
+  name: 'Chỉnh thêm ảnh',
+  description: 'Hậu kỳ thêm ngoài 40 ảnh của gói',
+  unit: AddonUnit.perItem,
+  price: 20000,
+  maxQty: 10,
+);
+final addonTransport = bookingAddon(
+  'a_car',
+  kind: AddonKind.transport,
+  name: 'Xe đón trong nội thành',
+  description: 'Đón đi và đưa về, xe 4 chỗ',
+  unit: AddonUnit.perBooking,
+  price: 300000,
+  serviceIds: ['s1'],
+);
+
 class BookingWorldHandles {
   const BookingWorldHandles({
     required this.router,
@@ -122,10 +191,12 @@ class BookingWorldHandles {
     required this.availRepo,
     required this.contactRepo,
     required this.externalLauncher,
+    required this.addonRepo,
     this.reviewRepo,
   });
 
   final GoRouter router;
+  final FakeAddonRepository addonRepo;
   final FakeBookingRepository bookings;
   final FakeAvailabilityRepository availRepo;
   final FakeUserContactRepository contactRepo;
@@ -164,6 +235,9 @@ Future<BookingWorldHandles> pumpBookingRoute(
   /// Signs in as this uid instead of the registered fake user (S05.02 shows
   /// a booking only to its two parties; the world's customer is `c1`).
   String? signedInUid,
+
+  /// Active add-ons of `p1` (S04.01); none by default.
+  List<ServiceAddon> addons = const [],
 }) async {
   final effectiveNow = now ?? worldBookingToday;
   final effectiveBookings = bookings ?? FakeBookingRepository();
@@ -193,6 +267,10 @@ Future<BookingWorldHandles> pumpBookingRoute(
       kind: kind,
     );
   };
+  final addonRepo = FakeAddonRepository();
+  for (final a in addons) {
+    addonRepo.seed(a);
+  }
 
   tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
@@ -358,6 +436,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
     realPaymentsProvider.overrideWithValue(realPayments),
     paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
+    addonRepositoryProvider.overrideWithValue(addonRepo),
     ...extraOverrides,
   ];
 
@@ -385,6 +464,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     availRepo: availRepo,
     contactRepo: contactRepo,
     externalLauncher: externalLauncher,
+    addonRepo: addonRepo,
     reviewRepo: effectiveReviews,
   );
 }

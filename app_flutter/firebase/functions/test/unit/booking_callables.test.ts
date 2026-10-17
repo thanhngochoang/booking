@@ -10,6 +10,8 @@ import {
   type ServiceRecord,
   type CustomerContactRecord,
   computeDeposit,
+  MemoryAddonStore,
+  type ServiceAddon,
 } from '@photobooking/domain';
 import {
   handleCreateBooking,
@@ -19,8 +21,15 @@ import {
 import { handleConfirmFakePayment, handleCreatePayment } from '../../src/callables/payment.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
 
-function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gateway: FakePaymentGateway; blocks: FakeBlockGate } {
+function createTestDeps(): {
+  deps: BookingDeps;
+  store: MemoryBookingStore;
+  gateway: FakePaymentGateway;
+  blocks: FakeBlockGate;
+  addonStore: MemoryAddonStore;
+} {
   const store = new MemoryBookingStore();
+  const addonStore = new MemoryAddonStore();
   const gateway = new FakePaymentGateway();
   const blocks = new FakeBlockGate();
   let idCounter = 1;
@@ -41,6 +50,7 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
         return svc === undefined ? null : { ...svc, photographerId };
       },
     },
+    addons: addonStore,
     contacts: {
       get: async (uid) => contactsMap.get(uid) ?? null,
     },
@@ -51,7 +61,7 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
     ids: { newId: () => `id_${idCounter++}` },
   };
 
-  return { deps, store, gateway, blocks };
+  return { deps, store, gateway, blocks, addonStore };
 }
 
 /** Fake payments run on the emulator (or the dev project) only; the fake webhook needs its (test) secret. */
@@ -351,5 +361,82 @@ describe('Booking callables', () => {
       autoCompletions: 0,
       releasedEscrows: 0,
     });
+  });
+});
+
+const ADDON_ID_MAKEUP = '01ARZ3NDEKTSV4RRFFQ69G5FA1';
+const ADDON_ID_CAR = '01ARZ3NDEKTSV4RRFFQ69G5FA2';
+const addon = (o: Partial<ServiceAddon> & Pick<ServiceAddon, 'id' | 'kind' | 'name' | 'price' | 'unit'>): ServiceAddon => ({
+  providerId: 'p1',
+  maxQty: 4,
+  serviceIds: [],
+  active: true,
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+  ...o,
+});
+const bookingData = (extra: Record<string, unknown>) => ({
+  photographerId: 'p1',
+  serviceId: 'svc1',
+  day: '2026-10-15',
+  start: '09:00',
+  place: { name: 'Thảo Cầm Viên, Quận 1' },
+  ...extra,
+});
+
+describe('createBooking with add-ons', () => {
+  test('createBooking prices add-ons from Firestore, not from the request', async () => {
+    const { deps, addonStore } = createTestDeps();
+    addonStore.seedAddon(addon({ id: ADDON_ID_MAKEUP, kind: 'makeup', name: 'Trang điểm', price: 800_000, unit: 'per_person' }));
+    const result = await handleCreateBooking(
+      {
+        auth: { uid: 'c1' },
+        data: bookingData({ addons: [{ addonId: ADDON_ID_MAKEUP, qty: 2, unitPrice: 1, amount: 1 }] }),
+      },
+      deps,
+    );
+    assert.equal(result.addons?.length, 1);
+    assert.equal(result.addons?.[0]?.unitPrice, 800_000);
+    assert.equal(result.addons?.[0]?.amount, 1_600_000);
+    assert.equal(result.deposit, 2_600_000);
+    assert.equal(result.remaining, 0);
+  });
+
+  test('createBooking with a deactivated add-on is failed-precondition addon_changed', async () => {
+    const { deps, addonStore } = createTestDeps();
+    addonStore.seedAddon(addon({ id: ADDON_ID_MAKEUP, kind: 'makeup', name: 'Trang điểm', price: 800_000, unit: 'per_person', active: false }));
+    await assert.rejects(
+      handleCreateBooking({ auth: { uid: 'c1' }, data: bookingData({ addons: [{ addonId: ADDON_ID_MAKEUP, qty: 1 }] }) }, deps),
+      httpsError('failed-precondition', 'addon_changed'),
+    );
+  });
+
+  test('createBooking with transport and no pickup is failed-precondition pickup_required', async () => {
+    const { deps, addonStore } = createTestDeps();
+    addonStore.seedAddon(addon({ id: ADDON_ID_CAR, kind: 'transport', name: 'Xe đón', price: 300_000, unit: 'per_booking', maxQty: 1 }));
+    await assert.rejects(
+      handleCreateBooking({ auth: { uid: 'c1' }, data: bookingData({ addons: [{ addonId: ADDON_ID_CAR, qty: 1 }] }) }, deps),
+      httpsError('failed-precondition', 'pickup_required'),
+    );
+    const ok = await handleCreateBooking(
+      {
+        auth: { uid: 'c1' },
+        data: bookingData({ addons: [{ addonId: ADDON_ID_CAR, qty: 1 }], pickup: { name: '12 Lê Lợi, Quận 1' } }),
+      },
+      deps,
+    );
+    assert.equal(ok.pickup?.name, '12 Lê Lợi, Quận 1');
+  });
+
+  test('a closed provider is still refused with not_accepting_orders', async () => {
+    const { deps, addonStore } = createTestDeps();
+    addonStore.seedAddon(addon({ id: ADDON_ID_MAKEUP, providerId: 'closed1', kind: 'makeup', name: 'Trang điểm', price: 800_000, unit: 'per_person' }));
+    await assert.rejects(
+      handleCreateBooking(
+        { auth: { uid: 'c1' }, data: bookingData({ photographerId: 'closed1', addons: [{ addonId: ADDON_ID_MAKEUP, qty: 1 }] }) },
+        deps,
+      ),
+      httpsError('failed-precondition', 'not_accepting_orders'),
+    );
   });
 });

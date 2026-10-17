@@ -2184,3 +2184,73 @@ test('a participant reads the threads messages, a third user cannot', async () =
   await assertFails(getDoc(doc(thirdPartyDb, 'support_threads/help_u1/messages/m1')));
 });
 
+// ---- photographers/{uid}/addons (S08.06, #190) ----
+const addonPath = (uid, id) => `photographers/${uid}/addons/${id}`;
+const addonDoc = (o = {}) => ({
+  kind: 'makeup', name: 'Trang điểm', price: 800000, unit: 'per_person', maxQty: 4,
+  serviceIds: [], active: true, ...o,
+});
+const seedAddons = (uid) => env.withSecurityRulesDisabled(async (c) => {
+  const f = c.firestore();
+  await setDoc(doc(f, addonPath(uid, 'on')), addonDoc());
+  await setDoc(doc(f, addonPath(uid, 'off')), addonDoc({ name: 'Chỉnh thêm ảnh', active: false }));
+});
+
+test('a signed-in customer reads an active add-on', async () => {
+  await asPhotographer('ad1'); await seedAddons('ad1');
+  const db = env.authenticatedContext('cust-ad1').firestore();
+  await assertSucceeds(getDoc(doc(db, addonPath('ad1', 'on'))));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), addonPath('ad1', 'on'))));
+});
+
+test("a customer cannot read another provider's inactive add-on", async () => {
+  await asPhotographer('ad2'); await seedAddons('ad2');
+  const db = env.authenticatedContext('cust-ad2').firestore();
+  await assertFails(getDoc(doc(db, addonPath('ad2', 'off'))));
+});
+
+test('the owner reads their inactive add-on', async () => {
+  await asPhotographer('ad3'); await seedAddons('ad3');
+  const db = env.authenticatedContext('ad3').firestore();
+  await assertSucceeds(getDoc(doc(db, addonPath('ad3', 'off'))));
+});
+
+test('a customer list query filtered by active == true succeeds; unfiltered fails', async () => {
+  await asPhotographer('ad4'); await seedAddons('ad4');
+  const db = env.authenticatedContext('cust-ad4').firestore();
+  const col = collection(db, `photographers/ad4/addons`);
+  await assertSucceeds(getDocs(query(col, where('active', '==', true))));
+  await assertFails(getDocs(col));
+});
+
+test('the owner cannot create, update or delete an add-on directly', async () => {
+  await asPhotographer('ad5'); await seedAddons('ad5');
+  const db = env.authenticatedContext('ad5').firestore();
+  await assertFails(setDoc(doc(db, addonPath('ad5', 'new')), addonDoc()));
+  await assertFails(updateDoc(doc(db, addonPath('ad5', 'on')), { price: 900000 }));
+  await assertFails(deleteDoc(doc(db, addonPath('ad5', 'on'))));
+});
+
+test('nobody writes private/addons from a client; the owner reads it', async () => {
+  await asPhotographer('ad6');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/ad6/private/addons'), { activeCount: 1, updatedAt: Timestamp.now() }));
+  const db = env.authenticatedContext('ad6').firestore();
+  await assertFails(setDoc(doc(db, 'photographers/ad6/private/addons'), { activeCount: 0 }));
+  await assertFails(updateDoc(doc(db, 'photographers/ad6/private/addons'), { activeCount: 0 }));
+  await assertFails(deleteDoc(doc(db, 'photographers/ad6/private/addons')));
+  await assertSucceeds(getDoc(doc(db, 'photographers/ad6/private/addons')));
+  await assertFails(getDoc(doc(env.authenticatedContext('cust-ad6').firestore(), 'photographers/ad6/private/addons')));
+});
+
+test('a third user cannot read a booking that has a pickup', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'bookings/bk-pickup'), {
+      customerId: 'u-pk1', photographerId: 'u-pk2', status: 'requested',
+      addons: [{ addonId: 'a1', kind: 'transport', name: 'Xe đón', unit: 'per_booking', unitPrice: 300000, qty: 1, amount: 300000 }],
+      pickup: { name: '12 Lê Lợi, Quận 1' },
+    }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('u-pk1').firestore(), 'bookings/bk-pickup')));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('u-pk2').firestore(), 'bookings/bk-pickup')));
+  await assertFails(getDoc(doc(env.authenticatedContext('u-pk3').firestore(), 'bookings/bk-pickup')));
+});

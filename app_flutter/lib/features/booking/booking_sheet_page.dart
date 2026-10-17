@@ -70,6 +70,10 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         if (next.error != null && next.error != prev?.error) {
           _handleError(next.error!);
         }
+        if (next.droppedAddonNames.isNotEmpty &&
+            next.droppedAddonNames != prev?.droppedAddonNames) {
+          _showDropped(next.droppedAddonNames);
+        }
       },
     );
   }
@@ -105,6 +109,20 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
     }
   }
 
+  /// "Đã bỏ … vì không áp dụng cho gói này", shown once per package change.
+  void _showDropped(List<String> names) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.bookAddonDropped(names.join(', ')))),
+    );
+    final controller = ref.read(
+      bookingFlowControllerProvider(widget.args).notifier,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) controller.consumeDropped();
+    });
+  }
+
   void _handleError(BookingErrorCode err) {
     if (!mounted) return;
     final l10n = context.l10n;
@@ -134,6 +152,11 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.payAttemptsExceeded)),
         );
+      case BookingErrorCode.addonChanged:
+      case BookingErrorCode.addonNotApplicable:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookAddonsChanged)),
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
@@ -153,6 +176,8 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         );
       case BookingErrorCode.phoneRequired:
       case BookingErrorCode.priceChanged:
+      // S04.06 shows it under the "Điểm đón" field.
+      case BookingErrorCode.pickupRequired:
         break;
     }
   }

@@ -463,6 +463,15 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
                             size: AppButtonSize.small,
                             onPressed: saving ? null : _clearForm,
                           ),
+                        if (active.isNotEmpty)
+                          AppButton.text(
+                            l.setupAddAddon,
+                            key: const Key('setup-addons'),
+                            size: AppButtonSize.small,
+                            onPressed: saving
+                                ? null
+                                : () => context.push('/me/addons'),
+                          ),
                         if (active.isEmpty && packages.hasValue) ...[
                           const SizedBox(height: AppSpace.s2),
                           Semantics(

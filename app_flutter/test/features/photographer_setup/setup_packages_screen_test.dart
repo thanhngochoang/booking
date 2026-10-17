@@ -10,6 +10,7 @@ import '../../support/photographer_world.dart';
 final _routes = <RouteBase>[
   GoRoute(path: '/setup/1', builder: (_, _) => const Text('step 1')),
   GoRoute(path: '/setup/2', builder: (_, _) => const SetupPackagesScreen()),
+  GoRoute(path: '/me/addons', builder: (_, _) => const Text('stub addons')),
 ];
 
 const _portrait = ServicePackage(
@@ -284,4 +285,21 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('"Thêm dịch vụ đi kèm" shows once a package exists and opens '
+      '/me/addons', (tester) async {
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(_key('setup-addons'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    final w2 = await _world(seed: const [_portrait]);
+    await tester.pumpWidget(w2.app(location: '/setup/2', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.text('Thêm dịch vụ đi kèm'), findsOneWidget);
+    await tester.ensureVisible(_key('setup-addons'));
+    await tester.tap(_key('setup-addons'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub addons'), findsOneWidget);
+  });
 }

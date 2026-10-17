@@ -152,6 +152,28 @@ create table services (
 );
 create index ix_services_photographer on services (photographer_id) where active;
 
+-- Dịch vụ đi kèm (2026-10-08): chỉ server ghi; tối đa 10 dòng active mỗi nhà cung cấp (bất biến 25).
+create table service_addons (
+  id           text primary key,
+  provider_id  text not null references photographers(user_id) on delete cascade,
+  kind         text not null check (kind in ('makeup','retouch','transport','outfit','other')),
+  name         text not null check (char_length(name) between 2 and 60),
+  description  text check (char_length(description) <= 200),
+  price_vnd    bigint not null check (price_vnd between 10000 and 50000000),
+  unit         text not null check (unit in ('per_booking','per_person','per_item')),
+  max_qty      smallint not null check (max_qty between 1 and 10),
+  active       boolean not null default true,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index ix_service_addons_provider on service_addons (provider_id) where active;
+-- Gói mà dịch vụ áp dụng; không có dòng nào = mọi gói (Firestore: serviceIds = []).
+create table service_addon_services (
+  addon_id   text not null references service_addons(id) on delete cascade,
+  service_id text not null references services(id) on delete cascade,
+  primary key (addon_id, service_id)
+);
+
 create table photographer_specialties (
   photographer_id text not null references photographers(user_id) on delete cascade,
   specialty_id    text not null references taxonomy_items(id),
@@ -244,6 +266,8 @@ create table bookings (
   end_time         time not null check (end_time > start_time),
   place_name       text, place_lat double precision, place_lng double precision,
   note             text,
+  pickup_name      text,                          -- chỉ khi có dịch vụ transport (#190); không bao giờ ở bảng công khai
+  pickup_point     jsonb,                         -- {lat, lng}
   status           text not null check (status in ('draft','requested','accepted','declined','expired','cancelled','upcoming','completed','reviewed')),
   deposit_amount   bigint not null check (deposit_amount >= 0),
   remaining_amount bigint not null check (remaining_amount >= 0),
@@ -260,7 +284,20 @@ create table bookings (
   version          int not null default 1,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
-  check (deposit_amount + remaining_amount = service_price)   -- từ #129: deposit_amount = giá, remaining_amount = 0
+  -- từ #129: deposit_amount = tổng, remaining_amount = 0; tổng = service_price + Σ booking_addons.amount_vnd (#190, kiểm trong use case, không còn check một bảng)
+  check (remaining_amount = 0 or deposit_amount + remaining_amount >= service_price)
+);
+
+create table booking_addons (                     -- bản chụp dịch vụ đi kèm lúc đặt (#190)
+  booking_id     text not null references bookings(id) on delete cascade,
+  addon_id       text not null,
+  kind           text not null check (kind in ('makeup','retouch','transport','outfit','other')),
+  name           text not null,
+  unit           text not null check (unit in ('per_booking','per_person','per_item')),
+  unit_price_vnd bigint not null check (unit_price_vnd > 0),
+  qty            int not null check (qty between 1 and 10),
+  amount_vnd     bigint not null check (amount_vnd = unit_price_vnd * qty),
+  primary key (booking_id, addon_id)
 );
 create index ix_bookings_customer on bookings (customer_id, status, day);
 create index ix_bookings_photographer on bookings (photographer_id, status, day);
@@ -1071,6 +1108,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `photographers/{uid}.skills.specialties[]` | `photographer_specialties`, `photographer_specialty_evidence` | `evidencePostIds[]` → bảng bằng chứng |
 | `photographers/{uid}.skills.{styles,extras,languages,audiences}[]` | `photographer_skill_tags` | `grp` = nhóm |
 | `photographers/{uid}/services/{id}` | `services` | `deliverables.*`→`photo_count`, `edited_count`, `delivery_days` |
+| `photographers/{uid}/addons/{id}` | `service_addons` + `service_addon_services` | `providerId` lấy từ đường dẫn; `serviceIds[]`→`service_addon_services`; `price`→`price_vnd`; khoá `photographers/{uid}/private/addons` (`activeCount`) chỉ là khoá giao dịch của Firestore, bảng dùng `select … for update` trên nhà cung cấp |
 | `availability/{uid}/days/{yyyy-mm-dd}` | `availability_days` | Id tài liệu = cột `day` |
 | `posts/{id}` | `posts` + `post_images` + `post_hashtags` | `imageUrls[]`→`post_images`/`files`; hashtag trích từ `caption` |
 | `likes/{uid}_{postId}`, `saves/…`, `follows/{uid}_{photographerId}` | `likes`, `saves`, `follows` | Khoá ghép thay id ghép chuỗi |

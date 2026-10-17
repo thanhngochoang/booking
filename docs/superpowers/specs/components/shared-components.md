@@ -80,6 +80,12 @@ Nút liên hệ gọn, bung kênh khi bấm. `ContactDial({required ContactAcces
 - `busy`: đang lấy liên kết thì nút hiện vòng chờ và bỏ qua chạm. Sự kiện `contact_tapped{channel, source}` do `ContactAction` (lớp màn) ghi; widget không biết `source`. Khi mở khoá, `inApp` trong `channels` bị bỏ qua và không có kênh ngoài thì không vẽ gì.
 - Test: bung/đóng, một kênh, giảm chuyển động, thứ tự tiêu điểm.
 
+### QtyStepper · Mới
+Bộ đếm trừ / số / cộng, đã tách khỏi `_Stepper` của sheet đăng ký vé (S11.03). `QtyStepper({required int value, required ValueChanged<int> onChanged, required String valueLabel, required String decrementLabel, required String incrementLabel, int min = 1, required int max, bool enabled = true, String keyPrefix = 'qty'})`. Nút trừ tắt khi `value <= min`, nút cộng tắt khi `value >= max`, cả hai tắt khi `enabled == false` (form đang khoá hoặc đang gửi); chạm gọi `onChanged(value ∓ 1)`, không bao giờ ra ngoài `[min, max]`.
+- Khoá: `<keyPrefix>-minus`, `<keyPrefix>-quantity`, `<keyPrefix>-plus`. S11.03 truyền `keyPrefix: 'register'` nên test sự kiện giữ nguyên khoá `register-*`.
+- Truy cập: số là vùng cập nhật trực tiếp (`liveRegion`) đọc bằng `valueLabel` ("2 vé", "2 người"), màn quyết định danh từ; nút có `tooltip` là `decrementLabel` / `incrementLabel`.
+- Dùng ở S04.01 (số người, số ảnh của dịch vụ đi kèm) và S11.03 (số vé). Test: tắt ở min và max, chạm gọi `onChanged`, khoá theo `keyPrefix`, `valueLabel` được đọc.
+
 ### LocationPromptCard · Mới
 Thẻ xin vị trí đúng lúc. `LocationPromptCard({required LocationPromptState state, required VoidCallback onAllow, required VoidCallback onLater, VoidCallback? onChooseArea})`. Trạng thái `ask` (biểu tượng ghim, "Sự kiện gần bạn", mô tả, nút "Cho phép" + "Để sau"), `requesting` (nút loading), `denied` (thu thành chip "Chọn khu vực"). Viền nổi bật (trung tính) chỉ khi `ask`. Dùng ở S02.03. Widget không gọi hộp thoại quyền; màn xử lý trong `onAllow`.
 
@@ -114,7 +120,7 @@ Thẻ so sánh. `PhotographerCard({required PhotographerSummary data, List<Reaso
 Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Chip nhỏ nền kính, chữ 10,5, một dòng; dư thì bỏ bớt, không cuộn. `Semantics` đọc "Gợi ý vì: …". Mã lý do `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent`.
 
 ### BookingCard · Đã có
-`BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. `BookingSummary.tag` (String?, mặc định null) vẽ một viên thuốc viền nhỏ với `AppIcons.store` dưới dòng tên, ví dụ "Giao bởi Studio Ánh Dương" ở S06.01 (buổi studio giao); không có thì không vẽ gì. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
+`BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. `BookingSummary.tag` (String?, mặc định null) vẽ một viên thuốc viền nhỏ với `AppIcons.store` dưới dòng tên, ví dụ "Giao bởi Studio Ánh Dương" ở S06.01 (buổi studio giao); không có thì không vẽ gì. `BookingSummary.extraLine` (String?, mặc định null) thêm một dòng phụ dưới địa điểm ở cỡ `normal`, ví dụ "Điểm đón: Ga Sài Gòn, Quận 3" ở S04.03. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
 
 ### EventCard và DateBlock · Đã có
 `EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured` (mock S11.01, 2026-10-07): ảnh bìa 16:10; `PhotoPill` sáng góc trên trái với chấm trạng thái (xanh còn nhiều chỗ, vàng từ một nửa, đỏ "Hết chỗ"); lớp phủ đáy ba dòng: "thứ dd/MM · HH:mm · địa điểm[ · khoảng cách]", tên đậm, "chủ · n/sức chứa đã đăng ký"; không có giá (giá nằm ở thẻ hàng). `EventTypeTag(label)`: tag loại dạng pill kính có viền (mock `.tag`), dùng ở S11.02 và `TicketCard`. `size: compact` (hàng ngang S02.03) rộng 176dp. Có biến thể `EventCard.skeleton({EventCardSize size = row})`.  
@@ -516,3 +522,6 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.delete` | `delete` | (mới, chưa có trong mock) | `Icons.delete_outline` |
 | `AppIcons.personRemove` | `person_remove` | (mới, chưa có trong mock) | — |
 | `AppIcons.flag` | `flag` | (mới, chưa có trong mock) | `Icons.flag_outlined` |
+| `AppIcons.car` | `directions_car` | `directions_car` (có trong mock) | — |
+| `AppIcons.checkroom` | `checkroom` | `checkroom` (có trong mock) | — |
+| `AppIcons.addCircle` | `add_circle` | (mới, chưa có trong mock) | — |

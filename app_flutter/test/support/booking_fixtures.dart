@@ -1,3 +1,4 @@
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -68,3 +69,27 @@ Booking makeTestBooking({
     updatedAt: updatedAt ?? now,
   );
 }
+
+/// Add-on lines as snapshotted on a booking (S05.02, S06.01): 2 × 800.000₫
+/// make-up, a one-off transport of 300.000₫.
+const testMakeupLine = BookingAddonLine(
+  addonId: 'a_makeup',
+  kind: AddonKind.makeup,
+  name: 'Trang điểm',
+  unit: AddonUnit.perPerson,
+  unitPrice: 800000,
+  qty: 2,
+  amount: 1600000,
+);
+
+const testTransportLine = BookingAddonLine(
+  addonId: 'a_transport',
+  kind: AddonKind.transport,
+  name: 'Xe đón trong nội thành',
+  unit: AddonUnit.perBooking,
+  unitPrice: 300000,
+  qty: 1,
+  amount: 300000,
+);
+
+const testPickup = BookingPlace(name: 'Ga Sài Gòn, Quận 3');

@@ -6070,4 +6070,261 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get helpProviderPaidA =>
       'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.';
+
+  @override
+  String get addonKindMakeup => 'Trang điểm';
+
+  @override
+  String get addonKindRetouch => 'Chỉnh ảnh';
+
+  @override
+  String get addonKindTransport => 'Đưa đón';
+
+  @override
+  String get addonKindOutfit => 'Trang phục';
+
+  @override
+  String get addonKindOther => 'Khác';
+
+  @override
+  String get addonOnce => 'Một lần';
+
+  @override
+  String get addonUnitPerPerson => 'Theo người';
+
+  @override
+  String get addonUnitPerItem => 'Theo số lượng';
+
+  @override
+  String get addonNounPerson => 'người';
+
+  @override
+  String get addonNounPhoto => 'ảnh';
+
+  @override
+  String get addonNounSet => 'bộ';
+
+  @override
+  String get addonNounTime => 'lần';
+
+  @override
+  String addonPriceOnce(String price) {
+    return '$price · một lần';
+  }
+
+  @override
+  String addonPricePer(String price, String noun) {
+    return '$price / $noun';
+  }
+
+  @override
+  String addonLineQty(String name, int qty, String noun) {
+    return '$name · $qty $noun';
+  }
+
+  @override
+  String addonSummaryItem(String name, int qty) {
+    return '$name ×$qty';
+  }
+
+  @override
+  String addonBlockMeta(int qty, String noun, String price) {
+    return '$qty $noun × $price';
+  }
+
+  @override
+  String addonsSummary(String list) {
+    return '+ $list';
+  }
+
+  @override
+  String get addonsTitle => 'Dịch vụ đi kèm';
+
+  @override
+  String addonsActiveCount(int n) {
+    return '$n/10 dịch vụ đang bật';
+  }
+
+  @override
+  String get addonsAppliesAll => 'Áp dụng: mọi gói';
+
+  @override
+  String addonsAppliesTo(String names) {
+    return 'Áp dụng: $names';
+  }
+
+  @override
+  String addonsToggle(String name) {
+    return 'Bật $name';
+  }
+
+  @override
+  String get addonsAdd => 'Thêm dịch vụ';
+
+  @override
+  String get addonsEmptyTitle => 'Chưa có dịch vụ đi kèm';
+
+  @override
+  String get addonsEmptyBody =>
+      'Thêm trang điểm, chỉnh ảnh hay xe đưa đón để khách chọn khi đặt lịch.';
+
+  @override
+  String get addonsLoadError => 'Không tải được dịch vụ đi kèm. Thử lại.';
+
+  @override
+  String get addonsLimitReached =>
+      'Bạn đã bật đủ 10 dịch vụ. Tắt bớt một dịch vụ để bật dịch vụ này.';
+
+  @override
+  String get addonsSaveFailed => 'Không lưu được. Thử lại';
+
+  @override
+  String get addonEditAddTitle => 'Thêm dịch vụ đi kèm';
+
+  @override
+  String get addonEditEditTitle => 'Sửa dịch vụ đi kèm';
+
+  @override
+  String get addonEditClose => 'Đóng';
+
+  @override
+  String get addonFieldKind => 'Loại';
+
+  @override
+  String get addonFieldName => 'Tên dịch vụ';
+
+  @override
+  String get addonFieldDescription => 'Mô tả · không bắt buộc';
+
+  @override
+  String get addonFieldUnit => 'Cách tính';
+
+  @override
+  String get addonFieldPriceOnce => 'Giá (₫)';
+
+  @override
+  String addonFieldPricePer(String noun) {
+    return 'Giá / $noun (₫)';
+  }
+
+  @override
+  String get addonFieldMax => 'Tối đa';
+
+  @override
+  String get addonFieldApplies => 'Áp dụng cho';
+
+  @override
+  String get addonAppliesAllChip => 'Mọi gói';
+
+  @override
+  String get addonAppliesPickChip => 'Chọn gói';
+
+  @override
+  String get addonPickPackagesTitle => 'Chọn gói áp dụng';
+
+  @override
+  String get addonPickPackagesDone => 'Xong';
+
+  @override
+  String get addonResponsibility =>
+      'Bạn chịu trách nhiệm với khách về dịch vụ này, kể cả khi thuê người ngoài.';
+
+  @override
+  String get addonSave => 'Lưu';
+
+  @override
+  String get addonDelete => 'Xoá dịch vụ';
+
+  @override
+  String get addonDeleteTitle => 'Xoá dịch vụ này?';
+
+  @override
+  String get addonDeleteBody => 'Booking đã đặt vẫn giữ dịch vụ này.';
+
+  @override
+  String get addonDeleteConfirm => 'Xoá';
+
+  @override
+  String get addonDeleteKeep => 'Giữ lại';
+
+  @override
+  String get addonSaved => 'Đã lưu dịch vụ';
+
+  @override
+  String get addonDeleted => 'Đã xoá dịch vụ';
+
+  @override
+  String get addonErrName => 'Tên 2–60 ký tự';
+
+  @override
+  String get addonErrDescription => 'Mô tả tối đa 200 ký tự';
+
+  @override
+  String get addonErrPrice => 'Giá từ 10.000₫ tới 50.000.000₫';
+
+  @override
+  String get addonErrMaxQty => 'Tối đa từ 1 tới 10';
+
+  @override
+  String get addonErrContact =>
+      'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung';
+
+  @override
+  String get addonErrPackages => 'Chọn ít nhất một gói';
+
+  @override
+  String get settingsAddons => 'Dịch vụ đi kèm';
+
+  @override
+  String get profileEditAddons => 'Dịch vụ đi kèm';
+
+  @override
+  String get setupAddAddon => 'Thêm dịch vụ đi kèm';
+
+  @override
+  String get bookAddonsTitle => 'Thêm dịch vụ';
+
+  @override
+  String get bookAddonsOptional => 'Không bắt buộc';
+
+  @override
+  String bookAddonLess(String unit) {
+    return 'Bớt một $unit';
+  }
+
+  @override
+  String bookAddonMore(String unit) {
+    return 'Thêm một $unit';
+  }
+
+  @override
+  String bookAddonQty(String name, int qty, String unit) {
+    return '$name: $qty $unit';
+  }
+
+  @override
+  String bookAddonDropped(String names) {
+    return 'Đã bỏ $names vì không áp dụng cho gói này';
+  }
+
+  @override
+  String get bookAddonsChanged =>
+      'Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán';
+
+  @override
+  String get bookPickupTitle => 'Điểm đón';
+
+  @override
+  String get bookPickupHint => 'Tên điểm đón (tối thiểu 3 ký tự)';
+
+  @override
+  String get bookPickupPrivate => 'Chỉ thợ chụp cho bạn thấy điểm đón.';
+
+  @override
+  String get bookPickupRequired => 'Nhập điểm đón cho xe đưa đón';
+
+  @override
+  String bookPickupLine(String name) {
+    return 'Điểm đón: $name';
+  }
 }

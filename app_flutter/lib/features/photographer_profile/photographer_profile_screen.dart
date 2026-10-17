@@ -286,6 +286,7 @@ class _EditSheet extends StatelessWidget {
     final entries = [
       ('edit-intro', l.profileEditIntro, AppIcons.badge, '/setup/1'),
       ('edit-packages', l.profileEditPackages, AppIcons.tag, '/setup/2'),
+      ('edit-addons', l.profileEditAddons, AppIcons.addCircle, '/me/addons'),
       (
         'edit-skills',
         l.profileEditSkills,

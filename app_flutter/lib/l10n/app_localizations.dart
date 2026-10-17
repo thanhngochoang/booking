@@ -10647,6 +10647,450 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.'**
   String get helpProviderPaidA;
+
+  /// No description provided for @addonKindMakeup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trang điểm'**
+  String get addonKindMakeup;
+
+  /// No description provided for @addonKindRetouch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh ảnh'**
+  String get addonKindRetouch;
+
+  /// No description provided for @addonKindTransport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa đón'**
+  String get addonKindTransport;
+
+  /// No description provided for @addonKindOutfit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trang phục'**
+  String get addonKindOutfit;
+
+  /// No description provided for @addonKindOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get addonKindOther;
+
+  /// No description provided for @addonOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một lần'**
+  String get addonOnce;
+
+  /// No description provided for @addonUnitPerPerson.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo người'**
+  String get addonUnitPerPerson;
+
+  /// No description provided for @addonUnitPerItem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo số lượng'**
+  String get addonUnitPerItem;
+
+  /// No description provided for @addonNounPerson.
+  ///
+  /// In vi, this message translates to:
+  /// **'người'**
+  String get addonNounPerson;
+
+  /// No description provided for @addonNounPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'ảnh'**
+  String get addonNounPhoto;
+
+  /// No description provided for @addonNounSet.
+  ///
+  /// In vi, this message translates to:
+  /// **'bộ'**
+  String get addonNounSet;
+
+  /// No description provided for @addonNounTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'lần'**
+  String get addonNounTime;
+
+  /// No description provided for @addonPriceOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} · một lần'**
+  String addonPriceOnce(String price);
+
+  /// No description provided for @addonPricePer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} / {noun}'**
+  String addonPricePer(String price, String noun);
+
+  /// No description provided for @addonLineQty.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {qty} {noun}'**
+  String addonLineQty(String name, int qty, String noun);
+
+  /// No description provided for @addonSummaryItem.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} ×{qty}'**
+  String addonSummaryItem(String name, int qty);
+
+  /// No description provided for @addonBlockMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{qty} {noun} × {price}'**
+  String addonBlockMeta(int qty, String noun, String price);
+
+  /// No description provided for @addonsSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ {list}'**
+  String addonsSummary(String list);
+
+  /// No description provided for @addonsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ đi kèm'**
+  String get addonsTitle;
+
+  /// No description provided for @addonsActiveCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/10 dịch vụ đang bật'**
+  String addonsActiveCount(int n);
+
+  /// No description provided for @addonsAppliesAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp dụng: mọi gói'**
+  String get addonsAppliesAll;
+
+  /// No description provided for @addonsAppliesTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp dụng: {names}'**
+  String addonsAppliesTo(String names);
+
+  /// No description provided for @addonsToggle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật {name}'**
+  String addonsToggle(String name);
+
+  /// No description provided for @addonsAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm dịch vụ'**
+  String get addonsAdd;
+
+  /// No description provided for @addonsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có dịch vụ đi kèm'**
+  String get addonsEmptyTitle;
+
+  /// No description provided for @addonsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm trang điểm, chỉnh ảnh hay xe đưa đón để khách chọn khi đặt lịch.'**
+  String get addonsEmptyBody;
+
+  /// No description provided for @addonsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được dịch vụ đi kèm. Thử lại.'**
+  String get addonsLoadError;
+
+  /// No description provided for @addonsLimitReached.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã bật đủ 10 dịch vụ. Tắt bớt một dịch vụ để bật dịch vụ này.'**
+  String get addonsLimitReached;
+
+  /// No description provided for @addonsSaveFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được. Thử lại'**
+  String get addonsSaveFailed;
+
+  /// No description provided for @addonEditAddTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm dịch vụ đi kèm'**
+  String get addonEditAddTitle;
+
+  /// No description provided for @addonEditEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa dịch vụ đi kèm'**
+  String get addonEditEditTitle;
+
+  /// No description provided for @addonEditClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get addonEditClose;
+
+  /// No description provided for @addonFieldKind.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại'**
+  String get addonFieldKind;
+
+  /// No description provided for @addonFieldName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên dịch vụ'**
+  String get addonFieldName;
+
+  /// No description provided for @addonFieldDescription.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả · không bắt buộc'**
+  String get addonFieldDescription;
+
+  /// No description provided for @addonFieldUnit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cách tính'**
+  String get addonFieldUnit;
+
+  /// No description provided for @addonFieldPriceOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá (₫)'**
+  String get addonFieldPriceOnce;
+
+  /// No description provided for @addonFieldPricePer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá / {noun} (₫)'**
+  String addonFieldPricePer(String noun);
+
+  /// No description provided for @addonFieldMax.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa'**
+  String get addonFieldMax;
+
+  /// No description provided for @addonFieldApplies.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp dụng cho'**
+  String get addonFieldApplies;
+
+  /// No description provided for @addonAppliesAllChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi gói'**
+  String get addonAppliesAllChip;
+
+  /// No description provided for @addonAppliesPickChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn gói'**
+  String get addonAppliesPickChip;
+
+  /// No description provided for @addonPickPackagesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn gói áp dụng'**
+  String get addonPickPackagesTitle;
+
+  /// No description provided for @addonPickPackagesDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get addonPickPackagesDone;
+
+  /// No description provided for @addonResponsibility.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chịu trách nhiệm với khách về dịch vụ này, kể cả khi thuê người ngoài.'**
+  String get addonResponsibility;
+
+  /// No description provided for @addonSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get addonSave;
+
+  /// No description provided for @addonDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá dịch vụ'**
+  String get addonDelete;
+
+  /// No description provided for @addonDeleteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá dịch vụ này?'**
+  String get addonDeleteTitle;
+
+  /// No description provided for @addonDeleteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Booking đã đặt vẫn giữ dịch vụ này.'**
+  String get addonDeleteBody;
+
+  /// No description provided for @addonDeleteConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get addonDeleteConfirm;
+
+  /// No description provided for @addonDeleteKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get addonDeleteKeep;
+
+  /// No description provided for @addonSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu dịch vụ'**
+  String get addonSaved;
+
+  /// No description provided for @addonDeleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xoá dịch vụ'**
+  String get addonDeleted;
+
+  /// No description provided for @addonErrName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên 2–60 ký tự'**
+  String get addonErrName;
+
+  /// No description provided for @addonErrDescription.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả tối đa 200 ký tự'**
+  String get addonErrDescription;
+
+  /// No description provided for @addonErrPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá từ 10.000₫ tới 50.000.000₫'**
+  String get addonErrPrice;
+
+  /// No description provided for @addonErrMaxQty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa từ 1 tới 10'**
+  String get addonErrMaxQty;
+
+  /// No description provided for @addonErrContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung'**
+  String get addonErrContact;
+
+  /// No description provided for @addonErrPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất một gói'**
+  String get addonErrPackages;
+
+  /// No description provided for @settingsAddons.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ đi kèm'**
+  String get settingsAddons;
+
+  /// No description provided for @profileEditAddons.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ đi kèm'**
+  String get profileEditAddons;
+
+  /// No description provided for @setupAddAddon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm dịch vụ đi kèm'**
+  String get setupAddAddon;
+
+  /// No description provided for @bookAddonsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm dịch vụ'**
+  String get bookAddonsTitle;
+
+  /// No description provided for @bookAddonsOptional.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không bắt buộc'**
+  String get bookAddonsOptional;
+
+  /// No description provided for @bookAddonLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt một {unit}'**
+  String bookAddonLess(String unit);
+
+  /// No description provided for @bookAddonMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm một {unit}'**
+  String bookAddonMore(String unit);
+
+  /// No description provided for @bookAddonQty.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name}: {qty} {unit}'**
+  String bookAddonQty(String name, int qty, String unit);
+
+  /// No description provided for @bookAddonDropped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ {names} vì không áp dụng cho gói này'**
+  String bookAddonDropped(String names);
+
+  /// No description provided for @bookAddonsChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán'**
+  String get bookAddonsChanged;
+
+  /// No description provided for @bookPickupTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm đón'**
+  String get bookPickupTitle;
+
+  /// No description provided for @bookPickupHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên điểm đón (tối thiểu 3 ký tự)'**
+  String get bookPickupHint;
+
+  /// No description provided for @bookPickupPrivate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ thợ chụp cho bạn thấy điểm đón.'**
+  String get bookPickupPrivate;
+
+  /// No description provided for @bookPickupRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập điểm đón cho xe đưa đón'**
+  String get bookPickupRequired;
+
+  /// No description provided for @bookPickupLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm đón: {name}'**
+  String bookPickupLine(String name);
 }
 
 class _AppLocalizationsDelegate
