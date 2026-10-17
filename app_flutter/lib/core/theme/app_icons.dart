@@ -48,6 +48,7 @@ abstract final class AppIcons {
   static const IconData expandMore = Symbols.expand_more_rounded;
   static const IconData visibility = Symbols.visibility_rounded;
   static const IconData visibilityOff = Symbols.visibility_off_rounded;
+  static const IconData block = Symbols.block_rounded;
 
   // Places.
   static const IconData place = Symbols.location_on_rounded;

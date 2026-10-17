@@ -58,6 +58,7 @@ class FirestoreChatRepository implements ChatRepository {
           'day_taken' || 'already-exists' => ChatErrorCode.dayTaken,
           'invalid_argument' ||
           'invalid-argument' => ChatErrorCode.invalidArgument,
+          'blocked' => ChatErrorCode.blocked,
           'unavailable' || 'deadline-exceeded' => ChatErrorCode.network,
           _ => null,
         };

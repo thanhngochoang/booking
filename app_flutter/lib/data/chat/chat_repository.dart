@@ -9,6 +9,7 @@ enum ChatErrorCode {
   conflict,
   dayTaken,
   invalidArgument,
+  blocked,
   network,
   unknown,
 }
