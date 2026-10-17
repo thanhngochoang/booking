@@ -831,4 +831,12 @@ export const submitReport = onCall(CALLABLE_OPTIONS, (request) =>
   handleSubmitReport(request, liveReportDeps()),
 );
 
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { handleDeliveryUpload, liveDeliveryUploadDeps } from './triggers/delivery_upload.js';
+import { WATERMARK_OPTIONS } from './config.js';
+
+export const onDeliveryUpload = onObjectFinalized(WATERMARK_OPTIONS, async (event) => {
+  await handleDeliveryUpload(event.data, liveDeliveryUploadDeps());
+});
+
 

@@ -10,7 +10,7 @@ const options = {
   target: 'node22',
   format: 'esm',
   sourcemap: true,
-  external: ['firebase-admin', 'firebase-functions'],
+  external: ['firebase-admin', 'firebase-functions', 'sharp'],
   tsconfig: 'tsconfig.json',
   logLevel: 'info',
 };
