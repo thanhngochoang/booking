@@ -34,6 +34,9 @@ ChatBubbleContent bubbleContentOf(
   required String senderName,
   List<Widget> systemActions = const [],
 }) {
+  if (m.deletedAt != null) {
+    return TextContent(l.chatMessageRemoved);
+  }
   return switch (m.type) {
     MessageType.text => TextContent(m.body ?? ''),
     MessageType.image => ImageContent(imageUrl ?? '', localPath: localPath),

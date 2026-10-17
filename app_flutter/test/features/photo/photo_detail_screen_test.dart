@@ -239,9 +239,9 @@ void main() {
     final w = DiscoveryWorld();
     await _open(tester, w);
     await tester.tap(find.byKey(const Key('photo-more')));
-    await tester.pump();
-    expect(copied, '/p/a');
-    expect(find.text('Đã sao chép liên kết bài viết'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('safety-menu-report')), findsOneWidget);
+    Navigator.of(tester.element(find.byKey(const Key('safety-menu-report')))).pop();
     await tester.pumpAndSettle();
 
     copied = null;

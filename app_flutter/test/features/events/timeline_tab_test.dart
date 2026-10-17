@@ -123,7 +123,7 @@ void main() {
       expect(find.text('Minh Khoa'), findsNothing);
     });
 
-    testWidgets('everyone can long-press, Báo cáo is disabled with Sắp có', (
+    testWidgets('everyone can long-press, Báo cáo opens report sheet for others posts', (
       tester,
     ) async {
       final w = _world();
@@ -131,15 +131,12 @@ void main() {
       await tester.longPress(_byKey('timeline-item-p1'));
       await settle(tester);
       expect(find.text('Báo cáo'), findsOneWidget);
-      expect(find.text('Sắp có'), findsOneWidget);
+      expect(find.text('Sắp có'), findsNothing);
       expect(find.text('Duyệt'), findsNothing);
       expect(find.text('Ẩn khỏi timeline'), findsNothing);
       await tester.tap(find.text('Báo cáo'));
       await settle(tester);
-      expect(
-        find.text('Báo cáo'),
-        findsOneWidget,
-      ); // still open: nothing happened
+      expect(find.text('Báo cáo bài viết'), findsOneWidget);
     });
 
     testWidgets('a failed moderation says so and keeps the row', (

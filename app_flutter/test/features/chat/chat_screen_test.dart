@@ -726,7 +726,7 @@ void main() {
       );
     });
 
-    testWidgets('no … menu for the photographer in an inquiry', (
+    testWidgets('an inquiry chat shows the … menu with report and block for the photographer', (
       tester,
     ) async {
       fakeChat.currentUserId = 'p1';
@@ -741,7 +741,7 @@ void main() {
 
       await pumpScreen(tester, signedInUid: 'p1');
 
-      expect(find.byType(PopupMenuButton<String>), findsNothing);
+      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
     });
 
     testWidgets('a booking chat keeps "Xem buổi chụp" in the … menu', (

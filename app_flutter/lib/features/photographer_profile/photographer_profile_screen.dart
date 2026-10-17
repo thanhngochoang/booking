@@ -8,6 +8,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/safety/safety.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -15,6 +16,7 @@ import 'package:photobooking/features/photographer_profile/profile_section.dart'
 import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_header.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_sections.dart';
+import 'package:photobooking/features/safety/safety_menu.dart';
 
 /// S03.01 "Hồ sơ nhiếp ảnh gia" at `/u/:uid`, for visitors and the owner.
 class PhotographerProfileScreen extends ConsumerStatefulWidget {
@@ -180,21 +182,33 @@ class _PhotographerProfileScreenState
                 );
               },
             ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpace.s1),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                color: AppColors.overlay,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                key: const Key('profile-more'),
-                tooltip: l.profileMoreOptions,
-                icon: const AppIcon(AppIcons.more, color: Colors.white),
-                onPressed: _share,
+          if (!owner)
+            Padding(
+              padding: const EdgeInsets.all(AppSpace.s1),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: AppColors.overlay,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  key: const Key('profile-more'),
+                  tooltip: l.profileMoreOptions,
+                  icon: const AppIcon(AppIcons.more, color: Colors.white),
+                  onPressed: () => showSafetyMenu(
+                    context,
+                    ref,
+                    target: ReportTarget.user(
+                      uid: widget.uid,
+                      name: p.summary.displayName,
+                      avatarUrl: p.summary.avatarUrl,
+                    ),
+                    blockUserId: widget.uid,
+                    blockName: p.summary.displayName,
+                    onShare: _share,
+                  ),
+                ),
               ),
             ),
-          ),
           const SizedBox(width: AppSpace.s1),
         ],
       ),

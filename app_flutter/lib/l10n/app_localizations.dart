@@ -8812,12 +8812,6 @@ abstract class AppLocalizations {
   /// **'Báo cáo'**
   String get timelineReport;
 
-  /// No description provided for @timelineReportSoon.
-  ///
-  /// In vi, this message translates to:
-  /// **'Sắp có'**
-  String get timelineReportSoon;
-
   /// No description provided for @timelineHostSuffix.
   ///
   /// In vi, this message translates to:
@@ -11199,6 +11193,396 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Điểm đón: {name}'**
   String bookPickupLine(String name);
+
+  /// No description provided for @safetyMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm tuỳ chọn'**
+  String get safetyMore;
+
+  /// No description provided for @safetyShareProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ hồ sơ'**
+  String get safetyShareProfile;
+
+  /// No description provided for @safetyLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết hồ sơ'**
+  String get safetyLinkCopied;
+
+  /// No description provided for @safetyReport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo'**
+  String get safetyReport;
+
+  /// No description provided for @safetyReportPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo bài viết'**
+  String get safetyReportPost;
+
+  /// No description provided for @safetyReportMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo tin nhắn'**
+  String get safetyReportMessage;
+
+  /// No description provided for @safetyReportEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo sự kiện'**
+  String get safetyReportEvent;
+
+  /// No description provided for @safetyReportUser.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo {name}'**
+  String safetyReportUser(String name);
+
+  /// No description provided for @safetyBlock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chặn {name}'**
+  String safetyBlock(String name);
+
+  /// No description provided for @safetyUnblock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chặn {name}'**
+  String safetyUnblock(String name);
+
+  /// No description provided for @reportTitleUser.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo {name}'**
+  String reportTitleUser(String name);
+
+  /// No description provided for @reportTitlePost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo bài viết'**
+  String get reportTitlePost;
+
+  /// No description provided for @reportTitleMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo tin nhắn'**
+  String get reportTitleMessage;
+
+  /// No description provided for @reportTitleEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo sự kiện'**
+  String get reportTitleEvent;
+
+  /// No description provided for @reportAnonymous.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người bị báo cáo không biết ai đã báo cáo.'**
+  String get reportAnonymous;
+
+  /// No description provided for @reportReasonTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vì sao bạn báo cáo?'**
+  String get reportReasonTitle;
+
+  /// No description provided for @reportReasonSpam.
+  ///
+  /// In vi, this message translates to:
+  /// **'Spam hoặc quảng cáo'**
+  String get reportReasonSpam;
+
+  /// No description provided for @reportReasonScam.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lừa đảo, đòi chuyển tiền ngoài ứng dụng'**
+  String get reportReasonScam;
+
+  /// No description provided for @reportReasonHarassment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quấy rối hoặc xúc phạm'**
+  String get reportReasonHarassment;
+
+  /// No description provided for @reportReasonInappropriate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung nhạy cảm, không phù hợp'**
+  String get reportReasonInappropriate;
+
+  /// No description provided for @reportReasonStolen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh lấy cắp, vi phạm bản quyền'**
+  String get reportReasonStolen;
+
+  /// No description provided for @reportReasonImpersonation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giả mạo người khác'**
+  String get reportReasonImpersonation;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportTextLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả thêm (tuỳ chọn)'**
+  String get reportTextLabel;
+
+  /// No description provided for @reportTextRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác cần mô tả ít nhất 10 ký tự'**
+  String get reportTextRequired;
+
+  /// No description provided for @reportBlockAlso.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chặn {name}'**
+  String reportBlockAlso(String name);
+
+  /// No description provided for @reportBlockAlsoBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hai bên không thấy bài của nhau, không nhắn tin hay đặt lịch với nhau.'**
+  String get reportBlockAlsoBody;
+
+  /// No description provided for @reportSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi báo cáo'**
+  String get reportSubmit;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi báo cáo. Cảm ơn bạn.'**
+  String get reportSent;
+
+  /// No description provided for @reportSentBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi báo cáo và chặn {name}.'**
+  String reportSentBlocked(String name);
+
+  /// No description provided for @reportDuplicate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã báo cáo nội dung này rồi.'**
+  String get reportDuplicate;
+
+  /// No description provided for @reportLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã gửi nhiều báo cáo hôm nay. Thử lại ngày mai.'**
+  String get reportLimit;
+
+  /// No description provided for @reportFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được. Thử lại.'**
+  String get reportFailed;
+
+  /// No description provided for @blockConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chặn {name}?'**
+  String blockConfirmTitle(String name);
+
+  /// No description provided for @blockConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hai bên sẽ không thấy bài của nhau, không nhắn tin hay đặt lịch với nhau. Buổi chụp đã đặt vẫn giữ; cần trao đổi thì liên hệ hỗ trợ. {name} không nhận thông báo.'**
+  String blockConfirmBody(String name);
+
+  /// No description provided for @blockConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chặn'**
+  String get blockConfirm;
+
+  /// No description provided for @blockKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không chặn'**
+  String get blockKeep;
+
+  /// No description provided for @blockDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chặn {name}'**
+  String blockDone(String name);
+
+  /// No description provided for @blockFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa chặn được. Thử lại.'**
+  String get blockFailed;
+
+  /// No description provided for @blockLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã chặn quá nhiều người. Bỏ chặn bớt rồi thử lại.'**
+  String get blockLimit;
+
+  /// No description provided for @unblockConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chặn {name}?'**
+  String unblockConfirmTitle(String name);
+
+  /// No description provided for @unblockConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hai bên lại thấy bài của nhau, nhắn tin và đặt lịch được.'**
+  String get unblockConfirmBody;
+
+  /// No description provided for @unblockConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chặn'**
+  String get unblockConfirm;
+
+  /// No description provided for @unblockKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ chặn'**
+  String get unblockKeep;
+
+  /// No description provided for @unblockDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ chặn {name}'**
+  String unblockDone(String name);
+
+  /// No description provided for @blockedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người đã chặn'**
+  String get blockedTitle;
+
+  /// No description provided for @blockedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người bạn chặn không thấy bài của bạn, không nhắn tin hay đặt lịch với bạn. Họ không nhận thông báo.'**
+  String get blockedNote;
+
+  /// No description provided for @blockedSince.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chặn {date}'**
+  String blockedSince(String date);
+
+  /// No description provided for @blockedUnblock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chặn'**
+  String get blockedUnblock;
+
+  /// No description provided for @blockedEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa chặn ai'**
+  String get blockedEmptyTitle;
+
+  /// No description provided for @blockedEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chặn từ menu … trên hồ sơ, bài viết hoặc tin nhắn.'**
+  String get blockedEmptyBody;
+
+  /// No description provided for @settingsBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người đã chặn'**
+  String get settingsBlocked;
+
+  /// No description provided for @settingsBlockedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem và bỏ chặn'**
+  String get settingsBlockedBody;
+
+  /// No description provided for @profileBlockedByMeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã chặn {name}'**
+  String profileBlockedByMeTitle(String name);
+
+  /// No description provided for @profileBlockedByMeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chặn để xem hồ sơ, nhắn tin và đặt lịch.'**
+  String get profileBlockedByMeBody;
+
+  /// No description provided for @profileBlockedByThemTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không xem được hồ sơ này'**
+  String get profileBlockedByThemTitle;
+
+  /// No description provided for @profileBlockedByThemBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ này không hiển thị với bạn.'**
+  String get profileBlockedByThemBody;
+
+  /// No description provided for @postHiddenTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không xem được bài này'**
+  String get postHiddenTitle;
+
+  /// No description provided for @postHiddenBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài này không hiển thị với bạn.'**
+  String get postHiddenBody;
+
+  /// No description provided for @chatBlockedByMe.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã chặn {name}. Bỏ chặn để nhắn tin.'**
+  String chatBlockedByMe(String name);
+
+  /// No description provided for @chatBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gửi được tin nhắn trong cuộc trò chuyện này.'**
+  String get chatBlocked;
+
+  /// No description provided for @chatMessageRemoved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn đã bị gỡ'**
+  String get chatMessageRemoved;
+
+  /// No description provided for @bookingBlockedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hai bên đã chặn nhau. Cần trao đổi về buổi chụp, hãy liên hệ hỗ trợ.'**
+  String get bookingBlockedNote;
+
+  /// No description provided for @eventErrBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không đăng ký được sự kiện này.'**
+  String get eventErrBlocked;
+
+  /// No description provided for @chatErrBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gửi được: hai bên đã chặn nhau.'**
+  String get chatErrBlocked;
 }
 
 class _AppLocalizationsDelegate

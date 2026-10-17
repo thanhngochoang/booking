@@ -6,15 +6,18 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/safety/safety.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photo/photo_detail_controller.dart';
+import 'package:photobooking/features/safety/safety_menu.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Mock: the gallery is 3:4.
@@ -181,24 +184,49 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
                 ),
               ),
             ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpace.s2),
-                  child: IconButton(
-                    key: const Key('photo-more'),
-                    tooltip: l.photoMoreOptions,
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.overlay,
-                      foregroundColor: AppColors.foregroundInverse,
+            Consumer(
+              builder: (context, ref, _) {
+                final d = detail.value;
+                if (d == null) return const SizedBox.shrink();
+                final currentUid = ref.watch(authStateProvider).value?.uid;
+                final isOwn = currentUid != null && currentUid == d.post.photographerId;
+                if (isOwn) return const SizedBox.shrink();
+
+                final firstImage = d.post.images.isNotEmpty ? d.post.images.first : null;
+
+                return Positioned(
+                  top: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpace.s2),
+                      child: IconButton(
+                        key: const Key('photo-more'),
+                        tooltip: l.photoMoreOptions,
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.overlay,
+                          foregroundColor: AppColors.foregroundInverse,
+                        ),
+                        icon: const AppIcon(AppIcons.more),
+                        onPressed: () => showSafetyMenu(
+                          context,
+                          ref,
+                          target: ReportTarget.post(
+                            postId: d.post.id,
+                            authorId: d.post.photographerId,
+                            authorName: d.photographer?.displayName,
+                            excerpt: d.post.caption,
+                            thumbUrl: firstImage?.url,
+                          ),
+                          blockUserId: d.post.photographerId,
+                          blockName: d.photographer?.displayName,
+                          onShare: () => _share(widget.postId),
+                        ),
+                      ),
                     ),
-                    icon: const AppIcon(AppIcons.more),
-                    onPressed: () => _share(widget.postId),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),

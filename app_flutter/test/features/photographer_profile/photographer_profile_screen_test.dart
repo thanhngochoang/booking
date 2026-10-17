@@ -439,6 +439,9 @@ void main() {
       expect(w.savedFollow.isPhotographerSaved(w.uid, 'p1'), completion(isTrue));
 
       await tester.tap(_key('profile-more'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('safety-menu-share')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('safety-menu-share')));
       await tester.pump();
       expect(copied, '/u/p1');
       expect(find.text('Đã sao chép liên kết hồ sơ'), findsOneWidget);
@@ -489,7 +492,7 @@ void main() {
     expect(_key('profile-book'), findsNothing);
     expect(_key('profile-follow'), findsNothing);
     expect(_key('profile-save'), findsNothing);
-    expect(_key('profile-more'), findsOneWidget);
+    expect(_key('profile-more'), findsNothing);
     expect(find.byType(ContactDial), findsNothing);
     expect(find.byType(CompletenessMeter), findsOneWidget);
     final loadsBefore = w.profiles.loads;

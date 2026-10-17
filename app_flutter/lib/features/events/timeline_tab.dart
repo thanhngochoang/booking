@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_social_providers.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
+import 'package:photobooking/data/safety/safety.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/events/timeline_controller.dart';
+import 'package:photobooking/features/safety/report_sheet.dart';
 
 /// Timeline closes for new posts 30 days after the event completed (domain
 /// `TIMELINE_OPEN_DAYS`).
@@ -181,6 +184,8 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
 
   Future<void> _menu(TimelineItem item) async {
     final l = context.l10n;
+    final myUid = ref.read(authStateProvider).value?.uid;
+    final isMine = myUid != null && myUid == item.authorId;
     final action = await showAppSheet<_MenuChoice>(
       context,
       builder: (sheet) => Padding(
@@ -203,19 +208,30 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
                 label: l.timelineHide,
                 onTap: () => Navigator.of(sheet).pop(_MenuChoice.hide),
               ),
-            // Reporting arrives with S20.01; until then the row says so.
-            _MenuTile(
-              key: const Key('timeline-report'),
-              icon: AppIcons.flag,
-              label: l.timelineReport,
-              trailing: l.timelineReportSoon,
-              onTap: null,
-            ),
+            if (!isMine)
+              _MenuTile(
+                key: const Key('timeline-report'),
+                icon: AppIcons.flag,
+                label: l.timelineReport,
+                onTap: () => Navigator.of(sheet).pop(_MenuChoice.report),
+              ),
           ],
         ),
       ),
     );
     if (action == null || !mounted) {
+      return;
+    }
+    if (action == _MenuChoice.report) {
+      showReportSheet(
+        context,
+        target: ReportTarget.post(
+          postId: item.postId,
+          authorId: item.authorId,
+          authorName: item.authorName,
+          thumbUrl: item.imageUrl,
+        ),
+      );
       return;
     }
     final ok = await ref
@@ -335,7 +351,7 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
   }
 }
 
-enum _MenuChoice { approve, hide }
+enum _MenuChoice { approve, hide, report }
 
 class _MenuTile extends StatelessWidget {
   const _MenuTile({
@@ -343,17 +359,14 @@ class _MenuTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.trailing,
   });
 
   final IconData icon;
   final String label;
-  final String? trailing;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // The sheet paints a background; the tile's ink needs a Material of its own.
     return Material(
       type: MaterialType.transparency,
@@ -362,9 +375,6 @@ class _MenuTile extends StatelessWidget {
         enabled: onTap != null,
         leading: AppIcon(icon),
         title: Text(label),
-        trailing: trailing == null
-            ? null
-            : Text(trailing!, style: theme.textTheme.bodySmall),
         onTap: onTap,
       ),
     );
