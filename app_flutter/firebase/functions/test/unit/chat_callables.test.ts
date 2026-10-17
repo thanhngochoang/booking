@@ -19,6 +19,7 @@ describe('chat callables unit tests', () => {
       chats: memoryChats,
       bookings: memoryBookings,
       photographers: { acceptsInquiries: async () => true },
+      blocks: { isBlockedEitherWay: async () => false },
       clock: { now: () => new Date('2026-10-01T12:00:00.000Z') },
       ids: { newId: () => 'id_1' },
     };

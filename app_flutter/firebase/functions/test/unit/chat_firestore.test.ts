@@ -26,6 +26,7 @@ describe('chat_firestore mapping and trigger unit tests', () => {
       lastMessagePreview: 'Xin chào',
       lastSenderId: 'cust1',
       readOnlyAt: new Date('2026-10-08T12:00:00.000Z'),
+      blockedAt: new Date('2026-10-02T10:00:00.000Z'),
       rescheduleUsed: true,
       createdAt: new Date('2026-10-01T10:00:00.000Z'),
       updatedAt: new Date('2026-10-01T12:05:00.000Z'),
@@ -34,10 +35,17 @@ describe('chat_firestore mapping and trigger unit tests', () => {
     const firestoreChat = toFirestoreChat(chat);
     assert.ok(firestoreChat.createdAt instanceof Timestamp);
     assert.ok(firestoreChat.photographerRepliedAt instanceof Timestamp);
+    assert.ok(firestoreChat.blockedAt instanceof Timestamp);
     assert.deepEqual(firestoreChat.members, ['cust1', 'phot1']);
 
     const restoredChat = fromFirestoreChat('cust1_phot1', firestoreChat);
     assert.deepEqual(restoredChat, chat);
+
+    // Also round-trip with blockedAt: null
+    const chatNullBlocked = { ...chat, blockedAt: null };
+    const fsChatNull = toFirestoreChat(chatNullBlocked);
+    assert.equal(fsChatNull.blockedAt, null);
+    assert.deepEqual(fromFirestoreChat('cust1_phot1', fsChatNull), chatNullBlocked);
 
     // Message with GeoPoint and system proposal
     const msg: Message = {
@@ -104,6 +112,7 @@ describe('chat_firestore mapping and trigger unit tests', () => {
       lastSenderId: null,
       readOnlyAt: null,
       rescheduleUsed: false,
+      blockedAt: null,
       createdAt: new Date('2026-10-01T10:00:00.000Z'),
       updatedAt: new Date('2026-10-01T10:00:00.000Z'),
     });
@@ -124,6 +133,7 @@ describe('chat_firestore mapping and trigger unit tests', () => {
     const fakeDeps: ChatDeps = {
       chats: memoryChats,
       photographers: { acceptsInquiries: async () => true },
+      blocks: { isBlockedEitherWay: async () => false },
       clock: { now: () => new Date('2026-10-01T12:00:00.000Z') },
       ids: { newId: () => 'id_1' },
     };

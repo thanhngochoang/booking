@@ -20,6 +20,12 @@ import {
   handleAnswerReschedule,
 } from './callables/chat.js';
 import {
+  handleBlockUser,
+  handleUnblockUser,
+  handleSubmitReport,
+} from './callables/safety.js';
+import { liveBlockDeps, liveReportDeps } from './infra/live_safety.js';
+import {
   BOOKING_CLOCK_OPTIONS,
   BOOKING_REFUND_CALLABLE_OPTIONS,
   CALLABLE_OPTIONS,
@@ -789,4 +795,18 @@ export const onSupportMessageCreated = onDocumentCreated(
     );
   },
 );
+
+/** Safety: S20 report and block callables */
+export const blockUser = onCall(CALLABLE_OPTIONS, (request) =>
+  handleBlockUser(request, liveBlockDeps()),
+);
+
+export const unblockUser = onCall(CALLABLE_OPTIONS, (request) =>
+  handleUnblockUser(request, liveBlockDeps()),
+);
+
+export const submitReport = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitReport(request, liveReportDeps()),
+);
+
 

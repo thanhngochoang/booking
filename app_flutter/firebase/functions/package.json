@@ -19,6 +19,7 @@
     "support": "tsx tools/support.ts",
     "clock": "tsx tools/clock.ts",
     "stats": "tsx tools/discovery_stats.ts",
+    "reports": "tsx tools/reports.ts",
     "try:contact": "node --import tsx seed/try_contact_link.ts"
   },
   "dependencies": {

@@ -2275,3 +2275,61 @@ test('a third user cannot read a booking that has a pickup', async () => {
   await assertSucceeds(getDoc(doc(env.authenticatedContext('u-pk2').firestore(), 'bookings/bk-pickup')));
   await assertFails(getDoc(doc(env.authenticatedContext('u-pk3').firestore(), 'bookings/bk-pickup')));
 });
+
+// S20: Blocks and Reports security rules
+test('a user lists their own blocks', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'blocks/u1_u2'), { blockerId: 'u1', blockedId: 'u2' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'blocks/u1_u2')));
+  const col = collection(db, 'blocks');
+  await assertSucceeds(getDocs(query(col, where('blockerId', '==', 'u1'))));
+});
+
+test('a user cannot read blocks made by others (including against them)', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'blocks/u1_u2'), { blockerId: 'u1', blockedId: 'u2' });
+  });
+  const db = env.authenticatedContext('u2').firestore();
+  await assertFails(getDoc(doc(db, 'blocks/u1_u2')));
+  const db3 = env.authenticatedContext('u3').firestore();
+  await assertFails(getDoc(doc(db3, 'blocks/u1_u2')));
+});
+
+test('nobody reads or writes reports from client', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'reports/rep_1'), { reporterId: 'u1', status: 'open' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(getDoc(doc(db, 'reports/rep_1')));
+  await assertFails(setDoc(doc(db, 'reports/rep_2'), { reporterId: 'u1', status: 'open' }));
+  await assertFails(updateDoc(doc(db, 'reports/rep_1'), { status: 'dismissed' }));
+  await assertFails(deleteDoc(doc(db, 'reports/rep_1')));
+});
+
+test('the owner reads private/blocks but cannot write it', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'users/u1/private/blocks'), { blockedIds: ['u2'], blockedByIds: [] });
+  });
+  const db1 = env.authenticatedContext('u1').firestore();
+  await assertSucceeds(getDoc(doc(db1, 'users/u1/private/blocks')));
+  await assertFails(setDoc(doc(db1, 'users/u1/private/blocks'), { blockedIds: [] }));
+  await assertFails(updateDoc(doc(db1, 'users/u1/private/blocks'), { blockedIds: [] }));
+
+  const db2 = env.authenticatedContext('u2').firestore();
+  await assertFails(getDoc(doc(db2, 'users/u1/private/blocks')));
+});
+
+test('a client cannot write private/report_quota', async () => {
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(setDoc(doc(db, 'users/u1/private/report_quota'), { day: '2026-10-07', count: 0 }));
+});
+
+test('a chat member cannot set blockedAt', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'chats/u1_u2'), { members: ['u1', 'u2'], kind: 'inquiry' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(updateDoc(doc(db, 'chats/u1_u2'), { blockedAt: Timestamp.now() }));
+});

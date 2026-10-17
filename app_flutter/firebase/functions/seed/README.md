@@ -285,3 +285,20 @@ npm run support -- reply <threadId> "<text>" --actor <uid>
 
 `--actor` must have the custom claim `staffRole: 'admin'` or `'sales'`.
 
+## Safety (S20 · Báo cáo & chặn)
+
+- Minh và Bình đã chặn nhau (`blocks/seed-customer-minh_seed-photographer-binh`): Minh không thấy bài của Bình, Bình không mở được hồ sơ của Minh.
+- Lan có 1 báo cáo mở đối với bài viết `seed-post-an-5` của An (`reports/seed-customer-lan_post_seed-post-an-5`).
+
+### Staff CLI for reports
+
+```bash
+npm run reports -- list [open|dismissed|actioned]
+npm run reports -- show <reportId>
+npm run reports -- dismiss <reportId> "<note>" --actor <uid>
+npm run reports -- takedown <reportId> "<note>" --actor <uid>
+```
+
+`--actor` must have the custom claim `staffRole: 'admin'`.
+
+
