@@ -793,4 +793,33 @@ describe('verification_use_cases with the fee (feeRequired: true)', () => {
     assert.equal(approved.after.status, 'approved');
     assert.equal(approved.after.steps.fee, null);
   });
+
+  it('a fee paid after the rejection is the paid resubmit: resubmit goes to submitted and charges nothing more', async () => {
+    const free = createVerificationWorld();
+    await confirmPhoneVerified(free.deps, 'p1');
+    await identityPassed(free);
+    await acceptVerificationRules(free.deps, 'p1', { version: PROVIDER_RULES_VERSION });
+    await submitVerification(free.deps, 'p1');
+    await reviewVerification(free.deps, staff, { uid: 'p1', action: 'reject', reason: 'fake_avatar' });
+    await resubmitVerification(free.deps, 'p1');
+    await reviewVerification(free.deps, staff, { uid: 'p1', action: 'reject', reason: 'fake_avatar' });
+
+    // #203 turns the fee on: the rejected record (0 free resubmits) pays the fee while rejected.
+    const deps = { ...free.deps, feeRequired: true };
+    await assert.rejects(resubmitVerification(deps, 'p1'), refusedWith('not_eligible'));
+    free.clock.advanceMinutes(5);
+    const inst = await startVerificationFee(deps, 'p1', { method: 'bank_qr' });
+    assert.equal((await free.payFee(inst.paymentId)).outcome, 'paid');
+    assert.equal(free.store.verifications.get('p1')?.status, 'rejected');
+
+    const res = await resubmitVerification(deps, 'p1');
+    assert.equal(res.after.status, 'submitted');
+    assert.equal(res.after.steps.fee?.paymentId, inst.paymentId);
+    assert.equal(res.after.feeAttempt, 1);
+    const p = free.store.payments.get(inst.paymentId);
+    assert.deepEqual([p?.status, p?.escrowStatus], ['paid', 'released']);
+    assert.equal(free.store.refunds.size, 0);
+    // Nothing more to pay.
+    await assert.rejects(startVerificationFee(deps, 'p1', { method: 'momo' }), refusedWith('not_eligible'));
+  });
 });

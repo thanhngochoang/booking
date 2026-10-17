@@ -8,7 +8,13 @@ import {
   verificationFeePayments,
   verificationFeeRefundHandler,
 } from '../src/verification_fee.js';
-import { confirmPhoneVerified } from '../src/verification_use_cases.js';
+import {
+  confirmPhoneVerified,
+  resubmitVerification,
+  reviewVerification,
+  submitVerification,
+} from '../src/verification_use_cases.js';
+import { PROVIDER_RULES_VERSION } from '../src/verification.js';
 import { fakeTransferFor } from '../src/fake_payment_gateway.js';
 import { settleTransfer } from '../src/payment_settlement.js';
 import { applyRefundEvent, resendPendingRefunds } from '../src/refund_subjects.js';
@@ -220,5 +226,87 @@ describe('verification_fee: VerificationFeeSettler through V1 settlement', () =>
     assert.deepEqual(after, { paid: true, instructions: null });
     assert.equal(must(world.store.verifications.get('p1')).steps.fee?.paymentId, inst.paymentId);
     assert.deepEqual(await verificationFeePayments(world.deps, 'p1'), []);
+  });
+
+  it('the settler applies the same transfer once when called directly', async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    const inst = await openFee(world);
+    const n = fakeTransferFor(paymentOf(world, inst.paymentId) as Payment & { transferCode: string }, 'exact', world.clock.now());
+    const settler = must(world.settlement.subjects.verification_fee);
+
+    assert.equal(await settler.settle(inst.paymentId, n), 'paid');
+    assert.equal(await settler.settle(inst.paymentId, n), 'duplicate');
+    assert.equal(ledgerOf(world, inst.paymentId).filter((e) => e.type === 'payment_received').length, 1);
+    assert.equal(refundsOf(world, inst.paymentId).length, 0);
+  });
+
+  it("a code for the old kind's fee is refunded as stale_verification_fee after a switch to studio", async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    const inst = await openFee(world);
+    assert.equal(inst.amount, 99_000);
+    const p1 = must(world.store.providers.get('p1'));
+    world.store.providers.set('p1', { ...p1, providerType: 'studio' });
+
+    const res = await world.payFee(inst.paymentId);
+    assert.equal(res.outcome, 'refunded');
+    const [refund] = refundsOf(world, inst.paymentId);
+    assert.equal(refund?.reason, 'stale_verification_fee');
+    assert.equal(refund?.amount, 99_000);
+    assert.equal(refund?.status, 'done');
+    assert.equal(must(world.store.verifications.get('p1')).steps.fee, null);
+
+    // The studio fee is then 299.000₫ and records the step with the studio kind.
+    const studio = await startVerificationFee(world.deps, 'p1', { method: 'bank_qr' });
+    assert.equal(studio.amount, 299_000);
+    assert.equal((await world.payFee(studio.paymentId)).outcome, 'paid');
+    const rec = must(world.store.verifications.get('p1'));
+    assert.equal(rec.kind, 'studio');
+    assert.equal(rec.steps.fee?.amount, 299_000);
+  });
+
+  it("starting the fee after a kind switch closes the attempt's codes for the old amount", async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    const qr = await openFee(world, 'bank_qr');
+    const p1 = must(world.store.providers.get('p1'));
+    world.store.providers.set('p1', { ...p1, providerType: 'studio' });
+
+    const momo = await startVerificationFee(world.deps, 'p1', { method: 'momo' });
+    assert.equal(momo.amount, 299_000);
+    assert.equal(paymentOf(world, qr.paymentId).status, 'expired');
+    // Paying the closed code later is a late transfer, sent straight back.
+    assert.equal((await world.payFee(qr.paymentId)).outcome, 'refunded');
+    assert.equal(refundsOf(world, qr.paymentId)[0]?.reason, 'late_transfer');
+    assert.equal(must(world.store.verifications.get('p1')).steps.fee, null);
+  });
+
+  it('a live code from an earlier attempt is refunded as stale_verification_fee', async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    const staff = { uid: 'staff1', isAdmin: true };
+    const qr = await openFee(world, 'bank_qr');
+    const oldMomo = await startVerificationFee(world.deps, 'p1', { method: 'momo' });
+    await world.payFee(qr.paymentId);
+    await world.store.runTransaction(async (tx) => {
+      const rec = must(await tx.getVerification('p1'));
+      tx.putVerification({
+        ...rec,
+        steps: {
+          ...rec.steps,
+          identity: { method: 'vneid', checkedAt: world.clock.now().toISOString(), result: 'passed', failure: null, maskedName: 'A' },
+          rules: { acceptedAt: world.clock.now().toISOString(), version: PROVIDER_RULES_VERSION },
+        },
+      });
+    });
+    await submitVerification(world.deps, 'p1');
+    await reviewVerification(world.deps, staff, { uid: 'p1', action: 'reject', reason: 'fake_avatar' });
+    await resubmitVerification(world.deps, 'p1');
+    await reviewVerification(world.deps, staff, { uid: 'p1', action: 'reject', reason: 'fake_avatar' });
+    const paidResubmit = await resubmitVerification(world.deps, 'p1');
+    assert.equal(paidResubmit.after.feeAttempt, 2);
+
+    // The attempt-1 MoMo code is still open; paying it cannot be attempt 2's fee.
+    assert.equal(paymentOf(world, oldMomo.paymentId).status, 'created');
+    assert.equal((await world.payFee(oldMomo.paymentId)).outcome, 'refunded');
+    assert.equal(refundsOf(world, oldMomo.paymentId)[0]?.reason, 'stale_verification_fee');
+    assert.equal(must(world.store.verifications.get('p1')).steps.fee, null);
   });
 });

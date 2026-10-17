@@ -48,6 +48,10 @@ import type { VerificationDeps, VerificationTx } from './verification_ports.js';
 
 /** Policy refund of a second fee paid for an attempt whose fee is already recorded. */
 export const DUPLICATE_FEE_REFUND_REASON = 'duplicate_verification_fee';
+/** Policy refund of a code that no longer fits the fee: another kind's amount or an earlier attempt. */
+export const STALE_FEE_REFUND_REASON = 'stale_verification_fee';
+/** Why a paid verification fee went back in full (`applyRefundToPayment`, from what the payment holds). */
+export const VERIFICATION_FEE_REFUND_REASONS = [DUPLICATE_FEE_REFUND_REASON, STALE_FEE_REFUND_REASON] as const;
 
 /** The ledger account the fee is charged to (Decision 4). */
 export const PLATFORM_REVENUE_ACCOUNT = 'platform_revenue';
@@ -119,15 +123,21 @@ export async function startVerificationFee(
     const rec: VerificationRecord = { ...base, kind: verificationKindOf(provider.providerType) };
     const amount = feeFor(rec.kind);
 
-    const mine = (await tx.feePaymentsOf(uid)).filter((p) => isFeeOf(p, uid, rec.feeAttempt, method));
+    const ofAttempt = (await tx.feePaymentsOf(uid)).filter((p) => isFeeOf(p, uid, rec.feeAttempt));
+    const mine = ofAttempt.filter((p) => isFeeOf(p, uid, rec.feeAttempt, method));
     const open = mine.filter((p) => p.status === 'created');
     const live = open.find(
       (p) => p.amount === amount && p.expiresAt !== undefined && Date.parse(p.expiresAt) > now.getTime(),
     );
-    if (live && !renew) return live;
+    const reuse = live !== undefined && !renew;
+    // Codes of this attempt (any method) for another kind's fee can no longer be the fee; the
+    // settler would refund them as stale, so they are closed here too.
+    const stale = ofAttempt.filter((p) => p.status === 'created' && p.amount !== amount);
+    const toExpire = new Map<string, Payment>(stale.map((p) => [p.id, p]));
+    if (!reuse) for (const p of open) toExpire.set(p.id, p);
 
     // ---- writes ----
-    for (const p of open) {
+    for (const p of toExpire.values()) {
       const out = expireUnpaid({ payment: p, refundId: deps.ids.newId(), ledgerEntryId: deps.ids.newId(), now });
       tx.putPayment(out.payment);
       if (out.refund !== null && out.ledgerEntry !== null) {
@@ -136,6 +146,16 @@ export async function startVerificationFee(
         expired.push({ refund: out.refund, payment: out.payment });
       }
     }
+
+    if (stored === null || stored.status === 'not_started' || stored.kind !== rec.kind) {
+      tx.putVerification({
+        ...rec,
+        status: rec.status === 'not_started' ? 'in_progress' : rec.status,
+        updatedAt: nowIso,
+        version: rec.version + 1,
+      });
+    }
+    if (reuse) return live;
 
     const payment = newSubjectPayment({
       id: paymentId,
@@ -151,17 +171,14 @@ export async function startVerificationFee(
       expiresAt: new Date(now.getTime() + PAYMENT_EXPIRY_MINUTES * MINUTE),
     });
     tx.putPayment(payment);
-
-    if (stored === null || stored.status === 'not_started' || stored.kind !== rec.kind) {
-      tx.putVerification({
-        ...rec,
-        status: rec.status === 'not_started' ? 'in_progress' : rec.status,
-        updatedAt: nowIso,
-        version: rec.version + 1,
-      });
-    }
     return payment;
   });
+
+  // The expiries are committed: send their refunds before the gateway is asked for the new code, so a
+  // gateway failure there never strands them (a refused or thrown refund stays for V2's re-send or staff).
+  for (const { refund, payment } of expired) {
+    await dispatchVerificationFeeRefund(deps, refund, payment);
+  }
 
   const reused = instructionsOf(intent);
   const instructions = reused ?? await issuePaymentInstructions(deps.gateway, intent, async (providerRef, inst) => {
@@ -177,10 +194,6 @@ export async function startVerificationFee(
     });
   });
 
-  // The new code is committed: a refund the gateway refuses or throws on stays for V2's re-send or staff.
-  for (const { refund, payment } of expired) {
-    await dispatchVerificationFeeRefund(deps, refund, payment);
-  }
   return instructions;
 }
 
@@ -300,6 +313,7 @@ export class VerificationFeeSettler implements SubjectSettler {
       if (p === null || p.subjectType !== 'verification_fee') throw new DomainError('not_found');
       paymentForRefund = p;
       const rec = await tx.getVerification(p.subjectId);
+      const provider = await tx.getProvider(p.subjectId);
       const now = deps.clock.now();
       const nowIso = now.toISOString();
 
@@ -344,15 +358,20 @@ export class VerificationFeeSettler implements SubjectSettler {
       let paid: Payment = counted;
       if (applied.excess > 0) paid = giveBack(paid, applied.excess, 'overpaid_excess');
 
-      const records = rec !== null && rec.steps.fee === null && FEE_OPEN_STATUSES.includes(rec.status);
-      if (!records) {
-        // The attempt's fee is already recorded (two methods, a retry): all of it goes back.
+      // A fee still open on a running record; otherwise the attempt's fee is already recorded (two
+      // methods, a retry) or the record is past the steps: a duplicate.
+      const open = rec !== null && rec.steps.fee === null && FEE_OPEN_STATUSES.includes(rec.status);
+      // The kind is frozen only by a recorded fee, so until then it follows the provider type now;
+      // a code for another kind's fee or an earlier attempt cannot be this attempt's fee.
+      const kind = provider === null ? null : verificationKindOf(provider.providerType);
+      const fits = open && kind !== null && p.amount === feeFor(kind) && isFeeOf(p, p.subjectId, rec.feeAttempt);
+      if (!fits) {
         const out = applyRefundToPayment({
           payment: paid,
           refundId: deps.ids.newId(),
           percent: 100,
           ledgerEntryId: deps.ids.newId(),
-          reason: DUPLICATE_FEE_REFUND_REASON,
+          reason: open ? STALE_FEE_REFUND_REASON : DUPLICATE_FEE_REFUND_REASON,
           now,
         });
         const refund: Refund = { ...out.refund, providerRef: transfer.txnId };
@@ -380,6 +399,7 @@ export class VerificationFeeSettler implements SubjectSettler {
       tx.addLedgerEntry(charged);
       tx.putVerification({
         ...rec,
+        kind,
         status: rec.status === 'not_started' ? 'in_progress' : rec.status,
         steps: { ...rec.steps, fee: { paymentId: p.id, amount: p.amount, paidAt: nowIso } },
         updatedAt: nowIso,

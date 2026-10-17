@@ -281,6 +281,19 @@ export async function resubmitVerification(
           updatedAt: nowIso,
           version: rec.version + 1,
         };
+      } else if (feePaidAfterRejection(rec)) {
+        // A record rejected before the fee existed paid it while rejected: that payment is the paid
+        // resubmit, so it goes back to staff and is never charged twice.
+        after = {
+          ...rec,
+          status: 'submitted',
+          submittedAt: nowIso,
+          decidedAt: null,
+          decidedBy: null,
+          rejectReason: null,
+          updatedAt: nowIso,
+          version: rec.version + 1,
+        };
       } else {
         // Paid resubmit (#203, Decision 13): back to the steps with the fee open under a new attempt
         // (`vfee_{uid}_{feeAttempt}_…`); pay again, then "Gửi duyệt".
@@ -302,6 +315,12 @@ export async function resubmitVerification(
     tx.putVerification(after);
     return { before: rec, after };
   });
+}
+
+/** True when the recorded fee was paid after the record's last decision (the rejection). */
+function feePaidAfterRejection(rec: VerificationRecord): boolean {
+  const fee = rec.steps.fee;
+  return fee !== null && rec.decidedAt !== null && Date.parse(fee.paidAt) > Date.parse(rec.decidedAt);
 }
 
 export async function reviewVerification(
