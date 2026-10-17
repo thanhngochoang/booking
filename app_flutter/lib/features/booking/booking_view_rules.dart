@@ -21,6 +21,10 @@ enum DetailAction {
   directions,
   accept,
   decline,
+  markShot,
+  deliver,
+  answerExtraRound,
+  viewDelivery,
   complete,
   cancel,
   bookAgain,
@@ -62,7 +66,12 @@ List<DetailAction> detailActions(
   if (features.chat && b.chatId != null) out.add(DetailAction.message);
 
   if (role == BookingRole.customer) {
-    if (s == BookingStatus.requested || _isActive(s)) {
+    if (s == BookingStatus.requested ||
+        _isActive(s) ||
+        s == BookingStatus.shot ||
+        s == BookingStatus.delivered ||
+        s == BookingStatus.revisionRequested ||
+        s == BookingStatus.approved) {
       out.add(DetailAction.contact);
     }
     if (_isActive(s) && features.reschedule && beforeStart) {
@@ -73,6 +82,11 @@ List<DetailAction> detailActions(
     }
     if ((s == BookingStatus.requested || _isActive(s)) && beforeStart) {
       out.add(DetailAction.cancel);
+    }
+    if (s == BookingStatus.delivered ||
+        s == BookingStatus.revisionRequested ||
+        s == BookingStatus.approved) {
+      out.add(DetailAction.viewDelivery);
     }
     if (_isStopped(s)) out.add(DetailAction.bookAgain);
     if (BookingRules.canReview(b) && features.review) {
@@ -98,9 +112,26 @@ List<DetailAction> detailActions(
     out.add(DetailAction.contact);
     if (features.reschedule && beforeStart) out.add(DetailAction.reschedule);
     if (BookingRules.canPhotographerComplete(b, now)) {
-      out.add(DetailAction.complete);
+      out.add(DetailAction.markShot);
     }
     if (beforeStart) out.add(DetailAction.cancel);
+    return out;
+  }
+  if (s == BookingStatus.shot || s == BookingStatus.revisionRequested) {
+    out.add(DetailAction.contact);
+    out.add(DetailAction.deliver);
+    return out;
+  }
+  if (s == BookingStatus.delivered) {
+    out.add(DetailAction.contact);
+    if (b.extraRound?.status == 'pending') {
+      out.add(DetailAction.answerExtraRound);
+    }
+    return out;
+  }
+  if (s == BookingStatus.approved) {
+    out.add(DetailAction.contact);
+    return out;
   }
   return out;
 }
@@ -180,11 +211,48 @@ List<TimelineStep> timelineSteps(
   );
   TimelineStep step5(TimelineStepState st) =>
       TimelineStep(title: l.timelineShoot, state: st);
+
+  final isCustomer = photographerName != l.detailYou;
+  final roundNum = b.deliveryRound > 0 ? b.deliveryRound : 1;
+  String? deliverySubtitle;
+  switch (s) {
+    case BookingStatus.shot:
+      deliverySubtitle = isCustomer
+          ? l.timelineDeliveryWaitCustomer(photographerName)
+          : l.timelineDeliveryWaitProvider;
+    case BookingStatus.delivered:
+      deliverySubtitle = isCustomer
+          ? l.timelineDeliveryReviewCustomer(roundNum)
+          : l.timelineDeliveryReviewProvider(roundNum);
+    case BookingStatus.revisionRequested:
+      deliverySubtitle = isCustomer
+          ? l.timelineDeliveryRevisingCustomer(photographerName, roundNum)
+          : l.timelineDeliveryRevisingProvider(roundNum);
+    case BookingStatus.approved:
+    case BookingStatus.completed:
+    case BookingStatus.reviewed:
+      deliverySubtitle = b.approvedAt != null
+          ? l.timelineDeliveryApproved(_when(b.approvedAt!, now, l))
+          : null;
+    default:
+      deliverySubtitle = null;
+  }
+
+  TimelineStep stepDelivery(TimelineStepState st) => TimelineStep(
+    title: l.timelineDelivery,
+    subtitle: deliverySubtitle,
+    state: st,
+  );
+
   TimelineStep step6(TimelineStepState st) => TimelineStep(
     title: l.timelineDone,
     subtitle: st == done && b.completedAt != null
         ? _when(b.completedAt!, now, l)
-        : l.timelinePayAtShoot(formatMoney(b.remaining)),
+        : (st == current && s == BookingStatus.approved
+            ? l.timelineCheck
+            : (b.remaining > 0
+                ? l.timelinePayAtShoot(formatMoney(b.remaining))
+                : null)),
     state: st,
   );
   TimelineStep step7(TimelineStepState st) =>
@@ -219,6 +287,7 @@ List<TimelineStep> timelineSteps(
         step3(upcoming),
         step4(upcoming),
         step5(upcoming),
+        stepDelivery(upcoming),
         step6(upcoming),
         step7(upcoming),
       ];
@@ -234,7 +303,32 @@ List<TimelineStep> timelineSteps(
         step3(done),
         step4(st4),
         step5(started ? current : upcoming),
+        stepDelivery(upcoming),
         step6(upcoming),
+        step7(upcoming),
+      ];
+    case BookingStatus.shot:
+    case BookingStatus.delivered:
+    case BookingStatus.revisionRequested:
+      return [
+        step1,
+        step2(done),
+        step3(done),
+        step4(done),
+        step5(done),
+        stepDelivery(current),
+        step6(upcoming),
+        step7(upcoming),
+      ];
+    case BookingStatus.approved:
+      return [
+        step1,
+        step2(done),
+        step3(done),
+        step4(done),
+        step5(done),
+        stepDelivery(done),
+        step6(current),
         step7(upcoming),
       ];
     case BookingStatus.completed:
@@ -246,6 +340,7 @@ List<TimelineStep> timelineSteps(
         step3(done),
         step4(done),
         step5(done),
+        stepDelivery(done),
         step6(done),
         step7(reviewed ? done : upcoming),
       ];
@@ -280,6 +375,7 @@ class WorkDashboard {
     required this.monthRevenueVnd,
     required this.heldVnd,
     required this.upcomingCount,
+    this.toDeliver = const [],
   });
 
   /// accepted/upcoming on today's Vietnamese date, earliest start.
@@ -292,8 +388,12 @@ class WorkDashboard {
   final int heldVnd;
   final int upcomingCount;
 
-  /// No shoot today, no requests and nothing upcoming.
-  bool get isEmpty => today == null && requests.isEmpty && upcomingCount == 0;
+  /// Bookings waiting for delivery actions (shot, revisionRequested, or delivered with pending extra round).
+  final List<Booking> toDeliver;
+
+  /// No shoot today, no requests, nothing to deliver and nothing upcoming.
+  bool get isEmpty =>
+      today == null && requests.isEmpty && toDeliver.isEmpty && upcomingCount == 0;
 }
 
 const _heldEscrow = {
@@ -342,6 +442,15 @@ WorkDashboard workDashboard(
         return da.compareTo(db);
       });
 
+  final toDeliver = [
+    for (final b in own)
+      if (b.status == BookingStatus.shot ||
+          b.status == BookingStatus.revisionRequested ||
+          (b.status == BookingStatus.delivered &&
+              b.extraRound?.status == 'pending'))
+        b,
+  ]..sort((a, b) => startsAtOf(a).compareTo(startsAtOf(b)));
+
   var month = 0;
   var held = 0;
   for (final b in own) {
@@ -366,6 +475,7 @@ WorkDashboard workDashboard(
     monthRevenueVnd: month,
     heldVnd: held,
     upcomingCount: active.length,
+    toDeliver: toDeliver,
   );
 }
 

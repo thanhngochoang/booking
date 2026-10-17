@@ -120,6 +120,12 @@ void main() {
         expect(BookingRules.isReviewed(b), isFalse);
       });
 
+      test('canReview is true for approved without reviewedAt', () {
+        final b = booking(BookingStatus.approved);
+        expect(BookingRules.canReview(b), isTrue);
+        expect(BookingRules.isReviewed(b), isFalse);
+      });
+
       test('canReview is false after reviewedAt', () {
         final b = booking(
           BookingStatus.completed,
@@ -221,6 +227,32 @@ void main() {
           updatedAt: DateTime.utc(2026, 10, 1),
         );
         expect(BookingRules.tabForBooking(bComp), BookingTab.history);
+
+        for (final status in [
+          BookingStatus.shot,
+          BookingStatus.delivered,
+          BookingStatus.revisionRequested,
+        ]) {
+          final b = makeBooking(
+            id: 'b_${status.name}',
+            status: status,
+            day: '2026-10-15',
+            start: '09:00',
+            createdAt: DateTime.utc(2026, 10, 1),
+            updatedAt: DateTime.utc(2026, 10, 1),
+          );
+          expect(BookingRules.tabForBooking(b), BookingTab.pending);
+        }
+
+        final bAppr = makeBooking(
+          id: 'b_approved',
+          status: BookingStatus.approved,
+          day: '2026-10-15',
+          start: '09:00',
+          createdAt: DateTime.utc(2026, 10, 1),
+          updatedAt: DateTime.utc(2026, 10, 1),
+        );
+        expect(BookingRules.tabForBooking(bAppr), BookingTab.history);
       });
 
       test('groupBookingsByTab groups and sorts', () {

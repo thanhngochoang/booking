@@ -189,6 +189,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       case DetailAction.review:
       case DetailAction.viewReview:
         await context.push('/b/${b.id}/review');
+      case DetailAction.markShot:
+        await _transition(b, a, BookingAction.markShot);
+      case DetailAction.deliver:
+      case DetailAction.answerExtraRound:
+      case DetailAction.viewDelivery:
+        break;
     }
   }
 

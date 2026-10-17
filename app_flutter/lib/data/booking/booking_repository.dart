@@ -122,9 +122,13 @@ enum BookingAction {
   accept,
   decline,
   cancel,
-  complete;
+  complete,
+  markShot;
 
-  String get code => name;
+  String get code => switch (this) {
+    markShot => 'mark_shot',
+    _ => name,
+  };
 }
 
 abstract class BookingRepository {

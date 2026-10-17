@@ -446,6 +446,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statusUpcoming => 'Sắp tới';
 
   @override
+  String get statusShot => 'Chờ bàn giao';
+
+  @override
+  String get statusDelivered => 'Chờ duyệt ảnh';
+
+  @override
+  String get statusRevisionRequested => 'Cần chỉnh sửa';
+
+  @override
+  String get statusApproved => 'Đã đồng ý ảnh';
+
+  @override
   String get statusCompleted => 'Hoàn thành';
 
   @override
@@ -2263,6 +2275,46 @@ class AppLocalizationsVi extends AppLocalizations {
   String get timelineShoot => 'Buổi chụp';
 
   @override
+  String get timelineDelivery => 'Bàn giao & duyệt ảnh';
+
+  @override
+  String timelineDeliveryWaitCustomer(String name) {
+    return 'Chờ $name gửi ảnh mẫu';
+  }
+
+  @override
+  String get timelineDeliveryWaitProvider =>
+      'Chờ bạn nộp ảnh mẫu và link ảnh gốc';
+
+  @override
+  String timelineDeliveryReviewCustomer(int round) {
+    return 'Vòng $round · chờ bạn duyệt';
+  }
+
+  @override
+  String timelineDeliveryReviewProvider(int round) {
+    return 'Vòng $round · chờ khách duyệt';
+  }
+
+  @override
+  String timelineDeliveryRevisingCustomer(String name, int round) {
+    return '$name đang chỉnh sửa vòng $round';
+  }
+
+  @override
+  String timelineDeliveryRevisingProvider(int round) {
+    return 'Khách muốn chỉnh sửa vòng $round';
+  }
+
+  @override
+  String timelineDeliveryApproved(String when) {
+    return 'Đã đồng ý ảnh · $when';
+  }
+
+  @override
+  String get timelineCheck => 'Kiểm tra bộ ảnh gốc trong 48 giờ';
+
+  @override
   String get timelineDone => 'Hoàn thành';
 
   @override
@@ -2347,6 +2399,64 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailComplete => 'Hoàn thành';
+
+  @override
+  String get detailMarkShot => 'Đã chụp xong';
+
+  @override
+  String get detailDeliver => 'Nộp bàn giao';
+
+  @override
+  String detailDeliverRound(int round) {
+    return 'Nộp vòng $round';
+  }
+
+  @override
+  String get detailViewDelivery => 'Xem bàn giao';
+
+  @override
+  String detailRevisionCard(int round) {
+    return 'Khách muốn chỉnh sửa vòng $round';
+  }
+
+  @override
+  String detailWaitingApproval(int round) {
+    return 'Đã gửi vòng $round · chờ khách duyệt';
+  }
+
+  @override
+  String get detailApprovedProvider =>
+      'Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra';
+
+  @override
+  String detailExtraRoundTitle(String name) {
+    return '$name xin thêm 1 vòng sửa';
+  }
+
+  @override
+  String detailExtraRoundUsed(int total) {
+    return 'Đã dùng hết $total lượt sửa miễn phí của gói.';
+  }
+
+  @override
+  String get detailExtraGrant => 'Cho thêm 1 vòng';
+
+  @override
+  String get detailExtraDecline => 'Không thêm';
+
+  @override
+  String get detailExtraDeclineTitle => 'Không thêm vòng sửa?';
+
+  @override
+  String detailExtraDeclineBody(String name) {
+    return '$name vẫn đồng ý ảnh được, hoặc mở khiếu nại.';
+  }
+
+  @override
+  String get detailExtraGranted => 'Đã cho thêm 1 vòng sửa';
+
+  @override
+  String get detailExtraDeclined => 'Đã báo khách là không thêm vòng';
 
   @override
   String get detailBookAgain => 'Đặt lại';
@@ -2555,6 +2665,22 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workUpcoming => 'Buổi sắp tới';
+
+  @override
+  String get workToDeliver => 'Chờ bàn giao';
+
+  @override
+  String workToDeliverShot(String day) {
+    return '$day · đã chụp';
+  }
+
+  @override
+  String workToDeliverRevision(int round) {
+    return 'Vòng $round · khách muốn chỉnh sửa';
+  }
+
+  @override
+  String get workToDeliverExtra => 'Khách xin thêm 1 vòng';
 
   @override
   String get workNoRequests => 'Không có yêu cầu mới';

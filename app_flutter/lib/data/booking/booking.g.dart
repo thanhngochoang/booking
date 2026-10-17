@@ -136,9 +136,43 @@ const _$BookingStatusEnumMap = {
   BookingStatus.expired: 'expired',
   BookingStatus.cancelled: 'cancelled',
   BookingStatus.upcoming: 'upcoming',
+  BookingStatus.shot: 'shot',
+  BookingStatus.delivered: 'delivered',
+  BookingStatus.revisionRequested: 'revisionRequested',
+  BookingStatus.approved: 'approved',
   BookingStatus.completed: 'completed',
   BookingStatus.reviewed: 'reviewed',
 };
+
+_PhotoNote _$PhotoNoteFromJson(Map<String, dynamic> json) => _PhotoNote(
+  sampleIndex: (json['sampleIndex'] as num).toInt(),
+  note: json['note'] as String,
+);
+
+Map<String, dynamic> _$PhotoNoteToJson(_PhotoNote instance) =>
+    <String, dynamic>{
+      'sampleIndex': instance.sampleIndex,
+      'note': instance.note,
+    };
+
+_ExtraRound _$ExtraRoundFromJson(Map<String, dynamic> json) => _ExtraRound(
+  status: json['status'] as String,
+  at: DateTime.parse(json['at'] as String),
+  note: json['note'] as String?,
+  photoNotes:
+      (json['photoNotes'] as List<dynamic>?)
+          ?.map((e) => PhotoNote.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PhotoNote>[],
+);
+
+Map<String, dynamic> _$ExtraRoundToJson(_ExtraRound instance) =>
+    <String, dynamic>{
+      'status': instance.status,
+      'at': instance.at.toIso8601String(),
+      'note': instance.note,
+      'photoNotes': instance.photoNotes,
+    };
 
 _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
   id: json['id'] as String,
@@ -182,6 +216,35 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
   cancel: json['cancel'] == null
       ? null
       : BookingCancel.fromJson(json['cancel'] as Map<String, dynamic>),
+  shotAt: json['shotAt'] == null
+      ? null
+      : DateTime.parse(json['shotAt'] as String),
+  deliveredAt: json['deliveredAt'] == null
+      ? null
+      : DateTime.parse(json['deliveredAt'] as String),
+  approvedAt: json['approvedAt'] == null
+      ? null
+      : DateTime.parse(json['approvedAt'] as String),
+  checkUntil: json['checkUntil'] == null
+      ? null
+      : DateTime.parse(json['checkUntil'] as String),
+  autoApproveAt: json['autoApproveAt'] == null
+      ? null
+      : DateTime.parse(json['autoApproveAt'] as String),
+  autoApproveNoticeAt: json['autoApproveNoticeAt'] == null
+      ? null
+      : DateTime.parse(json['autoApproveNoticeAt'] as String),
+  samplesPurgeAfter: json['samplesPurgeAfter'] == null
+      ? null
+      : DateTime.parse(json['samplesPurgeAfter'] as String),
+  deliveryRound: (json['deliveryRound'] as num?)?.toInt() ?? 0,
+  revisionsIncluded: (json['revisionsIncluded'] as num?)?.toInt() ?? 1,
+  revisionsUsed: (json['revisionsUsed'] as num?)?.toInt() ?? 0,
+  revisionsGranted: (json['revisionsGranted'] as num?)?.toInt() ?? 0,
+  extraRound: json['extraRound'] == null
+      ? null
+      : ExtraRound.fromJson(json['extraRound'] as Map<String, dynamic>),
+  samplesPurged: json['samplesPurged'] as bool? ?? false,
   completedAt: json['completedAt'] == null
       ? null
       : DateTime.parse(json['completedAt'] as String),
@@ -217,6 +280,19 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'depositRefundedAt': instance.depositRefundedAt?.toIso8601String(),
   'acceptDeadline': instance.acceptDeadline?.toIso8601String(),
   'cancel': instance.cancel,
+  'shotAt': instance.shotAt?.toIso8601String(),
+  'deliveredAt': instance.deliveredAt?.toIso8601String(),
+  'approvedAt': instance.approvedAt?.toIso8601String(),
+  'checkUntil': instance.checkUntil?.toIso8601String(),
+  'autoApproveAt': instance.autoApproveAt?.toIso8601String(),
+  'autoApproveNoticeAt': instance.autoApproveNoticeAt?.toIso8601String(),
+  'samplesPurgeAfter': instance.samplesPurgeAfter?.toIso8601String(),
+  'deliveryRound': instance.deliveryRound,
+  'revisionsIncluded': instance.revisionsIncluded,
+  'revisionsUsed': instance.revisionsUsed,
+  'revisionsGranted': instance.revisionsGranted,
+  'extraRound': instance.extraRound,
+  'samplesPurged': instance.samplesPurged,
   'completedAt': instance.completedAt?.toIso8601String(),
   'reviewedAt': instance.reviewedAt?.toIso8601String(),
   'chatId': instance.chatId,

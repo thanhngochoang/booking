@@ -916,6 +916,30 @@ abstract class AppLocalizations {
   /// **'Sắp tới'**
   String get statusUpcoming;
 
+  /// No description provided for @statusShot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bàn giao'**
+  String get statusShot;
+
+  /// No description provided for @statusDelivered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ duyệt ảnh'**
+  String get statusDelivered;
+
+  /// No description provided for @statusRevisionRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần chỉnh sửa'**
+  String get statusRevisionRequested;
+
+  /// No description provided for @statusApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đồng ý ảnh'**
+  String get statusApproved;
+
   /// No description provided for @statusCompleted.
   ///
   /// In vi, this message translates to:
@@ -4030,6 +4054,60 @@ abstract class AppLocalizations {
   /// **'Buổi chụp'**
   String get timelineShoot;
 
+  /// No description provided for @timelineDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao & duyệt ảnh'**
+  String get timelineDelivery;
+
+  /// No description provided for @timelineDeliveryWaitCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ {name} gửi ảnh mẫu'**
+  String timelineDeliveryWaitCustomer(String name);
+
+  /// No description provided for @timelineDeliveryWaitProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bạn nộp ảnh mẫu và link ảnh gốc'**
+  String get timelineDeliveryWaitProvider;
+
+  /// No description provided for @timelineDeliveryReviewCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vòng {round} · chờ bạn duyệt'**
+  String timelineDeliveryReviewCustomer(int round);
+
+  /// No description provided for @timelineDeliveryReviewProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vòng {round} · chờ khách duyệt'**
+  String timelineDeliveryReviewProvider(int round);
+
+  /// No description provided for @timelineDeliveryRevisingCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang chỉnh sửa vòng {round}'**
+  String timelineDeliveryRevisingCustomer(String name, int round);
+
+  /// No description provided for @timelineDeliveryRevisingProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách muốn chỉnh sửa vòng {round}'**
+  String timelineDeliveryRevisingProvider(int round);
+
+  /// No description provided for @timelineDeliveryApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đồng ý ảnh · {when}'**
+  String timelineDeliveryApproved(String when);
+
+  /// No description provided for @timelineCheck.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra bộ ảnh gốc trong 48 giờ'**
+  String get timelineCheck;
+
   /// No description provided for @timelineDone.
   ///
   /// In vi, this message translates to:
@@ -4161,6 +4239,96 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Hoàn thành'**
   String get detailComplete;
+
+  /// No description provided for @detailMarkShot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chụp xong'**
+  String get detailMarkShot;
+
+  /// No description provided for @detailDeliver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nộp bàn giao'**
+  String get detailDeliver;
+
+  /// No description provided for @detailDeliverRound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nộp vòng {round}'**
+  String detailDeliverRound(int round);
+
+  /// No description provided for @detailViewDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem bàn giao'**
+  String get detailViewDelivery;
+
+  /// No description provided for @detailRevisionCard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách muốn chỉnh sửa vòng {round}'**
+  String detailRevisionCard(int round);
+
+  /// No description provided for @detailWaitingApproval.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi vòng {round} · chờ khách duyệt'**
+  String detailWaitingApproval(int round);
+
+  /// No description provided for @detailApprovedProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra'**
+  String get detailApprovedProvider;
+
+  /// No description provided for @detailExtraRoundTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} xin thêm 1 vòng sửa'**
+  String detailExtraRoundTitle(String name);
+
+  /// No description provided for @detailExtraRoundUsed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã dùng hết {total} lượt sửa miễn phí của gói.'**
+  String detailExtraRoundUsed(int total);
+
+  /// No description provided for @detailExtraGrant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho thêm 1 vòng'**
+  String get detailExtraGrant;
+
+  /// No description provided for @detailExtraDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thêm'**
+  String get detailExtraDecline;
+
+  /// No description provided for @detailExtraDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thêm vòng sửa?'**
+  String get detailExtraDeclineTitle;
+
+  /// No description provided for @detailExtraDeclineBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} vẫn đồng ý ảnh được, hoặc mở khiếu nại.'**
+  String detailExtraDeclineBody(String name);
+
+  /// No description provided for @detailExtraGranted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã cho thêm 1 vòng sửa'**
+  String get detailExtraGranted;
+
+  /// No description provided for @detailExtraDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã báo khách là không thêm vòng'**
+  String get detailExtraDeclined;
 
   /// No description provided for @detailBookAgain.
   ///
@@ -4533,6 +4701,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Buổi sắp tới'**
   String get workUpcoming;
+
+  /// No description provided for @workToDeliver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bàn giao'**
+  String get workToDeliver;
+
+  /// No description provided for @workToDeliverShot.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · đã chụp'**
+  String workToDeliverShot(String day);
+
+  /// No description provided for @workToDeliverRevision.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vòng {round} · khách muốn chỉnh sửa'**
+  String workToDeliverRevision(int round);
+
+  /// No description provided for @workToDeliverExtra.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách xin thêm 1 vòng'**
+  String get workToDeliverExtra;
 
   /// No description provided for @workNoRequests.
   ///

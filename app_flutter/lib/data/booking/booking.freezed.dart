@@ -1697,11 +1697,569 @@ as String?,
 
 
 /// @nodoc
+mixin _$PhotoNote {
+
+ int get sampleIndex; String get note;
+/// Create a copy of PhotoNote
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PhotoNoteCopyWith<PhotoNote> get copyWith => _$PhotoNoteCopyWithImpl<PhotoNote>(this as PhotoNote, _$identity);
+
+  /// Serializes this PhotoNote to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as PhotoNote;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PhotoNote&&(identical(other.sampleIndex, _this.sampleIndex) || other.sampleIndex == _this.sampleIndex)&&(identical(other.note, _this.note) || other.note == _this.note));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as PhotoNote;
+  return Object.hash(runtimeType,_this.sampleIndex,_this.note);
+}
+
+@override
+String toString() {
+  final _this = this as PhotoNote;
+  return 'PhotoNote(sampleIndex: ${_this.sampleIndex}, note: ${_this.note})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PhotoNoteCopyWith<$Res>  {
+  factory $PhotoNoteCopyWith(PhotoNote value, $Res Function(PhotoNote) _then) = _$PhotoNoteCopyWithImpl;
+@useResult
+$Res call({
+ int sampleIndex, String note
+});
+
+
+
+
+}
+/// @nodoc
+class _$PhotoNoteCopyWithImpl<$Res>
+    implements $PhotoNoteCopyWith<$Res> {
+  _$PhotoNoteCopyWithImpl(this._self, this._then);
+
+  final PhotoNote _self;
+  final $Res Function(PhotoNote) _then;
+
+/// Create a copy of PhotoNote
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sampleIndex = null,Object? note = null,}) {
+  return _then(PhotoNote(
+sampleIndex: null == sampleIndex ? _self.sampleIndex : sampleIndex // ignore: cast_nullable_to_non_nullable
+as int,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PhotoNote].
+extension PhotoNotePatterns on PhotoNote {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PhotoNote value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PhotoNote() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PhotoNote value)  $default,){
+final _that = this;
+switch (_that) {
+case _PhotoNote():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PhotoNote value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PhotoNote() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int sampleIndex,  String note)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PhotoNote() when $default != null:
+return $default(_that.sampleIndex,_that.note);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int sampleIndex,  String note)  $default,) {final _that = this;
+switch (_that) {
+case _PhotoNote():
+return $default(_that.sampleIndex,_that.note);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int sampleIndex,  String note)?  $default,) {final _that = this;
+switch (_that) {
+case _PhotoNote() when $default != null:
+return $default(_that.sampleIndex,_that.note);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PhotoNote implements PhotoNote {
+  const _PhotoNote({required this.sampleIndex, required this.note});
+  factory _PhotoNote.fromJson(Map<String, dynamic> json) => _$PhotoNoteFromJson(json);
+
+@override final  int sampleIndex;
+@override final  String note;
+
+/// Create a copy of PhotoNote
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PhotoNoteCopyWith<_PhotoNote> get copyWith => __$PhotoNoteCopyWithImpl<_PhotoNote>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PhotoNoteToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PhotoNote&&(identical(other.sampleIndex, sampleIndex) || other.sampleIndex == sampleIndex)&&(identical(other.note, note) || other.note == note));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,sampleIndex,note);
+}
+
+@override
+String toString() {
+    return 'PhotoNote(sampleIndex: $sampleIndex, note: $note)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PhotoNoteCopyWith<$Res> implements $PhotoNoteCopyWith<$Res> {
+  factory _$PhotoNoteCopyWith(_PhotoNote value, $Res Function(_PhotoNote) _then) = __$PhotoNoteCopyWithImpl;
+@override @useResult
+$Res call({
+ int sampleIndex, String note
+});
+
+
+
+
+}
+/// @nodoc
+class __$PhotoNoteCopyWithImpl<$Res>
+    implements _$PhotoNoteCopyWith<$Res> {
+  __$PhotoNoteCopyWithImpl(this._self, this._then);
+
+  final _PhotoNote _self;
+  final $Res Function(_PhotoNote) _then;
+
+/// Create a copy of PhotoNote
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sampleIndex = null,Object? note = null,}) {
+  return _then(_PhotoNote(
+sampleIndex: null == sampleIndex ? _self.sampleIndex : sampleIndex // ignore: cast_nullable_to_non_nullable
+as int,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ExtraRound {
+
+ String get status; DateTime get at; String? get note; List<PhotoNote> get photoNotes;
+/// Create a copy of ExtraRound
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ExtraRoundCopyWith<ExtraRound> get copyWith => _$ExtraRoundCopyWithImpl<ExtraRound>(this as ExtraRound, _$identity);
+
+  /// Serializes this ExtraRound to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ExtraRound;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExtraRound&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.at, _this.at) || other.at == _this.at)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.photoNotes, _this.photoNotes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ExtraRound;
+  return Object.hash(runtimeType,_this.status,_this.at,_this.note,const DeepCollectionEquality().hash(_this.photoNotes));
+}
+
+@override
+String toString() {
+  final _this = this as ExtraRound;
+  return 'ExtraRound(status: ${_this.status}, at: ${_this.at}, note: ${_this.note}, photoNotes: ${_this.photoNotes})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ExtraRoundCopyWith<$Res>  {
+  factory $ExtraRoundCopyWith(ExtraRound value, $Res Function(ExtraRound) _then) = _$ExtraRoundCopyWithImpl;
+@useResult
+$Res call({
+ String status, DateTime at, String? note, List<PhotoNote> photoNotes
+});
+
+
+
+
+}
+/// @nodoc
+class _$ExtraRoundCopyWithImpl<$Res>
+    implements $ExtraRoundCopyWith<$Res> {
+  _$ExtraRoundCopyWithImpl(this._self, this._then);
+
+  final ExtraRound _self;
+  final $Res Function(ExtraRound) _then;
+
+/// Create a copy of ExtraRound
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? at = null,Object? note = freezed,Object? photoNotes = null,}) {
+  return _then(ExtraRound(
+status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,at: null == at ? _self.at : at // ignore: cast_nullable_to_non_nullable
+as DateTime,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,photoNotes: null == photoNotes ? _self.photoNotes : photoNotes // ignore: cast_nullable_to_non_nullable
+as List<PhotoNote>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ExtraRound].
+extension ExtraRoundPatterns on ExtraRound {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ExtraRound value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ExtraRound() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ExtraRound value)  $default,){
+final _that = this;
+switch (_that) {
+case _ExtraRound():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ExtraRound value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ExtraRound() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String status,  DateTime at,  String? note,  List<PhotoNote> photoNotes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ExtraRound() when $default != null:
+return $default(_that.status,_that.at,_that.note,_that.photoNotes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String status,  DateTime at,  String? note,  List<PhotoNote> photoNotes)  $default,) {final _that = this;
+switch (_that) {
+case _ExtraRound():
+return $default(_that.status,_that.at,_that.note,_that.photoNotes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String status,  DateTime at,  String? note,  List<PhotoNote> photoNotes)?  $default,) {final _that = this;
+switch (_that) {
+case _ExtraRound() when $default != null:
+return $default(_that.status,_that.at,_that.note,_that.photoNotes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ExtraRound implements ExtraRound {
+  const _ExtraRound({required this.status, required this.at, this.note,  List<PhotoNote> photoNotes = const <PhotoNote>[]}): _photoNotes = photoNotes;
+  factory _ExtraRound.fromJson(Map<String, dynamic> json) => _$ExtraRoundFromJson(json);
+
+@override final  String status;
+@override final  DateTime at;
+@override final  String? note;
+ final  List<PhotoNote> _photoNotes;
+@override@JsonKey() List<PhotoNote> get photoNotes {
+  if (_photoNotes is EqualUnmodifiableListView) return _photoNotes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_photoNotes);
+}
+
+
+/// Create a copy of ExtraRound
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ExtraRoundCopyWith<_ExtraRound> get copyWith => __$ExtraRoundCopyWithImpl<_ExtraRound>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ExtraRoundToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExtraRound&&(identical(other.status, status) || other.status == status)&&(identical(other.at, at) || other.at == at)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.photoNotes, _photoNotes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,status,at,note,const DeepCollectionEquality().hash(_photoNotes));
+}
+
+@override
+String toString() {
+    return 'ExtraRound(status: $status, at: $at, note: $note, photoNotes: $photoNotes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ExtraRoundCopyWith<$Res> implements $ExtraRoundCopyWith<$Res> {
+  factory _$ExtraRoundCopyWith(_ExtraRound value, $Res Function(_ExtraRound) _then) = __$ExtraRoundCopyWithImpl;
+@override @useResult
+$Res call({
+ String status, DateTime at, String? note, List<PhotoNote> photoNotes
+});
+
+
+
+
+}
+/// @nodoc
+class __$ExtraRoundCopyWithImpl<$Res>
+    implements _$ExtraRoundCopyWith<$Res> {
+  __$ExtraRoundCopyWithImpl(this._self, this._then);
+
+  final _ExtraRound _self;
+  final $Res Function(_ExtraRound) _then;
+
+/// Create a copy of ExtraRound
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? at = null,Object? note = freezed,Object? photoNotes = null,}) {
+  return _then(_ExtraRound(
+status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,at: null == at ? _self.at : at // ignore: cast_nullable_to_non_nullable
+as DateTime,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,photoNotes: null == photoNotes ? _self._photoNotes : photoNotes // ignore: cast_nullable_to_non_nullable
+as List<PhotoNote>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$Booking {
 
  String get id; String get customerId; String get photographerId; String get serviceId; BookingServiceSnapshot get serviceSnapshot; String get day; String get start; String get end; BookingPlace get place; String? get note;/// Add-on snapshot lines (S04.03, S05.02); empty on old bookings.
  List<BookingAddonLine> get addons;/// Pick-up address, only with a `transport` add-on; two parties read it.
- BookingPlace? get pickup; BookingStatus get status; int get deposit; int get remaining; EscrowStatus? get escrowStatus; int? get depositRefunded; String? get depositProvider; DateTime? get depositPaidAt; DateTime? get depositRefundedAt; DateTime? get acceptDeadline; BookingCancel? get cancel; DateTime? get completedAt; DateTime? get reviewedAt; String? get chatId;/// What S04.04 pays: mirror of `bookings/{id}.checkout`, set while a draft
+ BookingPlace? get pickup; BookingStatus get status; int get deposit; int get remaining; EscrowStatus? get escrowStatus; int? get depositRefunded; String? get depositProvider; DateTime? get depositPaidAt; DateTime? get depositRefundedAt; DateTime? get acceptDeadline; BookingCancel? get cancel; DateTime? get shotAt; DateTime? get deliveredAt; DateTime? get approvedAt; DateTime? get checkUntil; DateTime? get autoApproveAt; DateTime? get autoApproveNoticeAt; DateTime? get samplesPurgeAfter; int get deliveryRound; int get revisionsIncluded; int get revisionsUsed; int get revisionsGranted; ExtraRound? get extraRound; bool get samplesPurged; DateTime? get completedAt; DateTime? get reviewedAt; String? get chatId;/// What S04.04 pays: mirror of `bookings/{id}.checkout`, set while a draft
 /// waits for its payment. Not part of the JSON form.
 @JsonKey(includeFromJson: false, includeToJson: false) BookingCheckout? get checkout; int get version; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of Booking
@@ -1717,20 +2275,20 @@ $BookingCopyWith<Booking> get copyWith => _$BookingCopyWithImpl<Booking>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as Booking;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Booking&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.photographerId, _this.photographerId) || other.photographerId == _this.photographerId)&&(identical(other.serviceId, _this.serviceId) || other.serviceId == _this.serviceId)&&(identical(other.serviceSnapshot, _this.serviceSnapshot) || other.serviceSnapshot == _this.serviceSnapshot)&&(identical(other.day, _this.day) || other.day == _this.day)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.place, _this.place) || other.place == _this.place)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.addons, _this.addons)&&(identical(other.pickup, _this.pickup) || other.pickup == _this.pickup)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.deposit, _this.deposit) || other.deposit == _this.deposit)&&(identical(other.remaining, _this.remaining) || other.remaining == _this.remaining)&&(identical(other.escrowStatus, _this.escrowStatus) || other.escrowStatus == _this.escrowStatus)&&(identical(other.depositRefunded, _this.depositRefunded) || other.depositRefunded == _this.depositRefunded)&&(identical(other.depositProvider, _this.depositProvider) || other.depositProvider == _this.depositProvider)&&(identical(other.depositPaidAt, _this.depositPaidAt) || other.depositPaidAt == _this.depositPaidAt)&&(identical(other.depositRefundedAt, _this.depositRefundedAt) || other.depositRefundedAt == _this.depositRefundedAt)&&(identical(other.acceptDeadline, _this.acceptDeadline) || other.acceptDeadline == _this.acceptDeadline)&&(identical(other.cancel, _this.cancel) || other.cancel == _this.cancel)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt)&&(identical(other.chatId, _this.chatId) || other.chatId == _this.chatId)&&(identical(other.checkout, _this.checkout) || other.checkout == _this.checkout)&&(identical(other.version, _this.version) || other.version == _this.version)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Booking&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.photographerId, _this.photographerId) || other.photographerId == _this.photographerId)&&(identical(other.serviceId, _this.serviceId) || other.serviceId == _this.serviceId)&&(identical(other.serviceSnapshot, _this.serviceSnapshot) || other.serviceSnapshot == _this.serviceSnapshot)&&(identical(other.day, _this.day) || other.day == _this.day)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.place, _this.place) || other.place == _this.place)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.addons, _this.addons)&&(identical(other.pickup, _this.pickup) || other.pickup == _this.pickup)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.deposit, _this.deposit) || other.deposit == _this.deposit)&&(identical(other.remaining, _this.remaining) || other.remaining == _this.remaining)&&(identical(other.escrowStatus, _this.escrowStatus) || other.escrowStatus == _this.escrowStatus)&&(identical(other.depositRefunded, _this.depositRefunded) || other.depositRefunded == _this.depositRefunded)&&(identical(other.depositProvider, _this.depositProvider) || other.depositProvider == _this.depositProvider)&&(identical(other.depositPaidAt, _this.depositPaidAt) || other.depositPaidAt == _this.depositPaidAt)&&(identical(other.depositRefundedAt, _this.depositRefundedAt) || other.depositRefundedAt == _this.depositRefundedAt)&&(identical(other.acceptDeadline, _this.acceptDeadline) || other.acceptDeadline == _this.acceptDeadline)&&(identical(other.cancel, _this.cancel) || other.cancel == _this.cancel)&&(identical(other.shotAt, _this.shotAt) || other.shotAt == _this.shotAt)&&(identical(other.deliveredAt, _this.deliveredAt) || other.deliveredAt == _this.deliveredAt)&&(identical(other.approvedAt, _this.approvedAt) || other.approvedAt == _this.approvedAt)&&(identical(other.checkUntil, _this.checkUntil) || other.checkUntil == _this.checkUntil)&&(identical(other.autoApproveAt, _this.autoApproveAt) || other.autoApproveAt == _this.autoApproveAt)&&(identical(other.autoApproveNoticeAt, _this.autoApproveNoticeAt) || other.autoApproveNoticeAt == _this.autoApproveNoticeAt)&&(identical(other.samplesPurgeAfter, _this.samplesPurgeAfter) || other.samplesPurgeAfter == _this.samplesPurgeAfter)&&(identical(other.deliveryRound, _this.deliveryRound) || other.deliveryRound == _this.deliveryRound)&&(identical(other.revisionsIncluded, _this.revisionsIncluded) || other.revisionsIncluded == _this.revisionsIncluded)&&(identical(other.revisionsUsed, _this.revisionsUsed) || other.revisionsUsed == _this.revisionsUsed)&&(identical(other.revisionsGranted, _this.revisionsGranted) || other.revisionsGranted == _this.revisionsGranted)&&(identical(other.extraRound, _this.extraRound) || other.extraRound == _this.extraRound)&&(identical(other.samplesPurged, _this.samplesPurged) || other.samplesPurged == _this.samplesPurged)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt)&&(identical(other.chatId, _this.chatId) || other.chatId == _this.chatId)&&(identical(other.checkout, _this.checkout) || other.checkout == _this.checkout)&&(identical(other.version, _this.version) || other.version == _this.version)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Booking;
-  return Object.hashAll([runtimeType,_this.id,_this.customerId,_this.photographerId,_this.serviceId,_this.serviceSnapshot,_this.day,_this.start,_this.end,_this.place,_this.note,const DeepCollectionEquality().hash(_this.addons),_this.pickup,_this.status,_this.deposit,_this.remaining,_this.escrowStatus,_this.depositRefunded,_this.depositProvider,_this.depositPaidAt,_this.depositRefundedAt,_this.acceptDeadline,_this.cancel,_this.completedAt,_this.reviewedAt,_this.chatId,_this.checkout,_this.version,_this.createdAt,_this.updatedAt]);
+  return Object.hashAll([runtimeType,_this.id,_this.customerId,_this.photographerId,_this.serviceId,_this.serviceSnapshot,_this.day,_this.start,_this.end,_this.place,_this.note,const DeepCollectionEquality().hash(_this.addons),_this.pickup,_this.status,_this.deposit,_this.remaining,_this.escrowStatus,_this.depositRefunded,_this.depositProvider,_this.depositPaidAt,_this.depositRefundedAt,_this.acceptDeadline,_this.cancel,_this.shotAt,_this.deliveredAt,_this.approvedAt,_this.checkUntil,_this.autoApproveAt,_this.autoApproveNoticeAt,_this.samplesPurgeAfter,_this.deliveryRound,_this.revisionsIncluded,_this.revisionsUsed,_this.revisionsGranted,_this.extraRound,_this.samplesPurged,_this.completedAt,_this.reviewedAt,_this.chatId,_this.checkout,_this.version,_this.createdAt,_this.updatedAt]);
 }
 
 @override
 String toString() {
   final _this = this as Booking;
-  return 'Booking(id: ${_this.id}, customerId: ${_this.customerId}, photographerId: ${_this.photographerId}, serviceId: ${_this.serviceId}, serviceSnapshot: ${_this.serviceSnapshot}, day: ${_this.day}, start: ${_this.start}, end: ${_this.end}, place: ${_this.place}, note: ${_this.note}, addons: ${_this.addons}, pickup: ${_this.pickup}, status: ${_this.status}, deposit: ${_this.deposit}, remaining: ${_this.remaining}, escrowStatus: ${_this.escrowStatus}, depositRefunded: ${_this.depositRefunded}, depositProvider: ${_this.depositProvider}, depositPaidAt: ${_this.depositPaidAt}, depositRefundedAt: ${_this.depositRefundedAt}, acceptDeadline: ${_this.acceptDeadline}, cancel: ${_this.cancel}, completedAt: ${_this.completedAt}, reviewedAt: ${_this.reviewedAt}, chatId: ${_this.chatId}, checkout: ${_this.checkout}, version: ${_this.version}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
+  return 'Booking(id: ${_this.id}, customerId: ${_this.customerId}, photographerId: ${_this.photographerId}, serviceId: ${_this.serviceId}, serviceSnapshot: ${_this.serviceSnapshot}, day: ${_this.day}, start: ${_this.start}, end: ${_this.end}, place: ${_this.place}, note: ${_this.note}, addons: ${_this.addons}, pickup: ${_this.pickup}, status: ${_this.status}, deposit: ${_this.deposit}, remaining: ${_this.remaining}, escrowStatus: ${_this.escrowStatus}, depositRefunded: ${_this.depositRefunded}, depositProvider: ${_this.depositProvider}, depositPaidAt: ${_this.depositPaidAt}, depositRefundedAt: ${_this.depositRefundedAt}, acceptDeadline: ${_this.acceptDeadline}, cancel: ${_this.cancel}, shotAt: ${_this.shotAt}, deliveredAt: ${_this.deliveredAt}, approvedAt: ${_this.approvedAt}, checkUntil: ${_this.checkUntil}, autoApproveAt: ${_this.autoApproveAt}, autoApproveNoticeAt: ${_this.autoApproveNoticeAt}, samplesPurgeAfter: ${_this.samplesPurgeAfter}, deliveryRound: ${_this.deliveryRound}, revisionsIncluded: ${_this.revisionsIncluded}, revisionsUsed: ${_this.revisionsUsed}, revisionsGranted: ${_this.revisionsGranted}, extraRound: ${_this.extraRound}, samplesPurged: ${_this.samplesPurged}, completedAt: ${_this.completedAt}, reviewedAt: ${_this.reviewedAt}, chatId: ${_this.chatId}, checkout: ${_this.checkout}, version: ${_this.version}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -1741,11 +2299,11 @@ abstract mixin class $BookingCopyWith<$Res>  {
   factory $BookingCopyWith(Booking value, $Res Function(Booking) _then) = _$BookingCopyWithImpl;
 @useResult
 $Res call({
- String id, String customerId, String photographerId, String serviceId, BookingServiceSnapshot serviceSnapshot, String day, String start, String end, BookingPlace place, String? note, List<BookingAddonLine> addons, BookingPlace? pickup, BookingStatus status, int deposit, int remaining, EscrowStatus? escrowStatus, int? depositRefunded, String? depositProvider, DateTime? depositPaidAt, DateTime? depositRefundedAt, DateTime? acceptDeadline, BookingCancel? cancel, DateTime? completedAt, DateTime? reviewedAt, String? chatId,@JsonKey(includeFromJson: false, includeToJson: false) BookingCheckout? checkout, int version, DateTime createdAt, DateTime updatedAt
+ String id, String customerId, String photographerId, String serviceId, BookingServiceSnapshot serviceSnapshot, String day, String start, String end, BookingPlace place, String? note, List<BookingAddonLine> addons, BookingPlace? pickup, BookingStatus status, int deposit, int remaining, EscrowStatus? escrowStatus, int? depositRefunded, String? depositProvider, DateTime? depositPaidAt, DateTime? depositRefundedAt, DateTime? acceptDeadline, BookingCancel? cancel, DateTime? shotAt, DateTime? deliveredAt, DateTime? approvedAt, DateTime? checkUntil, DateTime? autoApproveAt, DateTime? autoApproveNoticeAt, DateTime? samplesPurgeAfter, int deliveryRound, int revisionsIncluded, int revisionsUsed, int revisionsGranted, ExtraRound? extraRound, bool samplesPurged, DateTime? completedAt, DateTime? reviewedAt, String? chatId,@JsonKey(includeFromJson: false, includeToJson: false) BookingCheckout? checkout, int version, DateTime createdAt, DateTime updatedAt
 });
 
 
-$BookingServiceSnapshotCopyWith<$Res> get serviceSnapshot;$BookingPlaceCopyWith<$Res> get place;$BookingPlaceCopyWith<$Res>? get pickup;$BookingCancelCopyWith<$Res>? get cancel;
+$BookingServiceSnapshotCopyWith<$Res> get serviceSnapshot;$BookingPlaceCopyWith<$Res> get place;$BookingPlaceCopyWith<$Res>? get pickup;$BookingCancelCopyWith<$Res>? get cancel;$ExtraRoundCopyWith<$Res>? get extraRound;
 
 }
 /// @nodoc
@@ -1758,7 +2316,7 @@ class _$BookingCopyWithImpl<$Res>
 
 /// Create a copy of Booking
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? photographerId = null,Object? serviceId = null,Object? serviceSnapshot = null,Object? day = null,Object? start = null,Object? end = null,Object? place = null,Object? note = freezed,Object? addons = null,Object? pickup = freezed,Object? status = null,Object? deposit = null,Object? remaining = null,Object? escrowStatus = freezed,Object? depositRefunded = freezed,Object? depositProvider = freezed,Object? depositPaidAt = freezed,Object? depositRefundedAt = freezed,Object? acceptDeadline = freezed,Object? cancel = freezed,Object? completedAt = freezed,Object? reviewedAt = freezed,Object? chatId = freezed,Object? checkout = freezed,Object? version = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? photographerId = null,Object? serviceId = null,Object? serviceSnapshot = null,Object? day = null,Object? start = null,Object? end = null,Object? place = null,Object? note = freezed,Object? addons = null,Object? pickup = freezed,Object? status = null,Object? deposit = null,Object? remaining = null,Object? escrowStatus = freezed,Object? depositRefunded = freezed,Object? depositProvider = freezed,Object? depositPaidAt = freezed,Object? depositRefundedAt = freezed,Object? acceptDeadline = freezed,Object? cancel = freezed,Object? shotAt = freezed,Object? deliveredAt = freezed,Object? approvedAt = freezed,Object? checkUntil = freezed,Object? autoApproveAt = freezed,Object? autoApproveNoticeAt = freezed,Object? samplesPurgeAfter = freezed,Object? deliveryRound = null,Object? revisionsIncluded = null,Object? revisionsUsed = null,Object? revisionsGranted = null,Object? extraRound = freezed,Object? samplesPurged = null,Object? completedAt = freezed,Object? reviewedAt = freezed,Object? chatId = freezed,Object? checkout = freezed,Object? version = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(Booking(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -1782,7 +2340,20 @@ as String?,depositPaidAt: freezed == depositPaidAt ? _self.depositPaidAt : depos
 as DateTime?,depositRefundedAt: freezed == depositRefundedAt ? _self.depositRefundedAt : depositRefundedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,acceptDeadline: freezed == acceptDeadline ? _self.acceptDeadline : acceptDeadline // ignore: cast_nullable_to_non_nullable
 as DateTime?,cancel: freezed == cancel ? _self.cancel : cancel // ignore: cast_nullable_to_non_nullable
-as BookingCancel?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
+as BookingCancel?,shotAt: freezed == shotAt ? _self.shotAt : shotAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,deliveredAt: freezed == deliveredAt ? _self.deliveredAt : deliveredAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,approvedAt: freezed == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,checkUntil: freezed == checkUntil ? _self.checkUntil : checkUntil // ignore: cast_nullable_to_non_nullable
+as DateTime?,autoApproveAt: freezed == autoApproveAt ? _self.autoApproveAt : autoApproveAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,autoApproveNoticeAt: freezed == autoApproveNoticeAt ? _self.autoApproveNoticeAt : autoApproveNoticeAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,samplesPurgeAfter: freezed == samplesPurgeAfter ? _self.samplesPurgeAfter : samplesPurgeAfter // ignore: cast_nullable_to_non_nullable
+as DateTime?,deliveryRound: null == deliveryRound ? _self.deliveryRound : deliveryRound // ignore: cast_nullable_to_non_nullable
+as int,revisionsIncluded: null == revisionsIncluded ? _self.revisionsIncluded : revisionsIncluded // ignore: cast_nullable_to_non_nullable
+as int,revisionsUsed: null == revisionsUsed ? _self.revisionsUsed : revisionsUsed // ignore: cast_nullable_to_non_nullable
+as int,revisionsGranted: null == revisionsGranted ? _self.revisionsGranted : revisionsGranted // ignore: cast_nullable_to_non_nullable
+as int,extraRound: freezed == extraRound ? _self.extraRound : extraRound // ignore: cast_nullable_to_non_nullable
+as ExtraRound?,samplesPurged: null == samplesPurged ? _self.samplesPurged : samplesPurged // ignore: cast_nullable_to_non_nullable
+as bool,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,chatId: freezed == chatId ? _self.chatId : chatId // ignore: cast_nullable_to_non_nullable
 as String?,checkout: freezed == checkout ? _self.checkout : checkout // ignore: cast_nullable_to_non_nullable
@@ -1833,6 +2404,18 @@ $BookingCancelCopyWith<$Res>? get cancel {
 
   return $BookingCancelCopyWith<$Res>(_self.cancel!, (value) {
     return _then(_self.copyWith(cancel: value));
+  });
+}/// Create a copy of Booking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ExtraRoundCopyWith<$Res>? get extraRound {
+    if (_self.extraRound == null) {
+    return null;
+  }
+
+  return $ExtraRoundCopyWith<$Res>(_self.extraRound!, (value) {
+    return _then(_self.copyWith(extraRound: value));
   });
 }
 }
@@ -1916,10 +2499,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String customerId,  String photographerId,  String serviceId,  BookingServiceSnapshot serviceSnapshot,  String day,  String start,  String end,  BookingPlace place,  String? note,  List<BookingAddonLine> addons,  BookingPlace? pickup,  BookingStatus status,  int deposit,  int remaining,  EscrowStatus? escrowStatus,  int? depositRefunded,  String? depositProvider,  DateTime? depositPaidAt,  DateTime? depositRefundedAt,  DateTime? acceptDeadline,  BookingCancel? cancel,  DateTime? completedAt,  DateTime? reviewedAt,  String? chatId, @JsonKey(includeFromJson: false, includeToJson: false)  BookingCheckout? checkout,  int version,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String customerId,  String photographerId,  String serviceId,  BookingServiceSnapshot serviceSnapshot,  String day,  String start,  String end,  BookingPlace place,  String? note,  List<BookingAddonLine> addons,  BookingPlace? pickup,  BookingStatus status,  int deposit,  int remaining,  EscrowStatus? escrowStatus,  int? depositRefunded,  String? depositProvider,  DateTime? depositPaidAt,  DateTime? depositRefundedAt,  DateTime? acceptDeadline,  BookingCancel? cancel,  DateTime? shotAt,  DateTime? deliveredAt,  DateTime? approvedAt,  DateTime? checkUntil,  DateTime? autoApproveAt,  DateTime? autoApproveNoticeAt,  DateTime? samplesPurgeAfter,  int deliveryRound,  int revisionsIncluded,  int revisionsUsed,  int revisionsGranted,  ExtraRound? extraRound,  bool samplesPurged,  DateTime? completedAt,  DateTime? reviewedAt,  String? chatId, @JsonKey(includeFromJson: false, includeToJson: false)  BookingCheckout? checkout,  int version,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Booking() when $default != null:
-return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_that.serviceSnapshot,_that.day,_that.start,_that.end,_that.place,_that.note,_that.addons,_that.pickup,_that.status,_that.deposit,_that.remaining,_that.escrowStatus,_that.depositRefunded,_that.depositProvider,_that.depositPaidAt,_that.depositRefundedAt,_that.acceptDeadline,_that.cancel,_that.completedAt,_that.reviewedAt,_that.chatId,_that.checkout,_that.version,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_that.serviceSnapshot,_that.day,_that.start,_that.end,_that.place,_that.note,_that.addons,_that.pickup,_that.status,_that.deposit,_that.remaining,_that.escrowStatus,_that.depositRefunded,_that.depositProvider,_that.depositPaidAt,_that.depositRefundedAt,_that.acceptDeadline,_that.cancel,_that.shotAt,_that.deliveredAt,_that.approvedAt,_that.checkUntil,_that.autoApproveAt,_that.autoApproveNoticeAt,_that.samplesPurgeAfter,_that.deliveryRound,_that.revisionsIncluded,_that.revisionsUsed,_that.revisionsGranted,_that.extraRound,_that.samplesPurged,_that.completedAt,_that.reviewedAt,_that.chatId,_that.checkout,_that.version,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -1937,10 +2520,10 @@ return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String customerId,  String photographerId,  String serviceId,  BookingServiceSnapshot serviceSnapshot,  String day,  String start,  String end,  BookingPlace place,  String? note,  List<BookingAddonLine> addons,  BookingPlace? pickup,  BookingStatus status,  int deposit,  int remaining,  EscrowStatus? escrowStatus,  int? depositRefunded,  String? depositProvider,  DateTime? depositPaidAt,  DateTime? depositRefundedAt,  DateTime? acceptDeadline,  BookingCancel? cancel,  DateTime? completedAt,  DateTime? reviewedAt,  String? chatId, @JsonKey(includeFromJson: false, includeToJson: false)  BookingCheckout? checkout,  int version,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String customerId,  String photographerId,  String serviceId,  BookingServiceSnapshot serviceSnapshot,  String day,  String start,  String end,  BookingPlace place,  String? note,  List<BookingAddonLine> addons,  BookingPlace? pickup,  BookingStatus status,  int deposit,  int remaining,  EscrowStatus? escrowStatus,  int? depositRefunded,  String? depositProvider,  DateTime? depositPaidAt,  DateTime? depositRefundedAt,  DateTime? acceptDeadline,  BookingCancel? cancel,  DateTime? shotAt,  DateTime? deliveredAt,  DateTime? approvedAt,  DateTime? checkUntil,  DateTime? autoApproveAt,  DateTime? autoApproveNoticeAt,  DateTime? samplesPurgeAfter,  int deliveryRound,  int revisionsIncluded,  int revisionsUsed,  int revisionsGranted,  ExtraRound? extraRound,  bool samplesPurged,  DateTime? completedAt,  DateTime? reviewedAt,  String? chatId, @JsonKey(includeFromJson: false, includeToJson: false)  BookingCheckout? checkout,  int version,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Booking():
-return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_that.serviceSnapshot,_that.day,_that.start,_that.end,_that.place,_that.note,_that.addons,_that.pickup,_that.status,_that.deposit,_that.remaining,_that.escrowStatus,_that.depositRefunded,_that.depositProvider,_that.depositPaidAt,_that.depositRefundedAt,_that.acceptDeadline,_that.cancel,_that.completedAt,_that.reviewedAt,_that.chatId,_that.checkout,_that.version,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_that.serviceSnapshot,_that.day,_that.start,_that.end,_that.place,_that.note,_that.addons,_that.pickup,_that.status,_that.deposit,_that.remaining,_that.escrowStatus,_that.depositRefunded,_that.depositProvider,_that.depositPaidAt,_that.depositRefundedAt,_that.acceptDeadline,_that.cancel,_that.shotAt,_that.deliveredAt,_that.approvedAt,_that.checkUntil,_that.autoApproveAt,_that.autoApproveNoticeAt,_that.samplesPurgeAfter,_that.deliveryRound,_that.revisionsIncluded,_that.revisionsUsed,_that.revisionsGranted,_that.extraRound,_that.samplesPurged,_that.completedAt,_that.reviewedAt,_that.chatId,_that.checkout,_that.version,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1957,10 +2540,10 @@ return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String customerId,  String photographerId,  String serviceId,  BookingServiceSnapshot serviceSnapshot,  String day,  String start,  String end,  BookingPlace place,  String? note,  List<BookingAddonLine> addons,  BookingPlace? pickup,  BookingStatus status,  int deposit,  int remaining,  EscrowStatus? escrowStatus,  int? depositRefunded,  String? depositProvider,  DateTime? depositPaidAt,  DateTime? depositRefundedAt,  DateTime? acceptDeadline,  BookingCancel? cancel,  DateTime? completedAt,  DateTime? reviewedAt,  String? chatId, @JsonKey(includeFromJson: false, includeToJson: false)  BookingCheckout? checkout,  int version,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String customerId,  String photographerId,  String serviceId,  BookingServiceSnapshot serviceSnapshot,  String day,  String start,  String end,  BookingPlace place,  String? note,  List<BookingAddonLine> addons,  BookingPlace? pickup,  BookingStatus status,  int deposit,  int remaining,  EscrowStatus? escrowStatus,  int? depositRefunded,  String? depositProvider,  DateTime? depositPaidAt,  DateTime? depositRefundedAt,  DateTime? acceptDeadline,  BookingCancel? cancel,  DateTime? shotAt,  DateTime? deliveredAt,  DateTime? approvedAt,  DateTime? checkUntil,  DateTime? autoApproveAt,  DateTime? autoApproveNoticeAt,  DateTime? samplesPurgeAfter,  int deliveryRound,  int revisionsIncluded,  int revisionsUsed,  int revisionsGranted,  ExtraRound? extraRound,  bool samplesPurged,  DateTime? completedAt,  DateTime? reviewedAt,  String? chatId, @JsonKey(includeFromJson: false, includeToJson: false)  BookingCheckout? checkout,  int version,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Booking() when $default != null:
-return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_that.serviceSnapshot,_that.day,_that.start,_that.end,_that.place,_that.note,_that.addons,_that.pickup,_that.status,_that.deposit,_that.remaining,_that.escrowStatus,_that.depositRefunded,_that.depositProvider,_that.depositPaidAt,_that.depositRefundedAt,_that.acceptDeadline,_that.cancel,_that.completedAt,_that.reviewedAt,_that.chatId,_that.checkout,_that.version,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_that.serviceSnapshot,_that.day,_that.start,_that.end,_that.place,_that.note,_that.addons,_that.pickup,_that.status,_that.deposit,_that.remaining,_that.escrowStatus,_that.depositRefunded,_that.depositProvider,_that.depositPaidAt,_that.depositRefundedAt,_that.acceptDeadline,_that.cancel,_that.shotAt,_that.deliveredAt,_that.approvedAt,_that.checkUntil,_that.autoApproveAt,_that.autoApproveNoticeAt,_that.samplesPurgeAfter,_that.deliveryRound,_that.revisionsIncluded,_that.revisionsUsed,_that.revisionsGranted,_that.extraRound,_that.samplesPurged,_that.completedAt,_that.reviewedAt,_that.chatId,_that.checkout,_that.version,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -1972,7 +2555,7 @@ return $default(_that.id,_that.customerId,_that.photographerId,_that.serviceId,_
 @JsonSerializable()
 
 class _Booking extends Booking {
-  const _Booking({required this.id, required this.customerId, required this.photographerId, required this.serviceId, required this.serviceSnapshot, required this.day, required this.start, required this.end, required this.place, this.note,  List<BookingAddonLine> addons = const <BookingAddonLine>[], this.pickup, required this.status, required this.deposit, required this.remaining, this.escrowStatus, this.depositRefunded, this.depositProvider, this.depositPaidAt, this.depositRefundedAt, this.acceptDeadline, this.cancel, this.completedAt, this.reviewedAt, this.chatId, @JsonKey(includeFromJson: false, includeToJson: false) this.checkout, this.version = 1, required this.createdAt, required this.updatedAt}): _addons = addons,super._();
+  const _Booking({required this.id, required this.customerId, required this.photographerId, required this.serviceId, required this.serviceSnapshot, required this.day, required this.start, required this.end, required this.place, this.note,  List<BookingAddonLine> addons = const <BookingAddonLine>[], this.pickup, required this.status, required this.deposit, required this.remaining, this.escrowStatus, this.depositRefunded, this.depositProvider, this.depositPaidAt, this.depositRefundedAt, this.acceptDeadline, this.cancel, this.shotAt, this.deliveredAt, this.approvedAt, this.checkUntil, this.autoApproveAt, this.autoApproveNoticeAt, this.samplesPurgeAfter, this.deliveryRound = 0, this.revisionsIncluded = 1, this.revisionsUsed = 0, this.revisionsGranted = 0, this.extraRound, this.samplesPurged = false, this.completedAt, this.reviewedAt, this.chatId, @JsonKey(includeFromJson: false, includeToJson: false) this.checkout, this.version = 1, required this.createdAt, required this.updatedAt}): _addons = addons,super._();
   factory _Booking.fromJson(Map<String, dynamic> json) => _$BookingFromJson(json);
 
 @override final  String id;
@@ -2006,6 +2589,19 @@ class _Booking extends Booking {
 @override final  DateTime? depositRefundedAt;
 @override final  DateTime? acceptDeadline;
 @override final  BookingCancel? cancel;
+@override final  DateTime? shotAt;
+@override final  DateTime? deliveredAt;
+@override final  DateTime? approvedAt;
+@override final  DateTime? checkUntil;
+@override final  DateTime? autoApproveAt;
+@override final  DateTime? autoApproveNoticeAt;
+@override final  DateTime? samplesPurgeAfter;
+@override@JsonKey() final  int deliveryRound;
+@override@JsonKey() final  int revisionsIncluded;
+@override@JsonKey() final  int revisionsUsed;
+@override@JsonKey() final  int revisionsGranted;
+@override final  ExtraRound? extraRound;
+@override@JsonKey() final  bool samplesPurged;
 @override final  DateTime? completedAt;
 @override final  DateTime? reviewedAt;
 @override final  String? chatId;
@@ -2029,18 +2625,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Booking&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.photographerId, photographerId) || other.photographerId == photographerId)&&(identical(other.serviceId, serviceId) || other.serviceId == serviceId)&&(identical(other.serviceSnapshot, serviceSnapshot) || other.serviceSnapshot == serviceSnapshot)&&(identical(other.day, day) || other.day == day)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.place, place) || other.place == place)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.addons, _addons)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.status, status) || other.status == status)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.escrowStatus, escrowStatus) || other.escrowStatus == escrowStatus)&&(identical(other.depositRefunded, depositRefunded) || other.depositRefunded == depositRefunded)&&(identical(other.depositProvider, depositProvider) || other.depositProvider == depositProvider)&&(identical(other.depositPaidAt, depositPaidAt) || other.depositPaidAt == depositPaidAt)&&(identical(other.depositRefundedAt, depositRefundedAt) || other.depositRefundedAt == depositRefundedAt)&&(identical(other.acceptDeadline, acceptDeadline) || other.acceptDeadline == acceptDeadline)&&(identical(other.cancel, cancel) || other.cancel == cancel)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.chatId, chatId) || other.chatId == chatId)&&(identical(other.checkout, checkout) || other.checkout == checkout)&&(identical(other.version, version) || other.version == version)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Booking&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.photographerId, photographerId) || other.photographerId == photographerId)&&(identical(other.serviceId, serviceId) || other.serviceId == serviceId)&&(identical(other.serviceSnapshot, serviceSnapshot) || other.serviceSnapshot == serviceSnapshot)&&(identical(other.day, day) || other.day == day)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.place, place) || other.place == place)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.addons, _addons)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.status, status) || other.status == status)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.escrowStatus, escrowStatus) || other.escrowStatus == escrowStatus)&&(identical(other.depositRefunded, depositRefunded) || other.depositRefunded == depositRefunded)&&(identical(other.depositProvider, depositProvider) || other.depositProvider == depositProvider)&&(identical(other.depositPaidAt, depositPaidAt) || other.depositPaidAt == depositPaidAt)&&(identical(other.depositRefundedAt, depositRefundedAt) || other.depositRefundedAt == depositRefundedAt)&&(identical(other.acceptDeadline, acceptDeadline) || other.acceptDeadline == acceptDeadline)&&(identical(other.cancel, cancel) || other.cancel == cancel)&&(identical(other.shotAt, shotAt) || other.shotAt == shotAt)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.checkUntil, checkUntil) || other.checkUntil == checkUntil)&&(identical(other.autoApproveAt, autoApproveAt) || other.autoApproveAt == autoApproveAt)&&(identical(other.autoApproveNoticeAt, autoApproveNoticeAt) || other.autoApproveNoticeAt == autoApproveNoticeAt)&&(identical(other.samplesPurgeAfter, samplesPurgeAfter) || other.samplesPurgeAfter == samplesPurgeAfter)&&(identical(other.deliveryRound, deliveryRound) || other.deliveryRound == deliveryRound)&&(identical(other.revisionsIncluded, revisionsIncluded) || other.revisionsIncluded == revisionsIncluded)&&(identical(other.revisionsUsed, revisionsUsed) || other.revisionsUsed == revisionsUsed)&&(identical(other.revisionsGranted, revisionsGranted) || other.revisionsGranted == revisionsGranted)&&(identical(other.extraRound, extraRound) || other.extraRound == extraRound)&&(identical(other.samplesPurged, samplesPurged) || other.samplesPurged == samplesPurged)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.chatId, chatId) || other.chatId == chatId)&&(identical(other.checkout, checkout) || other.checkout == checkout)&&(identical(other.version, version) || other.version == version)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,customerId,photographerId,serviceId,serviceSnapshot,day,start,end,place,note,const DeepCollectionEquality().hash(_addons),pickup,status,deposit,remaining,escrowStatus,depositRefunded,depositProvider,depositPaidAt,depositRefundedAt,acceptDeadline,cancel,completedAt,reviewedAt,chatId,checkout,version,createdAt,updatedAt]);
+    return Object.hashAll([runtimeType,id,customerId,photographerId,serviceId,serviceSnapshot,day,start,end,place,note,const DeepCollectionEquality().hash(_addons),pickup,status,deposit,remaining,escrowStatus,depositRefunded,depositProvider,depositPaidAt,depositRefundedAt,acceptDeadline,cancel,shotAt,deliveredAt,approvedAt,checkUntil,autoApproveAt,autoApproveNoticeAt,samplesPurgeAfter,deliveryRound,revisionsIncluded,revisionsUsed,revisionsGranted,extraRound,samplesPurged,completedAt,reviewedAt,chatId,checkout,version,createdAt,updatedAt]);
 }
 
 @override
 String toString() {
-    return 'Booking(id: $id, customerId: $customerId, photographerId: $photographerId, serviceId: $serviceId, serviceSnapshot: $serviceSnapshot, day: $day, start: $start, end: $end, place: $place, note: $note, addons: $addons, pickup: $pickup, status: $status, deposit: $deposit, remaining: $remaining, escrowStatus: $escrowStatus, depositRefunded: $depositRefunded, depositProvider: $depositProvider, depositPaidAt: $depositPaidAt, depositRefundedAt: $depositRefundedAt, acceptDeadline: $acceptDeadline, cancel: $cancel, completedAt: $completedAt, reviewedAt: $reviewedAt, chatId: $chatId, checkout: $checkout, version: $version, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Booking(id: $id, customerId: $customerId, photographerId: $photographerId, serviceId: $serviceId, serviceSnapshot: $serviceSnapshot, day: $day, start: $start, end: $end, place: $place, note: $note, addons: $addons, pickup: $pickup, status: $status, deposit: $deposit, remaining: $remaining, escrowStatus: $escrowStatus, depositRefunded: $depositRefunded, depositProvider: $depositProvider, depositPaidAt: $depositPaidAt, depositRefundedAt: $depositRefundedAt, acceptDeadline: $acceptDeadline, cancel: $cancel, shotAt: $shotAt, deliveredAt: $deliveredAt, approvedAt: $approvedAt, checkUntil: $checkUntil, autoApproveAt: $autoApproveAt, autoApproveNoticeAt: $autoApproveNoticeAt, samplesPurgeAfter: $samplesPurgeAfter, deliveryRound: $deliveryRound, revisionsIncluded: $revisionsIncluded, revisionsUsed: $revisionsUsed, revisionsGranted: $revisionsGranted, extraRound: $extraRound, samplesPurged: $samplesPurged, completedAt: $completedAt, reviewedAt: $reviewedAt, chatId: $chatId, checkout: $checkout, version: $version, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -2051,11 +2647,11 @@ abstract mixin class _$BookingCopyWith<$Res> implements $BookingCopyWith<$Res> {
   factory _$BookingCopyWith(_Booking value, $Res Function(_Booking) _then) = __$BookingCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String customerId, String photographerId, String serviceId, BookingServiceSnapshot serviceSnapshot, String day, String start, String end, BookingPlace place, String? note, List<BookingAddonLine> addons, BookingPlace? pickup, BookingStatus status, int deposit, int remaining, EscrowStatus? escrowStatus, int? depositRefunded, String? depositProvider, DateTime? depositPaidAt, DateTime? depositRefundedAt, DateTime? acceptDeadline, BookingCancel? cancel, DateTime? completedAt, DateTime? reviewedAt, String? chatId,@JsonKey(includeFromJson: false, includeToJson: false) BookingCheckout? checkout, int version, DateTime createdAt, DateTime updatedAt
+ String id, String customerId, String photographerId, String serviceId, BookingServiceSnapshot serviceSnapshot, String day, String start, String end, BookingPlace place, String? note, List<BookingAddonLine> addons, BookingPlace? pickup, BookingStatus status, int deposit, int remaining, EscrowStatus? escrowStatus, int? depositRefunded, String? depositProvider, DateTime? depositPaidAt, DateTime? depositRefundedAt, DateTime? acceptDeadline, BookingCancel? cancel, DateTime? shotAt, DateTime? deliveredAt, DateTime? approvedAt, DateTime? checkUntil, DateTime? autoApproveAt, DateTime? autoApproveNoticeAt, DateTime? samplesPurgeAfter, int deliveryRound, int revisionsIncluded, int revisionsUsed, int revisionsGranted, ExtraRound? extraRound, bool samplesPurged, DateTime? completedAt, DateTime? reviewedAt, String? chatId,@JsonKey(includeFromJson: false, includeToJson: false) BookingCheckout? checkout, int version, DateTime createdAt, DateTime updatedAt
 });
 
 
-@override $BookingServiceSnapshotCopyWith<$Res> get serviceSnapshot;@override $BookingPlaceCopyWith<$Res> get place;@override $BookingPlaceCopyWith<$Res>? get pickup;@override $BookingCancelCopyWith<$Res>? get cancel;
+@override $BookingServiceSnapshotCopyWith<$Res> get serviceSnapshot;@override $BookingPlaceCopyWith<$Res> get place;@override $BookingPlaceCopyWith<$Res>? get pickup;@override $BookingCancelCopyWith<$Res>? get cancel;@override $ExtraRoundCopyWith<$Res>? get extraRound;
 
 }
 /// @nodoc
@@ -2068,7 +2664,7 @@ class __$BookingCopyWithImpl<$Res>
 
 /// Create a copy of Booking
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? photographerId = null,Object? serviceId = null,Object? serviceSnapshot = null,Object? day = null,Object? start = null,Object? end = null,Object? place = null,Object? note = freezed,Object? addons = null,Object? pickup = freezed,Object? status = null,Object? deposit = null,Object? remaining = null,Object? escrowStatus = freezed,Object? depositRefunded = freezed,Object? depositProvider = freezed,Object? depositPaidAt = freezed,Object? depositRefundedAt = freezed,Object? acceptDeadline = freezed,Object? cancel = freezed,Object? completedAt = freezed,Object? reviewedAt = freezed,Object? chatId = freezed,Object? checkout = freezed,Object? version = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? photographerId = null,Object? serviceId = null,Object? serviceSnapshot = null,Object? day = null,Object? start = null,Object? end = null,Object? place = null,Object? note = freezed,Object? addons = null,Object? pickup = freezed,Object? status = null,Object? deposit = null,Object? remaining = null,Object? escrowStatus = freezed,Object? depositRefunded = freezed,Object? depositProvider = freezed,Object? depositPaidAt = freezed,Object? depositRefundedAt = freezed,Object? acceptDeadline = freezed,Object? cancel = freezed,Object? shotAt = freezed,Object? deliveredAt = freezed,Object? approvedAt = freezed,Object? checkUntil = freezed,Object? autoApproveAt = freezed,Object? autoApproveNoticeAt = freezed,Object? samplesPurgeAfter = freezed,Object? deliveryRound = null,Object? revisionsIncluded = null,Object? revisionsUsed = null,Object? revisionsGranted = null,Object? extraRound = freezed,Object? samplesPurged = null,Object? completedAt = freezed,Object? reviewedAt = freezed,Object? chatId = freezed,Object? checkout = freezed,Object? version = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_Booking(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -2092,7 +2688,20 @@ as String?,depositPaidAt: freezed == depositPaidAt ? _self.depositPaidAt : depos
 as DateTime?,depositRefundedAt: freezed == depositRefundedAt ? _self.depositRefundedAt : depositRefundedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,acceptDeadline: freezed == acceptDeadline ? _self.acceptDeadline : acceptDeadline // ignore: cast_nullable_to_non_nullable
 as DateTime?,cancel: freezed == cancel ? _self.cancel : cancel // ignore: cast_nullable_to_non_nullable
-as BookingCancel?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
+as BookingCancel?,shotAt: freezed == shotAt ? _self.shotAt : shotAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,deliveredAt: freezed == deliveredAt ? _self.deliveredAt : deliveredAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,approvedAt: freezed == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,checkUntil: freezed == checkUntil ? _self.checkUntil : checkUntil // ignore: cast_nullable_to_non_nullable
+as DateTime?,autoApproveAt: freezed == autoApproveAt ? _self.autoApproveAt : autoApproveAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,autoApproveNoticeAt: freezed == autoApproveNoticeAt ? _self.autoApproveNoticeAt : autoApproveNoticeAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,samplesPurgeAfter: freezed == samplesPurgeAfter ? _self.samplesPurgeAfter : samplesPurgeAfter // ignore: cast_nullable_to_non_nullable
+as DateTime?,deliveryRound: null == deliveryRound ? _self.deliveryRound : deliveryRound // ignore: cast_nullable_to_non_nullable
+as int,revisionsIncluded: null == revisionsIncluded ? _self.revisionsIncluded : revisionsIncluded // ignore: cast_nullable_to_non_nullable
+as int,revisionsUsed: null == revisionsUsed ? _self.revisionsUsed : revisionsUsed // ignore: cast_nullable_to_non_nullable
+as int,revisionsGranted: null == revisionsGranted ? _self.revisionsGranted : revisionsGranted // ignore: cast_nullable_to_non_nullable
+as int,extraRound: freezed == extraRound ? _self.extraRound : extraRound // ignore: cast_nullable_to_non_nullable
+as ExtraRound?,samplesPurged: null == samplesPurged ? _self.samplesPurged : samplesPurged // ignore: cast_nullable_to_non_nullable
+as bool,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,chatId: freezed == chatId ? _self.chatId : chatId // ignore: cast_nullable_to_non_nullable
 as String?,checkout: freezed == checkout ? _self.checkout : checkout // ignore: cast_nullable_to_non_nullable
@@ -2144,6 +2753,18 @@ $BookingCancelCopyWith<$Res>? get cancel {
 
   return $BookingCancelCopyWith<$Res>(_self.cancel!, (value) {
     return _then(_self.copyWith(cancel: value));
+  });
+}/// Create a copy of Booking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ExtraRoundCopyWith<$Res>? get extraRound {
+    if (_self.extraRound == null) {
+    return null;
+  }
+
+  return $ExtraRoundCopyWith<$Res>(_self.extraRound!, (value) {
+    return _then(_self.copyWith(extraRound: value));
   });
 }
 }

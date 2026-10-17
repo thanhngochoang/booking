@@ -158,6 +158,10 @@
   "statusExpired": "Hết hạn",
   "statusCancelled": "Đã huỷ",
   "statusUpcoming": "Sắp tới",
+  "statusShot": "Chờ bàn giao",
+  "statusDelivered": "Chờ duyệt ảnh",
+  "statusRevisionRequested": "Cần chỉnh sửa",
+  "statusApproved": "Đã đồng ý ảnh",
   "statusCompleted": "Hoàn thành",
   "statusReviewed": "Đã đánh giá",
   "sessionErrorTitle": "Không tải được tài khoản",
@@ -1061,6 +1065,46 @@
   },
   "timelineUpcomingHint": "Nhắc trước 24 giờ",
   "timelineShoot": "Buổi chụp",
+  "timelineDelivery": "Bàn giao & duyệt ảnh",
+  "timelineDeliveryWaitCustomer": "Chờ {name} gửi ảnh mẫu",
+  "@timelineDeliveryWaitCustomer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "timelineDeliveryWaitProvider": "Chờ bạn nộp ảnh mẫu và link ảnh gốc",
+  "timelineDeliveryReviewCustomer": "Vòng {round} · chờ bạn duyệt",
+  "@timelineDeliveryReviewCustomer": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryReviewProvider": "Vòng {round} · chờ khách duyệt",
+  "@timelineDeliveryReviewProvider": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryRevisingCustomer": "{name} đang chỉnh sửa vòng {round}",
+  "@timelineDeliveryRevisingCustomer": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryRevisingProvider": "Khách muốn chỉnh sửa vòng {round}",
+  "@timelineDeliveryRevisingProvider": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryApproved": "Đã đồng ý ảnh · {when}",
+  "@timelineDeliveryApproved": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "timelineCheck": "Kiểm tra bộ ảnh gốc trong 48 giờ",
   "timelineDone": "Hoàn thành",
   "timelinePayAtShoot": "Trả {amount} tại chỗ",
   "@timelinePayAtShoot": {
@@ -1133,6 +1177,51 @@
   "detailAcceptNow": "Nhận",
   "detailDecline": "Từ chối",
   "detailComplete": "Hoàn thành",
+  "detailMarkShot": "Đã chụp xong",
+  "detailDeliver": "Nộp bàn giao",
+  "detailDeliverRound": "Nộp vòng {round}",
+  "@detailDeliverRound": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "detailViewDelivery": "Xem bàn giao",
+  "detailRevisionCard": "Khách muốn chỉnh sửa vòng {round}",
+  "@detailRevisionCard": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "detailWaitingApproval": "Đã gửi vòng {round} · chờ khách duyệt",
+  "@detailWaitingApproval": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "detailApprovedProvider": "Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra",
+  "detailExtraRoundTitle": "{name} xin thêm 1 vòng sửa",
+  "@detailExtraRoundTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "detailExtraRoundUsed": "Đã dùng hết {total} lượt sửa miễn phí của gói.",
+  "@detailExtraRoundUsed": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "detailExtraGrant": "Cho thêm 1 vòng",
+  "detailExtraDecline": "Không thêm",
+  "detailExtraDeclineTitle": "Không thêm vòng sửa?",
+  "detailExtraDeclineBody": "{name} vẫn đồng ý ảnh được, hoặc mở khiếu nại.",
+  "@detailExtraDeclineBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "detailExtraGranted": "Đã cho thêm 1 vòng sửa",
+  "detailExtraDeclined": "Đã báo khách là không thêm vòng",
   "detailBookAgain": "Đặt lại",
   "detailReview": "Đánh giá",
   "detailViewReview": "Xem đánh giá",
@@ -1241,6 +1330,20 @@
   "workMonth": "Tháng này",
   "workHeld": "Đang giữ",
   "workUpcoming": "Buổi sắp tới",
+  "workToDeliver": "Chờ bàn giao",
+  "workToDeliverShot": "{day} · đã chụp",
+  "@workToDeliverShot": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "workToDeliverRevision": "Vòng {round} · khách muốn chỉnh sửa",
+  "@workToDeliverRevision": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "workToDeliverExtra": "Khách xin thêm 1 vòng",
   "workNoRequests": "Không có yêu cầu mới",
   "workRequestMeta": "{service} · {when} · {place}",
   "@workRequestMeta": {
