@@ -2071,6 +2071,27 @@ test('nobody writes verifications', async () => {
   await assertFails(setDoc(doc(env.authenticatedContext('ver4').firestore(), 'verifications/ver4'), { uid: 'ver4', status: 'approved' }));
 });
 
+// #203: the fee is a server-only payment; the payer can neither read nor forge it, nor record it on the record.
+test('the payer cannot read or forge a verification fee payment, its refund or ledger entry, or set steps.fee', async () => {
+  await seedVerification('ver6');
+  await seedDoc('payments/vfee6', {
+    subjectType: 'verification_fee', subjectId: 'ver6', payerId: 'ver6', payeeId: 'platform', amount: 99000,
+    status: 'created', escrowStatus: 'held', idempotencyKey: 'vfee_ver6_1_bank_qr',
+  });
+  await seedDoc('refunds/rvfee6', { paymentId: 'vfee6', subjectType: 'verification_fee', amount: 99000, status: 'pending' });
+  await seedDoc('ledger_entries/lvfee6', { type: 'fee_charged', paymentId: 'vfee6', accountOwnerId: 'platform_revenue', amount: 99000 });
+  const payer = env.authenticatedContext('ver6').firestore();
+  await assertFails(getDoc(doc(payer, 'payments/vfee6')));
+  await assertFails(updateDoc(doc(payer, 'payments/vfee6'), { status: 'paid' }));
+  await assertFails(setDoc(doc(payer, 'payments/vfee7'), { subjectType: 'verification_fee', subjectId: 'ver6', payerId: 'ver6', status: 'paid' }));
+  await assertFails(getDocs(query(collection(payer, 'payments'), where('subjectId', '==', 'ver6'))));
+  await assertFails(getDoc(doc(payer, 'refunds/rvfee6')));
+  await assertFails(getDoc(doc(payer, 'ledger_entries/lvfee6')));
+  await assertFails(updateDoc(doc(payer, 'verifications/ver6'), {
+    'steps.fee': { paymentId: 'vfee6', amount: 99000, paidAt: Timestamp.now() },
+  }));
+});
+
 test('the owner cannot read private/identity but still reads private/contact', async () => {
   await env.withSecurityRulesDisabled(async (c) => {
     await setDoc(doc(c.firestore(), 'users/ver5/private/identity'), {

@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
-import { reviewVerification, type IdentityRecord, type VerificationRecord } from '@photobooking/domain';
+import {
+  PLATFORM_PAYEE,
+  newSubjectPayment,
+  reviewVerification,
+  type IdentityRecord,
+  type Refund,
+  type VerificationRecord,
+} from '@photobooking/domain';
+import { paymentToFirestore } from '../../src/infra/booking_firestore.js';
 import {
   FirestoreVerificationStore,
   identityFromFirestore,
@@ -10,7 +18,7 @@ import {
   verificationFromFirestore,
   verificationToFirestore,
 } from '../../src/infra/verification_firestore.js';
-import { NOW, readyRecord } from './verification_support.js';
+import { NOW, feeDepsOf, readyRecord } from './verification_support.js';
 
 const full: VerificationRecord = readyRecord('s1', {
   status: 'approved',
@@ -82,7 +90,11 @@ function fakeFirestore(seed: Record<string, DocumentData> = {}) {
       const id = (txCount += 1);
       const staged: Write[] = [];
       const tx = {
-        get: async (r: { path: string }) => ({ exists: docs.has(r.path), data: () => docs.get(r.path) }),
+        // A document by its path, or a query (fee payments of a uid) run as the query's own get().
+        get: async (r: { path?: string; get?: () => Promise<unknown> }) =>
+          r.path === undefined && r.get !== undefined
+            ? r.get()
+            : { exists: docs.has(r.path ?? ''), data: () => docs.get(r.path ?? '') },
         set: (r: { path: string }, data: DocumentData, opts?: { merge?: boolean }) =>
           void staged.push({ tx: id, op: 'set', path: r.path, data, merge: opts?.merge === true }),
         create: (r: { path: string }, data: DocumentData) => {
@@ -168,7 +180,7 @@ describe('FirestoreVerificationStore', () => {
     });
     const store = new FirestoreVerificationStore(firestore);
     await reviewVerification(
-      { store, authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false, clock: { now: () => NOW }, ids: { newId: () => 'a1' } },
+      { store, authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false, ...feeDepsOf(), clock: { now: () => NOW }, ids: { newId: () => 'a1' } },
       { uid: 'staff1', isAdmin: true },
       { uid: 'p1', action: 'approve' },
     );
@@ -196,7 +208,7 @@ describe('FirestoreVerificationStore', () => {
       'photographers/p1': { onboardingComplete: false },
     });
     await reviewVerification(
-      { store: new FirestoreVerificationStore(firestore), authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false, clock: { now: () => NOW }, ids: { newId: () => 'a1' } },
+      { store: new FirestoreVerificationStore(firestore), authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false, ...feeDepsOf(), clock: { now: () => NOW }, ids: { newId: () => 'a1' } },
       { uid: 'staff1', isAdmin: true },
       { uid: 'p1', action: 'approve' },
     );
@@ -239,6 +251,69 @@ describe('FirestoreVerificationStore', () => {
     );
     assert.deepEqual(writes[0]?.data, { phoneVerified: true });
     await assert.rejects(() => store.runTransaction(async (tx) => tx.putIdentityHash('taken', 'p1')), /ALREADY_EXISTS/);
+  });
+
+  it('the fee members read and write the shared payment collections with the shared mappings (#203)', async () => {
+    const fee = newSubjectPayment({
+      id: '01JA0000000000000000000001',
+      subjectType: 'verification_fee',
+      subjectId: 'p1',
+      payerId: 'p1',
+      payeeId: PLATFORM_PAYEE,
+      amount: 99_000,
+      method: 'bank_qr',
+      provider: 'fake',
+      idempotencyKey: 'vfee_p1_1_bank_qr',
+      now: NOW,
+      expiresAt: new Date(NOW.getTime() + 15 * 60_000),
+    });
+    const { firestore, writes, queries } = fakeFirestore({ [`payments/${fee.id}`]: paymentToFirestore(fee) });
+    const store = new FirestoreVerificationStore(firestore);
+    const at = NOW.toISOString();
+    const refund: Refund = {
+      id: 'r1', paymentId: fee.id, subjectType: 'verification_fee', amount: 99_000, percent: 100, status: 'pending',
+      method: 'gateway', attempts: 0, manual: false, fromEscrow: true, reason: 'duplicate_verification_fee', createdAt: at, updatedAt: at,
+    };
+
+    await store.runTransaction(async (tx) => {
+      const mine = await tx.feePaymentsOf('p1');
+      assert.deepEqual(mine.map((p) => [p.id, p.subjectType, p.payeeId, p.amount, p.idempotencyKey]), [
+        [fee.id, 'verification_fee', 'platform', 99_000, 'vfee_p1_1_bank_qr'],
+      ]);
+      assert.equal((await tx.getPayment(fee.id))?.transferCode, fee.transferCode);
+      assert.equal(await tx.getPayment('nope'), null);
+      assert.equal(await tx.getRefund('r1'), null);
+      assert.equal(await tx.getTransferRecord('fake_t1'), null);
+      tx.putPayment({ ...fee, status: 'paid', escrowStatus: 'released', releasedAt: at });
+      tx.putRefund(refund);
+      tx.addLedgerEntry({ id: 'l1', type: 'fee_charged', paymentId: fee.id, accountOwnerId: 'platform_revenue', amount: 99_000, at });
+      tx.putTransferRecord({ id: 'fake_t1', provider: 'fake', txnId: 't1', receivedAt: at, outcome: 'paid', paymentId: fee.id });
+    });
+
+    const query = queries.find((q) => q.some((c) => c[0] === 'where'));
+    assert.deepEqual(query?.[0], ['collection', 'payments']);
+    assert.deepEqual(whereOf(query), [
+      ['subjectType', '==', 'verification_fee'],
+      ['subjectId', '==', 'p1'],
+    ]);
+    assert.deepEqual(
+      writes.map((w) => [w.path, w.merge]),
+      [
+        [`payments/${fee.id}`, false],
+        ['refunds/r1', false],
+        ['ledger_entries/l1', false],
+        ['payment_notifications/fake_t1', false],
+      ],
+    );
+    assert.equal(writes[0]?.data.escrowStatus, 'released');
+    assert.ok(writes[0]?.data.releasedAt instanceof Timestamp);
+    assert.equal(writes[1]?.data.subjectType, 'verification_fee');
+    assert.equal(writes[2]?.data.type, 'fee_charged');
+    // Read back through the same mappings.
+    await store.runTransaction(async (tx) => {
+      assert.equal((await tx.getRefund('r1'))?.reason, 'duplicate_verification_fee');
+      assert.equal((await tx.getTransferRecord('fake_t1'))?.paymentId, fee.id);
+    });
   });
 
   it('dueForNudge asks for in_progress, never nudged, unchanged since the cutoff', async () => {

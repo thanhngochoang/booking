@@ -15,11 +15,15 @@ import type {
   IdentityRecord,
   IdentitySessionRecord,
   IdentityStepRecord,
+  LedgerEntry,
+  Payment,
   PhoneStepRecord,
   ProviderVerificationView,
   RejectReason,
+  Refund,
   RejectReasonRecord,
   RulesStepRecord,
+  TransferRecord,
   VerificationAuditEntry,
   VerificationKind,
   VerificationRecord,
@@ -29,6 +33,19 @@ import type {
   VerificationTx,
 } from '@photobooking/domain';
 import { providerTypeOf } from '@photobooking/domain';
+import {
+  LEDGER_COLLECTION,
+  PAYMENTS_COLLECTION,
+  PAYMENT_NOTIFICATIONS_COLLECTION,
+  REFUNDS_COLLECTION,
+  ledgerEntryToFirestore,
+  paymentFromFirestore,
+  paymentToFirestore,
+  refundFromFirestore,
+  refundToFirestore,
+  transferRecordFromFirestore,
+  transferRecordToFirestore,
+} from './booking_firestore.js';
 
 // Server-written; rules: owner reads verifications/{uid}, everything else here is closed.
 export const VERIFICATIONS_COLLECTION = 'verifications';
@@ -315,6 +332,53 @@ export class FirestoreVerificationTx implements VerificationTx {
     const snap = await this.tx.get(ref);
     if (!snap.exists) return null;
     return (snap.data()?.uid as string) ?? null;
+  }
+
+  // ---- the verification fee (#203): the shared payments, refunds, ledger and transfer records,
+  // mapped exactly as every other payment subject (booking_firestore.ts) ----
+
+  async getPayment(id: string): Promise<Payment | null> {
+    const snap = await this.tx.get(this.firestore.collection(PAYMENTS_COLLECTION).doc(id));
+    return snap.exists ? paymentFromFirestore(snap.id, snap.data()) : null;
+  }
+
+  /** Equality on two fields only: served by the single-field indexes, no composite index. */
+  async feePaymentsOf(uid: string): Promise<readonly Payment[]> {
+    const snap = await this.tx.get(
+      this.firestore
+        .collection(PAYMENTS_COLLECTION)
+        .where('subjectType', '==', 'verification_fee')
+        .where('subjectId', '==', uid),
+    );
+    return snap.docs
+      .map((d) => paymentFromFirestore(d.id, d.data()))
+      .filter((p): p is Payment => p !== null);
+  }
+
+  async getRefund(id: string): Promise<Refund | null> {
+    const snap = await this.tx.get(this.firestore.collection(REFUNDS_COLLECTION).doc(id));
+    return snap.exists ? refundFromFirestore(snap.id, snap.data()) : null;
+  }
+
+  async getTransferRecord(id: string): Promise<TransferRecord | null> {
+    const snap = await this.tx.get(this.firestore.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(id));
+    return snap.exists ? transferRecordFromFirestore(snap.id, snap.data()) : null;
+  }
+
+  putPayment(p: Payment): void {
+    this.tx.set(this.firestore.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p));
+  }
+
+  putRefund(r: Refund): void {
+    this.tx.set(this.firestore.collection(REFUNDS_COLLECTION).doc(r.id), refundToFirestore(r));
+  }
+
+  addLedgerEntry(e: LedgerEntry): void {
+    this.tx.set(this.firestore.collection(LEDGER_COLLECTION).doc(e.id), ledgerEntryToFirestore(e));
+  }
+
+  putTransferRecord(r: TransferRecord): void {
+    this.tx.set(this.firestore.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(r.id), transferRecordToFirestore(r));
   }
 
   putVerification(r: VerificationRecord): void {

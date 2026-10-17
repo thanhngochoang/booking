@@ -20,6 +20,11 @@ import {
   earningItemOf,
   emptyVerification,
   fakeIdNumberOf,
+  feeFor,
+  newSubjectPayment,
+  verificationFeeKey,
+  PLATFORM_PAYEE,
+  PLATFORM_REVENUE_ACCOUNT,
   maskLegalName,
   providerTypeOf,
   PROVIDER_RULES_VERSION,
@@ -55,6 +60,7 @@ import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
 import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
 import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
+import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -887,10 +893,14 @@ export const SEED_CUC_LEGAL_NAME = 'TRẦN THỊ CÚC';
 /** Minh's fake card says 16: the underage example if Minh switches to a photographer role. */
 export const SEED_MINH_FAKE_DOB = '2010-05-01';
 
+/** Giang's verification fee payment (#203; bank QR, paid before she submitted). */
+export const SEED_GIANG_FEE_PAYMENT = 'seed-payment-vfee-giang';
+
 /**
- * S21 verification (#135, fee-free until #203): the verified seed photographers have an approved
- * record; Giang has a submitted one (phone, fake identity and rules done; `steps.fee` null) for
- * the staff CLI; Bình has none and walks the whole flow; Cúc's identity (fake id number of her uid)
+ * S21 verification: the verified seed photographers have an approved record from before the fee
+ * (#203 grandfathers them: `steps.fee` stays null); Giang has a submitted one (phone, the 99.000₫
+ * fee paid by bank QR, fake identity and rules done) for the staff CLI; Bình has none and walks
+ * the whole flow, fee included; Cúc's identity (fake id number of her uid)
  * lets her household tax code (that same number) match in S21.04. Identity docs hold the dev-vault
  * hash and ciphertext of `fakeIdNumberOf(uid)`, so a second account presenting it gets
  * `identity_in_use`.
@@ -937,8 +947,65 @@ function verificationDocuments(now: Date): SeedDocument[] {
   identity(CUC, SEED_CUC_LEGAL_NAME, '1988-03-08', 'female', at);
 
   // Giang: submitted 26 hours before seeding, so `npm run verifications -- list` marks it overdue (!).
+  // Her fee was paid 30 minutes earlier: a released platform payment (never earnings, never
+  // payouts) with the ledger entries the fee settler writes.
   const submitted = new Date(now.getTime() - 26 * HOUR_MS);
-  docs.push({ path: `verifications/${GIANG}`, data: verificationToFirestore(done(GIANG, SEED_GIANG_LEGAL_NAME, submitted, 'submitted')) });
+  const feePaidAt = new Date(submitted.getTime() - 30 * 60_000);
+  const feeOpened = new Date(feePaidAt.getTime() - 5 * 60_000);
+  const fee = feeFor('individual');
+  const opened = newSubjectPayment({
+    id: SEED_GIANG_FEE_PAYMENT,
+    subjectType: 'verification_fee',
+    subjectId: GIANG,
+    payerId: GIANG,
+    payeeId: PLATFORM_PAYEE,
+    amount: fee,
+    method: 'bank_qr',
+    provider: 'fake',
+    idempotencyKey: verificationFeeKey(GIANG, 1, 'bank_qr'),
+    now: feeOpened,
+    expiresAt: new Date(feeOpened.getTime() + PAYMENT_EXPIRY_MINUTES * 60_000),
+  });
+  const paidIso = feePaidAt.toISOString();
+  docs.push({
+    path: `payments/${SEED_GIANG_FEE_PAYMENT}`,
+    data: paymentToFirestore({
+      ...opened,
+      status: 'paid',
+      escrowStatus: 'released',
+      receivedAmount: fee,
+      paidAt: paidIso,
+      releasedAt: paidIso,
+      updatedAt: paidIso,
+    }),
+  });
+  for (const [suffix, type, owner] of [
+    ['received', 'payment_received', 'platform_escrow'],
+    ['charged', 'fee_charged', PLATFORM_REVENUE_ACCOUNT],
+  ] as const) {
+    docs.push({
+      path: `ledger_entries/seed-ledger-vfee-giang-${suffix}`,
+      data: ledgerEntryToFirestore({
+        id: `seed-ledger-vfee-giang-${suffix}`,
+        type,
+        paymentId: SEED_GIANG_FEE_PAYMENT,
+        subjectType: 'verification_fee',
+        subjectId: GIANG,
+        accountOwnerId: owner,
+        amount: fee,
+        note: `Seed verification fee for ${GIANG}`,
+        at: paidIso,
+      }),
+    });
+  }
+  const giangRecord = done(GIANG, SEED_GIANG_LEGAL_NAME, submitted, 'submitted');
+  docs.push({
+    path: `verifications/${GIANG}`,
+    data: verificationToFirestore({
+      ...giangRecord,
+      steps: { ...giangRecord.steps, fee: { paymentId: SEED_GIANG_FEE_PAYMENT, amount: fee, paidAt: paidIso } },
+    }),
+  });
   identity(GIANG, SEED_GIANG_LEGAL_NAME, '1996-04-12', 'female', submitted);
   const giang = SEED_PHOTOGRAPHERS.find((p) => p.uid === GIANG);
   docs.push({

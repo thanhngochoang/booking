@@ -151,8 +151,13 @@ must be able to sign. `--actor` is the uid of a user with the admin claim. The d
 
 ## Verification (S21)
 
-Verification is free until #203 adds the fee: three steps (phone, identity, rules), `steps.fee` stays
-null. Identity uses the fake verifier on the emulator (and the dev project): it reads the override
+Four steps (#203): phone, the verification fee (99 000 ₫ for an individual or artist, 299 000 ₫ for
+a studio; paid to the platform, never earnings or payouts), identity, rules; identity opens only
+once the fee is paid. The fee is a `payments` doc with `subjectType: 'verification_fee'` and payee
+`platform` on the fake gateway: `startVerificationFee {method}` opens the QR (S04.04), the shared
+`confirmFakePayment {paymentId, kind?}` pays it (emulator and dev project only), `checkVerificationFee`
+is "Kiểm tra". A second fee for an attempt whose fee is already recorded is refunded in full
+(`duplicate_verification_fee`). Records approved before #203 keep `steps.fee` null. Identity uses the fake verifier on the emulator (and the dev project): it reads the override
 `fake_identities/{uid}` if one exists (fields `legalName`, `dob`, `gender`, `idNumber`, `passed`;
 edit it in the Emulator UI), else the legal name is the display name without accents in capitals,
 `dob` 1995-01-01 and the id number is derived from the uid. Identity docs store only the dev-vault
@@ -160,9 +165,9 @@ hash and ciphertext of that number (`identity_hashes/{hash}` guards duplicates).
 
 | Who / what | State | Try |
 |---|---|---|
-| Giang (`seed-photographer-giang`) | `verifications/{uid}` `submitted` 26 h before seeding (phone, fake identity `NGUYỄN T** G**`, rules done); `verified: false`, `acceptingOrders: false` | `list` shows her with `!` (over 24 h); `approve` → verified, accepting orders, push `verification_approved`; or `reject <uid> fake_avatar` → S21.02 rejected with one free resubmit |
-| Bình (`seed-photographer-binh`) | no verification record, no `fake_identities` override | sign in and walk S21.01 → S21.03 → rules → submit; then `approve` with the CLI |
-| An, Cúc, Dũng | `approved` records (match `verified: true`) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
+| Giang (`seed-photographer-giang`) | `verifications/{uid}` `submitted` 26 h before seeding (phone, fee paid by bank QR 30 min before that: `payments/seed-payment-vfee-giang`, 99 000 ₫, `released`, with `payment_received` and `fee_charged` ledger entries; fake identity `NGUYỄN T** G**`, rules done); `verified: false`, `acceptingOrders: false` | `list` shows her with `!` (over 24 h); `approve` → verified, accepting orders, push `verification_approved`; or `reject <uid> fake_avatar` → S21.02 rejected with one free resubmit |
+| Bình (`seed-photographer-binh`) | no verification record, no `fake_identities` override | sign in and walk S21.01 → fee (pay with the fake confirmation) → S21.03 → rules → submit; then `approve` with the CLI |
+| An, Cúc, Dũng | `approved` records from before the fee (match `verified: true`, `steps.fee` null) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
 | Minh (`seed-customer-minh`) | `fake_identities` override `{dob: '2010-05-01'}` | the underage example (`underage`) if Minh switches to a photographer role |
 | Staff CLI (`tools/verifications.ts`, actor `seed-staff-admin`) | `scripts/verifications-local.sh list` · `show <uid>` · `approve <uid>` · `reject <uid> <reason> ["note"]` · `revoke <uid> "note"` · `business-approve <uid>` · `business-reject <uid> <reason> ["note"]`, each decision with `--actor seed-staff-admin` | decisions go through the same `reviewVerification` use case and notifications as the callable; reasons: `fake_avatar`, `stolen_portfolio`, `identity_mismatch`, `duplicate_account`, `underage`, `other` (business: `inactive`, `representative_mismatch`, `doc_unreadable`, `other`); `other` and `revoke` need a 5-500 character note |
 

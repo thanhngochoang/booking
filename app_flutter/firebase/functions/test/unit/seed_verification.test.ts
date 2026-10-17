@@ -10,14 +10,28 @@ import {
 } from '@photobooking/domain';
 import { devHashIdSync, devIdentityVaultDecrypt } from '../../src/infra/identity_vault.js';
 import { identityFromFirestore, verificationFromFirestore } from '../../src/infra/verification_firestore.js';
-import { AN, BINH, CUC, DUNG, GIANG, MINH, SEED_MINH_FAKE_DOB, SEED_PHOTOGRAPHERS, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
+import {
+  AN,
+  BINH,
+  CUC,
+  DUNG,
+  GIANG,
+  MINH,
+  SEED_GIANG_FEE_PAYMENT,
+  SEED_MINH_FAKE_DOB,
+  SEED_PHOTOGRAPHERS,
+  SEED_USERS,
+  seedDocuments,
+} from '../../seed/fixtures.js';
+import { paymentFromFirestore } from '../../src/infra/booking_firestore.js';
+import { feeDepsOf } from './verification_support.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 const docs = seedDocuments(NOW);
 const get = (path: string) => docs.find((d) => d.path === path)?.data;
 
 describe('seed verification (S21)', () => {
-  test('Giang is unverified with a submitted record: phone, fake identity and rules done, no fee', () => {
+  test('Giang is unverified with a submitted record: phone, fee, fake identity and rules done', () => {
     const giang = SEED_PHOTOGRAPHERS.find((p) => p.uid === GIANG);
     assert.equal(giang?.verified, false);
     assert.equal(get(`photographers/${GIANG}`)?.acceptingOrders, false);
@@ -26,10 +40,12 @@ describe('seed verification (S21)', () => {
     const v = verificationFromFirestore(get(`verifications/${GIANG}`));
     assert.equal(v?.status, 'submitted');
     assert.equal(v?.kind, 'individual');
-    assert.equal(v?.steps.fee, null);
+    assert.deepEqual(v?.steps.fee && [v.steps.fee.paymentId, v.steps.fee.amount], [SEED_GIANG_FEE_PAYMENT, 99_000]);
     assert.ok(v !== null && v.steps.phone !== null && v.steps.rules !== null);
     assert.equal(v.steps.identity?.result, 'passed');
-    assert.equal(nextStep(v, true, false), null);
+    // Every step of the #203 flow is done (the fee is required since #203).
+    assert.equal(nextStep(v, true, true), null);
+    assert.ok(Date.parse(v.steps.fee?.paidAt ?? '') < Date.parse(v.submittedAt ?? ''));
     // 26 h waiting: the staff CLI marks it overdue.
     assert.equal(NOW.getTime() - Date.parse(v.submittedAt ?? ''), 26 * 3_600_000);
 
@@ -37,6 +53,27 @@ describe('seed verification (S21)', () => {
     const contact = get(`users/${GIANG}/private/contact`);
     assert.equal(contact?.phoneVerified, true);
     assert.equal(contact?.phone, SEED_USERS.find((u) => u.uid === GIANG)?.phoneNumber);
+  });
+
+  test("Giang's fee is a released platform payment with its received and charged ledger entries", () => {
+    const p = paymentFromFirestore(SEED_GIANG_FEE_PAYMENT, get(`payments/${SEED_GIANG_FEE_PAYMENT}`));
+    assert.ok(p !== null);
+    assert.equal(p.subjectType, 'verification_fee');
+    assert.equal(p.subjectId, GIANG);
+    assert.equal(p.payerId, GIANG);
+    assert.equal(p.payeeId, 'platform');
+    assert.equal(p.amount, 99_000);
+    assert.equal(p.status, 'paid');
+    assert.equal(p.escrowStatus, 'released');
+    assert.equal(p.idempotencyKey, `vfee_${GIANG}_1_bank_qr`);
+    assert.ok(p.transferCode !== undefined);
+    const ledger = docs.filter((d) => d.path.startsWith('ledger_entries/') && d.data.paymentId === SEED_GIANG_FEE_PAYMENT);
+    assert.deepEqual(
+      ledger.map((d) => [d.data.type, d.data.accountOwnerId, d.data.amount]).sort(),
+      [['fee_charged', 'platform_revenue', 99_000], ['payment_received', 'platform_escrow', 99_000]],
+    );
+    // Approved records from before #203 keep no fee (Decision 24).
+    for (const uid of [AN, CUC, DUNG]) assert.equal(verificationFromFirestore(get(`verifications/${uid}`))?.steps.fee, null, uid);
   });
 
   test('identity docs hold the dev-vault hash and ciphertext of the fake id, guarded by identity_hashes', () => {
@@ -65,7 +102,7 @@ describe('seed verification (S21)', () => {
     store.verifications.set(GIANG, v);
     store.providers.set(GIANG, { providerType: 'individual', onboardingComplete: true, verified: false, businessVerified: false });
     const change = await reviewVerification(
-      { store, authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false, clock: { now: () => NOW }, ids: { newId: () => 'a1' } },
+      { store, authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false, ...feeDepsOf(), clock: { now: () => NOW }, ids: { newId: () => 'a1' } },
       { uid: 'seed-staff-admin', isAdmin: true },
       { uid: GIANG, action: 'approve' },
     );
@@ -85,7 +122,7 @@ describe('seed verification (S21)', () => {
       {
         store, authPhones: { verifiedPhoneOf: async () => null }, identity: null,
         vault: { hashId: async (s) => devHashIdSync(s), encryptId: async (s) => s },
-        taxCodes: new FakeTaxCodeLookup(), feeRequired: false, clock: { now: () => NOW }, ids: { newId: () => 'a1' },
+        taxCodes: new FakeTaxCodeLookup(), feeRequired: false, ...feeDepsOf(), clock: { now: () => NOW }, ids: { newId: () => 'a1' },
       },
       CUC,
       { taxCode: fakeIdNumberOf(CUC) },

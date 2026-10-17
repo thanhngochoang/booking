@@ -8,10 +8,11 @@ import { applySeed } from '../../seed/apply.js';
 import { callCallable, emulatorProject, resetEmulators, signIn } from '../../seed/emulator_client.js';
 import { ADMIN, BINH, GIANG, LAN, SEED_PASSWORD, SEED_USERS } from '../../seed/fixtures.js';
 
-// S21 verification (#135, no fee until #203) on the Functions emulator: the real callables over
-// FirestoreVerificationStore, the fake identity verifier and the dev vault (the emulator runs a
-// demo-* project, so fakes are allowed). Needs the emulators; CI runs it (npm run test:integration).
-// Bình walks the whole flow; two throwaway photographers race for one identity.
+// S21 verification on the Functions emulator: the real callables over FirestoreVerificationStore,
+// the fake identity verifier, the dev vault and (#203) the verification fee on the fake gateway,
+// paid through the shared settlement (the emulator runs a demo-* project, so fakes are allowed).
+// Needs the emulators; CI runs it (npm run test:integration). Bình walks the whole flow; throwaway
+// photographers race for one identity.
 
 let app: App;
 let db: Firestore;
@@ -43,6 +44,16 @@ async function newPhotographer(uid: string, phone: string): Promise<void> {
   tokens.set(uid, await signIn(`${uid}@seed.test`, SEED_PASSWORD));
 }
 
+/** #203: identity needs the fee paid. Opens the bank-QR fee and pays it with the fake confirmation. */
+async function payFee(uid: string): Promise<string> {
+  const start = await call('startVerificationFee', uid, { method: 'bank_qr' });
+  assert.equal(start.status, 200, start.text);
+  const { paymentId } = start.result as { paymentId: string };
+  const paid = await call('confirmFakePayment', uid, { paymentId });
+  assert.deepEqual(paid.result, { outcome: 'paid' }, paid.text);
+  return paymentId;
+}
+
 describe('verification callables on the emulators', () => {
   test('two accounts with the same fake identity: one gets identity_in_use', async () => {
     const shared = '012345678901';
@@ -50,6 +61,7 @@ describe('verification callables on the emulators', () => {
     await newPhotographer('int-ver-y', '+84976100002');
     for (const uid of ['int-ver-x', 'int-ver-y']) {
       await db.doc(`fake_identities/${uid}`).set({ idNumber: shared, legalName: 'NGUYỄN VĂN TRÙNG', dob: '1990-02-02' });
+      await payFee(uid);
     }
     const sx = await call('startIdentityVerification', 'int-ver-x', { method: 'vneid' });
     const sy = await call('startIdentityVerification', 'int-ver-y', { method: 'nfc' });
@@ -66,14 +78,15 @@ describe('verification callables on the emulators', () => {
     assert.equal((await db.doc(`users/${loser}/private/identity`).get()).exists, false);
 
     // A seeded identity (Giang's) is taken as well.
-    await db.doc(`fake_identities/${BINH}`).set({ idNumber: fakeIdNumberOf(GIANG) });
-    const sb = await call('startIdentityVerification', BINH, { method: 'vneid' });
-    const rb = await call('completeIdentityVerification', BINH, { sessionId: (sb.result as { sessionId: string }).sessionId });
-    assert.equal(codeOf(rb), 'identity_in_use', rb.text);
-    await db.doc(`fake_identities/${BINH}`).delete();
+    await newPhotographer('int-ver-z', '+84976100003');
+    await db.doc(`fake_identities/int-ver-z`).set({ idNumber: fakeIdNumberOf(GIANG) });
+    await payFee('int-ver-z');
+    const sz = await call('startIdentityVerification', 'int-ver-z', { method: 'vneid' });
+    const rz = await call('completeIdentityVerification', 'int-ver-z', { sessionId: (sz.result as { sessionId: string }).sessionId });
+    assert.equal(codeOf(rz), 'identity_in_use', rz.text);
   });
 
-  test('full path on the emulator: phone, identity (fake), rules, submit, approve → photographers.acceptingOrders true', async () => {
+  test('full path on the emulator: phone, fee (fake), identity (fake), rules, submit, approve → photographers.acceptingOrders true', async () => {
     // As if S21.01 linked the OTP-verified number to the Auth user.
     await auth.updateUser(BINH, { phoneNumber: '+84987000001' });
     await db.doc(`users/${BINH}/private/contact`).set({ phone: '+84987000001', phoneVerified: false, updatedAt: new Date() });
@@ -84,6 +97,35 @@ describe('verification callables on the emulators', () => {
 
     const early = await call('submitVerification', BINH, {});
     assert.equal(codeOf(early), 'not_eligible', early.text);
+    // #203: identity needs the fee paid.
+    const unpaid = await call('startIdentityVerification', BINH, { method: 'vneid' });
+    assert.equal(codeOf(unpaid), 'not_eligible', unpaid.text);
+
+    const noRecordCheck = await call('checkVerificationFee', LAN, {});
+    assert.equal(codeOf(noRecordCheck), 'permission_denied', noRecordCheck.text);
+    const fee = await call('startVerificationFee', BINH, { method: 'bank_qr' });
+    assert.equal(fee.status, 200, fee.text);
+    const inst = fee.result as { paymentId: string; amount: number; subjectType: string; qrPayload?: string };
+    assert.equal(inst.amount, 99_000);
+    assert.equal(inst.subjectType, 'verification_fee');
+    assert.ok(inst.qrPayload?.startsWith('000201'));
+    const again = await call('startVerificationFee', BINH, { method: 'bank_qr' });
+    assert.equal((again.result as { paymentId: string }).paymentId, inst.paymentId, 'a second tap reuses the live code');
+    const before = await call('checkVerificationFee', BINH, {});
+    assert.equal((before.result as { paid: boolean }).paid, false, before.text);
+    const paid = await call('confirmFakePayment', BINH, { paymentId: inst.paymentId });
+    assert.deepEqual(paid.result, { outcome: 'paid' }, paid.text);
+    const afterPay = await call('checkVerificationFee', BINH, {});
+    assert.deepEqual(afterPay.result, { paid: true, instructions: null }, afterPay.text);
+    const payment = await data(`payments/${inst.paymentId}`);
+    assert.equal(payment.subjectType, 'verification_fee');
+    assert.equal(payment.payeeId, 'platform');
+    assert.equal(payment.status, 'paid');
+    assert.equal(payment.escrowStatus, 'released');
+    const charged = await db.collection('ledger_entries').where('paymentId', '==', inst.paymentId).get();
+    assert.deepEqual(charged.docs.map((d) => d.data().type).sort(), ['fee_charged', 'payment_received']);
+    const paidTwice = await call('startVerificationFee', BINH, { method: 'momo' });
+    assert.equal(codeOf(paidTwice), 'not_eligible', paidTwice.text);
 
     const start = await call('startIdentityVerification', BINH, { method: 'vneid' });
     assert.equal(start.status, 200, start.text);
@@ -112,7 +154,8 @@ describe('verification callables on the emulators', () => {
     const v = await data(`verifications/${BINH}`);
     assert.equal(v.status, 'approved');
     assert.equal(v.decidedBy, ADMIN);
-    assert.equal(v.steps.fee, null);
+    assert.equal(v.steps.fee.paymentId, inst.paymentId);
+    assert.equal(v.steps.fee.amount, 99_000);
     const audit = await db.collection('verificationAudit').where('uid', '==', BINH).where('action', '==', 'approve').get();
     assert.equal(audit.size, 1);
     const rows = await db.collection(`users/${BINH}/notifications`).where('type', '==', 'verification_approved').get();
