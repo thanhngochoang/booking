@@ -309,4 +309,25 @@ describe('verification_fee: VerificationFeeSettler through V1 settlement', () =>
     assert.equal(refundsOf(world, oldMomo.paymentId)[0]?.reason, 'stale_verification_fee');
     assert.equal(must(world.store.verifications.get('p1')).steps.fee, null);
   });
+
+  it('a payment for a finally rejected record is refunded as stale_verification_fee', async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    const inst = await openFee(world);
+    // The record is finally rejected while the code is still open (e.g. a pre-#203 rejection edited by staff).
+    const rec = must(world.store.verifications.get('p1'));
+    world.store.verifications.set('p1', {
+      ...rec,
+      status: 'rejected',
+      submittedAt: world.clock.now().toISOString(),
+      decidedAt: world.clock.now().toISOString(),
+      rejectReason: { code: 'duplicate_account', text: null },
+    });
+
+    assert.equal((await world.payFee(inst.paymentId)).outcome, 'refunded');
+    const [refund] = refundsOf(world, inst.paymentId);
+    assert.equal(refund?.reason, 'stale_verification_fee');
+    assert.equal(refund?.amount, 99_000);
+    assert.equal(must(world.store.verifications.get('p1')).steps.fee, null);
+    assert.equal(ledgerOf(world, inst.paymentId).some((e) => e.type === 'fee_charged'), false);
+  });
 });

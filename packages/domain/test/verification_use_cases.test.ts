@@ -12,7 +12,7 @@ import {
   verificationNotices,
 } from '../src/verification_use_cases.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
-import { PROVIDER_RULES_VERSION, emptyVerification } from '../src/verification.js';
+import { PROVIDER_RULES_VERSION, emptyVerification, feeWaived, nextStep } from '../src/verification.js';
 import { startVerificationFee } from '../src/verification_fee.js';
 import { PLATFORM_PAYEE } from '../src/payout.js';
 
@@ -821,5 +821,58 @@ describe('verification_use_cases with the fee (feeRequired: true)', () => {
     assert.equal(free.store.refunds.size, 0);
     // Nothing more to pay.
     await assert.rejects(startVerificationFee(deps, 'p1', { method: 'momo' }), refusedWith('not_eligible'));
+  });
+
+  /** A record submitted and rejected while the fee was off (#135), then the fee turned on. */
+  async function rejectedBeforeFee(reason = 'fake_avatar') {
+    const free = createVerificationWorld();
+    await confirmPhoneVerified(free.deps, 'p1');
+    await identityPassed(free);
+    await acceptVerificationRules(free.deps, 'p1', { version: PROVIDER_RULES_VERSION });
+    await submitVerification(free.deps, 'p1');
+    await reviewVerification(free.deps, staff, { uid: 'p1', action: 'reject', reason });
+    return { world: free, deps: { ...free.deps, feeRequired: true } };
+  }
+
+  it('a pre-#203 rejected record resubmits free without paying', async () => {
+    const { world, deps } = await rejectedBeforeFee();
+    const rec = world.store.verifications.get('p1');
+    assert.ok(rec);
+    // The S21.02 helpers agree: nothing left to do but resubmit, and no fee to open.
+    assert.equal(feeWaived(rec), true);
+    assert.equal(nextStep(rec, true, true), null);
+    await assert.rejects(startVerificationFee(deps, 'p1', { method: 'bank_qr' }), refusedWith('not_eligible'));
+
+    const res = await resubmitVerification(deps, 'p1');
+    assert.equal(res.after.status, 'submitted');
+    assert.equal(res.after.steps.fee, null);
+    assert.equal(res.after.freeResubmitsLeft, 0);
+    assert.equal(world.store.payments.size, 0);
+  });
+
+  it('after that, a staff reject with 0 free resubmits requires paying', async () => {
+    const { world, deps } = await rejectedBeforeFee();
+    await resubmitVerification(deps, 'p1');
+    await reviewVerification(deps, staff, { uid: 'p1', action: 'reject', reason: 'fake_avatar' });
+    const rec = world.store.verifications.get('p1');
+    assert.ok(rec);
+    assert.equal(feeWaived(rec), false);
+    assert.equal(nextStep(rec, true, true), 'fee');
+    await assert.rejects(resubmitVerification(deps, 'p1'), refusedWith('not_eligible'));
+
+    world.clock.advanceMinutes(5);
+    const inst = await startVerificationFee(deps, 'p1', { method: 'bank_qr' });
+    assert.equal((await world.payFee(inst.paymentId)).outcome, 'paid');
+    const res = await resubmitVerification(deps, 'p1');
+    assert.equal(res.after.status, 'submitted');
+    assert.equal(res.after.steps.fee?.paymentId, inst.paymentId);
+  });
+
+  it('a final rejection (underage, duplicate_account) cannot open the fee', async () => {
+    for (const reason of ['underage', 'duplicate_account']) {
+      const { world, deps } = await rejectedBeforeFee(reason);
+      await assert.rejects(startVerificationFee(deps, 'p1', { method: 'bank_qr' }), refusedWith('not_eligible'), reason);
+      assert.equal(world.store.payments.size, 0);
+    }
   });
 });

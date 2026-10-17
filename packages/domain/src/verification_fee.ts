@@ -40,15 +40,16 @@ import { mergeRefundOutcome, sendRefundOnce, transferRefund } from './refunds.js
 import {
   emptyVerification,
   feeFor,
+  feeWaived,
+  RESUBMITTABLE_REASONS,
   type VerificationRecord,
-  type VerificationStatus,
   verificationKindOf,
 } from './verification.js';
 import type { VerificationDeps, VerificationTx } from './verification_ports.js';
 
 /** Policy refund of a second fee paid for an attempt whose fee is already recorded. */
 export const DUPLICATE_FEE_REFUND_REASON = 'duplicate_verification_fee';
-/** Policy refund of a code that no longer fits the fee: another kind's amount or an earlier attempt. */
+/** Policy refund of a code that no longer fits the fee: another kind's amount, an earlier attempt, or a record that cannot use a fee. */
 export const STALE_FEE_REFUND_REASON = 'stale_verification_fee';
 /** Why a paid verification fee went back in full (`applyRefundToPayment`, from what the payment holds). */
 export const VERIFICATION_FEE_REFUND_REASONS = [DUPLICATE_FEE_REFUND_REASON, STALE_FEE_REFUND_REASON] as const;
@@ -56,8 +57,18 @@ export const VERIFICATION_FEE_REFUND_REASONS = [DUPLICATE_FEE_REFUND_REASON, STA
 /** The ledger account the fee is charged to (Decision 4). */
 export const PLATFORM_REVENUE_ACCOUNT = 'platform_revenue';
 
-/** States in which the fee can be opened and recorded (a pre-#203 rejection can still pay). */
-const FEE_OPEN_STATUSES: readonly VerificationStatus[] = ['not_started', 'in_progress', 'rejected'];
+/**
+ * Whether the fee can be opened and recorded for this record: not paid and not waived (`feeWaived`),
+ * and the record still walking the steps (`not_started`, `in_progress`) or rejected for a reason
+ * that allows a resubmit (a pre-#203 rejection pays before its paid resubmit). A final rejection
+ * (`underage`, `duplicate_account`) can never use a fee.
+ */
+export function feePayable(rec: VerificationRecord): boolean {
+  if (rec.steps.fee !== null || feeWaived(rec)) return false;
+  if (rec.status === 'not_started' || rec.status === 'in_progress') return true;
+  return rec.status === 'rejected' && rec.rejectReason !== null
+    && (RESUBMITTABLE_REASONS as readonly string[]).includes(rec.rejectReason.code);
+}
 
 const MINUTE = 60_000;
 
@@ -116,9 +127,7 @@ export async function startVerificationFee(
     if (!provider) throw new DomainError('permission_denied');
     const stored = await tx.getVerification(uid);
     const base = stored ?? emptyVerification(uid, verificationKindOf(provider.providerType), now);
-    if (base.steps.fee !== null || !FEE_OPEN_STATUSES.includes(base.status)) {
-      throw new DomainError('not_eligible');
-    }
+    if (!feePayable(base)) throw new DomainError('not_eligible');
     // Decision 5: the kind follows the provider type until the fee is paid.
     const rec: VerificationRecord = { ...base, kind: verificationKindOf(provider.providerType) };
     const amount = feeFor(rec.kind);
@@ -358,20 +367,20 @@ export class VerificationFeeSettler implements SubjectSettler {
       let paid: Payment = counted;
       if (applied.excess > 0) paid = giveBack(paid, applied.excess, 'overpaid_excess');
 
-      // A fee still open on a running record; otherwise the attempt's fee is already recorded (two
-      // methods, a retry) or the record is past the steps: a duplicate.
-      const open = rec !== null && rec.steps.fee === null && FEE_OPEN_STATUSES.includes(rec.status);
       // The kind is frozen only by a recorded fee, so until then it follows the provider type now;
-      // a code for another kind's fee or an earlier attempt cannot be this attempt's fee.
+      // a code for another kind's fee or an earlier attempt, or for a record that cannot use a fee
+      // (gone, past the steps, finally rejected, fee waived), is not this attempt's fee.
+      const duplicate = rec !== null && rec.steps.fee !== null;
       const kind = provider === null ? null : verificationKindOf(provider.providerType);
-      const fits = open && kind !== null && p.amount === feeFor(kind) && isFeeOf(p, p.subjectId, rec.feeAttempt);
+      const fits = rec !== null && feePayable(rec) && kind !== null && p.amount === feeFor(kind)
+        && isFeeOf(p, p.subjectId, rec.feeAttempt);
       if (!fits) {
         const out = applyRefundToPayment({
           payment: paid,
           refundId: deps.ids.newId(),
           percent: 100,
           ledgerEntryId: deps.ids.newId(),
-          reason: open ? STALE_FEE_REFUND_REASON : DUPLICATE_FEE_REFUND_REASON,
+          reason: duplicate ? DUPLICATE_FEE_REFUND_REASON : STALE_FEE_REFUND_REASON,
           now,
         });
         const refund: Refund = { ...out.refund, providerRef: transfer.txnId };
