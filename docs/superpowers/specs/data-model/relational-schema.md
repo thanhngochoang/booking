@@ -527,6 +527,7 @@ create table chats (
   moderators_only      boolean not null default false,
   last_message_at      timestamptz,
   last_message_preview text,
+  blocked_at           timestamptz,                -- khi hai bên đã chặn nhau (#144)
   created_at           timestamptz not null default now(),
   check (kind <> 'event_group' or event_id is not null)
 );
@@ -1106,6 +1107,48 @@ create table verification_audit (                   -- 🔒 Firestore: verificat
 );
 create index ix_verification_audit_user on verification_audit (user_id, at desc);
 create trigger trg_verifications_updated before update on verifications for each row execute function set_updated_at();
+
+### 2.11 Báo cáo và chặn (S20, #144)
+
+Theo `domain-model.md` mục 2.10.
+
+```sql
+create table blocks (
+  blocker_id        text not null references users(id) on delete cascade,
+  blocked_id        text not null references users(id) on delete cascade,
+  blocked_name      text not null default '',
+  blocked_avatar_url text,
+  source            text not null check (source in ('menu','report')),
+  created_at        timestamptz not null default now(),
+  primary key (blocker_id, blocked_id)
+);
+create index ix_blocks_blocker_created on blocks (blocker_id, created_at desc);
+
+create table reports (
+  id              text primary key,
+  reporter_id     text not null references users(id) on delete cascade,
+  target_type     text not null check (target_type in ('user','post','message','event')),
+  target_id       text not null,
+  chat_id         text references chats(id),
+  target_owner_id text references users(id),
+  reason          text not null check (reason in ('spam','scam','harassment','inappropriate','stolen_photos','impersonation','other')),
+  text            text,
+  blocked         boolean not null default false,
+  snapshot        jsonb not null default '{}'::jsonb,
+  status          text not null default 'open' check (status in ('open','dismissed','actioned')),
+  staff_note      text,
+  decided_by      text references users(id),
+  decided_at      timestamptz,
+  created_at      timestamptz not null default now()
+);
+create index ix_reports_status_created on reports (status, created_at);
+
+create table report_quotas (
+  user_id         text not null references users(id) on delete cascade,
+  day             date not null,
+  count           smallint not null default 0 check (count between 0 and 20),
+  primary key (user_id, day)
+);
 ```
 
 ## 3. Ánh xạ Firestore → bảng
@@ -1153,6 +1196,10 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
 | `config/{key}` | `app_config` | |
+| `blocks/{blockerId}_{blockedId}` | `blocks` | Id ghép `blockerId_blockedId`; `source`, `createdAt` |
+| `users/{uid}/private/blocks` | (dẫn xuất từ `blocks`) | Chỉ mục hai chiều do server duy trì; không có bảng riêng (được tạo bởi query/trigger trên `blocks`) |
+| `reports/{id}` | `reports` | Id báo cáo; client không đọc/ghi; staff quản lý |
+| `users/{uid}/private/report_quota` | `report_quotas` | Hạn ngạch 20 báo cáo/ngày/tài khoản |
 | Custom claims (`role`, `staffRole`) | `users.role`, `users.staff_role` | Bảng là nguồn sự thật; claim chỉ là bản sao trong token |
 
 **Ngoại lệ đặt tên** (không tự động): `fcmTokens`→bảng `devices`; `imageUrls`→`post_images`; `members`→`chat_members`; `timeline`→`booking_events`; `unread`→`chat_members.unread_count`.

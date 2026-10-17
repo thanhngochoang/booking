@@ -174,8 +174,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ✅ đã làm (#143) | — |
 | S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ✅ đã làm (#143) | — |
 | **S20** | **Báo cáo & chặn** | | | | | |
-| S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | `/report` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
-| S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
+| S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | — (sheet) | cả hai | mới | ✅ đã làm (#144) | — |
+| S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ✅ đã làm (#144) | — |
 | **S21** | **Xác minh** | | | | | |
 | S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135, phí xác minh #203) · danh tính/thuế giả lập | — |
@@ -948,6 +948,12 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 - **Vì sao cần**: có chat 1‑1, nhóm chat sự kiện, timeline hashtag và bài công khai; spec đã nhắc "báo cáo tin nhắn" (mục 3.7) và câu hỏi mở 21, nhưng chưa có luồng chung. Cửa hàng ứng dụng cũng yêu cầu báo cáo và chặn cho nội dung do người dùng tạo.
 - **Luồng**: menu "…" trên hồ sơ, bài, tin nhắn (nhấn giữ), sự kiện → S20.01 (lý do cố định + mô tả, tuỳ chọn "Chặn người này") → hàng đợi S23.05.
 - **Chặn**: hai bên không thấy bài của nhau trong feed, không nhắn được, không đặt lịch được với nhau (booking đang có vẫn giữ để không mất tiền; liên hệ đi qua hỗ trợ); bỏ chặn ở S20.02.
+- **Đã chốt khi viết plan #144**:
+  - Máy chủ kiểm tra và từ chối ở mọi ngõ giao dịch và tương tác (`createBookingDraft`, `createPayment`, `openInquiry`, `sendMessage`, `getContactLink`, `registerEvent`), trả về mã `blocked`.
+  - Hạn chế hiển thị (ẩn hồ sơ, bài viết, tin nhắn, sự kiện) thực hiện ở máy khách dựa vào chỉ mục `users/{uid}/private/blocks` do máy chủ duy trì.
+  - Báo cáo lưu trữ tại `reports/{id}` kèm bản chụp ngữ cảnh (snapshot), không cho máy khách đọc; giới hạn 20 báo cáo/ngày.
+  - Quản trị viên xử lý báo cáo qua CLI `npm run reports` trong giai đoạn 1; hàng đợi web S23.05 làm ở giai đoạn 1.5.
+
 
 ### 3i.4 S21 · Xác minh
 - **S21.01 SĐT** (câu hỏi mở 6): S21.01 dùng Firebase Auth phone (emulator khi dev); khách chưa phải OTP khi đặt (plan S21 Decision 21). Bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
@@ -1126,7 +1132,8 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 13. **Hạ tầng gợi ý** (đề xuất, cần xác nhận): làm theo hai giai đoạn ở mục 3e.4, bắt đầu bằng `recommender-core` trong hàm `recommend`, tách Cloud Run khi chạm ngưỡng.
 22. **Đã chốt 2026-10-08** (`2026-10-08-dashboard-web-design.md`): web nội bộ riêng; giấy tờ xác minh và bằng chứng khiếu nại chỉ `admin` và `support` xem, qua URL ký 5 phút có ghi nhật ký. Bản cũ: **Công cụ vận hành (S23)**: web nội bộ riêng hay chế độ staff trong app? Ai được thấy giấy tờ xác minh và bằng chứng khiếu nại?
 23. **Đã chốt 2026-10-06** (spec xác minh): có phí, bỏ ngưỡng thành tích. Bản cũ: **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
-24. **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
+24. **Đã chốt 2026-10-07** (plan #144): giữ booking và liên hệ qua hỗ trợ (không tự ý huỷ để tránh mất tiền/thiệt hại bên còn lại); chat 1‑1 và thông tin liên lạc ngoài bị khoá. Bản cũ: **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
+
 25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)?
 26. **Hợp đồng kiểu freelancer** (spec 10-05 mục 4): trả 100% qua app theo 2 mốc thay cho cọc 30%? Tỉ lệ mốc, số ngày tự duyệt, cách bàn giao (link ngoài hay lưu trên app), hoa hồng. Chi tiết ở câu hỏi mở 3–7 của spec 10-05.
 27. **Hạng NAG** (spec 10-05 mục 2.3): ngưỡng 3 giải đã duyệt, có tính trọng số theo kết quả hay cấp cuộc thi không?

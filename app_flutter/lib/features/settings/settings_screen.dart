@@ -127,6 +127,13 @@ class SettingsScreen extends ConsumerWidget {
           path: '/u/${profile.uid}',
         ),
       ],
+      _LinkTile(
+        key: const Key('settings-blocked'),
+        icon: AppIcons.block,
+        title: l.settingsBlocked,
+        subtitle: l.settingsBlockedBody,
+        path: '/settings/blocked',
+      ),
       if (isStaff)
         _LinkTile(
           key: const Key('settings-manage-events'),

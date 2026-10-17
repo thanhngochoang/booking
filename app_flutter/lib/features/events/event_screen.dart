@@ -12,12 +12,14 @@ import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/data/safety/safety.dart';
 import 'package:photobooking/features/events/event_info_tab.dart';
 import 'package:photobooking/features/events/event_join_bar.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/events/register_sheet.dart';
 import 'package:photobooking/features/events/timeline_controller.dart';
 import 'package:photobooking/features/events/timeline_tab.dart';
+import 'package:photobooking/features/safety/report_sheet.dart';
 
 /// The three tabs of an event (Decision 26): `/e/:id` opens "Thông tin",
 /// `/e/:id/timeline` opens "Timeline".
@@ -71,8 +73,15 @@ class _EventScreenState extends ConsumerState<EventScreen> {
       ..showSnackBar(SnackBar(content: Text(text)));
   }
 
-  void _more() {
-    _share();
+  void _more(EventDetail event) {
+    showReportSheet(
+      context,
+      target: ReportTarget.event(
+        eventId: event.id,
+        title: event.summary.title,
+        coverUrl: event.summary.coverUrl,
+      ),
+    );
   }
 
   /// "Đăng ký tham gia": a customer needs a phone number first (spec 3b.1);
@@ -294,7 +303,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                   key: const Key('event-more'),
                   tooltip: l.photoMoreOptions,
                   icon: const AppIcon(AppIcons.more),
-                  onPressed: _more,
+                  onPressed: () => _more(e),
                 ),
                 IconButton(
                   key: const Key('event-share'),
@@ -317,7 +326,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                 url: cover,
                 onBack: _back,
                 onShare: _share,
-                onMore: _more,
+                onMore: () => _more(e),
                 shareTooltip: l.eventShareTooltip,
                 backTooltip: l.back,
                 moreTooltip: l.photoMoreOptions,

@@ -9,6 +9,7 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 
@@ -667,5 +668,28 @@ void main() {
         }
       }
     }
+  });
+
+  testWidgets('shows bookingBlockedNote and hides contact actions when parties are blocked', (
+    tester,
+  ) async {
+    await pumpBookingDetail(
+      tester,
+      uid: detailCustomerUid,
+      clock: TestClock(_startsAt.subtract(const Duration(hours: 1))),
+      bookings: _repo(_booking(status: BookingStatus.accepted, chatId: 'chat1')),
+      extraOverrides: [
+        hiddenUsersProvider.overrideWithValue({detailPhotographerUid}),
+      ],
+    );
+    await _settle(tester);
+
+    expect(
+      find.text(
+        'Hai bên đã chặn nhau. Cần trao đổi về buổi chụp, hãy liên hệ hỗ trợ.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('contact-dial-button')), findsNothing);
   });
 }

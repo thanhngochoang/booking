@@ -150,6 +150,7 @@ class ChatThread {
     this.lastSenderId,
     this.readOnlyAt,
     this.rescheduleUsed = false,
+    this.blockedAt,
     this.createdAt,
     this.updatedAt,
     this.bookingStatus,
@@ -167,6 +168,10 @@ class ChatThread {
   final String? lastSenderId;
   final DateTime? readOnlyAt;
   final bool rescheduleUsed;
+
+  /// Time when one of the participants blocked the other, making the chat
+  /// permanently read-only and disabling the composer.
+  final DateTime? blockedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -198,6 +203,7 @@ class ChatThread {
       lastSenderId: data['lastSenderId'] as String?,
       readOnlyAt: toDate(data['readOnlyAt']),
       rescheduleUsed: data['rescheduleUsed'] as bool? ?? false,
+      blockedAt: toDate(data['blockedAt']),
       createdAt: toDate(data['createdAt']),
       updatedAt: toDate(data['updatedAt']),
       bookingStatus: data['bookingStatus'] is String
@@ -219,6 +225,7 @@ class ChatThread {
     String? lastSenderId,
     DateTime? readOnlyAt,
     bool? rescheduleUsed,
+    DateTime? blockedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? bookingStatus,
@@ -238,6 +245,7 @@ class ChatThread {
       lastSenderId: lastSenderId ?? this.lastSenderId,
       readOnlyAt: readOnlyAt ?? this.readOnlyAt,
       rescheduleUsed: rescheduleUsed ?? this.rescheduleUsed,
+      blockedAt: blockedAt ?? this.blockedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       bookingStatus: bookingStatus ?? this.bookingStatus,
@@ -248,6 +256,7 @@ class ChatThread {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ChatThread &&
+          runtimeType == other.runtimeType &&
           id == other.id &&
           kind == other.kind &&
           customerId == other.customerId &&
@@ -260,6 +269,9 @@ class ChatThread {
           lastSenderId == other.lastSenderId &&
           readOnlyAt == other.readOnlyAt &&
           rescheduleUsed == other.rescheduleUsed &&
+          blockedAt == other.blockedAt &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt &&
           bookingStatus == other.bookingStatus;
 
   @override
@@ -276,9 +288,13 @@ class ChatThread {
     lastSenderId,
     readOnlyAt,
     rescheduleUsed,
+    blockedAt,
+    createdAt,
+    updatedAt,
     bookingStatus,
   );
 }
+
 
 /// Days of silence after which an inquiry is closed (domain
 /// `INQUIRY_CLOSE_DAYS`). Closed is derived, never stored: any message reopens it.

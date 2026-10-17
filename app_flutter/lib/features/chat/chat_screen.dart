@@ -9,6 +9,8 @@ import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/chat/chat_bubble_mapping.dart';
@@ -16,6 +18,8 @@ import 'package:photobooking/features/chat/chat_controller.dart';
 import 'package:photobooking/features/chat/widgets/context_card.dart';
 import 'package:photobooking/features/chat/widgets/quick_actions.dart';
 import 'package:photobooking/features/chat/widgets/reschedule_sheet.dart';
+import 'package:photobooking/features/safety/block_confirm.dart';
+import 'package:photobooking/features/safety/report_sheet.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -223,6 +227,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             final isReadOnly =
                 thread.readOnlyAt != null && now.isAfter(thread.readOnlyAt!);
 
+            final isBlocked = thread.blockedAt != null;
+            final blockIndex = ref.watch(blockIndexProvider).value;
+            final blockedByMe = blockIndex?.blockedByMe(counterpartId) ?? false;
+
             // Closed inquiry?
             final isClosedInquiry = thread.isClosedInquiryAt(now);
 
@@ -235,7 +243,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 thread.customerMessagesBeforeReply >= 3;
 
             String? disabledReason;
-            if (inquiryLimitReached) {
+            if (isBlocked) {
+              disabledReason = blockedByMe
+                  ? l10n.chatBlockedByMe(counterpartName)
+                  : l10n.chatBlocked;
+            } else if (inquiryLimitReached) {
               disabledReason = l10n.chatInquiryCap(counterpartName);
             }
 
@@ -344,7 +356,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               systemActions: systemActions,
                             );
 
-                            return Padding(
+                            final bubbleWidget = Padding(
                               padding: const EdgeInsets.symmetric(
                                 vertical: AppSpace.s1,
                               ),
@@ -355,6 +367,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 senderName: isMine ? null : senderName,
                                 onRetry: () => controller.retryMessage(msg),
                               ),
+                            );
+
+                            if (isMine || msg.type == MessageType.system || msg.deletedAt != null || msg.senderId == null) {
+                              return bubbleWidget;
+                            }
+
+                            return GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onLongPress: () {
+                                showReportSheet(
+                                  context,
+                                  target: ReportTarget.message(
+                                    messageId: msg.id,
+                                    chatId: widget.chatId,
+                                    senderId: msg.senderId!,
+                                    senderName: senderName,
+                                    text: msg.body ?? (msg.type == MessageType.image ? l10n.chatPhoto : ''),
+                                  ),
+                                );
+                              },
+                              child: bubbleWidget,
                             );
                           },
                         );
@@ -371,7 +404,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                       ),
                     )
-                  else ...[
+                  else if (isBlocked) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s3,
+                        vertical: AppSpace.s2,
+                      ),
+                      child: Row(
+                        children: [
+                          const AppIcon(AppIcons.block, size: 16),
+                          const SizedBox(width: AppSpace.s2),
+                          Expanded(
+                            child: Text(
+                              disabledReason ?? '',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          if (blockedByMe) ...[
+                            const SizedBox(width: AppSpace.s2),
+                            TextButton(
+                              onPressed: () => confirmUnblock(
+                                context,
+                                ref,
+                                userId: counterpartId,
+                                name: counterpartName,
+                              ),
+                              child: Text(l10n.blockedUnblock),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ] else ...[
                     if (isClosedInquiry)
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -429,7 +493,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final avatarUrl = counterpartProfile?.avatarUrl;
     final canViewProfile =
         thread.kind == ChatKind.inquiry && currentUserId == thread.customerId;
-    final hasMenu = thread.bookingId != null || canViewProfile;
 
     return AppBar(
       title: Row(
@@ -447,20 +510,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
       actions: [
-        if (hasMenu)
-          PopupMenuButton<String>(
-            key: const Key('chat-more'),
-            tooltip: l10n.photoMoreOptions,
-            icon: const AppIcon(AppIcons.more),
-            onSelected: (val) {
-              switch (val) {
-                case 'view_booking':
+        PopupMenuButton<String>(
+          key: const Key('chat-more'),
+          tooltip: l10n.photoMoreOptions,
+          icon: const AppIcon(AppIcons.more),
+          onSelected: (val) async {
+            switch (val) {
+              case 'view_booking':
+                if (thread.bookingId != null) {
                   context.push('/b/${thread.bookingId}');
-                case 'view_profile':
-                  context.push('/u/${thread.photographerId}');
-              }
-            },
-            itemBuilder: (_) => [
+                }
+              case 'view_profile':
+                context.push('/u/${thread.photographerId}');
+              case 'report':
+                showReportSheet(
+                  context,
+                  target: ReportTarget.user(
+                    uid: counterpartId,
+                    name: counterpartName,
+                    avatarUrl: avatarUrl,
+                  ),
+                );
+              case 'block':
+                await confirmBlock(
+                  context,
+                  ref,
+                  userId: counterpartId,
+                  name: counterpartName,
+                );
+              case 'unblock':
+                await confirmUnblock(
+                  context,
+                  ref,
+                  userId: counterpartId,
+                  name: counterpartName,
+                );
+            }
+          },
+          itemBuilder: (_) {
+            final blockIndex =
+                ref.read(blockIndexProvider).value ?? const BlockIndex();
+            final isBlockedByMe = blockIndex.blockedByMe(counterpartId);
+
+            return [
               if (thread.bookingId != null)
                 PopupMenuItem(
                   value: 'view_booking',
@@ -471,8 +563,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   value: 'view_profile',
                   child: Text(l10n.chatViewProfile),
                 ),
-            ],
-          ),
+              PopupMenuItem(
+                value: 'report',
+                child: Text(l10n.safetyReport),
+              ),
+              if (counterpartId.isNotEmpty && counterpartId != currentUserId)
+                PopupMenuItem(
+                  value: isBlockedByMe ? 'unblock' : 'block',
+                  child: Text(
+                    isBlockedByMe
+                        ? l10n.safetyUnblock(counterpartName)
+                        : l10n.safetyBlock(counterpartName),
+                    style: TextStyle(
+                      color: isBlockedByMe ? null : AppColors.error,
+                    ),
+                  ),
+                ),
+            ];
+          },
+        ),
       ],
     );
   }
@@ -484,6 +593,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final thread = ref.read(chatThreadProvider(widget.chatId)).value;
     final now = ref.read(clockProvider)();
     final message = switch (code) {
+      ChatErrorCode.blocked => l10n.chatErrBlocked,
       ChatErrorCode.notEligible
           when thread != null && thread.isClosedInquiryAt(now) =>
         l10n.chatInquiriesOff,

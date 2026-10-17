@@ -5004,9 +5004,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get timelineReport => 'Báo cáo';
 
   @override
-  String get timelineReportSoon => 'Sắp có';
-
-  @override
   String get timelineHostSuffix => 'chủ sự kiện';
 
   @override
@@ -6393,4 +6390,236 @@ class AppLocalizationsVi extends AppLocalizations {
   String bookPickupLine(String name) {
     return 'Điểm đón: $name';
   }
+
+  @override
+  String get safetyMore => 'Thêm tuỳ chọn';
+
+  @override
+  String get safetyShareProfile => 'Chia sẻ hồ sơ';
+
+  @override
+  String get safetyLinkCopied => 'Đã sao chép liên kết hồ sơ';
+
+  @override
+  String get safetyReport => 'Báo cáo';
+
+  @override
+  String get safetyReportPost => 'Báo cáo bài viết';
+
+  @override
+  String get safetyReportMessage => 'Báo cáo tin nhắn';
+
+  @override
+  String get safetyReportEvent => 'Báo cáo sự kiện';
+
+  @override
+  String safetyReportUser(String name) {
+    return 'Báo cáo $name';
+  }
+
+  @override
+  String safetyBlock(String name) {
+    return 'Chặn $name';
+  }
+
+  @override
+  String safetyUnblock(String name) {
+    return 'Bỏ chặn $name';
+  }
+
+  @override
+  String reportTitleUser(String name) {
+    return 'Báo cáo $name';
+  }
+
+  @override
+  String get reportTitlePost => 'Báo cáo bài viết';
+
+  @override
+  String get reportTitleMessage => 'Báo cáo tin nhắn';
+
+  @override
+  String get reportTitleEvent => 'Báo cáo sự kiện';
+
+  @override
+  String get reportAnonymous => 'Người bị báo cáo không biết ai đã báo cáo.';
+
+  @override
+  String get reportReasonTitle => 'Vì sao bạn báo cáo?';
+
+  @override
+  String get reportReasonSpam => 'Spam hoặc quảng cáo';
+
+  @override
+  String get reportReasonScam => 'Lừa đảo, đòi chuyển tiền ngoài ứng dụng';
+
+  @override
+  String get reportReasonHarassment => 'Quấy rối hoặc xúc phạm';
+
+  @override
+  String get reportReasonInappropriate => 'Nội dung nhạy cảm, không phù hợp';
+
+  @override
+  String get reportReasonStolen => 'Ảnh lấy cắp, vi phạm bản quyền';
+
+  @override
+  String get reportReasonImpersonation => 'Giả mạo người khác';
+
+  @override
+  String get reportReasonOther => 'Lý do khác';
+
+  @override
+  String get reportTextLabel => 'Mô tả thêm (tuỳ chọn)';
+
+  @override
+  String get reportTextRequired => 'Lý do khác cần mô tả ít nhất 10 ký tự';
+
+  @override
+  String reportBlockAlso(String name) {
+    return 'Chặn $name';
+  }
+
+  @override
+  String get reportBlockAlsoBody =>
+      'Hai bên không thấy bài của nhau, không nhắn tin hay đặt lịch với nhau.';
+
+  @override
+  String get reportSubmit => 'Gửi báo cáo';
+
+  @override
+  String get reportSent => 'Đã gửi báo cáo. Cảm ơn bạn.';
+
+  @override
+  String reportSentBlocked(String name) {
+    return 'Đã gửi báo cáo và chặn $name.';
+  }
+
+  @override
+  String get reportDuplicate => 'Bạn đã báo cáo nội dung này rồi.';
+
+  @override
+  String get reportLimit =>
+      'Bạn đã gửi nhiều báo cáo hôm nay. Thử lại ngày mai.';
+
+  @override
+  String get reportFailed => 'Chưa gửi được. Thử lại.';
+
+  @override
+  String blockConfirmTitle(String name) {
+    return 'Chặn $name?';
+  }
+
+  @override
+  String blockConfirmBody(String name) {
+    return 'Hai bên sẽ không thấy bài của nhau, không nhắn tin hay đặt lịch với nhau. Buổi chụp đã đặt vẫn giữ; cần trao đổi thì liên hệ hỗ trợ. $name không nhận thông báo.';
+  }
+
+  @override
+  String get blockConfirm => 'Chặn';
+
+  @override
+  String get blockKeep => 'Không chặn';
+
+  @override
+  String blockDone(String name) {
+    return 'Đã chặn $name';
+  }
+
+  @override
+  String get blockFailed => 'Chưa chặn được. Thử lại.';
+
+  @override
+  String get blockLimit =>
+      'Bạn đã chặn quá nhiều người. Bỏ chặn bớt rồi thử lại.';
+
+  @override
+  String unblockConfirmTitle(String name) {
+    return 'Bỏ chặn $name?';
+  }
+
+  @override
+  String get unblockConfirmBody =>
+      'Hai bên lại thấy bài của nhau, nhắn tin và đặt lịch được.';
+
+  @override
+  String get unblockConfirm => 'Bỏ chặn';
+
+  @override
+  String get unblockKeep => 'Giữ chặn';
+
+  @override
+  String unblockDone(String name) {
+    return 'Đã bỏ chặn $name';
+  }
+
+  @override
+  String get blockedTitle => 'Người đã chặn';
+
+  @override
+  String get blockedNote =>
+      'Người bạn chặn không thấy bài của bạn, không nhắn tin hay đặt lịch với bạn. Họ không nhận thông báo.';
+
+  @override
+  String blockedSince(String date) {
+    return 'Chặn $date';
+  }
+
+  @override
+  String get blockedUnblock => 'Bỏ chặn';
+
+  @override
+  String get blockedEmptyTitle => 'Bạn chưa chặn ai';
+
+  @override
+  String get blockedEmptyBody =>
+      'Chặn từ menu … trên hồ sơ, bài viết hoặc tin nhắn.';
+
+  @override
+  String get settingsBlocked => 'Người đã chặn';
+
+  @override
+  String get settingsBlockedBody => 'Xem và bỏ chặn';
+
+  @override
+  String profileBlockedByMeTitle(String name) {
+    return 'Bạn đã chặn $name';
+  }
+
+  @override
+  String get profileBlockedByMeBody =>
+      'Bỏ chặn để xem hồ sơ, nhắn tin và đặt lịch.';
+
+  @override
+  String get profileBlockedByThemTitle => 'Không xem được hồ sơ này';
+
+  @override
+  String get profileBlockedByThemBody => 'Hồ sơ này không hiển thị với bạn.';
+
+  @override
+  String get postHiddenTitle => 'Không xem được bài này';
+
+  @override
+  String get postHiddenBody => 'Bài này không hiển thị với bạn.';
+
+  @override
+  String chatBlockedByMe(String name) {
+    return 'Bạn đã chặn $name. Bỏ chặn để nhắn tin.';
+  }
+
+  @override
+  String get chatBlocked =>
+      'Không gửi được tin nhắn trong cuộc trò chuyện này.';
+
+  @override
+  String get chatMessageRemoved => 'Tin nhắn đã bị gỡ';
+
+  @override
+  String get bookingBlockedNote =>
+      'Hai bên đã chặn nhau. Cần trao đổi về buổi chụp, hãy liên hệ hỗ trợ.';
+
+  @override
+  String get eventErrBlocked => 'Bạn không đăng ký được sự kiện này.';
+
+  @override
+  String get chatErrBlocked => 'Không gửi được: hai bên đã chặn nhau.';
 }

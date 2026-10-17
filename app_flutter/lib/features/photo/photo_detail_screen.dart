@@ -6,15 +6,19 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photo/photo_detail_controller.dart';
+import 'package:photobooking/features/safety/safety_menu.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Mock: the gallery is 3:4.
@@ -141,23 +145,36 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
                         ref.invalidate(postDetailProvider(widget.postId)),
                   ),
                 ),
-                data: (context, d) => d == null
-                    ? EmptyState(
-                        title: l.photoRemovedTitle,
-                        body: l.photoRemovedBody,
-                        actionLabel: l.photoBackHome,
-                        onAction: () => context.go(AppTab.home.path),
-                      )
-                    : _Content(
-                        detail: d,
-                        pages: _pages,
-                        page: _page,
-                        onPage: (i) => setState(() => _page = i),
-                        onLike: () => _like(d.post.id),
-                        onSave: () => _save(d.post.id),
-                        onFollow: () => _follow(d.post.photographerId),
-                        onShare: () => _share(d.post.id),
-                      ),
+                data: (context, d) {
+                  if (d == null) {
+                    return EmptyState(
+                      title: l.photoRemovedTitle,
+                      body: l.photoRemovedBody,
+                      actionLabel: l.photoBackHome,
+                      onAction: () => context.go(AppTab.home.path),
+                    );
+                  }
+                  final hiddenUsers = ref.watch(hiddenUsersProvider);
+                  if (hiddenUsers.contains(d.post.photographerId) ||
+                      hiddenUsers.contains(d.post.authorId)) {
+                    return EmptyState(
+                      title: l.postHiddenTitle,
+                      body: l.postHiddenBody,
+                      actionLabel: l.photoBackHome,
+                      onAction: () => context.go(AppTab.home.path),
+                    );
+                  }
+                  return _Content(
+                    detail: d,
+                    pages: _pages,
+                    page: _page,
+                    onPage: (i) => setState(() => _page = i),
+                    onLike: () => _like(d.post.id),
+                    onSave: () => _save(d.post.id),
+                    onFollow: () => _follow(d.post.photographerId),
+                    onShare: () => _share(d.post.id),
+                  );
+                },
               ),
             ),
             Positioned(
@@ -181,24 +198,49 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
                 ),
               ),
             ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpace.s2),
-                  child: IconButton(
-                    key: const Key('photo-more'),
-                    tooltip: l.photoMoreOptions,
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.overlay,
-                      foregroundColor: AppColors.foregroundInverse,
+            Consumer(
+              builder: (context, ref, _) {
+                final d = detail.value;
+                if (d == null) return const SizedBox.shrink();
+                final currentUid = ref.watch(authStateProvider).value?.uid;
+                final isOwn = currentUid != null && currentUid == d.post.photographerId;
+                if (isOwn) return const SizedBox.shrink();
+
+                final firstImage = d.post.images.isNotEmpty ? d.post.images.first : null;
+
+                return Positioned(
+                  top: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpace.s2),
+                      child: IconButton(
+                        key: const Key('photo-more'),
+                        tooltip: l.photoMoreOptions,
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.overlay,
+                          foregroundColor: AppColors.foregroundInverse,
+                        ),
+                        icon: const AppIcon(AppIcons.more),
+                        onPressed: () => showSafetyMenu(
+                          context,
+                          ref,
+                          target: ReportTarget.post(
+                            postId: d.post.id,
+                            authorId: d.post.photographerId,
+                            authorName: d.photographer?.displayName,
+                            excerpt: d.post.caption,
+                            thumbUrl: firstImage?.url,
+                          ),
+                          blockUserId: d.post.photographerId,
+                          blockName: d.photographer?.displayName,
+                          onShare: () => _share(widget.postId),
+                        ),
+                      ),
                     ),
-                    icon: const AppIcon(AppIcons.more),
-                    onPressed: () => _share(widget.postId),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -408,53 +450,67 @@ class _Content extends ConsumerWidget {
                       const SizedBox(height: AppSpace.s3),
                       _ServiceCard(service: service),
                     ],
-                    if (detail.more.isNotEmpty && author != null) ...[
-                      const SizedBox(height: AppSpace.s5),
-                      Row(
+                    () {
+                      final hiddenUsers = ref.watch(hiddenUsersProvider);
+                      final visibleMore = detail.more
+                          .where((p) =>
+                              !hiddenUsers.contains(p.photographerId) &&
+                              !hiddenUsers.contains(p.authorId))
+                          .toList();
+                      if (visibleMore.isEmpty || author == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: Semantics(
-                              header: true,
-                              child: Text(
-                                l.photoMoreOf(author.displayName),
-                                style: theme.textTheme.titleLarge,
+                          const SizedBox(height: AppSpace.s5),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Semantics(
+                                  header: true,
+                                  child: Text(
+                                    l.photoMoreOf(author.displayName),
+                                    style: theme.textTheme.titleLarge,
+                                  ),
+                                ),
                               ),
-                            ),
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/u/${post.photographerId}'),
+                                child: Text(l.photoMoreProfile),
+                              ),
+                            ],
                           ),
-                          TextButton(
-                            onPressed: () =>
-                                context.push('/u/${post.photographerId}'),
-                            child: Text(l.photoMoreProfile),
+                          const SizedBox(height: AppSpace.s2),
+                          Row(
+                            children: [
+                              for (var i = 0; i < _moreSlots; i++) ...[
+                                if (i > 0) const SizedBox(width: AppSpace.s2),
+                                Expanded(
+                                  child: i < visibleMore.length
+                                      ? PhotoCard(
+                                          key: Key('more-${visibleMore[i].id}'),
+                                          imageUrl: visibleMore[i].cover.url,
+                                          aspect: 1,
+                                          // No visible text: name the card by the
+                                          // post's caption, else "Ảnh {i}".
+                                          semanticLabel:
+                                              visibleMore[i].caption.isNotEmpty
+                                              ? visibleMore[i].caption
+                                              : l.photoItemLabel(i + 1),
+                                          onTap: () => context.push(
+                                            '/p/${visibleMore[i].id}',
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
-                      ),
-                      const SizedBox(height: AppSpace.s2),
-                      Row(
-                        children: [
-                          for (var i = 0; i < _moreSlots; i++) ...[
-                            if (i > 0) const SizedBox(width: AppSpace.s2),
-                            Expanded(
-                              child: i < detail.more.length
-                                  ? PhotoCard(
-                                      key: Key('more-${detail.more[i].id}'),
-                                      imageUrl: detail.more[i].cover.url,
-                                      aspect: 1,
-                                      // No visible text: name the card by the
-                                      // post's caption, else "Ảnh {i}".
-                                      semanticLabel:
-                                          detail.more[i].caption.isNotEmpty
-                                          ? detail.more[i].caption
-                                          : l.photoItemLabel(i + 1),
-                                      onTap: () => context.push(
-                                        '/p/${detail.more[i].id}',
-                                      ),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
+                      );
+                    }(),
                   ],
                 ),
               ),

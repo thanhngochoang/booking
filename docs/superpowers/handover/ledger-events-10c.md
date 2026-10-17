@@ -81,7 +81,7 @@ Other notes:
 - Post-publish edit UI (the `updateEvent` callable exists; the app edits drafts only). This includes the staff FAQ of platform events, which is frozen at publish.
 - "Tạo hộ" UI: staff photographer picker on S12.01 (backend and the photographer's accept/decline exist; `hostInvitationsProvider` is not shown anywhere, the photographer reaches an invitation only through the notification).
 - Support inbox for platform events (S23.06); S11.02 shows the staff-entered FAQ only. The support line is hidden until the owner gives an address the project owns (`eventSupportEmail` in `event_links.dart`, now `null`).
-- Report sheet ("Báo cáo" in the S11.06 long-press menu is a disabled "Sắp có" row until S20.01).
+- ~Report sheet ("Báo cáo" in the S11.06 long-press menu is a disabled "Sắp có" row until S20.01).~ Done in #144 (`docs/superpowers/plans/2026-10-07-s20-report-block.md`).
 - Final-fix review minors: the FAQ "incomplete" error shows while the question is still being typed (show it on save or blur instead); a few raw pixel values in the rebuilt TicketCard/EventCard should move to tokens; the free hero event on S11.01 no longer shows "Không thu phí" because the featured card carries no price (mock).
 - QR brightness: the full-screen ticket QR does not raise the screen brightness (no plugin).
 - Author post deletion: a post deleted by its author should leave the timeline once post deletion exists.

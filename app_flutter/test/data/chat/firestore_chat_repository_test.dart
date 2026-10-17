@@ -534,5 +534,38 @@ void main() {
       );
       expect(uploader.uploadCalls, 0);
     });
+
+    test('ChatThread maps blockedAt from Firestore', () async {
+      final blockedDate = DateTime(2026, 10, 7, 12, 0);
+      await counting.collection('chats').doc('chat_blocked').set({
+        'kind': 'inquiry',
+        'customerId': 'u1',
+        'photographerId': 'u2',
+        'blockedAt': Timestamp.fromDate(blockedDate),
+      });
+
+      final r = FirestoreChatRepository(
+        firestore: counting,
+        functions: functions,
+        currentUid: () => 'u1',
+        mediaUploader: uploader,
+      );
+
+      final thread = await r.watchThread('chat_blocked').first;
+      expect(thread?.blockedAt, blockedDate);
+    });
+
+    test('send failing with blocked maps to ChatErrorCode.blocked', () {
+      final err = FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'blocked',
+        details: {'code': 'blocked'},
+      );
+      expect(
+        FirestoreChatRepository.mapFunctionsError(err),
+        ChatErrorCode.blocked,
+      );
+    });
   });
 }
+

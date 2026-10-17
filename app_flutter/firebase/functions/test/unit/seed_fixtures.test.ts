@@ -691,5 +691,33 @@ describe('seed discovery stats (S02)', () => {
     assert.equal(explore.specialties.portrait?.serviceCount, 1);
     assert.equal(explore.specialties.family?.serviceCount, 1);
   });
+
+  test('Minh has blocked Bình (record and both indexes)', () => {
+    const blockDoc = get(`blocks/${MINH}_${BINH}`);
+    assert.ok(blockDoc);
+    assert.equal(blockDoc.blockerId, MINH);
+    assert.equal(blockDoc.blockedId, BINH);
+    assert.equal(blockDoc.source, 'menu');
+
+    const minhIdx = get(`users/${MINH}/private/blocks`) as { blockedIds: string[]; blockedByIds: string[] } | undefined;
+    assert.ok(minhIdx);
+    assert.deepEqual(minhIdx.blockedIds, [BINH]);
+    assert.deepEqual(minhIdx.blockedByIds, []);
+
+    const binhIdx = get(`users/${BINH}/private/blocks`) as { blockedIds: string[]; blockedByIds: string[] } | undefined;
+    assert.ok(binhIdx);
+    assert.deepEqual(binhIdx.blockedIds, []);
+    assert.deepEqual(binhIdx.blockedByIds, [MINH]);
+  });
+
+  test('one open report by Lan on seed-post-an-5', () => {
+    const rep = get(`reports/${LAN}_post_seed-post-an-5`);
+    assert.ok(rep);
+    assert.equal(rep.reporterId, LAN);
+    assert.equal(rep.targetType, 'post');
+    assert.equal(rep.targetId, 'seed-post-an-5');
+    assert.equal(rep.targetOwnerId, AN);
+    assert.equal(rep.status, 'open');
+  });
 });
 

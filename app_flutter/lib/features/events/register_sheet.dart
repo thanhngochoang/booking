@@ -141,6 +141,7 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
 
   String? _errorText(String? code) => switch (code) {
     null || 'sold_out' || 'phone_required' => null,
+    'blocked' => context.l10n.eventErrBlocked,
     'deadline_passed' => context.l10n.eventClosed,
     _ => context.l10n.registerError,
   };

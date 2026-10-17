@@ -36,3 +36,70 @@ describe('FirestoreBlockGate', () => {
     assert.deepEqual(getAllCalls, [['blocks/c1_p1', 'blocks/p1_c1']]);
   });
 });
+
+import {
+  blockIndexFromFirestore,
+  blockIndexToFirestore,
+  blockRecordFromFirestore,
+  blockRecordToFirestore,
+  reportFromFirestore,
+  reportToFirestore,
+} from '../../src/infra/safety_firestore.js';
+
+describe('safety_firestore mappings', () => {
+  test('block record and index mapping', () => {
+    const record = {
+      blockerId: 'u1',
+      blockedId: 'u2',
+      blockedName: 'User Two',
+      blockedAvatarUrl: 'https://img.test/u2.jpg',
+      source: 'menu' as const,
+      createdAt: '2026-10-07T10:00:00.000Z',
+    };
+    const fDoc = blockRecordToFirestore(record);
+    const roundTripped = blockRecordFromFirestore(fDoc);
+    assert.deepEqual(roundTripped, record);
+
+    const index = {
+      blockedIds: ['u2', 'u3'],
+      blockedByIds: ['u4'],
+    };
+    const idxDoc = blockIndexToFirestore(index, '2026-10-07T10:00:00.000Z');
+    const idxRoundTripped = blockIndexFromFirestore(idxDoc);
+    assert.deepEqual(idxRoundTripped, index);
+  });
+
+  test('blockUser writes the record at the path FirestoreBlockGate reads', () => {
+    assert.equal(
+      `blocks/${blockRecordToFirestore({ blockerId: 'u1', blockedId: 'u2', blockedName: 'U2', blockedAvatarUrl: null, source: 'menu', createdAt: '' }).blockerId}_${blockRecordToFirestore({ blockerId: 'u1', blockedId: 'u2', blockedName: 'U2', blockedAvatarUrl: null, source: 'menu', createdAt: '' }).blockedId}`,
+      'blocks/u1_u2',
+    );
+  });
+
+  test('report mapping keeps the snapshot', () => {
+    const report = {
+      id: 'rep_1',
+      reporterId: 'u1',
+      targetType: 'post' as const,
+      targetId: 'p1',
+      chatId: null,
+      targetOwnerId: 'u2',
+      reason: 'scam' as const,
+      text: 'Lừa đảo',
+      blocked: true,
+      snapshot: {
+        name: null,
+        excerpt: 'Chuyển khoản nhé',
+        imageUrl: 'https://img.test/p1.jpg',
+      },
+      status: 'open' as const,
+      staffNote: null,
+      decidedBy: null,
+      decidedAt: null,
+      createdAt: '2026-10-07T10:00:00.000Z',
+    };
+    const fDoc = reportToFirestore(report);
+    const roundTripped = reportFromFirestore(fDoc);
+    assert.deepEqual(roundTripped, report);
+  });
+});

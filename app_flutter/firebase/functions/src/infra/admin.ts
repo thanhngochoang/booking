@@ -1,4 +1,5 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 /**
@@ -11,4 +12,9 @@ import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 export function db(): Firestore {
   if (!getApps().some((app) => app.name === '[DEFAULT]')) initializeApp();
   return getFirestore();
+}
+
+export function auth(): Auth {
+  if (!getApps().some((app) => app.name === '[DEFAULT]')) initializeApp();
+  return getAuth();
 }

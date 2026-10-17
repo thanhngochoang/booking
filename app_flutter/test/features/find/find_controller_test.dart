@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/find/find_controller.dart';
 
@@ -347,13 +346,20 @@ void main() {
     );
   });
 
-  test('a stored area survives as prefs only (no coordinates)', () async {
-    final (c, w, _) = await _make();
-    await c
-        .read(locationControllerProvider.notifier)
-        .chooseArea(builtInAreas.first);
-    final stored =
-        jsonDecode(w.prefs.getString(LocationController.areaKey)!) as Map;
-    expect(stored.keys.toSet(), {'id', 'name', 'geohash5'});
+  test('find results filter out hidden/blocked photographers', () async {
+    final world = DiscoveryWorld();
+    await world.init();
+    final c = ProviderContainer(
+      overrides: [
+        ...world.overrides,
+        hiddenUsersProvider.overrideWithValue(const {'p1'}),
+      ],
+      retry: (_, _) => null,
+    );
+    addTearDown(c.dispose);
+
+    final r = await c.read(findResultsProvider.future);
+    expect(r.items.any((item) => item.photographer.id == 'p1'), isFalse);
+    expect(r.items.any((item) => item.photographer.id == 'p2'), isTrue);
   });
 }

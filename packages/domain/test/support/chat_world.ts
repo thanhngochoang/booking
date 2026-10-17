@@ -42,22 +42,27 @@ export class FakePhotographerInquiryReader implements PhotographerInquiryReader 
   }
 }
 
+import { FakeBlockGate } from '../../src/fake_block_gate.js';
+
 export function createChatWorld(): {
   deps: ChatDeps;
   clock: FakeClock;
   ids: FakeIdGenerator;
   chats: MemoryChatStore;
   photographers: FakePhotographerInquiryReader;
+  blocks: FakeBlockGate;
 } {
   const clock = new FakeClock();
   const ids = new FakeIdGenerator();
   const chats = new MemoryChatStore();
   const photographers = new FakePhotographerInquiryReader();
+  const blocks = new FakeBlockGate();
   const deps: ChatDeps = {
     chats,
     photographers,
+    blocks,
     clock,
     ids,
   };
-  return { deps, clock, ids, chats, photographers };
+  return { deps, clock, ids, chats, photographers, blocks };
 }

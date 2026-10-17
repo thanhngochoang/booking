@@ -125,6 +125,7 @@ describe('discovery triggers (in-memory deps)', () => {
     const chatDeps = {
       chats: chatStore,
       photographers: { acceptsInquiries: async () => true },
+      blocks: { isBlockedEitherWay: async () => false },
       clock: { now: () => NOW },
       ids: { newId: () => 'id1' },
     };

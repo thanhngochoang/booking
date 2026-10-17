@@ -1040,7 +1040,7 @@ function directChatDocuments(now: Date, existing: readonly SeedDocument[]): Seed
       bookingId: c.bookingId, bookingStatus,
       photographerRepliedAt: null, customerMessagesBeforeReply: 0,
       lastMessageAt: null, lastMessagePreview: null, lastSenderId: null,
-      readOnlyAt: null, rescheduleUsed: false, createdAt: at0, updatedAt: at0,
+      readOnlyAt: null, rescheduleUsed: false, blockedAt: null, createdAt: at0, updatedAt: at0,
     };
     const messages: SeedDocument[] = [];
     c.texts.forEach((t, i) => {
@@ -1532,5 +1532,61 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
   docs.push({ path: `ticket_codes/${registration.ticketCode}`, data: { eventId: free.id, registrationId: registration.id } });
   docs.push({ path: `events/${soon.id}/registrations/${soonTicket.id}`, data: registrationToFirestore(soonTicket) as Record<string, unknown> });
   docs.push({ path: `ticket_codes/${soonTicket.ticketCode}`, data: { eventId: soon.id, registrationId: soonTicket.id } });
+
+  // S20 Safety seed: Minh blocks Bình
+  docs.push({
+    path: `blocks/${MINH}_${BINH}`,
+    data: {
+      blockerId: MINH,
+      blockedId: BINH,
+      blockedName: 'Bình (seed)',
+      blockedAvatarUrl: null,
+      source: 'menu',
+      createdAt: SEED_CREATED_AT,
+    },
+  });
+  docs.push({
+    path: `users/${MINH}/private/blocks`,
+    data: {
+      blockedIds: [BINH],
+      blockedByIds: [],
+      updatedAt: SEED_CREATED_AT,
+    },
+  });
+  docs.push({
+    path: `users/${BINH}/private/blocks`,
+    data: {
+      blockedIds: [],
+      blockedByIds: [MINH],
+      updatedAt: SEED_CREATED_AT,
+    },
+  });
+
+  // S20 Safety seed: Open report on seed-post-an-5 by Lan
+  docs.push({
+    path: `reports/${LAN}_post_seed-post-an-5`,
+    data: {
+      id: `${LAN}_post_seed-post-an-5`,
+      reporterId: LAN,
+      targetType: 'post',
+      targetId: 'seed-post-an-5',
+      chatId: null,
+      targetOwnerId: AN,
+      reason: 'inappropriate',
+      text: 'Ảnh có nội dung chưa phù hợp',
+      blocked: false,
+      snapshot: {
+        name: null,
+        excerpt: 'Cưới ngoại cảnh',
+        imageUrl: 'https://seed.test/seed-post-an-5/1.jpg',
+      },
+      status: 'open',
+      staffNote: null,
+      decidedBy: null,
+      decidedAt: null,
+      createdAt: SEED_CREATED_AT,
+    },
+  });
+
   return docs;
 }

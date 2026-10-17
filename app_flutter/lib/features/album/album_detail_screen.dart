@@ -16,6 +16,8 @@ import 'package:photobooking/features/album/album_detail_controller.dart';
 import 'package:photobooking/features/album/edit_album_sheet.dart';
 import 'package:photobooking/features/album/my_albums_controller.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
+import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/features/safety/safety_menu.dart';
 
 /// S24.01 "Chi tiết album" at `/u/:uid/albums/:albumId`: an album read as a
 /// set, with the way to book and to ask first kept in the bottom bar. The
@@ -247,6 +249,26 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                         ),
                       ),
                     ],
+                  )
+                else
+                  IconButton(
+                    key: const Key('album-safety-more'),
+                    tooltip: l.photoMoreOptions,
+                    icon: const AppIcon(AppIcons.more),
+                    onPressed: () {
+                      final profile = ref.read(photographerProfileProvider(widget.uid)).value;
+                      final name = profile?.summary.displayName ?? '';
+                      showSafetyMenu(
+                        context,
+                        ref,
+                        target: ReportTarget.user(
+                          uid: widget.uid,
+                          name: name,
+                        ),
+                        blockUserId: widget.uid,
+                        blockName: name,
+                      );
+                    },
                   ),
               ],
             ],

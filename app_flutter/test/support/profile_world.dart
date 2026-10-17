@@ -152,6 +152,7 @@ class ProfileWorld {
     Brightness brightness = Brightness.dark,
     double textScale = 1.0,
     bool defaultRetry = false,
+    List<Override> extraOverrides = const [],
   }) {
     Widget stub(BuildContext _, GoRouterState s) => Text('stub ${s.uri}');
     router = GoRouter(
@@ -196,7 +197,7 @@ class ProfileWorld {
     );
     return screenRouterApp(
       router: router,
-      overrides: overrides,
+      overrides: [...overrides, ...extraOverrides],
       brightness: brightness,
       textScale: textScale,
       defaultRetry: defaultRetry,

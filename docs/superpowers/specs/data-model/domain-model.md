@@ -86,7 +86,7 @@ Ký hiệu: **PK** khoá chính, **FK** khoá ngoại, `?` có thể rỗng, `�
 
 | Thực thể | Trường chính | Ghi chú |
 |----------|--------------|---------|
-| `Chat` | `id` PK, `kind: ChatKind` (`inquiry`, `booking`, `event_group`), `bookingId?` (duy nhất khi có), `eventId?` (duy nhất khi `event_group`), `customerId?`, `photographerId?` (rỗng với nhóm), `assigneeId?` (nhân viên hỗ trợ, chat hỏi trước của sự kiện nền tảng), `moderatorsOnly = false`, `photographerRepliedAt?`, `lastMessageAt?`, `lastMessagePreview?`, `bookingStatus?: BookingStatus` (read model: bản sao `Booking.status` của `bookingId`, máy chủ ghi mỗi lần booking đổi trạng thái kể cả `upcoming` và `reviewed`; null với `inquiry`; nguồn sự thật vẫn là `Booking.status`) | `inquiry` → thành `booking` khi gắn `bookingId`; chat `booking` hết hạn chỉ đọc → thành `inquiry` lại khi khách mở "Nhắn tin hỏi trước" (`bookingId`, `bookingStatus`, `readOnlyAt` xoá); `photographerRepliedAt != null` gỡ giới hạn 3 tin; "đã đóng" của `inquiry` được tính (`lastMessageAt ?? createdAt` + 14 ngày), không lưu |
+| `Chat` | `id` PK, `kind: ChatKind` (`inquiry`, `booking`, `event_group`), `bookingId?` (duy nhất khi có), `eventId?` (duy nhất khi `event_group`), `customerId?`, `photographerId?` (rỗng với nhóm), `assigneeId?` (nhân viên hỗ trợ, chat hỏi trước của sự kiện nền tảng), `moderatorsOnly = false`, `photographerRepliedAt?`, `lastMessageAt?`, `lastMessagePreview?`, `bookingStatus?: BookingStatus` (read model: bản sao `Booking.status` của `bookingId`, máy chủ ghi mỗi lần booking đổi trạng thái kể cả `upcoming` và `reviewed`; null với `inquiry`; nguồn sự thật vẫn là `Booking.status`), `blockedAt?: Instant` (khi hai bên đã chặn nhau; chat đóng không gửi được tin) | `inquiry` → thành `booking` khi gắn `bookingId`; chat `booking` hết hạn chỉ đọc → thành `inquiry` lại khi khách mở "Nhắn tin hỏi trước" (`bookingId`, `bookingStatus`, `readOnlyAt` xoá); `photographerRepliedAt != null` gỡ giới hạn 3 tin; "đã đóng" của `inquiry` được tính (`lastMessageAt ?? createdAt` + 14 ngày), không lưu |
 | `ChatMember` | `chatId`, `userId`, `role: ChatMemberRole`, `mutedUntil?`, `unreadCount`, `lastReadAt?`, `joinedAt`, `removedAt?` | Thành viên nhóm sự kiện có vai `member`/`moderator` |
 | `ChatPin` | `chatId`, `messageId`, `pinnedBy`, `pinnedAt` | Tin ghim (thông báo của chủ sự kiện) |
 | `Message` | `id` PK, `chatId`, `senderId?`, `type: MessageType`, `body?`, `file?`, `point?`, `createdAt`, `deletedAt?` | `system` không có người gửi |
@@ -150,6 +150,17 @@ Nguồn: [`../2026-10-06-identity-verification-design.md`](../2026-10-06-identit
 | `VerificationAudit` 🔒 | `id` PK, `userId` FK, `target: identity \| business`, `action`, `reason?`, `note?`, `actorId?`, `otherUid?`, `at` | Nhật ký mỗi quyết định của staff và mỗi lần trùng danh tính; chỉ server đọc và ghi |
 
 Phí xác minh (#203) là một `Payment` có `subjectType = verification_fee` (`subjectId` = `payerId` = `userId`, người nhận là nền tảng, `escrowStatus` `released` ngay vì là doanh thu, không có gì để giữ). `Verification.steps.fee = {paymentId, amount, paidAt}` chỉ do bộ xử lý ghi, cùng giao dịch với `Payment` và bút toán `fee_charged`. Khoá chống trùng gửi sang cổng `vfee_{userId}_{feeAttempt}_{method}` cho mã đầu và `…_{n}` cho mã thứ n của cùng lần trả và phương thức. Hai lý do hoàn riêng của chủ thể này (luôn 100%, gửi qua V2): `duplicate_verification_fee` khi khoản trả đến lúc bản ghi đã có phí; `stale_verification_fee` khi khoản trả không còn là phí của bản ghi (mức phí của `kind` cũ, `feeAttempt` trước, bản ghi không còn nhận phí hoặc không còn tồn tại). `feePayable(rec)` là điều kiện nhận phí: `steps.fee` rỗng, phí không được miễn (`feeWaived`) và trạng thái là `not_started`, `in_progress` hoặc `rejected` với lý do gửi lại được (từ chối cuối cùng `underage`, `duplicate_account` không bao giờ nhận phí). `feeWaived(rec)`: `rejected`, `freeResubmitsLeft > 0`, `submittedAt` có giá trị và `steps.fee` rỗng thì bước phí tính là xong (bản ghi gửi trước #203 giữ trạng thái, Decision 24); tắt rồi bật lại `feeRequired` làm mọi bản ghi gửi trong lúc tắt hưởng cùng miễn phí khi bị từ chối.
+
+### 2.10 Báo cáo và chặn (S20, #144)
+
+Nguồn: [`2026-10-07-s20-report-block.md`](../../plans/2026-10-07-s20-report-block.md). Mã nguồn: `packages/domain/src/block*.ts`, `packages/domain/src/report*.ts`.
+
+| Thực thể | Trường chính | Ghi chú |
+|----------|--------------|---------|
+| `Block` | `id` PK (`{blockerId}_{blockedId}`), `blockerId` FK, `blockedId` FK, `blockedName`, `blockedAvatarUrl?`, `source: BlockSource` (`menu`, `report`), `createdAt: Instant` | Firestore `blocks/{blockerId}_{blockedId}`. Khách chỉ đọc các bản ghi do mình chặn; chỉ server ghi |
+| `BlockIndex` 🔒 | `userId` PK, `blockedIds: List<string>`, `blockedByIds: List<string>`, `updatedAt: Instant` | Chỉ mục hai chiều do server duy trì tại `users/{uid}/private/blocks`. Chủ tài khoản đọc thời gian thực; tối đa 500 bản ghi chặn mỗi chiều |
+| `Report` 🔒 | `id` PK (`reportDocId(...)`), `reporterId` FK, `targetType: ReportTargetType`, `targetId`, `chatId?`, `targetOwnerId?`, `reason: ReportReason`, `text?`, `blocked: bool`, `snapshot: {name?, excerpt?, imageUrl?}`, `status: ReportStatus`, `staffNote?`, `decidedBy?`, `decidedAt?`, `createdAt: Instant` | Firestore `reports/{id}`. Client không được đọc hay ghi trực tiếp; chỉ gửi qua callable `submitReport` và nhân viên xử lý qua CLI/hàng đợi |
+| `ReportQuota` 🔒 | `userId` PK, `day: string` (`yyyy-MM-dd` giờ VN), `count: int` | Giới hạn 20 báo cáo/ngày/tài khoản tại `users/{uid}/private/report_quota`. Chỉ server đọc và ghi |
 
 ## 3. Quan hệ (ERD)
 
@@ -275,6 +286,10 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `JobStatus` | `draft`, `open`, `awarded`, `expired`, `closed` | |
 | `QuoteStatus` | `submitted`, `withdrawn`, `accepted`, `not_selected`, `declined` | |
 | `AllowedProviders` | `all`, `artist`, `studio` | |
+| `BlockSource` | `menu`, `report` | Nguồn tạo chặn ở S20.01 / S20.02 |
+| `ReportTargetType` | `user`, `post`, `message`, `event` | Loại đối tượng bị báo cáo |
+| `ReportReason` | `spam`, `scam`, `harassment`, `inappropriate`, `stolen_photos`, `impersonation`, `other` | 7 lý do báo cáo chuẩn |
+| `ReportStatus` | `open`, `dismissed`, `actioned` | Trạng thái xử lý báo cáo của staff |
 
 ## 5. Máy trạng thái
 

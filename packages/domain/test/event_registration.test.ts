@@ -7,10 +7,11 @@ import {
 } from '../src/event_registration.js';
 import { registrationContactOf } from '../src/event.js';
 import { cancelEvent } from '../src/event_use_cases.js';
+import { FakeBlockGate } from '../src/fake_block_gate.js';
 import { ticketCodeCandidates } from '../src/ticket_code.js';
 import {
   START, admin, sales1, cu1, cu2, cu3, cuNoPhone, createEventWorld, makeRandom, ph1, publishedEvent, register,
-  registrationDoc, must, type EventWorld,
+  registrationDoc, eventRecord, must, type EventWorld,
 } from './support/event_world.js';
 
 const code = (c: ErrorCode) => (e: unknown) => e instanceof DomainError && e.code === c;
@@ -399,5 +400,37 @@ describe('checkInRegistration', () => {
     w.clock.set(dayStart);
     await assert.rejects(checkInRegistration(w.deps, cu1, { eventId: 'ev1_aaaaaaaaaaaaaaaaaaaa', ticketCode: ticketOf(w, 'cu1') }), code('permission_denied'));
     await assert.rejects(checkInRegistration(w.deps, cu2, { eventId: 'ev1_aaaaaaaaaaaaaaaaaaaa', ticketCode: ticketOf(w, 'cu1') }), code('permission_denied'));
+  });
+
+  test('registerEvent refused when the host photographer is blocked either way; platform events unaffected', async () => {
+    const w = createEventWorld();
+    await publishedEvent(w); // host is ph1
+
+    // Block cu1 <-> ph1
+    const fakeGate = w.deps.blocks as unknown as FakeBlockGate;
+    fakeGate.block('cu1', 'ph1');
+
+    await assert.rejects(
+      register(w, cu1, 'ev1_aaaaaaaaaaaaaaaaaaaa'),
+      code('blocked'),
+    );
+
+    // Unblock and check platform event is unaffected
+    fakeGate.unblock('cu1', 'ph1');
+    fakeGate.block('cu2', 'admin_staff');
+
+    // Create a platform-hosted event
+    const platformEvId = 'ev_plat_aaaaaaaaaaaaaaaa';
+    w.store.events.set(platformEvId, eventRecord({
+      id: platformEvId,
+      host: { type: 'platform', id: null, name: 'PhotoBooking', avatarUrl: null, verified: true },
+      status: 'open',
+      capacity: 10,
+      registeredCount: 0,
+      heldCount: 0,
+    }));
+
+    const regRes = await register(w, cu2, platformEvId);
+    assert.equal(regRes.status, 'paid');
   });
 });

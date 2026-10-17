@@ -12,6 +12,10 @@ import 'package:photobooking/data/events/event_chat.dart';
 import 'package:photobooking/data/events/event_social_providers.dart';
 import 'package:photobooking/features/event_chat/event_chat_controller.dart';
 import 'package:photobooking/features/event_chat/members_sheet.dart';
+import 'package:photobooking/features/safety/block_confirm.dart';
+import 'package:photobooking/features/safety/report_sheet.dart';
+import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// S11.06: the group chat of an event, for the people holding a paid ticket
@@ -115,8 +119,10 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
   Future<void> _messageMenu(
     ChatMessage m,
     PinnedMessage? pin,
-    EventChatController ctl,
-  ) async {
+    EventChatController ctl, {
+    required bool moderator,
+    required bool isMine,
+  }) async {
     final l = context.l10n;
     if (m.type == MessageType.system || m.deletedAt != null) {
       return;
@@ -130,32 +136,75 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                key: const Key('msg-pin'),
-                minTileHeight: 48,
-                leading: const AppIcon(AppIcons.pushPin),
-                title: Text(pinned ? l.chatUnpin : l.chatPin),
-                onTap: () => Navigator.of(sheet).pop(pinned ? 'unpin' : 'pin'),
-              ),
-              ListTile(
-                key: const Key('msg-delete'),
-                minTileHeight: 48,
-                leading: AppIcon(
-                  AppIcons.delete,
-                  color: Theme.of(context).colorScheme.error,
+              if (moderator) ...[
+                ListTile(
+                  key: const Key('msg-pin'),
+                  minTileHeight: 48,
+                  leading: const AppIcon(AppIcons.pushPin),
+                  title: Text(pinned ? l.chatUnpin : l.chatPin),
+                  onTap: () => Navigator.of(sheet).pop(pinned ? 'unpin' : 'pin'),
                 ),
-                title: Text(
-                  l.chatDelete,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ListTile(
+                  key: const Key('msg-delete'),
+                  minTileHeight: 48,
+                  leading: AppIcon(
+                    AppIcons.delete,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    l.chatDelete,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                  onTap: () => Navigator.of(sheet).pop('delete'),
                 ),
-                onTap: () => Navigator.of(sheet).pop('delete'),
-              ),
+              ],
+              if (!isMine) ...[
+                ListTile(
+                  key: const Key('msg-report'),
+                  minTileHeight: 48,
+                  leading: const Icon(Icons.flag_outlined),
+                  title: Text(l.safetyReportMessage),
+                  onTap: () => Navigator.of(sheet).pop('report'),
+                ),
+                ListTile(
+                  key: const Key('msg-block'),
+                  minTileHeight: 48,
+                  leading: const AppIcon(AppIcons.block, color: AppColors.error),
+                  title: Text(
+                    l.safetyBlock(m.senderName ?? ''),
+                    style: const TextStyle(color: AppColors.error),
+                  ),
+                  onTap: () => Navigator.of(sheet).pop('block'),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
     if (choice == null || !mounted) {
+      return;
+    }
+    if (choice == 'report') {
+      showReportSheet(
+        context,
+        target: ReportTarget.message(
+          messageId: m.id,
+          chatId: widget.eventId,
+          senderId: m.senderId!,
+          senderName: m.senderName ?? '',
+          text: m.body ?? (m.type == MessageType.image ? l.chatPhoto : ''),
+        ),
+      );
+      return;
+    }
+    if (choice == 'block') {
+      await confirmBlock(
+        context,
+        ref,
+        userId: m.senderId!,
+        name: m.senderName ?? '',
+      );
       return;
     }
     if (choice == 'delete') {
@@ -355,7 +404,10 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
       for (final m in stream) m.id: m,
       for (final m in state.pending) m.id: m,
     };
-    final ordered = merged.values.toList()
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
+    final ordered = merged.values
+        .where((m) => m.senderId == null || !hiddenUsers.contains(m.senderId))
+        .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final newestFirst = ordered.reversed.toList();
 
@@ -474,14 +526,30 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
                         onRetry: () => ctl.retry(m),
                       ),
                     );
-                    if (!moderator || m.type == MessageType.system) {
+                    final canShowMenu =
+                        m.type != MessageType.system &&
+                        m.deletedAt == null &&
+                        (moderator || !mine);
+                    if (!canShowMenu) {
                       return bubble;
                     }
                     return Semantics(
-                      onLongPress: () => _messageMenu(m, pin, ctl),
+                      onLongPress: () => _messageMenu(
+                        m,
+                        pin,
+                        ctl,
+                        moderator: moderator,
+                        isMine: mine,
+                      ),
                       child: GestureDetector(
                         behavior: HitTestBehavior.translucent,
-                        onLongPress: () => _messageMenu(m, pin, ctl),
+                        onLongPress: () => _messageMenu(
+                          m,
+                          pin,
+                          ctl,
+                          moderator: moderator,
+                          isMine: mine,
+                        ),
                         child: bubble,
                       ),
                     );

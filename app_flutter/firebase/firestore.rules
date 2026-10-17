@@ -776,6 +776,17 @@ service cloud.firestore {
       }
     }
 
+    // Blocks: S20.02 list/get by blocker only; writes via Admin SDK / callables only.
+    match /blocks/{blockId} {
+      allow get, list: if signedIn() && resource.data.blockerId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Reports: staff / callables only, no client read or write.
+    match /reports/{reportId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

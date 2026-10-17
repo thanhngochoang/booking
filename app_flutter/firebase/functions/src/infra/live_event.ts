@@ -7,6 +7,7 @@ import { firestoreUserContactReader } from './firestore.js';
 import { getSharedFakeGateway, liveAccountCipher } from './live_booking.js';
 import { liveNotifyDeps } from './live_notification.js';
 import { FirestorePaymentLookup } from './payment_firestore.js';
+import { liveBlockGate } from './live_safety.js';
 
 export function liveEventDeps(): EventDeps {
   const firestore = db();
@@ -16,6 +17,7 @@ export function liveEventDeps(): EventDeps {
     people: firestoreEventPeople(firestore),
     contacts: firestoreUserContactReader(firestore),
     media: { isOwnUpload: ownCoverUpload(prefixes) },
+    blocks: liveBlockGate(),
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
     random: (n) => globalThis.crypto.getRandomValues(new Uint8Array(n)),

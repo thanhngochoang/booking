@@ -17,7 +17,7 @@ Shipped in the batch branch `plan/9abc-L1-provider-portfolio-awards` (one PR wit
 - Unsorted / all-post counts are read in pages (max 3 per read, no count API): "30+" while more pages exist, "…" / a count-less line when nothing unsorted was found yet.
 - Edit sheet uses `enableDrag: false` so a drag cannot skip "Bỏ thay đổi?".
 - A stale album id at publish is re-checked against the user's albums and dropped if gone; if the albums can't be read the id is sent and the rule (`!exists(album) || owner`) + `onPostCreated` trigger handle a deleted album.
-- Visitors get no "…" menu on S24.01 until "Báo cáo" (S20.01) exists.
+- ~Visitors get no "…" menu on S24.01 until "Báo cáo" (S20.01) exists.~ Done in #144 (`docs/superpowers/plans/2026-10-07-s20-report-block.md`).
 
 ## Deferred
 - Explicit "Không xếp album" in an otherwise empty draft is not persisted (after restart the last album is preselected again).

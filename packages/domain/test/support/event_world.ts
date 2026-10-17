@@ -72,6 +72,8 @@ export interface EventWorld {
   readonly clock: FakeClock;
 }
 
+import { FakeBlockGate } from '../../src/fake_block_gate.js';
+
 export function createEventWorld(seed = 7): EventWorld {
   const store = new MemoryEventStore();
   const clock = new FakeClock(T0);
@@ -82,6 +84,7 @@ export function createEventWorld(seed = 7): EventWorld {
     media: {
       isOwnUpload: (url, path, uid, eventId) => path.startsWith(`eventCovers/${uid}/${eventId}/`) && url.endsWith(path),
     },
+    blocks: new FakeBlockGate(),
     clock,
     ids: new FakeIdGenerator(),
     random: makeRandom(seed),
