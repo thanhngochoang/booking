@@ -6,6 +6,7 @@ import {
   type IdentityMethod,
   maskLegalName,
   MIN_PROVIDER_AGE_YEARS,
+  stepDone,
   type VerificationRecord,
   verificationKindOf,
   vnDayKey,
@@ -77,14 +78,17 @@ export async function startIdentityVerification(
 
 /**
  * `conflict` once identity passed; with the fee on (#203, Decision 2), `not_eligible` until the
- * fee is paid (the vendor check costs money); `rate_limited` at [IDENTITY_ATTEMPTS_PER_DAY]
- * starts in one VN day; otherwise today's attempt count so far.
+ * fee step is done (the vendor check costs money): paid, or waived for a record rejected before the
+ * fee existed with a free resubmit left (`feeWaived`, same rule as the S21.02 step helpers);
+ * `rate_limited` at [IDENTITY_ATTEMPTS_PER_DAY] starts in one VN day; otherwise today's attempt
+ * count so far.
  */
 function refuseIdentityStart(rec: VerificationRecord | null, todayKey: string, feeRequired: boolean): number {
   if (rec?.steps.identity?.result === 'passed') {
     throw new DomainError('conflict');
   }
-  if (feeRequired && (rec === null || rec.steps.fee === null)) {
+  // The phone flag plays no part in the fee step.
+  if (feeRequired && (rec === null || !stepDone(rec, 'fee', false))) {
     throw new DomainError('not_eligible');
   }
   if (!rec) return 0;
