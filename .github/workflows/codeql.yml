@@ -1,0 +1,42 @@
+# CodeQL static analysis for the TypeScript (domain, Cloud Functions, api) and
+# Python (scripts) code. Dart has no CodeQL support; the legacy Android app is
+# not built (old toolchain), so Java is left out.
+name: codeql
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  schedule:
+    - cron: '0 23 * * 0'   # weekly, Monday 06:00 Asia/Ho_Chi_Minh
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v5
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
