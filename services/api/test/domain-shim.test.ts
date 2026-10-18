@@ -10,10 +10,12 @@ const DAY = 86_400_000;
 describe('phase 1 domain module, as reused by the API', () => {
   it('lists the ErrorCode catalogue of domain-model.md §4', () => {
     expect([...ERROR_CODES].sort()).toEqual([
-      'blocked', 'conflict', 'contact_locked', 'day_taken', 'deadline_passed', 'invalid_argument',
+      'addon_changed', 'addon_limit', 'addon_not_applicable', 'blocked', 'conflict', 'contact_leak',
+      'contact_locked', 'day_taken', 'deadline_passed', 'identity_in_use', 'invalid_argument',
       'limit_exceeded', 'name_mismatch', 'not_accepting_orders', 'not_eligible', 'not_found',
-      'otp_expired', 'otp_invalid', 'otp_required', 'payment_attempts_exceeded', 'permission_denied',
-      'phone_required', 'price_changed', 'reauth_required', 'sold_out',
+      'not_ready', 'otp_expired', 'otp_invalid', 'otp_required', 'payment_attempts_exceeded',
+      'permission_denied', 'phone_required', 'pickup_required', 'price_changed', 'rate_limited',
+      'reauth_required', 'sold_out', 'underage',
     ]);
   });
 
