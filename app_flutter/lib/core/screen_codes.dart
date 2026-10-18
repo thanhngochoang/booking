@@ -41,6 +41,7 @@ abstract final class ScreenCodes {
   static const reviewAndShare = 'S05.05';
   static const deliveryReview = 'S05.06';
   static const requestRevision = 'S05.07';
+  static const cancelLateDelivery = 'S05.08';
   // S06 Nhận việc (nhiếp ảnh gia).
   static const work = 'S06.01';
   static const workEmpty = 'S06.02';
@@ -201,6 +202,7 @@ abstract final class ScreenCodes {
     reviewAndShare,
     deliveryReview,
     requestRevision,
+    cancelLateDelivery,
     work,
     workEmpty,
     declineRequest,
