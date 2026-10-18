@@ -79,8 +79,11 @@ class FakeDeliveryRepository implements DeliveryRepository {
     return c.stream;
   }
 
+  final List<String> watchLinkCalls = [];
+
   @override
   Stream<DeliveryLink?> watchLink(String bookingId) {
+    watchLinkCalls.add(bookingId);
     late final StreamController<DeliveryLink?> c;
     StreamSubscription? sub;
     c = StreamController<DeliveryLink?>(

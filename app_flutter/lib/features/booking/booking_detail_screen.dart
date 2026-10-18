@@ -26,6 +26,7 @@ import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
+import 'package:photobooking/features/delivery/delivery_review_screen.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -35,7 +36,7 @@ import 'package:photobooking/features/review/review_screen.dart';
 /// `/b/:id/cancel`, `/b/:id/decline`).
 enum DetailSheet { cancel, decline }
 
-/// `/b/:id`, `/b/:id/cancel`, `/b/:id/decline` (outside the tab shell).
+/// `/b/:id`, `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/review`, `/b/:id/delivery`
 List<RouteBase> bookingDetailRoutes() => [
   GoRoute(
     path: '/b/:id',
@@ -61,6 +62,10 @@ List<RouteBase> bookingDetailRoutes() => [
   GoRoute(
     path: '/b/:id/review',
     builder: (_, s) => ReviewScreen(bookingId: s.pathParameters['id']!),
+  ),
+  GoRoute(
+    path: '/b/:id/delivery',
+    builder: (_, s) => DeliveryReviewScreen(bookingId: s.pathParameters['id']!),
   ),
 ];
 
@@ -578,6 +583,21 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           loading: _busy == DetailAction.deliver,
           onPressed: busy ? null : () => run(DetailAction.deliver),
         ),
+      );
+    }
+    if (has(DetailAction.viewDelivery)) {
+      final isOutline = b.status == BookingStatus.approved ||
+          has(DetailAction.review);
+      add(
+        isOutline
+            ? AppButton.outline(
+                l10n.detailViewDelivery,
+                onPressed: () => run(DetailAction.viewDelivery),
+              )
+            : AppButton.primary(
+                l10n.detailViewDelivery,
+                onPressed: () => run(DetailAction.viewDelivery),
+              ),
       );
     }
     if (has(DetailAction.bookAgain)) {

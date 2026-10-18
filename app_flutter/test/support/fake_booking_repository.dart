@@ -393,12 +393,15 @@ class FakeBookingRepository implements BookingRepository {
     return updated;
   }
 
+  final List<({String bookingId, String reason})> disputeCalls = [];
+
   @override
   Future<Booking> openDispute({
     required String bookingId,
     required String reason,
   }) async {
     _checkNextError();
+    disputeCalls.add((bookingId: bookingId, reason: reason));
     final b = bookings[bookingId];
     if (b == null) throw StateError('Booking not found');
 

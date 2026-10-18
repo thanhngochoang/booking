@@ -11907,6 +11907,306 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ảnh mẫu đang xử lý, đợi một chút rồi nộp lại.'**
   String get deliveryNotReady;
+
+  /// No description provided for @deliveryReviewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao · vòng {round}'**
+  String deliveryReviewTitle(int round);
+
+  /// No description provided for @deliveryReviewApprovedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao · đã đồng ý'**
+  String get deliveryReviewApprovedTitle;
+
+  /// No description provided for @deliveryWaitingApprovalBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bạn duyệt'**
+  String get deliveryWaitingApprovalBadge;
+
+  /// No description provided for @deliverySenderInfo.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} gửi {count} ảnh mẫu · {date}'**
+  String deliverySenderInfo(String name, int count, String date);
+
+  /// No description provided for @deliveryOriginalsCardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bộ ảnh gốc · {count} ảnh'**
+  String deliveryOriginalsCardTitle(int count);
+
+  /// No description provided for @deliveryOriginalsLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở khi bạn đồng ý ảnh'**
+  String get deliveryOriginalsLocked;
+
+  /// No description provided for @deliveryOriginalsOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở bộ ảnh gốc'**
+  String get deliveryOriginalsOpen;
+
+  /// No description provided for @deliveryOriginalsSubApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} gửi {date}'**
+  String deliveryOriginalsSubApproved(String name, String date);
+
+  /// No description provided for @deliveryRevisionsLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {used}/{total} lượt sửa miễn phí'**
+  String deliveryRevisionsLeft(int used, int total);
+
+  /// No description provided for @deliveryRevisionsExhausted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết lượt sửa miễn phí ({total}/{total})'**
+  String deliveryRevisionsExhausted(int total);
+
+  /// No description provided for @deliveryAutoApproveHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tự đồng ý sau {time} nếu bạn không phản hồi'**
+  String deliveryAutoApproveHint(String time);
+
+  /// No description provided for @deliveryRequestRevision.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu chỉnh sửa'**
+  String get deliveryRequestRevision;
+
+  /// No description provided for @deliveryApprove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý ảnh'**
+  String get deliveryApprove;
+
+  /// No description provided for @deliveryAskExtraRound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin thêm 1 vòng'**
+  String get deliveryAskExtraRound;
+
+  /// No description provided for @deliveryExtraRoundPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin thêm 1 vòng · chờ {name} trả lời'**
+  String deliveryExtraRoundPending(String name);
+
+  /// No description provided for @deliveryApproveConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý ảnh?'**
+  String get deliveryApproveConfirmTitle;
+
+  /// No description provided for @deliveryApproveConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý thì link ảnh gốc mở ra; bạn có 48 giờ để kiểm tra.'**
+  String get deliveryApproveConfirmBody;
+
+  /// No description provided for @deliveryApproveConfirmReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lại'**
+  String get deliveryApproveConfirmReview;
+
+  /// No description provided for @deliveryApprovedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã đồng ý ảnh lúc {time}. Link bộ ảnh gốc đã mở.'**
+  String deliveryApprovedToast(String time);
+
+  /// No description provided for @deliveryCheckCardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra bộ ảnh gốc trong 48 giờ'**
+  String get deliveryCheckCardTitle;
+
+  /// No description provided for @deliveryCheckCardHoursLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn {hours} giờ'**
+  String deliveryCheckCardHoursLeft(int hours);
+
+  /// No description provided for @deliveryCheckCardHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải và kiểm tra chất lượng file gốc. Sau 48 giờ hệ thống tự động hoàn tất đơn.'**
+  String get deliveryCheckCardHint;
+
+  /// No description provided for @deliveryCheckExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hết thời gian kiểm tra'**
+  String get deliveryCheckExpired;
+
+  /// No description provided for @deliveryReportOriginals.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề với ảnh gốc'**
+  String get deliveryReportOriginals;
+
+  /// No description provided for @deliveryRateShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá buổi chụp'**
+  String get deliveryRateShoot;
+
+  /// No description provided for @deliveryViewReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem đánh giá'**
+  String get deliveryViewReview;
+
+  /// No description provided for @deliverySamplesPurged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh mẫu đã xoá sau 90 ngày'**
+  String get deliverySamplesPurged;
+
+  /// No description provided for @deliveryNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy bàn giao'**
+  String get deliveryNotFound;
+
+  /// No description provided for @deliveryRevisionSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu chỉnh sửa'**
+  String get deliveryRevisionSheetTitle;
+
+  /// No description provided for @deliveryRevisionSheetSelectedCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ảnh'**
+  String deliveryRevisionSheetSelectedCount(int count);
+
+  /// No description provided for @deliveryRevisionSheetHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm ảnh để sửa ghi chú riêng của ảnh đó.'**
+  String get deliveryRevisionSheetHint;
+
+  /// No description provided for @deliveryRevisionGeneralNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú chung'**
+  String get deliveryRevisionGeneralNote;
+
+  /// No description provided for @deliveryRevisionRoundFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vòng sửa {round}/{total} (miễn phí)'**
+  String deliveryRevisionRoundFree(int round, int total);
+
+  /// No description provided for @deliveryRevisionSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi yêu cầu'**
+  String get deliveryRevisionSend;
+
+  /// No description provided for @deliveryRevisionSendDisabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ảnh hoặc ghi chú điều cần sửa'**
+  String get deliveryRevisionSendDisabled;
+
+  /// No description provided for @deliveryRevisionNoteForPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú cho ảnh {index}'**
+  String deliveryRevisionNoteForPhoto(int index);
+
+  /// No description provided for @deliveryRevisionChipBrighter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Da sáng hơn'**
+  String get deliveryRevisionChipBrighter;
+
+  /// No description provided for @deliveryRevisionChipLessYellow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt vàng'**
+  String get deliveryRevisionChipLessYellow;
+
+  /// No description provided for @deliveryRevisionChipRemoveObject.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá vật thể'**
+  String get deliveryRevisionChipRemoveObject;
+
+  /// No description provided for @deliveryRevisionChipStraighten.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cân lại nghiêng'**
+  String get deliveryRevisionChipStraighten;
+
+  /// No description provided for @deliveryExtraRoundTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin thêm 1 vòng'**
+  String get deliveryExtraRoundTitle;
+
+  /// No description provided for @deliveryExtraRoundHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết lượt sửa miễn phí. {name} có thể cho thêm hoặc không.'**
+  String deliveryExtraRoundHint(String name);
+
+  /// No description provided for @deliveryExtraRoundSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi đề nghị'**
+  String get deliveryExtraRoundSend;
+
+  /// No description provided for @deliveryReportSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề với ảnh gốc'**
+  String get deliveryReportSheetTitle;
+
+  /// No description provided for @deliveryReportReasonBrokenLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link hỏng hoặc không truy cập được'**
+  String get deliveryReportReasonBrokenLink;
+
+  /// No description provided for @deliveryReportReasonMissingFiles.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiếu ảnh so với cam kết'**
+  String get deliveryReportReasonMissingFiles;
+
+  /// No description provided for @deliveryReportReasonWrongFiles.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh không đúng buổi chụp'**
+  String get deliveryReportReasonWrongFiles;
+
+  /// No description provided for @deliveryReportReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác'**
+  String get deliveryReportReasonOther;
+
+  /// No description provided for @deliveryReportButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề'**
+  String get deliveryReportButton;
+
+  /// No description provided for @deliveryReportSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.'**
+  String get deliveryReportSuccess;
 }
 
 class _AppLocalizationsDelegate
