@@ -6748,4 +6748,80 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get chatErrBlocked => 'Không gửi được: hai bên đã chặn nhau.';
+
+  @override
+  String deliverySubmitTitle(int round) {
+    return 'Nộp bàn giao · vòng $round';
+  }
+
+  @override
+  String get deliverySamplesHint =>
+      '3–20 ảnh mẫu · tự đóng watermark khi tải lên';
+
+  @override
+  String get deliveryAddSample => 'Thêm ảnh mẫu';
+
+  @override
+  String get deliverySampleProcessing => 'Đang đóng watermark...';
+
+  @override
+  String get deliverySampleFailed => 'Lỗi';
+
+  @override
+  String get deliverySampleRetry => 'Thử lại';
+
+  @override
+  String get deliverySampleRemove => 'Bỏ ảnh này';
+
+  @override
+  String get deliveryLinkLabel => 'Link bộ ảnh gốc';
+
+  @override
+  String get deliveryLinkInvalid => 'Dán link http(s) hợp lệ';
+
+  @override
+  String get deliveryCountLabel => 'Số ảnh gốc';
+
+  @override
+  String get deliveryCountInvalid => 'Nhập số ảnh gốc';
+
+  @override
+  String get deliveryNoteLabel => 'Ghi chú · tuỳ chọn';
+
+  @override
+  String get deliveryLockNote => 'Khách chỉ thấy link sau khi đồng ý ảnh mẫu';
+
+  @override
+  String get deliverySubmit => 'Nộp bàn giao';
+
+  @override
+  String get deliveryNeedSamples => 'Cần ít nhất 3 ảnh mẫu';
+
+  @override
+  String get deliveryTooManySamples => 'Tối đa 20 ảnh mẫu';
+
+  @override
+  String get deliveryWaitProcessing => 'Đợi ảnh mẫu đóng watermark xong';
+
+  @override
+  String get deliveryCustomerNotes => 'Khách muốn chỉnh sửa';
+
+  @override
+  String deliveryCustomerNotesRound(int round) {
+    return 'Khách muốn chỉnh sửa vòng $round';
+  }
+
+  @override
+  String deliveryPhotoNoteCaption(int index, String note) {
+    return 'Ảnh $index: $note';
+  }
+
+  @override
+  String deliverySubmitted(int round) {
+    return 'Đã nộp vòng $round';
+  }
+
+  @override
+  String get deliveryNotReady =>
+      'Ảnh mẫu đang xử lý, đợi một chút rồi nộp lại.';
 }

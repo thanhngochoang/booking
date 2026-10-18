@@ -184,7 +184,7 @@ void main() {
     expect(_badge(BookingStatus.requested), findsOneWidget);
 
     final timeline = tester.widget<StatusTimeline>(find.byType(StatusTimeline));
-    expect(timeline.steps, hasLength(7));
+    expect(timeline.steps, hasLength(8));
     expect(timeline.steps[1].state, TimelineStepState.current);
     expect(timeline.steps[1].title, 'Chờ Minh Trí nhận');
 
@@ -385,8 +385,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Hoàn thành appears for the photographer only after the end '
-      'time and calls transitionBooking(complete)', (tester) async {
+  testWidgets('Đã chụp xong appears for the photographer only after the end '
+      'time and calls transitionBooking(mark_shot)', (tester) async {
     final clock = TestClock(_endsAt.subtract(const Duration(seconds: 30)));
     final handles = await pumpBookingDetail(
       tester,
@@ -398,19 +398,19 @@ void main() {
       ),
     );
     await _settle(tester);
-    expect(find.widgetWithText(AppButton, 'Hoàn thành'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Đã chụp xong'), findsNothing);
 
     clock.advance(const Duration(minutes: 1));
     await tester.pump(const Duration(minutes: 1));
     await _settle(tester);
 
-    final done = find.widgetWithText(AppButton, 'Hoàn thành');
+    final done = find.widgetWithText(AppButton, 'Đã chụp xong');
     expect(done, findsOneWidget);
     await tester.ensureVisible(done);
     await tester.tap(done);
     await _settle(tester);
     expect(handles.bookings.transitions, [
-      (bookingId: 'b1', action: 'complete', reason: null),
+      (bookingId: 'b1', action: 'mark_shot', reason: null),
     ]);
   });
 
@@ -659,7 +659,7 @@ void main() {
         final dial = find.byKey(const Key('contact-dial-button'));
         expect(dial, findsOneWidget, reason: '$brightness $uid');
         if (uid == detailPhotographerUid) {
-          final done = find.widgetWithText(AppButton, 'Hoàn thành');
+          final done = find.widgetWithText(AppButton, 'Đã chụp xong');
           await tester.ensureVisible(done);
           await tester.pump();
           final a = tester.getRect(dial);
@@ -691,5 +691,85 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('contact-dial-button')), findsNothing);
+  });
+
+  group('Provider delivery actions (S05.02 / Task 7)', () {
+    testWidgets('shot shows Nộp bàn giao button', (tester) async {
+      await pumpBookingDetail(
+        tester,
+        uid: detailPhotographerUid,
+        bookings: _repo(_booking(status: BookingStatus.shot)),
+      );
+      await _settle(tester);
+
+      expect(find.widgetWithText(AppButton, 'Nộp bàn giao'), findsOneWidget);
+    });
+
+    testWidgets('revision_requested shows notice card and Nộp vòng {round+1}', (tester) async {
+      final b = _booking(status: BookingStatus.revisionRequested).copyWith(
+        deliveryRound: 1,
+      );
+      await pumpBookingDetail(
+        tester,
+        uid: detailPhotographerUid,
+        bookings: _repo(b),
+      );
+      await _settle(tester);
+
+      expect(find.text('Khách muốn chỉnh sửa vòng 1'), findsWidgets);
+      expect(find.widgetWithText(AppButton, 'Nộp vòng 2'), findsOneWidget);
+    });
+
+    testWidgets('delivered shows waiting approval message and no primary action', (tester) async {
+      final b = _booking(status: BookingStatus.delivered).copyWith(
+        deliveryRound: 1,
+      );
+      await pumpBookingDetail(
+        tester,
+        uid: detailPhotographerUid,
+        bookings: _repo(b),
+      );
+      await _settle(tester);
+
+      expect(find.text('Đã gửi vòng 1 · chờ khách duyệt'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Nộp bàn giao'), findsNothing);
+    });
+
+    testWidgets('delivered with pending extra round shows _ExtraRoundCard and actions', (tester) async {
+      final b = _booking(status: BookingStatus.delivered).copyWith(
+        deliveryRound: 2,
+        extraRound: ExtraRound(
+          at: DateTime.utc(2026, 10, 17, 12),
+          status: 'pending',
+        ),
+      );
+      await pumpBookingDetail(
+        tester,
+        uid: detailPhotographerUid,
+        bookings: _repo(b, copy: testContactSnapshot),
+      );
+      await _settle(tester);
+
+      expect(find.textContaining('xin thêm 1 vòng sửa'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Cho thêm 1 vòng'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Không thêm'), findsOneWidget);
+    });
+
+    testWidgets('approved shows success card for provider', (tester) async {
+      final b = _booking(status: BookingStatus.approved).copyWith(
+        deliveryRound: 1,
+      );
+      await pumpBookingDetail(
+        tester,
+        uid: detailPhotographerUid,
+        bookings: _repo(b),
+      );
+      await _settle(tester);
+
+      expect(
+        find.text('Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra'),
+        findsOneWidget,
+      );
+    });
   });
 }

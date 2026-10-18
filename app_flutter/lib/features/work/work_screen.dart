@@ -247,6 +247,38 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           Padding(padding: gutter, child: _todayCard(context, today, features)),
           const SizedBox(height: AppSpace.s2),
         ],
+        if (d.toDeliver.isNotEmpty) ...[
+          Row(
+            key: const Key('to-deliver-section'),
+            children: [
+              Expanded(child: SectionHeader(title: l10n.workToDeliver)),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: AppSpace.s4),
+                child: Text(
+                  '${d.toDeliver.length}',
+                  key: const Key('work-to-deliver-count'),
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+            ],
+          ),
+          for (final (b, name) in [
+            for (final b in d.toDeliver) (b, _customerName(b)),
+          ]) ...[
+            Padding(
+              padding: gutter,
+              child: _ToDeliverCard(
+                key: Key('to-deliver-${b.id}'),
+                booking: b,
+                name: name,
+                avatarUrl: _customerAvatar(b),
+                onOpen: () => context.push('/b/${b.id}'),
+              ),
+            ),
+            const SizedBox(height: AppSpace.s3),
+          ],
+          const SizedBox(height: AppSpace.s2),
+        ],
         Row(
           children: [
             Expanded(child: SectionHeader(title: l10n.workRequests)),
@@ -537,3 +569,134 @@ class _RequestCard extends ConsumerWidget {
     );
   }
 }
+
+class _ToDeliverCard extends StatelessWidget {
+  const _ToDeliverCard({
+    super.key,
+    required this.booking,
+    required this.name,
+    required this.avatarUrl,
+    required this.onOpen,
+  });
+
+  final Booking booking;
+  final String name;
+  final String? avatarUrl;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final secondary = dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+
+    final b = booking;
+    final day = parseDayKey(b.day);
+    final dayStr = day == null ? b.day : formatDay(day);
+
+    String badgeLabel;
+    Color badgeColor;
+    String subtitle;
+
+    if (b.status == BookingStatus.revisionRequested) {
+      final round = b.deliveryRound > 0 ? b.deliveryRound : 1;
+      badgeLabel = 'Vòng $round';
+      badgeColor = AppColors.warning;
+      subtitle = l10n.workToDeliverRevision(round);
+    } else if (b.status == BookingStatus.delivered &&
+        b.extraRound?.status == 'pending') {
+      badgeLabel = 'Xin thêm';
+      badgeColor = AppColors.info;
+      subtitle = l10n.workToDeliverExtra;
+    } else {
+      badgeLabel = 'Đã chụp';
+      badgeColor = AppColors.success;
+      subtitle = l10n.workToDeliverShot(dayStr);
+    }
+
+    final radius = BorderRadius.circular(AppRadius.card);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        borderRadius: radius,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: radius,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.s3),
+            child: Row(
+              children: [
+                AppAvatar(
+                  url: avatarUrl,
+                  name: name,
+                  size: AppAvatarSize.sm,
+                ),
+                const SizedBox(width: AppSpace.s2),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpace.s1),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(AppRadius.full),
+                            ),
+                            child: Text(
+                              badgeLabel,
+                              style: TextStyle(
+                                color: badgeColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s2),
+                const AppIcon(AppIcons.chevron, size: 18),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

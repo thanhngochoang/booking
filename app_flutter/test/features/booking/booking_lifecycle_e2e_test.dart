@@ -287,7 +287,7 @@ void main() {
       TimelineStepState.upcoming,
     ]);
 
-    // After the shoot the photographer completes it on S05.02.
+    // After the shoot the photographer marks shot on S05.02.
     clock.now = _endsAt.add(const Duration(minutes: 10));
     await pumpBookingDetail(
       tester,
@@ -297,13 +297,20 @@ void main() {
       path: '/b/$id',
     );
     await _settle(tester);
-    await _tapButton(tester, 'Hoàn thành');
+    await _tapButton(tester, 'Đã chụp xong');
     expect(repo.transitions.last, (
       bookingId: id,
-      action: 'complete',
+      action: 'mark_shot',
       reason: null,
     ));
-    expect(_badge(BookingStatus.completed), findsOneWidget);
+    expect(_badge(BookingStatus.shot), findsOneWidget);
+
+    // Simulate completion (e.g. after delivery & approval) so it lists under "Đã xong".
+    repo.seedBooking(
+      repo.bookings[id]!.copyWith(
+        status: BookingStatus.completed,
+      ),
+    );
 
     // Customer S05.01: "Đã xong" lists it.
     await pumpBookingsTab(tester, bookings: repo, clock: clock);

@@ -17,6 +17,7 @@ import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
+import 'package:photobooking/data/delivery/delivery_providers.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
@@ -25,6 +26,7 @@ import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
+import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/review/review_screen.dart';
@@ -192,9 +194,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       case DetailAction.markShot:
         await _transition(b, a, BookingAction.markShot);
       case DetailAction.deliver:
+        final round = await showSubmitDeliverySheet(context, booking: b);
+        if (round != null && mounted) {
+          _say(context.l10n.deliverySubmitted(round));
+        }
       case DetailAction.answerExtraRound:
-      case DetailAction.viewDelivery:
         break;
+      case DetailAction.viewDelivery:
+        await context.push('/b/${b.id}/delivery');
     }
   }
 
@@ -398,7 +405,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ),
           ),
           const SizedBox(height: AppSpace.s4),
-          ..._actions(context, b, role, actions, run),
+          ..._actions(context, b, role, actions, name, run),
         ],
       ),
     );
@@ -409,6 +416,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     Booking b,
     BookingRole role,
     List<DetailAction> actions,
+    String counterpartName,
     void Function(DetailAction) run,
   ) {
     final l10n = context.l10n;
@@ -517,6 +525,61 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
       );
     }
+    if (has(DetailAction.markShot)) {
+      add(
+        AppButton.primary(
+          l10n.detailMarkShot,
+          loading: _busy == DetailAction.markShot,
+          onPressed: busy ? null : () => run(DetailAction.markShot),
+        ),
+      );
+    }
+    if (role == BookingRole.photographer) {
+      if (b.status == BookingStatus.revisionRequested) {
+        add(
+          _StatusNoticeCard(
+            text: l10n.detailRevisionCard(b.deliveryRound > 0 ? b.deliveryRound : 1),
+            icon: AppIcons.info,
+          ),
+        );
+      } else if (b.status == BookingStatus.delivered) {
+        if (b.extraRound?.status == 'pending') {
+          add(
+            _ExtraRoundCard(
+              booking: b,
+              counterpartName: counterpartName,
+              busy: busy,
+              onGrant: () => _answerExtraRound(b, grant: true),
+              onDecline: () => _confirmDeclineExtraRound(b, counterpartName),
+            ),
+          );
+        } else {
+          add(
+            _StatusNoticeCard(
+              text: l10n.detailWaitingApproval(b.deliveryRound > 0 ? b.deliveryRound : 1),
+              icon: AppIcons.info,
+            ),
+          );
+        }
+      } else if (b.status == BookingStatus.approved) {
+        add(
+          _StatusNoticeCard(
+            text: l10n.detailApprovedProvider,
+            icon: AppIcons.checkCircle,
+          ),
+        );
+      }
+    }
+    if (has(DetailAction.deliver)) {
+      final round = b.deliveryRound > 0 ? b.deliveryRound + 1 : 1;
+      add(
+        AppButton.primary(
+          b.deliveryRound >= 1 ? l10n.detailDeliverRound(round) : l10n.detailDeliver,
+          loading: _busy == DetailAction.deliver,
+          onPressed: busy ? null : () => run(DetailAction.deliver),
+        ),
+      );
+    }
     if (has(DetailAction.bookAgain)) {
       add(
         AppButton.primary(
@@ -612,6 +675,165 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         subject: ContactSubject.booking(b.id),
         source: ScreenCodes.bookingDetail,
         style: ContactDialStyle.labeled,
+      ),
+    );
+  }
+
+  Future<void> _answerExtraRound(Booking b, {required bool grant}) async {
+    final l10n = context.l10n;
+    setState(() => _busy = DetailAction.answerExtraRound);
+    try {
+      await ref.read(deliveryRepositoryProvider).answerExtraRound(
+            bookingId: b.id,
+            grant: grant,
+          );
+      if (mounted) {
+        _say(grant ? l10n.detailExtraGranted : l10n.detailExtraDeclined);
+      }
+    } catch (e) {
+      if (mounted) _say(bookingErrorText(e, l10n));
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
+  }
+
+  Future<void> _confirmDeclineExtraRound(Booking b, String counterpartName) async {
+    final l10n = context.l10n;
+    final name = counterpartName.isNotEmpty ? counterpartName : 'Khách';
+    final confirmed = await showConfirmSheet(
+      context,
+      title: l10n.detailExtraDeclineTitle,
+      body: l10n.detailExtraDeclineBody(name),
+      confirmLabel: l10n.detailExtraDecline,
+      keepLabel: l10n.cancelKeep,
+      danger: true,
+      onConfirm: () => _answerExtraRound(b, grant: false),
+    );
+    if (confirmed == true && mounted) {
+      ref.invalidate(bookingProvider(widget.bookingId));
+    }
+  }
+}
+
+class _StatusNoticeCard extends StatelessWidget {
+  const _StatusNoticeCard({
+    required this.text,
+    required this.icon,
+  });
+
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpace.s3),
+      decoration: BoxDecoration(
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon(icon, size: 18),
+          const SizedBox(width: AppSpace.s2),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExtraRoundCard extends StatelessWidget {
+  const _ExtraRoundCard({
+    required this.booking,
+    required this.counterpartName,
+    required this.busy,
+    required this.onGrant,
+    required this.onDecline,
+  });
+
+  final Booking booking;
+  final String counterpartName;
+  final bool busy;
+  final VoidCallback onGrant;
+  final VoidCallback onDecline;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+
+    final note = booking.extraRound?.note?.trim();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpace.s3),
+      decoration: BoxDecoration(
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const AppIcon(AppIcons.info, size: 18),
+              const SizedBox(width: AppSpace.s2),
+              Expanded(
+                child: Text(
+                  l10n.detailExtraRoundTitle(counterpartName),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s1),
+          Text(
+            l10n.detailExtraRoundUsed(booking.revisionsIncluded),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: dark
+                  ? AppColorsDark.foregroundSecondary
+                  : AppColors.foregroundSecondary,
+            ),
+          ),
+          if (note != null && note.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.s2),
+            Text('“$note”', style: theme.textTheme.bodyMedium),
+          ],
+          const SizedBox(height: AppSpace.s3),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton.outline(
+                  l10n.detailExtraDecline,
+                  size: AppButtonSize.small,
+                  onPressed: busy ? null : onDecline,
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              Expanded(
+                child: AppButton.primary(
+                  l10n.detailExtraGrant,
+                  size: AppButtonSize.small,
+                  onPressed: busy ? null : onGrant,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

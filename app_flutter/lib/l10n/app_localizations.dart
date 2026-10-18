@@ -11775,6 +11775,138 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không gửi được: hai bên đã chặn nhau.'**
   String get chatErrBlocked;
+
+  /// No description provided for @deliverySubmitTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nộp bàn giao · vòng {round}'**
+  String deliverySubmitTitle(int round);
+
+  /// No description provided for @deliverySamplesHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'3–20 ảnh mẫu · tự đóng watermark khi tải lên'**
+  String get deliverySamplesHint;
+
+  /// No description provided for @deliveryAddSample.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh mẫu'**
+  String get deliveryAddSample;
+
+  /// No description provided for @deliverySampleProcessing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang đóng watermark...'**
+  String get deliverySampleProcessing;
+
+  /// No description provided for @deliverySampleFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lỗi'**
+  String get deliverySampleFailed;
+
+  /// No description provided for @deliverySampleRetry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử lại'**
+  String get deliverySampleRetry;
+
+  /// No description provided for @deliverySampleRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ảnh này'**
+  String get deliverySampleRemove;
+
+  /// No description provided for @deliveryLinkLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link bộ ảnh gốc'**
+  String get deliveryLinkLabel;
+
+  /// No description provided for @deliveryLinkInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dán link http(s) hợp lệ'**
+  String get deliveryLinkInvalid;
+
+  /// No description provided for @deliveryCountLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh gốc'**
+  String get deliveryCountLabel;
+
+  /// No description provided for @deliveryCountInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số ảnh gốc'**
+  String get deliveryCountInvalid;
+
+  /// No description provided for @deliveryNoteLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú · tuỳ chọn'**
+  String get deliveryNoteLabel;
+
+  /// No description provided for @deliveryLockNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chỉ thấy link sau khi đồng ý ảnh mẫu'**
+  String get deliveryLockNote;
+
+  /// No description provided for @deliverySubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nộp bàn giao'**
+  String get deliverySubmit;
+
+  /// No description provided for @deliveryNeedSamples.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần ít nhất 3 ảnh mẫu'**
+  String get deliveryNeedSamples;
+
+  /// No description provided for @deliveryTooManySamples.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 20 ảnh mẫu'**
+  String get deliveryTooManySamples;
+
+  /// No description provided for @deliveryWaitProcessing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đợi ảnh mẫu đóng watermark xong'**
+  String get deliveryWaitProcessing;
+
+  /// No description provided for @deliveryCustomerNotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách muốn chỉnh sửa'**
+  String get deliveryCustomerNotes;
+
+  /// No description provided for @deliveryCustomerNotesRound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách muốn chỉnh sửa vòng {round}'**
+  String deliveryCustomerNotesRound(int round);
+
+  /// No description provided for @deliveryPhotoNoteCaption.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {index}: {note}'**
+  String deliveryPhotoNoteCaption(int index, String note);
+
+  /// No description provided for @deliverySubmitted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nộp vòng {round}'**
+  String deliverySubmitted(int round);
+
+  /// No description provided for @deliveryNotReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh mẫu đang xử lý, đợi một chút rồi nộp lại.'**
+  String get deliveryNotReady;
 }
 
 class _AppLocalizationsDelegate

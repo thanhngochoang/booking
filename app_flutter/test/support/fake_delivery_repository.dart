@@ -53,32 +53,62 @@ class FakeDeliveryRepository implements DeliveryRepository {
   }
 
   void seedStagedSample(String bookingId, StagedSample sample) {
-    stagedSamples.putIfAbsent(bookingId, () => []).add(sample);
+    final list = stagedSamples.putIfAbsent(bookingId, () => []);
+    final idx = list.indexWhere((s) => s.fileId == sample.fileId);
+    if (idx != -1) {
+      list[idx] = sample;
+    } else {
+      list.add(sample);
+    }
     _stagedController.add(bookingId);
   }
 
   @override
-  Stream<List<DeliveryRound>> watchRounds(String bookingId) async* {
-    yield rounds[bookingId] ?? const [];
-    yield* _roundsController.stream
-        .where((id) => id == bookingId)
-        .map((id) => rounds[id] ?? const []);
+  Stream<List<DeliveryRound>> watchRounds(String bookingId) {
+    late final StreamController<List<DeliveryRound>> c;
+    StreamSubscription? sub;
+    c = StreamController<List<DeliveryRound>>(
+      onListen: () {
+        c.add(List.unmodifiable(rounds[bookingId] ?? const []));
+        sub = _roundsController.stream.where((id) => id == bookingId).listen((_) {
+          c.add(List.unmodifiable(rounds[bookingId] ?? const []));
+        });
+      },
+      onCancel: () => sub?.cancel(),
+    );
+    return c.stream;
   }
 
   @override
-  Stream<DeliveryLink?> watchLink(String bookingId) async* {
-    yield links[bookingId];
-    yield* _linksController.stream
-        .where((id) => id == bookingId)
-        .map((id) => links[id]);
+  Stream<DeliveryLink?> watchLink(String bookingId) {
+    late final StreamController<DeliveryLink?> c;
+    StreamSubscription? sub;
+    c = StreamController<DeliveryLink?>(
+      onListen: () {
+        c.add(links[bookingId]);
+        sub = _linksController.stream.where((id) => id == bookingId).listen((_) {
+          c.add(links[bookingId]);
+        });
+      },
+      onCancel: () => sub?.cancel(),
+    );
+    return c.stream;
   }
 
   @override
-  Stream<List<StagedSample>> watchStagedSamples(String bookingId) async* {
-    yield stagedSamples[bookingId] ?? const [];
-    yield* _stagedController.stream
-        .where((id) => id == bookingId)
-        .map((id) => stagedSamples[id] ?? const []);
+  Stream<List<StagedSample>> watchStagedSamples(String bookingId) {
+    late final StreamController<List<StagedSample>> c;
+    StreamSubscription? sub;
+    c = StreamController<List<StagedSample>>(
+      onListen: () {
+        c.add(List.unmodifiable(stagedSamples[bookingId] ?? const []));
+        sub = _stagedController.stream.where((id) => id == bookingId).listen((_) {
+          c.add(List.unmodifiable(stagedSamples[bookingId] ?? const []));
+        });
+      },
+      onCancel: () => sub?.cancel(),
+    );
+    return c.stream;
   }
 
   @override
@@ -87,20 +117,23 @@ class FakeDeliveryRepository implements DeliveryRepository {
     required String uploaderId,
     required String fileId,
     required PickedImage image,
-  }) async* {
+  }) {
     uploadCalls.add((
       bookingId: bookingId,
       uploaderId: uploaderId,
       fileId: fileId,
       image: image,
     ));
-    yield const UploadEvent.progress(0.5);
-    yield UploadEvent.done(
-      UploadedMedia(
-        url: 'https://storage/$fileId.jpg',
-        storagePath: 'deliveryUploads/$bookingId/$uploaderId/$fileId.jpg',
-      ),
-    );
+    Stream<UploadEvent> run() async* {
+      yield const UploadEvent.progress(0.5);
+      yield UploadEvent.done(
+        UploadedMedia(
+          url: 'https://storage/$fileId.jpg',
+          storagePath: 'deliveryUploads/$bookingId/$uploaderId/$fileId.jpg',
+        ),
+      );
+    }
+    return run();
   }
 
   @override
@@ -122,7 +155,17 @@ class FakeDeliveryRepository implements DeliveryRepository {
     String? note,
   }) async {
     if (nextError != null) {
-      throw DeliveryException(nextError!.name);
+      final code = switch (nextError!) {
+        DeliveryErrorCode.notReady => 'not_ready',
+        DeliveryErrorCode.notEligible => 'not_eligible',
+        DeliveryErrorCode.conflict => 'conflict',
+        DeliveryErrorCode.permissionDenied => 'permission_denied',
+        DeliveryErrorCode.notFound => 'not_found',
+        DeliveryErrorCode.invalidArgument => 'invalid_argument',
+        DeliveryErrorCode.network => 'network',
+        DeliveryErrorCode.unknown => 'unknown',
+      };
+      throw DeliveryException(code);
     }
     submitCalls.add((
       bookingId: bookingId,

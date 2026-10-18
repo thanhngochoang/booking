@@ -28,3 +28,9 @@ final stagedSamplesProvider =
   (ref, bookingId) =>
       ref.watch(deliveryRepositoryProvider).watchStagedSamples(bookingId),
 );
+
+final deliveryImageUrlProvider =
+    FutureProvider.autoDispose.family<String, String>(
+  (ref, storagePath) =>
+      ref.watch(deliveryRepositoryProvider).imageUrl(storagePath),
+);
