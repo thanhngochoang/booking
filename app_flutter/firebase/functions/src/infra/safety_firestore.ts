@@ -159,14 +159,16 @@ export class FirestoreBlockStore implements BlockStore {
         getBlock: async (blockerId: string, blockedId: string): Promise<BlockRecord | null> => {
           const ref = this.firestore.collection(BLOCKS_COLLECTION).doc(blockDocId(blockerId, blockedId));
           const snap = await fTx.get(ref);
-          if (!snap.exists) return null;
-          return blockRecordFromFirestore(snap.data()!);
+          const data = snap.data();
+          if (!snap.exists || !data) return null;
+          return blockRecordFromFirestore(data);
         },
         getIndex: async (uid: string): Promise<BlockIndex> => {
           const ref = this.firestore.doc(`users/${uid}/private/blocks`);
           const snap = await fTx.get(ref);
-          if (!snap.exists) return EMPTY_BLOCK_INDEX;
-          return blockIndexFromFirestore(snap.data()!);
+          const data = snap.data();
+          if (!snap.exists || !data) return EMPTY_BLOCK_INDEX;
+          return blockIndexFromFirestore(data);
         },
         chatExists: async (chatId: string): Promise<boolean> => {
           const ref = this.firestore.collection('chats').doc(chatId);
@@ -214,8 +216,9 @@ export class FirestoreReportStore implements ReportStore {
         getReport: async (id: string): Promise<Report | null> => {
           const ref = this.firestore.collection(REPORTS_COLLECTION).doc(id);
           const snap = await fTx.get(ref);
-          if (!snap.exists) return null;
-          return reportFromFirestore(snap.data()!);
+          const data = snap.data();
+          if (!snap.exists || !data) return null;
+          return reportFromFirestore(data);
         },
         getTarget: async (type: ReportTargetType, id: string, chatId: string | null): Promise<ReportTargetView | null> => {
           if (type === 'user') {
@@ -236,8 +239,8 @@ export class FirestoreReportStore implements ReportStore {
           }
           if (type === 'post') {
             const snap = await fTx.get(this.firestore.collection('posts').doc(id));
-            if (!snap.exists) return null;
-            const data = snap.data()!;
+            const data = snap.data();
+            if (!snap.exists || !data) return null;
             const images = Array.isArray(data.images) ? data.images : [];
             const firstImg = images[0] ? (typeof images[0] === 'string' ? images[0] : images[0].url) : null;
             const caption = str(data.caption) ?? '';
@@ -259,8 +262,8 @@ export class FirestoreReportStore implements ReportStore {
             if (!chatId) return null;
             const msgRef = this.firestore.doc(`chats/${chatId}/messages/${id}`);
             const snap = await fTx.get(msgRef);
-            if (!snap.exists) return null;
-            const data = snap.data()!;
+            const data = snap.data();
+            if (!snap.exists || !data) return null;
             const senderId = str(data.senderId);
             if (senderId === null || data.type === 'system') {
               return null;
@@ -282,8 +285,8 @@ export class FirestoreReportStore implements ReportStore {
           }
           if (type === 'event') {
             const snap = await fTx.get(this.firestore.collection('events').doc(id));
-            if (!snap.exists) return null;
-            const data = snap.data()!;
+            const data = snap.data();
+            if (!snap.exists || !data) return null;
             if (data.status === 'draft') return null;
             const host = data.host as Record<string, unknown> | undefined;
             const hostType = host?.type ?? 'photographer';
@@ -311,8 +314,8 @@ export class FirestoreReportStore implements ReportStore {
         },
         getQuota: async (uid: string): Promise<{ day: string; count: number } | null> => {
           const snap = await fTx.get(this.firestore.doc(`users/${uid}/private/report_quota`));
-          if (!snap.exists) return null;
-          const data = snap.data()!;
+          const data = snap.data();
+          if (!snap.exists || !data) return null;
           return {
             day: String(data.day ?? ''),
             count: Number(data.count ?? 0),
@@ -344,8 +347,9 @@ export class FirestoreReportStore implements ReportStore {
 
   async get(id: string): Promise<Report | null> {
     const snap = await this.firestore.collection(REPORTS_COLLECTION).doc(id).get();
-    if (!snap.exists) return null;
-    return reportFromFirestore(snap.data()!);
+    const data = snap.data();
+    if (!snap.exists || !data) return null;
+    return reportFromFirestore(data);
   }
 
   async decide(

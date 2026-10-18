@@ -43,9 +43,9 @@ describe('discovery firestore adapter mapping', () => {
     let updatePayload: Record<string, unknown> | null = null;
 
     const fakeDb = {
-      collection(col: string) {
+      collection() {
         return {
-          doc(id: string) {
+          doc() {
             return {
               update: async (data: Record<string, unknown>) => {
                 updatePayload = data;
@@ -66,9 +66,9 @@ describe('discovery firestore adapter mapping', () => {
 
   test('NOT_FOUND on apply is a no-op', async () => {
     const fakeDb = {
-      collection(col: string) {
+      collection() {
         return {
-          doc(id: string) {
+          doc() {
             return {
               update: async () => {
                 const err = new Error('Document not found');

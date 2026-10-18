@@ -123,7 +123,9 @@ describe('Firestore <-> Domain booking mappers', () => {
   });
 
   it('a booking without add-ons writes neither addons nor pickup', () => {
-    const { addons: _a, pickup: _p, ...plain } = sampleBooking;
+    const { addons, pickup, ...plain } = sampleBooking;
+    assert.ok(addons);
+    assert.ok(pickup);
     const docData = bookingToFirestore(plain);
     assert.equal('addons' in docData, false);
     assert.equal('pickup' in docData, false);

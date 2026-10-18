@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MemoryDiscoveryStore, MemoryChatStore, type DiscoveryDeps, addDays } from '@photobooking/domain';
+import { MemoryDiscoveryStore, MemoryChatStore, type DiscoveryDeps } from '@photobooking/domain';
 import { handleAvailabilityWrite } from '../../src/triggers/availability_write.js';
 import { handleEngagementWrite } from '../../src/triggers/engagement_write.js';
 import { handleServiceDiscovery } from '../../src/triggers/service_write.js';

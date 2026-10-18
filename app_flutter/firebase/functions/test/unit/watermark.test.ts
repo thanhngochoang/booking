@@ -123,7 +123,7 @@ describe('watermark infra', () => {
     const centerStart = Math.floor(plain.length * 0.4);
     const centerEnd = Math.floor(plain.length * 0.6);
     for (let i = centerStart; i < centerEnd; i++) {
-      diffSum += Math.abs(plain[i]! - watermarkedRaw[i]!);
+      diffSum += Math.abs((plain[i] ?? 0) - (watermarkedRaw[i] ?? 0));
     }
     const meanDiff = diffSum / (centerEnd - centerStart);
     assert.ok(meanDiff > 1, `Expected mean pixel difference > 1, got ${meanDiff}`);
