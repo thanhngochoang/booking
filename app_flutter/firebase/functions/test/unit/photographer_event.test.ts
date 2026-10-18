@@ -1,6 +1,6 @@
 import { describe, test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
-import type { ScoreSkillsDeps } from '@photobooking/domain';
+import type { DiscoveryDeps, ScoreSkillsDeps } from '@photobooking/domain';
 import { handlePhotographerEvent, type AcceptingOrdersWriter, isPermanentFirestoreError, MAX_EVENT_AGE_MS } from '../../src/triggers/photographer_write.js';
 
 // Final review item 5: onPhotographerWrite is deployed with retry: true; permanent failures and
@@ -103,7 +103,7 @@ describe('onPhotographerWrite event policy', () => {
     let refreshedUid: string | null = null;
     const discoveryDeps = {
       stats: {
-        snapshot: async (uid: string) => ({ nextFreeDate: null, score: null, reviewCount: null, startingPrice: null, completedCount: null }),
+        snapshot: async () => ({ nextFreeDate: null, score: null, reviewCount: null, startingPrice: null, completedCount: null }),
         blockedDays: async () => new Set<string>(),
         apply: async (uid: string) => { refreshedUid = uid; return 'written' as const; },
         ensureScore: async () => 'unchanged' as const,
@@ -123,7 +123,7 @@ describe('onPhotographerWrite event policy', () => {
       before: { acceptingOrders: false, onboardingComplete: false },
       after: { skills, acceptingOrders: true, onboardingComplete: true },
     };
-    await handlePhotographerEvent(ev, () => deps, noSync, NOW, discoveryDeps as any);
+    await handlePhotographerEvent(ev, () => deps, noSync, NOW, discoveryDeps as unknown as DiscoveryDeps);
     assert.equal(refreshedUid, 'p1');
   });
 });

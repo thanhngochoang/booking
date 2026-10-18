@@ -17,6 +17,7 @@ import {
   handleRequestRevision,
   handleAnswerExtraRound,
 } from '../../src/callables/delivery.js';
+import type { CallableInput } from '../../src/callables/get_contact_link.js';
 
 function createTestDeps(): {
   deps: BookingDeps;
@@ -90,23 +91,23 @@ describe('delivery callables', () => {
   describe('unauthenticated requests', () => {
     test('refuses unauthenticated callers', async () => {
       const { deps } = createTestDeps();
-      const unauthReq = { auth: null, data: {} } as any;
+      const unauthReq: CallableInput = { auth: undefined, data: {} };
 
       await assert.rejects(
         () => handleSubmitDelivery(unauthReq, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'unauthenticated',
+        (err: unknown) => err instanceof HttpsError && err.code === 'unauthenticated',
       );
       await assert.rejects(
         () => handleApproveDelivery(unauthReq, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'unauthenticated',
+        (err: unknown) => err instanceof HttpsError && err.code === 'unauthenticated',
       );
       await assert.rejects(
         () => handleRequestRevision(unauthReq, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'unauthenticated',
+        (err: unknown) => err instanceof HttpsError && err.code === 'unauthenticated',
       );
       await assert.rejects(
         () => handleAnswerExtraRound(unauthReq, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'unauthenticated',
+        (err: unknown) => err instanceof HttpsError && err.code === 'unauthenticated',
       );
     });
   });
@@ -152,7 +153,7 @@ describe('delivery callables', () => {
         failure: null,
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'p1' },
         data: {
           bookingId: 'b1',
@@ -161,7 +162,7 @@ describe('delivery callables', () => {
           photoCount: 50,
           note: 'Gửi bạn ảnh nhé',
         },
-      } as any;
+      };
 
       const res = await handleSubmitDelivery(req, deps);
       assert.deepEqual(res, { round: 1 });
@@ -173,7 +174,7 @@ describe('delivery callables', () => {
         await tx.setBooking(makeShotBooking());
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'c1' },
         data: {
           bookingId: 'b1',
@@ -181,11 +182,11 @@ describe('delivery callables', () => {
           link: 'https://drive.google.com/folders/xyz',
           photoCount: 50,
         },
-      } as any;
+      };
 
       await assert.rejects(
         () => handleSubmitDelivery(req, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'permission-denied',
+        (err: unknown) => err instanceof HttpsError && err.code === 'permission-denied',
       );
     });
 
@@ -206,7 +207,7 @@ describe('delivery callables', () => {
         failure: 'corrupt',
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'p1' },
         data: {
           bookingId: 'b1',
@@ -214,11 +215,11 @@ describe('delivery callables', () => {
           link: 'https://drive.google.com/folders/xyz',
           photoCount: 50,
         },
-      } as any;
+      };
 
       await assert.rejects(
         () => handleSubmitDelivery(req, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'failed-precondition' && (err.details as any)?.code === 'not_ready',
+        (err: unknown) => err instanceof HttpsError && err.code === 'failed-precondition' && (err.details as { code?: unknown } | undefined)?.code === 'not_ready',
       );
     });
   });
@@ -253,7 +254,7 @@ describe('delivery callables', () => {
         });
       });
 
-      const req = { auth: { uid: 'c1' }, data: { bookingId: 'b1' } } as any;
+      const req: CallableInput = { auth: { uid: 'c1' }, data: { bookingId: 'b1' } };
       const res = await handleApproveDelivery(req, deps);
       assert.deepEqual(res, { status: 'approved' });
     });
@@ -264,10 +265,10 @@ describe('delivery callables', () => {
         await tx.setBooking({ ...makeShotBooking(), status: 'delivered' });
       });
 
-      const req = { auth: { uid: 'p1' }, data: { bookingId: 'b1' } } as any;
+      const req: CallableInput = { auth: { uid: 'p1' }, data: { bookingId: 'b1' } };
       await assert.rejects(
         () => handleApproveDelivery(req, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'permission-denied',
+        (err: unknown) => err instanceof HttpsError && err.code === 'permission-denied',
       );
     });
   });
@@ -297,14 +298,14 @@ describe('delivery callables', () => {
         });
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'c1' },
         data: {
           bookingId: 'b1',
           note: 'Chỉnh thêm giúp mình',
           photoNotes: [{ sampleIndex: 0, note: 'Làm mịn da' }],
         },
-      } as any;
+      };
 
       const res = await handleRequestRevision(req, deps);
       assert.deepEqual(res, { status: 'revision_requested' });
@@ -316,14 +317,14 @@ describe('delivery callables', () => {
         await tx.setBooking({ ...makeShotBooking(), status: 'delivered' });
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'c1' },
         data: { bookingId: 'b1' },
-      } as any;
+      };
 
       await assert.rejects(
         () => handleRequestRevision(req, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'invalid-argument',
+        (err: unknown) => err instanceof HttpsError && err.code === 'invalid-argument',
       );
     });
   });
@@ -359,10 +360,10 @@ describe('delivery callables', () => {
         });
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'p1' },
         data: { bookingId: 'b1', grant: true },
-      } as any;
+      };
 
       const res = await handleAnswerExtraRound(req, deps);
       assert.deepEqual(res, { status: 'revision_requested' });
@@ -378,14 +379,14 @@ describe('delivery callables', () => {
         });
       });
 
-      const req = {
+      const req: CallableInput = {
         auth: { uid: 'c1' },
         data: { bookingId: 'b1', grant: true },
-      } as any;
+      };
 
       await assert.rejects(
         () => handleAnswerExtraRound(req, deps),
-        (err: any) => err instanceof HttpsError && err.code === 'permission-denied',
+        (err: unknown) => err instanceof HttpsError && err.code === 'permission-denied',
       );
     });
   });

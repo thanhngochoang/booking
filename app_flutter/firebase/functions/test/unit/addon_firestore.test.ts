@@ -29,7 +29,8 @@ describe('addon Firestore conversion', () => {
   });
 
   it('a description that is absent stays absent', () => {
-    const { description: _d, ...bare } = full;
+    const { description, ...bare } = full;
+    assert.equal(typeof description, 'string');
     const d = addonToFirestore(bare);
     assert.equal('description' in d, false);
     const back = addonFromFirestore('p1', full.id, d);

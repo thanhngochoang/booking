@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseArgs, executeTakedown } from '../../tools/reports.js';
-import type { Report } from '@photobooking/domain';
+import type { Report, ReportDeps } from '@photobooking/domain';
 
 describe('reports CLI', () => {
   it('parseArgs list/show/dismiss/takedown', () => {
@@ -87,7 +87,7 @@ describe('reports CLI', () => {
       createdAt: '2026-10-07T10:00:00.000Z',
     };
 
-    const msg = await executeTakedown(report, 'staff_1', 'Lý do gỡ sự kiện', {} as any);
+    const msg = await executeTakedown(report, 'staff_1', 'Lý do gỡ sự kiện', {} as ReportDeps);
     assert.match(msg, /Cancel it in S12.03 with an admin account/);
   });
 });

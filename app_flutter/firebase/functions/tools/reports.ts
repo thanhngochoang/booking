@@ -163,10 +163,14 @@ export async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
+  // parseArgs guarantees an id for show/dismiss/takedown and an actor + note for decisions.
+  const id = parsed.id;
+  if (id === null) throw new Error(USAGE);
+
   if (parsed.command === 'show') {
-    const r = await deps.store.get(parsed.id!);
+    const r = await deps.store.get(id);
     if (!r) {
-      console.error(`Report ${parsed.id} not found.`);
+      console.error(`Report ${id} not found.`);
       process.exitCode = 1;
       return;
     }
@@ -174,25 +178,28 @@ export async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
-  const report = await deps.store.get(parsed.id!);
+  const report = await deps.store.get(id);
   if (!report) {
-    console.error(`Report ${parsed.id} not found.`);
+    console.error(`Report ${id} not found.`);
     process.exitCode = 1;
     return;
   }
 
+  const { actor, note } = parsed;
+  if (actor === null || note === null) throw new Error(USAGE);
+
   if (parsed.command === 'dismiss') {
-    await decideReport(deps, parsed.actor!, {
-      reportId: parsed.id!,
+    await decideReport(deps, actor, {
+      reportId: id,
       status: 'dismissed',
-      note: parsed.note!,
+      note,
     });
-    console.log(`Report ${parsed.id} dismissed.`);
+    console.log(`Report ${id} dismissed.`);
     return;
   }
 
   if (parsed.command === 'takedown') {
-    const msg = await executeTakedown(report, parsed.actor!, parsed.note!, deps);
+    const msg = await executeTakedown(report, actor, note, deps);
     console.log(msg);
   }
 }

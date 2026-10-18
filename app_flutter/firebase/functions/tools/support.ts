@@ -115,9 +115,7 @@ async function main(): Promise<void> {
   }
 
   const { getAuth } = await import('firebase-admin/auth');
-  const { db } = await import('../src/infra/admin.js');
   const { liveSupportDeps } = await import('../src/infra/live_support.js');
-  const firestore = db();
   const deps = liveSupportDeps();
 
   const io: CliIo = {
