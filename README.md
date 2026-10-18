@@ -15,7 +15,7 @@
 
 **Hướng dẫn từng bước cho máy mới (app Flutter, VS Code, emulator, lỗi thường gặp): `docs/SETUP.md`.** Phần dưới giải thích toolchain chi tiết.
 
-Mọi công cụ nằm **trong thư mục repo**, không cài vào hệ thống. Chỉ cần sẵn `git`, `curl`, `unzip`, `python3` (macOS có sẵn) và một JDK 17 do user sở hữu.
+Mọi công cụ nằm **trong thư mục repo**, không cài vào hệ thống. Chỉ cần sẵn `git`, `curl`, `unzip`, `python3` (macOS có sẵn) và một JDK 21 do user sở hữu.
 
 ```bash
 git clone <repo-url> booking && cd booking
@@ -34,7 +34,7 @@ cd app_flutter && flutter pub get && flutter run
 | Font | `scripts/fetch-fonts.sh` | Be Vietnam Pro + Fraunces vào `app_flutter/assets/fonts/`. |
 | Môi trường | `scripts/env.sh` | `JAVA_HOME`, `ANDROID_HOME`, `PATH` (ưu tiên `scripts/bin`), `local.properties`, truststore TLS. |
 
-**JDK 17**: `env.sh` tìm theo thứ tự `.jdk/` trong repo → Homebrew `openjdk@17` (`/opt/homebrew` hoặc `/usr/local`). Không cần sudo: `brew install openjdk@17`, hoặc giải nén tar.gz Temurin/Zulu 17 vào `.jdk/` sao cho có `.jdk/Contents/Home/bin/java`. Vì sao 17 mà không mới hơn: Android Gradle Plugin 8.x (cả app Java cũ lẫn Flutter) chỉ chạy trên JDK 17–21.
+**JDK 21**: `env.sh` tìm theo thứ tự `.jdk/` trong repo → Homebrew `openjdk@21` (`/opt/homebrew` hoặc `/usr/local`) → bản 23 rồi 17 nếu đã cài sẵn. Không cần sudo: `brew install openjdk@21`, hoặc giải nén tar.gz Temurin/Zulu 21 vào `.jdk/` sao cho có `.jdk/Contents/Home/bin/java`. Vì sao đúng 21: Firebase CLI 15 (emulator Firestore/Storage/Functions) đòi Java 21 trở lên, còn Android Gradle Plugin 8.x (cả app Java cũ lẫn Flutter) chỉ chạy trên JDK 17–21; 21 là bản duy nhất dùng được cho cả hai.
 
 **`scripts/bin/flutter` và `scripts/bin/dart`** là wrapper đặt `HOME=.home/` trong repo trước khi gọi Flutter thật. Nhờ vậy Dart, Gradle, Android debug keystore và pub cache đều ghi vào `.home/`, `.pub-cache/`, không đụng home thật. Debug keystore nằm ở `.home/.android/debug.keystore`; SHA‑1 của nó cần đăng ký trong Firebase cho Google Sign‑In (`cd app_flutter/android && ./gradlew signingReport`).
 

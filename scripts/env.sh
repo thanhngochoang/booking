@@ -3,9 +3,10 @@
 # Uses a project-local toolchain so no system install or admin rights are required.
 #
 #   .android-sdk/   Android SDK (platform 34, build-tools 34.0.0, platform-tools) — see scripts/install-sdk.sh
-#   .jdk/           optional project-local JDK 17 (Temurin/Zulu tar.gz extracted here)
+#   .jdk/           optional project-local JDK 21 (Temurin/Zulu tar.gz extracted here)
 #
-# Fallback JDK: Homebrew openjdk@17 (user-owned, no sudo).
+# Fallback JDK: Homebrew openjdk@21 (user-owned, no sudo). JDK 21 is the one version that both
+# firebase-tools 15 (emulators need Java 21+) and Android Gradle Plugin 8.x (JDK 17-21) accept.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # In a worktree made by scripts/worktree.sh the toolchain folders are symlinks to the main checkout.
@@ -17,11 +18,16 @@ if [ -x "$TOOLS/.jdk/Contents/Home/bin/java" ]; then
   export JAVA_HOME="$TOOLS/.jdk/Contents/Home"
 elif [ -x "$TOOLS/.jdk/bin/java" ]; then
   export JAVA_HOME="$TOOLS/.jdk"
+elif [ -d /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ]; then
+  export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+elif [ -d /usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ]; then
+  export JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+elif [ -d /opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home ]; then
+  # Last resorts: JDK 23 runs the emulators and Gradle 9.x (app_flutter) but not the legacy
+  # Android app (Gradle 8.9); JDK 17 builds both apps but firebase-tools 15 refuses it.
+  export JAVA_HOME=/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home
 elif [ -d /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]; then
   export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
-elif [ -d /opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home ]; then
-  # Gradle 9.x (app_flutter) runs on JDK 23 too.
-  export JAVA_HOME=/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home
 fi
 
 export ANDROID_HOME="$TOOLS/.android-sdk"
