@@ -78,7 +78,7 @@ class _SafetyMenuSheet extends ConsumerWidget {
                 ),
               ListTile(
                 key: const Key('safety-menu-report'),
-                leading: const Icon(Icons.flag_outlined),
+                leading: const AppIcon(AppIcons.flag),
                 title: Text(l.safetyReport),
                 onTap: () {
                   Navigator.of(context).pop();

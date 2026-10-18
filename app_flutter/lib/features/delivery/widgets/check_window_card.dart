@@ -37,7 +37,7 @@ class CheckWindowCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpace.s4),
         child: Row(
           children: [
-            Icon(Icons.check_circle_outline, size: 20, color: textMuted),
+            AppIcon(AppIcons.checkCircle, size: 20, color: textMuted),
             const SizedBox(width: AppSpace.s2),
             Expanded(
               child: Text(

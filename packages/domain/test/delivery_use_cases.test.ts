@@ -83,7 +83,7 @@ describe('delivery use cases', () => {
       assert.equal(roundDoc.round, 1);
       assert.equal(roundDoc.photoCount, 40);
       assert.equal(roundDoc.linkHost, 'drive.google.com');
-      assert.equal((roundDoc as Record<string, unknown>).link, undefined);
+      assert.equal((roundDoc as unknown as Record<string, unknown>).link, undefined);
       assert.equal(roundDoc.samples.length, 3);
       assert.equal(roundDoc.note, 'Ảnh đã chỉnh xong màu');
 

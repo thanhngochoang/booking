@@ -197,7 +197,7 @@ class _RevisionSheetState extends ConsumerState<RevisionSheet> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const AppIcon(AppIcons.close),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -379,13 +379,14 @@ class _SampleImage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final urlAsync = ref.watch(deliveryImageUrlProvider(storagePath));
-    return urlAsync.when(
-      data: (url) => NetworkPhoto(url: url, fit: BoxFit.cover, retry: false),
-      loading: () => Container(color: Theme.of(context).colorScheme.surfaceContainerHighest),
-      error: (_, _) => Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Icon(Icons.broken_image, size: 24),
+    final url = ref.watch(deliveryImageUrlProvider(storagePath)).value;
+    if (url != null) {
+      return NetworkPhoto(url: url, fit: BoxFit.cover, retry: false);
+    }
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Center(
+        child: AppIcon(AppIcons.image, size: 24),
       ),
     );
   }

@@ -43,8 +43,8 @@ class OriginalsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                isApproved ? Icons.link : Icons.lock_outline,
+              AppIcon(
+                isApproved ? AppIcons.link : AppIcons.lock,
                 size: 20,
                 color: isApproved ? accent : textMuted,
               ),
@@ -80,8 +80,8 @@ class OriginalsCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.link,
+                AppIcon(
+                  AppIcons.link,
                   size: 16,
                   color: isApproved ? accent : textMuted,
                 ),

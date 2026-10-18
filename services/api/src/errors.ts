@@ -35,6 +35,18 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   // Wrong or expired OTP: the request is well-formed but its value is refused.
   otp_invalid: 422,
   otp_expired: 422,
+  // Verification error codes (#135)
+  identity_in_use: 409,
+  underage: 422,
+  rate_limited: 429,
+  // Addon error codes (#190)
+  addon_changed: 409,
+  addon_not_applicable: 422,
+  pickup_required: 422,
+  addon_limit: 422,
+  contact_leak: 422,
+  // Delivery error codes (#152)
+  not_ready: 422,
   internal: 500,
 };
 

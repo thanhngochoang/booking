@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/dot_ring_loader.dart';
+import 'package:photobooking/core/widgets/signature_loader.dart' show LoaderSize;
 import 'package:photobooking/data/delivery/delivery_providers.dart';
 import 'package:photobooking/features/delivery/submit_delivery_controller.dart';
 
@@ -36,15 +38,10 @@ class SampleTile extends ConsumerWidget {
                 color: Colors.black.withValues(alpha: 0.35),
               ),
             ),
-            Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  value: tile.progress > 0 ? tile.progress : null,
-                  strokeWidth: 2.5,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+            const Center(
+              child: DotRingLoader(
+                size: LoaderSize.inline,
+                color: Colors.white,
               ),
             ),
           ],
@@ -60,13 +57,9 @@ class SampleTile extends ConsumerWidget {
               ),
             ),
             const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                ),
+              child: DotRingLoader(
+                size: LoaderSize.inline,
+                color: Colors.white70,
               ),
             ),
           ],
@@ -74,16 +67,16 @@ class SampleTile extends ConsumerWidget {
       case SampleTilePhase.ready:
         final thumbPath = tile.thumbPath;
         if (thumbPath != null && thumbPath.isNotEmpty) {
-          final urlAsync = ref.watch(deliveryImageUrlProvider(thumbPath));
-          content = urlAsync.when(
-            data: (url) => Image.network(
+          final url = ref.watch(deliveryImageUrlProvider(thumbPath)).value;
+          if (url != null) {
+            content = Image.network(
               url,
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => _LocalThumbnail(path: tile.local.path),
-            ),
-            loading: () => _LocalThumbnail(path: tile.local.path),
-            error: (_, _) => _LocalThumbnail(path: tile.local.path),
-          );
+            );
+          } else {
+            content = _LocalThumbnail(path: tile.local.path);
+          }
         } else {
           content = _LocalThumbnail(path: tile.local.path);
         }

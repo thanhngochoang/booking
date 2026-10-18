@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/async_view.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 import 'package:photobooking/data/delivery/delivery.dart';
 import 'package:photobooking/data/delivery/delivery_providers.dart';
@@ -103,13 +105,14 @@ class _SampleThumb extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final urlAsync = ref.watch(deliveryImageUrlProvider(storagePath));
-    return urlAsync.when(
-      data: (url) => NetworkPhoto(url: url, fit: BoxFit.cover, retry: false),
-      loading: () => Container(color: Theme.of(context).colorScheme.surfaceContainerHighest),
-      error: (_, _) => Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Icon(Icons.broken_image, size: 24),
+    final url = ref.watch(deliveryImageUrlProvider(storagePath)).value;
+    if (url != null) {
+      return NetworkPhoto(url: url, fit: BoxFit.cover, retry: false);
+    }
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Center(
+        child: AppIcon(AppIcons.image, size: 24),
       ),
     );
   }
@@ -171,13 +174,11 @@ class _DeliveryPhotoViewerState extends State<DeliveryPhotoViewer> {
               child: Consumer(
                 builder: (context, ref, _) {
                   final urlAsync = ref.watch(deliveryImageUrlProvider(sample.path));
-                  return urlAsync.when(
-                    data: (url) => NetworkPhoto(url: url, fit: BoxFit.contain),
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(color: Colors.white70),
-                    ),
-                    error: (_, _) => const Center(
-                      child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                  return AsyncView<String>(
+                    value: urlAsync,
+                    data: (context, url) => NetworkPhoto(url: url, fit: BoxFit.contain),
+                    error: (context, _, _) => const Center(
+                      child: AppIcon(AppIcons.brokenImage, color: Colors.white54, size: 48),
                     ),
                   );
                 },

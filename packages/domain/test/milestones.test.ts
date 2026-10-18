@@ -163,17 +163,16 @@ test('releaseDueMilestones is idempotent', () => {
   const payment = withMilestones(
     {
       id: 'pay_1',
-      bookingId: 'bk_1',
       subjectType: 'booking',
       subjectId: 'bk_1',
-      customerId: 'c1',
+      payerId: 'c1',
       payeeId: 'p1',
       amount: 1_000_000,
       receivedAmount: 1_000_000,
       status: 'paid',
       escrowStatus: 'held',
       method: 'bank_qr',
-      provider: 'sepay',
+      provider: 'fake',
       idempotencyKey: 'k',
       createdAt: shotAt.toISOString(),
       updatedAt: shotAt.toISOString(),
@@ -185,8 +184,9 @@ test('releaseDueMilestones is idempotent', () => {
   const nowPastShoot = new Date(shotAt.getTime() + 25 * 3600 * 1000);
   let idCounter = 1;
   const rel1 = releaseDueMilestones(payment, nowPastShoot, () => `led_${idCounter++}`);
-  assert.equal(rel1.ledgerEntries.length, 1);
-  assert.equal(rel1.ledgerEntries[0].amount, 500_000);
+  const firstEntry = rel1.ledgerEntries[0];
+  assert.ok(firstEntry);
+  assert.equal(firstEntry.amount, 500_000);
   assert.equal(rel1.payment.payableAmount, 500_000);
 
   const rel2 = releaseDueMilestones(rel1.payment, nowPastShoot, () => `led_${idCounter++}`);

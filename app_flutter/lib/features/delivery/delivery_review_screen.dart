@@ -117,7 +117,7 @@ class _DeliveryReviewScreenState extends ConsumerState<DeliveryReviewScreen> {
     if (booking == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.deliveryReviewApprovedTitle)),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: DotRingLoader(size: LoaderSize.screen)),
       );
     }
 

@@ -32,11 +32,16 @@ class BlockedUsersScreen extends ConsumerWidget {
             backgroundColor: Colors.transparent,
             title: Text(l.blockedTitle),
           ),
-          body: usersAsync.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator.adaptive(),
+          body: AsyncView<List<BlockedUser>>(
+            value: usersAsync,
+            isEmpty: (users) => users.isEmpty,
+            empty: (context) => Center(
+              child: EmptyState(
+                title: l.blockedEmptyTitle,
+                body: l.blockedEmptyBody,
+              ),
             ),
-            error: (err, _) => Center(
+            error: (context, _, _) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -49,15 +54,7 @@ class BlockedUsersScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            data: (users) {
-              if (users.isEmpty) {
-                return Center(
-                  child: EmptyState(
-                    title: l.blockedEmptyTitle,
-                    body: l.blockedEmptyBody,
-                  ),
-                );
-              }
+            data: (context, users) {
 
               final dateFormat = DateFormat('d/M');
 
