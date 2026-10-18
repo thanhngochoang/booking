@@ -206,3 +206,16 @@ export const CREATE_PAYOUTS_OPTIONS: ScheduleOptions = {
 export function payoutsMode(env: Readonly<Record<string, string | undefined>> = process.env): 'fake' | 'off' {
   return env.FUNCTIONS_EMULATOR === 'true' || env.PAYOUTS_MODE === 'fake' ? 'fake' : 'off';
 }
+
+export const WATERMARK_OPTIONS = {
+  region: REGION,
+  bucket: process.env.STORAGE_BUCKET || (process.env.GCLOUD_PROJECT ? `${process.env.GCLOUD_PROJECT}.firebasestorage.app` : 'demo-photobooking.appspot.com'),
+  memory: '1GiB',
+  cpu: 1,
+  concurrency: 1,
+  timeoutSeconds: 60,
+  maxInstances: 10,
+  minInstances: 0,
+  retry: false,
+} as const;
+

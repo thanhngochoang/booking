@@ -227,13 +227,23 @@ export class FirestorePayoutStore implements PayoutStore {
   }
 
   async listDuePayees(): Promise<{ payeeId: string; amount: number; hasAccount: boolean }[]> {
-    const snap = await this.db.collection(PAYMENTS_COLLECTION).where('escrowStatus', '==', 'released').get();
+    const snapReleased = await this.db.collection(PAYMENTS_COLLECTION).where('escrowStatus', '==', 'released').get();
+    const snapPayable = await this.db.collection(PAYMENTS_COLLECTION).where('payableAmount', '>', 0).get();
+    const docMap = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+    for (const d of snapReleased.docs) docMap.set(d.id, d);
+    for (const d of snapPayable.docs) docMap.set(d.id, d);
+
     const totals = new Map<string, number>();
-    for (const d of snap.docs) {
+    for (const d of docMap.values()) {
       const p = paymentFromFirestore(d.id, d.data());
       if (p === null || !isPayoutPayable(p)) continue;
-      const net = p.amount - (await this.refundedOf(p.id, (q) => q.get()));
-      if (net > 0) totals.set(p.payeeId, (totals.get(p.payeeId) ?? 0) + net);
+      let amt = 0;
+      if (p.milestones) {
+        amt = p.payableAmount ?? 0;
+      } else {
+        amt = p.amount - (await this.refundedOf(p.id, (q) => q.get()));
+      }
+      if (amt > 0) totals.set(p.payeeId, (totals.get(p.payeeId) ?? 0) + amt);
     }
     const out: { payeeId: string; amount: number; hasAccount: boolean }[] = [];
     for (const [payeeId, amount] of totals) {
@@ -307,10 +317,17 @@ export class FirestorePayoutStore implements PayoutStore {
           writes.push((t) => t.set(this.db.collection(PAYOUT_ACCOUNTS_COLLECTION).doc(userId), accountViewToFirestore(v))),
         putPayout: (p) => writes.push((t) => t.set(this.db.collection(PAYOUTS_COLLECTION).doc(p.id), payoutToFirestore(p))),
         listPayablePayments: async (payeeId) => {
-          const snap = await fTx.get(
+          const snapReleased = await fTx.get(
             this.db.collection(PAYMENTS_COLLECTION).where('payeeId', '==', payeeId).where('escrowStatus', '==', 'released'),
           );
-          return snap.docs.flatMap((d) => {
+          const snapPayable = await fTx.get(
+            this.db.collection(PAYMENTS_COLLECTION).where('payeeId', '==', payeeId).where('payableAmount', '>', 0),
+          );
+          const docMap = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+          for (const d of snapReleased.docs) docMap.set(d.id, d);
+          for (const d of snapPayable.docs) docMap.set(d.id, d);
+
+          return [...docMap.values()].flatMap((d) => {
             const p = paymentFromFirestore(d.id, d.data());
             // Bookings and event tickets (payee = host); the platform payee never matches a provider.
             return p === null || !isPayoutPayable(p) ? [] : [p];

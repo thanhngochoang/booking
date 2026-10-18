@@ -41,7 +41,7 @@ describe('contactUrlFor: the exact URL formats (same as the client)', () => {
 
 describe('booking contact unlock (domain-model §5; client contactAccessForBooking)', () => {
   test('open from the deposit until the booking is over', () => {
-    for (const status of ['requested', 'accepted', 'upcoming']) {
+    for (const status of ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved']) {
       assert.equal(bookingContactUnlocked({ status, completedAt: null }, NOW), true, status);
     }
   });

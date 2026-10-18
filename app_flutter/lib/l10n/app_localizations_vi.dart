@@ -446,6 +446,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statusUpcoming => 'Sắp tới';
 
   @override
+  String get statusShot => 'Chờ bàn giao';
+
+  @override
+  String get statusDelivered => 'Chờ duyệt ảnh';
+
+  @override
+  String get statusRevisionRequested => 'Cần chỉnh sửa';
+
+  @override
+  String get statusApproved => 'Đã đồng ý ảnh';
+
+  @override
   String get statusCompleted => 'Hoàn thành';
 
   @override
@@ -2263,6 +2275,46 @@ class AppLocalizationsVi extends AppLocalizations {
   String get timelineShoot => 'Buổi chụp';
 
   @override
+  String get timelineDelivery => 'Bàn giao & duyệt ảnh';
+
+  @override
+  String timelineDeliveryWaitCustomer(String name) {
+    return 'Chờ $name gửi ảnh mẫu';
+  }
+
+  @override
+  String get timelineDeliveryWaitProvider =>
+      'Chờ bạn nộp ảnh mẫu và link ảnh gốc';
+
+  @override
+  String timelineDeliveryReviewCustomer(int round) {
+    return 'Vòng $round · chờ bạn duyệt';
+  }
+
+  @override
+  String timelineDeliveryReviewProvider(int round) {
+    return 'Vòng $round · chờ khách duyệt';
+  }
+
+  @override
+  String timelineDeliveryRevisingCustomer(String name, int round) {
+    return '$name đang chỉnh sửa vòng $round';
+  }
+
+  @override
+  String timelineDeliveryRevisingProvider(int round) {
+    return 'Khách muốn chỉnh sửa vòng $round';
+  }
+
+  @override
+  String timelineDeliveryApproved(String when) {
+    return 'Đã đồng ý ảnh · $when';
+  }
+
+  @override
+  String get timelineCheck => 'Kiểm tra bộ ảnh gốc trong 48 giờ';
+
+  @override
   String get timelineDone => 'Hoàn thành';
 
   @override
@@ -2347,6 +2399,64 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailComplete => 'Hoàn thành';
+
+  @override
+  String get detailMarkShot => 'Đã chụp xong';
+
+  @override
+  String get detailDeliver => 'Nộp bàn giao';
+
+  @override
+  String detailDeliverRound(int round) {
+    return 'Nộp vòng $round';
+  }
+
+  @override
+  String get detailViewDelivery => 'Xem bàn giao';
+
+  @override
+  String detailRevisionCard(int round) {
+    return 'Khách muốn chỉnh sửa vòng $round';
+  }
+
+  @override
+  String detailWaitingApproval(int round) {
+    return 'Đã gửi vòng $round · chờ khách duyệt';
+  }
+
+  @override
+  String get detailApprovedProvider =>
+      'Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra';
+
+  @override
+  String detailExtraRoundTitle(String name) {
+    return '$name xin thêm 1 vòng sửa';
+  }
+
+  @override
+  String detailExtraRoundUsed(int total) {
+    return 'Đã dùng hết $total lượt sửa miễn phí của gói.';
+  }
+
+  @override
+  String get detailExtraGrant => 'Cho thêm 1 vòng';
+
+  @override
+  String get detailExtraDecline => 'Không thêm';
+
+  @override
+  String get detailExtraDeclineTitle => 'Không thêm vòng sửa?';
+
+  @override
+  String detailExtraDeclineBody(String name) {
+    return '$name vẫn đồng ý ảnh được, hoặc mở khiếu nại.';
+  }
+
+  @override
+  String get detailExtraGranted => 'Đã cho thêm 1 vòng sửa';
+
+  @override
+  String get detailExtraDeclined => 'Đã báo khách là không thêm vòng';
 
   @override
   String get detailBookAgain => 'Đặt lại';
@@ -2555,6 +2665,22 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workUpcoming => 'Buổi sắp tới';
+
+  @override
+  String get workToDeliver => 'Chờ bàn giao';
+
+  @override
+  String workToDeliverShot(String day) {
+    return '$day · đã chụp';
+  }
+
+  @override
+  String workToDeliverRevision(int round) {
+    return 'Vòng $round · khách muốn chỉnh sửa';
+  }
+
+  @override
+  String get workToDeliverExtra => 'Khách xin thêm 1 vòng';
 
   @override
   String get workNoRequests => 'Không có yêu cầu mới';
@@ -6622,4 +6748,263 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get chatErrBlocked => 'Không gửi được: hai bên đã chặn nhau.';
+
+  @override
+  String deliverySubmitTitle(int round) {
+    return 'Nộp bàn giao · vòng $round';
+  }
+
+  @override
+  String get deliverySamplesHint =>
+      '3–20 ảnh mẫu · tự đóng watermark khi tải lên';
+
+  @override
+  String get deliveryAddSample => 'Thêm ảnh mẫu';
+
+  @override
+  String get deliverySampleProcessing => 'Đang đóng watermark...';
+
+  @override
+  String get deliverySampleFailed => 'Lỗi';
+
+  @override
+  String get deliverySampleRetry => 'Thử lại';
+
+  @override
+  String get deliverySampleRemove => 'Bỏ ảnh này';
+
+  @override
+  String get deliveryLinkLabel => 'Link bộ ảnh gốc';
+
+  @override
+  String get deliveryLinkInvalid => 'Dán link http(s) hợp lệ';
+
+  @override
+  String get deliveryCountLabel => 'Số ảnh gốc';
+
+  @override
+  String get deliveryCountInvalid => 'Nhập số ảnh gốc';
+
+  @override
+  String get deliveryNoteLabel => 'Ghi chú · tuỳ chọn';
+
+  @override
+  String get deliveryLockNote => 'Khách chỉ thấy link sau khi đồng ý ảnh mẫu';
+
+  @override
+  String get deliverySubmit => 'Nộp bàn giao';
+
+  @override
+  String get deliveryNeedSamples => 'Cần ít nhất 3 ảnh mẫu';
+
+  @override
+  String get deliveryTooManySamples => 'Tối đa 20 ảnh mẫu';
+
+  @override
+  String get deliveryWaitProcessing => 'Đợi ảnh mẫu đóng watermark xong';
+
+  @override
+  String get deliveryCustomerNotes => 'Khách muốn chỉnh sửa';
+
+  @override
+  String deliveryCustomerNotesRound(int round) {
+    return 'Khách muốn chỉnh sửa vòng $round';
+  }
+
+  @override
+  String deliveryPhotoNoteCaption(int index, String note) {
+    return 'Ảnh $index: $note';
+  }
+
+  @override
+  String deliverySubmitted(int round) {
+    return 'Đã nộp vòng $round';
+  }
+
+  @override
+  String get deliveryNotReady =>
+      'Ảnh mẫu đang xử lý, đợi một chút rồi nộp lại.';
+
+  @override
+  String deliveryReviewTitle(int round) {
+    return 'Bàn giao · vòng $round';
+  }
+
+  @override
+  String get deliveryReviewApprovedTitle => 'Bàn giao · đã đồng ý';
+
+  @override
+  String get deliveryWaitingApprovalBadge => 'Chờ bạn duyệt';
+
+  @override
+  String deliverySenderInfo(String name, int count, String date) {
+    return '$name gửi $count ảnh mẫu · $date';
+  }
+
+  @override
+  String deliveryOriginalsCardTitle(int count) {
+    return 'Bộ ảnh gốc · $count ảnh';
+  }
+
+  @override
+  String get deliveryOriginalsLocked => 'Mở khi bạn đồng ý ảnh';
+
+  @override
+  String get deliveryOriginalsOpen => 'Mở bộ ảnh gốc';
+
+  @override
+  String deliveryOriginalsSubApproved(String name, String date) {
+    return '$name gửi $date';
+  }
+
+  @override
+  String deliveryRevisionsLeft(int used, int total) {
+    return 'Còn $used/$total lượt sửa miễn phí';
+  }
+
+  @override
+  String deliveryRevisionsExhausted(int total) {
+    return 'Hết lượt sửa miễn phí ($total/$total)';
+  }
+
+  @override
+  String deliveryAutoApproveHint(String time) {
+    return 'Tự đồng ý sau $time nếu bạn không phản hồi';
+  }
+
+  @override
+  String get deliveryRequestRevision => 'Yêu cầu chỉnh sửa';
+
+  @override
+  String get deliveryApprove => 'Đồng ý ảnh';
+
+  @override
+  String get deliveryAskExtraRound => 'Xin thêm 1 vòng';
+
+  @override
+  String deliveryExtraRoundPending(String name) {
+    return 'Đã xin thêm 1 vòng · chờ $name trả lời';
+  }
+
+  @override
+  String get deliveryApproveConfirmTitle => 'Đồng ý ảnh?';
+
+  @override
+  String get deliveryApproveConfirmBody =>
+      'Đồng ý thì link ảnh gốc mở ra; bạn có 48 giờ để kiểm tra.';
+
+  @override
+  String get deliveryApproveConfirmReview => 'Xem lại';
+
+  @override
+  String deliveryApprovedToast(String time) {
+    return 'Bạn đã đồng ý ảnh lúc $time. Link bộ ảnh gốc đã mở.';
+  }
+
+  @override
+  String get deliveryCheckCardTitle => 'Kiểm tra bộ ảnh gốc trong 48 giờ';
+
+  @override
+  String deliveryCheckCardHoursLeft(int hours) {
+    return 'còn $hours giờ';
+  }
+
+  @override
+  String get deliveryCheckCardHint =>
+      'Tải và kiểm tra chất lượng file gốc. Sau 48 giờ hệ thống tự động hoàn tất đơn.';
+
+  @override
+  String get deliveryCheckExpired => 'Đã hết thời gian kiểm tra';
+
+  @override
+  String get deliveryReportOriginals => 'Báo vấn đề với ảnh gốc';
+
+  @override
+  String get deliveryRateShoot => 'Đánh giá buổi chụp';
+
+  @override
+  String get deliveryViewReview => 'Xem đánh giá';
+
+  @override
+  String get deliverySamplesPurged => 'Ảnh mẫu đã xoá sau 90 ngày';
+
+  @override
+  String get deliveryNotFound => 'Không tìm thấy bàn giao';
+
+  @override
+  String get deliveryRevisionSheetTitle => 'Yêu cầu chỉnh sửa';
+
+  @override
+  String deliveryRevisionSheetSelectedCount(int count) {
+    return '$count ảnh';
+  }
+
+  @override
+  String get deliveryRevisionSheetHint =>
+      'Chạm ảnh để sửa ghi chú riêng của ảnh đó.';
+
+  @override
+  String get deliveryRevisionGeneralNote => 'Ghi chú chung';
+
+  @override
+  String deliveryRevisionRoundFree(int round, int total) {
+    return 'Vòng sửa $round/$total (miễn phí)';
+  }
+
+  @override
+  String get deliveryRevisionSend => 'Gửi yêu cầu';
+
+  @override
+  String get deliveryRevisionSendDisabled =>
+      'Chọn ảnh hoặc ghi chú điều cần sửa';
+
+  @override
+  String deliveryRevisionNoteForPhoto(int index) {
+    return 'Ghi chú cho ảnh $index';
+  }
+
+  @override
+  String get deliveryRevisionChipBrighter => 'Da sáng hơn';
+
+  @override
+  String get deliveryRevisionChipLessYellow => 'Bớt vàng';
+
+  @override
+  String get deliveryRevisionChipRemoveObject => 'Xoá vật thể';
+
+  @override
+  String get deliveryRevisionChipStraighten => 'Cân lại nghiêng';
+
+  @override
+  String get deliveryExtraRoundTitle => 'Xin thêm 1 vòng';
+
+  @override
+  String deliveryExtraRoundHint(String name) {
+    return 'Hết lượt sửa miễn phí. $name có thể cho thêm hoặc không.';
+  }
+
+  @override
+  String get deliveryExtraRoundSend => 'Gửi đề nghị';
+
+  @override
+  String get deliveryReportSheetTitle => 'Báo vấn đề với ảnh gốc';
+
+  @override
+  String get deliveryReportReasonBrokenLink =>
+      'Link hỏng hoặc không truy cập được';
+
+  @override
+  String get deliveryReportReasonMissingFiles => 'Thiếu ảnh so với cam kết';
+
+  @override
+  String get deliveryReportReasonWrongFiles => 'Ảnh không đúng buổi chụp';
+
+  @override
+  String get deliveryReportReasonOther => 'Lý do khác';
+
+  @override
+  String get deliveryReportButton => 'Báo vấn đề';
+
+  @override
+  String get deliveryReportSuccess => 'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.';
 }

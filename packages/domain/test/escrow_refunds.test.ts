@@ -50,7 +50,8 @@ const released = (w: PayoutWorld, paymentId: string): number[] =>
 async function payeeAmounts(w: PayoutWorld, paymentId: string): Promise<{ release: number[]; earning: number | undefined; payout: number }> {
   const release = released(w, paymentId);
   const summary = await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [paymentId] });
-  const earning = w.earningsStore.items.get(`p1/${paymentId}`)?.amount;
+  const item = w.earningsStore.items.get(`p1/${paymentId}`);
+  const earning = item?.soonAmount ?? item?.amount;
   assert.equal(summary.soonAmount, earning);
   await addAccount(w);
   const payout = (await createPayout(w.payoutDeps, ADMIN, 'p1')).amount;
@@ -75,7 +76,7 @@ describe('escrow refunds vs pass-through refunds', () => {
     const w = createPayoutWorld();
     const { bookingId, paymentId } = await bookingPaidWith(w, [1_200_000]);
     await completeAndRelease(w, bookingId);
-    assert.deepEqual(await payeeAmounts(w, paymentId), { release: [PRICE], earning: PRICE, payout: PRICE });
+    assert.deepEqual(await payeeAmounts(w, paymentId), { release: [500_000], earning: 500_000, payout: 500_000 });
   });
 
   it('paying the QR twice: the second transfer goes back and the payee still gets the price', async () => {
@@ -84,7 +85,7 @@ describe('escrow refunds vs pass-through refunds', () => {
     const refunds = [...w.store.refunds.values()].filter((r) => r.paymentId === paymentId);
     assert.deepEqual(refunds.map((r) => [r.reason, r.fromEscrow]), [['extra_transfer', false]]);
     await completeAndRelease(w, bookingId);
-    assert.deepEqual(await payeeAmounts(w, paymentId), { release: [PRICE], earning: PRICE, payout: PRICE });
+    assert.deepEqual(await payeeAmounts(w, paymentId), { release: [500_000], earning: 500_000, payout: 500_000 });
   });
 
   it('a 50% cancellation after an over-transfer releases half of the price', async () => {
@@ -109,7 +110,7 @@ describe('escrow refunds vs pass-through refunds', () => {
     assert.equal(isEscrowRefund(legacy), true);
     w.store.refunds.set(legacy.id, legacy);
     await completeAndRelease(w, bookingId);
-    assert.deepEqual(await payeeAmounts(w, paymentId), { release: [900_000], earning: 900_000, payout: 900_000 });
+    assert.deepEqual(await payeeAmounts(w, paymentId), { release: [450_000], earning: 450_000, payout: 450_000 });
   });
 
   it('escrowRefundedTotal sums only escrow refunds', () => {
@@ -151,7 +152,7 @@ describe('unpaid booking payments', () => {
     const w = createPayoutWorld();
     const { bookingId, paymentId, stray } = await withStrayFirst(w);
     await completeAndRelease(w, bookingId);
-    assert.deepEqual(released(w, paymentId), [PRICE]);
+    assert.deepEqual(released(w, paymentId), [500_000]);
     assert.deepEqual(released(w, stray.id), []);
     assert.equal(w.store.payments.get(stray.id)?.releaseAfter, undefined);
   });

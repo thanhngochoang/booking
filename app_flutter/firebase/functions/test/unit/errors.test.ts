@@ -42,6 +42,7 @@ describe('toHttpsError', () => {
       pickup_required: 'failed-precondition',
       addon_limit: 'resource-exhausted',
       contact_leak: 'invalid-argument',
+      not_ready: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

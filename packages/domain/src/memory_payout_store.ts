@@ -60,8 +60,8 @@ export class MemoryPayoutStore implements PayoutStore {
     const totals = new Map<string, number>();
     for (const p of this.booking.payments.values()) {
       if (!isPayoutPayable(p)) continue;
-      const net = p.amount - this.refunded(p.id);
-      if (net > 0) totals.set(p.payeeId, (totals.get(p.payeeId) ?? 0) + net);
+      const amount = p.milestones ? (p.payableAmount ?? 0) : p.amount - this.refunded(p.id);
+      if (amount > 0) totals.set(p.payeeId, (totals.get(p.payeeId) ?? 0) + amount);
     }
     return [...totals.entries()].map(([payeeId, amount]) => ({
       payeeId,

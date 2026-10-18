@@ -168,25 +168,83 @@ describe('Task 2: Booking state machine & transitions', () => {
       // end: 2026-10-15 16:00 VN (09:00 UTC)
       const now = new Date('2026-10-15T09:00:00.000Z');
       const booking = { ...baseBooking, status: 'upcoming' as const };
-      const res = decideTransition(booking, 'complete', { id: 'photog_01', role: 'photographer' }, now);
-      assert.equal(res.nextStatus, 'completed');
+      const res = decideTransition(booking, 'mark_shot', { id: 'photog_01', role: 'photographer' }, now);
+      assert.equal(res.nextStatus, 'shot');
     });
 
-    it('photographer cannot complete before end time (not_eligible)', () => {
+    it('photographer mark_shot after the end moves upcoming to shot', () => {
+      const now = new Date('2026-10-15T09:00:00.000Z');
+      const booking = { ...baseBooking, status: 'upcoming' as const };
+      const res = decideTransition(booking, 'mark_shot', { id: 'photog_01', role: 'photographer' }, now);
+      assert.equal(res.nextStatus, 'shot');
+    });
+
+    it('mark_shot before the end is not_eligible', () => {
       const now = new Date('2026-10-15T08:59:59.000Z');
       const booking = { ...baseBooking, status: 'upcoming' as const };
       assert.throws(
-        () => decideTransition(booking, 'complete', { id: 'photog_01', role: 'photographer' }, now),
+        () => decideTransition(booking, 'mark_shot', { id: 'photog_01', role: 'photographer' }, now),
         (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
       );
     });
 
-    it('system can auto-complete 24h after end time', () => {
-      // end + 24h: 2026-10-16 09:00 UTC
-      const now = new Date('2026-10-16T09:00:00.000Z');
+    it('complete is an alias of mark_shot', () => {
+      const now = new Date('2026-10-15T09:00:00.000Z');
       const booking = { ...baseBooking, status: 'upcoming' as const };
-      const res = decideTransition(booking, 'complete', { role: 'system' }, now);
+      const res = decideTransition(booking, 'complete', { id: 'photog_01', role: 'photographer' }, now);
+      assert.equal(res.nextStatus, 'shot');
+    });
+
+    it('system mark_shot needs end + 24 h', () => {
+      // end + 24h: 2026-10-16 09:00 UTC
+      const nowBefore = new Date('2026-10-16T08:59:00.000Z');
+      const booking = { ...baseBooking, status: 'upcoming' as const };
+      assert.throws(
+        () => decideTransition(booking, 'mark_shot', { role: 'system' }, nowBefore),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+
+      const now = new Date('2026-10-16T09:00:00.000Z');
+      const res = decideTransition(booking, 'mark_shot', { role: 'system' }, now);
+      assert.equal(res.nextStatus, 'shot');
+    });
+
+    it('finish moves approved to completed after checkUntil', () => {
+      const checkUntil = '2026-10-18T10:00:00.000Z';
+      const now = new Date('2026-10-18T10:00:01.000Z');
+      const booking = { ...baseBooking, status: 'approved' as const, checkUntil };
+      const res = decideTransition(booking, 'finish', { role: 'system' }, now);
       assert.equal(res.nextStatus, 'completed');
+    });
+
+    it('finish before checkUntil is conflict', () => {
+      const checkUntil = '2026-10-18T10:00:00.000Z';
+      const now = new Date('2026-10-18T09:59:59.000Z');
+      const booking = { ...baseBooking, status: 'approved' as const, checkUntil };
+      assert.throws(
+        () => decideTransition(booking, 'finish', { role: 'system' }, now),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+    });
+
+    it('finish on a disputed escrow is not_eligible', () => {
+      const checkUntil = '2026-10-18T10:00:00.000Z';
+      const now = new Date('2026-10-18T10:01:00.000Z');
+      const booking = { ...baseBooking, status: 'approved' as const, checkUntil, escrowStatus: 'disputed' as const };
+      assert.throws(
+        () => decideTransition(booking, 'finish', { role: 'system' }, now),
+        (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+      );
+    });
+
+    it('customer cannot finish', () => {
+      const checkUntil = '2026-10-18T10:00:00.000Z';
+      const now = new Date('2026-10-18T10:01:00.000Z');
+      const booking = { ...baseBooking, status: 'approved' as const, checkUntil };
+      assert.throws(
+        () => decideTransition(booking, 'finish', { id: 'cust_01', role: 'customer' }, now),
+        (err: unknown) => err instanceof DomainError && err.code === 'permission_denied',
+      );
     });
 
     it('the retired review action is refused (reviews go through submitReview)', () => {

@@ -97,6 +97,30 @@ abstract class BookingEventRecord with _$BookingEventRecord {
 }
 
 @freezed
+abstract class PhotoNote with _$PhotoNote {
+  const factory PhotoNote({
+    required int sampleIndex,
+    required String note,
+  }) = _PhotoNote;
+
+  factory PhotoNote.fromJson(Map<String, dynamic> json) =>
+      _$PhotoNoteFromJson(json);
+}
+
+@freezed
+abstract class ExtraRound with _$ExtraRound {
+  const factory ExtraRound({
+    required String status,
+    required DateTime at,
+    String? note,
+    @Default(<PhotoNote>[]) List<PhotoNote> photoNotes,
+  }) = _ExtraRound;
+
+  factory ExtraRound.fromJson(Map<String, dynamic> json) =>
+      _$ExtraRoundFromJson(json);
+}
+
+@freezed
 abstract class Booking with _$Booking {
   const Booking._();
 
@@ -131,6 +155,19 @@ abstract class Booking with _$Booking {
     DateTime? depositRefundedAt,
     DateTime? acceptDeadline,
     BookingCancel? cancel,
+    DateTime? shotAt,
+    DateTime? deliveredAt,
+    DateTime? approvedAt,
+    DateTime? checkUntil,
+    DateTime? autoApproveAt,
+    DateTime? autoApproveNoticeAt,
+    DateTime? samplesPurgeAfter,
+    @Default(0) int deliveryRound,
+    @Default(1) int revisionsIncluded,
+    @Default(0) int revisionsUsed,
+    @Default(0) int revisionsGranted,
+    ExtraRound? extraRound,
+    @Default(false) bool samplesPurged,
     DateTime? completedAt,
     DateTime? reviewedAt,
     String? chatId,
@@ -229,6 +266,34 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
     final createdAt = toDateTime(data['createdAt']) ?? DateTime.now().toUtc();
     final updatedAt = toDateTime(data['updatedAt']) ?? createdAt;
 
+    ExtraRound? extraRound;
+    final extraRaw = data['extraRound'];
+    if (extraRaw is Map<String, dynamic>) {
+      final at = toDateTime(extraRaw['at']);
+      if (at != null) {
+        final notesRaw = extraRaw['photoNotes'];
+        final photoNotes = <PhotoNote>[];
+        if (notesRaw is List) {
+          for (final n in notesRaw) {
+            if (n is Map && n['sampleIndex'] is num && n['note'] is String) {
+              photoNotes.add(
+                PhotoNote(
+                  sampleIndex: (n['sampleIndex'] as num).toInt(),
+                  note: n['note'] as String,
+                ),
+              );
+            }
+          }
+        }
+        extraRound = ExtraRound(
+          status: extraRaw['status'] as String? ?? 'pending',
+          at: at,
+          note: extraRaw['note'] as String?,
+          photoNotes: photoNotes,
+        );
+      }
+    }
+
     return Booking(
       id: id,
       customerId: data['customerId'] as String? ?? '',
@@ -256,6 +321,19 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       depositRefundedAt: toDateTime(data['depositRefundedAt']),
       acceptDeadline: toDateTime(data['acceptDeadline']),
       cancel: cancel,
+      shotAt: toDateTime(data['shotAt']),
+      deliveredAt: toDateTime(data['deliveredAt']),
+      approvedAt: toDateTime(data['approvedAt']),
+      checkUntil: toDateTime(data['checkUntil']),
+      autoApproveAt: toDateTime(data['autoApproveAt']),
+      autoApproveNoticeAt: toDateTime(data['autoApproveNoticeAt']),
+      samplesPurgeAfter: toDateTime(data['samplesPurgeAfter']),
+      deliveryRound: (data['deliveryRound'] as num?)?.toInt() ?? 0,
+      revisionsIncluded: (data['revisionsIncluded'] as num?)?.toInt() ?? 1,
+      revisionsUsed: (data['revisionsUsed'] as num?)?.toInt() ?? 0,
+      revisionsGranted: (data['revisionsGranted'] as num?)?.toInt() ?? 0,
+      extraRound: extraRound,
+      samplesPurged: data['samplesPurged'] as bool? ?? false,
       completedAt: toDateTime(data['completedAt']),
       reviewedAt: toDateTime(data['reviewedAt']),
       chatId: data['chatId'] as String?,

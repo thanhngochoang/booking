@@ -641,4 +641,44 @@ void main() {
       expect(find.text('Sự kiện của tôi'), findsNothing);
     });
   });
+
+  group('S06.01 Chờ bàn giao (Task 7)', () {
+    testWidgets('"Chờ bàn giao" lists shot and revision_requested bookings with badges and opens /b/:id', (tester) async {
+      final shotB = makeTestBooking(
+        id: 'b-shot',
+        status: BookingStatus.shot,
+        photographerId: detailPhotographerUid,
+        customerId: 'c1',
+      );
+      final revisionB = makeTestBooking(
+        id: 'b-rev',
+        status: BookingStatus.revisionRequested,
+        photographerId: detailPhotographerUid,
+        customerId: 'c2',
+      ).copyWith(deliveryRound: 1);
+
+      final h = await _pump(
+        tester,
+        _repo([shotB, revisionB]),
+        viewSize: const Size(390, 2400),
+      );
+      await _settle(tester);
+
+      final section = find.byKey(const Key('to-deliver-section'));
+      expect(section, findsOneWidget);
+      expect(find.text('Chờ bàn giao'), findsOneWidget);
+      expect(find.byKey(const Key('to-deliver-b-shot')), findsOneWidget);
+      expect(find.byKey(const Key('to-deliver-b-rev')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('to-deliver-b-shot')));
+      await _settle(tester);
+      expect(h.location, '/b/b-shot');
+    });
+
+    testWidgets('section is hidden when toDeliver is empty', (tester) async {
+      await _pump(tester, _repo(_busy()), viewSize: const Size(390, 2400));
+      await _settle(tester);
+      expect(find.byKey(const Key('to-deliver-section')), findsNothing);
+    });
+  });
 }

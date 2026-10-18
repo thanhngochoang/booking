@@ -173,11 +173,11 @@ void main() {
       );
     });
 
-    test('accepted, photographer after endsAt → contact, complete', () {
+    test('accepted, photographer after endsAt → contact, markShot', () {
       final b = _b(BookingStatus.upcoming);
       expect(detailActions(b, BookingRole.photographer, endsAt, _off), [
         DetailAction.contact,
-        DetailAction.complete,
+        DetailAction.markShot,
       ]);
     });
 
@@ -288,17 +288,18 @@ void main() {
         l,
         photographerName: 'Minh Trí',
       );
-      expect(steps, hasLength(7));
+      expect(steps, hasLength(8));
       expect(steps[0].title, 'Đã gửi & thanh toán');
       expect(steps[0].subtitle, 'Hôm nay 09:41 · 450.000₫');
       expect(steps[1].title, 'Chờ Minh Trí nhận');
       expect(steps[1].subtitle, 'Thường trong 1 giờ');
       expect(steps[3].title, 'Sắp tới · T2 12/10');
-      expect(steps[5].subtitle, 'Trả 1.050.000₫ tại chỗ');
-      expect(steps[6].title, 'Đánh giá & chia sẻ ảnh');
+      expect(steps[6].subtitle, 'Trả 1.050.000₫ tại chỗ');
+      expect(steps[7].title, 'Đánh giá & chia sẻ ảnh');
       expect(states(steps), [
         TimelineStepState.done,
         TimelineStepState.current,
+        TimelineStepState.upcoming,
         TimelineStepState.upcoming,
         TimelineStepState.upcoming,
         TimelineStepState.upcoming,
@@ -329,7 +330,7 @@ void main() {
         l,
         photographerName: 'Minh Trí',
       );
-      expect(steps, hasLength(7));
+      expect(steps, hasLength(8));
       expect(states(steps).take(4), [
         TimelineStepState.done,
         TimelineStepState.done,
@@ -369,10 +370,11 @@ void main() {
         TimelineStepState.current,
         TimelineStepState.upcoming,
         TimelineStepState.upcoming,
+        TimelineStepState.upcoming,
       ]);
     });
 
-    test('completed: 1–6 done with completion time, 7 upcoming', () {
+    test('completed: 1–7 done with completion time, 8 upcoming', () {
       final completedAt = DateTime.utc(2026, 10, 12, 11, 0); // 18:00 VN
       final steps = timelineSteps(
         _b(BookingStatus.completed, completedAt: completedAt),
@@ -382,10 +384,10 @@ void main() {
         photographerName: 'Minh Trí',
       );
       expect(states(steps), [
-        for (var i = 0; i < 6; i++) TimelineStepState.done,
+        for (var i = 0; i < 7; i++) TimelineStepState.done,
         TimelineStepState.upcoming,
       ]);
-      expect(steps[5].subtitle, '12/10 18:00');
+      expect(steps[6].subtitle, '12/10 18:00');
     });
 
     test('reviewed: all done', () {
@@ -396,7 +398,7 @@ void main() {
         l,
         photographerName: 'Minh Trí',
       );
-      expect(steps, hasLength(7));
+      expect(steps, hasLength(8));
       expect(states(steps), everyElement(TimelineStepState.done));
     });
 

@@ -113,7 +113,7 @@ describe('seed fixtures', () => {
   });
 
   test('money follows the up-front rule: the whole price is paid, nothing remains, integer VND', () => {
-    for (const d of seedDocuments(NOW).filter((x) => x.path.startsWith('bookings/') && !x.path.includes('/private/'))) {
+    for (const d of seedDocuments(NOW).filter((x) => /^bookings\/[^/]+$/.test(x.path))) {
       const data = d.data as { service: { price: number }; deposit: { amount: number }; remaining: number };
       assert.equal(data.deposit.amount, computeDeposit(data.service.price).deposit, d.path);
       assert.equal(data.remaining, 0, d.path);
@@ -339,13 +339,56 @@ describe('seed payouts and earnings', () => {
   test('the earnings projection equals the payments', () => {
     const e = get('earnings/seed-photographer-an');
     const dep = (price: number) => computeDeposit(price).deposit;
-    // held: accepted + upcoming + disputed; soon: completed-recent; received: completed-old.
-    assert.equal(e?.heldAmount, 3 * dep(1_500_000));
-    assert.equal(e?.soonAmount, dep(1_500_000));
+    // An has:
+    // - Legacy bookings: accepted (held 1.5m), upcoming (held 1.5m), disputed (held 1.5m), completed-recent (soon 1.5m), completed-old (received 1.5m)
+    // - Delivery milestone bookings (1.5m deposit each, 750k shoot / 750k delivery):
+    //   - shot: shoot held (750k), delivery held (750k) -> held 1.5m
+    //   - delivered: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
+    //   - revision_requested: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
+    //   - approved: shoot released (soon 750k), delivery released (soon 750k) -> soon 1.5m
+    // Total held = 1.5m * 3 + 1.5m (shot) + 750k (delivered) + 750k (revision) = 7.5m
+    // Total soon = 1.5m (recent) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 4.5m
+    // Total received = 1.5m (completed-old)
+    assert.equal(e?.heldAmount, 7_500_000);
+    assert.equal(e?.soonAmount, 4_500_000);
     assert.equal(e?.receivedAmount, dep(1_500_000));
     assert.equal((e?.lastPayout as { status: string }).status, 'paid');
     assert.equal(get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old')?.state, 'paid_out');
     assert.equal(get('earnings/seed-photographer-binh')?.heldAmount, dep(1_200_000));
+  });
+
+  test('seed has bookings in shot, delivered (round 1, 3 ready samples), revision_requested, approved with milestone payments', () => {
+    const docs = seedDocuments(NOW);
+    const shot = docs.find((d) => d.path === 'bookings/seed-booking-shot')?.data;
+    assert.ok(shot);
+    assert.equal(shot.status, 'shot');
+
+    const delivered = docs.find((d) => d.path === 'bookings/seed-booking-delivered')?.data;
+    assert.ok(delivered);
+    assert.equal(delivered.status, 'delivered');
+    assert.equal(delivered.deliveryRound, 1);
+    const round1 = docs.find((d) => d.path === 'bookings/seed-booking-delivered/deliveries/1')?.data;
+    assert.ok(round1);
+    assert.equal((round1.samples as any[]).length, 3);
+
+    const revision = docs.find((d) => d.path === 'bookings/seed-booking-revision')?.data;
+    assert.ok(revision);
+    assert.equal(revision.status, 'revision_requested');
+
+    const approved = docs.find((d) => d.path === 'bookings/seed-booking-approved')?.data;
+    assert.ok(approved);
+    assert.equal(approved.status, 'approved');
+    const privateDelivery = docs.find((d) => d.path === 'bookings/seed-booking-approved/private/delivery')?.data;
+    assert.ok(privateDelivery);
+    assert.ok(privateDelivery.unlockedAt !== null);
+
+    const payApproved = docs.find((d) => d.path === 'payments/seed-payment-seed-booking-approved')?.data;
+    assert.ok(payApproved);
+    assert.equal(payApproved.payableAmount, 1_500_000);
+    const shootMilestone = docs.find((d) => d.path === 'bookings/seed-booking-approved/milestones/shoot')?.data;
+    assert.equal(shootMilestone?.status, 'released');
+    const deliveryMilestone = docs.find((d) => d.path === 'bookings/seed-booking-approved/milestones/delivery')?.data;
+    assert.equal(deliveryMilestone?.status, 'released');
   });
 });
 

@@ -369,6 +369,9 @@ class FakeBookingRepository implements BookingRepository {
       case 'upcoming':
         nextStatus = BookingStatus.upcoming;
         break;
+      case 'mark_shot':
+        nextStatus = BookingStatus.shot;
+        break;
       case 'complete':
         nextStatus = BookingStatus.completed;
         break;
@@ -376,17 +379,21 @@ class FakeBookingRepository implements BookingRepository {
         nextStatus = b.status;
     }
 
+    final nowUtc = _clock().toUtc();
     final updated = b.copyWith(
       status: nextStatus,
+      shotAt: nextStatus == BookingStatus.shot ? nowUtc : b.shotAt,
       completedAt: nextStatus == BookingStatus.completed
-          ? DateTime.now().toUtc()
+          ? nowUtc
           : b.completedAt,
-      updatedAt: DateTime.now().toUtc(),
+      updatedAt: nowUtc,
     );
     bookings[bookingId] = updated;
     _bookingChanges.add(bookingId);
     return updated;
   }
+
+  final List<({String bookingId, String reason})> disputeCalls = [];
 
   @override
   Future<Booking> openDispute({
@@ -394,6 +401,7 @@ class FakeBookingRepository implements BookingRepository {
     required String reason,
   }) async {
     _checkNextError();
+    disputeCalls.add((bookingId: bookingId, reason: reason));
     final b = bookings[bookingId];
     if (b == null) throw StateError('Booking not found');
 

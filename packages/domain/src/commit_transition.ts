@@ -9,6 +9,7 @@ import { parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { DomainError } from './errors.js';
 import { applyRefundToPayment, isSettledPayment, type Payment, type Refund } from './escrow.js';
+import { releaseMilestone, splitMilestones, withMilestones } from './milestones.js';
 import { dispatchRefund } from './refunds.js';
 
 export async function commitTransition(
@@ -87,32 +88,61 @@ export async function commitTransition(
         depositRefunded += refundResult.refund.amount;
         pendingRefund = { refund: refundResult.refund, provider: payment.provider };
       }
-    } else if (nextStatus === 'completed') {
-      // Completed booking: the paid payment releases after the 24h dispute window (never a
-      // `created` or stray row, whose escrow is `held` from creation).
+    } else if (nextStatus === 'shot') {
       const payments = await deps.store.getPaymentsForBooking(current.id);
       const payment = payments.find(
         (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded'),
       );
       if (payment) {
-        const releaseAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        const updatedPayment = {
-          ...payment,
-          releaseAfter: releaseAfter.toISOString(),
-        };
+        const refunds = await deps.store.getRefundsForPayment(payment.id);
+        const escrowRefunds = refunds.reduce((sum, r) => (r.fromEscrow !== false ? sum + r.amount : sum), 0);
+        const net = payment.amount - escrowRefunds;
+        const ms = splitMilestones(net, now);
+        const updatedPayment = withMilestones(payment, ms, now.toISOString());
         await tx.setPayment(updatedPayment);
+        newEscrowStatus = updatedPayment.escrowStatus;
+      }
+    } else if (nextStatus === 'completed') {
+      const payments = await deps.store.getPaymentsForBooking(current.id);
+      const payment = payments.find(
+        (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'released'),
+      );
+      if (payment) {
+        if (payment.milestones) {
+          const deliveryMs = payment.milestones.find((m) => m.kind === 'delivery');
+          if (deliveryMs && deliveryMs.status === 'held') {
+            const rel = releaseMilestone(payment, 'delivery', deps.ids.newId(), now);
+            await tx.setPayment(rel.payment);
+            await tx.addLedgerEntry(rel.ledgerEntry);
+            newEscrowStatus = rel.payment.escrowStatus;
+          }
+        } else {
+          // Legacy payments without milestones
+          const releaseAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const updatedPayment = {
+            ...payment,
+            releaseAfter: releaseAfter.toISOString(),
+          };
+          await tx.setPayment(updatedPayment);
+        }
       }
     }
 
     // 3. Update booking
+    const samplesPurgeAfter = nextStatus === 'completed'
+      ? new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
+      : current.samplesPurgeAfter;
+
     const resultBooking: Booking = {
       ...current,
       status: nextStatus,
       escrowStatus: newEscrowStatus,
       depositRefunded: depositRefunded > 0 ? depositRefunded : undefined,
       cancel: decision.cancelRecord ?? current.cancel,
+      shotAt: nextStatus === 'shot' ? (current.shotAt ?? now.toISOString()) : current.shotAt,
       completedAt: nextStatus === 'completed' ? now.toISOString() : current.completedAt,
       reviewedAt: nextStatus === 'reviewed' ? now.toISOString() : current.reviewedAt,
+      samplesPurgeAfter,
       version: current.version + 1,
       updatedAt: now.toISOString(),
     };

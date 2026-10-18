@@ -11,6 +11,10 @@ enum BookingStatus {
   expired,
   cancelled,
   upcoming,
+  shot,
+  delivered,
+  revisionRequested,
+  approved,
   completed,
   reviewed,
 }
@@ -18,6 +22,7 @@ enum BookingStatus {
 /// The status for a stored code (`BookingStatus.name`); null when [code] is
 /// missing or unknown.
 BookingStatus? bookingStatusFromCode(String? code) {
+  if (code == 'revision_requested') return BookingStatus.revisionRequested;
   for (final s in BookingStatus.values) {
     if (s.name == code) return s;
   }
@@ -26,18 +31,26 @@ BookingStatus? bookingStatusFromCode(String? code) {
 
 extension BookingStatusX on BookingStatus {
   Color get color => switch (this) {
-    BookingStatus.draft || BookingStatus.requested => AppColors.bookingWaiting,
-    BookingStatus.accepted => AppColors.bookingAccepted,
+    BookingStatus.draft ||
+    BookingStatus.requested ||
+    BookingStatus.delivered => AppColors.bookingWaiting,
+    BookingStatus.accepted ||
+    BookingStatus.approved => AppColors.bookingAccepted,
     BookingStatus.declined ||
     BookingStatus.cancelled ||
     BookingStatus.expired => AppColors.bookingDenied,
-    BookingStatus.upcoming => AppColors.bookingOpened,
+    BookingStatus.upcoming ||
+    BookingStatus.shot ||
+    BookingStatus.revisionRequested => AppColors.bookingOpened,
     BookingStatus.completed ||
     BookingStatus.reviewed => AppColors.bookingClosed,
   };
 
   /// Text color on top of [color]; the warning yellow needs dark text.
-  Color get onColor => this == BookingStatus.upcoming
+  Color get onColor =>
+      (this == BookingStatus.upcoming ||
+          this == BookingStatus.shot ||
+          this == BookingStatus.revisionRequested)
       ? AppColors.foreground
       : AppColors.foregroundInverse;
 
@@ -48,6 +61,10 @@ extension BookingStatusX on BookingStatus {
     BookingStatus.expired => l.statusExpired,
     BookingStatus.cancelled => l.statusCancelled,
     BookingStatus.upcoming => l.statusUpcoming,
+    BookingStatus.shot => l.statusShot,
+    BookingStatus.delivered => l.statusDelivered,
+    BookingStatus.revisionRequested => l.statusRevisionRequested,
+    BookingStatus.approved => l.statusApproved,
     BookingStatus.completed => l.statusCompleted,
     BookingStatus.reviewed => l.statusReviewed,
   };

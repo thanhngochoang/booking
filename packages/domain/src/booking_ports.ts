@@ -5,6 +5,7 @@
 import type { AddonCatalog } from './addon_ports.js';
 import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
+import type { DeliveryRound, DeliverySample, PrivateDelivery } from './delivery.js';
 import type { Payment, PaymentMethod, PaymentSubject, Refund, RefundMethod, LedgerEntry } from './escrow.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
@@ -128,6 +129,12 @@ export interface BookingTx {
   getTransferRecord(id: string): Promise<TransferRecord | null>;
   /** Written in the same transaction as the payment and ledger changes, so a repeat is a no-op. */
   saveTransferRecord(record: TransferRecord): Promise<void>;
+  getDelivery(bookingId: string, round: number): Promise<DeliveryRound | null>;
+  setDelivery(d: DeliveryRound): Promise<void>;
+  getDeliverySamples(bookingId: string, fileIds: readonly string[]): Promise<(DeliverySample | null)[]>;
+  deleteDeliverySamples(bookingId: string, fileIds: readonly string[]): Promise<void>;
+  setPrivateDelivery(bookingId: string, p: PrivateDelivery): Promise<void>;
+  getPrivateDelivery(bookingId: string): Promise<PrivateDelivery | null>;
 }
 
 export interface BookingStore {
@@ -163,6 +170,12 @@ export interface BookingStore {
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
   findReleasableEscrows(cutoff: Date, limit?: number): Promise<readonly Payment[]>;
+  /** status delivered, autoApproveAt <= now */
+  findDueAutoApprovals(now: Date, limit?: number): Promise<readonly Booking[]>;
+  /** status approved, checkUntil <= now */
+  findDueChecks(now: Date, limit?: number): Promise<readonly Booking[]>;
+  /** status delivered, autoApproveNoticeAt null, autoApproveAt <= now + 24 h */
+  findDueAutoApproveNotices(now: Date, limit?: number): Promise<readonly Booking[]>;
 }
 
 export interface PaymentGateway {

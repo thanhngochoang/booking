@@ -5,6 +5,7 @@
 
 import type { AddonKind, AddonUnit } from './addon.js';
 import type { PaymentMethod } from './escrow.js';
+import type { ExtraRound } from './delivery.js';
 
 export const BOOKING_STATUSES = [
   'draft',
@@ -14,6 +15,10 @@ export const BOOKING_STATUSES = [
   'expired',
   'cancelled',
   'upcoming',
+  'shot',
+  'delivered',
+  'revision_requested',
+  'approved',
   'completed',
   'reviewed',
 ] as const;
@@ -139,6 +144,18 @@ export interface Booking {
   readonly payableUntil?: string;
   /** Number of free revision rounds included in this booking. */
   readonly revisionsIncluded?: number;
+  readonly revisionsUsed?: number;
+  readonly revisionsGranted?: number;
+  readonly deliveryRound?: number;
+  readonly shotAt?: string;
+  readonly deliveredAt?: string;
+  readonly approvedAt?: string;
+  readonly checkUntil?: string;
+  readonly autoApproveAt?: string;
+  readonly autoApproveNoticeAt?: string | null;
+  readonly extraRound?: ExtraRound | null;
+  readonly samplesPurgeAfter?: string | null;
+  readonly samplesPurged?: boolean;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;

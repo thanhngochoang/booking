@@ -22,10 +22,19 @@ Password for every account: `seed-password-1`
 |---|---|---|---|
 | `seed-booking-accepted` | Lan ↔ An | accepted | unlocked (all three channels) |
 | `seed-booking-upcoming` | Lan ↔ An | upcoming | unlocked |
+| `seed-booking-shot` | Lan ↔ An | shot | unlocked |
+| `seed-booking-delivered` | Lan ↔ An | delivered (round 1, 3 ready samples) | unlocked |
+| `seed-booking-revision` | Lan ↔ An | revision_requested (round 1) | unlocked |
+| `seed-booking-approved` | Lan ↔ An | approved (checkUntil in 47 h, link unlocked) | unlocked |
 | `seed-booking-requested-binh` | Lan ↔ Bình | requested | `call` only; `zalo`/`whatsapp` → `not_found` |
 | `seed-booking-cancelled` | Lan ↔ An | cancelled | `contact_locked` |
 | `seed-booking-completed-recent` | Lan ↔ An | completed 3 days before seeding | unlocked |
 | `seed-booking-completed-old` | Lan ↔ An | completed 40 days before seeding | `contact_locked` |
+
+### Delivery (two-layer)
+
+The seed includes two-layer delivery bookings (`shot`, `delivered`, `revision_requested`, `approved`) with milestone payments (shoot milestone released on delivered/revision/approved; delivery milestone released on approved). For local testing of delivery uploads and sample watermarks, the seed needs the Storage emulator (`FIREBASE_STORAGE_EMULATOR_HOST`).
+
 
 | Post / album | Owner | Notes |
 |---|---|---|

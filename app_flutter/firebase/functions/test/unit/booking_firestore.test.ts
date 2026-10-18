@@ -50,7 +50,24 @@ describe('Firestore <-> Domain booking mappers', () => {
     completedAt: '2026-10-15T09:00:00.000Z',
     reviewedAt: '2026-10-16T10:00:00.000Z',
     chatId: 'chat_01',
+    shotAt: '2026-10-15T16:00:00.000Z',
+    deliveredAt: '2026-10-16T16:00:00.000Z',
+    approvedAt: '2026-10-17T10:00:00.000Z',
+    checkUntil: '2026-10-19T10:00:00.000Z',
+    autoApproveAt: '2026-10-19T16:00:00.000Z',
+    autoApproveNoticeAt: '2026-10-18T16:00:00.000Z',
+    deliveryRound: 2,
     revisionsIncluded: 2,
+    revisionsUsed: 1,
+    revisionsGranted: 1,
+    extraRound: {
+      status: 'pending',
+      at: '2026-10-17T09:00:00.000Z',
+      note: 'Thêm 1 lượt chỉnh sáng',
+      photoNotes: [{ sampleIndex: 0, note: 'Tăng sáng góc trái' }],
+    },
+    samplesPurgeAfter: '2027-01-15T09:00:00.000Z',
+    samplesPurged: false,
     version: 2,
     createdAt: '2026-10-10T09:00:00.000Z',
     updatedAt: '2026-10-10T10:00:00.000Z',
@@ -61,7 +78,18 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.ok(docData.place.point instanceof GeoPoint);
     assert.ok(docData.createdAt instanceof Timestamp);
     assert.ok(docData.acceptDeadline instanceof Timestamp);
+    assert.ok(docData.shotAt instanceof Timestamp);
+    assert.ok(docData.deliveredAt instanceof Timestamp);
+    assert.ok(docData.approvedAt instanceof Timestamp);
+    assert.ok(docData.checkUntil instanceof Timestamp);
+    assert.ok(docData.autoApproveAt instanceof Timestamp);
+    assert.ok(docData.autoApproveNoticeAt instanceof Timestamp);
+    assert.ok(docData.samplesPurgeAfter instanceof Timestamp);
+    assert.equal(docData.deliveryRound, 2);
     assert.equal(docData.revisionsIncluded, 2);
+    assert.equal(docData.revisionsUsed, 1);
+    assert.equal(docData.revisionsGranted, 1);
+    assert.equal(docData.samplesPurged, false);
 
     const restored = bookingFromFirestore('b_01', docData);
     assert.ok(restored);
@@ -75,7 +103,19 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(restored.depositPaidAt, sampleBooking.depositPaidAt);
     assert.equal(restored.acceptDeadline, sampleBooking.acceptDeadline);
     assert.deepEqual(restored.cancel, sampleBooking.cancel);
+    assert.equal(restored.shotAt, sampleBooking.shotAt);
+    assert.equal(restored.deliveredAt, sampleBooking.deliveredAt);
+    assert.equal(restored.approvedAt, sampleBooking.approvedAt);
+    assert.equal(restored.checkUntil, sampleBooking.checkUntil);
+    assert.equal(restored.autoApproveAt, sampleBooking.autoApproveAt);
+    assert.equal(restored.autoApproveNoticeAt, sampleBooking.autoApproveNoticeAt);
+    assert.equal(restored.deliveryRound, 2);
     assert.equal(restored.revisionsIncluded, 2);
+    assert.equal(restored.revisionsUsed, 1);
+    assert.equal(restored.revisionsGranted, 1);
+    assert.deepEqual(restored.extraRound, sampleBooking.extraRound);
+    assert.equal(restored.samplesPurgeAfter, sampleBooking.samplesPurgeAfter);
+    assert.equal(restored.samplesPurged, false);
     assert.equal(restored.version, sampleBooking.version);
     assert.deepEqual(restored.addons, sampleBooking.addons);
     assert.deepEqual(restored.pickup, sampleBooking.pickup);
@@ -160,6 +200,32 @@ describe('Firestore <-> Domain booking mappers', () => {
     const payerDoc = paymentToFirestore(paymentWithPayer);
     assert.doesNotMatch(JSON.stringify(payerDoc), /0071000123456/);
     assert.deepEqual(paymentFromFirestore('pay_01', payerDoc), paymentWithPayer);
+
+    // a payment round-trips milestones and payableAmount
+    const paymentWithMilestones: Payment = {
+      ...paymentWithPayer,
+      payableAmount: 150_000,
+      milestones: [
+        {
+          kind: 'shoot',
+          amount: 150_000,
+          status: 'released',
+          releaseAfter: '2026-10-16T09:00:00.000Z',
+          releasedAt: '2026-10-16T09:00:00.000Z',
+          payoutId: null,
+        },
+        {
+          kind: 'delivery',
+          amount: 150_000,
+          status: 'held',
+          releaseAfter: null,
+          releasedAt: null,
+          payoutId: null,
+        },
+      ],
+    };
+    const milestoneDoc = paymentToFirestore(paymentWithMilestones);
+    assert.deepEqual(paymentFromFirestore('pay_01', milestoneDoc), paymentWithMilestones);
   });
 
   it('round-trips Refund and LedgerEntry', () => {

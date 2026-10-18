@@ -457,7 +457,7 @@ service cloud.firestore {
     }
 
     function isBookingContactUnlocked(b) {
-      return b.status in ['requested', 'accepted', 'upcoming']
+      return b.status in ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved']
         || ((b.status in ['completed', 'reviewed'])
             && ('completedAt' in b)
             && b.completedAt != null
@@ -468,6 +468,9 @@ service cloud.firestore {
     // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The
     // private/contact and events sub-rules are #136's and stay customer/photographer only.
     match /bookings/{bookingId} {
+      function bk() { return get(/databases/$(database)/documents/bookings/$(bookingId)).data; }
+      function isParty() { return signedIn() && (bk().customerId == request.auth.uid || bk().photographerId == request.auth.uid); }
+
       allow read: if signedIn()
         && (resource.data.customerId == request.auth.uid
             || resource.data.photographerId == request.auth.uid
@@ -475,17 +478,19 @@ service cloud.firestore {
       allow write: if false; // only Cloud Functions (sub-project 4)
 
       match /private/{docId} {
-        allow read: if signedIn()
-          && docId == 'contact'
-          && (
-            get(/databases/$(database)/documents/bookings/$(bookingId)).data.customerId == request.auth.uid
-            || (
-              get(/databases/$(database)/documents/bookings/$(bookingId)).data.photographerId == request.auth.uid
-              && isBookingContactUnlocked(get(/databases/$(database)/documents/bookings/$(bookingId)).data)
-            )
-          );
+        allow read: if signedIn() && (
+          (docId == 'contact'
+            && (bk().customerId == request.auth.uid
+                || (bk().photographerId == request.auth.uid && isBookingContactUnlocked(bk()))))
+          || (docId == 'delivery'
+            && (bk().photographerId == request.auth.uid
+                || (bk().customerId == request.auth.uid && bk().status in ['approved', 'completed']))));
         allow write: if false;
       }
+
+      match /deliveries/{round} { allow read: if isParty(); allow write: if false; }
+      match /deliverySamples/{fileId} { allow read: if signedIn() && bk().photographerId == request.auth.uid; allow write: if false; }
+      match /milestones/{kind} { allow read: if isParty(); allow write: if false; }
 
       match /events/{eventId} {
         allow read: if signedIn()

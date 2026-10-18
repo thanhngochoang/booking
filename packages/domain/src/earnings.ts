@@ -33,6 +33,10 @@ export interface EarningItem {
   readonly day: string;
   /** Gross (the booking money kept after refunds); KPIs add this. */
   readonly amount: number;
+  /** Milestone amounts breakdown (when present, sum = amount). */
+  readonly heldAmount?: number;
+  readonly soonAmount?: number;
+  readonly receivedAmount?: number;
   /** Breakdown: from the payout item once paid out (`estimated` false), else today's policy. */
   readonly platformFee: number;
   readonly taxWithheld: number;
@@ -58,6 +62,13 @@ export interface EarningsSummary {
 }
 
 export function earningStateOf(p: Payment): EarningState | null {
+  if (p.milestones) {
+    if (p.milestones.some((m) => m.status === 'disputed')) return 'disputed';
+    if (p.milestones.some((m) => m.status === 'released')) return 'released';
+    if (p.milestones.some((m) => m.status === 'held')) return 'held';
+    if (p.milestones.every((m) => m.status === 'refunded')) return null;
+    return 'paid_out';
+  }
   switch (p.escrowStatus) {
     case 'held':
     case 'partially_refunded':
@@ -94,8 +105,39 @@ export function earningItemOf(i: {
   if (!payment.payeeId || !paid || state === null || net <= 0) return null;
 
   let holdReason: string | null = null;
-  if (state === 'disputed') holdReason = HOLD_REASON_DISPUTE;
-  else if (state === 'released' && payout?.status === 'on_hold') holdReason = HOLD_REASON_PAYOUT_ON_HOLD;
+  if (payment.milestones) {
+    if (payment.milestones.some((m) => m.status === 'disputed')) {
+      holdReason = HOLD_REASON_DISPUTE;
+    } else if (state === 'released' && payout?.status === 'on_hold') {
+      holdReason = HOLD_REASON_PAYOUT_ON_HOLD;
+    }
+  } else {
+    if (state === 'disputed') holdReason = HOLD_REASON_DISPUTE;
+    else if (state === 'released' && payout?.status === 'on_hold') holdReason = HOLD_REASON_PAYOUT_ON_HOLD;
+  }
+
+  let heldAmount: number | undefined;
+  let soonAmount: number | undefined;
+  let receivedAmount: number | undefined;
+
+  let milestonesDone = subject.milestones?.done ?? null;
+  let milestonesTotal = subject.milestones?.total ?? null;
+
+  if (payment.milestones) {
+    heldAmount = payment.milestones
+      .filter((m) => m.status === 'held' || m.status === 'disputed')
+      .reduce((s, m) => s + m.amount, 0);
+    soonAmount = payment.milestones
+      .filter((m) => m.status === 'released')
+      .reduce((s, m) => s + m.amount, 0);
+    receivedAmount = payment.milestones
+      .filter((m) => m.status === 'paid_out')
+      .reduce((s, m) => s + m.amount, 0);
+
+    const doneCount = payment.milestones.filter((m) => m.status === 'released' || m.status === 'paid_out').length;
+    milestonesDone = doneCount;
+    milestonesTotal = payment.milestones.length;
+  }
 
   const breakdown = breakdownOf(state, payment.id, net, payout, payeeType, policy);
   return {
@@ -107,9 +149,12 @@ export function earningItemOf(i: {
     subjectLabel: subject.label,
     day: subject.day,
     amount: net,
+    heldAmount,
+    soonAmount,
+    receivedAmount,
     ...breakdown,
-    milestonesDone: subject.milestones?.done ?? null,
-    milestonesTotal: subject.milestones?.total ?? null,
+    milestonesDone,
+    milestonesTotal,
     state,
     holdReason,
     paidOutAt: state === 'paid_out' ? (payout?.paidAt ?? payment.updatedAt) : null,
@@ -159,9 +204,15 @@ export function summarizeEarnings(
   let soonAmount = 0;
   let receivedAmount = 0;
   for (const it of items) {
-    if (it.state === 'held' || it.state === 'disputed') heldAmount += it.amount;
-    else if (it.state === 'released') soonAmount += it.amount;
-    else receivedAmount += it.amount;
+    if (it.heldAmount !== undefined || it.soonAmount !== undefined || it.receivedAmount !== undefined) {
+      heldAmount += it.heldAmount ?? 0;
+      soonAmount += it.soonAmount ?? 0;
+      receivedAmount += it.receivedAmount ?? 0;
+    } else {
+      if (it.state === 'held' || it.state === 'disputed') heldAmount += it.amount;
+      else if (it.state === 'released') soonAmount += it.amount;
+      else receivedAmount += it.amount;
+    }
   }
   return {
     payeeId,

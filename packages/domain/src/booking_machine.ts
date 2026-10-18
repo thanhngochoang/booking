@@ -12,7 +12,9 @@ export type TransitionAction =
   | 'decline'
   | 'cancel'
   | 'upcoming'
-  | 'complete'
+  | 'mark_shot'
+  | 'complete' // alias of mark_shot
+  | 'finish'
   | 'expire';
 
 export type ActorRole = 'customer' | 'photographer' | 'system';
@@ -190,24 +192,50 @@ export function decideTransition(
       };
     }
 
+    case 'mark_shot':
     case 'complete': {
       if (!['accepted', 'upcoming'].includes(booking.status)) {
         throw new DomainError('conflict');
       }
 
       if (actor.role === 'photographer') {
-        // Photographer can complete only after end time
+        // Photographer can mark shot only after end time
         if (now.getTime() < endsAt.getTime()) {
           throw new DomainError('not_eligible');
         }
       } else if (actor.role === 'system') {
-        // System auto-completes 24h after end time
+        // System auto mark-shots 24h after end time
         const autoTime = endsAt.getTime() + AUTO_COMPLETE_DELAY_HOURS * 60 * 60 * 1000;
         if (now.getTime() < autoTime) {
           throw new DomainError('conflict');
         }
       } else {
         throw new DomainError('permission_denied');
+      }
+
+      return { nextStatus: 'shot', refundPercent: 0 };
+    }
+
+    case 'finish': {
+      if (booking.status !== 'approved') {
+        throw new DomainError('conflict');
+      }
+
+      if (actor.role === 'customer') {
+        throw new DomainError('permission_denied');
+      }
+
+      if (booking.escrowStatus === 'disputed') {
+        throw new DomainError('not_eligible');
+      }
+
+      if (!booking.checkUntil) {
+        throw new DomainError('conflict');
+      }
+
+      const checkTime = new Date(booking.checkUntil).getTime();
+      if (now.getTime() < checkTime) {
+        throw new DomainError('conflict');
       }
 
       return { nextStatus: 'completed', refundPercent: 0 };

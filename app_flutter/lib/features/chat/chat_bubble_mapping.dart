@@ -23,6 +23,10 @@ String? bookingStatusSentence(BookingStatus status, AppLocalizations l) =>
       BookingStatus.completed => l.chatSysCompleted,
       BookingStatus.draft ||
       BookingStatus.upcoming ||
+      BookingStatus.shot ||
+      BookingStatus.delivered ||
+      BookingStatus.revisionRequested ||
+      BookingStatus.approved ||
       BookingStatus.reviewed => null,
     };
 

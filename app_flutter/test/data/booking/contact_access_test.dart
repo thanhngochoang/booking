@@ -12,6 +12,10 @@ void main() {
       BookingStatus.requested,
       BookingStatus.accepted,
       BookingStatus.upcoming,
+      BookingStatus.shot,
+      BookingStatus.delivered,
+      BookingStatus.revisionRequested,
+      BookingStatus.approved,
     ]) {
       expect(
         contactAccessForBooking(s, now: now),

@@ -5,6 +5,7 @@
 import type { Booking, BookingContactSnapshot, BookingEventRecord } from './booking.js';
 import type { AvailabilityDayRecord, BookingStore, BookingTx, TransferRecord } from './booking_ports.js';
 import { parseVnDateTime } from './booking_policy.js';
+import type { DeliveryRound, DeliverySample, PrivateDelivery } from './delivery.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 
 export class MemoryBookingStore implements BookingStore {
@@ -16,6 +17,9 @@ export class MemoryBookingStore implements BookingStore {
   readonly ledgerEntries = new Map<string, LedgerEntry>();
   readonly events: BookingEventRecord[] = [];
   readonly transferRecords = new Map<string, TransferRecord>();
+  readonly deliveries = new Map<string, DeliveryRound>(); // key: `${bookingId}_${round}`
+  readonly deliverySamples = new Map<string, DeliverySample>(); // key: `${bookingId}_${fileId}`
+  readonly privateDeliveries = new Map<string, PrivateDelivery>(); // key: bookingId
 
   private availabilityKey(photographerId: string, day: string): string {
     return `${photographerId}_${day}`;
@@ -65,6 +69,31 @@ export class MemoryBookingStore implements BookingStore {
       getTransferRecord: async (id) => this.getTransferRecord(id),
       saveTransferRecord: async (record) => {
         this.transferRecords.set(record.id, { ...record });
+      },
+      getDelivery: async (bookingId, round) => {
+        const d = this.deliveries.get(`${bookingId}_${round}`);
+        return d ? { ...d } : null;
+      },
+      setDelivery: async (d) => {
+        this.deliveries.set(`${d.bookingId}_${d.round}`, { ...d });
+      },
+      getDeliverySamples: async (bookingId, fileIds) => {
+        return fileIds.map((fid) => {
+          const s = this.deliverySamples.get(`${bookingId}_${fid}`);
+          return s ? { ...s } : null;
+        });
+      },
+      deleteDeliverySamples: async (bookingId, fileIds) => {
+        for (const fid of fileIds) {
+          this.deliverySamples.delete(`${bookingId}_${fid}`);
+        }
+      },
+      setPrivateDelivery: async (bookingId, p) => {
+        this.privateDeliveries.set(bookingId, { ...p });
+      },
+      getPrivateDelivery: async (bookingId) => {
+        const p = this.privateDeliveries.get(bookingId);
+        return p ? { ...p } : null;
       },
     };
 
@@ -291,6 +320,45 @@ export class MemoryBookingStore implements BookingStore {
         new Date(p.releaseAfter).getTime() <= cutoff.getTime()
       ) {
         res.push({ ...p });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findDueAutoApprovals(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const res: Booking[] = [];
+    for (const b of this.bookings.values()) {
+      if (b.status === 'delivered' && b.autoApproveAt && new Date(b.autoApproveAt).getTime() <= now.getTime()) {
+        res.push({ ...b });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findDueChecks(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const res: Booking[] = [];
+    for (const b of this.bookings.values()) {
+      if (b.status === 'approved' && b.checkUntil && new Date(b.checkUntil).getTime() <= now.getTime()) {
+        res.push({ ...b });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findDueAutoApproveNotices(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const res: Booking[] = [];
+    const threshold = now.getTime() + 24 * 60 * 60 * 1000;
+    for (const b of this.bookings.values()) {
+      if (
+        b.status === 'delivered' &&
+        (b.autoApproveNoticeAt === null || b.autoApproveNoticeAt === undefined) &&
+        b.autoApproveAt &&
+        new Date(b.autoApproveAt).getTime() <= threshold
+      ) {
+        res.push({ ...b });
         if (res.length >= limit) break;
       }
     }

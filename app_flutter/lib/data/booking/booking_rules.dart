@@ -61,8 +61,12 @@ class BookingRules {
   static BookingTab? tabForBooking(Booking booking) {
     return switch (booking.status) {
       BookingStatus.draft => null,
-      BookingStatus.requested => BookingTab.pending,
+      BookingStatus.requested ||
+      BookingStatus.shot ||
+      BookingStatus.delivered ||
+      BookingStatus.revisionRequested => BookingTab.pending,
       BookingStatus.accepted || BookingStatus.upcoming => BookingTab.upcoming,
+      BookingStatus.approved ||
       BookingStatus.completed ||
       BookingStatus.reviewed ||
       BookingStatus.declined ||
@@ -107,9 +111,11 @@ class BookingRules {
     return map;
   }
 
-  /// A finished shoot the customer has not reviewed yet.
+  /// An approved or completed shoot the customer has not reviewed yet.
   static bool canReview(Booking booking) =>
-      booking.status == BookingStatus.completed && booking.reviewedAt == null;
+      (booking.status == BookingStatus.approved ||
+          booking.status == BookingStatus.completed) &&
+      booking.reviewedAt == null;
 
   /// Reviewed: `reviewedAt` is set (a booking keeps its status after a
   /// review), or the legacy status `reviewed`.

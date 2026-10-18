@@ -80,6 +80,25 @@ service firebase.storage {
       allow delete: if isOwner(uid);
     }
 
+    // Delivery temporary clean uploads: thợ tải lên, server đọc/đóng watermark rồi xoá ngay.
+    match /deliveryUploads/{bookingId}/{uid}/{file} {
+      allow create: if isOwner(uid)
+        && firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.photographerId == uid
+        && firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.status in ['shot', 'revision_requested']
+        && resource == null
+        && jpegUpTo(2 * 1024 * 1024);   // #147 helper, ImagePurpose.deliverySample
+      allow delete: if isOwner(uid);
+      allow read, update: if false;
+    }
+
+    // Watermarked delivery samples: hai bên booking đọc, server ghi qua Admin SDK.
+    match /deliveries/{bookingId}/{file} {
+      allow read: if signedIn() && request.auth.uid in [
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.customerId,
+        firestore.get(/databases/(default)/documents/bookings/$(bookingId)).data.photographerId];
+      allow write: if false;
+    }
+
     // Anything else is closed.
     match /{allPaths=**} {
       allow read, write: if false;

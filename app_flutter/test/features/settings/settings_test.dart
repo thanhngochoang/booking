@@ -218,6 +218,7 @@ void main() {
     await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
     await tester.pumpAndSettle();
     final tabs = find.byKey(const Key('settings-button-style'));
+    await tester.scrollUntilVisible(tabs, 200);
     SegmentedTabs<ButtonStyleMode> style() =>
         tester.widget<SegmentedTabs<ButtonStyleMode>>(tabs);
     expect(style().options.map((o) => o.label), [
@@ -587,9 +588,9 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await openSettings(tester);
-      // Account: 2 rows (edit profile, phone). Theme and button style are
+      // Account: 3 rows (edit profile, phone, blocked users). Theme and button style are
       // segmented tabs, Thông báo a single row.
-      expect(find.byType(Divider), findsNWidgets(1));
+      expect(find.byType(Divider), findsNWidgets(2));
       final preview = tester.widget<AppButton>(
         find.widgetWithText(AppButton, 'Xem trước nút'),
       );

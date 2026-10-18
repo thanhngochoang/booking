@@ -158,6 +158,10 @@
   "statusExpired": "Hết hạn",
   "statusCancelled": "Đã huỷ",
   "statusUpcoming": "Sắp tới",
+  "statusShot": "Chờ bàn giao",
+  "statusDelivered": "Chờ duyệt ảnh",
+  "statusRevisionRequested": "Cần chỉnh sửa",
+  "statusApproved": "Đã đồng ý ảnh",
   "statusCompleted": "Hoàn thành",
   "statusReviewed": "Đã đánh giá",
   "sessionErrorTitle": "Không tải được tài khoản",
@@ -1061,6 +1065,46 @@
   },
   "timelineUpcomingHint": "Nhắc trước 24 giờ",
   "timelineShoot": "Buổi chụp",
+  "timelineDelivery": "Bàn giao & duyệt ảnh",
+  "timelineDeliveryWaitCustomer": "Chờ {name} gửi ảnh mẫu",
+  "@timelineDeliveryWaitCustomer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "timelineDeliveryWaitProvider": "Chờ bạn nộp ảnh mẫu và link ảnh gốc",
+  "timelineDeliveryReviewCustomer": "Vòng {round} · chờ bạn duyệt",
+  "@timelineDeliveryReviewCustomer": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryReviewProvider": "Vòng {round} · chờ khách duyệt",
+  "@timelineDeliveryReviewProvider": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryRevisingCustomer": "{name} đang chỉnh sửa vòng {round}",
+  "@timelineDeliveryRevisingCustomer": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryRevisingProvider": "Khách muốn chỉnh sửa vòng {round}",
+  "@timelineDeliveryRevisingProvider": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "timelineDeliveryApproved": "Đã đồng ý ảnh · {when}",
+  "@timelineDeliveryApproved": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "timelineCheck": "Kiểm tra bộ ảnh gốc trong 48 giờ",
   "timelineDone": "Hoàn thành",
   "timelinePayAtShoot": "Trả {amount} tại chỗ",
   "@timelinePayAtShoot": {
@@ -1133,6 +1177,51 @@
   "detailAcceptNow": "Nhận",
   "detailDecline": "Từ chối",
   "detailComplete": "Hoàn thành",
+  "detailMarkShot": "Đã chụp xong",
+  "detailDeliver": "Nộp bàn giao",
+  "detailDeliverRound": "Nộp vòng {round}",
+  "@detailDeliverRound": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "detailViewDelivery": "Xem bàn giao",
+  "detailRevisionCard": "Khách muốn chỉnh sửa vòng {round}",
+  "@detailRevisionCard": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "detailWaitingApproval": "Đã gửi vòng {round} · chờ khách duyệt",
+  "@detailWaitingApproval": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "detailApprovedProvider": "Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra",
+  "detailExtraRoundTitle": "{name} xin thêm 1 vòng sửa",
+  "@detailExtraRoundTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "detailExtraRoundUsed": "Đã dùng hết {total} lượt sửa miễn phí của gói.",
+  "@detailExtraRoundUsed": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "detailExtraGrant": "Cho thêm 1 vòng",
+  "detailExtraDecline": "Không thêm",
+  "detailExtraDeclineTitle": "Không thêm vòng sửa?",
+  "detailExtraDeclineBody": "{name} vẫn đồng ý ảnh được, hoặc mở khiếu nại.",
+  "@detailExtraDeclineBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "detailExtraGranted": "Đã cho thêm 1 vòng sửa",
+  "detailExtraDeclined": "Đã báo khách là không thêm vòng",
   "detailBookAgain": "Đặt lại",
   "detailReview": "Đánh giá",
   "detailViewReview": "Xem đánh giá",
@@ -1241,6 +1330,20 @@
   "workMonth": "Tháng này",
   "workHeld": "Đang giữ",
   "workUpcoming": "Buổi sắp tới",
+  "workToDeliver": "Chờ bàn giao",
+  "workToDeliverShot": "{day} · đã chụp",
+  "@workToDeliverShot": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "workToDeliverRevision": "Vòng {round} · khách muốn chỉnh sửa",
+  "@workToDeliverRevision": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "workToDeliverExtra": "Khách xin thêm 1 vòng",
   "workNoRequests": "Không có yêu cầu mới",
   "workRequestMeta": "{service} · {when} · {place}",
   "@workRequestMeta": {
@@ -2844,5 +2947,174 @@
   "chatMessageRemoved": "Tin nhắn đã bị gỡ",
   "bookingBlockedNote": "Hai bên đã chặn nhau. Cần trao đổi về buổi chụp, hãy liên hệ hỗ trợ.",
   "eventErrBlocked": "Bạn không đăng ký được sự kiện này.",
-  "chatErrBlocked": "Không gửi được: hai bên đã chặn nhau."
+  "chatErrBlocked": "Không gửi được: hai bên đã chặn nhau.",
+  "deliverySubmitTitle": "Nộp bàn giao · vòng {round}",
+  "@deliverySubmitTitle": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "deliverySamplesHint": "3–20 ảnh mẫu · tự đóng watermark khi tải lên",
+  "deliveryAddSample": "Thêm ảnh mẫu",
+  "deliverySampleProcessing": "Đang đóng watermark...",
+  "deliverySampleFailed": "Lỗi",
+  "deliverySampleRetry": "Thử lại",
+  "deliverySampleRemove": "Bỏ ảnh này",
+  "deliveryLinkLabel": "Link bộ ảnh gốc",
+  "deliveryLinkInvalid": "Dán link http(s) hợp lệ",
+  "deliveryCountLabel": "Số ảnh gốc",
+  "deliveryCountInvalid": "Nhập số ảnh gốc",
+  "deliveryNoteLabel": "Ghi chú · tuỳ chọn",
+  "deliveryLockNote": "Khách chỉ thấy link sau khi đồng ý ảnh mẫu",
+  "deliverySubmit": "Nộp bàn giao",
+  "deliveryNeedSamples": "Cần ít nhất 3 ảnh mẫu",
+  "deliveryTooManySamples": "Tối đa 20 ảnh mẫu",
+  "deliveryWaitProcessing": "Đợi ảnh mẫu đóng watermark xong",
+  "deliveryCustomerNotes": "Khách muốn chỉnh sửa",
+  "deliveryCustomerNotesRound": "Khách muốn chỉnh sửa vòng {round}",
+  "@deliveryCustomerNotesRound": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "deliveryPhotoNoteCaption": "Ảnh {index}: {note}",
+  "@deliveryPhotoNoteCaption": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "note": {"type": "String"}
+    }
+  },
+  "deliverySubmitted": "Đã nộp vòng {round}",
+  "@deliverySubmitted": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "deliveryNotReady": "Ảnh mẫu đang xử lý, đợi một chút rồi nộp lại.",
+  "deliveryReviewTitle": "Bàn giao · vòng {round}",
+  "@deliveryReviewTitle": {
+    "placeholders": {
+      "round": {"type": "int"}
+    }
+  },
+  "deliveryReviewApprovedTitle": "Bàn giao · đã đồng ý",
+  "deliveryWaitingApprovalBadge": "Chờ bạn duyệt",
+  "deliverySenderInfo": "{name} gửi {count} ảnh mẫu · {date}",
+  "@deliverySenderInfo": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "count": {"type": "int"},
+      "date": {"type": "String"}
+    }
+  },
+  "deliveryOriginalsCardTitle": "Bộ ảnh gốc · {count} ảnh",
+  "@deliveryOriginalsCardTitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deliveryOriginalsLocked": "Mở khi bạn đồng ý ảnh",
+  "deliveryOriginalsOpen": "Mở bộ ảnh gốc",
+  "deliveryOriginalsSubApproved": "{name} gửi {date}",
+  "@deliveryOriginalsSubApproved": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "date": {"type": "String"}
+    }
+  },
+  "deliveryRevisionsLeft": "Còn {used}/{total} lượt sửa miễn phí",
+  "@deliveryRevisionsLeft": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "deliveryRevisionsExhausted": "Hết lượt sửa miễn phí ({total}/{total})",
+  "@deliveryRevisionsExhausted": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "deliveryAutoApproveHint": "Tự đồng ý sau {time} nếu bạn không phản hồi",
+  "@deliveryAutoApproveHint": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "deliveryRequestRevision": "Yêu cầu chỉnh sửa",
+  "deliveryApprove": "Đồng ý ảnh",
+  "deliveryAskExtraRound": "Xin thêm 1 vòng",
+  "deliveryExtraRoundPending": "Đã xin thêm 1 vòng · chờ {name} trả lời",
+  "@deliveryExtraRoundPending": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deliveryApproveConfirmTitle": "Đồng ý ảnh?",
+  "deliveryApproveConfirmBody": "Đồng ý thì link ảnh gốc mở ra; bạn có 48 giờ để kiểm tra.",
+  "deliveryApproveConfirmReview": "Xem lại",
+  "deliveryApprovedToast": "Bạn đã đồng ý ảnh lúc {time}. Link bộ ảnh gốc đã mở.",
+  "@deliveryApprovedToast": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "deliveryCheckCardTitle": "Kiểm tra bộ ảnh gốc trong 48 giờ",
+  "deliveryCheckCardHoursLeft": "còn {hours} giờ",
+  "@deliveryCheckCardHoursLeft": {
+    "placeholders": {
+      "hours": {"type": "int"}
+    }
+  },
+  "deliveryCheckCardHint": "Tải và kiểm tra chất lượng file gốc. Sau 48 giờ hệ thống tự động hoàn tất đơn.",
+  "deliveryCheckExpired": "Đã hết thời gian kiểm tra",
+  "deliveryReportOriginals": "Báo vấn đề với ảnh gốc",
+  "deliveryRateShoot": "Đánh giá buổi chụp",
+  "deliveryViewReview": "Xem đánh giá",
+  "deliverySamplesPurged": "Ảnh mẫu đã xoá sau 90 ngày",
+  "deliveryNotFound": "Không tìm thấy bàn giao",
+  "deliveryRevisionSheetTitle": "Yêu cầu chỉnh sửa",
+  "deliveryRevisionSheetSelectedCount": "{count} ảnh",
+  "@deliveryRevisionSheetSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deliveryRevisionSheetHint": "Chạm ảnh để sửa ghi chú riêng của ảnh đó.",
+  "deliveryRevisionGeneralNote": "Ghi chú chung",
+  "deliveryRevisionRoundFree": "Vòng sửa {round}/{total} (miễn phí)",
+  "@deliveryRevisionRoundFree": {
+    "placeholders": {
+      "round": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "deliveryRevisionSend": "Gửi yêu cầu",
+  "deliveryRevisionSendDisabled": "Chọn ảnh hoặc ghi chú điều cần sửa",
+  "deliveryRevisionNoteForPhoto": "Ghi chú cho ảnh {index}",
+  "@deliveryRevisionNoteForPhoto": {
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "deliveryRevisionChipBrighter": "Da sáng hơn",
+  "deliveryRevisionChipLessYellow": "Bớt vàng",
+  "deliveryRevisionChipRemoveObject": "Xoá vật thể",
+  "deliveryRevisionChipStraighten": "Cân lại nghiêng",
+  "deliveryExtraRoundTitle": "Xin thêm 1 vòng",
+  "deliveryExtraRoundHint": "Hết lượt sửa miễn phí. {name} có thể cho thêm hoặc không.",
+  "@deliveryExtraRoundHint": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deliveryExtraRoundSend": "Gửi đề nghị",
+  "deliveryReportSheetTitle": "Báo vấn đề với ảnh gốc",
+  "deliveryReportReasonBrokenLink": "Link hỏng hoặc không truy cập được",
+  "deliveryReportReasonMissingFiles": "Thiếu ảnh so với cam kết",
+  "deliveryReportReasonWrongFiles": "Ảnh không đúng buổi chụp",
+  "deliveryReportReasonOther": "Lý do khác",
+  "deliveryReportButton": "Báo vấn đề",
+  "deliveryReportSuccess": "Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn."
 }
+

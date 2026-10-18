@@ -224,21 +224,20 @@ describe('earnings summary', () => {
     const sum = (f: (e: (typeof entries)[number]) => boolean): number => entries.filter(f).reduce((s, e) => s + e.amount, 0);
     const status = (id: string) => w.store.payments.get(id)?.escrowStatus;
     const heldIds = ids.filter((id) => ['held', 'partially_refunded', 'disputed'].includes(status(id) ?? ''));
-    const releasedIds = ids.filter((id) => status(id) === 'released');
     const held =
       sum((e) => heldIds.includes(e.paymentId ?? '') && (e.type === 'payment_received' || (e.type as string) === 'deposit_received')) +
       sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'refund_issued') -
       sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'escrow_released');
-    // A paid payment leaves escrow as the transfer (net) plus what was withheld (tax, fee).
+    // Soon in ledger is all escrow_released minus what was paid out
     const outgoing = ['payout_paid', 'tax_withheld', 'platform_fee'];
     const soon =
-      sum((e) => releasedIds.includes(e.paymentId ?? '') && e.type === 'escrow_released') +
-      sum((e) => releasedIds.includes(e.paymentId ?? '') && outgoing.includes(e.type));
+      sum((e) => e.type === 'escrow_released') +
+      sum((e) => outgoing.includes(e.type));
     const received = -sum((e) => outgoing.includes(e.type));
 
     assert.deepEqual(
       [summary.heldAmount, summary.soonAmount, summary.receivedAmount],
-      [2 * PAID, PAID, PAID - computeRefund(PAID, 50)],
+      [2_500_000, 500_000, PAID - computeRefund(PAID, 50)],
     );
     assert.deepEqual([summary.heldAmount, summary.soonAmount, summary.receivedAmount], [held, soon, received]);
     assert.equal(w.earningsStore.items.get(`p1/${c.paymentId}`)?.holdReason, HOLD_REASON_DISPUTE);

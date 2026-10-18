@@ -162,7 +162,7 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
                 ListTile(
                   key: const Key('msg-report'),
                   minTileHeight: 48,
-                  leading: const Icon(Icons.flag_outlined),
+                  leading: const AppIcon(AppIcons.flag),
                   title: Text(l.safetyReportMessage),
                   onTap: () => Navigator.of(sheet).pop('report'),
                 ),

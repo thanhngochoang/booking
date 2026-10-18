@@ -114,6 +114,8 @@ abstract final class AppIcons {
   static const IconData checkroom = Symbols.checkroom_rounded;
   static const IconData addCircle = Symbols.add_circle_rounded;
   static const IconData supportAgent = Symbols.support_agent_rounded;
+  static const IconData link = Symbols.link_rounded;
+  static const IconData brokenImage = Symbols.broken_image_rounded;
 }
 
 /// Icon sizes (logical pixels).

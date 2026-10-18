@@ -16,6 +16,10 @@ ContactAccess contactAccessForBooking(
     case BookingStatus.requested:
     case BookingStatus.accepted:
     case BookingStatus.upcoming:
+    case BookingStatus.shot:
+    case BookingStatus.delivered:
+    case BookingStatus.revisionRequested:
+    case BookingStatus.approved:
       return ContactAccess.unlocked;
     case BookingStatus.completed:
     case BookingStatus.reviewed:

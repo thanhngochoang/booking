@@ -37,6 +37,9 @@ export function earningItemToFirestore(i: EarningItem): DocumentData {
     subjectLabel: i.subjectLabel,
     day: i.day,
     amount: i.amount,
+    heldAmount: i.heldAmount ?? null,
+    soonAmount: i.soonAmount ?? null,
+    receivedAmount: i.receivedAmount ?? null,
     platformFee: i.platformFee,
     taxWithheld: i.taxWithheld,
     netAmount: i.netAmount,
@@ -67,6 +70,9 @@ export function earningItemFromFirestore(id: string, d: DocumentData): EarningIt
     subjectLabel: String(d.subjectLabel ?? ''),
     day: String(d.day ?? ''),
     amount,
+    ...(typeof d.heldAmount === 'number' ? { heldAmount: d.heldAmount } : {}),
+    ...(typeof d.soonAmount === 'number' ? { soonAmount: d.soonAmount } : {}),
+    ...(typeof d.receivedAmount === 'number' ? { receivedAmount: d.receivedAmount } : {}),
     platformFee: num(d.platformFee, 0),
     taxWithheld: num(d.taxWithheld, 0),
     netAmount: num(d.netAmount, amount),
@@ -92,10 +98,10 @@ export function earningsSummaryToFirestore(s: EarningsSummary): DocumentData {
   };
 }
 
-/** Released / all docs of `bookings/{id}/milestones` (written by the delivery flow, #152); none → null. */
+/** Released or paid_out / all docs of `bookings/{id}/milestones` (written by the delivery flow, #152); none → null. */
 export function milestonesOfDocs(docs: readonly DocumentData[]): { done: number; total: number } | null {
   if (docs.length === 0) return null;
-  return { done: docs.filter((d) => d.status === 'released').length, total: docs.length };
+  return { done: docs.filter((d) => d.status === 'released' || d.status === 'paid_out').length, total: docs.length };
 }
 
 /** Earnings projection in Firestore; writes are buffered until all reads are done. */

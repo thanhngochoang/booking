@@ -250,6 +250,11 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-completed-old', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-08-20', start: '08:00', end: '10:00', place: 'Phố cổ, Hà Nội', completedDaysAgo: 40 },
   // Completed 10 hours before seeding, then disputed by Lan: the money stays on hold (S06.05 row with a reason).
   { id: 'seed-booking-disputed', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-29', start: '08:00', end: '10:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: 10 / 24, dispute: { reason: 'Ảnh giao thiếu so với gói' } },
+  // Two-layer delivery seed bookings (S05/S06):
+  { id: 'seed-booking-shot', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'shot', date: '2026-10-14', start: '14:00', end: '16:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: null },
+  { id: 'seed-booking-delivered', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'delivered', date: '2026-10-13', start: '14:00', end: '16:00', place: 'Hồ Tây, Hà Nội', completedDaysAgo: null },
+  { id: 'seed-booking-revision', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'revision_requested', date: '2026-10-12', start: '14:00', end: '16:00', place: 'Bảo tàng Dân tộc học, Hà Nội', completedDaysAgo: null },
+  { id: 'seed-booking-approved', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'approved', date: '2026-10-11', start: '14:00', end: '16:00', place: 'Cầu Long Biên, Hà Nội', completedDaysAgo: null },
 ];
 
 /** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
@@ -431,6 +436,10 @@ const TIMELINE: Readonly<Record<string, readonly string[]>> = {
   requested: ['requested'],
   accepted: ['requested', 'accepted'],
   upcoming: ['requested', 'accepted', 'upcoming'],
+  shot: ['requested', 'accepted', 'upcoming', 'shot'],
+  delivered: ['requested', 'accepted', 'upcoming', 'shot', 'delivered'],
+  revision_requested: ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested'],
+  approved: ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'approved'],
   cancelled: ['requested', 'accepted', 'cancelled'],
   completed: ['requested', 'accepted', 'upcoming', 'completed'],
 };
@@ -438,7 +447,7 @@ const TIMELINE: Readonly<Record<string, readonly string[]>> = {
 function escrowOf(b: SeedBooking): string {
   if (b.dispute !== undefined) return 'disputed';
   if (b.id === SEED_PAID_OUT_BOOKING) return 'released';
-  return b.status === 'completed' ? 'released' : b.status === 'cancelled' ? 'refunded' : 'held';
+  return b.status === 'completed' || b.status === 'approved' ? 'released' : b.status === 'cancelled' ? 'refunded' : 'held';
 }
 
 function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
@@ -452,6 +461,19 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
   const timeline = steps.map((status, i) => ({ status, at: new Date(last.getTime() - (steps.length - 1 - i) * HOUR_MS) }));
   const createdAt = timeline[0]?.at ?? last;
   const completedAt = b.status === 'completed' ? last : null;
+  const shotAt = ['shot', 'delivered', 'revision_requested', 'approved', 'completed'].includes(b.status)
+    ? new Date(last.getTime() - 2 * HOUR_MS)
+    : null;
+  const deliveredAt = ['delivered', 'revision_requested', 'approved'].includes(b.status)
+    ? new Date(last.getTime() - HOUR_MS)
+    : null;
+  const approvedAt = b.status === 'approved' ? last : null;
+  const checkUntil = b.status === 'approved'
+    ? new Date(now.getTime() + 47 * HOUR_MS)
+    : null;
+  const autoApproveAt = b.status === 'delivered'
+    ? new Date(now.getTime() + 71 * HOUR_MS)
+    : null;
   const escrowStatus = escrowOf(b);
 
   return {
@@ -474,6 +496,14 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
     depositPaidAt: createdAt,
     escrowStatus,
     completedAt,
+    shotAt,
+    deliveredAt,
+    approvedAt,
+    checkUntil,
+    autoApproveAt,
+    deliveryRound: ['delivered', 'revision_requested', 'approved'].includes(b.status) ? 1 : 0,
+    revisionsIncluded: 1,
+    revisionsUsed: b.status === 'revision_requested' ? 1 : 0,
     timeline,
     createdAt,
     updatedAt: last,
@@ -803,13 +833,100 @@ export function seedDocuments(now: Date): SeedDocument[] {
       });
     }
 
+    // Payment milestones (for delivery-aware bookings: shot, delivered, revision_requested, approved)
+    const isDeliveryBooking = ['shot', 'delivered', 'revision_requested', 'approved'].includes(b.status);
+    if (isDeliveryBooking) {
+      const shootAmount = Math.floor(deposit / 2);
+      const deliveryAmount = deposit - shootAmount;
+      const shootReleased = ['delivered', 'revision_requested', 'approved'].includes(b.status);
+      const deliveryReleased = b.status === 'approved';
+      const ms = [
+        {
+          kind: 'shoot',
+          amount: shootAmount,
+          status: shootReleased ? 'released' : 'held',
+          releaseAfter: new Date(createdAt.getTime() + 24 * HOUR_MS).toISOString(),
+          releasedAt: shootReleased ? new Date(createdAt.getTime() + 24 * HOUR_MS).toISOString() : null,
+          payoutId: null,
+        },
+        {
+          kind: 'delivery',
+          amount: deliveryAmount,
+          status: deliveryReleased ? 'released' : 'held',
+          releaseAfter: null,
+          releasedAt: deliveryReleased ? updatedAt.toISOString() : null,
+          payoutId: null,
+        },
+      ];
+      paymentData.milestones = ms;
+      paymentData.payableAmount = (shootReleased ? shootAmount : 0) + (deliveryReleased ? deliveryAmount : 0);
+
+      // Mirror subcollection bookings/{id}/milestones/{kind}
+      for (const m of ms) {
+        docs.push({
+          path: `bookings/${b.id}/milestones/${m.kind}`,
+          data: m,
+        });
+      }
+
+      // Add delivery docs
+      if (['delivered', 'revision_requested', 'approved'].includes(b.status)) {
+        docs.push({
+          path: `bookings/${b.id}/deliveries/1`,
+          data: {
+            bookingId: b.id,
+            round: 1,
+            samples: [
+              { fileId: 's1', path: `deliveries/${b.id}/s1.jpg`, thumbPath: `deliveries/${b.id}/s1_thumb.jpg`, width: 1600, height: 1200 },
+              { fileId: 's2', path: `deliveries/${b.id}/s2.jpg`, thumbPath: `deliveries/${b.id}/s2_thumb.jpg`, width: 1600, height: 1200 },
+              { fileId: 's3', path: `deliveries/${b.id}/s3.jpg`, thumbPath: `deliveries/${b.id}/s3_thumb.jpg`, width: 1600, height: 1200 },
+            ],
+            photoCount: 40,
+            linkHost: 'drive.google.com',
+            note: 'Ảnh đã hoàn thiện',
+            submittedAt: updatedAt,
+            submittedBy: b.photographerId,
+            decision: b.status === 'revision_requested'
+              ? {
+                  kind: 'request_revision',
+                  note: 'Chỉnh thêm màu ấm',
+                  photoNotes: [{ sampleIndex: 0, note: 'Tăng sáng' }],
+                  at: updatedAt,
+                  auto: false,
+                  extra: false,
+                }
+              : b.status === 'approved'
+                ? {
+                    kind: 'approve',
+                    note: null,
+                    photoNotes: [],
+                    at: updatedAt,
+                    auto: false,
+                    extra: false,
+                  }
+                : null,
+          },
+        });
+
+        docs.push({
+          path: `bookings/${b.id}/private/delivery`,
+          data: {
+            link: 'https://drive.google.com/drive/folders/seed-an-approved',
+            round: 1,
+            unlockedAt: b.status === 'approved' ? updatedAt : null,
+            updatedAt,
+          },
+        });
+      }
+    }
+
     // Availability day
     if (b.status === 'requested') {
       docs.push({
         path: `availability/${b.photographerId}/days/${b.date}`,
         data: { state: 'pending', bookingId: b.id, updatedAt },
       });
-    } else if (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed') {
+    } else if (['accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved', 'completed'].includes(b.status)) {
       docs.push({
         path: `availability/${b.photographerId}/days/${b.date}`,
         data: { state: 'booked', bookingId: b.id, updatedAt },
@@ -1323,6 +1440,8 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
       escrowStatus: x.escrowStatus as Payment['escrowStatus'],
       idempotencyKey: x.idempotencyKey as string,
       payoutId: (x.payoutId as string | undefined) ?? null,
+      payableAmount: typeof x.payableAmount === 'number' ? x.payableAmount : undefined,
+      milestones: Array.isArray(x.milestones) ? x.milestones : undefined,
       createdAt: iso(x.createdAt) ?? at.toISOString(),
       updatedAt: iso(x.updatedAt) ?? at.toISOString(),
     };
@@ -1330,7 +1449,17 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     const item = earningItemOf({
       payment,
       refunded,
-      subject: { counterpartName: 'Lan (seed)', label: service.name, day: booking.date, milestones: null },
+      subject: {
+        counterpartName: 'Lan (seed)',
+        label: service.name,
+        day: booking.date,
+        milestones: payment.milestones
+          ? {
+              done: payment.milestones.filter((m) => m.status === 'released' || m.status === 'paid_out').length,
+              total: payment.milestones.length,
+            }
+          : null,
+      },
       payout: payment.payoutId === SEED_PAYOUT_AN ? payout : null,
       payeeType: providerTypeOf(SEED_PHOTOGRAPHERS.find((sp) => sp.uid === payment.payeeId)?.providerType),
       policy: DEFAULT_PAYOUT_POLICY,

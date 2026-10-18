@@ -8,6 +8,12 @@ import {
   handleTransitionBooking,
   handleOpenDispute,
 } from './callables/booking.js';
+import {
+  handleSubmitDelivery,
+  handleApproveDelivery,
+  handleRequestRevision,
+  handleAnswerExtraRound,
+} from './callables/delivery.js';
 import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment, handleGetPaymentInstructions } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
@@ -197,10 +203,26 @@ export const transitionBooking = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (reques
 /** Open dispute on completed/upcoming booking */
 export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
 
+/** Delivery: provider submits preview round */
+export const submitDelivery = onCall(CALLABLE_OPTIONS, (request) => handleSubmitDelivery(request, liveBookingDeps()));
+
+/** Delivery: customer approves round and unlocks original link */
+export const approveDelivery = onCall(CALLABLE_OPTIONS, (request) => handleApproveDelivery(request, liveBookingDeps()));
+
+/** Delivery: customer requests revision */
+export const requestRevision = onCall(CALLABLE_OPTIONS, (request) => handleRequestRevision(request, liveBookingDeps()));
+
+/** Delivery: provider grants or declines extra revision round */
+export const answerExtraRound = onCall(CALLABLE_OPTIONS, (request) => handleAnswerExtraRound(request, liveBookingDeps()));
+
 /** 15-minute booking lifecycle and escrow sweep clock */
 export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
   await handleBookingClock(undefined, liveReminderDeps(), {
     verification: { deps: liveVerificationDeps(), notify: liveNotifyDeps() },
+    delivery: {
+      notify: liveNotifyDeps(),
+      purge: { db: db(), bucket: (await import('firebase-admin/storage')).getStorage().bucket(), now: new Date() },
+    },
   });
 });
 
@@ -808,5 +830,13 @@ export const unblockUser = onCall(CALLABLE_OPTIONS, (request) =>
 export const submitReport = onCall(CALLABLE_OPTIONS, (request) =>
   handleSubmitReport(request, liveReportDeps()),
 );
+
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { handleDeliveryUpload, liveDeliveryUploadDeps } from './triggers/delivery_upload.js';
+import { WATERMARK_OPTIONS } from './config.js';
+
+export const onDeliveryUpload = onObjectFinalized(WATERMARK_OPTIONS, async (event) => {
+  await handleDeliveryUpload(event.data, liveDeliveryUploadDeps());
+});
 
 
