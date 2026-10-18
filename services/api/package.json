@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^10.16.0",
-    "@types/node": "^22.10.1",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.11.10",
     "esbuild": "^0.25.12",
     "firebase-admin": "^13.10.0",
