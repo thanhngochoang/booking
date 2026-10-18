@@ -991,27 +991,45 @@ create table booking_milestones (
   kind          text not null check (kind in ('shoot','delivery')),
   amount        bigint not null check (amount >= 0),
   status        text not null default 'held' check (status in ('held','released','refunded','disputed')),
+  payout_id     text references payouts(id),      -- gán khi giải ngân / vào lô chi trả (#152)
   release_after timestamptz,
   released_at   timestamptz,
   primary key (booking_id, kind)
 );
+-- Bàn giao hai lớp (#152): booking_deliveries công khai cho cả hai bên (chỉ chứa samples đã đóng watermark),
+-- link bộ ảnh gốc bảo mật nằm riêng ở booking_delivery_links và chỉ mở khi approved.
 create table booking_deliveries (
   id            text primary key,
   booking_id    text not null references bookings(id) on delete cascade,
   round         smallint not null,
-  link          text not null check (link like 'https://%'),
+  photo_count   int not null default 0,
+  link_host     text not null,                    -- ví dụ 'drive.google.com' để app vẽ 'drive.google.com/••••••••'
   note          text,
   submitted_at  timestamptz not null default now(),
+  submitted_by  text not null references users(id),
   decision      text check (decision in ('approve','request_revision')),
   decision_note text,
+  decision_extra boolean default false,
+  decision_auto boolean default false,
   decided_at    timestamptz,
   unique (booking_id, round)
 );
-create table booking_delivery_previews (
-  delivery_id text not null references booking_deliveries(id) on delete cascade,
-  position    smallint not null,
-  file_id     text not null references files(id),
-  primary key (delivery_id, position)
+create table booking_delivery_samples (
+  id            text primary key,
+  delivery_id   text not null references booking_deliveries(id) on delete cascade,
+  position      smallint not null,
+  file_id       text not null,
+  path          text not null,                    -- đường dẫn ảnh watermark 1600 px
+  thumb_path    text not null,                    -- đường dẫn thumbnail 400 px
+  width         int not null,
+  height        int not null,
+  unique (delivery_id, position)
+);
+create table booking_delivery_links (             -- 🔒 bảo mật, mở khi booking approved
+  booking_id    text primary key references bookings(id) on delete cascade,
+  round         smallint not null,
+  link          text not null check (link like 'https://%'),
+  unlocked_at   timestamptz
 );
 ```
 

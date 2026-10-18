@@ -97,20 +97,20 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
-| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) | S09 |
-| S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) | S10 |
+| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) | S09 |
+| S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) · ScreenCode ✅ (#152) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
 | S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) | S12 |
-| S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, có plan `2026-10-07-s05-delivery-two-layer.md` (#152) | — |
-| S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, có plan `2026-10-07-s05-delivery-two-layer.md` (#152) | — |
+| S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
+| S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi | S19 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
-| S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày | S43 |
+| S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày · theo mốc ✅ (#152) | S43 |
 | S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ (10b, #134) · tra tên, OTP, 72 giờ (cổng giả) | S44 |
-| S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, có plan `2026-10-07-s05-delivery-two-layer.md` (#152) | — |
+| S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) · ảnh, gửi lại ảnh (#131) | S11 |
 | S07.02 | Danh sách hội thoại | `/chats` | cả hai | 4d | ✅ đã làm (4d) · badge trạng thái thật, hỏi trước đã đóng (#131) | — (mới) |
@@ -725,16 +725,19 @@ held ──(booking/sự kiện completed + hết cửa sổ khiếu nại)─�
  └──(khách khiếu nại)──▶ disputed ──(admin xử lý)──▶ released | refunded | partially_refunded
 ```
 
-### 3g.2 Khi nào thả tiền
+### 3g.2 Khi nào thả tiền (theo 2 mốc, #152)
 
-| Khoản | Điều kiện thả (`held → released`) | Người nhận |
+Khách trả 100% trước, tiền được chia thành hai mốc (`PaymentMilestone` tại `payments/{id}/milestones` và `bookings/{id}/milestones` theo tỷ lệ 50/50, quyết định Decision 7):
+
+| Khoản / Mốc | Điều kiện thả (`held → released`) | Người nhận |
 |-------|-----------------------------------|------------|
-| Cọc booking | `Booking.status = completed` (nhiếp ảnh gia bấm hoàn thành, hoặc hệ thống sau `end + 24 giờ`) và hết cửa sổ khiếu nại `dispute_window_hours` (đề xuất 24 giờ) | Nhiếp ảnh gia của booking |
+| Mốc 1: Buổi chụp (`shoot`, 50%) | `Booking.status = shot` (thợ/studio xác nhận chụp xong) + 24 giờ không có khiếu nại | Nhiếp ảnh gia / Studio |
+| Mốc 2: Bàn giao (`delivery`, 50%) | `Booking.status = approved` (khách duyệt hoặc tự động duyệt sau 72h) + 48 giờ kiểm tra không có báo vấn đề (`completed`) | Nhiếp ảnh gia / Studio |
 | Phần không hoàn khi huỷ muộn | Sau thời điểm `start` của buổi lẽ ra diễn ra + cửa sổ khiếu nại | Nhiếp ảnh gia (bồi thường huỷ muộn) |
 | Vé sự kiện (host nhiếp ảnh gia) | `Event.status = completed` (sau `endAt`), chỉ vé còn hiệu lực; hết cửa sổ khiếu nại | Nhiếp ảnh gia host |
 | Vé sự kiện (host `platform`) | Sau `completed` | Giữ ở nền tảng (doanh thu), không chi trả |
 
-Khách khiếu nại trong cửa sổ khiếu nại → khoản thành `disputed`, khoản chi trả liên quan `on_hold` cho tới khi `admin` xử lý.
+Khách khiếu nại trong cửa sổ khiếu nại → khoản/mốc thành `disputed`, khoản chi trả liên quan `on_hold` cho tới khi `admin` xử lý.
 
 ### 3g.3 Hoàn tiền
 

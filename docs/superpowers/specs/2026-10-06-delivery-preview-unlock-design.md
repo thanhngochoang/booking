@@ -1,6 +1,6 @@
 # Bàn giao hai lớp: ảnh mẫu có watermark, link ảnh gốc mở khi khách đồng ý
 
-Ngày: 2026-10-06 · Trạng thái: đang làm (#152) · Sửa: `2026-10-05-provider-types-portfolio-jobs-design.md` §4.1 mục 3–4 và §4.3 (máy trạng thái). Áp dụng cho **mọi booking** (gói, báo giá, Chụp ngay; cá nhân và studio).
+Ngày: 2026-10-06 · Trạng thái: đã làm (#152) · Sửa: `2026-10-05-provider-types-portfolio-jobs-design.md` §4.1 mục 3–4 và §4.3 (máy trạng thái). Áp dụng cho **mọi booking** (gói, báo giá, Chụp ngay; cá nhân và studio).
 
 ## 1. Vì sao
 

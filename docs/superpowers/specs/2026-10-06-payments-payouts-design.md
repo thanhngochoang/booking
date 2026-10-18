@@ -56,7 +56,7 @@ Nhà cung cấp `fake` (emulator, dev, test; bị từ chối `404` ở nơi `fa
 
 ## 4. Giữ tiền và chuyển mốc
 
-Sổ cái của app quản lý (giữ nguyên nguyên tắc §3g.1, §3g.5, thay "cọc" bằng toàn bộ tiền đã trả). Mỗi `Payment` có các `Milestone` (spec 2026-10-05 §4.2). Job `releaseMilestones` (mỗi 15 phút, chung job với spec bàn giao và Studio) ghi `escrow_released` khi đủ điều kiện:
+Sổ cái của app quản lý (giữ nguyên nguyên tắc §3g.1, §3g.5, thay "cọc" bằng toàn bộ tiền đã trả). Mỗi `Payment` có các `Milestone` (spec 2026-10-05 §4.2, cài đặt tại `payments/{id}/milestones` và phản chiếu ở `bookings/{id}/milestones`, #152). Bước `releaseMilestones` là một bước trong cronjob `bookingClock` (chạy định kỳ mỗi 5–15 phút), duyệt qua các booking/payment để ghi `escrow_released` khi đủ điều kiện:
 
 | Mốc | Điều kiện |
 |---|---|
