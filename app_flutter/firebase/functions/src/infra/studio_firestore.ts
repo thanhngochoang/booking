@@ -11,6 +11,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import {
+  CLOSED_BOOKING_STATUSES,
   DomainError,
   MAX_MEMBERS_VERIFIED,
   OPEN_RELATION_STATUSES,
@@ -39,8 +40,6 @@ export const STUDIO_QUOTA_COLLECTION = 'studio_quota';
 const PHOTOGRAPHERS = 'photographers';
 const USERS = 'users';
 
-/** The statuses `isOpenBookingStatus` calls closed (Decision 6), for the `not-in` filter. */
-export const CLOSED_BOOKING_STATUSES = ['declined', 'expired', 'cancelled', 'completed', 'reviewed'] as const;
 const DUE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function iso(v: unknown): string | null {
@@ -322,6 +321,10 @@ export class FirestoreMemberDayReader implements MemberDayReader {
 
 export const INVITE_SEARCH_MIN_CHARS = 2;
 export const INVITE_SEARCH_LIMIT = 20;
+/** Fetched before studios, unfinished profiles and the caller are filtered out, then cut to INVITE_SEARCH_LIMIT. */
+export const INVITE_SEARCH_FETCH = 40;
+/** `in` takes at most 30 values. */
+const IN_CHUNK = 30;
 
 export interface InviteCandidateRow {
   readonly uid: string;
@@ -358,31 +361,38 @@ export async function searchInviteCandidates(
   if (studio === null) throw new DomainError('not_found');
   if (!isStudio(studio)) throw new DomainError('permission_denied');
 
-  const [found, pending] = await Promise.all([
-    firestore
-      .collection(PHOTOGRAPHERS)
-      .where('nameKey', '>=', q)
-      .where('nameKey', '<', `${q}`)
-      .orderBy('nameKey')
-      .limit(INVITE_SEARCH_LIMIT)
-      .get(),
-    firestore
-      .collection(STUDIO_MEMBERS_COLLECTION)
-      .where('studioId', '==', studioId)
-      .where('status', 'in', ['invited', 'requested'])
-      .get(),
-  ]);
+  const found = await firestore
+    .collection(PHOTOGRAPHERS)
+    .where('nameKey', '>=', q)
+    .where('nameKey', '<', `${q}\uf8ff`)
+    .orderBy('nameKey')
+    .limit(INVITE_SEARCH_FETCH)
+    .get();
+  const people = found.docs
+    .filter((d) => {
+      const p = d.data();
+      return d.id !== studioId && p.onboardingComplete === true && providerTypeOf(p.providerType) !== 'studio';
+    })
+    .slice(0, INVITE_SEARCH_LIMIT);
+  if (people.length === 0) return [];
+
+  // The pair's open invite or request, for the rows found only (history is filtered here).
+  const uids = people.map((d) => d.id);
+  const chunks: string[][] = [];
+  for (let i = 0; i < uids.length; i += IN_CHUNK) chunks.push(uids.slice(i, i + IN_CHUNK));
+  const pending = await Promise.all(
+    chunks.map((chunk) =>
+      firestore.collection(STUDIO_MEMBERS_COLLECTION).where('studioId', '==', studioId).where('memberId', 'in', chunk).get(),
+    ),
+  );
   const openOf = new Map<string, { status: RelationStatus; expiresAt: string }>();
-  for (const d of pending.docs) {
+  for (const d of pending.flatMap((p) => p.docs)) {
     const r = relationFromFirestore(d.id, d.data());
-    if (r) openOf.set(r.memberId, { status: r.status, expiresAt: r.expiresAt });
+    if (r && (r.status === 'invited' || r.status === 'requested')) {
+      openOf.set(r.memberId, { status: r.status, expiresAt: r.expiresAt });
+    }
   }
 
-  const people = found.docs.filter((d) => {
-    const p = d.data();
-    return d.id !== studioId && p.onboardingComplete === true && providerTypeOf(p.providerType) !== 'studio';
-  });
-  if (people.length === 0) return [];
   const otherStudios = [
     ...new Set(people.map((d) => str(d.data().studioId)).filter((s): s is string => s !== null && s !== studioId)),
   ];

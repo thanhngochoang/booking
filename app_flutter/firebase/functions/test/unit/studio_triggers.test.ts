@@ -74,6 +74,12 @@ describe('onPhotographerWrite → studios to recompute', () => {
     assert.deepEqual(studiosToRecompute({ uid: 'm1', before: member, after: { ...member, bio: 'x' } }), []);
   });
 
+  it('a provider that becomes a studio gets its count; a deleted studio too', () => {
+    assert.deepEqual(studiosToRecompute({ uid: STUDIO, before: { providerType: 'individual' }, after: { providerType: 'studio' } }), [STUDIO]);
+    assert.deepEqual(studiosToRecompute({ uid: STUDIO, before: undefined, after: { providerType: 'studio' } }), [STUDIO]);
+    assert.deepEqual(studiosToRecompute({ uid: STUDIO, before: { providerType: 'studio' }, after: { providerType: 'studio', bio: 'x' } }), []);
+  });
+
   it('a studio that becomes individual loses its marks', () => {
     assert.deepEqual(
       studiosToRecompute({ uid: STUDIO, before: { providerType: 'studio' }, after: { providerType: 'individual' } }),
@@ -167,7 +173,9 @@ describe('bookingClock studio steps', () => {
     const lines = await captureLogs(t, () =>
       handleBookingClock(w.deps, undefined, { studio: { bookings: broken, members, notify: n.deps } }),
     );
-    assert.ok(lines.some((l) => l.includes('bookingClock studioBookingSweeps failed')));
+    assert.ok(lines.some((l) => l.includes('bookingClock studioAssignSweeps failed')));
+    // The change-request step still ran (its own try).
+    assert.ok(lines.some((l) => l.includes('bookingClock studioChangeSweeps completed')));
     assert.equal(studios.relations.get('r2')?.status, 'expired');
   });
 
@@ -176,7 +184,7 @@ describe('bookingClock studio steps', () => {
     w.store.bookings.set('due', studioBooking({ id: 'due', assignDeadline: new Date(NOW.getTime() - 60_000).toISOString() }));
     const broken = { ...notifyDeps().deps, store: { runTransaction: async () => { throw new Error('down'); } } } as unknown as NotifyDeps;
     const lines = await captureLogs(t, () => handleBookingClock(w.deps, undefined, { studio: { bookings, members, notify: broken } }));
-    assert.ok(lines.some((l) => l.includes('studioBookingSweeps notices failed') && l.includes('"notifyFailed":1')));
+    assert.ok(lines.some((l) => l.includes('studioAssignSweeps notices failed') && l.includes('"notifyFailed":1')));
     // Not marked: the next tick sends the notice again.
     assert.equal(w.store.bookings.get('due')?.assignOverdue, false);
   });

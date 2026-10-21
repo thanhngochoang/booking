@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
+  CLOSED_BOOKING_STATUSES,
   inviteMember,
   isOpenBookingStatus,
   respondInvite,
@@ -10,7 +11,6 @@ import {
   type StudioRelation,
 } from '@photobooking/domain';
 import {
-  CLOSED_BOOKING_STATUSES,
   FirestoreMemberDayReader,
   FirestoreNameKeys,
   FirestoreStudioRoster,
@@ -18,7 +18,11 @@ import {
   relationFromFirestore,
   relationToFirestore,
 } from '../../src/infra/studio_firestore.js';
-import { recomputeStudioDay, recomputeStudioDays } from '../../src/infra/studio_capacity_firestore.js';
+import {
+  recomputeStudioDay,
+  recomputeStudioDays,
+  refreshAssignableMembers,
+} from '../../src/infra/studio_capacity_firestore.js';
 import { FirestoreBookingStore } from '../../src/infra/booking_firestore.js';
 import { FirestoreProviderOrderGate } from '../../src/infra/booking_readers.js';
 import { studioRelationBlockers } from '../../src/infra/account_firestore.js';
@@ -284,6 +288,41 @@ describe('recomputeStudioDay (Decision 26)', () => {
     db.seed(`availability/${STUDIO}/days/${DAY}`, { state: 'booked', bookingId: 'x' });
     assert.equal(await recomputeStudioDay(db.asFirestore(), STUDIO, DAY), null);
     assert.equal(db.data(`availability/${STUDIO}/days/${DAY}`)?.state, 'booked');
+  });
+
+  it('after a member leaves, a day where the remaining member is busy and nothing is booked becomes full', async () => {
+    // m2 leaves; m1 is off on the 20th; Cúc has no booking that day (no load doc) → zero free members.
+    db.seed('photographers/m2', { ...db.data('photographers/m2'), studioId: null });
+    db.seed('availability/m1/days/2026-10-20', { state: 'off' });
+    // m2's own day (the member who left) is recomputed too; with m1 free there it stays open.
+    db.seed('availability/m2/days/2026-10-21', { state: 'booked', bookingId: 'own' });
+    db.seed('availability/m1/days/2026-10-01', { state: 'off' });
+    const n = await recomputeStudioDays(db.asFirestore(), STUDIO, NOW, ['m2']);
+    assert.equal(n, 2);
+    assert.equal(db.data(`availability/${STUDIO}/days/2026-10-20`)?.state, 'full');
+    assert.equal(db.data(`availability/${STUDIO}/days/2026-10-21`), undefined);
+    assert.equal(db.data(`availability/${STUDIO}/days/2026-10-01`), undefined, 'past days are left alone');
+  });
+
+  it("the studio's own event or old booking hold is never overwritten by full", async () => {
+    db.seed(`availability/${STUDIO}/days/${DAY}`, { state: 'booked', eventId: 'ev1' });
+    load(['b1', 'b2', 'b3']);
+    assert.equal(await recomputeStudioDay(db.asFirestore(), STUDIO, DAY), null);
+    assert.equal(db.data(`availability/${STUDIO}/days/${DAY}`)?.eventId, 'ev1');
+  });
+
+  it('refreshAssignableMembers counts members that pass the gate, writes only on change, skips non-studios', async () => {
+    assert.equal(await refreshAssignableMembers(db.asFirestore(), STUDIO), 2);
+    assert.equal(db.data(`photographers/${STUDIO}`)?.assignableMembers, 2);
+    const writes = db.log.length;
+    assert.equal(await refreshAssignableMembers(db.asFirestore(), STUDIO), 2);
+    assert.equal(db.log.length, writes, 'unchanged: nothing written');
+    db.seed('photographers/m1', { ...db.data('photographers/m1'), verified: false });
+    db.seed('photographers/m2', { ...db.data('photographers/m2'), deletionPending: true });
+    assert.equal(await refreshAssignableMembers(db.asFirestore(), STUDIO), 0);
+    assert.equal(db.data(`photographers/${STUDIO}`)?.assignableMembers, 0);
+    assert.equal(await refreshAssignableMembers(db.asFirestore(), 'm1'), null);
+    assert.equal(db.data('photographers/m1')?.assignableMembers, undefined);
   });
 
   it('recomputeStudioDays covers the upcoming load days and full marks, not past ones', async () => {

@@ -14,6 +14,8 @@ import {
   respondJoinRequest,
   runMembershipSweeps,
 } from '../src/studio_use_cases.js';
+import type { NotifyDeps } from '../src/notification_ports.js';
+import { createNotifyWorld } from './support/notify_world.js';
 import { createStudioWorld, type StudioWorld } from './support/studio_world.js';
 
 async function refused(p: Promise<unknown>, code: string): Promise<void> {
@@ -446,7 +448,7 @@ describe('studio membership use cases', () => {
       assert.deepEqual(first.expiring.map((r) => r.id), [early.after.id]); // requests get no expiring notice
       assert.equal(w.store.relations.get(early.after.id)?.expiringNotifiedAt, '2026-10-16T12:00:00.000Z');
       const opened = w.store.transactions;
-      assert.deepEqual(await runMembershipSweeps(w.deps), { expired: [], expiring: [] });
+      assert.deepEqual(await runMembershipSweeps(w.deps), { expired: [], expiring: [], notifyFailed: 0 });
       // the notified invite and the request that is not yet due open no transaction
       assert.equal(w.store.transactions, opened);
 
@@ -464,12 +466,46 @@ describe('studio membership use cases', () => {
       assert.deepEqual(third.expiring, []);
     });
 
+    it('the expiring notice is sent before the mark: a failed notice is retried once and sent once', async () => {
+      const n = createNotifyWorld(new Date('2026-10-16T12:00:00.000Z'));
+      n.users.users.set('s1', { name: 'Studio Mây', avatarUrl: null });
+      const inv = await inviteMember(w.deps, 's1', { memberId: 'm1' }); // expires 17/10 10:00
+      w.clock.setTime(new Date('2026-10-16T12:00:00.000Z'));
+      let failures = 1;
+      const flaky: NotifyDeps = {
+        ...n.deps,
+        users: {
+          get: async (uid) => {
+            if (failures > 0) {
+              failures -= 1;
+              throw new Error('directory down');
+            }
+            return n.users.get(uid);
+          },
+        },
+      };
+      const first = await runMembershipSweeps(w.deps, flaky);
+      assert.deepEqual({ expiring: first.expiring, notifyFailed: first.notifyFailed }, { expiring: [], notifyFailed: 1 });
+      assert.equal(w.store.relations.get(inv.after.id)?.expiringNotifiedAt, null, 'not marked: retried next run');
+
+      w.clock.setTime(new Date('2026-10-16T12:15:00.000Z'));
+      const second = await runMembershipSweeps(w.deps, flaky);
+      assert.deepEqual(second.expiring.map((r) => r.id), [inv.after.id]);
+      assert.equal(second.notifyFailed, 0);
+      const third = await runMembershipSweeps(w.deps, flaky);
+      assert.deepEqual(third, { expired: [], expiring: [], notifyFailed: 0 });
+      assert.deepEqual(
+        n.store.rowsOf('m1').map((r) => r.type),
+        ['studio_invite_expiring'],
+      );
+    });
+
     it('a sweep does not touch an answered relation', async () => {
       const inv = await inviteMember(w.deps, 's1', { memberId: 'm1' });
       await respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: true });
       w.clock.setTime(new Date(IN_7_DAYS));
       const r = await runMembershipSweeps(w.deps);
-      assert.deepEqual(r, { expired: [], expiring: [] });
+      assert.deepEqual(r, { expired: [], expiring: [], notifyFailed: 0 });
       assert.equal(w.store.relations.get(inv.after.id)?.status, 'active');
     });
   });

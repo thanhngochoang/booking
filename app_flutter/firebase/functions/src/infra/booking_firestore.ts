@@ -711,6 +711,36 @@ function paymentsOf(docs: readonly { id: string; data(): DocumentData }[]): Paym
   return res;
 }
 
+/** A member the studio can assign and count as capacity: verified and onboarded, not being deleted (Decision 26). */
+export function isAssignableMember(p: DocumentData | undefined): boolean {
+  return p !== undefined && p.deletionPending !== true && acceptsOrders(p);
+}
+
+/**
+ * Every active member of the studio (`photographers.studioId`, Decision 2) with whether they can be assigned and
+ * whether their own day is empty, read in `tx`. The one reader behind createBooking's capacity check and the
+ * derived `full` day, so both always agree.
+ */
+export async function readStudioMemberDays(
+  firestore: Firestore,
+  tx: Transaction,
+  studioId: string,
+  day: string,
+): Promise<{ uid: string; verified: boolean; free: boolean }[]> {
+  const members = await tx.get(
+    firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED),
+  );
+  if (members.empty) return [];
+  const days = await tx.getAll(
+    ...members.docs.map((m) => firestore.collection(AVAILABILITY_COLLECTION).doc(m.id).collection('days').doc(day)),
+  );
+  return members.docs.map((m, i) => ({
+    uid: m.id,
+    verified: isAssignableMember(m.data()),
+    free: days[i]?.exists !== true,
+  }));
+}
+
 function bookingsOf(docs: readonly { id: string; data(): DocumentData }[]): Booking[] {
   const res: Booking[] = [];
   for (const doc of docs) {
@@ -747,26 +777,7 @@ export class FirestoreBookingStore implements StudioBookingStore {
           const studioId = snap.data()?.studioId;
           return typeof studioId === 'string' && studioId !== '' ? studioId : null;
         },
-        getMemberDays: async (studioId, day) => {
-          // Active members carry `studioId` on their public photographer document (#136 Decision 2).
-          const members = await fTx.get(
-            this.firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED),
-          );
-          if (members.empty) return [];
-          const days = await fTx.getAll(
-            ...members.docs.map((m) =>
-              this.firestore.collection(AVAILABILITY_COLLECTION).doc(m.id).collection('days').doc(day),
-            ),
-          );
-          return members.docs.map((m, i) => {
-            const data = m.data();
-            return {
-              uid: m.id,
-              verified: data.deletionPending !== true && acceptsOrders(data),
-              free: days[i]?.exists !== true,
-            };
-          });
-        },
+        getMemberDays: (studioId, day) => readStudioMemberDays(this.firestore, fTx, studioId, day),
         getBooking: async (id) => {
           const snap = await fTx.get(this.firestore.collection(BOOKINGS_COLLECTION).doc(id));
           return bookingFromFirestore(snap.id, snap.data());

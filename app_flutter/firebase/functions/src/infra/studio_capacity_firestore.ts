@@ -5,16 +5,20 @@
  * change of a member (onPhotographerWrite).
  */
 
-import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
+import { FieldPath, Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
 import {
   MAX_MEMBERS_VERIFIED,
-  acceptsOrders,
   formatVnDate,
   providerTypeOf,
   studioDayMark,
   type StudioDayFacts,
 } from '@photobooking/domain';
-import { AVAILABILITY_COLLECTION, STUDIO_DAY_LOAD_COLLECTION } from './booking_firestore.js';
+import {
+  AVAILABILITY_COLLECTION,
+  STUDIO_DAY_LOAD_COLLECTION,
+  isAssignableMember,
+  readStudioMemberDays,
+} from './booking_firestore.js';
 
 export type StudioDayOutcome = 'set_full' | 'clear_full' | null;
 
@@ -38,21 +42,10 @@ export async function recomputeStudioDay(firestore: Firestore, studioId: string,
       tx.delete(dayRef);
       return 'clear_full';
     }
-    const members = await tx.get(
-      firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED),
-    );
-    const memberDays = members.empty
-      ? []
-      : await tx.getAll(
-          ...members.docs.map((m) => firestore.collection(AVAILABILITY_COLLECTION).doc(m.id).collection('days').doc(day)),
-        );
     const load: DocumentData = loadSnap?.exists ? (loadSnap.data() ?? {}) : {};
     const facts: StudioDayFacts = {
       studioOff: current?.state === 'off',
-      memberDays: members.docs.map((m, i) => {
-        const p = m.data();
-        return { uid: m.id, verified: p.deletionPending !== true && acceptsOrders(p), free: memberDays[i]?.exists !== true };
-      }),
+      memberDays: await readStudioMemberDays(firestore, tx, studioId, day),
       unassignedIds: ids(load.unassignedIds),
       assignedIds: ids(load.assignedIds),
     };
@@ -63,13 +56,33 @@ export async function recomputeStudioDay(firestore: Firestore, studioId: string,
   });
 }
 
+/** Upcoming day keys (id >= `today`) of one availability calendar, one page. */
+async function upcomingDayKeys(firestore: Firestore, uid: string, today: string): Promise<string[]> {
+  const snap = await firestore
+    .collection(AVAILABILITY_COLLECTION)
+    .doc(uid)
+    .collection('days')
+    .where(FieldPath.documentId(), '>=', today)
+    .orderBy(FieldPath.documentId())
+    .limit(STUDIO_DAYS_PAGE)
+    .get();
+  return snap.docs.map((d) => d.id);
+}
+
 /**
- * After a membership change every upcoming day the studio already holds bookings on (its `studio_day_load`
- * docs) or already shows as full is recomputed, one page of each from today (Vietnam day).
+ * After a membership or gate change, every upcoming day whose answer can change is recomputed (one page of each
+ * source from today, Vietnam day): the studio's load days, its own day records (full marks, off days), and each
+ * member's own day records, of the remaining members and of `formerMembers` (who just left or were removed). A
+ * day none of them has a record for has every member free, so its answer follows `assignableMembers`.
  */
-export async function recomputeStudioDays(firestore: Firestore, studioId: string, now: Date): Promise<number> {
+export async function recomputeStudioDays(
+  firestore: Firestore,
+  studioId: string,
+  now: Date,
+  formerMembers: readonly string[] = [],
+): Promise<number> {
   const today = formatVnDate(now);
-  const [loads, days] = await Promise.all([
+  const [loads, members] = await Promise.all([
     firestore
       .collection(STUDIO_DAY_LOAD_COLLECTION)
       .where('studioId', '==', studioId)
@@ -77,20 +90,37 @@ export async function recomputeStudioDays(firestore: Firestore, studioId: string
       .orderBy('day')
       .limit(STUDIO_DAYS_PAGE)
       .get(),
-    firestore
-      .collection(AVAILABILITY_COLLECTION)
-      .doc(studioId)
-      .collection('days')
-      .where('state', '==', 'full')
-      .limit(STUDIO_DAYS_PAGE)
-      .get(),
+    firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED).get(),
   ]);
+  const calendars = new Set([studioId, ...members.docs.map((m) => m.id), ...formerMembers]);
   const toDo = new Set<string>();
   for (const d of loads.docs) {
     const day = d.data().day;
     if (typeof day === 'string') toDo.add(day);
   }
-  for (const d of days.docs) if (d.id >= today) toDo.add(d.id);
+  for (const keys of await Promise.all([...calendars].map((uid) => upcomingDayKeys(firestore, uid, today)))) {
+    for (const day of keys) toDo.add(day);
+  }
   for (const day of [...toDo].sort()) await recomputeStudioDay(firestore, studioId, day);
   return toDo.size;
+}
+
+/**
+ * `photographers/{studioId}.assignableMembers` (public, server-written): how many members the studio can assign
+ * (`isAssignableMember`, the same rule as the capacity check). 0 means every day without a member record is full
+ * for the app; createBooking refuses such a day with day_taken. Written only when it changes; a provider that is
+ * not a studio is left alone. Returns the stored count, or null.
+ */
+export async function refreshAssignableMembers(firestore: Firestore, studioId: string): Promise<number | null> {
+  const ref = firestore.collection('photographers').doc(studioId);
+  return firestore.runTransaction(async (tx) => {
+    const studio = await tx.get(ref);
+    if (!studio.exists || providerTypeOf(studio.data()?.providerType) !== 'studio') return null;
+    const members = await tx.get(
+      firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED),
+    );
+    const count = members.docs.filter((m) => isAssignableMember(m.data())).length;
+    if (studio.data()?.assignableMembers !== count) tx.set(ref, { assignableMembers: count }, { merge: true });
+    return count;
+  });
 }

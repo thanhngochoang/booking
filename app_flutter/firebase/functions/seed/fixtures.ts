@@ -707,9 +707,9 @@ export function seedDocuments(now: Date): SeedDocument[] {
         followerCount: SEED_FOLLOWS.filter((f) => f.photographerId === p.uid).length,
         ...(SEED_FOLLOWS.some((f) => f.photographerId === p.uid) ? { followerCountAt: at } : {}),
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
-        // S26: the invite-search key, Cúc's member count and An's membership (#136).
+        // S26: the invite-search key, Cúc's member counts (An is verified) and An's membership (#136).
         nameKey: foldNameKey(SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? ''),
-        ...(p.uid === CUC ? { memberCount: 1 } : {}),
+        ...(p.uid === CUC ? { memberCount: 1, assignableMembers: 1 } : {}),
         ...(p.uid === AN
           ? { studioId: CUC, studioJoinedAt: new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS) }
           : {}),

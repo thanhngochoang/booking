@@ -102,7 +102,7 @@ import {
   liveStudioDeps,
 } from './infra/live_studio.js';
 import { FirestoreNameKeys, studioSideOf } from './infra/studio_firestore.js';
-import { recomputeStudioDay, recomputeStudioDays } from './infra/studio_capacity_firestore.js';
+import { recomputeStudioDay, recomputeStudioDays, refreshAssignableMembers } from './infra/studio_capacity_firestore.js';
 import { handleUserWrite } from './triggers/user_write.js';
 import {
   handleCreateAlbum,
@@ -289,7 +289,11 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   // S26 (#136): a missing invite-search key is healed once; membership and gate changes move studio capacity.
   const write = { uid, before: event.data?.before.data(), after: live?.data() };
   await healNameKey(write, new FirestoreNameKeys(db()));
-  for (const studioId of studiosToRecompute(write)) await recomputeStudioDays(db(), studioId, new Date());
+  for (const studioId of studiosToRecompute(write)) {
+    await refreshAssignableMembers(db(), studioId);
+    // A member who just left or was removed: their own days may now change the studio's answer.
+    await recomputeStudioDays(db(), studioId, new Date(), studioId === uid ? [] : [uid]);
+  }
 });
 
 /** Open chat inquiry between customer and photographer */

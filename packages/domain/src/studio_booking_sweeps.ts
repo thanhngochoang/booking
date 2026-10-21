@@ -63,18 +63,16 @@ function sameAction(a: AssignSweepAction, b: AssignSweepAction): boolean {
  * `assign_overdue`, `lateAssignCount`, customer and studio told while the shoot is still ahead). With `notify`,
  * the hook runs BEFORE the mark is committed: a failed notice leaves the booking unmarked, so the next run sends
  * it again, and #138's dedupe keys turn a resend after a lost mark into a duplicate, never a second notice.
- * (b) Pending change requests past `respondBy` expire (fault `change_expired`, `changeDeclinedCount`; the customer
- * hears it through the booking write). A failing item never stops the batch.
+ * A failing item never stops the batch.
  */
-export async function runStudioBookingSweeps(
+export async function runAssignDeadlineSweep(
   deps: StudioBookingDeps,
   notify?: NotifyDeps,
-): Promise<StudioBookingSweepResults> {
+): Promise<{ readonly overdue: number; readonly reminders: number; readonly notifyFailed: number }> {
   const now = deps.clock.now();
   const nowIso = now.toISOString();
   let overdue = 0;
   let reminders = 0;
-  let changesExpired = 0;
   let notifyFailed = 0;
 
   for (const due of await deps.store.findUnassignedStudioBookingsDue(now, STUDIO_SWEEP_LIMIT)) {
@@ -131,7 +129,17 @@ export async function runStudioBookingSweeps(
       // Swallowed so one failed item does not stop the batch; the next run sees it unmarked.
     }
   }
+  return { overdue, reminders, notifyFailed };
+}
 
+/**
+ * (b) Pending change requests past `respondBy` expire (fault `change_expired`, `changeDeclinedCount`; the customer
+ * hears it through the booking write). A failing item never stops the batch.
+ */
+export async function runChangeRequestSweep(deps: StudioBookingDeps): Promise<{ readonly changesExpired: number }> {
+  const now = deps.clock.now();
+  const nowIso = now.toISOString();
+  let changesExpired = 0;
   for (const due of await deps.store.findDueChangeRequests(now, STUDIO_SWEEP_LIMIT)) {
     try {
       const expired = await deps.store.runTransaction(async (tx) => {
@@ -154,6 +162,15 @@ export async function runStudioBookingSweeps(
       // Swallowed, as above.
     }
   }
+  return { changesExpired };
+}
 
-  return { overdue, reminders, changesExpired, notifyFailed };
+/** Both steps, (a) then (b). The clock runs them as two steps, each in its own try. */
+export async function runStudioBookingSweeps(
+  deps: StudioBookingDeps,
+  notify?: NotifyDeps,
+): Promise<StudioBookingSweepResults> {
+  const a = await runAssignDeadlineSweep(deps, notify);
+  const b = await runChangeRequestSweep(deps);
+  return { overdue: a.overdue, reminders: a.reminders, changesExpired: b.changesExpired, notifyFailed: a.notifyFailed };
 }

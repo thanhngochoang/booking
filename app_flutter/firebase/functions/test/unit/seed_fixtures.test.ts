@@ -783,6 +783,7 @@ describe('seed studio (S26, #136)', () => {
     assert.equal(cuc?.providerType, 'studio');
     assert.equal(cuc?.verified, true);
     assert.equal(cuc?.memberCount, 1);
+    assert.equal(cuc?.assignableMembers, 1);
     const an = get(`photographers/${AN}`);
     assert.equal(an?.studioId, CUC);
     assert.equal(millis(an?.studioJoinedAt), NOW.getTime() - 30 * 86_400_000);

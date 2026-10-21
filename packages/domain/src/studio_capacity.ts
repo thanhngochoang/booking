@@ -51,14 +51,14 @@ export function memberDayReleasable(f: StudioDayFacts, memberUid: string): boole
 
 /**
  * What the derived `availability/{studioId}/days/{day}` record should become: `set_full` when the day is full and
- * not yet marked, `clear_full` when a place freed up, null when nothing changes. A studio `off` day is the
- * studio's own record and is never touched.
+ * not yet marked, `clear_full` when a place freed up, null when nothing changes. Any other record of the studio's
+ * own day (`off`, or a `booked`/`pending` hold such as an event) is the studio's and is never touched.
  */
 export function studioDayMark(
   current: { readonly state: string } | null,
   f: StudioDayFacts,
 ): 'set_full' | 'clear_full' | null {
-  if (current?.state === 'off' || f.studioOff) return null;
+  if ((current !== null && current.state !== 'full') || f.studioOff) return null;
   const full = studioDayCapacity(f).full;
   if (full && current?.state !== 'full') return 'set_full';
   if (!full && current?.state === 'full') return 'clear_full';

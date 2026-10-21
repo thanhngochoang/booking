@@ -249,7 +249,7 @@ Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An
 
 ## Studio (S26)
 
-Cúc is a verified studio (`providerType: studio`, `memberCount: 1`) with package `seed-service-studio-family`
+Cúc is a verified studio (`providerType: studio`, `memberCount: 1`, `assignableMembers: 1`) with package `seed-service-studio-family`
 (Gia đình tại studio 2 giờ, 2 500 000 ₫). Relation ids are `{studioId}_{memberId}_{createdAtMs}`; every seeded
 photographer carries `nameKey` (the S26.02 search key).
 

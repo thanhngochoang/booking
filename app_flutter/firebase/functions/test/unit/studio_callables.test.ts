@@ -225,7 +225,25 @@ describe('searchPhotographersToInvite (S26.02)', () => {
     });
 
     for (let i = 0; i < 25; i++) seedPerson(db, `bulk_${i}`, `Nguyễn ${i}`, { nameKey: `nguyen ${String(i).padStart(2, '0')}` });
-    assert.ok((await search(STUDIO, 'nguyen')).rows.length <= 20);
+    assert.equal((await search(STUDIO, 'nguyen')).rows.length, 20);
+  });
+
+  it('studios ahead in the name order do not crowd out photographers (fetch 40, cut to 20 after filtering)', async () => {
+    for (let i = 0; i < 22; i++) {
+      seedPerson(db, `st_${i}`, `Nguyễn Studio ${i}`, { providerType: 'studio', nameKey: `nguyen a${String(i).padStart(2, '0')}` });
+    }
+    const { rows } = await search(STUDIO, 'nguyen');
+    assert.ok(rows.some((r) => r.uid === 'm_free'));
+    assert.ok(rows.every((r) => !r.uid.startsWith('st_')));
+  });
+
+  it('the open relation is read for the rows found only; an old declined one does not count', async () => {
+    db.seed(`studio_members/${STUDIO}_m_free_1`, {
+      studioId: STUDIO, memberId: 'm_free', status: 'declined', initiatedBy: 'studio',
+      createdAt: NOW, expiresAt: new Date(NOW.getTime() + 2 * DAY_MS), expiringNotifiedAt: null,
+    });
+    const { rows } = await search(STUDIO, 'nguyen f');
+    assert.deepEqual(rows.map((r) => [r.uid, r.state]), [['m_free', 'invitable']]);
   });
 
   it('only a studio searches', async () => {

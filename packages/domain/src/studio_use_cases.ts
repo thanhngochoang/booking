@@ -14,6 +14,8 @@ import {
   type StudioProfile,
   type StudioRelation,
 } from './studio_membership.js';
+import { notifyStudioInviteExpiring } from './notification_hooks.js';
+import type { NotifyDeps } from './notification_ports.js';
 import { fields, idField } from './studio_input.js';
 import type { StudioDeps, StudioTx } from './studio_ports.js';
 
@@ -372,19 +374,34 @@ export async function removeMember(deps: StudioDeps, studioId: string, raw: unkn
 
 /**
  * bookingClock step (Decision 20c), idempotent: invites and requests past `expiresAt` become `expired`;
- * invites within 24 h of it are marked `expiringNotifiedAt` once and listed for `notifyStudioInviteExpiring`.
+ * invites within 24 h of it get the one-time "invite expiring" notice and are then marked `expiringNotifiedAt`.
+ * With `notify`, the notice is sent BEFORE the mark is committed: a failed notice leaves the invite unmarked, so
+ * the next run sends it again (#138's dedupe key turns a resend after a lost mark into a duplicate).
  */
 export async function runMembershipSweeps(
   deps: StudioDeps,
-): Promise<{ expired: RelationChange[]; expiring: StudioRelation[] }> {
+  notify?: NotifyDeps,
+): Promise<{ expired: RelationChange[]; expiring: StudioRelation[]; notifyFailed: number }> {
   const now = deps.clock.now();
   const nowIso = now.toISOString();
   // The port already narrows to work to do; filtering again keeps a loose adapter from opening no-op transactions.
   const due = (await deps.studios.dueRelations(now, MEMBERSHIP_SWEEP_LIMIT)).filter(
     (r) => sweepActionOf(r, now) !== null,
   );
-  const out: { expired: RelationChange[]; expiring: StudioRelation[] } = { expired: [], expiring: [] };
+  const out: { expired: RelationChange[]; expiring: StudioRelation[]; notifyFailed: number } = {
+    expired: [],
+    expiring: [],
+    notifyFailed: 0,
+  };
   for (const d of due) {
+    if (notify && sweepActionOf(d, now) === 'expiring') {
+      try {
+        await notifyStudioInviteExpiring(notify, { photographerId: d.memberId, studioId: d.studioId, inviteId: d.id });
+      } catch {
+        out.notifyFailed += 1;
+        continue;
+      }
+    }
     const change = await deps.studios.runTransaction(async (tx): Promise<RelationChange | null> => {
       const rel = await tx.getRelation(d.id);
       const action = rel === null ? null : sweepActionOf(rel, now);

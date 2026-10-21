@@ -70,7 +70,8 @@ export interface DailyQuota {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const CLOSED_BOOKING_STATUSES: readonly string[] = ['declined', 'expired', 'cancelled', 'completed', 'reviewed'];
+/** Booking statuses that no longer hold an assignee (Decision 6); adapters use it for `not-in` filters. */
+export const CLOSED_BOOKING_STATUSES: readonly string[] = ['declined', 'expired', 'cancelled', 'completed', 'reviewed'];
 
 /** `{studioId}_{memberId}_{createdAtMs}` (Decision 1). Longer than `isId`'s 64 characters with real uids. */
 export function relationId(studioId: string, memberId: string, createdAt: Date): string {

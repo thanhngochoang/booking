@@ -2447,12 +2447,12 @@ test('the assignee reads the customer contact only while unlocked', async () => 
   await seedDoc('bookings/b_sa3/private/delivery', { url: 'https://x' });
   await assertFails(getDoc(doc(db, 'bookings/b_sa3/private/delivery')));
 });
-test('a client cannot set studioId, memberCount, nameKey or the counters on photographers', async () => {
+test('a client cannot set studioId, memberCount, assignableMembers, nameKey or the counters on photographers', async () => {
   await asPhotographer('sp1');
   await seedDoc('photographers/sp1', { onboardingComplete: true, verified: false, bio: 'x' });
   const db = env.authenticatedContext('sp1').firestore();
   for (const field of ['studioId', 'studioJoinedAt', 'studioCooldownUntil', 'memberCount', 'lateAssignCount',
-    'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey']) {
+    'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey', 'assignableMembers']) {
     await assertFails(updateDoc(doc(db, 'photographers/sp1'), { [field]: field === 'studioId' || field === 'nameKey' ? 'x' : 1 }));
   }
   await assertSucceeds(updateDoc(doc(db, 'photographers/sp1'), { bio: 'y' }));
@@ -2461,11 +2461,17 @@ test('a client cannot set studioId, memberCount, nameKey or the counters on phot
   await assertSucceeds(updateDoc(doc(db, 'photographers/sp1'), { bio: 'z' }));
   await assertFails(updateDoc(doc(db, 'photographers/sp1'), { studioId: null }));
 });
-test("a studio's full day is server-written: the client cannot create, change or delete it", async () => {
+test("a studio's full day is server-written; the owner may only turn it off", async () => {
   await asPhotographer('sfs1');
   await seedDoc('availability/sfs1/days/2026-10-14', { state: 'full' });
   const db = env.authenticatedContext('sfs1').firestore();
   await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-15'), { state: 'full' }));
-  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'off' }));
   await assertFails(deleteDoc(doc(db, 'availability/sfs1/days/2026-10-14')));
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'booked', bookingId: 'x' }));
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'off', note: 'x' }));
+  await assertFails(setDoc(doc(env.authenticatedContext('sfs2').firestore(), 'availability/sfs1/days/2026-10-14'), { state: 'off' }));
+  await assertSucceeds(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'off', updatedAt: serverTimestamp() }));
+  // A booked day stays server-only.
+  await seedDoc('availability/sfs1/days/2026-10-16', { state: 'booked', bookingId: 'b1' });
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-16'), { state: 'off' }));
 });

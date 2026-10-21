@@ -88,6 +88,9 @@ describe('studioDayCapacity (Decision 26)', () => {
     assert.equal(studioDayMark({ state: 'full' }, facts()), 'clear_full');
     assert.equal(studioDayMark(null, facts()), null);
     assert.equal(studioDayMark({ state: 'off' }, full), null);
+    // The studio's own holds (an event day, an old individual booking) are never overwritten.
+    assert.equal(studioDayMark({ state: 'booked' }, full), null);
+    assert.equal(studioDayMark({ state: 'pending' }, full), null);
   });
 
   it('studioDayLoadWith moves an id between the lists', () => {

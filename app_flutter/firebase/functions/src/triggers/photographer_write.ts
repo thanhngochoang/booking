@@ -1,7 +1,6 @@
 import type { DocumentData } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
 import {
-  acceptsOrders,
   acceptingOrdersPatch,
   foldNameKey,
   providerTypeOf,
@@ -11,6 +10,7 @@ import {
   type ScoreSkillsOutcome,
   type DiscoveryDeps,
 } from '@photobooking/domain';
+import { isAssignableMember } from '../infra/booking_firestore.js';
 import type { NameKeyStore } from './user_write.js';
 
 /** The two snapshots of one `photographers/{uid}` write; `after` undefined when it was deleted. */
@@ -133,14 +133,13 @@ function studioIdOf(d: DocumentData | undefined): string | null {
   return typeof d?.studioId === 'string' && d.studioId !== '' ? d.studioId : null;
 }
 
-function assignable(d: DocumentData | undefined): boolean {
-  return d !== undefined && d.deletionPending !== true && acceptsOrders(d);
-}
+const assignable = (d: DocumentData | undefined): boolean => isAssignableMember(d);
 
 /**
- * Studios whose derived `full` days a photographer write can change (#136 Decision 26): both studios of a member
- * who joined, left or was removed (`studioId` is written in the membership commit), the studio of a member who
- * became assignable or stopped being so, and a provider that stopped being a studio (its marks are cleared).
+ * Studios whose derived `full` days and `assignableMembers` a photographer write can change (#136 Decision 26):
+ * both studios of a member who joined, left or was removed (`studioId` is written in the membership commit), the
+ * studio of a member who became assignable or stopped being so, a provider that became a studio (its count
+ * starts at 0) and one that stopped being a studio (its marks are cleared).
  */
 export function studiosToRecompute(input: PhotographerWriteInput): string[] {
   const out = new Set<string>();
@@ -152,8 +151,8 @@ export function studiosToRecompute(input: PhotographerWriteInput): string[] {
   } else if (now !== null && assignable(input.before) !== assignable(input.after)) {
     out.add(now);
   }
-  if (providerTypeOf(input.before?.providerType) === 'studio' && providerTypeOf(input.after?.providerType) !== 'studio') {
-    out.add(input.uid);
-  }
+  const wasStudio = input.before !== undefined && providerTypeOf(input.before.providerType) === 'studio';
+  const isStudioNow = input.after !== undefined && providerTypeOf(input.after.providerType) === 'studio';
+  if (wasStudio !== isStudioNow) out.add(input.uid);
   return [...out];
 }

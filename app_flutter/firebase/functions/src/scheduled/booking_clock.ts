@@ -4,9 +4,9 @@ import {
   sendDueReminders,
   sendVerificationNudges,
   notifyDeliveryAutoApproveSoon,
-  notifyStudioInviteExpiring,
+  runAssignDeadlineSweep,
+  runChangeRequestSweep,
   runMembershipSweeps,
-  runStudioBookingSweeps,
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
@@ -136,33 +136,36 @@ export async function handleBookingClock(
 }
 
 /**
- * `studioBookingSweeps`: assign reminders, overdue marks (#136 Decision 20a) and expired change requests (20b),
- * one domain call that isolates every booking. `studioMembershipSweeps`: expired invites and requests, and the
- * one-time "invite expiring" notice (20c). Failed notices are logged as errors (assign_overdue is critical).
+ * The studio steps (#136 Decision 20), each in its own try so one failing query never skips the others:
+ * `studioAssignSweeps` (48 h / 26 h reminders and overdue marks, 20a), `studioChangeSweeps` (expired change
+ * requests, 20b), `studioMembershipSweeps` (expired invites and requests, and the one-time "invite expiring"
+ * notice, 20c). Notices are sent before their mark; failed ones are logged as errors and retried next tick.
  */
 export async function runStudioSteps(studio: NonNullable<BookingClockExtras['studio']>): Promise<void> {
   try {
-    const r = await runStudioBookingSweeps(studio.bookings, studio.notify);
-    logger.info('bookingClock studioBookingSweeps completed', r);
+    const r = await runAssignDeadlineSweep(studio.bookings, studio.notify);
+    logger.info('bookingClock studioAssignSweeps completed', r);
     if (r.notifyFailed > 0) {
-      logger.error('bookingClock studioBookingSweeps notices failed; the bookings stay unmarked and are retried', {
+      logger.error('bookingClock studioAssignSweeps notices failed; the bookings stay unmarked and are retried', {
         notifyFailed: r.notifyFailed,
       });
     }
   } catch (e) {
-    logger.error('bookingClock studioBookingSweeps failed', { error: String(e) });
+    logger.error('bookingClock studioAssignSweeps failed', { error: String(e) });
   }
   try {
-    const { expired, expiring } = await runMembershipSweeps(studio.members);
-    const sent = await Promise.allSettled(
-      expiring.map((r) =>
-        notifyStudioInviteExpiring(studio.notify, { photographerId: r.memberId, studioId: r.studioId, inviteId: r.id }),
-      ),
-    );
-    const notifyFailed = sent.filter((x) => x.status === 'rejected').length;
+    const r = await runChangeRequestSweep(studio.bookings);
+    logger.info('bookingClock studioChangeSweeps completed', r);
+  } catch (e) {
+    logger.error('bookingClock studioChangeSweeps failed', { error: String(e) });
+  }
+  try {
+    const { expired, expiring, notifyFailed } = await runMembershipSweeps(studio.members, studio.notify);
     logger.info('bookingClock studioMembershipSweeps completed', { expired: expired.length, expiring: expiring.length });
     if (notifyFailed > 0) {
-      logger.error('bookingClock studioMembershipSweeps expiring notices failed', { notifyFailed });
+      logger.error('bookingClock studioMembershipSweeps expiring notices failed; the invites stay unmarked and are retried', {
+        notifyFailed,
+      });
     }
   } catch (e) {
     logger.error('bookingClock studioMembershipSweeps failed', { error: String(e) });

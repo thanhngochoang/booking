@@ -178,7 +178,8 @@ service cloud.firestore {
                               'acceptingOrders', 'followerCount', 'followerCountAt', 'businessVerified', 'deletionPending',
                               // S26 studio members (#136): membership, studio counters and the invite-search key.
                               'studioId', 'studioJoinedAt', 'studioCooldownUntil', 'memberCount', 'lateAssignCount',
-                              'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey']);
+                              'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey',
+                              'assignableMembers']);
     }
 
     // Setup, once finished, stays finished: an update may not move onboardingComplete from true
@@ -699,7 +700,12 @@ service cloud.firestore {
         && dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && request.resource.data.keys().hasOnly(['state', 'updatedAt'])
         && request.resource.data.state == 'off';
-      allow update: if false;
+      // A studio may close a day the server shows as full (#136); the off day then wins over the mark.
+      allow update: if isOwner(uid)
+        && hasPhotographerRole(uid)
+        && resource.data.state == 'full'
+        && request.resource.data.keys().hasOnly(['state', 'updatedAt'])
+        && request.resource.data.state == 'off';
       allow delete: if isOwner(uid) && resource.data.state == 'off';
     }
 
