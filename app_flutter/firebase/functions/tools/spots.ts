@@ -183,12 +183,12 @@ export interface SpotCliDeps {
 
 /** Validates that a file is a JPEG <= maxSize bytes. */
 export async function validateJpegFile(filePath: string, maxSize: number): Promise<void> {
-  const stat = await fs.stat(filePath);
-  if (stat.size > maxSize) {
-    throw new Error(`File ${filePath} exceeds max size ${maxSize} bytes (got ${stat.size})`);
-  }
   const fh = await fs.open(filePath, 'r');
   try {
+    const stat = await fh.stat();
+    if (stat.size > maxSize) {
+      throw new Error(`File ${filePath} exceeds max size ${maxSize} bytes (got ${stat.size})`);
+    }
     const buf = Buffer.alloc(3);
     await fh.read(buf, 0, 3, 0);
     if (buf[0] !== 0xff || buf[1] !== 0xd8 || buf[2] !== 0xff) {
