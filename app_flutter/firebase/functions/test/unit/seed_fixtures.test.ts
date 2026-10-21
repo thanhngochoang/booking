@@ -4,6 +4,8 @@ import type { Timestamp } from 'firebase-admin/firestore';
 import {
   acceptsOrders,
   addVerdict,
+  assignSweepActionOf,
+  foldNameKey,
   bookingContactUnlocked,
   computeDeposit,
   intensityOf,
@@ -40,8 +42,12 @@ import {
   SEED_REGISTRATION_LAN_SOON,
   SEED_REVIEWS,
   SEED_USERS,
+  SEED_STUDIO_ASSIGNED,
+  SEED_STUDIO_UNASSIGNED,
   seedDocuments,
 } from '../../seed/fixtures.js';
+import { bookingFromFirestore } from '../../src/infra/booking_firestore.js';
+import { relationFromFirestore } from '../../src/infra/studio_firestore.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 /** A seeded time: a Date, or a Timestamp when the doc comes from a src/infra mapper. */
@@ -702,7 +708,8 @@ describe('seed discovery stats (S02)', () => {
 
     const cuc = get(`photographers/${CUC}`);
     assert.ok(cuc);
-    assert.equal(cuc.startingPrice, null);
+    // Cúc's studio package (S26 seed, #136).
+    assert.equal(cuc.startingPrice, 2_500_000);
     const cucStats = cuc.stats as Record<string, unknown>;
     assert.equal(cucStats.completedCount, 0);
     assert.ok(typeof cucStats.nextFreeDate === 'string');
@@ -766,3 +773,70 @@ describe('seed discovery stats (S02)', () => {
   });
 });
 
+
+describe('seed studio (S26, #136)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+
+  test('Cúc is a verified studio with one member, An, active since 30 days', () => {
+    const cuc = get(`photographers/${CUC}`);
+    assert.equal(cuc?.providerType, 'studio');
+    assert.equal(cuc?.verified, true);
+    assert.equal(cuc?.memberCount, 1);
+    const an = get(`photographers/${AN}`);
+    assert.equal(an?.studioId, CUC);
+    assert.equal(millis(an?.studioJoinedAt), NOW.getTime() - 30 * 86_400_000);
+  });
+
+  test('relations: An active, Bình invited (expires in 5 days), Dũng requested', () => {
+    const rels = docs
+      .filter((d) => d.path.startsWith('studio_members/'))
+      .map((d) => relationFromFirestore(d.path.slice('studio_members/'.length), d.data));
+    const of = (uid: string) => rels.find((r) => r?.memberId === uid);
+    assert.equal(rels.length, 3);
+    for (const r of rels) {
+      assert.ok(r);
+      assert.equal(r.studioId, CUC);
+      assert.match(r.id, new RegExp(`^${CUC}_${r.memberId}_\\d+$`));
+      assert.equal(r.expiringNotifiedAt, null);
+    }
+    assert.equal(of(AN)?.status, 'active');
+    assert.equal(of(BINH)?.status, 'invited');
+    assert.equal(Date.parse(of(BINH)?.expiresAt ?? ''), NOW.getTime() + 5 * 86_400_000);
+    assert.equal(of(DUNG)?.status, 'requested');
+    assert.equal(of(DUNG)?.initiatedBy, 'member');
+  });
+
+  test('every seeded photographer carries its nameKey', () => {
+    for (const p of SEED_PHOTOGRAPHERS) {
+      const name = SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? '';
+      assert.equal(get(`photographers/${p.uid}`)?.nameKey, foldNameKey(name), p.uid);
+    }
+  });
+
+  test('studio bookings: assigned to An (An\'s day booked) and unassigned past its deadline', () => {
+    const assigned = bookingFromFirestore(SEED_STUDIO_ASSIGNED, get(`bookings/${SEED_STUDIO_ASSIGNED}`));
+    assert.ok(assigned);
+    assert.equal(assigned.isStudio, true);
+    assert.equal(assigned.assigneeId, AN);
+    assert.equal(assigned.assignStatus, 'assigned');
+    assert.equal(assigned.status, 'accepted');
+    assert.equal(get(`availability/${AN}/days/${assigned.day}`)?.bookingId, SEED_STUDIO_ASSIGNED);
+    assert.equal(get(`availability/${CUC}/days/${assigned.day}`)?.state, 'full', 'its one member is taken');
+
+    const unassigned = bookingFromFirestore(SEED_STUDIO_UNASSIGNED, get(`bookings/${SEED_STUDIO_UNASSIGNED}`));
+    assert.ok(unassigned);
+    assert.equal(unassigned.assignStatus, 'unassigned');
+    assert.equal(unassigned.assigneeId, null);
+    // The first bookingClock after seeding marks it overdue (the customer gains the 100% cancel right).
+    assert.deepEqual(assignSweepActionOf(unassigned, NOW), { kind: 'overdue', notify: true });
+
+    const loads = docs.filter((d) => d.path.startsWith(`studio_day_load/${CUC}_`)).map((d) => d.data);
+    assert.deepEqual(
+      loads.map((l) => [l.day, l.unassignedIds, l.assignedIds]).sort(),
+      [[assigned.day, [], [SEED_STUDIO_ASSIGNED]], [unassigned.day, [SEED_STUDIO_UNASSIGNED], []]].sort(),
+    );
+    // A studio booking never writes the studio's own day as booked or pending.
+    for (const d of docs.filter((x) => x.path.startsWith(`availability/${CUC}/days/`))) assert.equal(d.data.state, 'full');
+  });
+});

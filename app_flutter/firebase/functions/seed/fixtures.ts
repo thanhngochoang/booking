@@ -15,6 +15,13 @@ import {
   computeStartingPrice,
   encodeGeohash,
   formatVnDate,
+  formatVnTime,
+  assignDeadlineFor,
+  foldNameKey,
+  inviteExpiresAt,
+  parseVnDateTime,
+  relationId,
+  studioDayMark,
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
@@ -61,6 +68,7 @@ import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '.
 import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
 import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
+import { relationToFirestore } from '../src/infra/studio_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -188,6 +196,8 @@ export interface SeedService {
 export const SEED_SERVICES: readonly SeedService[] = [
   { id: 'seed-service-portrait', photographerId: AN, name: 'Chân dung 2 giờ', price: 1_500_000, durationMinutes: 120 },
   { id: 'seed-service-family', photographerId: BINH, name: 'Gia đình 90 phút', price: 1_200_000, durationMinutes: 90 },
+  // Cúc's package: the studio bookings (S26) and the "one booking per free member" day (Decision 26).
+  { id: 'seed-service-studio-family', photographerId: CUC, name: 'Gia đình tại studio 2 giờ', price: 2_500_000, durationMinutes: 120 },
 ];
 
 export interface SeedAddon {
@@ -239,6 +249,8 @@ export interface SeedBooking {
   readonly completedDaysAgo: number | null;
   /** The deposit is held back by a dispute; the text is what the customer wrote. */
   readonly dispute?: { readonly reason: string };
+  /** A studio booking (#136): its member, or null while unassigned. */
+  readonly studio?: { readonly assigneeId: string | null };
 }
 
 export const SEED_BOOKINGS: readonly SeedBooking[] = [
@@ -256,6 +268,99 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-revision', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'revision_requested', date: '2026-10-12', start: '14:00', end: '16:00', place: 'Bảo tàng Dân tộc học, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-approved', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'approved', date: '2026-10-11', start: '14:00', end: '16:00', place: 'Cầu Long Biên, Hà Nội', completedDaysAgo: null },
 ];
+
+// ---- Studio (S26, #136) ----
+
+export const SEED_STUDIO_ASSIGNED = 'seed-booking-studio-assigned';
+export const SEED_STUDIO_UNASSIGNED = 'seed-booking-studio-unassigned';
+/** An joined Cúc this long before seeding. */
+export const SEED_STUDIO_JOINED_DAYS_AGO = 30;
+
+/** The start of an hour-aligned 2-hour slot near `at` in Vietnam time, kept within one day (09:00–21:00). */
+function vnSlot(at: Date): { date: string; start: string; end: string } {
+  const hourStart = new Date(Math.floor(at.getTime() / HOUR_MS) * HOUR_MS);
+  const date = formatVnDate(hourStart);
+  const hour = Number(formatVnTime(hourStart).slice(0, 2));
+  const h = Math.min(21, hour);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return { date, start: `${pad(h)}:00`, end: `${pad(h + 2)}:00` };
+}
+
+/** Days An's own calendar holds (seed bookings and the three seed events), before any studio job. */
+function anOwnDays(now: Date): Set<string> {
+  const days = new Set<string>();
+  for (const b of SEED_BOOKINGS) if (b.photographerId === AN && b.status !== 'cancelled') days.add(b.date);
+  for (const h of [8 * 24 + 2, 15 * 24 + 2, 36]) days.add(formatVnDate(new Date(now.getTime() + h * HOUR_MS)));
+  return days;
+}
+
+/**
+ * Lan ↔ Cúc, both accepted: one assigned to An three days ahead (or the next day An is free), one unassigned
+ * starting about 20 hours after seeding (its assign deadline has passed, so the first bookingClock marks it overdue).
+ */
+export function studioSeedBookings(now: Date): SeedBooking[] {
+  const base = { customerId: LAN, photographerId: CUC, serviceId: 'seed-service-studio-family', status: 'accepted', completedDaysAgo: null };
+  const anDays = anOwnDays(now);
+  let ahead = 3;
+  while (anDays.has(formatVnDate(new Date(now.getTime() + ahead * DAY_MS)))) ahead += 1;
+  const assigned = { date: formatVnDate(new Date(now.getTime() + ahead * DAY_MS)), start: '09:00', end: '11:00' };
+  const unassigned = vnSlot(new Date(now.getTime() + 20 * HOUR_MS));
+  return [
+    { ...base, id: SEED_STUDIO_ASSIGNED, ...assigned, place: 'Studio Cúc, Quận 1', studio: { assigneeId: AN } },
+    { ...base, id: SEED_STUDIO_UNASSIGNED, ...unassigned, place: 'Công viên Tao Đàn, TP.HCM', studio: { assigneeId: null } },
+  ];
+}
+
+/** Days An is not free for Cúc: An's own calendar and the studio job. */
+function anBusyDays(now: Date): Set<string> {
+  const days = anOwnDays(now);
+  for (const b of studioSeedBookings(now)) if (b.studio?.assigneeId === AN) days.add(b.date);
+  return days;
+}
+
+/** `studio_day_load` of Cúc per day, and the days its one member leaves full (Decision 26). */
+function studioLoads(now: Date): { day: string; unassignedIds: string[]; assignedIds: string[]; full: boolean }[] {
+  const byDay = new Map<string, { unassignedIds: string[]; assignedIds: string[] }>();
+  for (const b of studioSeedBookings(now)) {
+    const l = byDay.get(b.date) ?? { unassignedIds: [], assignedIds: [] };
+    (b.studio?.assigneeId ? l.assignedIds : l.unassignedIds).push(b.id);
+    byDay.set(b.date, l);
+  }
+  const busy = anBusyDays(now);
+  return [...byDay.entries()].map(([day, l]) => ({
+    day,
+    ...l,
+    full:
+      studioDayMark(null, { studioOff: false, memberDays: [{ uid: AN, verified: true, free: !busy.has(day) }], ...l }) ===
+      'set_full',
+  }));
+}
+
+/** Cúc's relations: An active, Bình invited (expires in 5 days), Dũng's open join request. */
+function studioMemberDocuments(now: Date): SeedDocument[] {
+  const joinedAt = new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS);
+  const names: Record<string, string> = Object.fromEntries(SEED_USERS.map((u) => [u.uid, u.displayName]));
+  const rel = (memberId: string, createdAt: Date, over: Record<string, unknown>) => {
+    const id = relationId(CUC, memberId, createdAt);
+    return {
+      path: `studio_members/${id}`,
+      data: relationToFirestore({
+        id, studioId: CUC, memberId, status: 'invited', initiatedBy: 'studio',
+        createdAt: createdAt.toISOString(), expiresAt: inviteExpiresAt(createdAt),
+        respondedAt: null, joinedAt: null, endedAt: null, endedBy: null, expiringNotifiedAt: null,
+        studioName: names[CUC] ?? '', studioAvatarUrl: null, memberName: names[memberId] ?? '', memberAvatarUrl: null,
+        version: 1,
+        ...over,
+      }),
+    };
+  };
+  const anInvited = new Date(joinedAt.getTime() - DAY_MS);
+  return [
+    rel(AN, anInvited, { status: 'active', respondedAt: joinedAt.toISOString(), joinedAt: joinedAt.toISOString(), version: 2 }),
+    rel(BINH, new Date(now.getTime() - 2 * DAY_MS), {}),
+    rel(DUNG, new Date(now.getTime() - DAY_MS), { status: 'requested', initiatedBy: 'member' }),
+  ];
+}
 
 /** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
 export const SEED_AN_ACCOUNT = { id: 'seed-account-an-1', bankCode: 'VCB', number: '0123456789', holderName: 'NGUYEN VAN AN' } as const;
@@ -508,6 +613,27 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
     createdAt,
     updatedAt: last,
     version: steps.length,
+    ...(b.studio !== undefined ? studioFieldsOf(b, createdAt, last) : {}),
+  };
+}
+
+/** The studio fields of a seeded studio booking, as `studioDraftFields` and `assignBooking` write them. */
+function studioFieldsOf(b: SeedBooking, createdAt: Date, assignedAt: Date): Record<string, unknown> {
+  const assigneeId = b.studio?.assigneeId ?? null;
+  return {
+    isStudio: true,
+    assigneeId,
+    assigneeKind: assigneeId === null ? null : 'member',
+    assignStatus: assigneeId === null ? 'unassigned' : 'assigned',
+    assignDeadline: assignDeadlineFor(parseVnDateTime(b.date, b.start), createdAt),
+    assignOverdue: false,
+    assignedAt: assigneeId === null ? null : assignedAt,
+    assignments:
+      assigneeId === null ? [] : [{ assigneeId, assigneeKind: 'member', at: assignedAt, by: b.photographerId, reason: null, late: false }],
+    assignRemindersSent: [],
+    changeRequest: null,
+    studioFault: null,
+    assignmentReturned: null,
   };
 }
 
@@ -537,6 +663,11 @@ export function seedDocuments(now: Date): SeedDocument[] {
       if (b.photographerId === p.uid && (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed')) {
         blockedDaysList.push(b.date);
       }
+    }
+    // Cúc's full days (its one member is busy) and An's studio job.
+    if (p.uid === CUC) blockedDaysList.push(...studioLoads(now).filter((l) => l.full).map((l) => l.day));
+    if (p.uid === AN) {
+      for (const b of studioSeedBookings(now)) if (b.studio?.assigneeId === AN) blockedDaysList.push(b.date);
     }
     // Event days for An
     if (p.uid === AN) {
@@ -576,6 +707,12 @@ export function seedDocuments(now: Date): SeedDocument[] {
         followerCount: SEED_FOLLOWS.filter((f) => f.photographerId === p.uid).length,
         ...(SEED_FOLLOWS.some((f) => f.photographerId === p.uid) ? { followerCountAt: at } : {}),
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
+        // S26: the invite-search key, Cúc's member count and An's membership (#136).
+        nameKey: foldNameKey(SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? ''),
+        ...(p.uid === CUC ? { memberCount: 1 } : {}),
+        ...(p.uid === AN
+          ? { studioId: CUC, studioJoinedAt: new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS) }
+          : {}),
         createdAt: at,
         updatedAt: at,
       },
@@ -705,7 +842,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       data: { userId: sp.userId, photographerId: sp.photographerId, createdAt: at },
     });
   }
-  for (const b of SEED_BOOKINGS) {
+  for (const b of [...SEED_BOOKINGS, ...studioSeedBookings(now)]) {
     const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
     if (!service) continue;
     const bData = bookingData(b, now);
@@ -920,8 +1057,15 @@ export function seedDocuments(now: Date): SeedDocument[] {
       }
     }
 
-    // Availability day
-    if (b.status === 'requested') {
+    // Availability day. A studio booking holds the studio's day load instead; its member's day is booked.
+    if (b.studio !== undefined) {
+      if (b.studio.assigneeId !== null) {
+        docs.push({
+          path: `availability/${b.studio.assigneeId}/days/${b.date}`,
+          data: { state: 'booked', bookingId: b.id, updatedAt },
+        });
+      }
+    } else if (b.status === 'requested') {
       docs.push({
         path: `availability/${b.photographerId}/days/${b.date}`,
         data: { state: 'pending', bookingId: b.id, updatedAt },
@@ -939,6 +1083,14 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...eventDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
   docs.push(...verificationDocuments(now));
+  docs.push(...studioMemberDocuments(now));
+  for (const l of studioLoads(now)) {
+    docs.push({
+      path: `studio_day_load/${CUC}_${l.day}`,
+      data: { studioId: CUC, day: l.day, unassignedIds: l.unassignedIds, assignedIds: l.assignedIds, updatedAt: now },
+    });
+    if (l.full) docs.push({ path: `availability/${CUC}/days/${l.day}`, data: { state: 'full', updatedAt: now } });
+  }
 
   // Explore catalog document (S02)
   docs.push({
