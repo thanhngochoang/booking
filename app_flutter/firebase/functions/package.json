@@ -25,7 +25,7 @@
     "try:contact": "node --import tsx seed/try_contact_link.ts"
   },
   "dependencies": {
-    "firebase-admin": "^13.10.0",
+    "firebase-admin": "^14.5.0",
     "firebase-functions": "^6.6.0",
     "opentype.js": "^2.0.0",
     "sharp": "^0.35.5"
