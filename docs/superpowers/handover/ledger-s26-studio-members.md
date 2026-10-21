@@ -80,3 +80,64 @@ Checked on develop 6ef387f (with #130 reviews, #152 delivery, #198 order gate, #
 ## Mock frames added (Task 1)
 
 `docs/design/ui-mock.html`: `S03.01-member`, `S05.02-studio-change`, `S06.01-studio`, `S06.01-member`, `S09.02-studio`, `S26.03-none`; `#S26.03` gains a "Từ chối" text button beside "Nhận"; `#S26.01` caption gains the empty state copy. Spec: studio-members-design §3.1 (relation id, public membership via `photographers.studioId`), §5.2 (deadline rule), §5.7 (assignee contact), §6 (reason label "Tư vấn chậm"); main spec §2 S26 rows now "⬜ có mock, đang làm (#136)".
+
+## Rulings (decisions taken while building, with what each costs if wrong)
+
+1. The claim branch is `plan/136-s26-studio-va-thanh-vien` (named by `project.py`), not the plan's `plan/136-s26-studio-members`. Cosmetic.
+2. Needs-the-owner 1, 3 and 4 take the plan's defaults (Decisions 8, 17, 21), as the owner-approved spec says. One small change each if wrong.
+3. #136 ran while #194 (also held by this machine) was paused, at the owner's request on 2026-10-21, so #194 Task 8 can build on it.
+4. The S26 status cells in the main spec link `#136` instead of the plan's prose "có mock, đang làm", because the owner rule "Issue status = links" wins over the plan text.
+5. A wrong caller on `respondInvite`, `respondJoinRequest` or `removeMember` gets `permission_denied`, consistent with the Contract refusal list and with `cancelInvite`/`cancelJoinRequest` (the brief's sample used `not_found`). The Contract is the interface authority; a code swap if wrong.
+6. A member's personal booking is refused when the studio's unassigned bookings that day are at least the number of free members (counting this member as free). The literal "at least free members minus one" would block a lone member forever; after the personal booking the free count drops by one, and the studio is short only when unassigned exceeds it. One comparison to change if wrong.
+7. Rescheduling a studio booking is refused with `not_eligible` in Phase 1 (the same pattern #194 uses for spot bookings), because `reschedule.ts` is not studio-aware and would write `booked` on the studio's day while leaving the load and the assignee's day alone. Costs a feature later, no data corruption. The app also hides "Đổi lịch" for every role on studio bookings.
+8. Reassigning while a change request is pending sends the customer only `booking_reassigned` (no extra `change_answered`); the brief maps change answers to declined and expired only, which avoids a double notice. Costs one notice if the owner wants both.
+9. The assignee gets unread counts in the booking chat (`send_message` counts members other than the sender), because Decision 16 makes the assignee a chat member. Small.
+10. `assignBooking` re-checks the assignee's studio membership inside the transaction (`photographers/{assignee}.studioId == studio`), which closes the remove-versus-assign race. One extra in-transaction read.
+11. A studio with zero assignable members (verified, not pending deletion) gets a server-written `photographers/{studio}.assignableMembers = 0`, kept up to date in `onPhotographerWrite`; the app treats 0 as every day full in S04.02 and in the next free date, while `createBooking` still refuses with `day_taken`. Per-day marks cannot express "no members". Costs one field and one app check; the owner may prefer hiding the studio from discovery instead (open question below).
+12. A studio may set a `full` day to `off` (rules allow the owner's update `full` to `off`), which keeps the day closed when a booking cancels. Small.
+13. The Dart side reads `assignableMembers` only for `providerType = studio`; when absent it falls back to `memberCount > 0` (not "all full"), and a present 0 means every day full. No production data yet (dev is on emulators) and the seed has the field. Costs one fallback branch.
+14. "Duyệt" in S26.01 is disabled when members plus open invites reach the cap (the same rule as "Mời" in the invite sheet); the mock and spec are silent. Chosen for consistency, so no request is sure to fail. Costs re-enabling if the owner wants the server refusal shown.
+15. `analysis_options.yaml` stays untouched (skill table rule); analyzer noise from `node_modules` is local only (CI does not install functions dependencies before analyze).
+16. S05.02 gets "Trả việc" for the assignee while now is before the start and the job is not yet returned (Decision 14: any time before the start). Same-day jobs have no button today. Done in the final wave.
+17. S05.05-studio keeps the shared "Chia sẻ ảnh" section (spec §6 is explicit) and the mock frame `#S05.05-studio` gained it, following the rule "update the mock when the spec is newer". Costs a mock edit.
+18. S26.05 keeps the mock's fixed "Studio trả lời trong 6 giờ." with no `respondBy`; the mock wins on copy. The owner may want "trước {respondBy}" (open question below).
+19. An unassigned booking past its start does not show the `overdue` copy promising a 100% cancel, because the fault right ends at the start. New keys `reviewNoAssigneeTitle` and `reviewNoAssigneeBody` cover it.
+
+## Deferred minors (final review or later)
+
+- Task 1: S26.03 and S26.03-none are both tagged "Mới" in the mock.
+- Task 2: `inviteMember`'s open-pair conflict check still sees stale unswept `invited` relations, so a re-invite is blocked until the sweep runs.
+- Task 3: a member leaving, being removed or setting an `off` day while the studio has unassigned bookings that rely on them can leave the studio short (Decision 26 covers personal bookings only). A permanently failing overdue notice blocks the critical mark (`lateAssignCount` never increments) and takes a sweep slot each run; a notice sent from the stale query snapshot can be spurious (deduped).
+- Task 4: a missing display name is snapshotted as `''` in `viaStudioName` and `assigneeName` (the app treats `''` as no name); no test for a non-owner order on a studio booking; `studio: null` treated as absent is untested.
+- Task 5: `assignableMembers` goes stale after studio to individual (ignored by the app); `recomputeStudioDays` runs sequential transactions in a trigger, unbounded (at most 31 days by 100); search may return fewer than 20; deleting an event hold does not re-mark `full` until the next recompute. `studioDayMark` leaves the studio's own non-full records alone (event hold or old individual booking): accepted.
+- Task 6: `studio_booking.dart` line 168 `a['by'] as String?` throws on a non-string and drops the whole booking; the S06 calendar full-day tap comment and section copy; the quota is not recomputed at Vietnam midnight; `StudioError` drops `details.field`; the fake `membersOf` order differs from `studioJoinedAt`.
+- Task 7: the S26.01 zero-size `AsyncView` pattern; an optional raw assigned provider in `booking_providers.dart`; spacing gap 2 to 4 dp and icons 16/18 to 20 (tokens). `_JobCard` is kept because the compact `BookingCard` shows place, a fixed title and a yellow badge against the mock.
+- Task 8: "Mới · n đánh giá" for 1 to 4 reviews in the S26.04 meta; the studio card should show "đã trả việc" beside the assignee; the change row should be actionable only while now is before `respondBy`; unit tests for `myWorkBookingsProvider`; S04.02 preset day before the profile loads, past days painted full, next-free-date for `assignableMembers == 0`; `profileStudioNameProvider` duplicates `partyProfileProvider`; undisposed `ValueNotifier`s in the decline and return sheets; the S06.01 assigned stream swallows errors (consider surfacing).
+- Task 9: a title-only `VerifyAlert` renders lighter than the mock `.warnc`; the 3-member chat display (owner and assignee as two provider-side senders) is unchecked.
+
+## Open questions for the owner
+
+1. The studio's "N năm hoạt động" in S03.01: the mock only says "số năm hoạt động"; we use `skills.yearsExperience`. Is that the right source, or should it come from the studio's founding date?
+2. S26.05 copy: keep the fixed "Studio trả lời trong 6 giờ." or show "trước {respondBy}" (the real deadline is `min(at + 6 giờ, startAt)`)?
+3. A studio with `assignableMembers == 0`: keep it visible with every day shown full (what we built), or hide it from discovery?
+4. Should "Duyệt" in S26.01 be disabled at the member cap (we did) or stay enabled so the server refusal `studio_full` is shown?
+5. Still open from the brief: assignee phone channels for the customer (spec §5.7, Needs the owner 3) have no control in the mock.
+
+## Skipped or missing verification
+
+- Firestore rules tests (`app_flutter/firebase/rules-test`) and Functions integration tests (`npm run test:integration`) are written but not run here (the sandbox cannot run the emulator); CI runs them on push.
+- No device or simulator build was done; the Flutter tests, analyzer, domain and Functions unit tests were run per task.
+- TDD "RED first" evidence is missing on several tasks (reported by the implementers).
+- Late-delivery hook: absent on develop, so `lateDeliveryCount` is stored but nothing increments it until #207.
+
+## Deploy order and the Blaze switch
+
+1. Indexes first (new queries on `bookings.assigneeId`, the sweep index `(assignStatus, assignOverdue, status, assignDeadline)`, `studio_members` and `photographers.studioId`), then Firestore rules, then Functions, then the app.
+2. `BLAZE_ENABLED` is off: Functions and Storage do not deploy to dev; only Firestore rules and indexes deploy and the app runs on the emulators. No new Scheduler job was added: the studio sweeps run inside `bookingClock` as two clock steps, so there is nothing new behind the switch.
+3. Existing photographers get `nameKey` on their next profile or user write (`onUserWrite` and `onPhotographerWrite` heal it); S26.02 cannot find older dev accounts until then.
+4. Studio bookings created before this change have no studio fields and behave as individual bookings.
+5. Account deletion reads `studio_members` by `memberId` and by `studioId` (the #205 fix in Task 5).
+
+## S27 notes (Decision 9)
+
+S27 "Studio tuyển thợ" (#151: collaborators who are not members, per-job acceptance, declared fee off the booking, `studio_collaborations`) is not built. The assignment model is ready: `assigneeKind` (today only `member`), `StudioRoster.relationOf` returns `'collaborator'` from S27's own collection, and everything goes through the one `assignBooking` entry point. Other deferred items: manager role, several owners, in-app money split, several assignees per booking, the customer pre-choosing a member, public violation counters, account deletion ending relations (`endedBy: system`, S22.02, #141), both tags on the real-shoot post in S02.02 (Decision 22), the `services/api` migration (#90) and staff screens for the counters (#83), and a real payment intermediary for studio-fault refunds (#129).

@@ -86,7 +86,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) | S04 |
 | S02.07 | Tìm kiếm: ô tìm, nhóm Dịch vụ / Phong cách / Địa điểm / Thợ ảnh, không kết quả có "Xem tất cả thợ ảnh" | `/explore/search` | cả hai | 3 | ⬜ có mock, có plan (#132) | — |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
-| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm · khớp mock: nút lưu & chia sẻ/tuỳ chọn trên ảnh bìa, nút theo dõi xs, bố cục header · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) | S03 |
+| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm · khớp mock: nút lưu & chia sẻ/tuỳ chọn trên ảnh bìa, nút theo dõi xs, bố cục header · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) · studio: dải thành viên `MemberStrip`, nhãn "Thuộc {Studio}" ở thành viên, "Hết chỗ" ở lịch ([#136](https://github.com/thanhngochoang/booking/issues/136)) | S03 |
 | S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ✅ đã làm (10a) · "Được đánh giá cao" theo % cà chua (#130) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) | S05 |
@@ -97,15 +97,15 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
-| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) | S09 |
+| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) · booking studio: thẻ thợ được giao (`AssigneeCard`), "Xin đổi thợ", "Trả việc", huỷ 100% khi studio lỗi ([#136](https://github.com/thanhngochoang/booking/issues/136)) | S09 |
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) · ScreenCode ✅ (#152) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
-| S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) | S12 |
+| S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) · booking studio: hai khối đánh giá (thợ + studio, `VerdictPad` gọn) ([#136](https://github.com/thanhngochoang/booking/issues/136)) | S12 |
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.08 | Huỷ phần bàn giao khi trễ hạn (sheet: hoàn mốc 2, thợ giữ mốc 1) | — (sheet) | khách | spec 10-05 §4.1.5 | kế hoạch `2026-10-18-s05-late-delivery-cancel.md` ([#207](https://github.com/thanhngochoang/booking/issues/207)) | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) | S19 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) · việc được giao cho thợ của studio, nhãn "Giao bởi {Studio}" ([#136](https://github.com/thanhngochoang/booking/issues/136)) | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
@@ -125,7 +125,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio ẩn tới #136 | S31 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio: [#136](https://github.com/thanhngochoang/booking/issues/136) | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |

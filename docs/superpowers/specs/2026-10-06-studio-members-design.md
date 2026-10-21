@@ -103,6 +103,7 @@ Booking thêm: `assigneeId?`, `assigneeKind?` (chỉ `member` ở S26; S27 thêm
 - Callable `assignBooking`: kiểm tra thành viên `active`, rảnh, booking chưa qua `shot`. Ghi `assigneeId`, thêm vào `assignments`, chặn lịch của thợ, thêm thợ vào hội thoại booking, báo khách.
 - Studio đổi thợ (chủ động) dùng cùng callable; thợ cũ rời hội thoại, liên hệ của thợ cũ đóng với khách. Đổi khi còn < 24 giờ → `lateReassignCount + 1` và khách được huỷ hoàn 100% (§5.4).
 - Nhắc studio lúc còn 48 giờ và 26 giờ. Booking studio không chuyển sang `upcoming` khi chưa có `assigneeId`.
+- **Trường sẵn cho S27** (Decision 9): `assigneeKind` (hiện chỉ `member`), `assignments[]` với `by`, `reason`, `late`; một điểm vào `assignBooking`; `StudioRoster.relationOf(studioId, uid)` trả `'member'` (S27 trả thêm `'collaborator'` từ bộ sưu tập riêng); `assignStatus: unassigned | assigned`, `assignedAt`, `assignRemindersSent`, `studioFault`, `assignmentReturned`, `changeRequest {at, note, respondBy, status, declineReason, answeredAt}`.
 - Thợ được giao có nút "Trả việc" (lý do tuỳ chọn): studio được báo để giao người khác; `assigneeId` giữ nguyên cho tới khi studio giao lại.
 
 ### 5.3 Phía khách (S05.02, khối "Thợ chụp cho bạn")
@@ -126,6 +127,8 @@ Huỷ do studio (quá hạn giao, từ chối đổi, đổi muộn): toàn bộ
 ### 5.5 Job định kỳ
 
 Cloud Function mỗi 15 phút (dùng chung với spec bàn giao): đánh dấu `assignOverdue` và báo khách; cho `changeRequest` hết hạn; cho lời mời/xin vào hết hạn; nhắc giao thợ (48 giờ, 26 giờ). Mỗi việc idempotent (ghi mốc đã xử lý).
+
+**Như đã làm (#136):** không thêm job Scheduler mới. Các quét chạy bên trong `bookingClock` (`functions/src/scheduled/booking_clock.ts`, `BookingClockExtras.studio`), thành hai bước riêng, mỗi bước trong try/catch của nó: (1) quan hệ (lời mời/xin vào hết hạn, báo "sắp hết hạn" trước 24 giờ), (2) giao thợ (đánh dấu `assignOverdue`, nhắc 48 giờ và 26 giờ, `changeRequest` hết hạn). Quét giao thợ dùng chỉ mục `(assignStatus, assignOverdue, status, assignDeadline)`; thông báo lỗi (`notifyFailed > 0`) được ghi log để cảnh báo. Vì Blaze đang tắt (`BLAZE_ENABLED`), Functions không deploy lên dev; chạy trên emulator.
 
 ### 5.6 Buổi chụp và bàn giao
 
@@ -164,6 +167,8 @@ Hook: `notifyStudioInvite`, `notifyStudioJoinRequest`, `notifyStudioInviteAccept
 - Booking: `assigneeId` được đọc booking như hai bên; trường riêng tư của booking (liên hệ) theo §5.7.
 - SQL (`services/api`): migration mới thêm bảng `studio_members` (check `status`, unique một `active` mỗi `member_id` bằng partial unique index), cột booking (`assignee_id`, `assign_deadline`, `assign_overdue`, `change_request jsonb`), bảng `booking_assignments`, cột `photographers.studio_id`, `member_count` và bộ đếm vi phạm; `reviews` thêm `subject_type`, `subject_id`, khoá `(booking_id, subject_type)`.
 - `data-model/domain-model.md`, `relational-schema.md`: thêm các thực thể và cột trên.
+
+**Rules như đã làm (#136):** `studio_members` đọc bởi `studioId` hoặc `memberId`, ghi `false`; `studio_quota/{uid}` chỉ chủ đọc, ghi `false`; `studio_day_load/{id}` đọc và ghi `false` (tải theo ngày của studio, chỉ server); `photographerServerFieldsUntouched()` thêm `studioId`, `studioJoinedAt`, `studioCooldownUntil`, `memberCount`, `lateAssignCount`, `changeDeclinedCount`, `lateReassignCount`, `lateDeliveryCount`, `nameKey`, `assignableMembers`; trạng thái ngày `full` chỉ server ghi (client chỉ tạo `off`; studio được đổi `full` thành `off`). Booking cho `assigneeId` đọc; `private/delivery` vẫn chỉ thợ chính và khách đã duyệt. Bộ đếm `lateDeliveryCount` được lưu nhưng chưa có gì tăng nó cho tới #207.
 
 ## 9. Ngoài phạm vi
 
