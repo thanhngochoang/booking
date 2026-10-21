@@ -217,6 +217,8 @@ class FindResultsController extends AsyncNotifier<FindResults> {
           (i) =>
               !hiddenUsers.contains(i.photographer.id) &&
               i.photographer.acceptingOrders &&
+              !i.photographer.hiddenFromDiscovery &&
+              !i.photographer.deletionPending &&
               (f.minTomatoPct == null ||
                   (i.photographer.hasTomatoPct &&
                       i.photographer.tomatoPct >= f.minTomatoPct!)),

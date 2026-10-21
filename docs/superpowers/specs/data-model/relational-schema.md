@@ -42,6 +42,8 @@ create table users (
   staff_role   text check (staff_role in ('admin','sales')),       -- phản chiếu custom claim
   city         text,
   locale       text not null default 'vi',
+  account_status text check (account_status in ('active','deletion_pending')), -- #205
+  restore_until timestamptz,                     -- #205: hạn khôi phục 30 ngày khi deletion_pending
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
   deleted_at   timestamptz
@@ -75,6 +77,17 @@ create table devices (                            -- 🔒 thay users.fcmTokens
   platform  text not null check (platform in ('android','ios')),
   last_seen_at timestamptz not null default now()
 );
+
+create table account_deletions (                  -- 🔒 #205 chỉ server đọc/ghi; Firestore: account_deletions/{uid}
+  uid          text primary key references users(id) on delete cascade,
+  status       text not null check (status in ('pending','restored','purging','done','blocked')),
+  requested_at timestamptz not null default now(),
+  restore_until timestamptz not null,             -- requested_at + 30 days
+  done         text[] not null default '{}',      -- các bước purge đã chạy xong (idempotent)
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index ix_account_deletions_due on account_deletions (status, restore_until);
 ```
 
 ### 2.2 Danh mục (taxonomy) và nhiếp ảnh gia
@@ -102,6 +115,8 @@ create table photographers (
   verified_at          timestamptz,
   onboarding_complete  boolean not null default false,
   accepts_inquiries    boolean not null default true,
+  hidden_from_discovery boolean not null default false, -- #205 (S22.03) ẩn khỏi gợi ý và tìm kiếm
+  deletion_pending     boolean not null default false, -- #205 khoá khi tài khoản chờ xoá
   -- dẫn xuất (use case ghi)
   -- 2026-10-06: rating_avg thay bằng các cột cà chua/gạch (migration 1791676800001_tomato_brick.sql, #130)
   tomato_count         int not null default 0,
@@ -1175,14 +1190,15 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 | Đường dẫn Firestore | Bảng | Ghi chú ánh xạ |
 |---------------------|------|----------------|
-| `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`devices` |
+| `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`devices`; `accountStatus`→`account_status`; `restoreUntil`→`restore_until` |
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
+| `account_deletions/{uid}` | `account_deletions` | #205 bản ghi yêu cầu xoá tài khoản; `uid` PK, `restoreUntil`→`restore_until`, `done[]`→`done text[]` |
 | `verifications/{uid}` | `verifications` | `steps.*`, `identitySession.*`, `identityAttempts.*`, `rejectReason.*` → cột phẳng có tiền tố; `business.*` → cột `business_*` (cùng bảng); `steps.phone` phản chiếu `user_contacts.phone_verified`; `steps.fee` → `fee_*` (#203; khoản thanh toán là dòng `payments` có `subject_type = 'verification_fee'`) |
 | `users/{uid}/private/identity` | `identities` | Chỉ server đọc/ghi; `idNumberEnc` → `id_number_enc` |
 | `identity_hashes/{idHash}` | `identity_hashes` | Id tài liệu = `id_hash`; `uid` → `user_id` |
 | `verificationAudit/{id}` | `verification_audit` | `actorId` → `actor_id`, `otherUid` → `other_user_id` |
 | `fake_identities/{uid}` | (không có bảng) | Chỉ emulator/dev, kết quả giả của `FakeIdentityVerifier` |
-| `photographers/{uid}` | `photographers` + `photographer_contact_channels` | `stats.*`→cột dẫn xuất; `serviceArea.*`→`service_*`; `skills.completeness`→`skills_completeness`; `skills.completenessNext`→`skills_completeness_next`; `skills.completenessNextAfter`→`skills_completeness_next_after`; `skills.evidenceRemovedAt`→`skills_evidence_removed_at` |
+| `photographers/{uid}` | `photographers` + `photographer_contact_channels` | `stats.*`→cột dẫn xuất; `serviceArea.*`→`service_*`; `skills.completeness`→`skills_completeness`; `skills.completenessNext`→`skills_completeness_next`; `skills.completenessNextAfter`→`skills_completeness_next_after`; `skills.evidenceRemovedAt`→`skills_evidence_removed_at`; `hiddenFromDiscovery`→`hidden_from_discovery`; `deletionPending`→`deletion_pending` |
 | `photographers/{uid}/private/contact` | `photographer_contact_numbers` | |
 | `photographers/{uid}.skills.specialties[]` | `photographer_specialties`, `photographer_specialty_evidence` | `evidencePostIds[]` → bảng bằng chứng |
 | `photographers/{uid}.skills.{styles,extras,languages,audiences}[]` | `photographer_skill_tags` | `grp` = nhóm |

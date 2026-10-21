@@ -310,4 +310,16 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
 
 `--actor` must have the custom claim `staffRole: 'admin'`.
 
+## Account Deletion & Data Export (S22 · #205)
+
+- To test deletion and blockers: call `getAccountDeletionBlockers` or `requestAccountDeletion` with Lan or An. Lan has open bookings (`seed-booking-upcoming`), so `requestAccountDeletion` will refuse with `conflict` (blockers listed).
+- To test 30-day restore: call `requestAccountDeletion` for an account with no blockers (e.g. `seed-customer-minh`), then call `restoreAccount` within 30 days to re-activate.
+- To test the purge: set `restoreUntil` of the `account_deletions/{uid}` document to a past date in the emulator UI, then run `pruneNotifications` from the Functions shell:
+  ```bash
+  # Inside functions directory
+  node -e "const { handleStartDueAccountPurges } = require('./lib/scheduled/start_account_purges.js'); handleStartDueAccountPurges();"
+  ```
+  The `onAccountDeletionUpdated` trigger will purge the account and tombstone `users/{uid}`.
+- To test data export: call `requestDataExport` to generate an export JSON under `exports/{uid}/{exportId}.json` in Storage.
+
 

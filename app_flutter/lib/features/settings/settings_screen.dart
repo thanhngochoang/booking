@@ -286,6 +286,25 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpace.s6),
                   _SectionLabel(
+                    l.settingsPaymentsData,
+                    key: const Key('settings-group-paymentsData'),
+                  ),
+                  guard(
+                    GlassCard(
+                      highlight: false,
+                      child: _LinkTile(
+                        key: const Key('settings-privacy'),
+                        icon: AppIcons.privacy,
+                        title: l.settingsPrivacy,
+                        subtitle: isPhotographer
+                            ? l.settingsPrivacyBody
+                            : l.settingsPrivacyBodyCustomer,
+                        path: '/settings/privacy',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
                     l.settingsSupportSection,
                     key: const Key('settings-group-support'),
                   ),

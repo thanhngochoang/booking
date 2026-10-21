@@ -183,11 +183,11 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
-| S22.01 | Lịch sử thanh toán: cọc, vé, hoàn tiền, khoản đang giữ (kể cả Chụp ngay chưa tìm được người), trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ có mock, có plan (#141) | — |
-| S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ⬜ có mock, có plan (#141) | — |
-| S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ⬜ có mock, có plan (#141) | — |
-| S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | ⬜ có mock, chưa có plan | — |
-| S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ⬜ có mock, có plan (#141) | — |
+| S22.01 | Lịch sử thanh toán: đã trả, đang giữ (kể cả Chụp ngay chưa tìm được người), hoàn tiền, phương thức, trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ có mock (2026-10-07), có plan (#141) | — |
+| S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ✅ đã làm (#205) | — |
+| S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ✅ đã làm (#205) · link tải trong app | — |
+| S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | ⬜ có mock (2026-10-07), có plan (#141) | — |
+| S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ✅ đã làm (#205) | — |
 | **S23** | **Vận hành nội bộ (staff)** | | | | | |
 | S23.01 | Khiếu nại: hàng đợi và chi tiết (bằng chứng, hai mốc tiền, hội thoại ba bên, thả / hoàn / chia; hoàn từ 10 triệu cần người thứ hai) | `/staff/disputes` (web) | admin · support (quyết định) · finance (xem số tiền) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
 | S23.02 | Chi trả: duyệt lần chi đầu, tạm giữ, thất bại, đang xử lý quá lâu | `/staff/payouts` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
@@ -966,8 +966,8 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 
 ### 3i.5 S22 · Thanh toán & tài khoản
 - **S22.01**: khách xem mọi khoản đã trả và đang được giữ, kể cả tiền Chụp ngay đang treo khi chưa tìm được người (spec Chụp ngay), hoàn tiền đang xử lý và đã xong; mỗi dòng mở chi tiết booking/vé/yêu cầu. Nhiếp ảnh gia đã có S06.05 cho tiền nhận.
-- **S22.02 Xoá tài khoản** (bắt buộc với Google Play và App Store khi có đăng ký tài khoản): chặn khi còn booking chưa xong, vé chưa diễn ra, tiền đang giữ hoặc khiếu nại mở (liệt kê từng thứ kèm lối đi); xoá dữ liệu cá nhân, giữ bút toán sổ cái ẩn danh theo yêu cầu kế toán; bài công khai gỡ xuống.
-- **S22.03**: ẩn hồ sơ khỏi gợi ý và tìm kiếm (nhiếp ảnh gia vẫn nhận khách cũ), tải bản sao dữ liệu (gửi link qua email trong 48 giờ).
+- **S22.02 Xoá tài khoản** (bắt buộc với Google Play và App Store khi có đăng ký tài khoản): chặn khi còn booking chưa xong, vé chưa diễn ra, tiền đang giữ hoặc khiếu nại mở (liệt kê từng thứ kèm lối đi); xoá dữ liệu cá nhân, giữ bút toán sổ cái ẩn danh theo yêu cầu kế toán; bài công khai gỡ xuống. Khoá ngay, xoá hẳn sau 30 ngày; đăng nhập lại trong 30 ngày thì khôi phục được (S22.05).
+- **S22.03**: ẩn hồ sơ khỏi gợi ý và tìm kiếm (nhiếp ảnh gia vẫn nhận khách cũ), tải bản sao dữ liệu (link tải trong app, 7 ngày; xem câu hỏi 1 kế hoạch S22).
 
 ### 3i.6 S23 · Vận hành nội bộ (staff)
 - **Vì sao cần**: `resolveDispute`, `executePayout`, hoàn tiền `manual`, duyệt dấu tích xanh, kiểm duyệt báo cáo và hộp thư hỗ trợ đều cần người của nền tảng thao tác (vai trò `admin`, `sales`, có thể `finance`, câu hỏi mở 18).
@@ -1138,7 +1138,7 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 23. **Đã chốt 2026-10-06** (spec xác minh): có phí, bỏ ngưỡng thành tích. Bản cũ: **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
 24. **Đã chốt 2026-10-07** (plan #144): giữ booking và liên hệ qua hỗ trợ (không tự ý huỷ để tránh mất tiền/thiệt hại bên còn lại); chat 1‑1 và thông tin liên lạc ngoài bị khoá. Bản cũ: **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
 
-25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)?
+25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)? Đã chốt 2026-10-07: 30 ngày.
 26. **Hợp đồng kiểu freelancer** (spec 10-05 mục 4): trả 100% qua app theo 2 mốc thay cho cọc 30%? Tỉ lệ mốc, số ngày tự duyệt, cách bàn giao (link ngoài hay lưu trên app), hoa hồng. Chi tiết ở câu hỏi mở 3–7 của spec 10-05.
 27. **Hạng NAG** (spec 10-05 mục 2.3): ngưỡng 3 giải đã duyệt, có tính trọng số theo kết quả hay cấp cuộc thi không?
 28. **Chip lọc "Loại"** ở S02.06 (Photographer / Nhiếp ảnh gia / Studio): có cần không?

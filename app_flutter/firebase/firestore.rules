@@ -52,7 +52,7 @@ service cloud.firestore {
     function photographerClientFields() {
       return ['bio', 'specialties', 'styles', 'equipment', 'yearsExperience', 'serviceArea',
               'contactChannels', 'portfolio', 'skills', 'onboardingComplete', 'verified',
-              'createdAt', 'updatedAt'];
+              'hiddenFromDiscovery', 'createdAt', 'updatedAt'];
     }
 
     // ---- photographers/{uid}.skills (spec 3e.2–3e.3) ----
@@ -160,6 +160,7 @@ service cloud.firestore {
         ? request.resource.data.keys()
         : request.resource.data.diff(resource.data).affectedKeys();
       return changed.hasOnly(photographerClientFields())
+        && (!('hiddenFromDiscovery' in changed) || request.resource.data.hiddenFromDiscovery is bool)
         && (!('serviceArea' in changed) || validServiceArea())
         && (!('contactChannels' in changed) || validContactChannels(uid))
         && (!('bio' in changed || 'equipment' in changed) || validIntro())
@@ -174,7 +175,7 @@ service cloud.firestore {
         ? request.resource.data.keys()
         : request.resource.data.diff(resource.data).affectedKeys();
       return !changed.hasAny(['providerType', 'artistSince', 'studioDistrict', 'studioCity', 'approvedAwardCount',
-                              'acceptingOrders', 'followerCount', 'followerCountAt', 'businessVerified']);
+                              'acceptingOrders', 'followerCount', 'followerCountAt', 'businessVerified', 'deletionPending']);
     }
 
     // Setup, once finished, stays finished: an update may not move onboardingComplete from true
@@ -789,6 +790,11 @@ service cloud.firestore {
 
     // Reports: staff / callables only, no client read or write.
     match /reports/{reportId} {
+      allow read, write: if false;
+    }
+
+    // Account deletions (S22.05): client cannot read or write account_deletions; handled via Cloud Functions / Admin SDK only.
+    match /account_deletions/{uid} {
       allow read, write: if false;
     }
 
