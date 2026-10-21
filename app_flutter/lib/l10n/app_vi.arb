@@ -3339,6 +3339,8 @@
   "myStudioTitle": "Studio của tôi",
   "myStudioSince": "Thành viên từ {month} · {m} việc được giao",
   "@myStudioSince": {"placeholders": {"month": {"type": "String"}, "m": {"type": "int"}}},
+  "myStudioSinceOnly": "Thành viên từ {month}",
+  "@myStudioSinceOnly": {"placeholders": {"month": {"type": "String"}}},
   "myStudioView": "Xem studio",
   "myStudioJobs": "Việc studio giao",
   "myStudioAssignedBadge": "Đã giao",

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
@@ -21,6 +22,25 @@ final _studioSummaryProvider = FutureProvider.autoDispose
         studioId,
       ]);
       return map[studioId];
+    });
+
+/// Shoots studios assigned to the signed-in photographer. Unlike #134's
+/// `assignedBookingsProvider` (which reads a failure as "no work" so S06.01
+/// never breaks), a failure stays an error here: leaving must wait until the
+/// open shoots are known.
+final _assignedJobsProvider = StreamProvider.autoDispose<List<Booking>>((ref) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return const Stream.empty();
+  return ref.watch(bookingRepositoryProvider).watchAssignedBookings(uid);
+});
+
+/// The package of a studio booking, for its cover as the job's thumbnail.
+final _packageCoverProvider = FutureProvider.autoDispose
+    .family<String?, (String, String)>((ref, key) async {
+      final service = await ref
+          .watch(serviceRepositoryProvider)
+          .byId(key.$1, key.$2);
+      return service?.coverUrl;
     });
 
 /// S26.03 "Studio của tôi" at `/me/studio` (individual or NAG photographer):
@@ -93,14 +113,22 @@ class _Body extends ConsumerWidget {
       for (final r in relations)
         if (r.status == RelationStatus.invited) r,
     ];
+    // This studio's open shoots; the count is unknown until they load.
     final jobs = active == null
-        ? const <Booking>[]
-        : [
-            for (final b
-                in ref.watch(assignedBookingsProvider).value ??
-                    const <Booking>[])
-              if (b.photographerId == active.studioId && isOpenStudioJob(b)) b,
-          ];
+        ? null
+        : ref
+              .watch(_assignedJobsProvider)
+              .whenData(
+                (list) => [
+                  for (final b in list)
+                    if (b.photographerId == active.studioId &&
+                        isOpenStudioJob(b))
+                      b,
+                ],
+              );
+    final openJobs = jobs != null && jobs.hasValue
+        ? jobs.requireValue.length
+        : null;
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.s4,
@@ -110,15 +138,38 @@ class _Body extends ConsumerWidget {
       ),
       children: [
         if (active != null) ...[
-          _StudioCard(relation: active, jobs: jobs.length),
-          if (jobs.isNotEmpty) ...[
-            StudioSectionHeader(title: l.myStudioJobs, count: '${jobs.length}'),
-            for (final b in jobs)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpace.s2),
-                child: _JobCard(booking: b),
-              ),
-          ],
+          _StudioCard(relation: active, jobs: openJobs),
+          AsyncView<List<Booking>>(
+            value: jobs!,
+            loaderSize: LoaderSize.inline,
+            skeleton: (_) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpace.s4),
+                for (var i = 0; i < 2; i++) ...[
+                  _JobCard.skeleton(),
+                  const SizedBox(height: AppSpace.s2),
+                ],
+              ],
+            ),
+            onRetry: () => ref.invalidate(_assignedJobsProvider),
+            data: (context, list) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (list.isNotEmpty) ...[
+                  StudioSectionHeader(
+                    title: l.myStudioJobs,
+                    count: '${list.length}',
+                  ),
+                  for (final b in list)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpace.s2),
+                      child: _JobCard(booking: b),
+                    ),
+                ],
+              ],
+            ),
+          ),
           Align(
             alignment: Alignment.centerLeft,
             child: AppButton.text(
@@ -130,9 +181,10 @@ class _Body extends ConsumerWidget {
                   Theme.of(context).colorScheme.error,
                 ),
               ),
-              onPressed: quotaOut == true
+              // Waits for the open shoots: a busy member cannot leave.
+              onPressed: quotaOut == true || openJobs == null
                   ? null
-                  : () => _leave(context, ref, active, jobs.length),
+                  : () => _leave(context, ref, active, openJobs),
             ),
           ),
         ] else ...[
@@ -214,12 +266,15 @@ class _StudioCard extends ConsumerWidget {
   const _StudioCard({required this.relation, required this.jobs});
 
   final StudioRelation relation;
-  final int jobs;
+
+  /// Open shoots from this studio; null until they load.
+  final int? jobs;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(_studioSummaryProvider(relation.studioId)).value;
+    final since = studioMonth(relation.joinedAt ?? relation.createdAt);
     final mark = s == null
         ? null
         : providerMarkOf(
@@ -236,10 +291,9 @@ class _StudioCard extends ConsumerWidget {
           mark: mark,
           meta: [
             MetaPart.text(
-              l.myStudioSince(
-                studioMonth(relation.joinedAt ?? relation.createdAt),
-                jobs,
-              ),
+              jobs == null
+                  ? l.myStudioSinceOnly(since)
+                  : l.myStudioSince(since, jobs!),
             ),
           ],
           trailing: AppButton.outline(
@@ -254,16 +308,52 @@ class _StudioCard extends ConsumerWidget {
   }
 }
 
-/// A shoot the studio gave the photographer (mock: thumbnail, package,
-/// day and time, "Đã giao").
-class _JobCard extends StatelessWidget {
+/// A shoot the studio gave the photographer (mock: the package's cover,
+/// package, day and time, "Đã giao").
+///
+/// Not core `BookingCard`: its compact size shows the place instead of the
+/// day and time, its title is always "{photographer} · {package}", and its
+/// `statusLabel` badge is the waiting yellow, while the mock's "Đã giao" is
+/// the accepted green.
+class _JobCard extends ConsumerWidget {
   const _JobCard({required this.booking});
 
   final Booking booking;
 
+  static const double _thumb = AppSpace.s12;
+
+  /// The card's shape while the shoots load.
+  static Widget skeleton() => GlassCard(
+    highlight: false,
+    child: Padding(
+      padding: const EdgeInsets.all(AppSpace.s3),
+      child: Row(
+        children: [
+          AppSkeleton.box(width: _thumb, height: _thumb, radius: AppRadius.lg),
+          const SizedBox(width: AppSpace.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSkeleton.line(widthFactor: 0.5),
+                const SizedBox(height: AppSpace.s1),
+                AppSkeleton.line(widthFactor: 0.7),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final cover = ref
+        .watch(
+          _packageCoverProvider((booking.photographerId, booking.serviceId)),
+        )
+        .value;
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     final secondary = dark
@@ -288,12 +378,14 @@ class _JobCard extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: SizedBox.square(
-                      dimension: AppSpace.s12,
+                      dimension: _thumb,
                       child: ColoredBox(
                         color: dark
                             ? AppColorsDark.surfaceMuted
                             : AppColors.surfaceMuted,
-                        child: AppIcon(AppIcons.camera, color: secondary),
+                        child: cover == null
+                            ? AppIcon(AppIcons.camera, color: secondary)
+                            : NetworkPhoto(url: cover, retry: false),
                       ),
                     ),
                   ),

@@ -7,7 +7,6 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
-import 'package:photobooking/features/studio/studio_common.dart';
 import 'package:photobooking/features/studio/studio_errors.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -98,15 +97,11 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
     final businessVerified =
         ref.watch(myIntroProvider).value?.businessVerified ?? false;
     final max = studioMaxMembers(businessVerified: businessVerified);
-    final members = relations
-        .where((r) => r.status == RelationStatus.active)
-        .length;
-    final invites = relations
-        .where((r) => r.status == RelationStatus.invited)
-        .length;
     if (quota?.exhausted ?? false) return l.studioQuotaOut;
-    if (invites >= kStudioMaxPendingInvites) return l.studioInviteFullPending;
-    if (members + invites >= max) return l.studioInviteFullMembers(max);
+    if (relations.openInvites >= kStudioMaxPendingInvites) {
+      return l.studioInviteFullPending;
+    }
+    if (relations.atCap(max)) return l.studioInviteFullMembers(max);
     return null;
   }
 

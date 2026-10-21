@@ -313,6 +313,95 @@ void main() {
     expect(_key('studio-verify-business'), findsNothing);
   });
 
+  testWidgets('Duyệt is off at the cap, as Mời is', (tester) async {
+    final w = await _open(
+      tester,
+      seed: (w) {
+        w.intro = const PhotographerIntro(
+          verified: true,
+          providerType: ProviderType.studio,
+        );
+        w.studios
+          ..seedRelation(_member('a', 'An'))
+          ..seedRelation(_member('b', 'Bình'))
+          ..seedRelation(
+            makeRelation(
+              id: 'inv_c',
+              memberId: 'c',
+              memberName: 'Chi',
+              status: RelationStatus.invited,
+            ),
+          )
+          ..seedRelation(
+            makeRelation(
+              id: 'req_d',
+              memberId: 'd',
+              memberName: 'Dũng',
+              status: RelationStatus.requested,
+              initiatedBy: RelationInitiator.member,
+            ),
+          );
+      },
+    );
+    expect(
+      tester.widget<AppButton>(_key('studio-approve-req_d')).onPressed,
+      isNull,
+    );
+    // Declining still works; cancelling the invite frees a place.
+    expect(
+      tester.widget<AppButton>(_key('studio-decline-req_d')).onPressed,
+      isNotNull,
+    );
+    await tester.tap(_key('studio-cancel-inv_c'));
+    await _settle(tester);
+    expect(
+      tester.widget<AppButton>(_key('studio-approve-req_d')).onPressed,
+      isNotNull,
+    );
+    expect(w.studios.calls.single.$1, 'cancelInvite');
+  });
+
+  testWidgets('an owner not identity-verified sees the cap banner without '
+      'the Xác minh doanh nghiệp link', (tester) async {
+    await _open(
+      tester,
+      seed: (w) {
+        w.intro = const PhotographerIntro(providerType: ProviderType.studio);
+        w.studios
+          ..seedRelation(_member('a', 'An'))
+          ..seedRelation(_member('b', 'Bình'))
+          ..seedRelation(_member('c', 'Chi'));
+      },
+    );
+    expect(
+      find.text('Đã đủ 3 thợ. Xác minh doanh nghiệp để nhận tới 30 thợ.'),
+      findsOneWidget,
+    );
+    expect(_key('studio-verify-business'), findsNothing);
+  });
+
+  testWidgets('when the bookings fail: Thử lại, no job counts and no '
+      'removing', (tester) async {
+    final w = await _open(
+      tester,
+      seed: (w) {
+        _seedMock(w);
+        w.studioBookingsError = Exception('offline');
+      },
+    );
+    expect(_key('error-retry'), findsOneWidget);
+    // The % stays; the unknown count is left out, not "chưa có việc".
+    expect(findMeta('97%'), findsOneWidget);
+    expect(find.textContaining('việc'), findsNothing);
+    await tester.tap(find.byTooltip('Tuỳ chọn cho Quốc Bảo'));
+    await _settle(tester);
+    await tester.tap(find.text('Bỏ khỏi studio'));
+    await _settle(tester);
+    expect(find.text('Bỏ Quốc Bảo khỏi studio?'), findsNothing);
+    expect(find.byKey(const Key('studio-blocked-sheet')), findsNothing);
+    expect(w.studios.calls, isEmpty);
+  });
+
   testWidgets('no quota disables actions and shows studioQuotaOut', (
     tester,
   ) async {

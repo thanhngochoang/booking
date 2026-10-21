@@ -24,7 +24,6 @@ import 'package:photobooking/features/settings/role_mode_card.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
-import 'package:photobooking/features/studio/studio_common.dart';
 
 /// S09.02's groups, top to bottom. Each group's label carries the key
 /// `settings-group-<name>`; a group whose screens do not exist yet is absent,
@@ -568,8 +567,9 @@ class _VerifyTile extends ConsumerWidget {
   }
 }
 
-/// "Thành viên studio" (S26.01) with "{n}/{max} thợ" once the relations load
-/// (the max is 30 with a business record, else 3).
+/// "Thành viên studio" (S26.01) with "{n}/{max} thợ" once both the relations
+/// and the own intro (the max is 30 with a business record, else 3) have
+/// loaded; until then #148's line, so the max never jumps from 3 to 30.
 class _StudioMembersTile extends ConsumerWidget {
   const _StudioMembersTile();
 
@@ -577,20 +577,16 @@ class _StudioMembersTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final relations = ref.watch(myStudioRelationsProvider).value;
-    final businessVerified =
-        ref.watch(myIntroProvider).value?.businessVerified ?? false;
-    final members = relations
-        ?.where((r) => r.status == RelationStatus.active)
-        .length;
+    final intro = ref.watch(myIntroProvider).value;
     return _LinkTile(
       key: const Key('settings-studio-members'),
       icon: AppIcons.people,
       title: l.settingsStudioMembers,
-      subtitle: members == null
+      subtitle: relations == null || intro == null
           ? l.settingsStudioMembersBody
           : l.settingsStudioMembersQuota(
-              members,
-              studioMaxMembers(businessVerified: businessVerified),
+              relations.activeCount,
+              studioMaxMembers(businessVerified: intro.businessVerified),
             ),
       path: '/studio/members',
     );

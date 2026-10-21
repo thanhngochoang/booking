@@ -315,6 +315,12 @@ class StudioWorld {
   /// Whether #135's `/verify/business` route exists.
   bool verifyRoutes = true;
 
+  /// Packages (S26.03 job thumbnails).
+  final services = FakeServiceRepository();
+
+  /// Makes the studio's own bookings stream ([uid]'s, S26.01) fail.
+  Object? studioBookingsError;
+
   late GoRouter router;
 
   /// [overrides] plus the intro and route flag of a studio screen.
@@ -322,6 +328,11 @@ class StudioWorld {
     ...overrides,
     myIntroProvider.overrideWith((ref) => Stream.value(intro)),
     verifyStartReadyProvider.overrideWithValue(verifyRoutes),
+    serviceRepositoryProvider.overrideWithValue(services),
+    if (studioBookingsError case final e?)
+      photographerBookingsStreamProvider(
+        uid,
+      ).overrideWith((ref) => Stream.error(e)),
   ];
 
   /// S26.01 at `/studio/members` and S26.03 at `/me/studio`; other routes

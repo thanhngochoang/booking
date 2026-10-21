@@ -12928,6 +12928,12 @@ abstract class AppLocalizations {
   /// **'Thành viên từ {month} · {m} việc được giao'**
   String myStudioSince(String month, int m);
 
+  /// No description provided for @myStudioSinceOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên từ {month}'**
+  String myStudioSinceOnly(String month);
+
   /// No description provided for @myStudioView.
   ///
   /// In vi, this message translates to:

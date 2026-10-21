@@ -26,14 +26,6 @@ final _memberSummariesProvider = FutureProvider.autoDispose
       return {for (final p in list) p.id: p};
     });
 
-/// The studio's own bookings (S06.01's stream), for the open shoots of each
-/// member; empty while signed out.
-final _studioBookingsProvider = Provider.autoDispose<List<Booking>>((ref) {
-  final uid = ref.watch(authStateProvider).value?.uid;
-  if (uid == null) return const [];
-  return ref.watch(photographerBookingsStreamProvider(uid)).value ?? const [];
-});
-
 /// S26.01 "Thành viên" at `/studio/members` (studio owner): members with
 /// their % and open shoots, pending invites and join requests, the daily
 /// quota and the cap; the one primary action invites (S26.02).
@@ -206,7 +198,15 @@ class _Body extends ConsumerWidget {
         ? const <String, PhotographerSummary>{}
         : ref.watch(_memberSummariesProvider(uid)).value ??
               const <String, PhotographerSummary>{};
-    final jobs = openJobsByAssignee(ref.watch(_studioBookingsProvider));
+    // The studio's own bookings (S06.01's stream) give each member's open
+    // shoots; until they load (or when they fail) the count is unknown, so
+    // the line leaves it out and removing waits.
+    final bookings = uid == null
+        ? const AsyncValue<List<Booking>>.loading()
+        : ref.watch(photographerBookingsStreamProvider(uid));
+    final jobs = bookings.hasValue
+        ? openJobsByAssignee(bookings.requireValue)
+        : null;
     final now = ref.watch(clockProvider)();
     final quotaLeft = quota?.left ?? kStudioDailyActions;
     final quotaOut = quota?.exhausted ?? false;
@@ -224,11 +224,8 @@ class _Body extends ConsumerWidget {
             r.status == RelationStatus.requested)
           r,
     ];
-    final invites = pending
-        .where((r) => r.status == RelationStatus.invited)
-        .length;
     // The cap counts members and open invites (Decision 3).
-    final atCap = members.length + invites >= max;
+    final atCap = relations.atCap(max);
     final showCapBanner = atCap && !businessVerified;
     final canVerify =
         ref.watch(verifyStartReadyProvider) && (intro?.verified ?? false);
@@ -254,6 +251,16 @@ class _Body extends ConsumerWidget {
           const SizedBox(height: AppSpace.s2),
           _CapBanner(canVerify: canVerify),
         ],
+        // Shows only a failure of the bookings, with "Thử lại".
+        if (uid != null)
+          AsyncView<List<Booking>>(
+            value: bookings,
+            loaderSize: LoaderSize.inline,
+            skeleton: (_) => const SizedBox.shrink(),
+            onRetry: () =>
+                ref.invalidate(photographerBookingsStreamProvider(uid)),
+            data: (_, _) => const SizedBox.shrink(),
+          ),
         const SizedBox(height: AppSpace.s3),
         if (members.isEmpty)
           StudioEmptyCard(
@@ -269,7 +276,7 @@ class _Body extends ConsumerWidget {
                   key: ValueKey('studio-member-${m.memberId}'),
                   relation: m,
                   summary: summaries[m.memberId],
-                  openJobs: jobs[m.memberId] ?? 0,
+                  openJobs: jobs == null ? null : jobs[m.memberId] ?? 0,
                   quotaOut: quotaOut,
                 ),
             ],
@@ -294,6 +301,7 @@ class _Body extends ConsumerWidget {
                         relation: r,
                         now: now,
                         quotaOut: quotaOut,
+                        atCap: atCap,
                       ),
             ],
           ),
@@ -325,7 +333,7 @@ class _CapBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ExcludeSemantics(
-                  child: AppIcon(AppIcons.businessVerify, size: 18),
+                  child: AppIcon(AppIcons.businessVerify, size: AppIconSize.sm),
                 ),
                 const SizedBox(width: AppSpace.s2),
                 Expanded(
@@ -361,16 +369,21 @@ class _MemberLine extends ConsumerWidget {
 
   final StudioRelation relation;
   final PhotographerSummary? summary;
-  final int openJobs;
+
+  /// Open studio shoots assigned to the member; null while the studio's
+  /// bookings have not loaded.
+  final int? openJobs;
   final bool quotaOut;
 
   Future<void> _remove(BuildContext context, WidgetRef ref) async {
     final l = context.l10n;
     final name = relation.memberName;
-    if (openJobs > 0) {
+    final jobs = openJobs;
+    if (jobs == null) return;
+    if (jobs > 0) {
       await showStudioBlockedSheet(
         context,
-        title: l.studioBusyTitle(openJobs),
+        title: l.studioBusyTitle(jobs),
         body: l.studioRemoveBusyBody,
       );
       return;
@@ -398,16 +411,16 @@ class _MemberLine extends ConsumerWidget {
     final l = context.l10n;
     final s = summary;
     final name = relation.memberName;
+    final jobs = openJobs;
     return MemberRow(
       avatarUrl: relation.memberAvatarUrl ?? s?.avatarUrl,
       name: name,
       meta: [
         if (s != null && s.hasTomatoPct) MetaPart.tomato(s.tomatoPct),
-        MetaPart.text(
-          openJobs > 0
-              ? l.studioMemberAssigned(openJobs)
-              : l.studioMemberNoWork,
-        ),
+        if (jobs != null)
+          MetaPart.text(
+            jobs > 0 ? l.studioMemberAssigned(jobs) : l.studioMemberNoWork,
+          ),
       ],
       onTap: () => context.push('/u/${relation.memberId}'),
       trailing: PopupMenuButton<String>(
@@ -418,9 +431,10 @@ class _MemberLine extends ConsumerWidget {
         itemBuilder: (_) => [
           PopupMenuItem(
             value: 'remove',
+            // Waits for the bookings (a busy member cannot be removed).
             // Removing spends a daily action; a busy member's sheet explains
             // itself whatever the quota.
-            enabled: !quotaOut || openJobs > 0,
+            enabled: jobs != null && (!quotaOut || jobs > 0),
             child: Text(
               l.studioRemoveMember,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -479,11 +493,16 @@ class _RequestLine extends ConsumerWidget {
     required this.relation,
     required this.now,
     required this.quotaOut,
+    required this.atCap,
   });
 
   final StudioRelation relation;
   final DateTime now;
   final bool quotaOut;
+
+  /// Members plus open invites already fill the studio: approving would be
+  /// refused (`studio_full`), as "Mời" is in S26.02.
+  final bool atCap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -518,7 +537,7 @@ class _RequestLine extends ConsumerWidget {
             l.studioApprove,
             key: Key('studio-approve-${relation.id}'),
             size: AppButtonSize.xsmall,
-            onPressed: quotaOut ? null : () => respond(true),
+            onPressed: quotaOut || atCap ? null : () => respond(true),
           ),
         ],
       ),

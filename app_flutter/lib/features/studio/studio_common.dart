@@ -8,16 +8,6 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// Pieces S26.01–S26.03 share: relation clocks, open studio shoots and the
 /// mock's `.sec`, `.lockn` and empty card.
 
-/// Most members of a studio without and with a business record (Decision 3).
-const kStudioMaxMembers = 3;
-const kStudioMaxMembersVerified = 30;
-
-/// Most open invites of one studio (Decision 3).
-const kStudioMaxPendingInvites = 5;
-
-int studioMaxMembers({required bool businessVerified}) =>
-    businessVerified ? kStudioMaxMembersVerified : kStudioMaxMembers;
-
 /// Whole Vietnam calendar days from [now] to [expiresAt]; 0 = it lapses
 /// today.
 int studioDaysLeft(DateTime expiresAt, DateTime now) {
@@ -137,7 +127,9 @@ class StudioNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ExcludeSemantics(child: AppIcon(icon, size: 16, color: secondary)),
+          ExcludeSemantics(
+            child: AppIcon(icon, size: AppIconSize.sm, color: secondary),
+          ),
           const SizedBox(width: AppSpace.s2),
           Expanded(
             child: Text(

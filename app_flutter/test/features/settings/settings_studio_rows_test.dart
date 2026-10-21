@@ -1,4 +1,6 @@
 // test/features/settings/settings_studio_rows_test.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +43,7 @@ Future<void> _open(
   WidgetTester tester, {
   ProviderType? type = ProviderType.individual,
   bool businessVerified = false,
+  StreamController<PhotographerIntro?>? introLater,
   void Function(FakeStudioRepository studios, String uid)? seed,
 }) async {
   tester.view.physicalSize = const Size(390, 2400);
@@ -117,6 +120,8 @@ Future<void> _open(
         ),
         photographerIntroRepositoryProvider.overrideWithValue(intros),
         studioRepositoryProvider.overrideWithValue(studios),
+        if (introLater != null)
+          myIntroProvider.overrideWith((ref) => introLater.stream),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -164,6 +169,33 @@ void main() {
     await tester.tap(_key('settings-studio-members'));
     await tester.pumpAndSettle();
     expect(find.text('stub /studio/members'), findsOneWidget);
+  });
+
+  testWidgets('until the own intro loads the studio row keeps its line, '
+      'never a max that changes', (tester) async {
+    final intro = StreamController<PhotographerIntro?>();
+    addTearDown(intro.close);
+    await _open(
+      tester,
+      type: ProviderType.studio,
+      businessVerified: true,
+      introLater: intro,
+      seed: (studios, uid) =>
+          studios.seedRelation(makeRelation(studioId: uid, memberId: 'x')),
+    );
+    expect(
+      _in('settings-studio-members', 'Mời thợ, giao việc cho thành viên'),
+      findsOneWidget,
+    );
+    expect(_in('settings-studio-members', '1/3 thợ'), findsNothing);
+    intro.add(
+      const PhotographerIntro(
+        businessVerified: true,
+        providerType: ProviderType.studio,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(_in('settings-studio-members', '1/30 thợ'), findsOneWidget);
   });
 
   testWidgets('an unverified studio counts against 3', (tester) async {

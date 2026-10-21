@@ -7459,6 +7459,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String myStudioSinceOnly(String month) {
+    return 'Thành viên từ $month';
+  }
+
+  @override
   String get myStudioView => 'Xem studio';
 
   @override

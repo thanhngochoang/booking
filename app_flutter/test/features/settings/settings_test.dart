@@ -33,11 +33,13 @@ import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/idle.dart';
 import '../../support/photo_scope.dart';
+import '../../support/studio_world.dart' show FakeStudioRepository;
 
 Future<Widget> _app({
   required FakeAuthRepository auth,
@@ -95,6 +97,7 @@ Future<Widget> _app({
     retry: (_, _) => null,
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
+      studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
       userRepositoryProvider.overrideWithValue(users),
       userContactRepositoryProvider.overrideWithValue(
         contacts ?? FakeUserContactRepository(),
@@ -1117,10 +1120,8 @@ void main() {
         y(tester, 'profile-public'),
         greaterThan(y(tester, 'settings-my-studio')),
       );
-      expect(
-        find.text('Studio đang ở, việc được giao, lời mời'),
-        findsOneWidget,
-      );
+      // No relation in the fake studio repository: not in a studio.
+      expect(find.text('Chưa ở studio nào'), findsOneWidget);
       await tapRow(tester, 'settings-my-studio');
       expect(find.text('stub /me/studio'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());

@@ -4,6 +4,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 
@@ -143,6 +144,57 @@ void main() {
     await _settle(tester);
     expect(find.text('stub /u/may'), findsOneWidget);
     handle.dispose();
+  });
+
+  testWidgets("a job shows its package's cover", (tester) async {
+    await _open(
+      tester,
+      seed: (w) {
+        _member(w, jobs: 1);
+        w.services.add(
+          const ServiceSummary(
+            id: 's1',
+            photographerId: 'may',
+            name: 'Gói chụp ngoại cảnh',
+            priceVnd: 1000000,
+            durationMinutes: 120,
+            coverUrl: 'https://img.test/cover.jpg',
+          ),
+        );
+      },
+    );
+    // The cover is read once the card shows.
+    await _settle(tester);
+    expect(
+      find.descendant(
+        of: _key('my-studio-job-job0'),
+        matching: find.byWidgetPredicate(
+          (w) => w is NetworkPhoto && w.url == 'https://img.test/cover.jpg',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('when the shoots fail: Thử lại, no count and no leaving', (
+    tester,
+  ) async {
+    final w = await _open(
+      tester,
+      seed: (w) {
+        w.studios
+          ..seedRelation(_active)
+          ..seedRelation(_invite);
+        w.bookings.failAssigned(Exception('offline'));
+      },
+    );
+    expect(_key('error-retry'), findsOneWidget);
+    expect(findMeta('Thành viên từ 02/2026'), findsOneWidget);
+    expect(_button(tester, 'my-studio-leave').onPressed, isNull);
+    await tester.tap(_key('my-studio-leave'));
+    await _settle(tester);
+    expect(find.byKey(const Key('app-sheet')), findsNothing);
+    expect(w.studios.calls, isEmpty);
   });
 
   testWidgets('a job opens its booking', (tester) async {

@@ -140,6 +140,31 @@ class StudioQuota {
 const kStudioDailyActions = 5;
 const kMemberDailyActions = 3;
 
+/// Most members of a studio without and with a business record, counting
+/// open invites (Decision 3).
+const kStudioMaxMembers = 3;
+const kStudioMaxMembersVerified = 30;
+
+/// Most open invites of one studio (Decision 3).
+const kStudioMaxPendingInvites = 5;
+
+int studioMaxMembers({required bool businessVerified}) =>
+    businessVerified ? kStudioMaxMembersVerified : kStudioMaxMembers;
+
+/// Counts over a studio's open relations (S26.01, S26.02, S09.02).
+extension StudioRelationCounts on Iterable<StudioRelation> {
+  /// Members in the studio now.
+  int get activeCount => where((r) => r.status == RelationStatus.active).length;
+
+  /// Invites the studio sent that are still waiting.
+  int get openInvites =>
+      where((r) => r.status == RelationStatus.invited).length;
+
+  /// Members plus open invites have reached [max]: no invite or approval
+  /// fits (the server answers `studio_full`).
+  bool atCap(int max) => activeCount + openInvites >= max;
+}
+
 /// Where a photographer found by the invite search stands for this studio.
 enum InviteState {
   invitable('invitable'),

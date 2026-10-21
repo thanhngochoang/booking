@@ -135,7 +135,7 @@ class MemberRow extends StatelessWidget {
                         ],
                       ),
                       if (meta.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpace.s1),
                         MetaLine(meta, maxLines: 2),
                       ],
                     ],
