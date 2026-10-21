@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { serviceRecordOf } from '../../src/infra/booking_readers.js';
-import type { DocumentData } from 'firebase-admin/firestore';
+import type { DocumentData, Firestore } from 'firebase-admin/firestore';
 
 describe('serviceRecordOf', () => {
   it('reads deliverables.revisions', () => {
@@ -52,5 +52,26 @@ describe('serviceRecordOf', () => {
     const d2: DocumentData = { active: false };
     const s2 = serviceRecordOf('srv_inactive', 'p1', d2);
     assert.equal(s2.active, false);
+  });
+
+  it('a provider with deletionPending is not accepting orders', async () => {
+    const { FirestoreProviderOrderGate } = await import('../../src/infra/booking_readers.js');
+    const fakeFirestore = {
+      collection: () => ({
+        doc: () => ({
+          get: async () => ({
+            exists: true,
+            data: () => ({
+              verified: true,
+              onboardingComplete: true,
+              deletionPending: true,
+            }),
+          }),
+        }),
+      }),
+    };
+    const gate = new FirestoreProviderOrderGate(fakeFirestore as unknown as Firestore);
+    const result = await gate.acceptsOrders('p1');
+    assert.equal(result, false);
   });
 });

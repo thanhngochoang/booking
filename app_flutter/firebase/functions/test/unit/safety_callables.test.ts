@@ -7,10 +7,7 @@ import {
   handleSubmitReport,
 } from '../../src/callables/safety.js';
 import type { CallableInput } from '../../src/callables/get_contact_link.js';
-import {
-  createSafetyWorld,
-  type SafetyWorld,
-} from '../../../../../packages/domain/test/support/safety_world.js';
+import { createSafetyWorld } from '../../../../../packages/domain/test/support/safety_world.js';
 import { MAX_BLOCKS } from '@photobooking/domain';
 
 describe('safety callables', () => {
@@ -30,7 +27,7 @@ describe('safety callables', () => {
     const { blockDeps, profiles } = createSafetyWorld();
     profiles.setProfile('u2', 'User Two');
     const req: CallableInput = {
-      auth: { uid: 'u1' } as any,
+      auth: { uid: 'u1' },
       data: { userId: 'u2' },
     };
     const res = await handleBlockUser(req, blockDeps);
@@ -47,7 +44,7 @@ describe('safety callables', () => {
     profiles.setProfile('u_new', 'New');
 
     const req: CallableInput = {
-      auth: { uid: 'u1' } as any,
+      auth: { uid: 'u1' },
       data: { userId: 'u_new' },
     };
     await assert.rejects(
@@ -59,7 +56,7 @@ describe('safety callables', () => {
   it('unblockUser returns {}', async () => {
     const { blockDeps } = createSafetyWorld();
     const req: CallableInput = {
-      auth: { uid: 'u1' } as any,
+      auth: { uid: 'u1' },
       data: { userId: 'u2' },
     };
     const res = await handleUnblockUser(req, blockDeps);
@@ -77,7 +74,7 @@ describe('safety callables', () => {
     });
 
     const req: CallableInput = {
-      auth: { uid: 'u_outsider' } as any,
+      auth: { uid: 'u_outsider' },
       data: {
         targetType: 'message',
         targetId: 'm1',
@@ -102,7 +99,7 @@ describe('safety callables', () => {
     });
 
     const req: CallableInput = {
-      auth: { uid: 'u1' } as any,
+      auth: { uid: 'u1' },
       data: {
         targetType: 'user',
         targetId: 'u2',

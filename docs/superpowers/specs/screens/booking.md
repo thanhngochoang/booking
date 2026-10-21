@@ -85,7 +85,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 |-----------|-----------------|---------------|
 | `requested` | Liên hệ, Huỷ | Nhận, Từ chối (S06.03) |
 | `accepted`/`upcoming` | Liên hệ, Đổi lịch, Chỉ đường, Huỷ | Liên hệ, Đổi lịch, Hoàn thành (sau giờ: "Đã chụp xong", tự chuyển sau 24h), Huỷ |
-| `shot` | Liên hệ, Đổi lịch | Liên hệ, Nộp bàn giao (S06.07) |
+| `shot` | Liên hệ, Đổi lịch; quá hạn bàn giao (`now > shotAt + deliveryDays`): khối cảnh báo + nút chữ đỏ "Huỷ phần bàn giao" → S05.08 (`#S05.02-late`, #207) | Liên hệ, Nộp bàn giao (S06.07) |
 | `delivered` | Liên hệ, Xem bàn giao (S05.06) | Liên hệ, Xem bàn giao (S05.06) |
 | `revision_requested` | Liên hệ, Xem bàn giao (S05.06) | Liên hệ, Nộp bàn giao (vòng n, S06.07), Trả lời xin thêm vòng (nếu có) |
 | `approved` | Liên hệ, Xem bàn giao (S05.06: mở link, kiểm tra 48h), Đánh giá (S05.05) | Liên hệ, Xem bàn giao (S05.06: thông báo tiền chuyển sau 48h) |
@@ -130,6 +130,21 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 - **Trạng thái**: chưa nhập ghi chú chung lẫn ghi chú riêng → nút vô hiệu; đang gửi → loading; thành công → đóng sheet, S05.06 cập nhật trạng thái `revision_requested` hoặc `extraRound.status = 'pending'`.
 - **Chuỗi**: `revisionTitle`, `revisionCount`, `revisionTapHint`, `revisionGeneralNote`, `revisionRoundOf`, `revisionSend`, `revisionExtraTitle`, `revisionExtraHint`, `revisionExtraSend`, `revisionNeedSomething`, `revisionChipSkin`, `revisionChipWarm`, `revisionChipRemove`, `revisionChipLevel`, `revisionPhotoNote`, `revisionSent`, `revisionExtraSent`.
 - **Chấp nhận**: không cho gửi yêu cầu rỗng; chặn gửi vòng sửa mới khi hết lượt mà không bật cờ `extra`; lưu đầy đủ danh sách `photoNotes` vào tài liệu vòng bàn giao.
+
+---
+
+## S05.08 · Huỷ phần bàn giao khi trễ hạn (sheet)
+
+- **Thông tin**: sheet mở trên S05.02 · khách · spec 10-05 §4.1.5, spec 10-06 §4 · Chưa có (kế hoạch `2026-10-18-s05-late-delivery-cancel.md`, #207).
+- **Mục đích**: khi thợ quá `deliveryDays` sau buổi chụp mà chưa nộp vòng bàn giao nào, khách kết thúc booking: mốc 2 hoàn 100%, thợ giữ mốc 1, booking `shot → completed`.
+- **Điểm vào → ra**: nút chữ đỏ "Huỷ phần bàn giao" trên S05.02 (chỉ hiện khi `status = shot` và quá hạn; mock `#S05.02-late`). Xác nhận → S05.02 ở trạng thái `completed` kèm toast; hoàn tiền chuyển khoản chưa có tài khoản nhận thì chờ "Đang hoàn" kèm thông báo `refund_account_needed` (S22.04 mở được khi #141 làm xong).
+- **Bố cục**: tiêu đề "Huỷ phần bàn giao?"; hai dòng tiền: "Hoàn mốc 2 cho bạn · {số tiền}" (nổi bật) và "{thợ} giữ mốc 1 (buổi chụp) · {số tiền}" (đọc từ `bookings/{id}/milestones/*`; thiếu thì chia 50/50 trên số đã trả trừ đã hoàn, server là nguồn đúng); ghi chú hậu quả; nút viền "Chờ thêm" và nút đỏ "Huỷ phần bàn giao".
+- **Dữ liệu**: callable `cancelLateDelivery({bookingId})` → `{status: 'completed', refundedAmount}`; booking ghi `completedAt`, `deliveryCancel {at, dueAt, refundedAmount}`, `depositRefunded`; milestone `delivery` của payment → `refunded`, một dòng `refunds`.
+- **Trạng thái**: đang gọi → nút đỏ khoá; `not_eligible` (thợ vừa nộp, hoặc chưa quá hạn) → "{thợ} vừa nộp bàn giao. Xem bàn giao trước khi quyết định." / "Chưa quá hạn bàn giao." và đóng sheet; `conflict` (đang khiếu nại) → "Booking đang khiếu nại, không huỷ được.".
+- **Phía thợ**: S05.02 `completed` có `deliveryCancel` hiện "Khách đã huỷ phần bàn giao vì quá hạn (hạn {ngày}). Bạn giữ mốc 1, mốc 2 đã hoàn cho khách."; S06.05 dòng mốc 2 "Đã hoàn cho khách"; thông báo `delivery_cancelled_late`.
+- **Chuỗi**: `lateDeliveryTitle` "{name} chưa bàn giao đúng hạn (trước {date})", `lateDeliveryBody` "Bạn có thể chờ thêm hoặc huỷ phần bàn giao và nhận lại mốc 2.", `lateDeliveryCancel` "Huỷ phần bàn giao", `detailDeliveryDue` "Hạn bàn giao {date}", `lateCancelTitle` "Huỷ phần bàn giao?", `lateCancelRefundRow` "Hoàn mốc 2 cho bạn", `lateCancelKeepRow` "{name} giữ mốc 1 (buổi chụp)", `lateCancelNote` "Buổi chụp được tính là hoàn thành, bạn sẽ không nhận ảnh. Nếu {name} bàn giao sau khi huỷ thì không còn qua app.", `lateCancelWait` "Chờ thêm", `lateCancelConfirm` "Huỷ phần bàn giao", `lateCancelDoneToast` "Đã huỷ phần bàn giao · hoàn {amount}", `lateCancelAlreadyDelivered` "{name} vừa nộp bàn giao. Xem bàn giao trước khi quyết định.", `lateCancelDisputed` "Booking đang khiếu nại, không huỷ được.", `detailLateCancelledProvider` "Khách đã huỷ phần bàn giao vì quá hạn (hạn {date}). Bạn giữ mốc 1, mốc 2 đã hoàn cho khách.", `timelineLateCancelled` "Đã huỷ phần bàn giao · hoàn {amount}".
+- **Phân tích**: `booking_action{action: "cancel_late_delivery"}`.
+- **Chấp nhận**: nút chỉ hiện đúng lúc (`shot`, quá hạn, chưa khiếu nại); thợ nộp bàn giao cùng lúc thì một trong hai thao tác thất bại rõ ràng; mốc 1 không đổi; sau huỷ khách vẫn đánh giá được; booking cũ không có `deliveryDays` dùng mặc định 7 ngày.
 
 ---
 

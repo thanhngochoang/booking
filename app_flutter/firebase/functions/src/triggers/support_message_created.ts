@@ -1,4 +1,4 @@
-import type { NotifyDeps, SupportMessage, SupportStore } from '@photobooking/domain';
+import type { NotifyDeps, SupportStore } from '@photobooking/domain';
 import { notifySupportMessage, supportMessageFromFirestore, supportThreadFromFirestore } from './support_firestore_deps.js';
 
 export interface SupportMessageCreatedInput {

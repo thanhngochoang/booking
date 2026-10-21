@@ -1092,6 +1092,22 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a hidden profile opened by link still shows Đặt lịch',
+      (tester) async {
+        final hiddenPhotographer = fixturePhotographer(
+          'p1',
+          hiddenFromDiscovery: true,
+          startingPrice: 1500000,
+        );
+        final w = await _world(tester, photographers: [hiddenPhotographer]);
+        await tester.pumpWidget(w.app('/u/p1'));
+        await tester.pumpAndSettle();
+        expect(find.text('Đặt lịch · từ 1,5M'), findsOneWidget);
+        expect(_enabled(tester, 'profile-book'), isTrue);
+      },
+    );
+
     for (final b in Brightness.values) {
       testWidgets('closed variant fits 320dp at 1.3x text (${b.name})', (
         tester,

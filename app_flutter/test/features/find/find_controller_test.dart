@@ -362,4 +362,23 @@ void main() {
     expect(r.items.any((item) => item.photographer.id == 'p1'), isFalse);
     expect(r.items.any((item) => item.photographer.id == 'p2'), isTrue);
   });
+
+  test('hiddenFromDiscovery and deletionPending profiles are left out of Find', () async {
+    final p1 = fixturePhotographer('p1', hiddenFromDiscovery: true);
+    final p2 = fixturePhotographer('p2', deletionPending: true);
+    final p3 = fixturePhotographer('p3');
+
+    final world = DiscoveryWorld(photographers: [p1, p2, p3]);
+    await world.init();
+    final c = ProviderContainer(
+      overrides: world.overrides,
+      retry: (_, _) => null,
+    );
+    addTearDown(c.dispose);
+
+    final r = await c.read(findResultsProvider.future);
+    expect(r.items.any((item) => item.photographer.id == 'p1'), isFalse);
+    expect(r.items.any((item) => item.photographer.id == 'p2'), isFalse);
+    expect(r.items.any((item) => item.photographer.id == 'p3'), isTrue);
+  });
 }

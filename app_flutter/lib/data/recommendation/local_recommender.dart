@@ -211,7 +211,12 @@ class LocalRecommender implements RecommendationRepository {
   ) async {
     final now = _now();
     var pool = (await _photographers.candidates(limit: candidatePool))
-        .where((p) => !q.excludeIds.contains(p.id))
+        .where(
+          (p) =>
+              !q.excludeIds.contains(p.id) &&
+              !p.hiddenFromDiscovery &&
+              !p.deletionPending,
+        )
         .where(
           (p) =>
               q.specialtyId == null || p.specialtyIds.contains(q.specialtyId),
@@ -334,7 +339,7 @@ class LocalRecommender implements RecommendationRepository {
     final mine = target.specialtyIds.toSet();
     final scored = <(PhotographerSummary, double, double?, String)>[];
     for (final p in await _photographers.candidates(limit: candidatePool)) {
-      if (p.id == photographerId) {
+      if (p.id == photographerId || p.hiddenFromDiscovery || p.deletionPending) {
         continue;
       }
       final theirs = p.specialtyIds.toSet();

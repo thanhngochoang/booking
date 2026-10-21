@@ -369,7 +369,7 @@ describe('seed payouts and earnings', () => {
     assert.equal(delivered.deliveryRound, 1);
     const round1 = docs.find((d) => d.path === 'bookings/seed-booking-delivered/deliveries/1')?.data;
     assert.ok(round1);
-    assert.equal((round1.samples as any[]).length, 3);
+    assert.equal((round1.samples as unknown[]).length, 3);
 
     const revision = docs.find((d) => d.path === 'bookings/seed-booking-revision')?.data;
     assert.ok(revision);
@@ -670,7 +670,9 @@ describe('seed chats and the inbox', () => {
       (d) => d.path.startsWith('savedPhotographers/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
     );
     assert.equal(lanSavedPhotographers.length, 1);
-    assert.equal((lanSavedPhotographers[0]!.data as { photographerId: string }).photographerId, 'seed-photographer-cuc');
+    const lanSavedPhotographer = lanSavedPhotographers[0];
+    assert.ok(lanSavedPhotographer);
+    assert.equal((lanSavedPhotographer.data as { photographerId: string }).photographerId, 'seed-photographer-cuc');
   });
 });
 

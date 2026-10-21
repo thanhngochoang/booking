@@ -219,3 +219,15 @@ export const WATERMARK_OPTIONS = {
   retry: false,
 } as const;
 
+export const DATA_EXPORT_CALLABLE_OPTIONS = {
+  ...CALLABLE_OPTIONS,
+  memory: '512MiB',
+  timeoutSeconds: 120,
+} as const satisfies CallableOptions;
+
+export const ACCOUNT_PURGE_TRIGGER_OPTIONS = {
+  ...TRIGGER_OPTIONS,
+  memory: '512MiB',
+  timeoutSeconds: 300,
+} as const satisfies Omit<DocumentOptions, 'document'>;
+

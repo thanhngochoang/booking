@@ -72,6 +72,8 @@ PhotographerSummary photographerSummaryFrom({
     providerType: ProviderType.fromCode(photographer['providerType']),
     approvedAwardCount: _int(photographer['approvedAwardCount']),
     studioDistrict: _str(photographer['studioDistrict']),
+    hiddenFromDiscovery: photographer['hiddenFromDiscovery'] == true,
+    deletionPending: photographer['deletionPending'] == true,
   );
 }
 

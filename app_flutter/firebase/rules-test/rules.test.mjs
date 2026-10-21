@@ -2333,3 +2333,41 @@ test('a chat member cannot set blockedAt', async () => {
   const db = env.authenticatedContext('u1').firestore();
   await assertFails(updateDoc(doc(db, 'chats/u1_u2'), { blockedAt: Timestamp.now() }));
 });
+
+// ---- S22 Account Deletion & Data Export (#205) ----
+test('client cannot read or write account_deletions', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'account_deletions/u1'), { uid: 'u1', status: 'pending' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(getDoc(doc(db, 'account_deletions/u1')));
+  await assertFails(setDoc(doc(db, 'account_deletions/u2'), { uid: 'u2', status: 'pending' }));
+  await assertFails(updateDoc(doc(db, 'account_deletions/u1'), { status: 'restored' }));
+  await assertFails(deleteDoc(doc(db, 'account_deletions/u1')));
+});
+
+test('client cannot set deleted on users/{uid}', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'users/u1'), { displayName: 'User One', role: 'customer' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(updateDoc(doc(db, 'users/u1'), { deleted: true }));
+  await assertFails(updateDoc(doc(db, 'users/u1'), { accountStatus: 'deletion_pending' }));
+  await assertFails(updateDoc(doc(db, 'users/u1'), { restoreUntil: '2026-11-20T10:00:00Z' }));
+});
+
+test('owner can set hiddenFromDiscovery to a bool, not a string', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'users/p1'), { displayName: 'Photographer', role: 'photographer' });
+    await setDoc(doc(c.firestore(), 'photographers/p1'), {
+      bio: 'Bio',
+      onboardingComplete: true,
+      verified: false,
+    });
+  });
+  const db = env.authenticatedContext('p1').firestore();
+  await assertSucceeds(updateDoc(doc(db, 'photographers/p1'), { hiddenFromDiscovery: true }));
+  await assertSucceeds(updateDoc(doc(db, 'photographers/p1'), { hiddenFromDiscovery: false }));
+  await assertFails(updateDoc(doc(db, 'photographers/p1'), { hiddenFromDiscovery: 'true' }));
+  await assertFails(updateDoc(doc(db, 'photographers/p1'), { deletionPending: true }));
+});

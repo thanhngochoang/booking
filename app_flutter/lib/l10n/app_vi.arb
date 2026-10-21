@@ -3115,6 +3115,160 @@
   "deliveryReportReasonWrongFiles": "Ảnh không đúng buổi chụp",
   "deliveryReportReasonOther": "Lý do khác",
   "deliveryReportButton": "Báo vấn đề",
-  "deliveryReportSuccess": "Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn."
+  "deliveryReportSuccess": "Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.",
+  "settingsPaymentsData": "Thanh toán và dữ liệu",
+  "settingsPaymentHistory": "Lịch sử thanh toán",
+  "settingsPaymentHistoryBody": "Khoản đã trả, đang giữ, đang hoàn",
+  "settingsPrivacy": "Quyền riêng tư & dữ liệu",
+  "settingsPrivacyBody": "Ẩn hồ sơ, tải bản sao dữ liệu, xoá tài khoản",
+  "settingsPrivacyBodyCustomer": "Tải bản sao dữ liệu, xoá tài khoản",
+  "deleteAccountTitle": "Xoá tài khoản",
+  "deleteBlockedTitle": "Chưa xoá được tài khoản",
+  "deleteBlockedBody": "Xong các việc dưới đây rồi quay lại.",
+  "deleteBlockBooking": "{count} buổi chụp chưa xong",
+  "@deleteBlockBooking": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockJob": "{count} buổi chụp khách đã đặt",
+  "@deleteBlockJob": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockJobPost": "{count} tin tìm thợ đang mở",
+  "@deleteBlockJobPost": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockJobPostBody": "Đóng tin hoặc chọn thợ trước.",
+  "deleteBlockQuote": "{count} báo giá đang chờ khách",
+  "@deleteBlockQuote": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockQuoteBody": "Rút báo giá hoặc đợi khách chọn.",
+  "deleteBlockInstant": "{count} yêu cầu Chụp ngay chưa xong",
+  "@deleteBlockInstant": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockStudio": "{count} quan hệ studio đang hoạt động",
+  "@deleteBlockStudio": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockStudioBody": "Rời studio hoặc gỡ thành viên trước.",
+  "deleteBlockCollab": "{count} cộng tác đang mở",
+  "@deleteBlockCollab": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockCollabBody": "Kết thúc cộng tác và xong các việc được giao.",
+  "deleteBlockTicket": "{count} vé sự kiện chưa diễn ra",
+  "@deleteBlockTicket": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockEvent": "{count} sự kiện bạn tổ chức còn mở",
+  "@deleteBlockEvent": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockDispute": "{count} khiếu nại đang mở",
+  "@deleteBlockDispute": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteBlockHeld": "{amount} đang được giữ",
+  "@deleteBlockHeld": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "deleteBlockHeldBody": "Đợi tiền được chuyển xong rồi xoá.",
+  "deleteBlockRefund": "{amount} đang hoàn",
+  "@deleteBlockRefund": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "deleteBlockRefundBody": "Đợi tiền hoàn về tài khoản của bạn.",
+  "deleteBlockEarnings": "{amount} chờ chi trả",
+  "@deleteBlockEarnings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "deleteBlockEarningsBody": "Thêm tài khoản nhận tiền hoặc đợi lần chi tới.",
+  "deleteConsequencesTitle": "Khi xoá tài khoản",
+  "deleteConsequence1": "Tài khoản bị khoá ngay; hồ sơ không còn hiện với người khác.",
+  "deleteConsequence2": "Tin nhắn bạn đã gửi vẫn còn ở phía người nhận, tên hiện là \"Người dùng đã xoá\".",
+  "deleteConsequence3": "Đánh giá bạn đã viết được giữ, không kèm tên.",
+  "deleteConsequence4": "Lịch sử giao dịch được giữ ẩn danh theo quy định kế toán.",
+  "deleteConsequence5": "Trong 30 ngày, đăng nhập lại để khôi phục. Sau 30 ngày, hồ sơ, ảnh đại diện, số điện thoại và bài đăng bị xoá hẳn, không khôi phục được.",
+  "deleteExportHint": "Muốn giữ dữ liệu? Tải bản sao trước khi xoá.",
+  "deleteExportHintLink": "Tải bản sao dữ liệu",
+  "deleteAction": "Xoá tài khoản",
+  "deleteConfirmTitle": "Xoá tài khoản?",
+  "deleteConfirmBody": "Tài khoản bị khoá ngay và xoá hẳn sau 30 ngày. Trong 30 ngày, đăng nhập lại để khôi phục. Bạn có thể cần đăng nhập lại để xác nhận.",
+  "deleteConfirmKeep": "Giữ tài khoản",
+  "deleteAccountDone": "Tài khoản đã khoá, sẽ xoá hẳn vào {date}.",
+  "@deleteAccountDone": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "deleteAccountFailed": "Chưa xoá được, thử lại sau.",
+  "privacyTitle": "Quyền riêng tư & dữ liệu",
+  "privacyProfile": "Hồ sơ",
+  "privacyHide": "Ẩn hồ sơ khỏi gợi ý và tìm kiếm",
+  "privacyHideBody": "Hồ sơ không hiện trong Tìm thợ và gợi ý. Khách cũ vẫn mở được hồ sơ và đặt lại; bài đăng vẫn hiện như thường.",
+  "privacyData": "Dữ liệu của bạn",
+  "privacyExport": "Tải bản sao dữ liệu",
+  "privacyExportBody": "Hồ sơ, đặt lịch, vé, thanh toán, bài đăng, đánh giá và tin nhắn bạn đã gửi, trong một tệp JSON.",
+  "privacyExportCreate": "Tạo bản sao",
+  "privacyExportCreating": "Đang tạo bản sao…",
+  "privacyExportReady": "Bản sao tạo lúc {time} · tải được tới {date}",
+  "@privacyExportReady": {
+    "placeholders": {
+      "time": {"type": "String"},
+      "date": {"type": "String"}
+    }
+  },
+  "privacyExportDownload": "Tải xuống",
+  "privacyExportCooldown": "Mỗi 24 giờ tạo được một bản sao.",
+  "privacyExportLimit": "Bạn vừa tạo bản sao, thử lại sau 24 giờ.",
+  "privacyExportFailed": "Chưa tạo được bản sao, thử lại sau.",
+  "privacyDelete": "Xoá tài khoản",
+  "restoreAccountTitle": "Tài khoản đang chờ xoá",
+  "restoreAccountBody": "Tài khoản của bạn sẽ bị xoá hẳn vào {date}. Khôi phục để dùng tiếp như cũ: hồ sơ, lịch sử và tin nhắn vẫn còn nguyên.",
+  "@restoreAccountBody": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "restoreAccountAction": "Khôi phục tài khoản",
+  "restoreAccountContinue": "Tiếp tục xoá",
+  "restoreAccountContinueNote": "Bạn sẽ được đăng xuất; tài khoản vẫn bị xoá vào {date}.",
+  "@restoreAccountContinueNote": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "restoreAccountExport": "Tải bản sao dữ liệu",
+  "restoreAccountDone": "Đã khôi phục tài khoản.",
+  "restoreAccountExpired": "Đã quá 30 ngày, tài khoản không khôi phục được nữa.",
+  "restoreAccountFailed": "Chưa khôi phục được, thử lại sau.",
+  "privacyExportPending": "Tài khoản đang chờ xoá, không tạo bản sao mới được."
 }
 

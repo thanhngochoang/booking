@@ -30,6 +30,8 @@ class PhotographerSummary {
     this.providerType = ProviderType.individual,
     this.approvedAwardCount = 0,
     this.studioDistrict,
+    this.hiddenFromDiscovery = false,
+    this.deletionPending = false,
   });
 
   final String id;
@@ -89,6 +91,12 @@ class PhotographerSummary {
 
   /// Public district of a studio; the full address stays private.
   final String? studioDistrict;
+
+  /// True when the photographer has hidden their profile from Find and suggestions (#205).
+  final bool hiddenFromDiscovery;
+
+  /// True while account deletion is pending (30-day restore window, #205).
+  final bool deletionPending;
 
   bool get hasReviews => reviewCount > 0;
   bool get hasTomatoPct => reviewCount >= kTomatoPctMinReviews;

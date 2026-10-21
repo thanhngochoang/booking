@@ -80,6 +80,8 @@ PhotographerSummary fixturePhotographer(
   int approvedAwards = 0,
   String? studioDistrict,
   bool acceptingOrders = true,
+  bool hiddenFromDiscovery = false,
+  bool deletionPending = false,
 }) => PhotographerSummary(
   id: id,
   displayName: name,
@@ -88,6 +90,8 @@ PhotographerSummary fixturePhotographer(
   verified: verified,
   businessVerified: businessVerified,
   acceptingOrders: acceptingOrders,
+  hiddenFromDiscovery: hiddenFromDiscovery,
+  deletionPending: deletionPending,
   specialtyIds: specialties,
   styleIds: styles,
   areaLabel: areaLabel,

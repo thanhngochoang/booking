@@ -8,6 +8,7 @@ info:
     (xác thực, App Check, giới hạn tần suất), hàm đó gọi dịch vụ bằng danh tính dịch vụ.
     Hợp đồng ổn định theo phiên bản đường dẫn (/v1). Thuật toán đổi bên trong, hợp đồng không đổi.
     Lưu ý (#133): ứng viên của Tìm thợ (S02.06) phải có `acceptingOrders == true`; hiện app lọc phía máy khách, dịch vụ từ xa sẽ lọc khi được nối vào.
+    Lưu ý (#205): ứng viên có `hiddenFromDiscovery == true` hoặc `deletionPending == true` bị loại khỏi gợi ý và tìm kiếm.
     Lưu ý (#143): followedIds: optional; posts of followed authors from the last 7 days rank first.
 servers:
   - url: https://recommender-REPLACE_ME.a.run.app

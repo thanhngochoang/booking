@@ -12207,6 +12207,414 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.'**
   String get deliveryReportSuccess;
+
+  /// No description provided for @settingsPaymentsData.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán và dữ liệu'**
+  String get settingsPaymentsData;
+
+  /// No description provided for @settingsPaymentHistory.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử thanh toán'**
+  String get settingsPaymentHistory;
+
+  /// No description provided for @settingsPaymentHistoryBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản đã trả, đang giữ, đang hoàn'**
+  String get settingsPaymentHistoryBody;
+
+  /// No description provided for @settingsPrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quyền riêng tư & dữ liệu'**
+  String get settingsPrivacy;
+
+  /// No description provided for @settingsPrivacyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn hồ sơ, tải bản sao dữ liệu, xoá tài khoản'**
+  String get settingsPrivacyBody;
+
+  /// No description provided for @settingsPrivacyBodyCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải bản sao dữ liệu, xoá tài khoản'**
+  String get settingsPrivacyBodyCustomer;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá tài khoản'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteBlockedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xoá được tài khoản'**
+  String get deleteBlockedTitle;
+
+  /// No description provided for @deleteBlockedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong các việc dưới đây rồi quay lại.'**
+  String get deleteBlockedBody;
+
+  /// No description provided for @deleteBlockBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} buổi chụp chưa xong'**
+  String deleteBlockBooking(int count);
+
+  /// No description provided for @deleteBlockJob.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} buổi chụp khách đã đặt'**
+  String deleteBlockJob(int count);
+
+  /// No description provided for @deleteBlockJobPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} tin tìm thợ đang mở'**
+  String deleteBlockJobPost(int count);
+
+  /// No description provided for @deleteBlockJobPostBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng tin hoặc chọn thợ trước.'**
+  String get deleteBlockJobPostBody;
+
+  /// No description provided for @deleteBlockQuote.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} báo giá đang chờ khách'**
+  String deleteBlockQuote(int count);
+
+  /// No description provided for @deleteBlockQuoteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rút báo giá hoặc đợi khách chọn.'**
+  String get deleteBlockQuoteBody;
+
+  /// No description provided for @deleteBlockInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} yêu cầu Chụp ngay chưa xong'**
+  String deleteBlockInstant(int count);
+
+  /// No description provided for @deleteBlockStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} quan hệ studio đang hoạt động'**
+  String deleteBlockStudio(int count);
+
+  /// No description provided for @deleteBlockStudioBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời studio hoặc gỡ thành viên trước.'**
+  String get deleteBlockStudioBody;
+
+  /// No description provided for @deleteBlockCollab.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} cộng tác đang mở'**
+  String deleteBlockCollab(int count);
+
+  /// No description provided for @deleteBlockCollabBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc cộng tác và xong các việc được giao.'**
+  String get deleteBlockCollabBody;
+
+  /// No description provided for @deleteBlockTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} vé sự kiện chưa diễn ra'**
+  String deleteBlockTicket(int count);
+
+  /// No description provided for @deleteBlockEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} sự kiện bạn tổ chức còn mở'**
+  String deleteBlockEvent(int count);
+
+  /// No description provided for @deleteBlockDispute.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} khiếu nại đang mở'**
+  String deleteBlockDispute(int count);
+
+  /// No description provided for @deleteBlockHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'{amount} đang được giữ'**
+  String deleteBlockHeld(String amount);
+
+  /// No description provided for @deleteBlockHeldBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đợi tiền được chuyển xong rồi xoá.'**
+  String get deleteBlockHeldBody;
+
+  /// No description provided for @deleteBlockRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'{amount} đang hoàn'**
+  String deleteBlockRefund(String amount);
+
+  /// No description provided for @deleteBlockRefundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đợi tiền hoàn về tài khoản của bạn.'**
+  String get deleteBlockRefundBody;
+
+  /// No description provided for @deleteBlockEarnings.
+  ///
+  /// In vi, this message translates to:
+  /// **'{amount} chờ chi trả'**
+  String deleteBlockEarnings(String amount);
+
+  /// No description provided for @deleteBlockEarningsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm tài khoản nhận tiền hoặc đợi lần chi tới.'**
+  String get deleteBlockEarningsBody;
+
+  /// No description provided for @deleteConsequencesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi xoá tài khoản'**
+  String get deleteConsequencesTitle;
+
+  /// No description provided for @deleteConsequence1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản bị khoá ngay; hồ sơ không còn hiện với người khác.'**
+  String get deleteConsequence1;
+
+  /// No description provided for @deleteConsequence2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn bạn đã gửi vẫn còn ở phía người nhận, tên hiện là \"Người dùng đã xoá\".'**
+  String get deleteConsequence2;
+
+  /// No description provided for @deleteConsequence3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá bạn đã viết được giữ, không kèm tên.'**
+  String get deleteConsequence3;
+
+  /// No description provided for @deleteConsequence4.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử giao dịch được giữ ẩn danh theo quy định kế toán.'**
+  String get deleteConsequence4;
+
+  /// No description provided for @deleteConsequence5.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong 30 ngày, đăng nhập lại để khôi phục. Sau 30 ngày, hồ sơ, ảnh đại diện, số điện thoại và bài đăng bị xoá hẳn, không khôi phục được.'**
+  String get deleteConsequence5;
+
+  /// No description provided for @deleteExportHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Muốn giữ dữ liệu? Tải bản sao trước khi xoá.'**
+  String get deleteExportHint;
+
+  /// No description provided for @deleteExportHintLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải bản sao dữ liệu'**
+  String get deleteExportHintLink;
+
+  /// No description provided for @deleteAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá tài khoản'**
+  String get deleteAction;
+
+  /// No description provided for @deleteConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá tài khoản?'**
+  String get deleteConfirmTitle;
+
+  /// No description provided for @deleteConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản bị khoá ngay và xoá hẳn sau 30 ngày. Trong 30 ngày, đăng nhập lại để khôi phục. Bạn có thể cần đăng nhập lại để xác nhận.'**
+  String get deleteConfirmBody;
+
+  /// No description provided for @deleteConfirmKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ tài khoản'**
+  String get deleteConfirmKeep;
+
+  /// No description provided for @deleteAccountDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản đã khoá, sẽ xoá hẳn vào {date}.'**
+  String deleteAccountDone(String date);
+
+  /// No description provided for @deleteAccountFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xoá được, thử lại sau.'**
+  String get deleteAccountFailed;
+
+  /// No description provided for @privacyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quyền riêng tư & dữ liệu'**
+  String get privacyTitle;
+
+  /// No description provided for @privacyProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get privacyProfile;
+
+  /// No description provided for @privacyHide.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn hồ sơ khỏi gợi ý và tìm kiếm'**
+  String get privacyHide;
+
+  /// No description provided for @privacyHideBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ không hiện trong Tìm thợ và gợi ý. Khách cũ vẫn mở được hồ sơ và đặt lại; bài đăng vẫn hiện như thường.'**
+  String get privacyHideBody;
+
+  /// No description provided for @privacyData.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dữ liệu của bạn'**
+  String get privacyData;
+
+  /// No description provided for @privacyExport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải bản sao dữ liệu'**
+  String get privacyExport;
+
+  /// No description provided for @privacyExportBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ, đặt lịch, vé, thanh toán, bài đăng, đánh giá và tin nhắn bạn đã gửi, trong một tệp JSON.'**
+  String get privacyExportBody;
+
+  /// No description provided for @privacyExportCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo bản sao'**
+  String get privacyExportCreate;
+
+  /// No description provided for @privacyExportCreating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tạo bản sao…'**
+  String get privacyExportCreating;
+
+  /// No description provided for @privacyExportReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản sao tạo lúc {time} · tải được tới {date}'**
+  String privacyExportReady(String time, String date);
+
+  /// No description provided for @privacyExportDownload.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải xuống'**
+  String get privacyExportDownload;
+
+  /// No description provided for @privacyExportCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mỗi 24 giờ tạo được một bản sao.'**
+  String get privacyExportCooldown;
+
+  /// No description provided for @privacyExportLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn vừa tạo bản sao, thử lại sau 24 giờ.'**
+  String get privacyExportLimit;
+
+  /// No description provided for @privacyExportFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tạo được bản sao, thử lại sau.'**
+  String get privacyExportFailed;
+
+  /// No description provided for @privacyDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá tài khoản'**
+  String get privacyDelete;
+
+  /// No description provided for @restoreAccountTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản đang chờ xoá'**
+  String get restoreAccountTitle;
+
+  /// No description provided for @restoreAccountBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản của bạn sẽ bị xoá hẳn vào {date}. Khôi phục để dùng tiếp như cũ: hồ sơ, lịch sử và tin nhắn vẫn còn nguyên.'**
+  String restoreAccountBody(String date);
+
+  /// No description provided for @restoreAccountAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khôi phục tài khoản'**
+  String get restoreAccountAction;
+
+  /// No description provided for @restoreAccountContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục xoá'**
+  String get restoreAccountContinue;
+
+  /// No description provided for @restoreAccountContinueNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ được đăng xuất; tài khoản vẫn bị xoá vào {date}.'**
+  String restoreAccountContinueNote(String date);
+
+  /// No description provided for @restoreAccountExport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải bản sao dữ liệu'**
+  String get restoreAccountExport;
+
+  /// No description provided for @restoreAccountDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khôi phục tài khoản.'**
+  String get restoreAccountDone;
+
+  /// No description provided for @restoreAccountExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã quá 30 ngày, tài khoản không khôi phục được nữa.'**
+  String get restoreAccountExpired;
+
+  /// No description provided for @restoreAccountFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa khôi phục được, thử lại sau.'**
+  String get restoreAccountFailed;
+
+  /// No description provided for @privacyExportPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản đang chờ xoá, không tạo bản sao mới được.'**
+  String get privacyExportPending;
 }
 
 class _AppLocalizationsDelegate

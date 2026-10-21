@@ -13,11 +13,11 @@ describe('delivery_upload trigger', () => {
 
   function makeDeps(overrides: Partial<DeliveryUploadDeps> = {}): {
     deps: DeliveryUploadDeps;
-    writtenSamples: Record<string, any>;
+    writtenSamples: Record<string, Record<string, unknown>>;
     uploadedFiles: Record<string, Buffer>;
     deletedFiles: string[];
   } {
-    const writtenSamples: Record<string, any> = {};
+    const writtenSamples: Record<string, Record<string, unknown>> = {};
     const uploadedFiles: Record<string, Buffer> = {};
     const deletedFiles: string[] = [];
 

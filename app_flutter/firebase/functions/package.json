@@ -40,5 +40,9 @@
     "tsx": "^4.23.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.0"
+  },
+  "overrides": {
+    "uuid@<11.1.1": "^11.1.1",
+    "@opentelemetry/core@<2.8.0": "^2.8.0"
   }
 }

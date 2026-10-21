@@ -1,20 +1,22 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Firestore } from 'firebase-admin/firestore';
+import type { Bucket } from '@google-cloud/storage';
 import { purgeDeliverySamples } from '../../src/scheduled/purge_delivery_samples.js';
 
 describe('purgeDeliverySamples', () => {
   it('deletes sample and thumbnail objects of every round, sets samplesPurged and clears samplesPurgeAfter', async () => {
     const deletedFiles: string[] = [];
-    const updatedDocs: Record<string, any> = {};
+    const updatedDocs: Record<string, unknown> = {};
 
-    const fakeBucket: any = {
+    const fakeBucket = {
       file: (path: string) => ({
         delete: async () => {
           deletedFiles.push(path);
           return [{}];
         },
       }),
-    };
+    } as unknown as Bucket;
 
     const roundDocs = [
       {
@@ -52,13 +54,13 @@ describe('purgeDeliverySamples', () => {
           }
           return { get: async () => ({ docs: [] }) };
         },
-        update: async (fields: any) => {
+        update: async (fields: Record<string, unknown>) => {
           updatedDocs['b1'] = fields;
         },
       },
     };
 
-    const fakeDb: any = {
+    const fakeDb = {
       collection: () => ({
         where: function () {
           return this;
@@ -70,7 +72,7 @@ describe('purgeDeliverySamples', () => {
           docs: [bookingDoc],
         }),
       }),
-    };
+    } as unknown as Firestore;
 
     const count = await purgeDeliverySamples({
       db: fakeDb,
@@ -95,16 +97,16 @@ describe('purgeDeliverySamples', () => {
 
   it('skips a disputed booking', async () => {
     const deletedFiles: string[] = [];
-    const updatedDocs: Record<string, any> = {};
+    const updatedDocs: Record<string, unknown> = {};
 
-    const fakeBucket: any = {
+    const fakeBucket = {
       file: (path: string) => ({
         delete: async () => {
           deletedFiles.push(path);
           return [{}];
         },
       }),
-    };
+    } as unknown as Bucket;
 
     const disputedDoc = {
       id: 'b_disputed',
@@ -115,13 +117,13 @@ describe('purgeDeliverySamples', () => {
       }),
       ref: {
         collection: () => ({ get: async () => ({ docs: [] }) }),
-        update: async (fields: any) => {
+        update: async (fields: Record<string, unknown>) => {
           updatedDocs['b_disputed'] = fields;
         },
       },
     };
 
-    const fakeDb: any = {
+    const fakeDb = {
       collection: () => ({
         where: function () {
           return this;
@@ -133,7 +135,7 @@ describe('purgeDeliverySamples', () => {
           docs: [disputedDoc],
         }),
       }),
-    };
+    } as unknown as Firestore;
 
     const count = await purgeDeliverySamples({
       db: fakeDb,
@@ -149,13 +151,13 @@ describe('purgeDeliverySamples', () => {
   it('missing objects are not an error', async () => {
     let updateCalled = false;
 
-    const fakeBucket: any = {
+    const fakeBucket = {
       file: () => ({
         delete: async () => {
           throw new Error('Not found');
         },
       }),
-    };
+    } as unknown as Bucket;
 
     const bookingDoc = {
       id: 'b1',
@@ -183,7 +185,7 @@ describe('purgeDeliverySamples', () => {
       },
     };
 
-    const fakeDb: any = {
+    const fakeDb = {
       collection: () => ({
         where: function () {
           return this;
@@ -193,7 +195,7 @@ describe('purgeDeliverySamples', () => {
         },
         get: async () => ({ docs: [bookingDoc] }),
       }),
-    };
+    } as unknown as Firestore;
 
     const count = await purgeDeliverySamples({
       db: fakeDb,
@@ -207,7 +209,7 @@ describe('purgeDeliverySamples', () => {
 
   it('stops at the limit', async () => {
     let requestedLimit = 0;
-    const fakeDb: any = {
+    const fakeDb = {
       collection: () => ({
         where: function () {
           return this;
@@ -218,11 +220,11 @@ describe('purgeDeliverySamples', () => {
         },
         get: async () => ({ docs: [] }),
       }),
-    };
+    } as unknown as Firestore;
 
     await purgeDeliverySamples({
       db: fakeDb,
-      bucket: {} as any,
+      bucket: {} as Bucket,
       now: new Date('2026-10-17T12:00:00.000Z'),
       limit: 15,
     });

@@ -1,6 +1,8 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { getStorage, type Storage } from 'firebase-admin/storage';
+import type { Bucket } from '@google-cloud/storage';
 
 /**
  * The Admin SDK's Firestore, initialised on first use (not at import) to keep cold starts short.
@@ -17,4 +19,17 @@ export function db(): Firestore {
 export function auth(): Auth {
   if (!getApps().some((app) => app.name === '[DEFAULT]')) initializeApp();
   return getAuth();
+}
+
+export function adminAuth(): Auth {
+  return auth();
+}
+
+export function storage(): Storage {
+  if (!getApps().some((app) => app.name === '[DEFAULT]')) initializeApp();
+  return getStorage();
+}
+
+export function bucket(): Bucket {
+  return storage().bucket();
 }

@@ -30,6 +30,19 @@ import {
   handleUnblockUser,
   handleSubmitReport,
 } from './callables/safety.js';
+import {
+  handleGetAccountDeletionBlockers,
+  handleRequestAccountDeletion,
+  handleRestoreAccount,
+  handleRequestDataExport,
+} from './callables/account.js';
+import { liveAccountDeletionDeps } from './infra/account_firestore.js';
+import { liveDataExportDeps } from './infra/data_export_firestore.js';
+import { handleAccountDeletionUpdated } from './triggers/account_deletion.js';
+import {
+  ACCOUNT_PURGE_TRIGGER_OPTIONS,
+  DATA_EXPORT_CALLABLE_OPTIONS,
+} from './config.js';
 import { liveBlockDeps, liveReportDeps } from './infra/live_safety.js';
 import {
   BOOKING_CLOCK_OPTIONS,
@@ -838,5 +851,30 @@ import { WATERMARK_OPTIONS } from './config.js';
 export const onDeliveryUpload = onObjectFinalized(WATERMARK_OPTIONS, async (event) => {
   await handleDeliveryUpload(event.data, liveDeliveryUploadDeps());
 });
+
+/** Account deletion (#205) callables and trigger */
+export const getAccountDeletionBlockers = onCall(CALLABLE_OPTIONS, (request) =>
+  handleGetAccountDeletionBlockers(request, liveAccountDeletionDeps()),
+);
+
+export const requestAccountDeletion = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRequestAccountDeletion(request, liveAccountDeletionDeps()),
+);
+
+export const restoreAccount = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRestoreAccount(request, liveAccountDeletionDeps()),
+);
+
+export const requestDataExport = onCall(DATA_EXPORT_CALLABLE_OPTIONS, (request) =>
+  handleRequestDataExport(request, liveDataExportDeps()),
+);
+
+export const onAccountDeletionUpdated = onDocumentWritten(
+  { ...ACCOUNT_PURGE_TRIGGER_OPTIONS, document: 'account_deletions/{uid}' },
+  async (event) => {
+    if (!event.data) return;
+    await handleAccountDeletionUpdated(event.data);
+  },
+);
 
 

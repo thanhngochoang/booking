@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/app/tabs.dart';
+import 'package:photobooking/data/account/account_providers.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification.dart';
+import 'package:photobooking/features/account/delete_account_screen.dart';
+import 'package:photobooking/features/account/privacy_screen.dart';
+import 'package:photobooking/features/account/restore_account_screen.dart';
 import 'package:photobooking/features/addons/addons_screen.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
@@ -71,11 +75,13 @@ const _authRoutes = {'/login', '/register'};
 const _onboardingRoute = '/onboarding/role';
 const _splashRoute = '/splash';
 const _sessionErrorRoute = '/session-error';
+const _restoreAccountRoute = '/account/restore';
 const _nonResumable = {
   ..._authRoutes,
   _onboardingRoute,
   _splashRoute,
   _sessionErrorRoute,
+  _restoreAccountRoute,
 };
 
 String _toSplash(String location) =>
@@ -92,6 +98,7 @@ String? computeRedirect({
   required bool profileLoaded,
   bool profileError = false,
   required bool needsRole,
+  bool isAccountLocked = false,
   required String location,
   String? from,
 }) {
@@ -106,6 +113,12 @@ String? computeRedirect({
   }
   if (!profileLoaded) {
     return location == _splashRoute ? null : _toSplash(location);
+  }
+  if (isAccountLocked) {
+    return location == _restoreAccountRoute ? null : _restoreAccountRoute;
+  }
+  if (location == _restoreAccountRoute) {
+    return AppTab.home.path;
   }
   if (needsRole) return location == _onboardingRoute ? null : _onboardingRoute;
   if (location == _splashRoute) {
@@ -126,12 +139,14 @@ class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this.ref) {
     ref.listen(authStateProvider, (_, _) => notifyListeners());
     ref.listen(currentProfileProvider, (_, _) => notifyListeners());
+    ref.listen(accountLockProvider, (_, _) => notifyListeners());
   }
   final Ref ref;
 
   String? redirect(BuildContext context, GoRouterState state) {
     final auth = ref.read(authStateProvider);
     final profile = ref.read(currentProfileProvider);
+    final lock = ref.read(accountLockProvider);
     final signedIn = auth.value != null;
     final profileError = signedIn && profile.hasError;
     return computeRedirect(
@@ -142,6 +157,7 @@ class RouterNotifier extends ChangeNotifier {
           (!profile.hasError && profile.hasValue && profile.value != null),
       profileError: profileError,
       needsRole: profile.value?.needsRole ?? false,
+      isAccountLocked: lock.value != null,
       location: state.matchedLocation,
       from: state.uri.queryParameters['from'],
     );
@@ -182,7 +198,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'blocked',
             builder: (_, _) => const BlockedUsersScreen(),
           ),
+          GoRoute(
+            path: 'privacy',
+            builder: (_, _) => const PrivacyScreen(),
+          ),
+          GoRoute(
+            path: 'delete-account',
+            builder: (_, _) => const DeleteAccountScreen(),
+          ),
         ],
+      ),
+      GoRoute(
+        path: '/account/restore',
+        builder: (_, _) => const RestoreAccountScreen(),
       ),
       GoRoute(
         path: '/notifications',
