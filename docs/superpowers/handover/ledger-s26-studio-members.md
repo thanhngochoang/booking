@@ -73,7 +73,7 @@ Checked on develop 6ef387f (with #130 reviews, #152 delivery, #198 order gate, #
 
 ## Findings the controller must act on
 
-1. **#205 reads `studio_members` with the wrong field.** `functions/src/infra/account_firestore.ts` L141–158 queries `studio_members.where('userId' == uid).where('status' == 'active')`; the contract names the fields `studioId` and `memberId` (no `userId`). Deleting an account therefore never sees a studio relation. A later task (Task 5, with the Firestore adapters) must change it to two queries (`memberId == uid` and `studioId == uid`, `status == 'active'`) and its unit test.
+1. **#205 reads `studio_members` with the wrong field.** `functions/src/infra/account_firestore.ts` L141–158 (the `studio_members` query at L145–146, `.where('userId', …)` at L146) queries `studio_members.where('userId' == uid).where('status' == 'active')`; the contract names the fields `studioId` and `memberId` (no `userId`). Deleting an account therefore never sees a studio relation. A later task (Task 5, with the Firestore adapters) must change it to two queries (`memberId == uid` and `studioId == uid`, `status == 'active'`) and its unit test.
 2. **No late-delivery hook exists** (see table). Decision 15's one-line increment is skipped; `lateDeliveryCount` is only a stored counter for now.
 3. **No stop condition.** #152, #198, #199 and #135 are all merged on 6ef387f and every member the plan calls "create-if-absent" is either present or created by a named task. `orderProfile` and `StudioBookingTx` are missing but the plan creates them in Task 3.
 
