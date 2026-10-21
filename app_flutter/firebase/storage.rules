@@ -99,6 +99,12 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // Data export files (S22.03): owner only can read exports/{uid}/{file}; server writes via Admin SDK; no client write.
+    match /exports/{uid}/{file} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
     // Anything else is closed.
     match /{allPaths=**} {
       allow read, write: if false;

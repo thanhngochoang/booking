@@ -53,4 +53,25 @@ describe('serviceRecordOf', () => {
     const s2 = serviceRecordOf('srv_inactive', 'p1', d2);
     assert.equal(s2.active, false);
   });
+
+  it('a provider with deletionPending is not accepting orders', async () => {
+    const { FirestoreProviderOrderGate } = await import('../../src/infra/booking_readers.js');
+    const fakeFirestore = {
+      collection: () => ({
+        doc: () => ({
+          get: async () => ({
+            exists: true,
+            data: () => ({
+              verified: true,
+              onboardingComplete: true,
+              deletionPending: true,
+            }),
+          }),
+        }),
+      }),
+    };
+    const gate = new FirestoreProviderOrderGate(fakeFirestore as any);
+    const result = await gate.acceptsOrders('p1');
+    assert.equal(result, false);
+  });
 });

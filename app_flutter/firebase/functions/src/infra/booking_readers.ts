@@ -72,6 +72,8 @@ export class FirestoreProviderOrderGate implements ProviderOrderGate {
   async acceptsOrders(photographerId: string): Promise<boolean> {
     const snap = await this.firestore.collection('photographers').doc(photographerId).get();
     if (!snap.exists) return false;
-    return acceptsOrders(snap.data());
+    const data = snap.data();
+    if (data?.deletionPending === true) return false;
+    return acceptsOrders(data);
   }
 }
