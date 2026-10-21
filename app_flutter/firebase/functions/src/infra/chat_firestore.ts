@@ -15,7 +15,9 @@ export function toFirestoreChat(chat: Chat): Record<string, unknown> {
     kind: chat.kind,
     customerId: chat.customerId,
     photographerId: chat.photographerId,
-    members: [chat.customerId, chat.photographerId],
+    // The studio booking's assignee is a member too (#136 Decision 16); a reassignment drops the old one.
+    assigneeId: chat.assigneeId,
+    members: chat.assigneeId ? [chat.customerId, chat.photographerId, chat.assigneeId] : [chat.customerId, chat.photographerId],
     bookingId: chat.bookingId ?? null,
     bookingStatus: chat.bookingStatus ?? null,
     photographerRepliedAt: chat.photographerRepliedAt
@@ -45,6 +47,7 @@ export function fromFirestoreChat(id: string, data: Record<string, unknown>): Ch
     kind: (data.kind as 'inquiry' | 'booking') || 'inquiry',
     customerId: String(data.customerId ?? ''),
     photographerId: String(data.photographerId ?? ''),
+    assigneeId: typeof data.assigneeId === 'string' && data.assigneeId !== '' ? data.assigneeId : null,
     bookingId: data.bookingId ? String(data.bookingId) : null,
     bookingStatus: typeof data.bookingStatus === 'string' ? data.bookingStatus : null,
     photographerRepliedAt: toDate(data.photographerRepliedAt),

@@ -3,6 +3,7 @@
  */
 
 import {
+  FieldValue,
   Timestamp,
   GeoPoint,
   type DocumentData,
@@ -10,7 +11,9 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import {
+  MAX_MEMBERS_VERIFIED,
   PAYMENT_METHODS,
+  acceptsOrders,
   escrowRefundedTotal,
   isAddonKind,
   isAddonUnit,
@@ -26,7 +29,8 @@ import {
   type PaymentProvider,
   type AvailabilityDayRecord,
   type BookingStore,
-  type BookingTx,
+  type StudioBookingTx,
+  type StudioDayLoad,
   type Payment,
   type PaymentStatus,
   type Refund,
@@ -52,6 +56,8 @@ export const REFUNDS_COLLECTION = 'refunds';
 export const LEDGER_COLLECTION = 'ledger_entries';
 /** One handled provider notification per doc, id `${provider}_${txnId}` (server only). */
 export const PAYMENT_NOTIFICATIONS_COLLECTION = 'payment_notifications';
+/** `${studioId}_${day}`, server only (#136 Decision 26). */
+export const STUDIO_DAY_LOAD_COLLECTION = 'studio_day_load';
 
 function toIsoString(v: unknown): string | undefined {
   if (v instanceof Timestamp) return v.toDate().toISOString();
@@ -116,6 +122,108 @@ function checkoutFromFirestore(d: unknown): BookingCheckout | undefined {
     transferCode: c.transferCode,
     attempt: c.attempt,
     ...(Object.fromEntries(Object.entries(optional).filter(([, v]) => v !== undefined)) as Partial<BookingCheckout>),
+  };
+}
+
+/** The studio fields (#136); written only on studio bookings. */
+function studioFieldsToFirestore(b: Booking): DocumentData {
+  if (b.isStudio !== true) return {};
+  const cr = b.changeRequest ?? null;
+  return {
+    isStudio: true,
+    assigneeId: b.assigneeId ?? null,
+    assigneeKind: b.assigneeKind ?? null,
+    assignStatus: b.assignStatus ?? 'unassigned',
+    assignDeadline: toTimestamp(b.assignDeadline),
+    assignOverdue: b.assignOverdue ?? false,
+    assignedAt: toTimestamp(b.assignedAt),
+    assignments: (b.assignments ?? []).map((a) => ({
+      assigneeId: a.assigneeId,
+      assigneeKind: a.assigneeKind,
+      at: toTimestamp(a.at),
+      by: a.by,
+      reason: a.reason,
+      late: a.late,
+    })),
+    assignRemindersSent: [...(b.assignRemindersSent ?? [])],
+    changeRequest: cr
+      ? {
+          at: toTimestamp(cr.at),
+          note: cr.note,
+          respondBy: toTimestamp(cr.respondBy),
+          status: cr.status,
+          declineReason: cr.declineReason,
+          answeredAt: toTimestamp(cr.answeredAt),
+        }
+      : null,
+    studioFault: b.studioFault ? { kind: b.studioFault.kind, at: toTimestamp(b.studioFault.at) } : null,
+    assignmentReturned: b.assignmentReturned
+      ? { at: toTimestamp(b.assignmentReturned.at), reason: b.assignmentReturned.reason }
+      : null,
+  };
+}
+
+function studioFieldsFromFirestore(d: DocumentData): Partial<Booking> {
+  if (d.isStudio !== true) return {};
+  const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+  const cr = d.changeRequest && typeof d.changeRequest === 'object' ? (d.changeRequest as Record<string, unknown>) : null;
+  const fault = d.studioFault && typeof d.studioFault === 'object' ? (d.studioFault as Record<string, unknown>) : null;
+  const returned =
+    d.assignmentReturned && typeof d.assignmentReturned === 'object'
+      ? (d.assignmentReturned as Record<string, unknown>)
+      : null;
+  return {
+    isStudio: true,
+    assigneeId: str(d.assigneeId),
+    assigneeKind: d.assigneeKind === 'member' ? 'member' : null,
+    assignStatus: d.assignStatus === 'assigned' ? 'assigned' : 'unassigned',
+    ...(toIsoString(d.assignDeadline) !== undefined ? { assignDeadline: toIsoString(d.assignDeadline) } : {}),
+    assignOverdue: d.assignOverdue === true,
+    assignedAt: toIsoString(d.assignedAt) ?? null,
+    assignments: Array.isArray(d.assignments)
+      ? d.assignments.map((raw: Record<string, unknown>) => ({
+          assigneeId: String(raw?.assigneeId ?? ''),
+          assigneeKind: 'member' as const,
+          at: toIsoString(raw?.at) ?? '',
+          by: String(raw?.by ?? ''),
+          reason: str(raw?.reason),
+          late: raw?.late === true,
+        }))
+      : [],
+    assignRemindersSent: Array.isArray(d.assignRemindersSent)
+      ? d.assignRemindersSent.filter((r: unknown): r is 'h48' | 'h26' => r === 'h48' || r === 'h26')
+      : [],
+    changeRequest: cr
+      ? {
+          at: toIsoString(cr.at) ?? '',
+          note: str(cr.note),
+          respondBy: toIsoString(cr.respondBy) ?? '',
+          status: (['pending', 'reassigned', 'declined', 'expired'] as const).find((s) => s === cr.status) ?? 'pending',
+          declineReason: str(cr.declineReason),
+          answeredAt: toIsoString(cr.answeredAt) ?? null,
+        }
+      : null,
+    studioFault:
+      fault &&
+      (fault.kind === 'assign_overdue' ||
+        fault.kind === 'change_declined' ||
+        fault.kind === 'change_expired' ||
+        fault.kind === 'late_reassign')
+        ? { kind: fault.kind, at: toIsoString(fault.at) ?? '' }
+        : null,
+    assignmentReturned: returned ? { at: toIsoString(returned.at) ?? '', reason: str(returned.reason) } : null,
+  };
+}
+
+function studioDayLoadFromFirestore(studioId: string, day: string, d: DocumentData | undefined): StudioDayLoad | null {
+  if (!d) return null;
+  const ids = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  return {
+    studioId,
+    day,
+    unassignedIds: ids(d.unassignedIds),
+    assignedIds: ids(d.assignedIds),
+    updatedAt: toIsoString(d.updatedAt) ?? '',
   };
 }
 
@@ -203,6 +311,7 @@ export function bookingToFirestore(b: Booking): DocumentData {
     samplesPurged: b.samplesPurged ?? false,
     checkout: checkoutToFirestore(b.checkout),
     payableUntil: toTimestamp(b.payableUntil),
+    ...studioFieldsToFirestore(b),
     version: b.version,
     createdAt: toTimestamp(b.createdAt),
     updatedAt: toTimestamp(b.updatedAt),
@@ -341,6 +450,7 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     samplesPurged: Boolean(d.samplesPurged),
     ...(checkout !== undefined ? { checkout } : {}),
     ...(payableUntil !== undefined ? { payableUntil } : {}),
+    ...studioFieldsFromFirestore(d),
     version: d.version ?? 1,
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
@@ -604,9 +714,45 @@ function paymentsOf(docs: readonly { id: string; data(): DocumentData }[]): Paym
 export class FirestoreBookingStore implements BookingStore {
   constructor(private readonly firestore: Firestore) {}
 
-  async runTransaction<T>(fn: (tx: BookingTx) => Promise<T>): Promise<T> {
+  async runTransaction<T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> {
     return this.firestore.runTransaction(async (fTx: Transaction) => {
-      const tx: BookingTx = {
+      const tx: StudioBookingTx = {
+        incrementStudioCounter: (studioId, field) => {
+          fTx.set(this.firestore.collection('photographers').doc(studioId), { [field]: FieldValue.increment(1) }, { merge: true });
+        },
+        getStudioDayLoad: async (studioId, day) => {
+          const snap = await fTx.get(this.firestore.collection(STUDIO_DAY_LOAD_COLLECTION).doc(`${studioId}_${day}`));
+          return snap.exists ? studioDayLoadFromFirestore(studioId, day, snap.data()) : null;
+        },
+        setStudioDayLoad: async (load) => {
+          fTx.set(this.firestore.collection(STUDIO_DAY_LOAD_COLLECTION).doc(`${load.studioId}_${load.day}`), {
+            studioId: load.studioId,
+            day: load.day,
+            unassignedIds: [...load.unassignedIds],
+            assignedIds: [...load.assignedIds],
+            updatedAt: toTimestamp(load.updatedAt),
+          });
+        },
+        getMemberDays: async (studioId, day) => {
+          // Active members carry `studioId` on their public photographer document (#136 Decision 2).
+          const members = await fTx.get(
+            this.firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED),
+          );
+          if (members.empty) return [];
+          const days = await fTx.getAll(
+            ...members.docs.map((m) =>
+              this.firestore.collection(AVAILABILITY_COLLECTION).doc(m.id).collection('days').doc(day),
+            ),
+          );
+          return members.docs.map((m, i) => {
+            const data = m.data();
+            return {
+              uid: m.id,
+              verified: data.deletionPending !== true && acceptsOrders(data),
+              free: days[i]?.exists !== true,
+            };
+          });
+        },
         getBooking: async (id) => {
           const snap = await fTx.get(this.firestore.collection(BOOKINGS_COLLECTION).doc(id));
           return bookingFromFirestore(snap.id, snap.data());

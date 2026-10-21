@@ -25,7 +25,8 @@ export function bookingNotices(before: Booking | null, after: Booking | null): B
     } else if (before.status === 'requested' && after.status === 'expired') {
       out.push({ to: 'customer', kind: 'expired' });
     } else if (after.status === 'cancelled') {
-      const by = after.cancel?.by ?? 'system';
+      // A studio-fault cancel is the customer's own (#136 Decision 12): only the studio hears about it.
+      const by = after.cancel?.by === 'studio_fault' ? 'customer' : (after.cancel?.by ?? 'system');
       // The party that did not cancel hears about it; both when the system cancelled.
       if (by !== 'customer') out.push({ to: 'customer', kind: 'cancelled' });
       if (by !== 'photographer') out.push({ to: 'photographer', kind: 'cancelled' });

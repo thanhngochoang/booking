@@ -1153,7 +1153,7 @@ function directChatDocuments(now: Date, existing: readonly SeedDocument[]): Seed
     const id = chatIdFor(c.customerId, c.photographerId);
     const at0 = new Date(now.getTime() - first.agoMs);
     let chat: Chat = {
-      id, kind: c.kind, customerId: c.customerId, photographerId: c.photographerId,
+      id, kind: c.kind, customerId: c.customerId, photographerId: c.photographerId, assigneeId: null,
       bookingId: c.bookingId, bookingStatus,
       photographerRepliedAt: null, customerMessagesBeforeReply: 0,
       lastMessageAt: null, lastMessagePreview: null, lastSenderId: null,

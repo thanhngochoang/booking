@@ -11,6 +11,7 @@ import { DomainError } from './errors.js';
 import { applyRefundToPayment, isSettledPayment, type Payment, type Refund } from './escrow.js';
 import { releaseMilestone, splitMilestones, withMilestones } from './milestones.js';
 import { dispatchRefund } from './refunds.js';
+import { studioDayLoadWith } from './studio_capacity.js';
 
 export async function commitTransition(
   deps: BookingDeps,
@@ -34,17 +35,34 @@ export async function commitTransition(
     const { nextStatus } = decision;
     const startsAt = parseVnDateTime(current.day, current.start);
 
-    // 1. Calendar availability updates
+    // 1. Calendar availability updates. A studio booking is held on the studio's day load, never on the
+    // studio's own day, and its assignee's day is booked by assignBooking (#136 Decision 26).
+    const isStudio = current.isStudio === true;
     if (nextStatus === 'accepted') {
-      await tx.setAvailabilityDay(current.photographerId, current.day, {
-        state: 'booked',
-        bookingId: current.id,
-      });
+      if (!isStudio) {
+        await tx.setAvailabilityDay(current.photographerId, current.day, {
+          state: 'booked',
+          bookingId: current.id,
+        });
+      }
     } else if (['declined', 'expired', 'cancelled'].includes(nextStatus)) {
-      // Clear availability day if held by this booking
+      // Every read before the first write
       const day = await tx.getAvailabilityDay(current.photographerId, current.day);
+      const assigneeDay = isStudio && current.assigneeId
+        ? await tx.getAvailabilityDay(current.assigneeId, current.day)
+        : null;
+      const load = isStudio ? await tx.getStudioDayLoad(current.photographerId, current.day) : null;
+      // Clear availability days held by this booking
       if (day && day.bookingId === current.id) {
         await tx.deleteAvailabilityDay(current.photographerId, current.day);
+      }
+      if (current.assigneeId && assigneeDay?.bookingId === current.id) {
+        await tx.deleteAvailabilityDay(current.assigneeId, current.day);
+      }
+      if (load) {
+        await tx.setStudioDayLoad(
+          studioDayLoadWith(load, { studioId: current.photographerId, day: current.day }, current.id, null, now.toISOString()),
+        );
       }
       // Remove contact copy on cancellation/decline/expiry (Assumption 9)
       await tx.deleteContactSnapshot(current.id);

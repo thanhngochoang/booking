@@ -6,6 +6,7 @@ import {
   MAX_CANCEL_REASON_LENGTH,
 } from './booking_policy.js';
 import { DomainError } from './errors.js';
+import { studioFaultOf } from './studio_assignment.js';
 
 export type TransitionAction =
   | 'accept'
@@ -15,7 +16,9 @@ export type TransitionAction =
   | 'mark_shot'
   | 'complete' // alias of mark_shot
   | 'finish'
-  | 'expire';
+  | 'expire'
+  /** The customer's 100% cancel after a studio fault (#136 Decision 12). */
+  | 'cancel_studio_fault';
 
 export type ActorRole = 'customer' | 'photographer' | 'system';
 
@@ -39,6 +42,11 @@ export function roleOf(
   if (userId === booking.customerId) return 'customer';
   if (userId === booking.photographerId) return 'photographer';
   return null;
+}
+
+/** A studio booking reaches `upcoming` only with an assignee (#136 Decision 11). */
+function waitsForAssignee(booking: Booking): boolean {
+  return booking.isStudio === true && !booking.assigneeId;
 }
 
 /**
@@ -88,9 +96,9 @@ export function decideTransition(
         }
       }
 
-      // If within 24h of start, transition directly to upcoming
+      // If within 24h of start, transition directly to upcoming (a studio booking needs its assignee first)
       const hoursUntilStart = (startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-      const nextStatus: BookingStatus = hoursUntilStart <= 24 ? 'upcoming' : 'accepted';
+      const nextStatus: BookingStatus = hoursUntilStart <= 24 && !waitsForAssignee(booking) ? 'upcoming' : 'accepted';
       return { nextStatus, refundPercent: 0 };
     }
 
@@ -146,10 +154,28 @@ export function decideTransition(
         throw new DomainError('permission_denied');
       }
       const hoursUntilStart = (startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-      if (hoursUntilStart > 24) {
+      if (hoursUntilStart > 24 || waitsForAssignee(booking)) {
         throw new DomainError('conflict');
       }
       return { nextStatus: 'upcoming', refundPercent: 0 };
+    }
+
+    case 'cancel_studio_fault': {
+      if (!['requested', 'accepted', 'upcoming'].includes(booking.status)) {
+        throw new DomainError('conflict');
+      }
+      if (actor.role !== 'customer') {
+        throw new DomainError('permission_denied');
+      }
+      const fault = studioFaultOf(booking, now);
+      if (fault === null) {
+        throw new DomainError('not_eligible');
+      }
+      return {
+        nextStatus: 'cancelled',
+        refundPercent: 100,
+        cancelRecord: { by: 'studio_fault', reason: fault, at: now.toISOString(), refundPercent: 100 },
+      };
     }
 
     case 'cancel': {

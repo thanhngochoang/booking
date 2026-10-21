@@ -120,6 +120,58 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual(restored.addons, sampleBooking.addons);
     assert.deepEqual(restored.pickup, sampleBooking.pickup);
     assert.ok(docData.pickup.point instanceof GeoPoint);
+
+    // An individual booking writes no studio field (#136)
+    assert.equal('isStudio' in docData, false);
+    assert.equal('assigneeId' in docData, false);
+    assert.equal(restored.isStudio, undefined);
+
+    // Studio fields (#136 Decision 16)
+    const studio: Booking = {
+      ...sampleBooking,
+      cancel: { by: 'studio_fault', reason: 'change_declined', at: '2026-10-12T10:00:00.000Z', refundPercent: 100 },
+      isStudio: true,
+      assigneeId: 'm_01',
+      assigneeKind: 'member',
+      assignStatus: 'assigned',
+      assignDeadline: '2026-10-14T07:00:00.000Z',
+      assignOverdue: true,
+      assignedAt: '2026-10-14T08:00:00.000Z',
+      assignments: [
+        { assigneeId: 'm_00', assigneeKind: 'member', at: '2026-10-11T08:00:00.000Z', by: 'photog_01', reason: null, late: false },
+        { assigneeId: 'm_01', assigneeKind: 'member', at: '2026-10-14T08:00:00.000Z', by: 'photog_01', reason: 'Đổi lịch', late: true },
+      ],
+      assignRemindersSent: ['h48', 'h26'],
+      changeRequest: {
+        at: '2026-10-13T08:00:00.000Z',
+        note: 'Muốn thợ nữ',
+        respondBy: '2026-10-13T14:00:00.000Z',
+        status: 'declined',
+        declineReason: 'Kín lịch',
+        answeredAt: '2026-10-13T09:00:00.000Z',
+      },
+      studioFault: { kind: 'late_reassign', at: '2026-10-14T08:00:00.000Z' },
+      assignmentReturned: { at: '2026-10-14T07:30:00.000Z', reason: null },
+    };
+    const studioDoc = bookingToFirestore(studio);
+    assert.ok(studioDoc.assignDeadline instanceof Timestamp);
+    assert.ok(studioDoc.changeRequest.respondBy instanceof Timestamp);
+    assert.ok(studioDoc.assignments[1].at instanceof Timestamp);
+    const back = bookingFromFirestore('b_01', studioDoc);
+    assert.ok(back);
+    for (const key of [
+      'cancel', 'isStudio', 'assigneeId', 'assigneeKind', 'assignStatus', 'assignDeadline', 'assignOverdue', 'assignedAt',
+      'assignments', 'assignRemindersSent', 'changeRequest', 'studioFault', 'assignmentReturned',
+    ] as const) {
+      assert.deepEqual(back[key], studio[key], key);
+    }
+    const unassigned = bookingFromFirestore('b_01', bookingToFirestore({
+      ...studio, assigneeId: null, assigneeKind: null, assignStatus: 'unassigned', assignedAt: null,
+      assignments: [], assignRemindersSent: [], changeRequest: null, studioFault: null, assignmentReturned: null,
+    }));
+    assert.equal(unassigned?.assigneeId, null);
+    assert.equal(unassigned?.changeRequest, null);
+    assert.deepEqual(unassigned?.assignments, []);
   });
 
   it('a booking without add-ons writes neither addons nor pickup', () => {

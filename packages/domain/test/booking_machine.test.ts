@@ -262,4 +262,64 @@ describe('Task 2: Booking state machine & transitions', () => {
       );
     });
   });
+
+  describe('studio bookings (#136)', () => {
+    const studio: Booking = {
+      ...baseBooking,
+      isStudio: true,
+      assigneeId: null,
+      assigneeKind: null,
+      assignStatus: 'unassigned',
+      assignDeadline: '2026-10-14T07:00:00.000Z',
+      assignOverdue: false,
+      assignments: [],
+      changeRequest: null,
+      studioFault: null,
+    };
+    const inside24h = new Date('2026-10-14T08:00:00.000Z');
+    const customer = { id: 'cust_01', role: 'customer' as const };
+
+    it('upcoming refuses a studio booking without assignee', () => {
+      assert.throws(
+        () => decideTransition({ ...studio, status: 'accepted' }, 'upcoming', { role: 'system' }, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+      const assigned = { ...studio, status: 'accepted' as const, assigneeId: 'm1', assignStatus: 'assigned' as const };
+      assert.equal(decideTransition(assigned, 'upcoming', { role: 'system' }, inside24h).nextStatus, 'upcoming');
+    });
+
+    it('accept inside 24 h keeps an unassigned studio booking accepted', () => {
+      const requested = { ...studio, acceptDeadline: '2026-10-15T00:00:00.000Z' };
+      const actor = { id: 'photog_01', role: 'photographer' as const };
+      assert.equal(decideTransition(requested, 'accept', actor, inside24h).nextStatus, 'accepted');
+      const assigned = { ...requested, assigneeId: 'm1', assignStatus: 'assigned' as const };
+      assert.equal(decideTransition(assigned, 'accept', actor, inside24h).nextStatus, 'upcoming');
+    });
+
+    it('cancel_studio_fault: customer only, 100% with the fault kind as reason', () => {
+      const overdue = { ...studio, status: 'accepted' as const };
+      const d = decideTransition(overdue, 'cancel_studio_fault', customer, new Date('2026-10-14T07:00:00.000Z'));
+      assert.deepEqual(d, {
+        nextStatus: 'cancelled',
+        refundPercent: 100,
+        cancelRecord: { by: 'studio_fault', reason: 'assign_overdue', at: '2026-10-14T07:00:00.000Z', refundPercent: 100 },
+      });
+      assert.throws(
+        () => decideTransition(overdue, 'cancel_studio_fault', { id: 'photog_01', role: 'photographer' }, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'permission_denied',
+      );
+      assert.throws(
+        () => decideTransition(overdue, 'cancel_studio_fault', customer, new Date('2026-10-13T07:00:00.000Z')),
+        (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+      );
+      assert.throws(
+        () => decideTransition({ ...overdue, status: 'cancelled' }, 'cancel_studio_fault', customer, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+      assert.throws(
+        () => decideTransition({ ...baseBooking, status: 'accepted' }, 'cancel_studio_fault', customer, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+      );
+    });
+  });
 });

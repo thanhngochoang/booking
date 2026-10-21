@@ -242,8 +242,14 @@ export async function createPayment(
     if (booking.customerId !== input.customerId) throw new DomainError('permission_denied');
     if (booking.status !== 'draft') throw new DomainError('conflict');
 
-    const day = await tx.getAvailabilityDay(booking.photographerId, booking.day);
-    if (!day || day.state !== 'pending' || day.bookingId !== booking.id) throw new DomainError('day_taken');
+    if (booking.isStudio === true) {
+      // A studio's draft is held on its day load, not on its own day (#136 Decision 26).
+      const load = await tx.getStudioDayLoad(booking.photographerId, booking.day);
+      if (!load?.unassignedIds.includes(booking.id)) throw new DomainError('day_taken');
+    } else {
+      const day = await tx.getAvailabilityDay(booking.photographerId, booking.day);
+      if (!day || day.state !== 'pending' || day.bookingId !== booking.id) throw new DomainError('day_taken');
+    }
 
     const attempt = Math.max(prior.length, booking.checkout?.attempt ?? 0) + 1;
     if (attempt > MAX_PAYMENT_ATTEMPTS) throw new DomainError('payment_attempts_exceeded');

@@ -58,6 +58,7 @@ export async function syncBookingChat(
         kind: 'booking',
         customerId: after.customerId,
         photographerId: after.photographerId,
+        assigneeId: after.assigneeId ?? null,
         bookingId: after.id,
         bookingStatus: after.status,
         photographerRepliedAt: null,
@@ -74,6 +75,7 @@ export async function syncBookingChat(
       tx.setChat(currentChat);
       tx.incrementUnread(chatId, after.customerId, 0);
       tx.incrementUnread(chatId, after.photographerId, 0);
+      if (after.assigneeId) tx.incrementUnread(chatId, after.assigneeId, 0);
     } else {
       currentChat = chat;
     }
@@ -86,6 +88,8 @@ export async function syncBookingChat(
         kind: 'booking',
         bookingId: after.id,
         bookingStatus: after.status,
+        // A new booking of the pair starts without the previous booking's assignee.
+        assigneeId: after.assigneeId ?? null,
         readOnlyAt: null,
         updatedAt: now,
       };
@@ -119,19 +123,23 @@ export async function syncBookingChat(
       return { chatId, setBookingChatId: false };
     }
 
-    // Mirror the status on the chat (read model for the list); only when it differs.
+    // Mirror the status and the studio assignee on the chat (read model and membership); only when they differ.
+    // A reassignment removes the old assignee from the chat (#136 Decision 16).
+    const assigneeId = after.assigneeId ?? null;
     const statusChanged = currentChat.bookingStatus !== after.status;
-    const mirrored: Chat = statusChanged
-      ? { ...currentChat, bookingStatus: after.status, updatedAt: now }
+    const assigneeChanged = currentChat.assigneeId !== assigneeId;
+    const mirrored: Chat = statusChanged || assigneeChanged
+      ? { ...currentChat, bookingStatus: after.status, assigneeId, updatedAt: now }
       : currentChat;
+    if (assigneeChanged && assigneeId) tx.incrementUnread(chatId, assigneeId, 0);
 
     if (before && before.status === after.status) {
-      if (statusChanged) tx.setChat(mirrored);
+      if (statusChanged || assigneeChanged) tx.setChat(mirrored);
       return { chatId, setBookingChatId: false };
     }
 
     if (after.status === 'upcoming' || after.status === 'reviewed') {
-      if (statusChanged) tx.setChat(mirrored);
+      if (statusChanged || assigneeChanged) tx.setChat(mirrored);
       return { chatId, setBookingChatId: false };
     }
     currentChat = mirrored;

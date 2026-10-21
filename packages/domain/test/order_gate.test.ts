@@ -7,7 +7,7 @@ import { DomainError } from '../src/errors.js';
 import type { ProviderOrderGate } from '../src/booking_ports.js';
 
 /** A provider gate backed by a map: ids not in `accepting` do not accept orders. */
-const gateOf = (accepting: readonly string[] = ['p1', 'p2']): ProviderOrderGate => {
+const gateOf = (accepting: readonly string[] = ['p1', 'p2']): Pick<ProviderOrderGate, 'acceptsOrders'> => {
   const open = new Set(accepting);
   return { acceptsOrders: async (id) => open.has(id) };
 };

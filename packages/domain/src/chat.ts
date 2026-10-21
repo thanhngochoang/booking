@@ -17,6 +17,11 @@ export interface Chat {
   readonly kind: ChatKind;
   readonly customerId: string;
   readonly photographerId: string;
+  /**
+   * The attached studio booking's assignee (#136 Decision 16): a chat member who speaks for the studio side.
+   * Copied from the booking on every change; null for inquiries and individual bookings.
+   */
+  readonly assigneeId: string | null;
   readonly bookingId: string | null;
   /** BookingStatus code of bookingId, mirrored for the chat list; null for inquiries. */
   readonly bookingStatus: string | null;
@@ -66,6 +71,7 @@ export const chatIdFor = (customerId: string, photographerId: string): string =>
 export function roleInChat(chat: Chat, uid: string): 'customer' | 'photographer' | null {
   if (uid === chat.customerId) return 'customer';
   if (uid === chat.photographerId) return 'photographer';
+  if (chat.assigneeId !== null && uid === chat.assigneeId) return 'photographer';
   return null;
 }
 

@@ -86,7 +86,7 @@ describe('fake payment gate', () => {
       services: { getService: async () => null },
       addons: { listAddons: async () => [] },
       contacts: { get: async () => null },
-      providers: { acceptsOrders: async () => true },
+      providers: { acceptsOrders: async () => true, orderProfile: async () => ({ acceptsOrders: true, providerType: 'individual' }) },
       blocks: new FakeBlockGate(),
       gateway: new FakePaymentGateway(),
       cipher: TEST_CIPHER,

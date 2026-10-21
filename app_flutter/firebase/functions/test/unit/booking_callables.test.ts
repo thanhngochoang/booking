@@ -55,7 +55,10 @@ function createTestDeps(): {
     contacts: {
       get: async (uid) => contactsMap.get(uid) ?? null,
     },
-    providers: { acceptsOrders: async (id) => id !== 'closed1' },
+    providers: {
+      acceptsOrders: async (id) => id !== 'closed1',
+      orderProfile: async (id) => ({ acceptsOrders: id !== 'closed1', providerType: 'individual' }),
+    },
     blocks,
     gateway,
     cipher: TEST_CIPHER,

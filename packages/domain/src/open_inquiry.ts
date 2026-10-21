@@ -59,6 +59,7 @@ export async function openInquiry(
       kind: 'inquiry',
       customerId: input.customerId,
       photographerId: input.photographerId,
+      assigneeId: null,
       bookingId: null,
       bookingStatus: null,
       photographerRepliedAt: null,

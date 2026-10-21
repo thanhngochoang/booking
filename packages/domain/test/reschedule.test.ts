@@ -48,6 +48,7 @@ describe('reschedule proposal and answer (Task 3)', () => {
       kind: 'booking',
       customerId: booking.customerId,
       photographerId: booking.photographerId,
+      assigneeId: null,
       bookingId: booking.id,
       bookingStatus: booking.status,
       photographerRepliedAt: new Date('2026-10-01T12:00:00.000Z'),

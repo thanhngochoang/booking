@@ -32,6 +32,11 @@ describe('bookingNotices', () => {
     ]);
   });
 
+  it('a studio_fault cancel is the customer\'s: only the studio hears about it (#136)', () => {
+    const cancelled = b({ status: 'cancelled', cancel: { by: 'studio_fault', reason: 'assign_overdue', at: 'x', refundPercent: 100 } });
+    assert.deepEqual(bookingNotices(b({ status: 'accepted' }), cancelled), [{ to: 'photographer', kind: 'cancelled' }]);
+  });
+
   it('refund once when depositRefundedAt appears', () => {
     const was = b({ status: 'declined' });
     const now = b({ status: 'declined', depositRefundedAt: '2026-10-10T10:00:00.000Z', depositRefunded: 300000 });
