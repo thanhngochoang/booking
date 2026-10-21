@@ -3515,5 +3515,7 @@
   "reviewGroupAssigneeA11y": "Đánh giá thợ {name}",
   "@reviewGroupAssigneeA11y": {"placeholders": {"name": {"type": "String"}}},
   "reviewGroupStudioA11y": "Đánh giá {studio}",
-  "@reviewGroupStudioA11y": {"placeholders": {"studio": {"type": "String"}}}
+  "@reviewGroupStudioA11y": {"placeholders": {"studio": {"type": "String"}}},
+  "reviewNoAssigneeTitle": "Chưa đánh giá được",
+  "reviewNoAssigneeBody": "Studio chưa giao thợ chụp cho buổi này."
 }

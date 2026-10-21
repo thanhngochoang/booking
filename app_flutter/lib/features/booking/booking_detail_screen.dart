@@ -500,6 +500,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final l10n = context.l10n;
     final busy = _busy != null;
     bool has(DetailAction a) => actions.contains(a);
+    final primaries = primaryActions(b, actions);
     final out = <Widget>[];
     void add(Widget w) {
       if (out.isNotEmpty) out.add(const SizedBox(height: AppSpace.s3));
@@ -541,11 +542,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       // A customer's studio booking: "Nhắn studio", the screen's one
       // primary unless another action already is (mock S05.02-studio).
       final studioMessage = role == BookingRole.customer && b.studio != null;
-      final otherPrimary =
-          has(DetailAction.bookAgain) ||
-          has(DetailAction.review) ||
-          (has(DetailAction.viewDelivery) &&
-              b.status != BookingStatus.approved);
+      final otherPrimary = primaries.isNotEmpty;
       final message = has(DetailAction.message)
           ? Expanded(
               child: studioMessage && !otherPrimary
@@ -693,10 +690,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       );
     }
     if (has(DetailAction.viewDelivery)) {
-      final isOutline = b.status == BookingStatus.approved ||
-          has(DetailAction.review);
       add(
-        isOutline
+        !primaries.contains(DetailAction.viewDelivery)
             ? AppButton.outline(
                 l10n.detailViewDelivery,
                 onPressed: () => run(DetailAction.viewDelivery),

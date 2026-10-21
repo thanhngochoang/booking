@@ -8,6 +8,10 @@ BookingSummary bookingSummaryOf(
   required String photographerName,
   String? thumbUrl,
   String? statusLabel,
+
+  /// Replaces the place line (S05.05-studio puts "{day} · thợ {name}"
+  /// there).
+  String? placeName,
 }) {
   return BookingSummary(
     photographerName: photographerName,
@@ -16,7 +20,7 @@ BookingSummary bookingSummaryOf(
     day: b.day,
     start: b.start,
     end: b.end,
-    placeName: b.place.name,
+    placeName: placeName ?? b.place.name,
     status: b.status,
     statusLabel: statusLabel,
   );

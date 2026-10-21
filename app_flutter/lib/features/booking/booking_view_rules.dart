@@ -104,7 +104,10 @@ List<DetailAction> detailActions(
       out.add(DetailAction.viewDelivery);
     }
     if (_isStopped(s)) out.add(DetailAction.bookAgain);
-    if (BookingRules.canReview(b) && features.review) {
+    // A studio booking is reviewed with who shot it: none, no review.
+    if (BookingRules.canReview(b) &&
+        features.review &&
+        (b.studio == null || b.studio!.assigneeId != null)) {
       out.add(DetailAction.review);
     }
     if (BookingRules.isReviewed(b) && features.review) {
@@ -162,6 +165,27 @@ List<DetailAction> detailActions(
   }
   return out;
 }
+
+/// Which of [actions] S05.02 draws as its gradient (primary) button; the
+/// screen keeps one. "Xem ảnh bàn giao" is primary until the delivery is
+/// approved or a review is due; a customer's "Nhắn studio" is primary only
+/// when none of these is on screen.
+Set<DetailAction> primaryActions(Booking b, List<DetailAction> actions) => {
+  for (final a in actions)
+    if (switch (a) {
+      DetailAction.accept ||
+      DetailAction.complete ||
+      DetailAction.markShot ||
+      DetailAction.deliver ||
+      DetailAction.bookAgain ||
+      DetailAction.review => true,
+      DetailAction.viewDelivery =>
+        b.status != BookingStatus.approved &&
+            !actions.contains(DetailAction.review),
+      _ => false,
+    })
+      a,
+};
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -654,6 +678,8 @@ enum StudioBlockState {
   changePending,
 
   /// Nobody past the deadline: "Quá hạn", the warning and the 100% cancel.
+  /// Once the shoot has started the right is gone: the warning keeps its
+  /// title only, without the refund line or the cancel.
   overdue,
 
   /// The card, then the studio's refusal and the 100% cancel.

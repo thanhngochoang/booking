@@ -13737,6 +13737,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đánh giá {studio}'**
   String reviewGroupStudioA11y(String studio);
+
+  /// No description provided for @reviewNoAssigneeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đánh giá được'**
+  String get reviewNoAssigneeTitle;
+
+  /// No description provided for @reviewNoAssigneeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa giao thợ chụp cho buổi này.'**
+  String get reviewNoAssigneeBody;
 }
 
 class _AppLocalizationsDelegate

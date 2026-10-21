@@ -74,12 +74,13 @@ class _World {
 Future<_World> _pump(
   WidgetTester tester, {
   bool studio = true,
+  Booking? booking,
   void Function(FakeReviewRepository reviews)? seed,
   Size viewSize = const Size(390, 1600),
   double textScale = 1.0,
 }) async {
   final bookings = RecordingBookingRepository()
-    ..seedBooking(_booking(studio: studio));
+    ..seedBooking(booking ?? _booking(studio: studio));
   final reviews = FakeReviewRepository(currentUserId: 'c1')
     ..bookingRepository = bookings;
   seed?.call(reviews);
@@ -322,6 +323,28 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a studio booking nobody shot explains why it cannot be '
+      'reviewed', (tester) async {
+    await _pump(
+      tester,
+      booking: _booking().copyWith(
+        studio: _booking().studio!.copyWith(
+          assigneeId: null,
+          assigneeKind: null,
+          assignStatus: StudioAssignStatus.unassigned,
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('review-no-assignee')), findsOneWidget);
+    expect(find.text('Chưa đánh giá được'), findsOneWidget);
+    expect(
+      find.text('Studio chưa giao thợ chụp cho buổi này.'),
+      findsOneWidget,
+    );
+    expect(find.byType(VerdictPad), findsNothing);
   });
 
   testWidgets('an individual booking keeps the single block', (tester) async {

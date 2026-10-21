@@ -22,6 +22,9 @@ final _weekBefore = DateTime.utc(2026, 10, 3, 10);
 /// Sunday 11/10 16:00 Vietnam: past the deadline, before the shoot.
 final _afterDeadline = DateTime.utc(2026, 10, 11, 9);
 
+/// Monday 12/10 16:00 Vietnam: the shoot has started.
+final _afterStart = DateTime.utc(2026, 10, 12, 9);
+
 const _studio = PhotographerProfile(
   summary: PhotographerSummary(
     id: 'cuc',
@@ -60,6 +63,7 @@ Booking _booking({
   StudioChangeRequest? change,
   StudioFault? fault,
   List<String> reminders = const [],
+  DateTime? createdAt,
 }) =>
     makeTestBooking(
       id: 'b1',
@@ -75,6 +79,7 @@ Booking _booking({
         durationMinutes: 240,
       ),
       place: const BookingPlace(name: 'Nhà hàng Riverside, Quận 7'),
+      createdAt: createdAt,
     ).copyWith(
       chatId: 'chat1',
       studio: StudioBookingInfo(
@@ -319,6 +324,75 @@ void main() {
     expect(h.bookings.transitions.single.action, 'cancel_studio_fault');
     expect(h.bookings.bookings['b1']!.status, BookingStatus.cancelled);
     expect(find.text('Đã huỷ. Hoàn 8.000.000₫ trong 3–5 ngày'), findsOneWidget);
+  });
+
+  testWidgets('unassigned past the start: Quá hạn and the title stay, the '
+      '100% line and the cancel are gone', (tester) async {
+    await _pump(
+      tester,
+      _booking(reminders: const ['h48', 'h26']),
+      now: _afterStart,
+    );
+
+    expect(find.text('Quá hạn'), findsOneWidget);
+    expect(
+      find.text('Studio chưa báo thợ chụp đúng hạn (trước 15:30 CN 11/10)'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Bạn có thể chờ thêm hoặc huỷ và được hoàn 100%.'),
+      findsNothing,
+    );
+    expect(_cancelFull, findsNothing);
+  });
+
+  testWidgets('a booking made after the first reminder time shows no '
+      'reminded line', (tester) async {
+    // Made Saturday 10/10 22:00 Vietnam, after 15:30 that day: both
+    // reminders went out together.
+    await _pump(
+      tester,
+      _booking(
+        reminders: const ['h48', 'h26'],
+        createdAt: DateTime.utc(2026, 10, 10, 15),
+      ),
+      now: _afterDeadline,
+    );
+
+    expect(find.text('Quá hạn'), findsOneWidget);
+    expect(find.byKey(const Key('assignee-reminded')), findsNothing);
+  });
+
+  testWidgets('Nhắn studio turns outline when another primary is on screen; '
+      'an unassigned studio booking offers no review', (tester) async {
+    const withReview = BookingFeatures(
+      chat: true,
+      reschedule: false,
+      review: true,
+    );
+    await _pump(
+      tester,
+      _booking(status: BookingStatus.completed, assignee: 'minh'),
+      features: withReview,
+    );
+    final primaries = [
+      for (final b in tester.widgetList<AppButton>(
+        find.ancestor(
+          of: find.byType(CtaSurface),
+          matching: find.byType(AppButton),
+        ),
+      ))
+        b.label,
+    ];
+    expect(primaries, ['Đánh giá']);
+    expect(find.text('Nhắn studio'), findsOneWidget);
+
+    await _pump(
+      tester,
+      _booking(status: BookingStatus.completed),
+      features: withReview,
+    );
+    expect(find.text('Đánh giá'), findsNothing);
   });
 
   testWidgets('the footer reads Nhắn studio for studio bookings', (

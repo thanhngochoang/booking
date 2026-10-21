@@ -258,8 +258,6 @@ class ReviewController extends Notifier<ReviewState> {
     );
   }
 
-  void resetStudio() => setStudioVerdict(null, 0);
-
   void toggleStudioReason(StudioReviewReason reason) {
     if (state.phase == ReviewPhase.submitting) return;
     final next = {...state.studioReasons};

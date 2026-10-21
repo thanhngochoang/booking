@@ -213,11 +213,11 @@ tile('stattile', 'StatTile', 'StatTile({required String value, required String l
      '<div class="row" style="gap:8px"><div class="kpi"><b>12,4M</b><span>Tháng này</span></div><div class="kpi"><b>3,2M</b><span>Đang giữ</span></div><div class="kpi"><b>5</b><span>Buổi sắp tới</span></div></div>',
      f'<div class="row" style="gap:8px">' + ''.join(f'<div class="kpi" style="gap:6px">{sk("70%","20px")}{sk("80%","9px")}</div>' for _ in range(3)) + '</div>')
 tile('verdictpad', 'VerdictPad · VerdictLevel',
-     'VerdictPad({required VerdictKind? kind, required int hits, required onChanged(kind, hits), compact = false, enabled = true}) · VerdictLevel({kind, hits, label, onReset}) · verdictLevelLabel(l10n, kind, hits)',
+     'VerdictPad({required VerdictKind? kind, required int hits, required onChanged(kind, hits), compact = false, enabled = true, String? subject}) · VerdictLevel({kind, hits, label, onReset}) · verdictLevelLabel(l10n, kind, hits)',
      'S05.05 (khối thợ và khối studio dùng compact)',
      '<div class="vpad" role="group" aria-label="Đánh giá buổi chụp"><div class="vbtn t on" role="slider" aria-label="Ném cà chua, 7 trên 10"><span class="hit">×7</span><svg><use href="#i-tomato"/></svg>Hài lòng</div><div class="vbtn b" role="slider" aria-label="Ném gạch, 0 trên 10"><svg><use href="#i-brick"/></svg>Chưa hài lòng</div></div>'
      '<div class="vlvl"><div class="sec"><b style="font-family:var(--body);font-size:13px">Rất hài lòng</b><span>Làm lại</span></div><div class="vtrack"><i style="width:91%"></i></div><span class="meta x">Chạm tiếp để tăng mức độ, tối đa 10</span></div>'
-     '<div class="vpad cp"><div class="vbtn t" role="slider" aria-label="Ném cà chua, 0 trên 10"><svg><use href="#i-tomato"/></svg>Hài lòng</div><div class="vbtn b on" role="slider" aria-label="Ném gạch, 2 trên 10"><span class="hit">×2</span><svg><use href="#i-brick"/></svg>Chưa hài lòng</div></div>'
+     '<div class="vpad cp"><div class="vbtn t" role="slider" aria-label="Ném cà chua cho studio, 0 trên 10"><svg><use href="#i-tomato"/></svg>Hài lòng</div><div class="vbtn b on" role="slider" aria-label="Ném gạch cho studio, 2 trên 10"><span class="hit">×2</span><svg><use href="#i-brick"/></svg>Chưa hài lòng</div></div>'
      '<div class="vlvl"><div class="sec"><b style="font-family:var(--body);font-size:13px">Hơi tiếc</b><span>Làm lại</span></div><div class="vtrack b"><i style="width:58%"></i></div></div>',
      '<div class="meta">Không có skeleton: pad là điều khiển, không tải dữ liệu. Chạm: phe mới ×1, chạm tiếp +1, tối đa 10; đổi phe về ×1. Một cú nảy mỗi lần chạm, không hiệu ứng lặp.</div>')
 tile('verdictbadge', 'VerdictBadge · TomatoRatioBar · MetaLine · VerdictIcon',

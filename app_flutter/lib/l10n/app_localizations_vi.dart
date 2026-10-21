@@ -7960,4 +7960,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String reviewGroupStudioA11y(String studio) {
     return 'Đánh giá $studio';
   }
+
+  @override
+  String get reviewNoAssigneeTitle => 'Chưa đánh giá được';
+
+  @override
+  String get reviewNoAssigneeBody => 'Studio chưa giao thợ chụp cho buổi này.';
 }

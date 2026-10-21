@@ -990,6 +990,44 @@ void main() {
         );
       });
 
+      test('an unassigned studio booking is not offered a review', () {
+        final unassigned = studio(BookingStatus.completed);
+        final assigned = studio(BookingStatus.completed, assignee: 'minh');
+        expect(
+          detailActions(unassigned, BookingRole.customer, afterStart, _on),
+          isNot(contains(DetailAction.review)),
+        );
+        expect(
+          detailActions(assigned, BookingRole.customer, afterStart, _on),
+          contains(DetailAction.review),
+        );
+      });
+
+      test('primaryActions: view delivery gives way to a review, message '
+          'is never primary here', () {
+        final b = studio(BookingStatus.approved, assignee: 'minh');
+        expect(
+          primaryActions(b, const [
+            DetailAction.message,
+            DetailAction.viewDelivery,
+            DetailAction.review,
+          ]),
+          {DetailAction.review},
+        );
+        final delivered = studio(BookingStatus.delivered, assignee: 'minh');
+        expect(
+          primaryActions(delivered, const [
+            DetailAction.message,
+            DetailAction.viewDelivery,
+          ]),
+          {DetailAction.viewDelivery},
+        );
+        expect(
+          primaryActions(b, const [DetailAction.message, DetailAction.contact]),
+          isEmpty,
+        );
+      });
+
       test('a change can be asked once, while assigned and before the '
           'start', () {
         final assigned = studio(BookingStatus.accepted, assignee: 'minh');

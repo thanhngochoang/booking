@@ -8,6 +8,8 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/studio/studio_common.dart';
+import 'package:photobooking/features/verification/widgets/verify_parts.dart'
+    show VerifyAlert;
 
 /// The block under the booking card of a studio booking (mocks
 /// `#S05.02-studio`, `-late`, `-change`): the waiting line, the member card
@@ -58,10 +60,13 @@ class StudioAssigneeBlock extends ConsumerWidget {
       },
     };
 
-    final (String, String)? alert = switch (state) {
+    // The overdue promise ("… huỷ và được hoàn 100%.") ends with the right
+    // at the start; the title alone stays true after it.
+    final rightLasts = studioFaultOf(booking, now) != null;
+    final (String, String?)? alert = switch (state) {
       StudioBlockState.overdue => (
         l.assigneeOverdueTitle(deadline),
-        l.assigneeOverdueBody,
+        rightLasts ? l.assigneeOverdueBody : null,
       ),
       StudioBlockState.changeDeclined => (
         l.assigneeChangeDeclinedTitle,
@@ -83,10 +88,17 @@ class StudioAssigneeBlock extends ConsumerWidget {
         state != StudioBlockState.waiting &&
         state != StudioBlockState.overdue &&
         assigneeId != null;
+    // The two reminders go out 24 h and 2 h before the deadline; a booking
+    // made later than the first one gets both at once, so the times would
+    // be wrong: no line then.
+    final firstReminder = studio.assignDeadline.subtract(
+      const Duration(hours: 24),
+    );
     final reminded =
         state == StudioBlockState.overdue &&
         studio.remindersSent.contains('h48') &&
         studio.remindersSent.contains('h26') &&
+        !firstReminder.isBefore(booking.createdAt) &&
         studioName.isNotEmpty;
 
     return Column(
@@ -162,7 +174,12 @@ class StudioAssigneeBlock extends ConsumerWidget {
           ),
         if (alert case (final title, final body)) ...[
           const SizedBox(height: AppSpace.s2),
-          _StudioAlert(title: title, body: body),
+          KeyedSubtree(
+            key: const Key('assignee-alert'),
+            child: body == null
+                ? VerifyAlert(title)
+                : VerifyAlert(body, title: title),
+          ),
         ],
         if (canCancel)
           Align(
@@ -179,9 +196,7 @@ class StudioAssigneeBlock extends ConsumerWidget {
           Text(
             l.assigneeReminded(
               studioName,
-              studioDeadlineText(
-                studio.assignDeadline.subtract(const Duration(hours: 24)),
-              ),
+              studioDeadlineText(firstReminder),
               studioDeadlineText(
                 studio.assignDeadline.subtract(const Duration(hours: 2)),
               ),
@@ -206,69 +221,6 @@ class StudioAssigneeBlock extends ConsumerWidget {
       verified: s?.verified ?? false,
       tomatoPct: s != null && s.hasTomatoPct ? s.tomatoPct : null,
       shoots: s?.completedCount ?? 0,
-    );
-  }
-}
-
-/// Mock `.warnc` (role alert): a red-outlined card, bold [title] over
-/// [body].
-class _StudioAlert extends StatelessWidget {
-  const _StudioAlert({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    final bad = dark ? AppColorsDark.destructive : AppColors.destructive;
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      child: DecoratedBox(
-        key: const Key('assignee-alert'),
-        decoration: BoxDecoration(
-          color: bad.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: bad.withValues(alpha: 0.55)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s3,
-            vertical: AppSpace.s2h,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppIcon(AppIcons.info, size: AppIconSize.sm, color: bad),
-              const SizedBox(width: AppSpace.s2),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      body,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: dark
-                            ? AppColorsDark.foregroundSecondary
-                            : AppColors.foregroundSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
