@@ -9508,12 +9508,6 @@ abstract class AppLocalizations {
   /// **'Không có điểm chụp nào khớp.'**
   String get eventSpotNoMatch;
 
-  /// No description provided for @eventSpotLoadError.
-  ///
-  /// In vi, this message translates to:
-  /// **'Không tải được danh sách điểm chụp.'**
-  String get eventSpotLoadError;
-
   /// No description provided for @eventSpotRequired.
   ///
   /// In vi, this message translates to:

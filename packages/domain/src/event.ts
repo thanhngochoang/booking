@@ -96,6 +96,8 @@ export interface EventRecord {
   readonly hashtagLocked: boolean;
   /** S29 / S12.01: the photo spot the event is tagged with; absent or null = none (old events). */
   readonly spotId?: string | null;
+  /** The organizer made the S12.01 choice (a spot or none); absent = false (old events). */
+  readonly spotDecided?: boolean;
   readonly status: EventStatus;
   readonly registeredCount: number;
   readonly heldCount: number;

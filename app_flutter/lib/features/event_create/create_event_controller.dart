@@ -416,12 +416,20 @@ class CreateEventController extends Notifier<CreateEventState> {
   /// S12.01 "Điểm chụp": [spot] is the chosen spot, null is "Không thuộc điểm
   /// chụp nào". A spot also fills an empty place with itself (the organizer
   /// can edit it inside the spot's radius).
-  void setSpot(SpotEntry? spot) {
+  ///
+  /// [previous] is the spot that was chosen before: a place that still equals
+  /// its auto-fill moves to the new spot, a place the organizer typed stays.
+  void setSpot(SpotEntry? spot, {SpotEntry? previous}) {
     var form = state.form.copyWith(spotId: spot?.spotId);
-    if (spot != null &&
-        form.placeName.trim().isEmpty &&
-        form.lat == null &&
-        form.lng == null) {
+    final empty =
+        form.placeName.trim().isEmpty && form.lat == null && form.lng == null;
+    final autoFilled =
+        previous != null &&
+        form.placeName == previous.name &&
+        form.lat == previous.lat &&
+        form.lng == previous.lng &&
+        form.areaId == null;
+    if (spot != null && (empty || autoFilled)) {
       form = form.copyWith(
         placeName: spot.name,
         areaId: null,
@@ -436,6 +444,7 @@ class CreateEventController extends Notifier<CreateEventState> {
   void setPlaceText({String? name, String? meetingPoint}) => _edit(
     state.form.copyWith(placeName: name, meetingPoint: meetingPoint),
     field: EventField.place,
+    clearServer: {EventField.spot},
   );
 
   /// Picks an area: its centre becomes the point.
@@ -443,6 +452,7 @@ class CreateEventController extends Notifier<CreateEventState> {
       _edit(
         state.form.copyWith(areaId: areaId, lat: lat, lng: lng),
         field: EventField.place,
+        clearServer: {EventField.spot},
       );
 
   /// "Dùng vị trí hiện tại": the device position replaces the point (the
@@ -450,6 +460,7 @@ class CreateEventController extends Notifier<CreateEventState> {
   void useDevicePoint({required double lat, required double lng}) => _edit(
     state.form.copyWith(lat: lat, lng: lng),
     field: EventField.place,
+    clearServer: {EventField.spot},
   );
 
   void goToStep(int step) {

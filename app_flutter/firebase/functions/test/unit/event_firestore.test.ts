@@ -38,6 +38,7 @@ const event = (over: Partial<EventRecord> = {}): EventRecord => ({
   hashtagKey: 'photowalk1012',
   hashtagLocked: false,
   spotId: 'spot-ho-guom',
+  spotDecided: true,
   status: 'draft',
   registeredCount: 0,
   heldCount: 0,
@@ -108,7 +109,17 @@ describe('Firestore mapping for events', () => {
   it('an event without spotId reads null', () => {
     const doc = eventToFirestore(event());
     delete doc.spotId;
-    assert.equal(eventFromFirestore('ev1', doc).spotId, null);
+    delete doc.spotDecided;
+    const back = eventFromFirestore('ev1', doc);
+    assert.equal(back.spotId, null);
+    assert.equal(back.spotDecided, false);
+  });
+
+  it('a decided "none" round-trips as decided with spotId null', () => {
+    const e = event({ spotId: null, spotDecided: true });
+    const back = eventFromFirestore('ev1', eventToFirestore(e));
+    assert.equal(back.spotId, null);
+    assert.equal(back.spotDecided, true);
   });
 
   it('soonNoticeAt round-trips; absent reads null', () => {

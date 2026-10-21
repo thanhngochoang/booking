@@ -5415,9 +5415,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get eventSpotNoMatch => 'Không có điểm chụp nào khớp.';
 
   @override
-  String get eventSpotLoadError => 'Không tải được danh sách điểm chụp.';
-
-  @override
   String get eventSpotRequired =>
       'Chọn một điểm chụp, hoặc “Không thuộc điểm chụp nào”';
 

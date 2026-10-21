@@ -173,13 +173,18 @@ void main() {
       expect(tagged.spotId, 'ho-tay');
       expect(tagged.spotDecided, isTrue);
 
-      // The key is there with null: decided for a published event, not for a draft.
-      await seed('sp2', {...eventDoc(), 'spotId': null});
+      // "None" is decided only when the server stored the decision.
+      await seed('sp2', {...eventDoc(), 'spotId': null, 'spotDecided': true});
       final none = (await repo.watchEvent('sp2').first)!;
       expect(none.spotId, isNull);
       expect(none.spotDecided, isTrue);
-      await seed('sp3', {...eventDoc(status: 'draft'), 'spotId': null});
-      expect((await repo.watchEvent('sp3').first)!.spotDecided, isFalse);
+      await seed(
+        'sp3',
+        {...eventDoc(status: 'draft'), 'spotId': null, 'spotDecided': true},
+      );
+      expect((await repo.watchEvent('sp3').first)!.spotDecided, isTrue);
+      await seed('sp5', {...eventDoc(status: 'draft'), 'spotId': null});
+      expect((await repo.watchEvent('sp5').first)!.spotDecided, isFalse);
 
       // An event made before S29 has no key.
       await seed('sp4', eventDoc());

@@ -32,6 +32,16 @@ describe('event spot tag (S12.01, Decision 14)', () => {
     assert.equal(w.store.events.get(ID)?.spotId, null);
   });
 
+  test('spotDecided is kept once the organizer chose "none", and not set before', async () => {
+    const w = world();
+    await saveEventDraft(w.deps, ph1, rawEvent(ID, 'ph1', {}));
+    assert.equal(w.store.events.get(ID)?.spotDecided, false);
+    await saveEventDraft(w.deps, ph1, { eventId: ID, spotId: null });
+    assert.equal(w.store.events.get(ID)?.spotDecided, true);
+    await saveEventDraft(w.deps, ph1, { eventId: ID, title: 'Đổi tên' });
+    assert.equal(w.store.events.get(ID)?.spotDecided, true);
+  });
+
   test('publish with an active spot covering the location stores spotId', async () => {
     const w = world();
     const id = await publishedEvent(w, { spotId: 'hoguom' });

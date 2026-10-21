@@ -153,6 +153,21 @@ void main() {
     expect(e.publisher.published.single.spotId, isNull);
   });
 
+  testWidgets('a failed publish drops the tag so the retry goes without it', (
+    tester,
+  ) async {
+    final e = _Env();
+    await e.open(tester);
+    await e.place(tester, 'Hồ Tây');
+    e.publisher.failWith = Exception('rules');
+    await e.publish(tester);
+    expect(e.publisher.published, isEmpty);
+    expect(_chip, findsNothing);
+    e.publisher.failWith = null;
+    await tester.runAsync(() => e.ctl(tester).publish());
+    expect(e.publisher.published.single.spotId, isNull);
+  });
+
   testWidgets('publishing with the chip sends spotId', (tester) async {
     final e = _Env();
     await e.open(tester);

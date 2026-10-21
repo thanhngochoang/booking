@@ -104,11 +104,9 @@ EventDetail? eventDetailFromFirestore(String id, Map<String, dynamic>? d) {
     priceSet: d['price'] is num,
     capacitySet: d['capacity'] is num,
     spotId: _str(d['spotId']),
-    // The server writes `spotId: null` on every save; a draft only counts as
-    // decided once a spot is chosen, a published event once it carries the key.
-    spotDecided:
-        _str(d['spotId']) != null ||
-        (d.containsKey('spotId') && summary.status != EventStatus.draft),
+    // The server stores the S12.01 decision itself (`spotDecided`), so a
+    // chosen "Không thuộc điểm chụp nào" survives a resume.
+    spotDecided: d['spotDecided'] == true || _str(d['spotId']) != null,
   );
 }
 

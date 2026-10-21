@@ -359,14 +359,15 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
     if (ok) {
       _scrollTop();
     } else {
-      final failure = ref
-          .read(createEventControllerProvider(widget.args))
-          .failure;
-      if (failure == CreateEventFailure.none) {
+      final s = ref.read(createEventControllerProvider(widget.args));
+      if (s.failure != CreateEventFailure.none) {
+        _say(_failureText(s.failure));
+      } else if (!s.form.spotDecided) {
         // The spot choice is missing: its error shows under the field.
         _jumpTo(EventField.spot);
-      } else {
-        _say(_failureText(failure));
+      } else if (s.serverErrors.isNotEmpty) {
+        // The server refused one field (day, hashtag, spot): go to it.
+        _jumpTo(s.serverErrors.keys.first);
       }
     }
   }
@@ -674,7 +675,7 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
           error: errorOf(EventField.spot),
           focusNode: _nodes[EventField.spot]!,
           enabled: !busy,
-          onChanged: ctl.setSpot,
+          onChanged: (spot, previous) => ctl.setSpot(spot, previous: previous),
         ),
       ),
       const SizedBox(height: AppSpace.s3),
@@ -1185,7 +1186,6 @@ class _SaveDraftSheet extends StatelessWidget {
   }
 }
 
-/// Mock `.field .e`: a short error under a field.
 /// "Điểm chụp" of step 1: the directory of active spots (one cached read,
 /// Decision 3), ordered for this event: those that reach the place first,
 /// else those near the organizer's device position, else the hottest.
@@ -1208,7 +1208,7 @@ class _SpotSection extends ConsumerWidget {
   final String? error;
   final FocusNode focusNode;
   final bool enabled;
-  final ValueChanged<SpotEntry?> onChanged;
+  final void Function(SpotEntry? spot, SpotEntry? previous) onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1239,6 +1239,7 @@ class _SpotSection extends ConsumerWidget {
           enabled: enabled,
           onChanged: (id) => onChanged(
             id == null ? null : ordered.firstWhere((s) => s.spotId == id),
+            ordered.where((s) => s.spotId == value).firstOrNull,
           ),
         );
       },
@@ -1246,6 +1247,7 @@ class _SpotSection extends ConsumerWidget {
   }
 }
 
+/// Mock `.field .e`: a short error under a field.
 class _FieldError extends StatelessWidget {
   const _FieldError(this.text);
   final String text;

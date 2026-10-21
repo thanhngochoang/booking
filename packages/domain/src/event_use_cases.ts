@@ -186,6 +186,7 @@ export async function saveEventDraft(
       startAt: f.startAt, endAt: f.endAt, dayKey: f.dayKey,
       location: f.location, capacity: f.capacity, price: f.price,
       registrationDeadline: f.registrationDeadline, faq: f.faq, spotId: f.spotId,
+      spotDecided: f.touched.has('spotId') || (existing?.spotDecided ?? false),
       hashtag: plan.tag, hashtagKey: plan.key, updatedAt: now,
     };
     writeHashtag(tx, plan, eventId, existing === null);
@@ -311,6 +312,7 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
       startAt: f.startAt, endAt: f.endAt, dayKey: f.dayKey,
       location: f.location, capacity: f.capacity, price: f.price,
       registrationDeadline: f.registrationDeadline, faq: f.faq, spotId: f.spotId,
+      spotDecided: f.touched.has('spotId') || (ev.spotDecided ?? false),
       hashtag: plan.tag, hashtagKey: plan.key,
       version: ev.version + 1, updatedAt: now,
     };

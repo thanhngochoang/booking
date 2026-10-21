@@ -588,6 +588,12 @@ class PostComposerController extends Notifier<ComposerState> {
       if (ref.mounted && gen == _gen) {
         _publishAttempted = true;
         state = state.copyWith(publishing: false);
+        // The rules refuse a tag whose spot was archived meanwhile, and the
+        // app cannot tell that from a network failure: drop the tag (the chip
+        // goes away) so the retry publishes the post without it.
+        if (spotId != null) {
+          state = state.withSpotOff(spotId);
+        }
       }
       return const PostPublishResult(PublishOutcome.publishFailed);
     }

@@ -2489,7 +2489,6 @@
   "@eventSpotPick": {"placeholders": {"name": {"type": "String"}}},
   "eventSpotPickNone": "Không gắn điểm",
   "eventSpotNoMatch": "Không có điểm chụp nào khớp.",
-  "eventSpotLoadError": "Không tải được danh sách điểm chụp.",
   "eventSpotRequired": "Chọn một điểm chụp, hoặc “Không thuộc điểm chụp nào”",
   "eventSpotFar": "Địa điểm nằm ngoài điểm chụp đã chọn. Sửa địa điểm hoặc chọn điểm khác.",
   "eventSpotArchived": "Điểm chụp này không còn nhận lịch mới. Chọn điểm khác.",

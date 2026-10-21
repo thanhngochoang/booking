@@ -196,6 +196,72 @@ void main() {
     expect(_state(tester).form.spotId, 'ho-tay');
   });
 
+  testWidgets('switching spot A → B moves the auto-filled place', (
+    tester,
+  ) async {
+    final w = _world();
+    await _open(tester, w);
+    await _stepOneWithoutSpot(tester);
+    await _pickSpot(tester, 'spot-option-cau-dat');
+    expect(_state(tester).form.placeName, 'Đồi chè Cầu Đất');
+    await _pickSpot(tester, 'spot-option-ho-tay');
+    expect(_state(tester).form.spotId, 'ho-tay');
+    expect(_state(tester).form.placeName, 'Hồ Tây');
+    expect(_state(tester).form.lat, 21.05);
+    // "Không thuộc điểm chụp nào" leaves the place alone.
+    await _pickSpot(tester, 'spot-option-none');
+    expect(_state(tester).form.placeName, 'Hồ Tây');
+  });
+
+  testWidgets('a place the organizer typed is kept when the spot changes', (
+    tester,
+  ) async {
+    final w = _world();
+    await _open(tester, w);
+    await _stepOneWithoutSpot(tester);
+    await _pickSpot(tester, 'spot-option-cau-dat');
+    _ctl(tester).setPlaceText(name: 'Đồi chè Cầu Đất, cổng phụ');
+    await settle(tester);
+    await _pickSpot(tester, 'spot-option-ho-tay');
+    expect(_state(tester).form.placeName, 'Đồi chè Cầu Đất, cổng phụ');
+    expect(_state(tester).form.lat, 11.85);
+  });
+
+  testWidgets('editing the place clears a stale "far" error', (tester) async {
+    final w = _world();
+    await _open(tester, w);
+    await _stepOneWithoutSpot(tester);
+    await _pickSpot(tester, 'spot-option-ho-tay');
+    w.repo
+      ..failWith = const EventError('invalid_argument', field: 'spotId')
+      ..failOnce = true;
+    await _tapNext(tester);
+    expect(_state(tester).serverErrors, contains(EventField.spot));
+    _ctl(tester).setPlaceText(name: 'Nơi khác');
+    expect(_state(tester).serverErrors, isNot(contains(EventField.spot)));
+  });
+
+  testWidgets('a draft saved with "none" resumes as decided', (tester) async {
+    final w = _world();
+    w.repo.putEvent(
+      detailOf(
+        'ev7',
+        status: EventStatus.draft,
+        createdBy: 'u1',
+        hostId: 'u1',
+        spotDecided: true,
+      ),
+    );
+    await _open(tester, w, path: '/events/new?draft=ev7');
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('spot-field')),
+        matching: find.text('Không thuộc điểm chụp nào'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('editing shows the saved choice', (tester) async {
     final w = _world();
     w.repo.putEvent(
@@ -222,23 +288,15 @@ void main() {
     expect(_state(tester).form.spotDecided, isTrue);
   });
 
-  testWidgets(
-    'a draft saved before the choice asks again',
-    (tester) async {
-      final w = _world();
-      w.repo.putEvent(
-        detailOf(
-          'ev8',
-          status: EventStatus.draft,
-          createdBy: 'u1',
-          hostId: 'u1',
-        ),
-      );
-      await _open(tester, w, path: '/events/new?draft=ev8');
-      expect(find.text('Chọn điểm chụp'), findsOneWidget);
-      expect(_state(tester).form.spotDecided, isFalse);
-    },
-  );
+  testWidgets('a draft saved before the choice asks again', (tester) async {
+    final w = _world();
+    w.repo.putEvent(
+      detailOf('ev8', status: EventStatus.draft, createdBy: 'u1', hostId: 'u1'),
+    );
+    await _open(tester, w, path: '/events/new?draft=ev8');
+    expect(find.text('Chọn điểm chụp'), findsOneWidget);
+    expect(_state(tester).form.spotDecided, isFalse);
+  });
 
   group('server refusals land under the field', () {
     for (final (code, field, text) in [
