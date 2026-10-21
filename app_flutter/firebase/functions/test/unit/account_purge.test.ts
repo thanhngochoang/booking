@@ -1,10 +1,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Firestore } from 'firebase-admin/firestore';
+import type { Bucket } from '@google-cloud/storage';
 import { purgeAccount, type PurgeDeps } from '../../src/infra/account_purge.js';
 import { handleAccountDeletionUpdated } from '../../src/triggers/account_deletion.js';
 
-function createMockFirestore(accountDeletionDoc: any = {}) {
-  const store = new Map<string, any>();
+interface MockStoreDoc {
+  exists: boolean;
+  data: () => Record<string, unknown> | undefined;
+}
+
+function createMockFirestore(accountDeletionDoc: Record<string, unknown> = {}) {
+  const store = new Map<string, Record<string, unknown>>();
   store.set('account_deletions/u1', { ...accountDeletionDoc });
   store.set('users/u1', { displayName: 'Original User', role: 'customer' });
 
@@ -14,19 +21,20 @@ function createMockFirestore(accountDeletionDoc: any = {}) {
         const path = `${col}/${id}`;
         return {
           id,
-          get: async () => ({
+          get: async (): Promise<MockStoreDoc> => ({
             exists: store.has(path),
             data: () => store.get(path),
           }),
-          set: async (val: any, opts?: any) => {
+          set: async (val: Record<string, unknown>, opts?: { merge?: boolean }) => {
             const cur = store.get(path) ?? {};
             store.set(path, opts?.merge ? { ...cur, ...val } : val);
           },
-          update: async (val: any) => {
+          update: async (val: Record<string, unknown>) => {
             const cur = store.get(path) ?? {};
-            if (val.done && (val.done.elements || val.done._elements)) {
-              const elements = val.done.elements || val.done._elements;
-              const existingDone = cur.done ?? [];
+            if (val.done && typeof val.done === 'object' && ('elements' in val.done || '_elements' in val.done)) {
+              const elements = ((val.done as { elements?: string[]; _elements?: string[] }).elements ||
+                (val.done as { elements?: string[]; _elements?: string[] })._elements) ?? [];
+              const existingDone = (cur.done as string[]) ?? [];
               cur.done = [...new Set([...existingDone, ...elements])];
               delete val.done;
             }
@@ -70,10 +78,10 @@ describe('account_purge', () => {
     });
 
     const deps: PurgeDeps = {
-      firestore: mockDb as any,
+      firestore: mockDb as unknown as Firestore,
       bucket: {
         deleteFiles: async () => {},
-      } as any,
+      } as unknown as Bucket,
       snapshot: async () => ({
         openBookings: [],
         openJobs: [],
@@ -111,10 +119,10 @@ describe('account_purge', () => {
     });
 
     const deps: PurgeDeps = {
-      firestore: mockDb as any,
+      firestore: mockDb as unknown as Firestore,
       bucket: {
         deleteFiles: async () => {},
-      } as any,
+      } as unknown as Bucket,
       snapshot: async () => ({
         openBookings: [],
         openJobs: [],
@@ -134,9 +142,9 @@ describe('account_purge', () => {
 
     await purgeAccount('u1', deps);
     const userDoc = mockDb._store.get('users/u1');
-    assert.equal(userDoc.displayName, 'Người dùng đã xoá');
-    assert.equal(userDoc.deleted, true);
-    assert.equal(userDoc.role, 'customer');
+    assert.equal(userDoc?.displayName, 'Người dùng đã xoá');
+    assert.equal(userDoc?.deleted, true);
+    assert.equal(userDoc?.role, 'customer');
   });
 
   it('purge records each step in done[]', async () => {
@@ -145,8 +153,8 @@ describe('account_purge', () => {
       done: [],
     });
     const deps: PurgeDeps = {
-      firestore: mockDb as any,
-      bucket: { deleteFiles: async () => {} } as any,
+      firestore: mockDb as unknown as Firestore,
+      bucket: { deleteFiles: async () => {} } as unknown as Bucket,
       snapshot: async () => ({
         openBookings: [],
         openJobs: [],
@@ -166,10 +174,10 @@ describe('account_purge', () => {
 
     await purgeAccount('u1', deps);
     const delDoc = mockDb._store.get('account_deletions/u1');
-    assert.equal(delDoc.status, 'done');
-    assert.ok(Array.isArray(delDoc.done));
-    assert.ok(delDoc.done.includes('delete_auth'));
-    assert.ok(delDoc.done.includes('tombstone_user'));
+    assert.equal(delDoc?.status, 'done');
+    assert.ok(Array.isArray(delDoc?.done));
+    assert.ok(delDoc?.done && (delDoc.done as string[]).includes('delete_auth'));
+    assert.ok(delDoc?.done && (delDoc.done as string[]).includes('tombstone_user'));
   });
 
   it('a blocker found at purge time stops the purge with status blocked', async () => {
@@ -179,8 +187,8 @@ describe('account_purge', () => {
       done: [],
     });
     const deps: PurgeDeps = {
-      firestore: mockDb as any,
-      bucket: { deleteFiles: async () => {} } as any,
+      firestore: mockDb as unknown as Firestore,
+      bucket: { deleteFiles: async () => {} } as unknown as Bucket,
       snapshot: async () => ({
         openBookings: [{ id: 'b1', title: 'Late booking', day: null }],
         openJobs: [],
@@ -206,18 +214,18 @@ describe('account_purge', () => {
     assert.equal(res, 'blocked');
     assert.equal(loggedBlocked, true);
     const delDoc = mockDb._store.get('account_deletions/u1');
-    assert.equal(delDoc.status, 'blocked');
-    assert.deepEqual(delDoc.blockedReasons, ['open_booking']);
+    assert.equal(delDoc?.status, 'blocked');
+    assert.deepEqual(delDoc?.blockedReasons, ['open_booking']);
   });
 
   it('the trigger ignores updates that do not move status to purging', async () => {
     let called = false;
     const deps: PurgeDeps = {
-      firestore: {} as any,
-      bucket: {} as any,
+      firestore: {} as unknown as Firestore,
+      bucket: {} as unknown as Bucket,
       snapshot: async () => {
         called = true;
-        return {} as any;
+        return {} as unknown as import('@photobooking/domain').AccountSnapshot;
       },
       deleteAuthUser: async () => {},
       logBlocked: async () => {},
@@ -229,7 +237,7 @@ describe('account_purge', () => {
       after: { id: 'u1', data: () => ({ status: 'pending' }) },
     };
 
-    await handleAccountDeletionUpdated(change as any, deps);
+    await handleAccountDeletionUpdated(change as unknown as Parameters<typeof handleAccountDeletionUpdated>[0], deps);
     assert.equal(called, false);
   });
 });

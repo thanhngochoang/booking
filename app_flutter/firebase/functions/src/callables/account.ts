@@ -58,8 +58,9 @@ export async function handleRequestAccountDeletion(
 
   try {
     return await requestAccountDeletion(deps, { uid, authTime }, request.data);
-  } catch (e: any) {
-    if (e?.code === 'conflict') {
+  } catch (e: unknown) {
+    const err = e as { code?: string };
+    if (err?.code === 'conflict') {
       // Review Focus 3 & Plan table: conflict carries details.blockers kinds
       const blockers = (await getAccountDeletionBlockers(deps, { uid })).blockers;
       const kinds = blockers.map((b) => b.kind);
@@ -82,8 +83,9 @@ export async function handleRestoreAccount(
   const uid = requireUid(request);
   try {
     return await restoreAccount(deps, { uid }, request.data);
-  } catch (e: any) {
-    if (e?.code === 'deadline_passed') {
+  } catch (e: unknown) {
+    const err = e as { code?: string };
+    if (err?.code === 'deadline_passed') {
       throw new HttpsError('failed-precondition', 'deadline_passed', { code: 'deadline_passed' });
     }
     const error = toHttpsError(e);

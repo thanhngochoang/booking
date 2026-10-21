@@ -1,13 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  handleGetAccountDeletionBlockers,
   handleRequestAccountDeletion,
   handleRestoreAccount,
   handleRequestDataExport,
   type AccountCallableInput,
 } from '../../src/callables/account.js';
-import type { AccountDeletionDeps, DataExportDeps, Blocker } from '@photobooking/domain';
+import type { AccountDeletionDeps, DataExportDeps } from '@photobooking/domain';
 
 function dummyDeletionDeps(overrides: Partial<AccountDeletionDeps> = {}): AccountDeletionDeps {
   return {
@@ -36,20 +35,40 @@ function dummyDeletionDeps(overrides: Partial<AccountDeletionDeps> = {}): Accoun
 
 describe('account_callables', () => {
   it('requestAccountDeletion passes auth_time', async () => {
-    let authTimePassed: Date | null = null;
+    let checkedAuthTime = false;
+    const now = new Date('2026-10-21T10:00:00Z');
+    const authTimeSeconds = Math.floor(now.getTime() / 1000) - 100; // 100s ago (< 300s)
     const deps = dummyDeletionDeps({
-      lock: async () => 'locked',
+      clock: { now: () => now },
+      lock: async () => {
+        checkedAuthTime = true;
+        return 'locked';
+      },
     });
-    // Request with auth_time
+    // Request with valid auth_time
     const req: AccountCallableInput = {
       auth: {
         uid: 'u1',
-        token: { auth_time: 1792576700 }, // ~100s before 2026-10-21T10:00:00Z
+        token: { auth_time: authTimeSeconds },
       },
       data: {},
     };
     const res = await handleRequestAccountDeletion(req, deps);
     assert.equal(res.status, 'deletion_pending');
+    assert.equal(checkedAuthTime, true);
+
+    // Request with stale auth_time (> 300s ago)
+    const staleReq: AccountCallableInput = {
+      auth: {
+        uid: 'u1',
+        token: { auth_time: authTimeSeconds - 300 },
+      },
+      data: {},
+    };
+    await assert.rejects(
+      async () => handleRequestAccountDeletion(staleReq, deps),
+      (err: { code: string }) => err.code === 'failed-precondition',
+    );
   });
 
   it('conflict carries details.blockers kinds', async () => {
@@ -82,10 +101,11 @@ describe('account_callables', () => {
     try {
       await handleRequestAccountDeletion(req, deps);
       assert.fail('should have thrown');
-    } catch (e: any) {
-      assert.equal(e.code, 'aborted');
-      assert.equal(e.details.code, 'conflict');
-      assert.deepEqual(e.details.blockers, ['open_booking']);
+    } catch (e: unknown) {
+      const err = e as { code: string; details: { code: string; blockers: string[] } };
+      assert.equal(err.code, 'aborted');
+      assert.equal(err.details.code, 'conflict');
+      assert.deepEqual(err.details.blockers, ['open_booking']);
     }
   });
 
@@ -100,9 +120,10 @@ describe('account_callables', () => {
     try {
       await handleRestoreAccount(req, deps);
       assert.fail('should have thrown');
-    } catch (e: any) {
-      assert.equal(e.code, 'failed-precondition');
-      assert.equal(e.details.code, 'deadline_passed');
+    } catch (e: unknown) {
+      const err = e as { code: string; details: { code: string } };
+      assert.equal(err.code, 'failed-precondition');
+      assert.equal(err.details.code, 'deadline_passed');
     }
   });
 

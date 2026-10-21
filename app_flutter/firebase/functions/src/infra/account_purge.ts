@@ -1,6 +1,7 @@
 import { Firestore, FieldValue } from 'firebase-admin/firestore';
 import type { Bucket } from '@google-cloud/storage';
 import { db, adminAuth, bucket as getBucket } from './admin.js';
+import { FirestoreAccountDeletionDeps } from './account_firestore.js';
 import {
   accountDeletionBlockers,
   tombstoneOf,
@@ -280,7 +281,6 @@ export async function purgeAccount(
 }
 
 export function livePurgeDeps(firestore: Firestore = db(), bucket: Bucket = getBucket()): PurgeDeps {
-  const { FirestoreAccountDeletionDeps } = require('./account_firestore.js');
   const accountDeps = new FirestoreAccountDeletionDeps(firestore);
 
   return {
@@ -290,8 +290,9 @@ export function livePurgeDeps(firestore: Firestore = db(), bucket: Bucket = getB
     deleteAuthUser: async (uid) => {
       try {
         await adminAuth().deleteUser(uid);
-      } catch (e: any) {
-        if (e?.code !== 'auth/user-not-found') throw e;
+      } catch (e: unknown) {
+        const err = e as { code?: string };
+        if (err?.code !== 'auth/user-not-found') throw e;
       }
     },
     logBlocked: async (uid, kinds) => {

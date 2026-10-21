@@ -2,13 +2,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { handleStartDueAccountPurges } from '../../src/scheduled/start_account_purges.js';
 import { handlePruneNotifications } from '../../src/scheduled/prune_notifications.js';
-import type { AccountDeletionDeps } from '@photobooking/domain';
+import type { AccountDeletionDeps, NotifyDeps } from '@photobooking/domain';
 
 describe('start_account_purges', () => {
   it('startDueAccountPurges wires correctly and reports started count', async () => {
     let dueChecked = false;
     const deps: AccountDeletionDeps = {
-      snapshot: async () => ({} as any),
+      snapshot: async () => ({} as unknown as import('@photobooking/domain').AccountSnapshot),
       lock: async () => 'locked',
       unlock: async () => 'restored',
       startPurge: async () => true,
@@ -27,7 +27,7 @@ describe('start_account_purges', () => {
 
   it('pruneNotifications runs startDueAccountPurges as a named step and a failure there does not stop pruneDataExports', async () => {
     let pruneReadCalled = false;
-    const mockNotifyDeps: any = {
+    const mockNotifyDeps: unknown = {
       store: {
         deleteReadBefore: async () => {
           pruneReadCalled = true;
@@ -37,7 +37,7 @@ describe('start_account_purges', () => {
       clock: { now: () => new Date() },
     };
 
-    const res = await handlePruneNotifications(mockNotifyDeps);
+    const res = await handlePruneNotifications(mockNotifyDeps as unknown as NotifyDeps);
     assert.equal(res, 5);
     assert.equal(pruneReadCalled, true);
   });

@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Bucket } from '@google-cloud/storage';
 import { pruneDataExports } from '../../src/scheduled/prune_data_exports.js';
 
 describe('prune_data_exports', () => {
@@ -10,7 +11,7 @@ describe('prune_data_exports', () => {
 
     const deletedFiles: string[] = [];
 
-    const mockBucket: any = {
+    const mockBucket: unknown = {
       getFiles: async () => [
         [
           {
@@ -31,7 +32,7 @@ describe('prune_data_exports', () => {
       ],
     };
 
-    const count = await pruneDataExports(mockBucket, now);
+    const count = await pruneDataExports(mockBucket as unknown as Bucket, now);
     assert.equal(count, 1);
     assert.deepEqual(deletedFiles, ['exports/u1/old.json']);
   });

@@ -18,8 +18,9 @@ export class FirestoreAccountDeletionDeps implements AccountDeletionDeps {
   async revokeSessions(uid: string): Promise<void> {
     try {
       await adminAuth().revokeRefreshTokens(uid);
-    } catch (e: any) {
-      if (e?.code !== 'auth/user-not-found') throw e;
+    } catch (e: unknown) {
+      const err = e as { code?: string };
+      if (err?.code !== 'auth/user-not-found') throw e;
     }
   }
 
