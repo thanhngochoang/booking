@@ -136,7 +136,7 @@ Cloud Function mỗi 15 phút (dùng chung với spec bàn giao): đánh dấu `
 |---|---|---|
 | "Đã chụp xong" (mốc 1) | thợ | thợ được giao hoặc chủ studio |
 | Nộp bàn giao, vòng sửa, cho thêm vòng (S06.07) | thợ | **chỉ studio** |
-| Hạn giao ảnh, giao trễ (hoàn 100% mốc 2) | tính cho thợ | tính cho studio (`lateDeliveryCount + 1`) |
+| Hạn giao ảnh, giao trễ (hoàn 100% mốc 2) | tính cho thợ | tính cho studio (`lateDeliveryCount + 1`, từ #207) |
 
 Thợ được giao không thấy lối vào S06.07. Chuyển ảnh gốc từ thợ sang studio để hậu kỳ nằm ngoài app.
 

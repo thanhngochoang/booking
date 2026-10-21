@@ -1231,7 +1231,7 @@ create index ix_photographers_studio on photographers (studio_id) where studio_i
 alter table bookings
   add column is_studio          boolean not null default false,
   add column assignee_id        text references photographers(user_id),
-  add column assignee_kind      text check (assignee_kind in ('member')),     -- S27 thêm 'collaborator'
+  add column assignee_kind      text check (assignee_kind in ('member')),     -- chỉ 'member' tới khi S27 thêm 'collaborator' (khi đó migration đổi check)
   add column assign_status      text check (assign_status in ('unassigned','assigned')),
   add column assign_deadline    timestamptz,
   add column assign_overdue     boolean not null default false,
@@ -1263,13 +1263,14 @@ create table studio_quotas (
   primary key (user_id, day)
 );
 
-create table studio_day_loads (
+create table studio_day_load_bookings (   -- tải theo ngày của studio: mỗi dòng một booking mở
   studio_id   text not null references photographers(user_id),
   day         date not null,
-  unassigned  int not null default 0,
-  free_members int not null default 0,
-  primary key (studio_id, day)
+  booking_id  text not null references bookings(id) on delete cascade,
+  assigned    boolean not null default false,   -- false = chưa giao thợ (unassignedIds), true = đã giao (assignedIds)
+  primary key (studio_id, day, booking_id)
 );
+-- Số thợ rảnh của ngày không lưu: tính từ availability_days của các thành viên lúc tính lại.
 
 alter table reviews
   add column via_studio_id   text references photographers(user_id),
@@ -1311,7 +1312,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
 | `studio_members/{studioId}_{memberId}_{createdAtMs}` | `studio_members` | Id ghép không thành cột: khoá `(studio_id, member_id, created_at)`; `createdAt` là phần mili giây của id |
 | `studio_quota/{uid}` | `studio_quotas` | `dayKey`→`day`; `studioActions`, `memberActions`→`studio_actions`, `member_actions` |
-| `studio_day_load/{id}` | `studio_day_loads` | Chỉ server; id = studio + ngày |
+| `studio_day_load/{id}` | `studio_day_load_bookings` | Chỉ server; id = studio + ngày; `unassignedIds[]`/`assignedIds[]`→ một dòng mỗi booking, `assigned` phân biệt hai mảng |
 | `bookings/{id}.assignments[]` | `booking_assignments` | `seq` = vị trí trong mảng; `changeRequest`, `studioFault`, `assignmentReturned`→`jsonb` |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột; `chats.bookingStatus`→không có cột, suy ra từ `bookings.status` qua `chats.booking_id` (join; trường Firestore chỉ là read model cho danh sách S07.02) |
@@ -1353,7 +1354,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `photographers` và bảng con → `services` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `studio_members`, `bookings`(+con, `booking_assignments`) → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_loads` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `photographers` và bảng con → `services` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `studio_members`, `bookings`(+con, `booking_assignments`) → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

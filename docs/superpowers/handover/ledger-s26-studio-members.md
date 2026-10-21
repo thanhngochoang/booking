@@ -79,7 +79,7 @@ Checked on develop 6ef387f (with #130 reviews, #152 delivery, #198 order gate, #
 
 ## Mock frames added (Task 1)
 
-`docs/design/ui-mock.html`: `S03.01-member`, `S05.02-studio-change`, `S06.01-studio`, `S06.01-member`, `S09.02-studio`, `S26.03-none`; `#S26.03` gains a "Từ chối" text button beside "Nhận"; `#S26.01` caption gains the empty state copy. Spec: studio-members-design §3.1 (relation id, public membership via `photographers.studioId`), §5.2 (deadline rule), §5.7 (assignee contact), §6 (reason label "Tư vấn chậm"); main spec §2 S26 rows now "⬜ có mock, đang làm (#136)".
+`docs/design/ui-mock.html`: `S03.01-member`, `S05.02-studio-change`, `S06.01-studio`, `S06.01-member`, `S09.02-studio`, `S26.03-none`; `#S26.03` gains a "Từ chối" text button beside "Nhận"; `#S26.01` caption gains the empty state copy. Spec: studio-members-design §3.1 (relation id, public membership via `photographers.studioId`), §5.2 (deadline rule), §5.7 (assignee contact), §6 (reason label "Tư vấn chậm"); main spec §2 S26 rows now link #136.
 
 ## Rulings (decisions taken while building, with what each costs if wrong)
 
