@@ -156,3 +156,66 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 - **Chuỗi (ARB)**: `primerTitleCustomerBooking` "Bật thông báo để biết khi {name} nhận lịch", `primerTitleCustomerTicket` "Bật thông báo để được nhắc trước khi {event} bắt đầu", `primerTitleCustomerInstant` "Bật thông báo để biết khi có người nhận chụp ngay", `primerTitlePhotographer` "Bật thông báo để không bỏ lỡ lời mời việc", `primerBenefit1` "Biết ngay khi lịch được nhận hoặc thay đổi", `primerBenefit2` "Nhắc trước giờ chụp, không lỡ hẹn", `primerBenefit3` "Tin nhắn mới khi app đang ở nền", `primerTicketBenefit1` "Nhắc trước khi sự kiện bắt đầu, kèm giờ và điểm tập trung", `primerEnableNotification` "Bật thông báo", `primerLater` "Để sau", `primerNote` "Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.", `primerEnabled` "Đã bật thông báo". Ngữ cảnh vé (`CustomerTicketPrimer`, analytics `customer_ticket`) dùng hai lợi ích: `primerTicketBenefit1` và `primerBenefit3`.
 - **Phân tích**: `notification_primer_shown{context}`, `notification_primer_enable{context}`, `notification_primer_later{context}`, `notification_os_result{granted}`.
 - **Chấp nhận**: không bao giờ xuất hiện trước hành động có ý nghĩa; "Để sau" không hỏi lại trước 7 ngày; nút chính là nút duy nhất dùng gradient; đóng bằng bàn phím/Back tương đương "Để sau"; token FCM chỉ đăng ký sau khi cấp quyền; hai theme.
+
+---
+
+## S22.01 · Lịch sử thanh toán
+
+- **Thông tin**: `/me/payments` · khách · sub‑project 6 · mới (kế hoạch S22, #141)
+- **Mục đích**: xem mọi khoản đã trả và đang giữ (kể cả Chụp ngay đang tìm thợ), hoàn tiền đang xử lý và đã xong; mỗi dòng mở chi tiết booking/vé/yêu cầu.
+- **Điểm vào → ra**: Cài đặt (S09.02) → "Lịch sử thanh toán". Chạm từng dòng mở bung chi tiết hoặc mở màn tương ứng; dòng "Cần tài khoản" mở S22.04.
+- **Bố cục**: Back + "Lịch sử thanh toán"; hàng KPI (Đang giữ · Đang hoàn); dòng giải thích trung gian thanh toán giữ tiền theo 2 mốc; mục "Các khoản" nhóm theo tháng; mỗi khoản hiển thị tiêu đề, ngày, phương thức, số tiền, nhãn trạng thái (`StatusBadge`), bung chi tiết các khoản hoàn, nút "Xem thêm" phân trang 20 dòng.
+- **Dữ liệu**: `PayerPaymentRow` từ `users/{uid}/payments`, `PaymentTotals` từ `users/{uid}/private/paymentTotals`.
+- **Trạng thái**: trống → `EmptyState` (`paymentsEmptyTitle`, `paymentsEmptyBody`); đang tải → skeleton.
+- **Chuỗi**: `paymentsTitle`, `paymentsHeld`, `paymentsRefunding`, `paymentsHeldNote`, `paymentsItems`, `paymentsMore`, `paymentsEmptyTitle`, `paymentsEmptyBody`, `payStatusHeld`, `payStatusDisputed`, `payStatusReleasedBooking`, `payStatusReleasedTicket`, `payStatusReleasedPlatform`, `payStatusRefunding`, `payStatusNeedsAccount`, `payStatusRefunded`, `payStatusPartlyRefunded`, `payMetaSearching`, `payMetaCancelled`, `payTitleTicket`, `payTitleInstant`, `payDetailPaid`, `payDetailRefundTo`, `payDetailWallet`, `payDetailRefundPending`, `payDetailRefundDone`, `payDetailWillGetBack`, `payDetailOpenBooking`, `payDetailOpenTicket`, `payDetailOpenInstant`, `payChooseRefundAccount`.
+- **Chấp nhận**: không có từ "cọc"; trạng thái cập nhật thời gian thực khi hoàn tiền; phân trang 20 dòng.
+
+---
+
+## S22.02 · Xoá tài khoản
+
+- **Thông tin**: `/settings/delete-account` · cả hai · sub‑project 6 · mới (kế hoạch S22, #205)
+- **Mục đích**: kiểm tra điều kiện chặn và yêu cầu khoá/xoá tài khoản với thời hạn khôi phục 30 ngày.
+- **Điểm vào → ra**: Quyền riêng tư & dữ liệu (S22.03) → "Xoá tài khoản".
+- **Bố cục**: Back + "Xoá tài khoản"; khi có blocker: thẻ cảnh báo `warnc` "Chưa xoá được tài khoản" và danh sách từng điều kiện cần giải quyết kèm lối đi; khi không có blocker: danh sách 5 hậu quả khi xoá, gợi ý tải bản sao dữ liệu; nút viền "Xoá tài khoản" (bị mờ khi có blocker) mở sheet xác nhận S22.02-confirm với nút đỏ "Xoá tài khoản".
+- **Dữ liệu**: `getAccountDeletionBlockers`, `requestAccountDeletion`.
+- **Trạng thái**: chặn khi còn booking chưa xong, việc đã nhận, tin đăng, báo giá, yêu cầu Chụp ngay, quan hệ studio/cộng tác, vé chưa dùng, sự kiện tổ chức, khiếu nại, tiền đang giữ, tiền đang hoàn, tiền chờ chi trả.
+- **Chuỗi**: `deleteAccountTitle`, `deleteBlockedTitle`, `deleteBlockedBody`, `deleteBlockBooking`, `deleteBlockJob`, `deleteBlockJobPost`, `deleteBlockJobPostBody`, `deleteBlockQuote`, `deleteBlockQuoteBody`, `deleteBlockInstant`, `deleteBlockStudio`, `deleteBlockStudioBody`, `deleteBlockCollab`, `deleteBlockCollabBody`, `deleteBlockTicket`, `deleteBlockEvent`, `deleteBlockDispute`, `deleteBlockHeld`, `deleteBlockHeldBody`, `deleteBlockRefund`, `deleteBlockRefundBody`, `deleteBlockEarnings`, `deleteBlockEarningsBody`, `deleteConsequencesTitle`, `deleteConsequence1`..`5`, `deleteExportHint`, `deleteExportHintLink`, `deleteAction`, `deleteConfirmTitle`, `deleteConfirmBody`, `deleteConfirmKeep`, `deleteAccountDone`, `deleteAccountFailed`.
+- **Chấp nhận**: re-check blocker phía server; yêu cầu re-auth nếu đăng nhập quá 5 phút; xác nhận xong khoá tài khoản ngay và đăng xuất.
+
+---
+
+## S22.03 · Quyền riêng tư & dữ liệu
+
+- **Thông tin**: `/settings/privacy` · cả hai · sub‑project 6 · mới (kế hoạch S22, #205)
+- **Mục đích**: tuỳ chọn ẩn hồ sơ khỏi tìm kiếm/gợi ý (chỉ thợ), tải bản sao dữ liệu cá nhân, và lối vào xoá tài khoản.
+- **Điểm vào → ra**: Cài đặt (S09.02) → "Quyền riêng tư & dữ liệu".
+- **Bố cục**: Back + "Quyền riêng tư & dữ liệu"; mục "Hồ sơ" (chỉ thợ ảnh): công tắc ẩn hồ sơ; mục "Dữ liệu của bạn": tạo và tải bản sao JSON (lưu 7 ngày, cooldown 24h); nút chữ đỏ "Xoá tài khoản" ở đáy dẫn tới S22.02.
+- **Dữ liệu**: `photographers/{uid}.hiddenFromDiscovery`, `requestDataExport`, `users/{uid}/private/dataExport`.
+- **Trạng thái**: đang tạo bản sao → "Đang tạo bản sao…"; đã có bản sao → nút "Tải xuống" kèm hạn dùng.
+- **Chuỗi**: `privacyTitle`, `privacyProfile`, `privacyHide`, `privacyHideBody`, `privacyData`, `privacyExport`, `privacyExportBody`, `privacyExportCreate`, `privacyExportCreating`, `privacyExportReady`, `privacyExportDownload`, `privacyExportCooldown`, `privacyExportLimit`, `privacyExportFailed`, `privacyDelete`.
+- **Chấp nhận**: thợ ẩn hồ sơ vẫn nhận đặt lịch qua link cũ; tải dữ liệu giới hạn 1 lần / 24 giờ.
+
+---
+
+## S22.04 · Tài khoản nhận hoàn (sheet)
+
+- **Thông tin**: — (sheet) · khách · sub‑project 6 · mới (kế hoạch S22, #141)
+- **Mục đích**: khách xác nhận tài khoản nhận tiền hoàn VietQR (tài khoản đã chuyển hoặc tài khoản khác).
+- **Điểm vào → ra**: S05.02, S05.03, S18.02, S22.01 hoặc thông báo `refund_account_needed`.
+- **Bố cục**: tiêu đề "Tài khoản nhận hoàn", số tiền được hoàn, thông tin tài khoản người chuyển (nếu có) + nút "Hoàn về tài khoản này", liên kết "Dùng tài khoản khác" mở form tra cứu ngân hàng/STK/tên chủ tài khoản (S22.04-other).
+- **Dữ liệu**: `pendingRefund`, `lookupRefundAccount`, `chooseRefundAccount`.
+- **Chuỗi**: `refundAccountTitle`, `refundAccountYouGet`, `refundAccountToPayer`, `refundAccountConfirm`, `refundAccountOther`, `refundAccountWalletNote`, `refundAccountAutoNote`, `refundAccountNoPayer`, `refundAccountBank`, `refundAccountNumber`, `refundAccountLookup`, `refundAccountLookupNote`, `refundAccountEncrypted`, `refundAccountNotFound`, `refundAccountUnsupported`, `refundAccountSent`, `refundAccountClose`, `detailRefundAccountTitle`, `detailRefundAccountBody`.
+- **Chấp nhận**: tra cứu tên tự động; không chọn sau 24h tự hoàn về tài khoản đã chuyển (nếu có thông tin).
+
+---
+
+## S22.05 · Khôi phục tài khoản
+
+- **Thông tin**: `/account/restore` · cả hai · sub‑project 6 · mới (kế hoạch S22, #205)
+- **Mục đích**: màn hình chặn router khi tài khoản đang ở trạng thái `deletion_pending` trong thời hạn 30 ngày.
+- **Điểm vào → ra**: tự động chuyển hướng khi đăng nhập tài khoản đang chờ xoá.
+- **Bố cục**: biểu tượng khôi phục, tiêu đề "Tài khoản đang chờ xoá", thông báo ngày xoá hẳn, thẻ tải bản sao dữ liệu (nếu còn hạn), nút chính "Khôi phục tài khoản", nút phụ "Tiếp tục xoá" (đăng xuất).
+- **Dữ liệu**: `restoreAccount`, `users/{uid}.accountStatus`, `account_deletions/{uid}`.
+- **Chuỗi**: `restoreAccountTitle`, `restoreAccountBody`, `restoreAccountAction`, `restoreAccountContinue`, `restoreAccountContinueNote`, `restoreAccountExport`, `restoreAccountDone`, `restoreAccountExpired`, `restoreAccountFailed`, `privacyExportPending`.
+- **Chấp nhận**: chỉ người trong hạn 30 ngày mới khôi phục được; khôi phục xong tài khoản và dữ liệu trở lại bình thường.

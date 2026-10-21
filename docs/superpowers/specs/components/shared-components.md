@@ -296,7 +296,7 @@ Nhãn "Chưa nhận đơn" (`profileOrdersClosedTag`) ở S03.01 cho thợ có `
 `AwardChip` (S03.01): thẻ 178dp, viền và nền vàng nhạt, đĩa biểu tượng giải vàng, kết quả (đậm) + "cuộc thi năm · hạng mục" một dòng. `AwardRow` (S25.01): đĩa biểu tượng (vàng khi `approved`, xám khi khác), tiêu đề "kết quả · cuộc thi năm", `StatusBadge` + dòng phụ (hạng mục hoặc lý do).
 
 #### EarningRow · Mới
-Hàng khoản thu của S06.05 (mock `.card`): trái là tiêu đề đậm "Tên khách · gói" (tối đa 2 dòng) và ngày `T7 12/10`; phải là số tiền ngắn (`450K`, `tabularFigures`, màu chữ thường, không dùng màu nhấn cho tiền) và `StatusBadge` trạng thái; dòng ghi chú tuỳ chọn bên dưới với biểu tượng (lý do tạm giữ, chữ cố định theo mã, không phải lời khách). `Semantics`: "tiêu đề, ngày, số tiền đầy đủ, ghi chú" (nút khi có `onTap`); ≥ 48dp. `EarningRow.skeleton()` cùng hình khối. Dùng ở S06.05.
+Hàng khoản thu của S06.05 và lịch sử thanh toán S22.01 (mock `.card`): trái là tiêu đề đậm "Tên khách · gói" (tối đa 2 dòng) và ngày `T7 12/10`; phải là số tiền ngắn (`450K`, `tabularFigures`, màu chữ thường, không dùng màu nhấn cho tiền) và `StatusBadge` trạng thái; dòng ghi chú tuỳ chọn bên dưới với biểu tượng (lý do tạm giữ, chữ cố định theo mã, không phải lời khách). `Semantics`: "tiêu đề, ngày, số tiền đầy đủ, ghi chú" (nút khi có `onTap`); ≥ 48dp. `EarningRow.skeleton()` cùng hình khối. Dùng ở S06.05 và S22.01.
 
 #### PortfolioViewToggle · Mới
 Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), biểu tượng + chữ, `Semantics` vai trò tab có trạng thái chọn.
@@ -378,7 +378,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04 |
 | `StatusTimeline` | S05.02 |
 | `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
-| `EarningRow` | S06.05 |
+| `EarningRow` | S06.05, S22.01 |
 | `ContactDial`, `ContactLauncher` | S03.01, S05.02, S11.02, S06.01, S12.03 (S05.04) |
 | `PhoneField` | S04.03, S11.03, S04.05, S08.05, S09.03 |
 | `OtpCodeField` | S06.06 (sheet OTP), S21.01 |
