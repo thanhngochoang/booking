@@ -122,7 +122,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final thread = ref.read(chatThreadProvider(widget.chatId)).value;
     if (thread == null || thread.bookingId == null) return;
     final booking = ref.read(bookingProvider(thread.bookingId!)).value;
-    if (booking == null) return;
+    // A studio booking cannot be moved (the reschedule callable refuses it).
+    if (booking == null || booking.studio != null) return;
 
     final res = await showRescheduleSheet(
       context,

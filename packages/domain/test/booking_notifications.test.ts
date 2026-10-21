@@ -117,11 +117,19 @@ describe('notifyBookingChange', () => {
     assert.equal(w.store.rowsOf('c1')[0]?.body, 'T2 12/10 · 15:30. Hoàn 100% số bạn đã trả.');
   });
 
-  it('the clock\'s cancel of an unassigned studio booking at its start tells the studio as a system cancel (#136)', async () => {
+  it('the clock\'s cancel of an unassigned studio booking at its start tells both as a system cancel (#136)', async () => {
     // start 2026-10-12 15:30 VN = 08:30Z
     const cancel = { by: 'studio_fault' as const, reason: 'assign_overdue', at: '2026-10-12T08:30:00.000Z', refundPercent: 100 };
-    await notifyBookingChange(w.deps, b({ status: 'accepted', isStudio: true }), b({ status: 'cancelled', isStudio: true, cancel }));
-    assert.equal(w.store.rowsOf('c1').length, 0);
+    const before = b({ status: 'accepted', isStudio: true });
+    const after = b({ status: 'cancelled', isStudio: true, cancel });
+    assert.deepEqual(bookingNotices(before, after), [
+      { to: 'customer', kind: 'cancelled' },
+      { to: 'photographer', kind: 'cancelled' },
+    ]);
+    await notifyBookingChange(w.deps, before, after);
+    const [row] = w.store.rowsOf('c1');
+    assert.equal(row?.title, 'Lịch T2 12/10 · 15:30 đã bị huỷ');
+    assert.equal(row?.body, 'Xem chi tiết trong lịch hẹn.');
     assert.equal(w.store.rowsOf('p1')[0]?.title, 'Lịch T2 12/10 · 15:30 đã bị huỷ');
     // the customer's own studio-fault cancel (before the start) keeps the customer's name
     const w2 = createNotifyWorld();
@@ -129,6 +137,7 @@ describe('notifyBookingChange', () => {
     const own = { ...cancel, at: '2026-10-12T08:29:59.000Z' };
     await notifyBookingChange(w2.deps, b({ status: 'accepted', isStudio: true }), b({ status: 'cancelled', isStudio: true, cancel: own }));
     assert.equal(w2.store.rowsOf('p1')[0]?.title, 'An đã huỷ lịch');
+    assert.equal(w2.store.rowsOf('c1').length, 0);
   });
 
   it('a system cancel notifies both', async () => {

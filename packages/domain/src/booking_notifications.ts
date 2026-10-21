@@ -26,9 +26,13 @@ export function bookingNotices(before: Booking | null, after: Booking | null): B
     } else if (before.status === 'requested' && after.status === 'expired') {
       out.push({ to: 'customer', kind: 'expired' });
     } else if (after.status === 'cancelled') {
-      // A studio-fault cancel is the customer's own (#136 Decision 12): only the studio hears about it. So does the
-      // clock's cancel of an unassigned studio booking at its start (the customer hears it through the refund).
-      const by = after.cancel?.by === 'studio_fault' ? 'customer' : (after.cancel?.by ?? 'system');
+      // A studio-fault cancel is the customer's own (#136 Decision 12): only the studio hears about it. The
+      // clock's cancel of an unassigned studio booking at its start is the system's: both hear it.
+      const by = isUnassignedStartCancel(after)
+        ? 'system'
+        : after.cancel?.by === 'studio_fault'
+          ? 'customer'
+          : (after.cancel?.by ?? 'system');
       // The party that did not cancel hears about it; both when the system cancelled.
       if (by !== 'customer') out.push({ to: 'customer', kind: 'cancelled' });
       if (by !== 'photographer') out.push({ to: 'photographer', kind: 'cancelled' });
@@ -94,7 +98,10 @@ function requestFor(
         name: counterpart.name,
         day,
         start: b.start,
-        percent: n.to === 'customer' && by !== 'system' ? (b.cancel?.refundPercent ?? null) : null,
+        percent:
+          n.to === 'customer' && (by !== 'system' || isUnassignedStartCancel(b))
+            ? (b.cancel?.refundPercent ?? null)
+            : null,
       };
       return { ...common, dedupeKey: `booking_cancelled_${b.id}_${n.to}`, content };
     }

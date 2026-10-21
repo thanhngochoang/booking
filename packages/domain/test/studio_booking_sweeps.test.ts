@@ -212,8 +212,9 @@ describe('unassigned studio bookings at their start (#136 ruling)', () => {
     assert.equal(after.depositRefunded, paid);
     assert.equal(w.store.counterOf('s1', 'lateAssignCount'), 1);
     assert.deepEqual(w.store.getStudioDayLoad('s1', after.day)?.unassignedIds ?? [], []);
-    // the studio is told by the booking write; the customer through the refund notice
+    // both are told by the booking write (a system cancel), the customer also of the refund
     assert.deepEqual(bookingNotices(before, after), [
+      { to: 'customer', kind: 'cancelled' },
       { to: 'photographer', kind: 'cancelled' },
       { to: 'customer', kind: 'refund' },
     ]);
