@@ -18,6 +18,8 @@ export class MemoryStudioStore implements StudioStore {
   readonly openAssignments = new Map<string, number>();
   /** Committed write count. */
   writes = 0;
+  /** Transactions opened (committed or not). */
+  transactions = 0;
 
   private chain: Promise<unknown> = Promise.resolve();
 
@@ -32,7 +34,11 @@ export class MemoryStudioStore implements StudioStore {
   async dueRelations(now: Date, limit: number): Promise<StudioRelation[]> {
     const until = now.getTime() + DUE_WINDOW_MS;
     return [...this.relations.values()]
-      .filter((r) => (r.status === 'invited' || r.status === 'requested') && Date.parse(r.expiresAt) <= until)
+      .filter((r) => {
+        const at = Date.parse(r.expiresAt);
+        if (r.status !== 'invited' && r.status !== 'requested') return false;
+        return at <= now.getTime() || (r.status === 'invited' && r.expiringNotifiedAt === null && at <= until);
+      })
       .sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt))
       .slice(0, limit);
   }
@@ -45,6 +51,7 @@ export class MemoryStudioStore implements StudioStore {
   }
 
   private async execute<T>(fn: (tx: StudioTx) => Promise<T>): Promise<T> {
+    this.transactions += 1;
     const staged: Array<() => void> = [];
     let hasWritten = false;
     const guardRead = (name: string): void => {
@@ -75,9 +82,11 @@ export class MemoryStudioStore implements StudioStore {
           ) ?? null
         );
       },
-      countOpenInvites: async (studioId) => {
+      countOpenInvites: async (studioId, now) => {
         guardRead('countOpenInvites');
-        return [...this.relations.values()].filter((r) => r.studioId === studioId && r.status === 'invited').length;
+        return [...this.relations.values()].filter(
+          (r) => r.studioId === studioId && r.status === 'invited' && Date.parse(r.expiresAt) > now.getTime(),
+        ).length;
       },
       countOpenAssignments: async (studioId, memberId) => {
         guardRead('countOpenAssignments');

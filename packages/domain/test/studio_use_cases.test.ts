@@ -134,6 +134,21 @@ describe('studio membership use cases', () => {
       assert.deepEqual(w.store.quotas.get('s1'), { dayKey: '2026-10-11', studioActions: 1, memberActions: 0 });
     });
 
+    it('an invite past expiresAt frees its seat before the sweep runs', async () => {
+      for (const m of ['m1', 'm2', 'm3']) {
+        await inviteMember(w.deps, 's1', { memberId: m });
+        tick();
+      }
+      await refused(inviteMember(w.deps, 's1', { memberId: 'm4' }), 'studio_full');
+      // 17/10 10:01: the invites of m1 (10:00) and m2 (10:01) are past expiresAt but not swept; m3's (10:02) is open.
+      w.clock.setTime(new Date('2026-10-17T10:01:00.000Z'));
+      assert.equal(w.store.relations.get('s1_m1_1791626400000')?.status, 'invited');
+      assert.equal((await inviteMember(w.deps, 's1', { memberId: 'm4' })).after.status, 'invited');
+      assert.equal((await inviteMember(w.deps, 's1', { memberId: 'm5' })).after.status, 'invited');
+      // m3, m4, m5 hold the three seats
+      await refused(inviteMember(w.deps, 's1', { memberId: 'a1' }), 'studio_full');
+    });
+
     it('a studio cannot invite itself or another studio (invalid_argument)', async () => {
       await refused(inviteMember(w.deps, 's1', { memberId: 's1' }), 'invalid_argument');
       await refused(inviteMember(w.deps, 's1', { memberId: 's2' }), 'invalid_argument');
@@ -155,7 +170,7 @@ describe('studio membership use cases', () => {
       const c = await inviteMember(w.deps, 's1', { memberId: 'm1' });
       tick();
       await refused(cancelInvite(w.deps, 's2', { relationId: c.after.id }), 'permission_denied');
-      await refused(cancelInvite(w.deps, 's1', { relationId: 'nope' }), 'not_found');
+      await refused(cancelInvite(w.deps, 's1', { relationId: 's1_m9_1791626400000' }), 'not_found');
       const done = await cancelInvite(w.deps, 's1', { relationId: c.after.id });
       assert.equal(done.before?.status, 'invited');
       assert.equal(done.after.status, 'cancelled');
@@ -163,6 +178,14 @@ describe('studio membership use cases', () => {
       assert.equal(done.after.version, 2);
       await refused(cancelInvite(w.deps, 's1', { relationId: c.after.id }), 'conflict');
       assert.equal(w.store.quotas.get('s1')?.studioActions, 2);
+    });
+
+    it('relation ids must have the {studio}_{member}_{ms} shape', async () => {
+      for (const relationId of ['__x__', 's1_m1', 'nope', '', 's1/m1_1', `${'a'.repeat(161)}_1`]) {
+        await refused(cancelInvite(w.deps, 's1', { relationId }), 'invalid_argument');
+        await refused(respondInvite(w.deps, 'm1', { relationId, accept: true }), 'invalid_argument');
+      }
+      assert.equal(w.store.transactions, 0);
     });
 
     it('a join request cannot be cancelled as an invite', async () => {
@@ -230,7 +253,7 @@ describe('studio membership use cases', () => {
 
     it('only the invited photographer answers, and only once', async () => {
       const inv = await inviteMember(w.deps, 's1', { memberId: 'm1' });
-      await refused(respondInvite(w.deps, 'm2', { relationId: inv.after.id, accept: true }), 'not_found');
+      await refused(respondInvite(w.deps, 'm2', { relationId: inv.after.id, accept: true }), 'permission_denied');
       await refused(respondInvite(w.deps, 'm1', { relationId: inv.after.id }), 'invalid_argument');
       await respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: false });
       await refused(respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: true }), 'conflict');
@@ -246,6 +269,15 @@ describe('studio membership use cases', () => {
       assert.equal(rel?.version, 2);
       assert.equal(w.store.profiles.get('m1')?.studioId, null);
       assert.equal(w.store.profiles.get('s1')?.memberCount, 0);
+    });
+
+    it('answering an invite the sweep already expired is deadline_passed', async () => {
+      const inv = await inviteMember(w.deps, 's1', { memberId: 'm1' });
+      w.clock.setTime(new Date(IN_7_DAYS));
+      assert.equal((await runMembershipSweeps(w.deps)).expired.length, 1);
+      await refused(respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: true }), 'deadline_passed');
+      await refused(respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: false }), 'deadline_passed');
+      assert.equal(w.store.relations.get(inv.after.id)?.version, 2);
     });
 
     it('decline is free of quota', async () => {
@@ -327,10 +359,18 @@ describe('studio membership use cases', () => {
 
     it('only its studio answers a request, and an expired one is deadline_passed', async () => {
       const req = await requestToJoin(w.deps, 'm1', { studioId: 's1' });
-      await refused(respondJoinRequest(w.deps, 's2', { relationId: req.after.id, accept: true }), 'not_found');
+      await refused(respondJoinRequest(w.deps, 's2', { relationId: req.after.id, accept: true }), 'permission_denied');
       w.clock.setTime(new Date(IN_7_DAYS));
       await refused(respondJoinRequest(w.deps, 's1', { relationId: req.after.id, accept: true }), 'deadline_passed');
       assert.equal(w.store.relations.get(req.after.id)?.status, 'expired');
+    });
+
+    it('answering a request the sweep already expired is deadline_passed', async () => {
+      const req = await requestToJoin(w.deps, 'm1', { studioId: 's1' });
+      w.clock.setTime(new Date(IN_7_DAYS));
+      assert.equal((await runMembershipSweeps(w.deps)).expired.length, 1);
+      await refused(respondJoinRequest(w.deps, 's1', { relationId: req.after.id, accept: true }), 'deadline_passed');
+      await refused(respondJoinRequest(w.deps, 's1', { relationId: req.after.id, accept: false }), 'deadline_passed');
     });
 
     it('approving a photographer who joined elsewhere is membership_conflict', async () => {
@@ -380,7 +420,8 @@ describe('studio membership use cases', () => {
     it('removeMember is the studio\'s, sets removed and notifies', async () => {
       await joinByInvite('s1', 'm1');
       tick();
-      await refused(removeMember(w.deps, 's2', { memberId: 'm1' }), 'not_found');
+      await refused(removeMember(w.deps, 's2', { memberId: 'm1' }), 'permission_denied');
+      await refused(removeMember(w.deps, 's1', { memberId: 'ghost' }), 'not_found');
       const c = await removeMember(w.deps, 's1', { memberId: 'm1' });
       assert.equal(c.after.status, 'removed');
       assert.equal(c.after.endedBy, 'studio');
@@ -404,7 +445,10 @@ describe('studio membership use cases', () => {
       assert.deepEqual(first.expired, []);
       assert.deepEqual(first.expiring.map((r) => r.id), [early.after.id]); // requests get no expiring notice
       assert.equal(w.store.relations.get(early.after.id)?.expiringNotifiedAt, '2026-10-16T12:00:00.000Z');
-      assert.deepEqual((await runMembershipSweeps(w.deps)).expiring, []);
+      const opened = w.store.transactions;
+      assert.deepEqual(await runMembershipSweeps(w.deps), { expired: [], expiring: [] });
+      // the notified invite and the request that is not yet due open no transaction
+      assert.equal(w.store.transactions, opened);
 
       w.clock.setTime(new Date(IN_7_DAYS));
       const second = await runMembershipSweeps(w.deps);

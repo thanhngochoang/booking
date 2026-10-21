@@ -28,11 +28,15 @@ export interface RelationChange {
 
 export type MembershipNotice = 'invite' | 'join_request' | 'invite_accepted' | 'join_approved' | 'removed';
 
+/** An invite is announced as expiring once, within this time of `expiresAt`. */
+const EXPIRING_NOTICE_MS = 24 * 60 * 60 * 1000;
+
 /** Relations sent to the sweep per run. */
 export const MEMBERSHIP_SWEEP_LIMIT = 200;
 
-// Relation ids are `{studioId}_{memberId}_{ms}`: longer than `isId` allows with 28-character uids.
-const RELATION_ID = /^[A-Za-z0-9_-]{1,200}$/;
+// Relation ids are `{studioId}_{memberId}_{ms}`: longer than `isId` allows with 28-character uids. Ending in
+// digits also keeps Firestore-reserved `__x__` ids out (invalid_argument, not a transport error).
+const RELATION_ID = /^[A-Za-z0-9_-]{1,160}_\d{1,16}$/;
 
 function fields(raw: unknown): Record<string, unknown> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new DomainError('invalid_argument');
@@ -165,7 +169,7 @@ export async function inviteMember(deps: StudioDeps, studioId: string, raw: unkn
   const now = deps.clock.now();
   return deps.studios.runTransaction(async (tx) => {
     const { studio, member } = await readNewPair(tx, studioId, memberId, now);
-    const openInvites = await tx.countOpenInvites(studioId);
+    const openInvites = await tx.countOpenInvites(studioId, now);
     const quota = await tx.getQuota(studioId);
     // ---- all reads above ----
     assertFreeToJoin(member, now);
@@ -254,7 +258,10 @@ export async function respondInvite(deps: StudioDeps, memberId: string, raw: unk
   const nowIso = now.toISOString();
   const a = await deps.studios.runTransaction(async (tx): Promise<Answer> => {
     const rel = await tx.getRelation(id);
-    if (rel === null || rel.memberId !== memberId) throw new DomainError('not_found');
+    if (rel === null) throw new DomainError('not_found');
+    if (rel.memberId !== memberId) throw new DomainError('permission_denied');
+    // The sweep may have expired it already: the same answer as finding it past expiresAt below.
+    if (rel.status === 'expired') throw new DomainError('deadline_passed');
     if (rel.status !== 'invited') throw new DomainError('conflict');
     const member = await tx.getProfile(memberId);
     const studio = await tx.getProfile(rel.studioId);
@@ -292,11 +299,13 @@ export async function respondJoinRequest(deps: StudioDeps, studioId: string, raw
   const nowIso = now.toISOString();
   const a = await deps.studios.runTransaction(async (tx): Promise<Answer> => {
     const rel = await tx.getRelation(id);
-    if (rel === null || rel.studioId !== studioId) throw new DomainError('not_found');
+    if (rel === null) throw new DomainError('not_found');
+    if (rel.studioId !== studioId) throw new DomainError('permission_denied');
+    if (rel.status === 'expired') throw new DomainError('deadline_passed');
     if (rel.status !== 'requested') throw new DomainError('conflict');
     const member = await tx.getProfile(rel.memberId);
     const studio = await tx.getProfile(studioId);
-    const openInvites = await tx.countOpenInvites(studioId);
+    const openInvites = await tx.countOpenInvites(studioId, now);
     const quota = await tx.getQuota(studioId);
     // ---- all reads above ----
     if (member === null || studio === null) throw new DomainError('not_found');
@@ -332,7 +341,9 @@ async function readActive(
   member: StudioProfile | null,
   studioId: string | null,
 ): Promise<StudioRelation> {
-  if (member === null || studioId === null || member.studioId !== studioId) throw new DomainError('not_found');
+  if (member === null || studioId === null) throw new DomainError('not_found');
+  // The caller is the member (studioId is theirs) or a studio removing someone who is not its member.
+  if (member.studioId !== studioId) throw new DomainError('permission_denied');
   const rel = await tx.openRelationOf(studioId, member.uid);
   if (rel === null || rel.status !== 'active') throw new DomainError('not_found');
   if ((await tx.countOpenAssignments(studioId, member.uid)) > 0) throw new DomainError('member_busy');
@@ -379,29 +390,34 @@ export async function runMembershipSweeps(
 ): Promise<{ expired: RelationChange[]; expiring: StudioRelation[] }> {
   const now = deps.clock.now();
   const nowIso = now.toISOString();
-  const due = await deps.studios.dueRelations(now, MEMBERSHIP_SWEEP_LIMIT);
+  // The port already narrows to work to do; filtering again keeps a loose adapter from opening no-op transactions.
+  const due = (await deps.studios.dueRelations(now, MEMBERSHIP_SWEEP_LIMIT)).filter(
+    (r) => sweepActionOf(r, now) !== null,
+  );
   const out: { expired: RelationChange[]; expiring: StudioRelation[] } = { expired: [], expiring: [] };
   for (const d of due) {
     const change = await deps.studios.runTransaction(async (tx): Promise<RelationChange | null> => {
       const rel = await tx.getRelation(d.id);
-      if (rel === null || (rel.status !== 'invited' && rel.status !== 'requested')) return null;
-      if (isExpired(rel, now)) {
-        const after = expired(rel, nowIso);
-        tx.putRelation(after);
-        return { before: rel, after };
-      }
-      if (rel.status === 'invited' && rel.expiringNotifiedAt === null) {
-        const after: StudioRelation = { ...rel, expiringNotifiedAt: nowIso, version: rel.version + 1 };
-        tx.putRelation(after);
-        return { before: rel, after };
-      }
-      return null;
+      const action = rel === null ? null : sweepActionOf(rel, now);
+      if (rel === null || action === null) return null;
+      const after: StudioRelation =
+        action === 'expire' ? expired(rel, nowIso) : { ...rel, expiringNotifiedAt: nowIso, version: rel.version + 1 };
+      tx.putRelation(after);
+      return { before: rel, after };
     });
     if (change === null) continue;
     if (change.after.status === 'expired') out.expired.push(change);
     else out.expiring.push(change.after);
   }
   return out;
+}
+
+/** What the sweep does to a relation now: expire it, mark its expiring notice, or nothing. */
+export function sweepActionOf(r: StudioRelation, now: Date): 'expire' | 'expiring' | null {
+  if (r.status !== 'invited' && r.status !== 'requested') return null;
+  if (isExpired(r, now)) return 'expire';
+  const soon = Date.parse(r.expiresAt) <= now.getTime() + EXPIRING_NOTICE_MS;
+  return r.status === 'invited' && r.expiringNotifiedAt === null && soon ? 'expiring' : null;
 }
 
 /** Which #138 hook the callable adapter calls after commit (the expiring notice comes from the sweep). */

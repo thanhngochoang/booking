@@ -6,6 +6,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import {
+  OPEN_RELATION_STATUSES,
   providerTypeOf,
   type ProviderProfile,
   type ProviderStore,
@@ -77,13 +78,13 @@ export class FirestoreProviderStore implements ProviderStore {
               this.firestore
                 .collection(STUDIO_MEMBERS_COLLECTION)
                 .where(field, '==', uid)
-                .where('status', 'in', ['invited', 'requested', 'active'])
+                .where('status', 'in', [...OPEN_RELATION_STATUSES])
                 .limit(1),
             );
           const [asStudio, asMember] = await Promise.all([open('studioId'), open('memberId')]);
           return asStudio.size + asMember.size;
         },
-                setProviderType: (uid, type, now) => {
+        setProviderType: (uid, type, now) => {
           fTx.set(
             photographer(uid),
             {
