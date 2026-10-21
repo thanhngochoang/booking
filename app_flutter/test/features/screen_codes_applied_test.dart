@@ -30,6 +30,8 @@ import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
+import '../support/studio_world.dart' show FakeStudioRepository;
 
 Future<void> _show(WidgetTester tester, Widget screen) async {
   SharedPreferences.setMockInitialValues({});
@@ -43,6 +45,7 @@ Future<void> _show(WidgetTester tester, Widget screen) async {
       retry: (_, _) => null,
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
+        studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
         userRepositoryProvider.overrideWithValue(users),
         photographerIntroRepositoryProvider.overrideWithValue(
           FakePhotographerIntroRepository(),

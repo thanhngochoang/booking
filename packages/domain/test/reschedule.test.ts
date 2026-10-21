@@ -48,6 +48,7 @@ describe('reschedule proposal and answer (Task 3)', () => {
       kind: 'booking',
       customerId: booking.customerId,
       photographerId: booking.photographerId,
+      assigneeId: null,
       bookingId: booking.id,
       bookingStatus: booking.status,
       photographerRepliedAt: new Date('2026-10-01T12:00:00.000Z'),
@@ -364,5 +365,47 @@ describe('reschedule proposal and answer (Task 3)', () => {
         }),
       (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
     );
+  });
+
+  describe('studio bookings (#136 ruling: no reschedule in Phase 1)', () => {
+    const notEligible = (err: unknown) => err instanceof DomainError && err.code === 'not_eligible';
+
+    it('proposing on a studio booking is not_eligible and writes nothing', async () => {
+      const { deps, bookings, booking, chats, chatId } = setup();
+      bookings.bookings.set(booking.id, { ...booking, isStudio: true, assigneeId: 'asg1', assignStatus: 'assigned' });
+      bookings.studioDayLoads.set(`phot1_${booking.day}`, {
+        studioId: 'phot1', day: booking.day, unassignedIds: [], assignedIds: [booking.id], updatedAt: 'x',
+      });
+      const before = { chat: chats.chats.get(chatId), messages: chats.messages.get(chatId)?.length ?? 0 };
+      await assert.rejects(
+        proposeReschedule(deps, { actorId: 'cust1', bookingId: booking.id, day: '2026-10-12', start: '14:00', clientId: 'p_1' }),
+        notEligible,
+      );
+      assert.deepEqual(chats.chats.get(chatId), before.chat);
+      assert.equal(chats.messages.get(chatId)?.length ?? 0, before.messages);
+      assert.deepEqual([...bookings.availability.keys()], [`phot1_${booking.day}`]);
+      assert.deepEqual(bookings.getStudioDayLoad('phot1', booking.day)?.assignedIds, [booking.id]);
+    });
+
+    it('answering a proposal on a studio booking is not_eligible and moves no day', async () => {
+      const { deps, bookings, booking, chats, chatId } = setup();
+      const m = await proposeReschedule(deps, {
+        actorId: 'cust1', bookingId: booking.id, day: '2026-10-12', start: '14:00', clientId: 'p_1',
+      });
+      const studioBooking = { ...booking, isStudio: true, assigneeId: 'asg1', assignStatus: 'assigned' as const };
+      bookings.bookings.set(booking.id, studioBooking);
+      const messages = JSON.stringify(chats.messages.get(chatId));
+      await assert.rejects(
+        answerReschedule(deps, { actorId: 'phot1', chatId, messageId: m.id, accept: true }),
+        notEligible,
+      );
+      await assert.rejects(
+        answerReschedule(deps, { actorId: 'phot1', chatId, messageId: m.id, accept: false }),
+        notEligible,
+      );
+      assert.equal(JSON.stringify(chats.messages.get(chatId)), messages);
+      assert.deepEqual(await bookings.getBooking(booking.id), studioBooking);
+      assert.deepEqual([...bookings.availability.keys()], [`phot1_${booking.day}`]);
+    });
   });
 });

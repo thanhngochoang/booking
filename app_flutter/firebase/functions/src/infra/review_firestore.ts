@@ -10,10 +10,12 @@ import {
   REVIEW_HITS_MAX,
   REVIEW_REASONS,
   REVIEW_SUBJECT_TYPES,
+  STUDIO_BRICK_REASONS,
   VERDICTS,
   type RealShootPost,
   type Review,
   type ReviewReason,
+  type StudioBrickReason,
   type ReviewStore,
   type ReviewTx,
   type StatsStore,
@@ -59,6 +61,10 @@ export function reviewToFirestore(r: Review): DocumentData {
     photoPostId: r.photoPostId ?? null,
     createdAt: Timestamp.fromDate(r.createdAt),
     countedAt: r.countedAt ? Timestamp.fromDate(r.countedAt) : null,
+    ...(r.viaStudioId !== undefined ? { viaStudioId: r.viaStudioId } : {}),
+    ...(r.viaStudioName !== undefined ? { viaStudioName: r.viaStudioName } : {}),
+    ...(r.assigneeId !== undefined ? { assigneeId: r.assigneeId } : {}),
+    ...(r.assigneeName !== undefined ? { assigneeName: r.assigneeName } : {}),
   };
 }
 
@@ -88,10 +94,12 @@ export function reviewFromFirestore(
     known !== undefined && typeof d.intensity === 'number' && Number.isFinite(d.intensity)
       ? d.intensity
       : intensityOf(hits);
-  const reasons: ReviewReason[] = [];
+  const reasons: (ReviewReason | StudioBrickReason)[] = [];
+  const allowed: readonly (ReviewReason | StudioBrickReason)[] =
+    d.subjectType === 'studio' ? STUDIO_BRICK_REASONS : REVIEW_REASONS;
   if (known === 'brick' && Array.isArray(d.reasons)) {
     for (const x of d.reasons as unknown[]) {
-      const reason = REVIEW_REASONS.find((r) => r === x);
+      const reason = allowed.find((r) => r === x);
       if (reason !== undefined && !reasons.includes(reason)) reasons.push(reason);
     }
   }
@@ -117,6 +125,10 @@ export function reviewFromFirestore(
     photoPostId: typeof d.photoPostId === 'string' ? d.photoPostId : null,
     createdAt,
     countedAt: toDate(d.countedAt),
+    ...(typeof d.viaStudioId === 'string' ? { viaStudioId: d.viaStudioId } : {}),
+    ...(typeof d.viaStudioName === 'string' ? { viaStudioName: d.viaStudioName } : {}),
+    ...(typeof d.assigneeId === 'string' ? { assigneeId: d.assigneeId } : {}),
+    ...(typeof d.assigneeName === 'string' ? { assigneeName: d.assigneeName } : {}),
   };
 }
 
@@ -127,6 +139,7 @@ export function realShootPostToFirestore(p: RealShootPost): DocumentData {
     photographerId: p.photographerId,
     serviceId: p.serviceId,
     bookingId: p.bookingId,
+    ...(p.assigneeId !== undefined ? { assigneeId: p.assigneeId } : {}),
     imageUrls: [...p.imageUrls],
     imageMeta: p.imageMeta.map((m) => ({
       blurHash: m.blurHash ?? null,
@@ -159,6 +172,11 @@ export class FirestoreReviewStore implements ReviewStore {
             this.firestore.collection(REVIEWS_COLLECTION).doc(reviewId)
           );
           return reviewFromFirestore(snap.id, snap.data());
+        },
+        getUserName: async (uid) => {
+          const snap = await fTx.get(this.firestore.collection('users').doc(uid));
+          const name: unknown = snap.data()?.displayName;
+          return typeof name === 'string' && name !== '' ? name : null;
         },
         setBooking: (b) => {
           fTx.set(

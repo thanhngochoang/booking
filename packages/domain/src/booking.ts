@@ -6,6 +6,7 @@
 import type { AddonKind, AddonUnit } from './addon.js';
 import type { PaymentMethod } from './escrow.js';
 import type { ExtraRound } from './delivery.js';
+import type { AssigneeKind } from './studio_ports.js';
 
 export const BOOKING_STATUSES = [
   'draft',
@@ -54,7 +55,11 @@ export interface BookingContactSnapshot {
 }
 
 export interface BookingCancel {
-  readonly by: 'customer' | 'photographer' | 'system';
+  /**
+   * `studio_fault`: the customer's 100% cancel after a studio fault (#136 Decision 12), `reason` holding the fault
+   * kind; or the clock's cancel of a studio booking still unassigned at its start (`at` ≥ start, reason `assign_overdue`).
+   */
+  readonly by: 'customer' | 'photographer' | 'system' | 'studio_fault';
   readonly reason?: string;
   readonly at: string;
   readonly refundPercent: number;
@@ -107,6 +112,39 @@ export interface BookingPickup {
   readonly point?: { readonly lat: number; readonly lng: number };
 }
 
+/** Why the customer of a studio booking may cancel with a 100% refund (#136 Decision 12). */
+export type StudioFaultKind = 'assign_overdue' | 'change_declined' | 'change_expired' | 'late_reassign';
+
+/** One line of a studio booking's assignment log (S27 adds offer timestamps without migration). */
+export interface StudioAssignment {
+  readonly assigneeId: string;
+  readonly assigneeKind: AssigneeKind;
+  readonly at: string;
+  /** Who assigned (the studio owner). */
+  readonly by: string;
+  readonly reason: string | null;
+  /** Reassigned after assignDeadline. */
+  readonly late: boolean;
+}
+
+/** The customer's one request to change the assignee (S26.05). */
+export interface StudioChangeRequest {
+  readonly at: string;
+  readonly note: string | null;
+  /** min(at + 6 h, startAt). */
+  readonly respondBy: string;
+  readonly status: 'pending' | 'reassigned' | 'declined' | 'expired';
+  readonly declineReason: string | null;
+  readonly answeredAt: string | null;
+}
+
+export interface StudioFault {
+  readonly kind: StudioFaultKind;
+  readonly at: string;
+}
+
+export type AssignReminder = 'h48' | 'h26';
+
 export interface Booking {
   readonly id: string;
   readonly customerId: string;
@@ -156,6 +194,22 @@ export interface Booking {
   readonly extraRound?: ExtraRound | null;
   readonly samplesPurgeAfter?: string | null;
   readonly samplesPurged?: boolean;
+  // ── Studio bookings only (#136; absent on individual bookings) ──
+  readonly isStudio?: boolean;
+  /** Who shoots for the studio; kept after "Trả việc" until the studio reassigns. */
+  readonly assigneeId?: string | null;
+  readonly assigneeKind?: AssigneeKind | null;
+  readonly assignStatus?: 'unassigned' | 'assigned';
+  /** ISO; max(startAt − 24 h, createdAt + 2 h), never after startAt. */
+  readonly assignDeadline?: string;
+  /** Set once by the sweep when the deadline passed unassigned; stays as history after a late assignment. */
+  readonly assignOverdue?: boolean;
+  readonly assignedAt?: string | null;
+  readonly assignments?: readonly StudioAssignment[];
+  readonly assignRemindersSent?: readonly AssignReminder[];
+  readonly changeRequest?: StudioChangeRequest | null;
+  readonly studioFault?: StudioFault | null;
+  readonly assignmentReturned?: { readonly at: string; readonly reason: string | null } | null;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;

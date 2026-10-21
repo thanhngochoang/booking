@@ -12,8 +12,10 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 /// State of one day on a photographer's calendar. A day with no stored
 /// record is [free]; `off` is set by the photographer, `pending` and `booked`
-/// only by the server (bookings and events).
-enum DayState { free, pending, booked, off }
+/// only by the server (bookings and events). `full` is a studio day whose
+/// bookings already use every free member (server-written, #136 Decision 26):
+/// drawn like `booked`, labelled "Hết chỗ", never selectable.
+enum DayState { free, pending, booked, off, full }
 
 extension DayStateLabel on DayState {
   String label(AppLocalizations l) => switch (this) {
@@ -21,6 +23,7 @@ extension DayStateLabel on DayState {
     DayState.pending => l.dayStatePending,
     DayState.booked => l.dayStateBooked,
     DayState.off => l.dayStateOff,
+    DayState.full => l.calendarDayFull,
   };
 }
 
@@ -286,7 +289,7 @@ class _DayCell extends StatelessWidget {
       case DayState.off:
         fillColor = _field(theme);
         fg = tertiary;
-      case DayState.booked:
+      case DayState.booked || DayState.full:
         line = TextDecoration.lineThrough;
         fg = tertiary;
     }

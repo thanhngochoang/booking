@@ -375,6 +375,9 @@ class FakeBookingRepository implements BookingRepository {
       case 'complete':
         nextStatus = BookingStatus.completed;
         break;
+      case 'cancel_studio_fault':
+        nextStatus = BookingStatus.cancelled;
+        break;
       default:
         nextStatus = b.status;
     }
@@ -382,6 +385,14 @@ class FakeBookingRepository implements BookingRepository {
     final nowUtc = _clock().toUtc();
     final updated = b.copyWith(
       status: nextStatus,
+      cancel: action == 'cancel_studio_fault'
+          ? BookingCancel(
+              by: 'studio_fault',
+              reason: b.studio?.studioFault?.kind.code,
+              at: nowUtc,
+              refundPercent: 100,
+            )
+          : b.cancel,
       shotAt: nextStatus == BookingStatus.shot ? nowUtc : b.shotAt,
       completedAt: nextStatus == BookingStatus.completed
           ? nowUtc
@@ -413,6 +424,98 @@ class FakeBookingRepository implements BookingRepository {
     _bookingChanges.add(bookingId);
     return updated;
   }
+
+  /// Studio callables made, in order: `(name, payload)` with the payload the
+  /// Firestore adapter sends.
+  final studioCalls = <(String, Map<String, Object?>)>[];
+
+  Future<Booking> _studio(
+    String name,
+    Map<String, Object?> payload,
+    StudioBookingInfo Function(StudioBookingInfo s, DateTime now) change,
+  ) async {
+    _checkNextError();
+    studioCalls.add((name, payload));
+    final bookingId = payload['bookingId']! as String;
+    // The assignee sees a studio booking only through the assigned stream.
+    final b =
+        bookings[bookingId] ??
+        _assigned.where((a) => a.id == bookingId).firstOrNull;
+    final s = b?.studio;
+    if (b == null || s == null) throw const BookingException('not_eligible');
+    final now = _clock().toUtc();
+    final updated = b.copyWith(studio: change(s, now), updatedAt: now);
+    bookings[bookingId] = updated;
+    _bookingChanges.add(bookingId);
+    if (_assigned.any((a) => a.id == bookingId)) {
+      emitAssigned([
+        for (final a in _assigned) a.id == bookingId ? updated : a,
+      ]);
+    }
+    return updated;
+  }
+
+  @override
+  Future<Booking> assign(String bookingId, String assigneeId) => _studio(
+    'assignBooking',
+    {'bookingId': bookingId, 'assigneeId': assigneeId},
+    (s, now) => s.copyWith(
+      assigneeId: assigneeId,
+      assigneeKind: 'member',
+      assignStatus: StudioAssignStatus.assigned,
+      assignedAt: now,
+      assignments: [
+        ...s.assignments,
+        StudioAssignment(assigneeId: assigneeId, at: now, by: 'studio'),
+      ],
+      changeRequest: s.changeRequest?.status == ChangeRequestStatus.pending
+          ? s.changeRequest!.copyWith(
+              status: ChangeRequestStatus.reassigned,
+              answeredAt: now,
+            )
+          : s.changeRequest,
+      studioFault: s.studioFault?.kind == StudioFaultKind.assignOverdue
+          ? null
+          : s.studioFault,
+      returnedAt: null,
+      returnReason: null,
+    ),
+  );
+
+  @override
+  Future<Booking> requestChange(String bookingId, {String? note}) => _studio(
+    'requestAssigneeChange',
+    {'bookingId': bookingId, 'note': ?note},
+    (s, now) => s.copyWith(
+      changeRequest: StudioChangeRequest(
+        at: now,
+        note: note,
+        respondBy: now.add(const Duration(hours: 6)),
+      ),
+    ),
+  );
+
+  @override
+  Future<Booking> declineChange(String bookingId, String reason) => _studio(
+    'declineAssigneeChange',
+    {'bookingId': bookingId, 'reason': reason},
+    (s, now) => s.copyWith(
+      changeRequest: s.changeRequest?.copyWith(
+        status: ChangeRequestStatus.declined,
+        declineReason: reason,
+        answeredAt: now,
+      ),
+      studioFault: StudioFault(kind: StudioFaultKind.changeDeclined, at: now),
+    ),
+  );
+
+  @override
+  Future<Booking> returnAssignment(String bookingId, {String? reason}) =>
+      _studio(
+        'returnAssignment',
+        {'bookingId': bookingId, 'reason': ?reason},
+        (s, now) => s.copyWith(returnedAt: now, returnReason: reason),
+      );
 }
 
 extension _StreamStartWith<T> on Stream<T> {

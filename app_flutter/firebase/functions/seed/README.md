@@ -247,13 +247,30 @@ Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An
 `photographers/{uid}/private/addons` holds `activeCount` (An 3, Cúc 1), the lock of `saveAddon`/`deleteAddon`.
 Đặt An · Chân dung 2 giờ để thử khối Thêm dịch vụ (S04.01) và điểm đón (S04.06).
 
+## Studio (S26)
+
+Cúc is a verified studio (`providerType: studio`, `memberCount: 1`, `assignableMembers: 1`) with package `seed-service-studio-family`
+(Gia đình tại studio 2 giờ, 2 500 000 ₫). Relation ids are `{studioId}_{memberId}_{createdAtMs}`; every seeded
+photographer carries `nameKey` (the S26.02 search key).
+
+| Data | Who | Notes |
+|---|---|---|
+| `studio_members/seed-photographer-cuc_seed-photographer-an_…` | Cúc ↔ An | `active`, joined 30 days before seeding; `photographers/seed-photographer-an.studioId` is Cúc |
+| `studio_members/seed-photographer-cuc_seed-photographer-binh_…` | Cúc → Bình | `invited`, expires 5 days after seeding (sign in as Bình to answer in S26.03) |
+| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to approve in S26.01) |
+| `seed-booking-studio-assigned` | Lan ↔ Cúc | accepted, assigned to An, 3 days ahead (the next day An is free); An's day is `booked`; Cúc's day is `full` (its one member is taken) |
+| `seed-booking-studio-unassigned` | Lan ↔ Cúc | accepted, unassigned, starts about 20 h after seeding: its assign deadline has passed, so the first `npm run clock -- bookings` marks it overdue (`assign_overdue`, Lan may cancel with 100% back) |
+
+`studio_day_load/seed-photographer-cuc_{day}` holds both bookings' days (server only). Studio bookings never write
+the studio's own day as `booked`/`pending`; Cúc's `availability/{day}` only shows the derived `full`.
+
 ## Discovery stats (S02)
 
 | Photographer | `startingPrice` | `stats.nextFreeDate` | `stats.completedCount` | Notes |
 |---|---|---|---|---|
 | An | 1 500 000 ₫ | computed from today & booked days | 3 | completed bookings: `recent`, `old`, `disputed` |
 | Bình | 1 200 000 ₫ | computed from today | 0 | unverified, `acceptingOrders: false` |
-| Cúc | `null` | computed from today | 0 | no services seeded |
+| Cúc | 2 500 000 ₫ | computed from today and its `full` days | 0 | studio package `seed-service-studio-family` (S26) |
 | Dũng | `null` | computed from today | 0 | no services seeded |
 
 | Item | Key / Path | Value | Notes |
@@ -271,7 +288,7 @@ npm run stats -- recompute
 
 The emulators never fire scheduled functions. `npm run clock -- events` runs the event clock once
 (close, complete, refunds, then the 48-hour `event_soon` reminders) and prints the counts;
-`npm run clock -- bookings` runs the booking clock once (sweeps and shoot reminders). The tool
+`npm run clock -- bookings` runs the booking clock once (sweeps, shoot reminders and the studio sweeps). The tool
 refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` point at a local host;
 push is only logged.
 

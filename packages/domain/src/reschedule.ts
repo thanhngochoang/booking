@@ -25,6 +25,11 @@ export async function proposeReschedule(
   if (!booking) {
     throw new DomainError('not_found');
   }
+  // Studio bookings cannot be rescheduled in Phase 1 (#136 ruling): the day is held on the studio's load and the
+  // assignee's day, which a move would leave behind.
+  if (booking.isStudio === true) {
+    throw new DomainError('not_eligible');
+  }
   if (booking.customerId !== input.actorId && booking.photographerId !== input.actorId) {
     throw new DomainError('permission_denied');
   }
@@ -130,6 +135,10 @@ export async function answerReschedule(
     const chat = await cTx.getChat(input.chatId);
     if (!chat) {
       throw new DomainError('not_found');
+    }
+    // No studio reschedule (see proposeReschedule); refused before anything is written.
+    if (chat.bookingId && (await deps.bookings.getBooking(chat.bookingId))?.isStudio === true) {
+      throw new DomainError('not_eligible');
     }
 
     const message = await cTx.getMessage(input.chatId, input.messageId);

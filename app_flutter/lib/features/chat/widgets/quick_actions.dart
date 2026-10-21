@@ -36,8 +36,10 @@ class QuickActionsRow extends StatelessWidget {
         (booking!.status == BookingStatus.accepted ||
             booking!.status == BookingStatus.upcoming);
 
+    // A studio booking cannot be moved (the reschedule callable refuses it).
     final showReschedule =
         isAcceptedOrUpcoming &&
+        booking!.studio == null &&
         rescheduleEnabled &&
         !thread.rescheduleUsed &&
         !hasPendingProposal;

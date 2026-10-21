@@ -28,6 +28,7 @@ describe('provider callables', () => {
       artistSince: null,
       studioDistrict: null,
       studioCity: null,
+      memberCount: 0,
     });
   });
 
@@ -64,6 +65,7 @@ describe('provider callables', () => {
       artistSince: null,
       studioDistrict: null,
       studioCity: null,
+      memberCount: 0,
     });
     store.activeBookings.set('p2', 1);
     await assert.rejects(

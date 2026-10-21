@@ -1,8 +1,40 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 
 void main() {
+  test('reads the studio a member belongs to (#136)', () {
+    expect(introFromFirestore({'studioId': 'cuc'}).studioId, 'cuc');
+    expect(introFromFirestore({'studioId': ''}).studioId, isNull);
+    expect(introFromFirestore({}).studioId, isNull);
+    expect(
+      const PhotographerIntro(studioId: 'cuc') ==
+          const PhotographerIntro(studioId: 'may'),
+      isFalse,
+    );
+  });
+
+  test('reads the studio cooldown (#136, S03.01 "Xin gia nhập")', () {
+    final until = DateTime.utc(2026, 10, 25, 3);
+    expect(
+      introFromFirestore({'studioCooldownUntil': Timestamp.fromDate(until)})
+          .studioCooldownUntil,
+      until,
+    );
+    expect(
+      introFromFirestore({'studioCooldownUntil': '2026-10-25T03:00:00.000Z'})
+          .studioCooldownUntil,
+      until,
+    );
+    expect(introFromFirestore({}).studioCooldownUntil, isNull);
+    expect(
+      PhotographerIntro(studioCooldownUntil: until) ==
+          const PhotographerIntro(),
+      isFalse,
+    );
+  });
+
   test('reads what is there and falls back for the rest', () {
     expect(
       introFromFirestore({

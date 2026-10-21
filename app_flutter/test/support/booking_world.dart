@@ -481,6 +481,8 @@ typedef TransitionCall = ({String bookingId, String action, String? reason});
 /// [FakeBookingRepository] that records `transitionBooking` calls and can
 /// hold them in flight with [gate].
 class RecordingBookingRepository extends FakeBookingRepository {
+  RecordingBookingRepository({super.customerId, super.clock});
+
   final transitions = <TransitionCall>[];
 
   /// When set, every transition waits for it before answering.
@@ -548,6 +550,10 @@ Future<BookingDetailHandles> pumpBookingDetail(
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
   List<Override> extraOverrides = const [],
+
+  /// More public profiles by uid (a studio and its member); each also gets
+  /// [photographerChannels].
+  Map<String, PhotographerProfile> profiles = const {},
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
   tester.view.physicalSize = viewSize;
@@ -558,6 +564,9 @@ Future<BookingDetailHandles> pumpBookingDetail(
   final links = FakeContactLinkRepository();
   final photographerContacts = FakePhotographerContactRepository()
     ..seed('p1', channels: photographerChannels);
+  for (final uid in profiles.keys) {
+    photographerContacts.seed(uid, channels: photographerChannels);
+  }
   final userRepo = FakeUserRepository();
   await userRepo.ensureProfile(
     const AuthUser(uid: 'c1', displayName: 'Lan Anh'),
@@ -574,6 +583,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
         '/home',
         '/bookings',
         '/u/:uid/book',
+        '/u/:uid',
         '/chat/:id',
         '/b/:id/review',
       ])
@@ -598,8 +608,11 @@ Future<BookingDetailHandles> pumpBookingDetail(
     calendarTodayProvider.overrideWithValue(effectiveClock.now),
     bookingRepositoryProvider.overrideWithValue(bookings),
     bookingFeaturesProvider.overrideWithValue(features),
-    photographerProfileProvider('p1')
-        .overrideWithValue(const AsyncData(bookingProfile)),
+    if (!profiles.containsKey('p1'))
+      photographerProfileProvider('p1')
+          .overrideWithValue(const AsyncData(bookingProfile)),
+    for (final e in profiles.entries)
+      photographerProfileProvider(e.key).overrideWithValue(AsyncData(e.value)),
     externalLauncherProvider.overrideWithValue(launcher),
     contactLinkRepositoryProvider.overrideWithValue(links),
     photographerContactRepositoryProvider.overrideWithValue(

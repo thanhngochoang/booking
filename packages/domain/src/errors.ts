@@ -44,6 +44,14 @@ export const ERROR_CODES = [
   'contact_leak',
   /** A delivery sample is missing, failed, or still processing. */
   'not_ready',
+  /** Studio membership (#136): the photographer is active in another studio, or a provider type change is blocked by members or an open relation. */
+  'membership_conflict',
+  /** Studio membership (#136): within 7 days of leaving or being removed from a studio. */
+  'cooldown',
+  /** Studio membership (#136): the member still has an open studio booking assigned. */
+  'member_busy',
+  /** Studio membership (#136): members + open invites reached the cap (3, or 30 business-verified), or 5 open invites. */
+  'studio_full',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

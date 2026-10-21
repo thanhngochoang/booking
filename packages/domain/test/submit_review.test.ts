@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import type { Booking } from '../src/booking.js';
+import { intensityOf } from '../src/review.js';
 import { DomainError } from '../src/errors.js';
 import { MemoryReviewStore } from '../src/memory_review_store.js';
 import type { ReviewDeps } from '../src/review_ports.js';
@@ -313,5 +314,148 @@ describe('submitReview', () => {
     assert.ok(storedBooking);
     assert.equal(storedBooking.status, 'approved');
     assert.equal(storedBooking.reviewedAt, now.toISOString());
+  });
+
+  describe('studio booking', () => {
+    const studioBooking = (over: Partial<Booking> = {}) =>
+      makeCompletedBooking({
+        photographerId: 'studio1',
+        isStudio: true,
+        assigneeId: 'member1',
+        assigneeKind: 'member',
+        ...over,
+      });
+    const studioInput = (over: Record<string, unknown> = {}) =>
+      tomatoInput({
+        verdict: 'brick',
+        hits: 3,
+        reasons: ['late'],
+        text: 'Thợ đến trễ gần nửa tiếng',
+        studio: {
+          verdict: 'tomato',
+          hits: 10,
+          text: 'Studio tư vấn rất nhiệt tình',
+        },
+        ...over,
+      });
+
+    beforeEach(() => {
+      store.seedUserName('studio1', 'Studio Ánh Sáng');
+      store.seedUserName('member1', 'Minh Thợ');
+    });
+
+    it('writes reviews/{id} for the last assignee and reviews/{id}_studio for the studio in one transaction', async () => {
+      store.seedBooking(studioBooking());
+      await submitReview(deps, 'cust1', studioInput());
+
+      assert.equal(store.reviews.size, 2);
+      const member = store.reviews.get('book1');
+      const studio = store.reviews.get('book1_studio');
+      assert.ok(member && studio);
+      assert.equal(member.subjectType, 'photographer');
+      assert.equal(member.subjectId, 'member1');
+      assert.equal(member.photographerId, 'member1');
+      assert.equal(studio.subjectType, 'studio');
+      assert.equal(studio.subjectId, 'studio1');
+      assert.equal(studio.photographerId, 'studio1');
+      assert.equal(studio.id, 'book1_studio');
+      assert.equal(studio.bookingId, 'book1');
+      assert.equal(store.events.length, 1);
+      assert.equal(store.bookings.get('book1')?.reviewedAt, now.toISOString());
+    });
+
+    it('the member review carries viaStudioId and name; the studio review carries assigneeId and name', async () => {
+      store.seedBooking(studioBooking());
+      await submitReview(deps, 'cust1', studioInput());
+
+      const member = store.reviews.get('book1');
+      const studio = store.reviews.get('book1_studio');
+      assert.equal(member?.viaStudioId, 'studio1');
+      assert.equal(member?.viaStudioName, 'Studio Ánh Sáng');
+      assert.equal(member?.assigneeId, undefined);
+      assert.equal(studio?.assigneeId, 'member1');
+      assert.equal(studio?.assigneeName, 'Minh Thợ');
+      assert.equal(studio?.viaStudioId, undefined);
+    });
+
+    it('computes verdict, reasons, text and intensity per block', async () => {
+      store.seedBooking(studioBooking());
+      await submitReview(deps, 'cust1', studioInput());
+
+      const member = store.reviews.get('book1');
+      const studio = store.reviews.get('book1_studio');
+      assert.equal(member?.verdict, 'brick');
+      assert.equal(member?.intensity, intensityOf(3));
+      assert.deepEqual(member?.reasons, ['late']);
+      assert.equal(member?.text, 'Thợ đến trễ gần nửa tiếng');
+      assert.equal(studio?.verdict, 'tomato');
+      assert.equal(studio?.intensity, 1);
+      assert.deepEqual(studio?.reasons, []);
+      assert.equal(studio?.text, 'Studio tư vấn rất nhiệt tình');
+      assert.equal(studio?.photoPostId, null);
+    });
+
+    it('a studio booking without an assignee is not_eligible', async () => {
+      store.seedBooking(studioBooking({ assigneeId: null, assigneeKind: null }));
+      await assert.rejects(
+        () => submitReview(deps, 'cust1', studioInput()),
+        (e: unknown) => e instanceof DomainError && e.code === 'not_eligible'
+      );
+      assert.equal(store.reviews.size, 0);
+    });
+
+    it('a studio booking without the studio block is invalid_argument; an individual one with it too', async () => {
+      store.seedBooking(studioBooking());
+      await assert.rejects(
+        () => submitReview(deps, 'cust1', studioInput({ studio: undefined })),
+        (e: unknown) => e instanceof DomainError && e.code === 'invalid_argument'
+      );
+      store.seedBooking(makeCompletedBooking({ id: 'book2' }));
+      await assert.rejects(
+        () => submitReview(deps, 'cust1', studioInput({ bookingId: 'book2' })),
+        (e: unknown) => e instanceof DomainError && e.code === 'invalid_argument'
+      );
+      assert.equal(store.reviews.size, 0);
+    });
+
+    it('either document already existing is conflict', async () => {
+      store.seedBooking(studioBooking());
+      await submitReview(deps, 'cust1', studioInput());
+      const written = [...store.reviews.values()];
+      assert.equal(written.length, 2);
+
+      for (const kept of written) {
+        store.reviews.clear();
+        store.seedReview(kept);
+        store.seedBooking(studioBooking());
+        await assert.rejects(
+          () => submitReview(deps, 'cust1', studioInput()),
+          (e: unknown) => e instanceof DomainError && e.code === 'conflict'
+        );
+      }
+    });
+
+    it('the real-shoot post keeps photographerId = studio and adds assigneeId', async () => {
+      store.seedBooking(studioBooking());
+      const postId = 'post_studio_1';
+      const storagePath = `posts/cust1/${postId}/0.jpg`;
+      const url = `${prefixes[0]}${encodeURIComponent(storagePath)}?alt=media`;
+      await submitReview(
+        deps,
+        'cust1',
+        studioInput({ postId, photos: [{ url, storagePath }] })
+      );
+      const post = store.posts.get(postId);
+      assert.equal(post?.photographerId, 'studio1');
+      assert.equal(post?.assigneeId, 'member1');
+      assert.equal(store.reviews.get('book1')?.photoPostId, postId);
+    });
+
+    it('an individual booking still writes one document and no assignee on the post', async () => {
+      store.seedBooking(makeCompletedBooking());
+      await submitReview(deps, 'cust1', tomatoInput());
+      assert.equal(store.reviews.size, 1);
+      assert.equal(store.reviews.get('book1')?.viaStudioId, undefined);
+    });
   });
 });

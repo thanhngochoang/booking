@@ -13,6 +13,8 @@ export class MemoryProviderStore implements ProviderStore {
   readonly activeBookings = new Map<string, number>();
   /** Seed: number of held | partially_refunded | disputed payments per payee. */
   readonly heldPayments = new Map<string, number>();
+  /** Seed: number of open studio relations (as studio or member) per uid. */
+  readonly openRelations = new Map<string, number>();
   /** Committed write count. */
   writes = 0;
   /** Order of committed writes (tests may append hook calls too). */
@@ -44,6 +46,10 @@ export class MemoryProviderStore implements ProviderStore {
       countHeldPayments: async (uid) => {
         guardRead('countHeldPayments');
         return this.heldPayments.get(uid) ?? 0;
+      },
+      countOpenRelations: async (uid) => {
+        guardRead('countOpenRelations');
+        return this.openRelations.get(uid) ?? 0;
       },
       setProviderType: (uid: string, type: ProviderType): void => {
         hasWritten = true;

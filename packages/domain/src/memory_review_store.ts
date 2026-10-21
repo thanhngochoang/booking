@@ -7,6 +7,11 @@ export class MemoryReviewStore implements ReviewStore {
   readonly reviews = new Map<string, Review>();
   readonly posts = new Map<string, RealShootPost>();
   readonly events: BookingEventRecord[] = [];
+  readonly userNames = new Map<string, string>();
+
+  seedUserName(uid: string, name: string): void {
+    this.userNames.set(uid, name);
+  }
 
   seedBooking(booking: Booking): void {
     this.bookings.set(booking.id, booking);
@@ -41,6 +46,15 @@ export class MemoryReviewStore implements ReviewStore {
           );
         }
         return this.reviews.get(reviewId) ?? null;
+      },
+
+      getUserName: async (uid: string): Promise<string | null> => {
+        if (hasWritten) {
+          throw new Error(
+            'Transaction read after write: getUserName called after a write operation'
+          );
+        }
+        return this.userNames.get(uid) ?? null;
       },
 
       setBooking: (b: Booking): void => {

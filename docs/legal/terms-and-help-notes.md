@@ -55,7 +55,7 @@ Trạng thái: **ĐK** = cần trong điều khoản, **FAQ** = cần trong tr�
 
 | # | Quy định | Nguồn | Dùng ở |
 |---|---|---|---|
-| S1 | Đặt với Studio: studio chốt giá rồi giao một thợ thành viên; studio **phải báo thợ chụp chậm nhất 24 giờ trước buổi chụp**. | studio 2026-10-06 §5.2 | ĐK, FAQ |
+| S1 | Đặt với Studio: studio chốt giá rồi giao một thợ thành viên; studio **phải báo thợ chụp chậm nhất 24 giờ trước buổi chụp**. Booking đặt khi còn dưới 24 giờ: studio có **2 giờ** kể từ lúc đặt để giao thợ (không vượt giờ bắt đầu), không bị từ chối ngay. | studio 2026-10-06 §5.2 | ĐK, FAQ |
 | S2 | Khách xem hồ sơ thợ được giao và được **xin đổi thợ 1 lần**; studio trả lời trong 6 giờ. Studio quá hạn giao thợ, từ chối/không trả lời yêu cầu đổi, hoặc tự đổi thợ khi còn dưới 24 giờ → khách được **huỷ và hoàn 100%**. | studio §5.3, §5.4 | ĐK, FAQ |
 | S3 | Booking studio: **studio bàn giao ảnh** và chịu hạn giao ảnh; tiền trả cho studio theo các mốc ở P2; studio tự chia với thợ, app không can thiệp. | studio §5.1, §5.6 | ĐK |
 | S4 | Thợ thuộc tối đa một studio một lúc, vẫn nhận booking cá nhân. Vào studio cần hai bên đồng ý (lời mời hết hạn sau 7 ngày); rời hoặc bị bỏ thì 7 ngày sau mới vào studio khác; không rời/bỏ được khi còn việc được giao chưa xong. Studio chưa xác minh tối đa 3 thợ, đã xác minh tối đa 30. | studio §3 | ĐK (điều khoản cho thợ và studio) |

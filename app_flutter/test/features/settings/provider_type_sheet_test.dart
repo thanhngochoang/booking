@@ -10,9 +10,11 @@ import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
 
 import '../../support/photographer_world.dart';
 import '../../support/screen_host.dart';
+import '../../support/studio_world.dart' show FakeStudioRepository;
 
 Future<PhotographerWorld> _open(
   WidgetTester tester, {
@@ -41,6 +43,7 @@ Future<PhotographerWorld> _open(
       router: router,
       overrides: [
         ...w.overrides,
+        studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
         userContactRepositoryProvider.overrideWithValue(
           FakeUserContactRepository(),
         ),
@@ -214,6 +217,7 @@ void main() {
         router: router,
         overrides: [
           ...w.overrides,
+          studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
           userContactRepositoryProvider.overrideWithValue(
             FakeUserContactRepository(),
           ),

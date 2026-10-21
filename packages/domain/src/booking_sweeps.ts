@@ -8,6 +8,8 @@ import { escrowRefundedTotal, releaseEscrowPayment } from './escrow.js';
 import { releaseDueMilestones } from './milestones.js';
 import { transitionBooking } from './transition_booking.js';
 import { approveDelivery } from './delivery_use_cases.js';
+import { studioDayLoadWith } from './studio_capacity.js';
+import { waitsForAssignee } from './studio_assignment.js';
 
 export interface BookingSweepResults {
   readonly cleanedDrafts: number;
@@ -33,10 +35,16 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
       if (b && b.status === 'draft' && b.payableUntil && Date.parse(b.payableUntil) <= now.getTime()) {
         // Every read before the first write (Firestore transactions refuse reads after writes).
         const day = await tx.getAvailabilityDay(draft.photographerId, draft.day);
+        const load = b.isStudio === true ? await tx.getStudioDayLoad(draft.photographerId, draft.day) : null;
         await tx.deleteBooking(draft.id);
         await tx.deleteContactSnapshot(draft.id);
         if (day && day.bookingId === draft.id) {
           await tx.deleteAvailabilityDay(draft.photographerId, draft.day);
+        }
+        if (load) {
+          await tx.setStudioDayLoad(
+            studioDayLoadWith(load, { studioId: draft.photographerId, day: draft.day }, draft.id, null, now.toISOString()),
+          );
         }
         cleanedDrafts += 1;
       }
@@ -73,11 +81,13 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     }
   }
 
-  // 4. Auto mark-shot upcoming bookings 24h after end time
+  // 4. Auto mark-shot upcoming bookings 24h after end time. A studio booking without an assignee is never
+  // marked shot (no payout); the studio sweep cancels it at its start.
   let autoShots = 0;
   const completeCutoff = new Date(now.getTime() - AUTO_COMPLETE_DELAY_HOURS * 60 * 60 * 1000);
   const completions = await deps.store.findAutoCompletions(completeCutoff);
   for (const b of completions) {
+    if (waitsForAssignee(b)) continue;
     try {
       await transitionBooking(deps, {
         bookingId: b.id,

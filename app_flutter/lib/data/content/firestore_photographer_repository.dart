@@ -11,6 +11,7 @@ double _double(Object? v) => v is num ? v.toDouble() : 0;
 int _int(Object? v) => v is num ? v.toInt() : 0;
 int? _intOrNull(Object? v) => v is num ? v.toInt() : null;
 String? _str(Object? v) => v is String ? v : null;
+String? _id(Object? v) => v is String && _validId(v) ? v : null;
 
 Map<String, dynamic> _map(Object? v) =>
     v is Map ? Map<String, dynamic>.from(v) : const {};
@@ -41,6 +42,14 @@ PhotographerSummary photographerSummaryFrom({
   final geo = area['center'] is GeoPoint ? area['center'] : area['geo'];
   final stats = _map(photographer['stats']);
   final created = photographer['createdAt'];
+  final providerType = ProviderType.fromCode(photographer['providerType']);
+  final memberCount = _int(photographer['memberCount']);
+  // Read only on studios (#136 ruling): absent falls back to memberCount.
+  final assignable = providerType == ProviderType.studio
+      ? _intOrNull(photographer['assignableMembers'])
+      : null;
+  final noCapacity =
+      providerType == ProviderType.studio && (assignable ?? memberCount) == 0;
   return PhotographerSummary(
     id: id,
     displayName: _str(user?['displayName']) ?? '',
@@ -67,13 +76,17 @@ PhotographerSummary photographerSummaryFrom({
     completedCount: _int(stats['completedCount']),
     responseMinutes: _intOrNull(stats['responseMinutes']),
     startingPriceVnd: _intOrNull(photographer['startingPrice']),
-    nextFreeDate: _str(stats['nextFreeDate']),
+    // A studio without assignable members has no free day at all.
+    nextFreeDate: noCapacity ? null : _str(stats['nextFreeDate']),
     createdAt: created is Timestamp ? created.toDate().toUtc() : null,
-    providerType: ProviderType.fromCode(photographer['providerType']),
+    providerType: providerType,
     approvedAwardCount: _int(photographer['approvedAwardCount']),
     studioDistrict: _str(photographer['studioDistrict']),
     hiddenFromDiscovery: photographer['hiddenFromDiscovery'] == true,
     deletionPending: photographer['deletionPending'] == true,
+    studioId: _id(photographer['studioId']),
+    memberCount: memberCount,
+    assignableMembers: assignable,
   );
 }
 
@@ -204,6 +217,24 @@ class FirestorePhotographerRepository implements PhotographerRepository {
       return byScore != 0 ? byScore : a.id.compareTo(b.id);
     });
     return list;
+  }
+
+  /// Index `photographers (studioId, studioJoinedAt)` (#136 Decision 2).
+  @override
+  Future<List<PhotographerSummary>> membersOf(
+    String studioId, {
+    int limit = 10,
+  }) async {
+    if (!_validId(studioId)) {
+      return const [];
+    }
+    final snap = await _db
+        .collection('photographers')
+        .where('studioId', isEqualTo: studioId)
+        .orderBy('studioJoinedAt')
+        .limit(clampPageSize(limit))
+        .get();
+    return _join(snap.docs);
   }
 
   /// Unordered pool (`__name__` order); callers cache it. Revisit the

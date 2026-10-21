@@ -18,6 +18,7 @@ describe('chat_firestore mapping and trigger unit tests', () => {
       kind: 'booking',
       customerId: 'cust1',
       photographerId: 'phot1',
+      assigneeId: 'asg1',
       bookingId: 'book_123',
       bookingStatus: 'upcoming',
       photographerRepliedAt: new Date('2026-10-01T12:00:00.000Z'),
@@ -36,10 +37,20 @@ describe('chat_firestore mapping and trigger unit tests', () => {
     assert.ok(firestoreChat.createdAt instanceof Timestamp);
     assert.ok(firestoreChat.photographerRepliedAt instanceof Timestamp);
     assert.ok(firestoreChat.blockedAt instanceof Timestamp);
-    assert.deepEqual(firestoreChat.members, ['cust1', 'phot1']);
+    assert.deepEqual(firestoreChat.members, ['cust1', 'phot1', 'asg1']);
+    assert.equal(firestoreChat.assigneeId, 'asg1');
 
     const restoredChat = fromFirestoreChat('cust1_phot1', firestoreChat);
     assert.deepEqual(restoredChat, chat);
+
+    // Without an assignee the members are the two parties and assigneeId stays null
+    const noAssignee = { ...chat, assigneeId: null };
+    const fsNoAssignee = toFirestoreChat(noAssignee);
+    assert.deepEqual(fsNoAssignee.members, ['cust1', 'phot1']);
+    assert.deepEqual(fromFirestoreChat('cust1_phot1', fsNoAssignee), noAssignee);
+    const legacy: Record<string, unknown> = { ...fsNoAssignee };
+    delete legacy.assigneeId;
+    assert.equal(fromFirestoreChat('cust1_phot1', legacy).assigneeId, null);
 
     // Also round-trip with blockedAt: null
     const chatNullBlocked = { ...chat, blockedAt: null };
@@ -103,6 +114,7 @@ describe('chat_firestore mapping and trigger unit tests', () => {
       kind: 'inquiry',
       customerId: 'cust1',
       photographerId: 'phot1',
+      assigneeId: null,
       bookingId: null,
       bookingStatus: null,
       photographerRepliedAt: null,

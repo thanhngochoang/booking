@@ -14,13 +14,16 @@ import {
 import type { BookingDeps, ServiceRecord } from './booking_ports.js';
 import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
-import { assertOrderAllowed } from './order_gate.js';
+import { profileOrderBlocker } from './order_gate.js';
 import { requireCustomerPhone } from './require_phone.js';
 
 // ── Draft slots: imports (one block per unit; edit only your own) ──
 // slot #139 (quotes)
 
 // slot #136 (studio)
+import type { ProviderType } from './provider_type.js';
+import { memberDayReleasable, studioDayCapacity, studioDayLoadWith } from './studio_capacity.js';
+import { studioDraftFields } from './studio_assignment.js';
 
 import { addonDraftFields, bookingTotal, priceAddonLines, requirePickup } from './addon_pricing.js';
 
@@ -45,6 +48,7 @@ export interface BookingDraftInput extends BookingDraftCore {
   // slot #139 (quotes): readonly quote?: { jobId: string; quoteId: string; terms: BookingTerms };
 
   // slot #136 (studio): readonly providerType?: ProviderType | null;
+  readonly providerType?: ProviderType | null;
 
   readonly addons?: readonly AddonLine[];
   readonly pickup?: BookingPickup;
@@ -103,6 +107,7 @@ export function buildBookingDraft(i: BookingDraftInput): Booking {
     // slot #139 (quotes): ...quoteDraftFields(i),
 
     // slot #136 (studio): ...studioDraftFields(i, core),
+    ...studioDraftFields(i, core),
 
     ...addonDraftFields(i),
   };
@@ -121,8 +126,16 @@ export async function createBookingDraft(
     throw new DomainError('not_found');
   }
 
-  // Providers who cannot take orders yet, and blocked pairs, are not bookable
-  await assertOrderAllowed(deps, { customerId: input.customerId, providerId: input.photographerId });
+  // Providers who cannot take orders yet, and blocked pairs, are not bookable. One read gives the gate
+  // and the provider type (a studio's booking gets the studio fields and is held on the studio's day load).
+  const profile = await deps.providers.orderProfile(input.photographerId);
+  const blocker = await profileOrderBlocker(deps, profile, {
+    customerId: input.customerId,
+    providerId: input.photographerId,
+  });
+  if (blocker) throw new DomainError(blocker);
+  const isStudio = profile?.providerType === 'studio';
+  const memberOf = !isStudio ? (profile?.studioId ?? null) : null;
 
   if (input.expectedPrice !== undefined && input.expectedPrice !== service.price) {
     throw new DomainError('price_changed');
@@ -150,8 +163,21 @@ export async function createBookingDraft(
       input.photographerId,
       input.day,
     );
+    // A studio holds its day on the load doc, one booking per free member (Decision 26); a member's own booking
+    // must leave the studio enough free members that day.
+    const loadOwner = isStudio ? input.photographerId : memberOf;
+    const load = loadOwner ? await tx.getStudioDayLoad(loadOwner, input.day) : null;
+    const memberDays = loadOwner ? await tx.getMemberDays(loadOwner, input.day) : [];
 
-    if (existingDay) {
+    if (isStudio) {
+      const facts = {
+        studioOff: existingDay?.state === 'off',
+        memberDays,
+        unassignedIds: (load?.unassignedIds ?? []).filter((id) => id !== existingDraft?.id),
+        assignedIds: load?.assignedIds ?? [],
+      };
+      if (!studioDayCapacity(facts).bookable) throw new DomainError('day_taken');
+    } else if (existingDay) {
       if (existingDay.state === 'off' || existingDay.state === 'booked') {
         throw new DomainError('day_taken');
       }
@@ -162,6 +188,15 @@ export async function createBookingDraft(
           throw new DomainError('day_taken');
         }
       }
+    }
+    if (memberOf) {
+      const facts = {
+        studioOff: false,
+        memberDays,
+        unassignedIds: load?.unassignedIds ?? [],
+        assignedIds: load?.assignedIds ?? [],
+      };
+      if (!memberDayReleasable(facts, input.photographerId)) throw new DomainError('day_taken');
     }
 
     // Replace customer's earlier draft if present
@@ -180,16 +215,23 @@ export async function createBookingDraft(
       start: input.start,
       place: input.place,
       note: input.note,
+      providerType: profile?.providerType ?? null,
       addons,
       pickup,
       now,
     });
 
     await tx.setBooking(booking);
-    await tx.setAvailabilityDay(input.photographerId, input.day, {
-      state: 'pending',
-      bookingId,
-    });
+    if (isStudio) {
+      const key = { studioId: input.photographerId, day: input.day };
+      const withoutOld = existingDraft ? studioDayLoadWith(load, key, existingDraft.id, null, now.toISOString()) : load;
+      await tx.setStudioDayLoad(studioDayLoadWith(withoutOld, key, bookingId, 'unassigned', now.toISOString()));
+    } else {
+      await tx.setAvailabilityDay(input.photographerId, input.day, {
+        state: 'pending',
+        bookingId,
+      });
+    }
     await tx.setContactSnapshot(bookingId, {
       name: contactRecord?.name ?? '',
       phone,

@@ -154,6 +154,7 @@ class ChatThread {
     this.createdAt,
     this.updatedAt,
     this.bookingStatus,
+    this.assigneeId,
   });
 
   final String id;
@@ -178,6 +179,20 @@ class ChatThread {
   /// `BookingStatus` code of [bookingId], mirrored by the server on every
   /// status change; null for inquiries and chats written before it existed.
   final String? bookingStatus;
+
+  /// Studio booking chat: the member who shoots, a third member speaking for
+  /// the studio side (#136 Decision 16); null otherwise.
+  final String? assigneeId;
+
+  /// The other party [uid] talks to: the customer for the studio side
+  /// (studio or assignee), the studio or photographer for the customer.
+  String counterpartIdOf(String uid) =>
+      uid == customerId ? photographerId : customerId;
+
+  /// Whether [uid] speaks for the provider (the photographer or studio, or
+  /// the studio's assignee), as the server's `roleInChat`.
+  bool isProviderSide(String uid) =>
+      uid.isNotEmpty && (uid == photographerId || uid == assigneeId);
 
   factory ChatThread.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
@@ -209,6 +224,10 @@ class ChatThread {
       bookingStatus: data['bookingStatus'] is String
           ? data['bookingStatus'] as String
           : null,
+      assigneeId:
+          data['assigneeId'] is String && (data['assigneeId'] as String) != ''
+          ? data['assigneeId'] as String
+          : null,
     );
   }
 
@@ -229,6 +248,7 @@ class ChatThread {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? bookingStatus,
+    String? assigneeId,
   }) {
     return ChatThread(
       id: id ?? this.id,
@@ -249,6 +269,7 @@ class ChatThread {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       bookingStatus: bookingStatus ?? this.bookingStatus,
+      assigneeId: assigneeId ?? this.assigneeId,
     );
   }
 
@@ -272,7 +293,8 @@ class ChatThread {
           blockedAt == other.blockedAt &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
-          bookingStatus == other.bookingStatus;
+          bookingStatus == other.bookingStatus &&
+          assigneeId == other.assigneeId;
 
   @override
   int get hashCode => Object.hash(
@@ -292,6 +314,7 @@ class ChatThread {
     createdAt,
     updatedAt,
     bookingStatus,
+    assigneeId,
   );
 }
 

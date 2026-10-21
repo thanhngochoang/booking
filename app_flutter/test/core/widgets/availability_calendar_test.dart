@@ -69,6 +69,40 @@ void main() {
     h.dispose();
   });
 
+  testWidgets('a full day shows Hết chỗ and is not tappable', (tester) async {
+    final h = tester.ensureSemantics();
+    final picked = <DateTime>[];
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(
+          month: _oct,
+          states: {..._states, _d(14): DayState.full},
+          onSelect: picked.add,
+          today: _d(1),
+        ),
+      ),
+    );
+    final full = find.bySemanticsLabel('14 tháng 10, hết chỗ');
+    expect(full, findsOneWidget);
+    expect(
+      tester.getSemantics(full),
+      matchesSemantics(
+        label: '14 tháng 10, hết chỗ',
+        hasEnabledState: true,
+        isEnabled: false,
+        hasSelectedState: true,
+      ),
+    );
+    await tester.tap(full);
+    expect(picked, isEmpty);
+    // Drawn like a booked day: struck through.
+    final text = tester.widget<Text>(
+      find.descendant(of: full, matching: find.text('14')),
+    );
+    expect(text.style?.decoration, TextDecoration.lineThrough);
+    h.dispose();
+  });
+
   testWidgets('editable mode reports every day and long presses', (
     tester,
   ) async {

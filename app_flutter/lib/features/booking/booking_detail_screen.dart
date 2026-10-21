@@ -25,9 +25,13 @@ import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
+import 'package:photobooking/features/booking/widgets/studio_assignee_block.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/delivery/delivery_review_screen.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
+import 'package:photobooking/features/studio/assign_sheet.dart';
+import 'package:photobooking/features/studio/change_request_sheet.dart';
+import 'package:photobooking/features/studio/return_job_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/review/review_screen.dart';
@@ -207,8 +211,32 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         break;
       case DetailAction.viewDelivery:
         await context.push('/b/${b.id}/delivery');
+      case DetailAction.assign:
+        await showAssignSheet(context, b.id);
+      case DetailAction.cancelStudioFault:
+        final l10n = context.l10n;
+        final cancelled = await showStudioFaultCancelSheet(
+          context,
+          booking: b,
+        );
+        if (cancelled != true || !mounted) return;
+        final refunded =
+            ref.read(bookingProvider(b.id)).value?.depositRefunded ??
+            b.deposit;
+        _say(l10n.cancelDoneToast(formatMoney(refunded)));
+      case DetailAction.returnJob:
+        await showReturnJobSheet(
+          context,
+          booking: b,
+          studioName:
+              ref.read(partyProfileProvider(b.photographerId)).value?.displayName ??
+              '',
+        );
     }
   }
+
+  /// "Xin đổi thợ (1 lần)" → S26.05 (it confirms the request itself).
+  Future<void> _requestChange(Booking b) => showChangeRequestSheet(context, b);
 
   void _maybeOpenSheet(
     Booking b,
@@ -222,9 +250,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     // is still loading (this build watches it, so it runs again).
     if (counterpartName.isEmpty && _nameLoading(b, role)) return;
     _sheetHandled = true;
-    final wanted = sheet == DetailSheet.cancel
-        ? DetailAction.cancel
-        : DetailAction.decline;
+    final wanted = switch (sheet) {
+      DetailSheet.cancel when actions.contains(DetailAction.cancelStudioFault) =>
+        DetailAction.cancelStudioFault,
+      DetailSheet.cancel => DetailAction.cancel,
+      DetailSheet.decline => DetailAction.decline,
+    };
     if (!actions.contains(wanted)) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _onAction(wanted, b, role, counterpartName);
@@ -257,7 +288,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final menu = currentRole == null
         ? const <DetailAction>[]
         : [
-            for (final a in detailActions(current!, currentRole, now, features))
+            for (final a in detailActions(
+              current!,
+              currentRole,
+              now,
+              features,
+              assignee: isAssigneeOf(current, auth.value?.uid),
+            ))
               if (a == DetailAction.reschedule) a,
           ];
     final menuName = menu.isEmpty
@@ -300,7 +337,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   onAction: () => context.go('/home'),
                 );
               }
-              final actions = detailActions(b, role, now, features);
+              final actions = detailActions(
+                b,
+                role,
+                now,
+                features,
+                assignee: isAssigneeOf(b, auth.value?.uid),
+              );
               final name = _counterpartName(b, role);
               _maybeOpenSheet(b, role, actions, name);
               return _body(context, b, role, actions, now, name);
@@ -335,6 +378,29 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         '';
   }
 
+  /// A studio booking still in play shows the customer who shoots it.
+  bool _showsStudioBlock(Booking b) =>
+      b.studio != null &&
+      switch (b.status) {
+        BookingStatus.draft ||
+        BookingStatus.declined ||
+        BookingStatus.expired ||
+        BookingStatus.cancelled => false,
+        _ => true,
+      };
+
+  /// The assigned member's name for the timeline; '' while unknown.
+  String _assigneeName(Booking b) {
+    final id = b.studio?.assigneeId;
+    if (id == null) return '';
+    return ref
+            .watch(photographerProfileProvider(id))
+            .value
+            ?.summary
+            .displayName ??
+        '';
+  }
+
   Widget _body(
     BuildContext context,
     Booking b,
@@ -354,6 +420,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         : ref.watch(partyProfileProvider(b.customerId)).value?.avatarUrl;
     final paidToast =
         widget.justPaid && customer && b.status == BookingStatus.requested;
+    // The money of a studio booking is the studio's, not the assignee's.
+    final assignee = isAssigneeOf(b, ref.watch(authStateProvider).value?.uid);
 
     void run(DetailAction a) => _onAction(a, b, role, name);
 
@@ -379,7 +447,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           if (paidToast) ...[
             _PaidToast(l10n.detailPaidToast(formatMoney(b.deposit))),
             const SizedBox(height: AppSpace.s3),
-          ] else if (b.escrowStatus == EscrowStatus.held) ...[
+          ] else if (b.escrowStatus == EscrowStatus.held && !assignee) ...[
             EscrowNotice(
               text: customer
                   ? l10n.escrowNoticeHeld(formatMoney(b.deposit))
@@ -391,6 +459,18 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
           const SizedBox(height: AppSpace.s4),
+          if (customer && _showsStudioBlock(b)) ...[
+            StudioAssigneeBlock(
+              booking: b,
+              studioName: name,
+              now: now,
+              canCancel: actions.contains(DetailAction.cancelStudioFault),
+              busy: _busy != null,
+              onCancel: () => run(DetailAction.cancelStudioFault),
+              onChange: () => _requestChange(b),
+            ),
+            const SizedBox(height: AppSpace.s4),
+          ],
           if (b.addons.isNotEmpty || b.pickup != null) ...[
             BookingAddonsBlock(booking: b),
             const SizedBox(height: AppSpace.s4),
@@ -406,6 +486,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 now,
                 l10n,
                 photographerName: customer ? name : l10n.detailYou,
+                studioRows: customer,
+                assigneeName: customer ? _assigneeName(b) : '',
               ),
             ),
           ),
@@ -427,6 +509,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final l10n = context.l10n;
     final busy = _busy != null;
     bool has(DetailAction a) => actions.contains(a);
+    final primaries = primaryActions(b, actions);
     final out = <Widget>[];
     void add(Widget w) {
       if (out.isNotEmpty) out.add(const SizedBox(height: AppSpace.s3));
@@ -465,17 +548,34 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     } else {
       // "Nhắn tin" (outline) + "Liên hệ" (dial), side by side (mock).
       final contact = has(DetailAction.contact) ? _contact(b, role) : null;
-      final row = <Widget>[
-        if (has(DetailAction.message))
-          Expanded(
-            child: AppButton.outline(
-              l10n.detailMessage,
-              size: AppButtonSize.small,
-              onPressed: () => run(DetailAction.message),
-            ),
-          ),
-        ?contact,
-      ];
+      // A customer's studio booking: "Nhắn studio", the screen's one
+      // primary unless another action already is (mock S05.02-studio).
+      final studioMessage = role == BookingRole.customer && b.studio != null;
+      final otherPrimary = primaries.isNotEmpty;
+      final message = has(DetailAction.message)
+          ? Expanded(
+              child: studioMessage && !otherPrimary
+                  ? AppButton.primary(
+                      l10n.detailMessageStudio,
+                      key: const Key('detail-message'),
+                      size: AppButtonSize.small,
+                      onPressed: () => run(DetailAction.message),
+                    )
+                  : AppButton.outline(
+                      studioMessage
+                          ? l10n.detailMessageStudio
+                          : l10n.detailMessage,
+                      key: const Key('detail-message'),
+                      size: AppButtonSize.small,
+                      onPressed: () => run(DetailAction.message),
+                    ),
+            )
+          : null;
+      // The studio frame puts the dial first; individual bookings keep
+      // "Nhắn tin" before "Liên hệ".
+      final row = studioMessage
+          ? <Widget>[?contact, ?message]
+          : <Widget>[?message, ?contact];
       if (row.isNotEmpty) {
         add(
           Row(
@@ -521,6 +621,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       );
     }
 
+    if (has(DetailAction.assign)) {
+      add(
+        AppButton.outline(
+          l10n.workAssignAction,
+          key: const Key('detail-assign'),
+          onPressed: busy ? null : () => run(DetailAction.assign),
+        ),
+      );
+    }
+
     if (has(DetailAction.complete)) {
       add(
         AppButton.primary(
@@ -539,7 +649,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
       );
     }
-    if (role == BookingRole.photographer) {
+    final studioSide =
+        role == BookingRole.photographer &&
+        !isAssigneeOf(b, ref.watch(authStateProvider).value?.uid);
+    if (studioSide) {
       if (b.status == BookingStatus.revisionRequested) {
         add(
           _StatusNoticeCard(
@@ -586,10 +699,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       );
     }
     if (has(DetailAction.viewDelivery)) {
-      final isOutline = b.status == BookingStatus.approved ||
-          has(DetailAction.review);
       add(
-        isOutline
+        !primaries.contains(DetailAction.viewDelivery)
             ? AppButton.outline(
                 l10n.detailViewDelivery,
                 onPressed: () => run(DetailAction.viewDelivery),
@@ -625,6 +736,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       );
     }
 
+    if (has(DetailAction.returnJob)) {
+      // Kept alive here so the sheet reads the studio's name on tap.
+      ref.watch(partyProfileProvider(b.photographerId));
+      final dark = Theme.of(context).brightness == Brightness.dark;
+      add(
+        AppButton.text(
+          l10n.workReturnJob,
+          key: const Key('detail-return-job'),
+          size: AppButtonSize.small,
+          style: ButtonStyle(
+            foregroundColor: WidgetStatePropertyAll(
+              dark ? AppColorsDark.destructive : AppColors.destructive,
+            ),
+          ),
+          onPressed: busy ? null : () => run(DetailAction.returnJob),
+        ),
+      );
+    }
     if (has(DetailAction.cancel)) {
       final dark = Theme.of(context).brightness == Brightness.dark;
       final now =

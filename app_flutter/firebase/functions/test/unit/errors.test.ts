@@ -43,6 +43,10 @@ describe('toHttpsError', () => {
       addon_limit: 'resource-exhausted',
       contact_leak: 'invalid-argument',
       not_ready: 'failed-precondition',
+      membership_conflict: 'failed-precondition',
+      cooldown: 'failed-precondition',
+      member_busy: 'failed-precondition',
+      studio_full: 'resource-exhausted',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

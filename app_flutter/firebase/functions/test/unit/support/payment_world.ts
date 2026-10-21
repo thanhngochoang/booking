@@ -55,7 +55,7 @@ export function paymentWorld(start = new Date('2026-10-01T10:00:00.000Z')): Paym
     } },
     addons: { listAddons: async () => [] },
     contacts: { get: async (uid) => contacts.get(uid) ?? null },
-    providers: { acceptsOrders: async () => true },
+    providers: { acceptsOrders: async () => true, orderProfile: async () => ({ acceptsOrders: true, providerType: 'individual' }) },
     blocks,
     gateway,
     cipher: TEST_CIPHER,

@@ -5,6 +5,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 
 class DateTimeStep extends ConsumerStatefulWidget {
@@ -18,6 +19,9 @@ class DateTimeStep extends ConsumerStatefulWidget {
 class _DateTimeStepState extends ConsumerState<DateTimeStep> {
   late DateTime _month;
   bool _tappedPending = false;
+
+  /// A post-frame clear of a chosen day is scheduled (no-member studio).
+  bool _clearScheduled = false;
 
   @override
   void initState() {
@@ -56,6 +60,33 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         month: _month,
       )),
     );
+    // A studio nobody can shoot for has no bookable day (#136 Decision 26).
+    // The sheet loads the profile from its first frame; until it answers
+    // (or if it fails) the days stay as the server keeps them, and the
+    // server still refuses such a day with day_taken (crossed below).
+    final noMembers =
+        ref
+            .watch(photographerProfileProvider(widget.args.photographerId))
+            .value
+            ?.summary
+            .hasNoAssignableMembers ??
+        false;
+
+    // Every day is full: a day preset by the flow (or chosen before the
+    // profile answered) cannot be booked, so it is cleared once the profile
+    // says so. After the frame: a provider is not changed while building.
+    final chosen = state.day;
+    if (noMembers && chosen != null && !_clearScheduled) {
+      _clearScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _clearScheduled = false;
+        if (!mounted) return;
+        if (ref.read(bookingFlowControllerProvider(widget.args)).day ==
+            chosen) {
+          controller.clearDay(chosen, taken: false);
+        }
+      });
+    }
 
     // Live calendar updates: if the chosen day became non-free, unselect with SnackBar
     ref.listen<AsyncValue<Map<DateTime, AvailabilityDay>>>(
@@ -166,6 +197,16 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                       for (final dayStr in state.takenDays) {
                         final d = parseDayKey(dayStr);
                         if (d != null) dayStates[d] = DayState.booked;
+                      }
+                      if (noMembers) {
+                        // From today on: a past day stays a past day.
+                        for (
+                          var d = _month.isBefore(today) ? today : _month;
+                          !d.isAfter(lastDayOfMonth(_month));
+                          d = DateTime.utc(d.year, d.month, d.day + 1)
+                        ) {
+                          dayStates[d] = DayState.full;
+                        }
                       }
 
                       return AvailabilityCalendar(

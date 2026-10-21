@@ -6,6 +6,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import {
+  OPEN_RELATION_STATUSES,
   providerTypeOf,
   type ProviderProfile,
   type ProviderStore,
@@ -13,6 +14,9 @@ import {
 } from '@photobooking/domain';
 import { BOOKINGS_COLLECTION, PAYMENTS_COLLECTION } from './booking_firestore.js';
 import { PHOTOGRAPHERS_COLLECTION } from './review_firestore.js';
+
+/** `studio_members/{studioId}_{memberId}_{createdAtMs}` (#136). */
+const STUDIO_MEMBERS_COLLECTION = 'studio_members';
 
 function toDate(v: unknown): Date | null {
   if (v instanceof Timestamp) return v.toDate();
@@ -44,6 +48,7 @@ export class FirestoreProviderStore implements ProviderStore {
             artistSince: toDate(d.artistSince),
             studioDistrict: str(d.studioDistrict),
             studioCity: str(d.studioCity),
+            memberCount: typeof d.memberCount === 'number' ? d.memberCount : 0,
           };
         },
         countActiveBookings: async (uid) => {
@@ -65,6 +70,19 @@ export class FirestoreProviderStore implements ProviderStore {
               .limit(1),
           );
           return snap.size;
+        },
+        countOpenRelations: async (uid) => {
+          // As studio or as member (#136 Decision 7); one open relation is enough to refuse.
+          const open = (field: 'studioId' | 'memberId') =>
+            fTx.get(
+              this.firestore
+                .collection(STUDIO_MEMBERS_COLLECTION)
+                .where(field, '==', uid)
+                .where('status', 'in', [...OPEN_RELATION_STATUSES])
+                .limit(1),
+            );
+          const [asStudio, asMember] = await Promise.all([open('studioId'), open('memberId')]);
+          return asStudio.size + asMember.size;
         },
         setProviderType: (uid, type, now) => {
           fTx.set(

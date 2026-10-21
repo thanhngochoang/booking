@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { roleOf, decideTransition, type TransitionAction } from '../src/booking_machine.js';
+import { roleOf, decideTransition, type TransitionAction, type TransitionActor } from '../src/booking_machine.js';
 import type { Booking } from '../src/booking.js';
 import { DomainError } from '../src/errors.js';
 
@@ -260,6 +260,116 @@ describe('Task 2: Booking state machine & transitions', () => {
           ),
         (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
       );
+    });
+  });
+
+  describe('studio bookings (#136)', () => {
+    const studio: Booking = {
+      ...baseBooking,
+      isStudio: true,
+      assigneeId: null,
+      assigneeKind: null,
+      assignStatus: 'unassigned',
+      assignDeadline: '2026-10-14T07:00:00.000Z',
+      assignOverdue: false,
+      assignments: [],
+      changeRequest: null,
+      studioFault: null,
+    };
+    const inside24h = new Date('2026-10-14T08:00:00.000Z');
+    const customer = { id: 'cust_01', role: 'customer' as const };
+
+    it('upcoming refuses a studio booking without assignee', () => {
+      assert.throws(
+        () => decideTransition({ ...studio, status: 'accepted' }, 'upcoming', { role: 'system' }, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+      const assigned = { ...studio, status: 'accepted' as const, assigneeId: 'm1', assignStatus: 'assigned' as const };
+      assert.equal(decideTransition(assigned, 'upcoming', { role: 'system' }, inside24h).nextStatus, 'upcoming');
+    });
+
+    it('accept inside 24 h keeps an unassigned studio booking accepted', () => {
+      const requested = { ...studio, acceptDeadline: '2026-10-15T00:00:00.000Z' };
+      const actor = { id: 'photog_01', role: 'photographer' as const };
+      assert.equal(decideTransition(requested, 'accept', actor, inside24h).nextStatus, 'accepted');
+      const assigned = { ...requested, assigneeId: 'm1', assignStatus: 'assigned' as const };
+      assert.equal(decideTransition(assigned, 'accept', actor, inside24h).nextStatus, 'upcoming');
+    });
+
+    it('cancel_studio_fault: customer only, 100% with the fault kind as reason', () => {
+      const overdue = { ...studio, status: 'accepted' as const };
+      const d = decideTransition(overdue, 'cancel_studio_fault', customer, new Date('2026-10-14T07:00:00.000Z'));
+      assert.deepEqual(d, {
+        nextStatus: 'cancelled',
+        refundPercent: 100,
+        cancelRecord: { by: 'studio_fault', reason: 'assign_overdue', at: '2026-10-14T07:00:00.000Z', refundPercent: 100 },
+      });
+      assert.throws(
+        () => decideTransition(overdue, 'cancel_studio_fault', { id: 'photog_01', role: 'photographer' }, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'permission_denied',
+      );
+      assert.throws(
+        () => decideTransition(overdue, 'cancel_studio_fault', customer, new Date('2026-10-13T07:00:00.000Z')),
+        (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+      );
+      assert.throws(
+        () => decideTransition({ ...overdue, status: 'cancelled' }, 'cancel_studio_fault', customer, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+      assert.throws(
+        () => decideTransition({ ...baseBooking, status: 'accepted' }, 'cancel_studio_fault', customer, inside24h),
+        (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+      );
+    });
+
+    it('mark_shot and complete refuse a studio booking without assignee, for every role', () => {
+      // start 2026-10-15 14:00 VN, end 16:00 VN = 09:00Z; the clock may mark shot from 2026-10-16T09:00Z
+      const afterAuto = new Date('2026-10-16T10:00:00.000Z');
+      const unassigned = { ...studio, status: 'accepted' as const, assignOverdue: true };
+      for (const action of ['mark_shot', 'complete'] as const) {
+        for (const actor of [{ id: 'photog_01', role: 'photographer' as const }, { role: 'system' as const }]) {
+          assert.throws(
+            () => decideTransition(unassigned, action, actor, afterAuto),
+            (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+          );
+        }
+      }
+      const assigned = { ...unassigned, assigneeId: 'm1', assignStatus: 'assigned' as const };
+      assert.equal(decideTransition(assigned, 'mark_shot', { role: 'system' }, afterAuto).nextStatus, 'shot');
+      assert.equal(
+        decideTransition({ ...assigned, status: 'upcoming' }, 'complete', { id: 'photog_01', role: 'photographer' }, afterAuto)
+          .nextStatus,
+        'shot',
+      );
+    });
+
+    it('cancel_unassigned_at_start: system only, at or after the start, unassigned only, 100%', () => {
+      const start = new Date('2026-10-15T07:00:00.000Z'); // 14:00 VN
+      const unassigned = { ...studio, status: 'accepted' as const };
+      assert.deepEqual(decideTransition(unassigned, 'cancel_unassigned_at_start', { role: 'system' }, start), {
+        nextStatus: 'cancelled',
+        refundPercent: 100,
+        cancelRecord: { by: 'studio_fault', reason: 'assign_overdue', at: start.toISOString(), refundPercent: 100 },
+      });
+      assert.equal(
+        decideTransition({ ...studio }, 'cancel_unassigned_at_start', { role: 'system' }, start).nextStatus,
+        'cancelled',
+      );
+      const refused: [Booking, TransitionActor, Date, string][] = [
+        [unassigned, { role: 'system' }, new Date(start.getTime() - 1), 'not_eligible'],
+        [{ ...unassigned, assigneeId: 'm1', assignStatus: 'assigned' }, { role: 'system' }, start, 'not_eligible'],
+        [{ ...baseBooking, status: 'accepted' }, { role: 'system' }, start, 'not_eligible'],
+        [{ ...unassigned, status: 'cancelled' }, { role: 'system' }, start, 'conflict'],
+        [unassigned, customer, start, 'permission_denied'],
+        [unassigned, { id: 'photog_01', role: 'photographer' }, start, 'permission_denied'],
+      ];
+      for (const [b, actor, at, code] of refused) {
+        assert.throws(
+          () => decideTransition(b, 'cancel_unassigned_at_start', actor, at),
+          (err: unknown) => err instanceof DomainError && err.code === code,
+          code,
+        );
+      }
     });
   });
 });

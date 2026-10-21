@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit } from '../src/booking_policy.js';
-import { createBookingWorld, newDraft, withAddons } from './support/booking_world.js';
+import { createBookingWorld, newDraft, withAddons, withStudio } from './support/booking_world.js';
 import type { ServiceAddon } from '../src/addon.js';
 import { addonDraftFields } from '../src/addon_pricing.js';
 import {
@@ -497,6 +497,101 @@ describe('Task 4: createBookingDraft', () => {
       };
       await rejectsWith(newDraft(world, { addons: [{ addonId: 'nope', qty: 1 }] }), 'not_accepting_orders');
       assert.equal(reads, 0);
+    });
+  });
+
+  describe('studio bookings (#136)', () => {
+    const rejectsWith = (p: Promise<unknown>, code: string) =>
+      assert.rejects(p, (err: unknown) => err instanceof DomainError && err.code === code);
+    const studioDraft = (world: ReturnType<typeof createBookingWorld>, over: Record<string, unknown> = {}) =>
+      newDraft(world, { photographerId: 's1', serviceId: 'srv_s1', ...over });
+
+    it('a booking with a studio is isStudio, unassigned, deadline 24 h before start', async () => {
+      const world = withStudio(createBookingWorld());
+      const b = await studioDraft(world);
+      // 2026-10-15 14:00 VN = 07:00Z
+      assert.equal(b.isStudio, true);
+      assert.equal(b.assignStatus, 'unassigned');
+      assert.equal(b.assigneeId, null);
+      assert.equal(b.assigneeKind, null);
+      assert.equal(b.assignDeadline, '2026-10-14T07:00:00.000Z');
+      assert.equal(b.assignOverdue, false);
+      assert.deepEqual(b.assignments, []);
+      assert.deepEqual(b.assignRemindersSent, []);
+      assert.equal(b.changeRequest, null);
+      assert.equal(b.studioFault, null);
+      assert.equal(b.assignmentReturned, null);
+      assert.deepEqual(await world.store.getBooking(b.id), b);
+    });
+
+    it('a studio booking starting in 10 h gets a deadline 2 h from now', async () => {
+      // 2026-10-10T10:00Z = 17:00 VN; 03:00 VN on the 11th is 10 h later
+      const world = withStudio(createBookingWorld());
+      const b = await studioDraft(world, { day: '2026-10-11', start: '03:00' });
+      assert.equal(b.assignDeadline, '2026-10-10T12:00:00.000Z');
+    });
+
+    it('a deadline never falls after the start', async () => {
+      const world = withStudio(createBookingWorld());
+      const b = await studioDraft(world, { day: '2026-10-10', start: '18:00' }); // 1 h ahead
+      assert.equal(b.assignDeadline, '2026-10-10T11:00:00.000Z');
+    });
+
+    it('an individual booking carries no studio fields', async () => {
+      const world = withStudio(createBookingWorld());
+      const b = await newDraft(world);
+      for (const key of ['isStudio', 'assigneeId', 'assignStatus', 'assignDeadline', 'assignments', 'changeRequest', 'studioFault']) {
+        assert.equal(key in b, false, key);
+      }
+    });
+
+    it('a studio draft is held on the studio day load, not on the studio day', async () => {
+      const world = withStudio(createBookingWorld());
+      const b = await studioDraft(world);
+      assert.equal(await world.store.getAvailabilityDay('s1', '2026-10-15'), null);
+      assert.deepEqual(world.store.getStudioDayLoad('s1', '2026-10-15')?.unassignedIds, [b.id]);
+    });
+
+    it("the customer's new draft replaces their earlier one on the load", async () => {
+      const world = withStudio(createBookingWorld(), 's1', ['m1']);
+      const first = await studioDraft(world);
+      const second = await studioDraft(world, { start: '15:00' });
+      assert.equal(await world.store.getBooking(first.id), null);
+      assert.deepEqual(world.store.getStudioDayLoad('s1', '2026-10-15')?.unassignedIds, [second.id]);
+    });
+
+    it('orderProfile closed is not_accepting_orders', async () => {
+      const world = withStudio(createBookingWorld());
+      world.providers.set('s1', { verified: false, onboardingComplete: true });
+      await rejectsWith(studioDraft(world), 'not_accepting_orders');
+      assert.equal(world.store.getStudioDayLoad('s1', '2026-10-15'), null);
+    });
+
+    it('a missing provider profile is not_accepting_orders', async () => {
+      const world = withStudio(createBookingWorld());
+      world.providers.delete('s1');
+      await rejectsWith(studioDraft(world), 'not_accepting_orders');
+    });
+
+    it('a quote booking of a studio (built through buildBookingDraft) carries the studio fields', () => {
+      const quoteService = { id: 'quote_q1', photographerId: 's1', name: 'Báo giá', price: 2_500_000, durationMinutes: 180, active: true };
+      const draft = buildBookingDraft({
+        id: 'b_q',
+        customerId: 'c1',
+        photographerId: 's1',
+        service: quoteService,
+        day: '2026-10-15',
+        start: '14:00',
+        place: { name: 'Hồ Gươm' },
+        providerType: 'studio',
+        now: new Date('2026-10-10T10:00:00.000Z'),
+      });
+      assert.equal(draft.isStudio, true);
+      assert.equal(draft.assignStatus, 'unassigned');
+      assert.equal(draft.assignDeadline, '2026-10-14T07:00:00.000Z');
+      assert.equal(draft.deposit, 2_500_000);
+      const individual = buildBookingDraft({ ...{ id: 'b_i', customerId: 'c1', photographerId: 'p1', service: quoteService, day: '2026-10-15', start: '14:00', place: { name: 'Hồ Gươm' }, now: new Date('2026-10-10T10:00:00.000Z') }, providerType: 'artist' });
+      assert.equal('isStudio' in individual, false);
     });
   });
 });

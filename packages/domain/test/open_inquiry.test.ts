@@ -101,6 +101,7 @@ describe('openInquiry (Task 2)', () => {
       kind: 'booking',
       customerId: 'cust1',
       photographerId: 'phot1',
+      assigneeId: null,
       bookingId: 'book_1',
       bookingStatus: 'completed',
       photographerRepliedAt: repliedAt === 'set' ? clock.now() : null,

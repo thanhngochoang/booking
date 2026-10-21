@@ -95,14 +95,18 @@ final assignedBookingsProvider = StreamProvider.autoDispose<List<Booking>>((
 });
 
 /// S06.01's bookings: the photographer's own merged with the assigned ones;
-/// the own document wins on the same id. Loading and errors are the own
-/// stream's.
+/// the own document wins on the same id. Errors are the own stream's (the
+/// assigned one reads a failure as none); it loads until both streams have
+/// answered once, so a studio shoot and its "Trả việc" never pop in late.
 final myWorkBookingsProvider = Provider.autoDispose<AsyncValue<List<Booking>>>((
   ref,
 ) {
   final own = ref.watch(myBookingsProvider(BookingRole.photographer));
-  final assigned =
-      ref.watch(assignedBookingsProvider).value ?? const <Booking>[];
+  final assignedAsync = ref.watch(assignedBookingsProvider);
+  if (!assignedAsync.hasValue && !own.hasError) {
+    return const AsyncLoading<List<Booking>>();
+  }
+  final assigned = assignedAsync.value ?? const <Booking>[];
   return own.whenData((list) {
     final ids = {for (final b in list) b.id};
     return [

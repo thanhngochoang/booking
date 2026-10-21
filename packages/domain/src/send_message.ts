@@ -1,6 +1,7 @@
 import {
   afterMessage,
   assertCanSend,
+  chatMembers,
   isInquiryClosed,
   roleInChat,
   validateMessageInput,
@@ -60,9 +61,10 @@ export async function sendMessage(
     const nextChat = afterMessage(chat, message, now);
     tx.setChat(nextChat);
 
-    const recipientId =
-      input.senderId === chat.customerId ? chat.photographerId : chat.customerId;
-    tx.incrementUnread(input.chatId, recipientId, 1);
+    // Every member but the sender gets the unread count, the studio's assignee included.
+    for (const uid of chatMembers(chat)) {
+      if (uid !== input.senderId) tx.incrementUnread(input.chatId, uid, 1);
+    }
 
     return message;
   });

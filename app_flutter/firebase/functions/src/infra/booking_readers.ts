@@ -4,9 +4,10 @@
 
 import type { DocumentData, Firestore } from 'firebase-admin/firestore';
 import { db } from './admin.js';
-import { acceptsOrders } from '@photobooking/domain';
+import { acceptsOrders, providerTypeOf } from '@photobooking/domain';
 import type {
   CustomerContactReader,
+  OrderProfile,
   CustomerContactRecord,
   ProviderOrderGate,
   ServiceCatalog,
@@ -70,10 +71,18 @@ export class FirestoreProviderOrderGate implements ProviderOrderGate {
   constructor(private readonly firestore: Firestore = db()) {}
 
   async acceptsOrders(photographerId: string): Promise<boolean> {
+    return (await this.orderProfile(photographerId))?.acceptsOrders === true;
+  }
+
+  /** The same single read gives the gate, the provider type and the studio a member belongs to (#136). */
+  async orderProfile(photographerId: string): Promise<OrderProfile | null> {
     const snap = await this.firestore.collection('photographers').doc(photographerId).get();
-    if (!snap.exists) return false;
     const data = snap.data();
-    if (data?.deletionPending === true) return false;
-    return acceptsOrders(data);
+    if (!snap.exists || !data) return null;
+    return {
+      acceptsOrders: data.deletionPending !== true && acceptsOrders(data),
+      providerType: providerTypeOf(data.providerType),
+      studioId: typeof data.studioId === 'string' ? data.studioId : null,
+    };
   }
 }

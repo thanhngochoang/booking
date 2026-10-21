@@ -5,6 +5,8 @@ import type { RealShootPost, Review } from './review.js';
 export interface ReviewTx {
   getBooking(id: string): Promise<Booking | null>;
   getReview(reviewId: string): Promise<Review | null>;
+  /** Display name for the review snapshots; null when the account has none. */
+  getUserName(uid: string): Promise<string | null>;
   setBooking(b: Booking): void;
   addBookingEvent(e: BookingEventRecord): void;
   setReview(r: Review): void;
