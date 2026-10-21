@@ -142,11 +142,9 @@ class _SpotsScreenState extends ConsumerState<SpotsScreen> {
           ),
           title: Text(l.spotsTitle),
         ),
-        body: spotsAsync.when(
-          loading: () => const Center(
-            child: SignatureLoader(size: LoaderSize.screen),
-          ),
-          error: (err, _) => Center(
+        body: AsyncView<List<SpotEntry>>(
+          value: spotsAsync,
+          error: (context, err, _) => Center(
             child: ErrorState(
               message: l.spotsLoadError,
               onRetry: () {
@@ -154,7 +152,7 @@ class _SpotsScreenState extends ConsumerState<SpotsScreen> {
               },
             ),
           ),
-          data: (spots) {
+          data: (context, spots) {
             final allSpots = directoryAsync.value ?? const [];
             final pagedSpots = spots.take(pageLimit).toList();
 

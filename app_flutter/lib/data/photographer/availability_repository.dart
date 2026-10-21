@@ -68,7 +68,12 @@ AvailabilityDay? availabilityDayFromFirestore(
     bookingId: booking is String ? booking : null,
     eventId: event is String ? event : null,
     scheduleId: scheduleId,
-    rawState: rawState,
+    // Only a state [DayState] does not describe is kept (`spot`; the spot
+    // screens read it); `full` is [DayState.full] (#136).
+    rawState: switch (rawState) {
+      'off' || 'pending' || 'booked' || 'full' => null,
+      _ => rawState,
+    },
   );
 }
 

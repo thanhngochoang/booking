@@ -262,8 +262,6 @@ Map<String, SpotDayConflictReason> scheduleConflicts(
         continue;
       }
       conflicts[dayStr] = SpotDayConflictReason.spot;
-    } else if (entry.rawState == 'full') {
-      conflicts[dayStr] = SpotDayConflictReason.full;
     } else {
       switch (entry.state) {
         case DayState.off:

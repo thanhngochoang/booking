@@ -101,17 +101,15 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
       ScreenCodes.spotDetail,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: spotAsync.when(
-          loading: () => const Center(
-            child: SignatureLoader(size: LoaderSize.screen),
-          ),
-          error: (err, _) => Center(
+        body: AsyncView<Spot?>(
+          value: spotAsync,
+          error: (context, err, _) => Center(
             child: ErrorState(
               message: l.spotNotFound,
               onRetry: () => ref.invalidate(spotProvider(widget.spotId)),
             ),
           ),
-          data: (spot) {
+          data: (context, spot) {
             if (spot == null) {
               return Center(
                 child: ErrorState(

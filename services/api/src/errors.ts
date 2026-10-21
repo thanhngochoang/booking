@@ -52,6 +52,13 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   cooldown: 422,
   member_busy: 409,
   studio_full: 429,
+  // Spot schedule codes (#194): a state the request cannot enter (409), a refused limit (429), a bad slot (422).
+  outside_schedule: 422,
+  slot_taken: 409,
+  day_conflict: 409,
+  schedule_limit: 429,
+  spot_archived: 422,
+  schedule_has_bookings: 409,
   internal: 500,
 };
 

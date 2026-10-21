@@ -19,6 +19,7 @@ import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/explore/nearby_events.dart';
 import 'package:photobooking/data/events/event_card_data_of.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 
@@ -711,11 +712,13 @@ class _PlacesSpotsSection extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
     final month = now.month;
 
-    return directoryAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (all) {
-        if (all.isEmpty) return const SizedBox.shrink();
+    return AsyncView<List<SpotEntry>>(
+      value: directoryAsync,
+      skeleton: (_) => const SizedBox.shrink(),
+      empty: (_) => const SizedBox.shrink(),
+      error: (context, _, _) => const SizedBox.shrink(),
+      isEmpty: (all) => all.isEmpty,
+      data: (context, all) {
         final ordered = orderSpots(
           all,
           month: month,
@@ -789,10 +792,11 @@ class _NearbySpotsSection extends ConsumerWidget {
     final l = context.l10n;
     final directoryAsync = ref.watch(spotDirectoryProvider);
 
-    return directoryAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (all) {
+    return AsyncView<List<SpotEntry>>(
+      value: directoryAsync,
+      skeleton: (_) => const SizedBox.shrink(),
+      error: (context, _, _) => const SizedBox.shrink(),
+      data: (context, all) {
         final originLat = origin!.lat;
         final originLng = origin!.lng;
         final nearbySpots = all.where((s) {

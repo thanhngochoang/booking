@@ -16,6 +16,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/discovery/photographer_meta.dart';
 import 'package:photobooking/features/home/home_controller.dart';
+import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 
 const _chipSpecialties = ['portrait', 'wedding', 'family', 'graduation'];
@@ -460,9 +461,13 @@ class _HotSpotsSection extends ConsumerWidget {
     final spotsAsync = ref.watch(hotSpotsProvider(region));
 
     return SliverToBoxAdapter(
-      child: spotsAsync.when(
-        data: (entries) {
-          if (entries.isEmpty) return const SizedBox.shrink();
+      child: AsyncView<List<SpotEntry>>(
+        value: spotsAsync,
+        skeleton: (_) => const SizedBox.shrink(),
+        empty: (_) => const SizedBox.shrink(),
+        error: (context, _, _) => const SizedBox.shrink(),
+        isEmpty: (entries) => entries.isEmpty,
+        data: (context, entries) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -496,8 +501,6 @@ class _HotSpotsSection extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const SizedBox.shrink(),
-        error: (_, _) => const SizedBox.shrink(),
       ),
     );
   }

@@ -127,7 +127,8 @@ EventSummary _event({
       hostName: 'Minh Trí',
       hostVerified: true,
       type: EventType.photoWalk,
-      startsAt: DateTime.utc(2026, 10, 18, 16),
+      // eventsAt filters by the wall clock, so the event must be upcoming whenever the test runs.
+      startsAt: DateTime.now().toUtc().add(const Duration(days: 30)),
       priceVnd: 100000,
       capacity: 10,
       registeredCount: 3,
