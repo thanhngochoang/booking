@@ -163,6 +163,30 @@ describe('studio booking sweep queries', () => {
     assert.deepEqual((await store.findUnassignedStudioBookingsDue(NOW, 10)).map((b) => b.id), ['due_1', 'due_2']);
   });
 
+  it('findUnassignedStudioBookingsStarted: unassigned, requested | accepted, start passed, oldest first', async () => {
+    const db = new MemoryFirestore();
+    // NOW = 2026-10-10 10:00 in Vietnam
+    seedBooking(db, studioBooking({ id: 'today_started', day: '2026-10-10', start: '10:00' }));
+    seedBooking(db, studioBooking({ id: 'yesterday', day: '2026-10-09', start: '18:00', status: 'requested', assignOverdue: true }));
+    seedBooking(db, studioBooking({ id: 'today_later', day: '2026-10-10', start: '10:30' }));
+    seedBooking(db, studioBooking({ id: 'tomorrow', day: '2026-10-11', start: '08:00' }));
+    seedBooking(db, studioBooking({ id: 'cancelled', day: '2026-10-09', status: 'cancelled' }));
+    seedBooking(db, studioBooking({ id: 'assigned', day: '2026-10-09', assignStatus: 'assigned', assigneeId: 'm1' }));
+    const store = new FirestoreBookingStore(db.asFirestore());
+    assert.deepEqual(
+      (await store.findUnassignedStudioBookingsStarted(NOW, 10)).map((b) => b.id),
+      ['yesterday', 'today_started'],
+    );
+  });
+
+  it('findAutoCompletions leaves out studio bookings without an assignee', async () => {
+    const db = new MemoryFirestore();
+    seedBooking(db, studioBooking({ id: 'unassigned', day: '2026-10-01' }));
+    seedBooking(db, studioBooking({ id: 'assigned', day: '2026-10-01', assignStatus: 'assigned', assigneeId: 'm1', status: 'upcoming' }));
+    const store = new FirestoreBookingStore(db.asFirestore());
+    assert.deepEqual((await store.findAutoCompletions(NOW)).map((b) => b.id), ['assigned']);
+  });
+
   it('findDueChangeRequests: pending and past respondBy, oldest first', async () => {
     const db = new MemoryFirestore();
     const cr = (respondBy: string, status: 'pending' | 'declined' = 'pending') => ({
@@ -349,6 +373,7 @@ describe('studio indexes', () => {
       .map((i) => `${i.collectionGroup}: ${i.fields.map((f) => `${f.fieldPath} ${f.order}`).join(', ')}`);
     for (const shape of [
       'bookings: assignStatus ASCENDING, assignOverdue ASCENDING, status ASCENDING, assignDeadline ASCENDING',
+      'bookings: assignStatus ASCENDING, status ASCENDING, day ASCENDING',
       'bookings: changeRequest.status ASCENDING, changeRequest.respondBy ASCENDING',
       'bookings: photographerId ASCENDING, assigneeId ASCENDING, status ASCENDING',
       'bookings: assigneeId ASCENDING, createdAt DESCENDING',

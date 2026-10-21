@@ -15,10 +15,13 @@ import {
   PAYMENT_METHODS,
   acceptsOrders,
   escrowRefundedTotal,
+  formatVnDate,
   isAddonKind,
   isAddonUnit,
   isPaymentMethod,
   isPaymentSubject,
+  parseVnDateTime,
+  waitsForAssignee,
   type AddonLine,
   type Booking,
   type BookingPickup,
@@ -1159,7 +1162,8 @@ export class FirestoreBookingStore implements StudioBookingStore {
     const res: Booking[] = [];
     for (const doc of snap.docs) {
       const b = bookingFromFirestore(doc.id, doc.data());
-      if (b) res.push(b);
+      // A studio booking without an assignee is never marked shot (#136); the studio sweep cancels it at its start.
+      if (b && !waitsForAssignee(b)) res.push(b);
     }
     return res;
   }
@@ -1225,6 +1229,23 @@ export class FirestoreBookingStore implements StudioBookingStore {
       .limit(limit)
       .get();
     return bookingsOf(snap.docs);
+  }
+
+  /**
+   * Unassigned studio bookings whose start has come (#136 ruling: the sweep cancels them), oldest day first
+   * (index `assignStatus, status, day`). The query stops at today in Vietnam and today's bookings not started yet
+   * are dropped here; they sort after every earlier day, and each run cancels what it returns.
+   */
+  async findUnassignedStudioBookingsStarted(now: Date, limit: number): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('assignStatus', '==', 'unassigned')
+      .where('status', 'in', ['requested', 'accepted'])
+      .where('day', '<=', formatVnDate(now))
+      .orderBy('day')
+      .limit(limit)
+      .get();
+    return bookingsOf(snap.docs).filter((b) => parseVnDateTime(b.day, b.start).getTime() <= now.getTime());
   }
 
   /** Pending change requests past `respondBy`, oldest first (index `changeRequest.status, changeRequest.respondBy`). */

@@ -55,7 +55,10 @@ export interface BookingContactSnapshot {
 }
 
 export interface BookingCancel {
-  /** `studio_fault`: the customer's 100% cancel after a studio fault (#136 Decision 12); `reason` holds the fault kind. */
+  /**
+   * `studio_fault`: the customer's 100% cancel after a studio fault (#136 Decision 12), `reason` holding the fault
+   * kind; or the clock's cancel of a studio booking still unassigned at its start (`at` ≥ start, reason `assign_overdue`).
+   */
   readonly by: 'customer' | 'photographer' | 'system' | 'studio_fault';
   readonly reason?: string;
   readonly at: string;

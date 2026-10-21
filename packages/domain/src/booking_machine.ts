@@ -6,7 +6,7 @@ import {
   MAX_CANCEL_REASON_LENGTH,
 } from './booking_policy.js';
 import { DomainError } from './errors.js';
-import { studioFaultOf } from './studio_assignment.js';
+import { studioFaultOf, waitsForAssignee } from './studio_assignment.js';
 
 export type TransitionAction =
   | 'accept'
@@ -18,7 +18,9 @@ export type TransitionAction =
   | 'finish'
   | 'expire'
   /** The customer's 100% cancel after a studio fault (#136 Decision 12). */
-  | 'cancel_studio_fault';
+  | 'cancel_studio_fault'
+  /** The clock cancels a studio booking still without an assignee at its start: 100% back (#136 ruling). */
+  | 'cancel_unassigned_at_start';
 
 export type ActorRole = 'customer' | 'photographer' | 'system';
 
@@ -42,11 +44,6 @@ export function roleOf(
   if (userId === booking.customerId) return 'customer';
   if (userId === booking.photographerId) return 'photographer';
   return null;
-}
-
-/** A studio booking reaches `upcoming` only with an assignee (#136 Decision 11). */
-function waitsForAssignee(booking: Booking): boolean {
-  return booking.isStudio === true && !booking.assigneeId;
 }
 
 /**
@@ -178,6 +175,23 @@ export function decideTransition(
       };
     }
 
+    case 'cancel_unassigned_at_start': {
+      if (!['requested', 'accepted', 'upcoming'].includes(booking.status)) {
+        throw new DomainError('conflict');
+      }
+      if (actor.role !== 'system') {
+        throw new DomainError('permission_denied');
+      }
+      if (!waitsForAssignee(booking) || now.getTime() < startsAt.getTime()) {
+        throw new DomainError('not_eligible');
+      }
+      return {
+        nextStatus: 'cancelled',
+        refundPercent: 100,
+        cancelRecord: { by: 'studio_fault', reason: 'assign_overdue', at: now.toISOString(), refundPercent: 100 },
+      };
+    }
+
     case 'cancel': {
       if (!['requested', 'accepted', 'upcoming'].includes(booking.status)) {
         throw new DomainError('conflict');
@@ -237,6 +251,10 @@ export function decideTransition(
         }
       } else {
         throw new DomainError('permission_denied');
+      }
+      // Nobody shot a studio booking without an assignee: no payout (the clock cancels it at the start instead).
+      if (waitsForAssignee(booking)) {
+        throw new DomainError('not_eligible');
       }
 
       return { nextStatus: 'shot', refundPercent: 0 };

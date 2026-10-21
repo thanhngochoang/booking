@@ -117,6 +117,20 @@ describe('notifyBookingChange', () => {
     assert.equal(w.store.rowsOf('c1')[0]?.body, 'T2 12/10 · 15:30. Hoàn 100% số bạn đã trả.');
   });
 
+  it('the clock\'s cancel of an unassigned studio booking at its start tells the studio as a system cancel (#136)', async () => {
+    // start 2026-10-12 15:30 VN = 08:30Z
+    const cancel = { by: 'studio_fault' as const, reason: 'assign_overdue', at: '2026-10-12T08:30:00.000Z', refundPercent: 100 };
+    await notifyBookingChange(w.deps, b({ status: 'accepted', isStudio: true }), b({ status: 'cancelled', isStudio: true, cancel }));
+    assert.equal(w.store.rowsOf('c1').length, 0);
+    assert.equal(w.store.rowsOf('p1')[0]?.title, 'Lịch T2 12/10 · 15:30 đã bị huỷ');
+    // the customer's own studio-fault cancel (before the start) keeps the customer's name
+    const w2 = createNotifyWorld();
+    w2.users.users.set('c1', { name: 'An', avatarUrl: null });
+    const own = { ...cancel, at: '2026-10-12T08:29:59.000Z' };
+    await notifyBookingChange(w2.deps, b({ status: 'accepted', isStudio: true }), b({ status: 'cancelled', isStudio: true, cancel: own }));
+    assert.equal(w2.store.rowsOf('p1')[0]?.title, 'An đã huỷ lịch');
+  });
+
   it('a system cancel notifies both', async () => {
     const cancel = { by: 'system' as const, at: 'x', refundPercent: 100 };
     await notifyBookingChange(w.deps, b({ status: 'upcoming' }), b({ status: 'cancelled', cancel }));

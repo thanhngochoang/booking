@@ -47,15 +47,17 @@ export async function handleBookingWrite(
   }
 
   if (extras) {
-    // Idempotent (deterministic notification ids, badge evaluation), so a retry of the event is safe.
-    await notifyBookingChange(extras.notify, before, after);
-    // Assigned, reassigned, change requested or answered, job returned (#136 Decision 23; #138's hooks).
-    await notifyStudioBookingChange(extras.notify, before, after);
+    // The studio's derived day first, so a failing notice never leaves a freed or taken day unrecomputed (#136
+    // Decision 26); the retry of the event recomputes again, which is idempotent.
     if (extras.studioDays) {
       for (const key of studioDaysOf(before, after)) {
         await extras.studioDays(key.studioId, key.day);
       }
     }
+    // Idempotent (deterministic notification ids, badge evaluation), so a retry of the event is safe.
+    await notifyBookingChange(extras.notify, before, after);
+    // Assigned, reassigned, change requested or answered, job returned (#136 Decision 23; #138's hooks).
+    await notifyStudioBookingChange(extras.notify, before, after);
 
     if (after) {
       const dNotices = deliveryNotices(before, after);

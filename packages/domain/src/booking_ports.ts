@@ -207,6 +207,7 @@ export interface BookingStore {
   findExpiredDrafts(now: Date, limit?: number): Promise<readonly Booking[]>;
   findExpiredRequests(now: Date, limit?: number): Promise<readonly Booking[]>;
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
+  /** accepted | upcoming bookings ended before `cutoff`, without studio bookings that have no assignee. */
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
   findReleasableEscrows(cutoff: Date, limit?: number): Promise<readonly Payment[]>;
   /** status delivered, autoApproveAt <= now */
@@ -224,6 +225,8 @@ export interface StudioBookingStore extends BookingStore {
    * assignDeadline <= now + 24 h (reminder or overdue work), soonest deadline first.
    */
   findUnassignedStudioBookingsDue(now: Date, limit: number): Promise<readonly Booking[]>;
+  /** Studio bookings with assignStatus unassigned, status requested | accepted and start <= now, oldest first. */
+  findUnassignedStudioBookingsStarted(now: Date, limit: number): Promise<readonly Booking[]>;
   /** changeRequest.status pending and changeRequest.respondBy <= now, oldest first. */
   findDueChangeRequests(now: Date, limit: number): Promise<readonly Booking[]>;
 }

@@ -376,22 +376,24 @@ export async function removeMember(deps: StudioDeps, studioId: string, raw: unkn
  * bookingClock step (Decision 20c), idempotent: invites and requests past `expiresAt` become `expired`;
  * invites within 24 h of it get the one-time "invite expiring" notice and are then marked `expiringNotifiedAt`.
  * With `notify`, the notice is sent BEFORE the mark is committed: a failed notice leaves the invite unmarked, so
- * the next run sends it again (#138's dedupe key turns a resend after a lost mark into a duplicate).
+ * the next run sends it again (#138's dedupe key turns a resend after a lost mark into a duplicate). A relation
+ * whose transaction fails is counted in `failed` and never stops the batch; the next run finds it again.
  */
 export async function runMembershipSweeps(
   deps: StudioDeps,
   notify?: NotifyDeps,
-): Promise<{ expired: RelationChange[]; expiring: StudioRelation[]; notifyFailed: number }> {
+): Promise<{ expired: RelationChange[]; expiring: StudioRelation[]; notifyFailed: number; failed: number }> {
   const now = deps.clock.now();
   const nowIso = now.toISOString();
   // The port already narrows to work to do; filtering again keeps a loose adapter from opening no-op transactions.
   const due = (await deps.studios.dueRelations(now, MEMBERSHIP_SWEEP_LIMIT)).filter(
     (r) => sweepActionOf(r, now) !== null,
   );
-  const out: { expired: RelationChange[]; expiring: StudioRelation[]; notifyFailed: number } = {
+  const out: { expired: RelationChange[]; expiring: StudioRelation[]; notifyFailed: number; failed: number } = {
     expired: [],
     expiring: [],
     notifyFailed: 0,
+    failed: 0,
   };
   for (const d of due) {
     if (notify && sweepActionOf(d, now) === 'expiring') {
@@ -402,15 +404,21 @@ export async function runMembershipSweeps(
         continue;
       }
     }
-    const change = await deps.studios.runTransaction(async (tx): Promise<RelationChange | null> => {
-      const rel = await tx.getRelation(d.id);
-      const action = rel === null ? null : sweepActionOf(rel, now);
-      if (rel === null || action === null) return null;
-      const after: StudioRelation =
-        action === 'expire' ? expired(rel, nowIso) : { ...rel, expiringNotifiedAt: nowIso, version: rel.version + 1 };
-      tx.putRelation(after);
-      return { before: rel, after };
-    });
+    let change: RelationChange | null;
+    try {
+      change = await deps.studios.runTransaction(async (tx): Promise<RelationChange | null> => {
+        const rel = await tx.getRelation(d.id);
+        const action = rel === null ? null : sweepActionOf(rel, now);
+        if (rel === null || action === null) return null;
+        const after: StudioRelation =
+          action === 'expire' ? expired(rel, nowIso) : { ...rel, expiringNotifiedAt: nowIso, version: rel.version + 1 };
+        tx.putRelation(after);
+        return { before: rel, after };
+      });
+    } catch {
+      out.failed += 1;
+      continue;
+    }
     if (change === null) continue;
     if (change.after.status === 'expired') out.expired.push(change);
     else out.expiring.push(change.after);

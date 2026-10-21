@@ -118,6 +118,28 @@ describe('onBookingWrite studio wiring', () => {
     assert.deepEqual(recomputed, [`${STUDIO}/2026-10-14`]);
   });
 
+  it('a failing notice never skips the studio day recompute', async () => {
+    const recomputed: string[] = [];
+    const before = studioBooking();
+    const after = studioBooking({ assigneeId: 'm1', assigneeKind: 'member', assignStatus: 'assigned', assignedAt: NOW.toISOString(), version: 2 });
+    const broken = { ...notifyDeps().deps, store: { runTransaction: async () => { throw new Error('down'); } } } as unknown as NotifyDeps;
+    await assert.rejects(
+      handleBookingWrite(
+        { id: before.id, before: bookingToFirestore(before), after: bookingToFirestore(after) },
+        chatDeps,
+        async () => undefined,
+        {
+          notify: broken,
+          badges: {} as BadgeDeps,
+          studioDays: async (studioId, day) => {
+            recomputed.push(`${studioId}/${day}`);
+          },
+        },
+      ),
+    );
+    assert.deepEqual(recomputed, [`${STUDIO}/2026-10-14`]);
+  });
+
   it('studioDaysOf: only studio bookings, and only when status, day or assignee changed', () => {
     const b = studioBooking();
     assert.deepEqual(studioDaysOf(null, b), [{ studioId: STUDIO, day: '2026-10-14' }]);
@@ -177,6 +199,26 @@ describe('bookingClock studio steps', () => {
     // The change-request step still ran (its own try).
     assert.ok(lines.some((l) => l.includes('bookingClock studioChangeSweeps completed')));
     assert.equal(studios.relations.get('r2')?.status, 'expired');
+  });
+
+  it('an unassigned studio booking whose start has come is cancelled by its own step', async (t) => {
+    const { w, bookings, members } = studioWorld();
+    // 2026-10-10 09:00 VN started an hour before NOW (10:00 VN).
+    w.store.bookings.set('started', studioBooking({
+      id: 'started', day: '2026-10-10', start: '09:00', end: '11:00',
+      assignDeadline: new Date(NOW.getTime() - 2 * 3_600_000).toISOString(), assignOverdue: true,
+    }));
+    w.store.bookings.set('assigned', studioBooking({
+      id: 'assigned', day: '2026-10-10', start: '09:00', end: '11:00', assigneeId: 'm1', assigneeKind: 'member',
+      assignStatus: 'assigned', status: 'upcoming',
+    }));
+    const lines = await captureLogs(t, () =>
+      handleBookingClock(w.deps, undefined, { studio: { bookings, members, notify: notifyDeps().deps } }),
+    );
+    assert.ok(lines.some((l) => l.includes('bookingClock studioStartCancels completed') && l.includes('"cancelled":1')));
+    assert.equal(w.store.bookings.get('started')?.status, 'cancelled');
+    assert.equal(w.store.bookings.get('started')?.cancel?.by, 'studio_fault');
+    assert.equal(w.store.bookings.get('assigned')?.status, 'upcoming');
   });
 
   it('failed sweep notices are logged as errors', async (t) => {

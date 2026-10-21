@@ -448,7 +448,7 @@ describe('studio membership use cases', () => {
       assert.deepEqual(first.expiring.map((r) => r.id), [early.after.id]); // requests get no expiring notice
       assert.equal(w.store.relations.get(early.after.id)?.expiringNotifiedAt, '2026-10-16T12:00:00.000Z');
       const opened = w.store.transactions;
-      assert.deepEqual(await runMembershipSweeps(w.deps), { expired: [], expiring: [], notifyFailed: 0 });
+      assert.deepEqual(await runMembershipSweeps(w.deps), { expired: [], expiring: [], notifyFailed: 0, failed: 0 });
       // the notified invite and the request that is not yet due open no transaction
       assert.equal(w.store.transactions, opened);
 
@@ -493,11 +493,32 @@ describe('studio membership use cases', () => {
       assert.deepEqual(second.expiring.map((r) => r.id), [inv.after.id]);
       assert.equal(second.notifyFailed, 0);
       const third = await runMembershipSweeps(w.deps, flaky);
-      assert.deepEqual(third, { expired: [], expiring: [], notifyFailed: 0 });
+      assert.deepEqual(third, { expired: [], expiring: [], notifyFailed: 0, failed: 0 });
       assert.deepEqual(
         n.store.rowsOf('m1').map((r) => r.type),
         ['studio_invite_expiring'],
       );
+    });
+
+    it('a relation whose transaction fails is counted and never stops the batch', async () => {
+      const a = await inviteMember(w.deps, 's1', { memberId: 'm1' });
+      const b = await inviteMember(w.deps, 's1', { memberId: 'm2' });
+      w.clock.setTime(new Date(IN_7_DAYS));
+      const original = w.store.runTransaction.bind(w.store);
+      let calls = 0;
+      w.store.runTransaction = (async (fn: Parameters<typeof original>[0]) => {
+        calls += 1;
+        if (calls === 1) throw new Error('store down');
+        return original(fn);
+      }) as typeof w.store.runTransaction;
+      const r = await runMembershipSweeps(w.deps);
+      assert.equal(r.failed, 1);
+      assert.equal(r.expired.length, 1);
+      w.store.runTransaction = original;
+      const again = await runMembershipSweeps(w.deps);
+      assert.deepEqual({ failed: again.failed, expired: again.expired.length }, { failed: 0, expired: 1 });
+      assert.equal(w.store.relations.get(a.after.id)?.status, 'expired');
+      assert.equal(w.store.relations.get(b.after.id)?.status, 'expired');
     });
 
     it('a sweep does not touch an answered relation', async () => {
@@ -505,7 +526,7 @@ describe('studio membership use cases', () => {
       await respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: true });
       w.clock.setTime(new Date(IN_7_DAYS));
       const r = await runMembershipSweeps(w.deps);
-      assert.deepEqual(r, { expired: [], expiring: [], notifyFailed: 0 });
+      assert.deepEqual(r, { expired: [], expiring: [], notifyFailed: 0, failed: 0 });
       assert.equal(w.store.relations.get(inv.after.id)?.status, 'active');
     });
   });

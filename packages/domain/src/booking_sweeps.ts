@@ -9,6 +9,7 @@ import { releaseDueMilestones } from './milestones.js';
 import { transitionBooking } from './transition_booking.js';
 import { approveDelivery } from './delivery_use_cases.js';
 import { studioDayLoadWith } from './studio_capacity.js';
+import { waitsForAssignee } from './studio_assignment.js';
 
 export interface BookingSweepResults {
   readonly cleanedDrafts: number;
@@ -80,11 +81,13 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     }
   }
 
-  // 4. Auto mark-shot upcoming bookings 24h after end time
+  // 4. Auto mark-shot upcoming bookings 24h after end time. A studio booking without an assignee is never
+  // marked shot (no payout); the studio sweep cancels it at its start.
   let autoShots = 0;
   const completeCutoff = new Date(now.getTime() - AUTO_COMPLETE_DELAY_HOURS * 60 * 60 * 1000);
   const completions = await deps.store.findAutoCompletions(completeCutoff);
   for (const b of completions) {
+    if (waitsForAssignee(b)) continue;
     try {
       await transitionBooking(deps, {
         bookingId: b.id,

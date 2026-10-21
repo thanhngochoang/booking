@@ -7,6 +7,7 @@ import {
   runAssignDeadlineSweep,
   runChangeRequestSweep,
   runMembershipSweeps,
+  runUnassignedStartSweep,
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
@@ -39,7 +40,10 @@ export interface ReminderDeps {
 export interface BookingClockExtras {
   readonly verification?: { readonly deps: VerificationDeps; readonly notify: NotifyDeps };
   readonly delivery?: { readonly notify: NotifyDeps; readonly purge?: PurgeDeliverySamplesDeps };
-  /** S26 studio sweeps (#136 Decision 20): assignment deadlines and change requests, then membership expiry. */
+  /**
+   * S26 studio sweeps (#136 Decision 20): assignment deadlines, change requests, unassigned bookings at their
+   * start, then membership expiry.
+   */
   readonly studio?: { readonly bookings: StudioBookingDeps; readonly members: StudioDeps; readonly notify: NotifyDeps };
 }
 
@@ -138,8 +142,9 @@ export async function handleBookingClock(
 /**
  * The studio steps (#136 Decision 20), each in its own try so one failing query never skips the others:
  * `studioAssignSweeps` (48 h / 26 h reminders and overdue marks, 20a), `studioChangeSweeps` (expired change
- * requests, 20b), `studioMembershipSweeps` (expired invites and requests, and the one-time "invite expiring"
- * notice, 20c). Notices are sent before their mark; failed ones are logged as errors and retried next tick.
+ * requests, 20b), `studioStartCancels` (a booking still unassigned at its start is cancelled with 100% back,
+ * #136 ruling), `studioMembershipSweeps` (expired invites and requests, and the one-time "invite expiring" notice,
+ * 20c). Notices are sent before their mark; failed ones are logged as errors and retried next tick.
  */
 export async function runStudioSteps(studio: NonNullable<BookingClockExtras['studio']>): Promise<void> {
   try {
@@ -160,8 +165,18 @@ export async function runStudioSteps(studio: NonNullable<BookingClockExtras['stu
     logger.error('bookingClock studioChangeSweeps failed', { error: String(e) });
   }
   try {
-    const { expired, expiring, notifyFailed } = await runMembershipSweeps(studio.members, studio.notify);
+    const r = await runUnassignedStartSweep(studio.bookings);
+    logger.info('bookingClock studioStartCancels completed', r);
+    if (r.failed > 0) logger.error('bookingClock studioStartCancels items failed; retried next tick', { failed: r.failed });
+  } catch (e) {
+    logger.error('bookingClock studioStartCancels failed', { error: String(e) });
+  }
+  try {
+    const { expired, expiring, notifyFailed, failed } = await runMembershipSweeps(studio.members, studio.notify);
     logger.info('bookingClock studioMembershipSweeps completed', { expired: expired.length, expiring: expiring.length });
+    if (failed > 0) {
+      logger.error('bookingClock studioMembershipSweeps relations failed; retried next tick', { failed });
+    }
     if (notifyFailed > 0) {
       logger.error('bookingClock studioMembershipSweeps expiring notices failed; the invites stay unmarked and are retried', {
         notifyFailed,

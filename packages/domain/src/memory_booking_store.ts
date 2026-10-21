@@ -346,7 +346,7 @@ export class MemoryBookingStore implements StudioBookingStore {
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
     const res: Booking[] = [];
     for (const b of this.bookings.values()) {
-      if (b.status === 'upcoming' || b.status === 'accepted') {
+      if ((b.status === 'upcoming' || b.status === 'accepted') && !(b.isStudio === true && !b.assigneeId)) {
         const endsAt = parseVnDateTime(b.day, b.end);
         // cutoff is now - 24 hours
         if (endsAt.getTime() <= cutoff.getTime()) {
@@ -425,6 +425,21 @@ export class MemoryBookingStore implements StudioBookingStore {
           Date.parse(b.assignDeadline) <= horizon,
       )
       .sort((a, b) => Date.parse(a.assignDeadline ?? '') - Date.parse(b.assignDeadline ?? ''))
+      .slice(0, limit)
+      .map((b) => ({ ...b }));
+  }
+
+  async findUnassignedStudioBookingsStarted(now: Date, limit: number): Promise<readonly Booking[]> {
+    const startOf = (b: Booking) => parseVnDateTime(b.day, b.start).getTime();
+    return [...this.bookings.values()]
+      .filter(
+        (b) =>
+          b.isStudio === true &&
+          b.assignStatus === 'unassigned' &&
+          (b.status === 'requested' || b.status === 'accepted') &&
+          startOf(b) <= now.getTime(),
+      )
+      .sort((a, b) => startOf(a) - startOf(b))
       .slice(0, limit)
       .map((b) => ({ ...b }));
   }

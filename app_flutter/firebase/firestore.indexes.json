@@ -1293,6 +1293,24 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "assignStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "day",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "changeRequest.status",
           "order": "ASCENDING"
         },

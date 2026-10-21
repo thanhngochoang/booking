@@ -6,7 +6,14 @@ import type { AssignReminder, Booking } from './booking.js';
 import { parseVnDateTime } from './booking_policy.js';
 import { notifyAssignOverdue, notifyAssignReminder } from './notification_hooks.js';
 import type { NotifyDeps } from './notification_ports.js';
-import { isOpenForAssignment, STUDIO_ASSIGN_LEAD_HOURS, type StudioBookingDeps } from './studio_assignment.js';
+import { decideTransition } from './booking_machine.js';
+import { commitTransition } from './commit_transition.js';
+import {
+  isOpenForAssignment,
+  STUDIO_ASSIGN_LEAD_HOURS,
+  waitsForAssignee,
+  type StudioBookingDeps,
+} from './studio_assignment.js';
 
 /** Bookings handled per sweep step and run. */
 export const STUDIO_SWEEP_LIMIT = 200;
@@ -19,6 +26,8 @@ export interface StudioBookingSweepResults {
   readonly overdue: number;
   readonly reminders: number;
   readonly changesExpired: number;
+  /** Unassigned bookings cancelled at their start with a 100% refund. */
+  readonly cancelledAtStart: number;
   /** Notices whose hook failed; their booking stays unmarked and is sent again on the next run. */
   readonly notifyFailed: number;
 }
@@ -165,12 +174,70 @@ export async function runChangeRequestSweep(deps: StudioBookingDeps): Promise<{ 
   return { changesExpired };
 }
 
-/** Both steps, (a) then (b). The clock runs them as two steps, each in its own try. */
+/**
+ * (c) A studio booking still unassigned at its start is cancelled with a 100% refund (#136 ruling): nobody can
+ * shoot it, the customer's own 100% right ended at the start, and it must never be marked shot and paid out.
+ * First the overdue mark as in (a) when the sweep has not made it yet (`assignOverdue`, fault, `lateAssignCount`
+ * once), then `cancel_unassigned_at_start` through commitTransition (refund, studio day load freed). The
+ * customer hears it through the refund notice and the studio through the booking write. Idempotent: a cancelled
+ * booking leaves the query and a marked one is not counted again. A failing item never stops the batch.
+ */
+export async function runUnassignedStartSweep(
+  deps: StudioBookingDeps,
+): Promise<{ readonly cancelled: number; readonly failed: number }> {
+  const now = deps.clock.now();
+  const nowIso = now.toISOString();
+  let cancelled = 0;
+  let failed = 0;
+  for (const due of await deps.store.findUnassignedStudioBookingsStarted(now, STUDIO_SWEEP_LIMIT)) {
+    try {
+      const marked = await deps.store.runTransaction(async (tx) => {
+        const b = await tx.getBooking(due.id);
+        if (
+          !b ||
+          !waitsForAssignee(b) ||
+          (b.status !== 'requested' && b.status !== 'accepted') ||
+          now.getTime() < parseVnDateTime(b.day, b.start).getTime()
+        ) {
+          return null;
+        }
+        if (b.assignOverdue === true) return b;
+        tx.incrementStudioCounter(b.photographerId, 'lateAssignCount');
+        const next: Booking = {
+          ...b,
+          assignOverdue: true,
+          studioFault: b.studioFault ?? { kind: 'assign_overdue', at: nowIso },
+          assignRemindersSent: ['h48', 'h26'],
+          version: b.version + 1,
+          updatedAt: nowIso,
+        };
+        await tx.setBooking(next);
+        return next;
+      });
+      if (marked === null) continue;
+      await commitTransition(deps, marked, decideTransition(marked, 'cancel_unassigned_at_start', { role: 'system' }, now));
+      cancelled += 1;
+    } catch {
+      // Swallowed so one failed item does not stop the batch; the next run finds it again.
+      failed += 1;
+    }
+  }
+  return { cancelled, failed };
+}
+
+/** Every step, (a), (b) then (c). The clock runs them as separate steps, each in its own try. */
 export async function runStudioBookingSweeps(
   deps: StudioBookingDeps,
   notify?: NotifyDeps,
 ): Promise<StudioBookingSweepResults> {
   const a = await runAssignDeadlineSweep(deps, notify);
   const b = await runChangeRequestSweep(deps);
-  return { overdue: a.overdue, reminders: a.reminders, changesExpired: b.changesExpired, notifyFailed: a.notifyFailed };
+  const c = await runUnassignedStartSweep(deps);
+  return {
+    overdue: a.overdue,
+    reminders: a.reminders,
+    changesExpired: b.changesExpired,
+    cancelledAtStart: c.cancelled,
+    notifyFailed: a.notifyFailed,
+  };
 }

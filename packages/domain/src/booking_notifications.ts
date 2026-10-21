@@ -4,6 +4,7 @@ import type { NotificationActor, NotifyDeps, NotifyRequest } from './notificatio
 import type { NotificationContent } from './notification_render.js';
 import { formatDayShortVi } from './notification_render.js';
 import { notify } from './notification_use_cases.js';
+import { isUnassignedStartCancel } from './studio_assignment.js';
 
 export interface BookingNotice {
   readonly to: 'customer' | 'photographer';
@@ -25,7 +26,8 @@ export function bookingNotices(before: Booking | null, after: Booking | null): B
     } else if (before.status === 'requested' && after.status === 'expired') {
       out.push({ to: 'customer', kind: 'expired' });
     } else if (after.status === 'cancelled') {
-      // A studio-fault cancel is the customer's own (#136 Decision 12): only the studio hears about it.
+      // A studio-fault cancel is the customer's own (#136 Decision 12): only the studio hears about it. So does the
+      // clock's cancel of an unassigned studio booking at its start (the customer hears it through the refund).
       const by = after.cancel?.by === 'studio_fault' ? 'customer' : (after.cancel?.by ?? 'system');
       // The party that did not cancel hears about it; both when the system cancelled.
       if (by !== 'customer') out.push({ to: 'customer', kind: 'cancelled' });
@@ -85,7 +87,7 @@ function requestFor(
         },
       };
     case 'cancelled': {
-      const by = b.cancel?.by ?? 'system';
+      const by = isUnassignedStartCancel(b) ? 'system' : (b.cancel?.by ?? 'system');
       const content: NotificationContent = {
         type: 'booking_cancelled',
         by: by === 'system' ? 'system' : 'party',

@@ -72,6 +72,26 @@ export function studioFaultOf(b: Booking, now: Date): StudioFaultKind | null {
   return null;
 }
 
+/**
+ * A studio booking with nobody assigned: it never reaches `upcoming` (Decision 11), cannot be marked shot or
+ * completed, and the clock cancels it at its start.
+ */
+export function waitsForAssignee(booking: Pick<Booking, 'isStudio' | 'assigneeId'>): boolean {
+  return booking.isStudio === true && !booking.assigneeId;
+}
+
+/**
+ * The clock's cancel of a studio booking still unassigned at its start (`cancel_unassigned_at_start`): a
+ * `studio_fault` cancel made at or after the start, which the customer's own cancel never is.
+ */
+export function isUnassignedStartCancel(b: Booking): boolean {
+  return (
+    b.isStudio === true &&
+    b.cancel?.by === 'studio_fault' &&
+    Date.parse(b.cancel.at) >= parseVnDateTime(b.day, b.start).getTime()
+  );
+}
+
 /** The booking of a studio, or not_found (an individual booking has nothing to assign). */
 async function studioBooking(deps: Pick<BookingDeps, 'store'>, bookingId: string): Promise<Booking> {
   const b = await deps.store.getBooking(bookingId);
