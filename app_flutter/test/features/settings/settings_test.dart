@@ -1083,14 +1083,19 @@ void main() {
       );
     });
 
-    testWidgets('studio rows wait for their routes; the verify row is shown', (
-      tester,
-    ) async {
-      for (final type in [ProviderType.individual, ProviderType.studio]) {
+    testWidgets('studio rows show without overrides since #136; the verify '
+        'row is shown', (tester) async {
+      for (final (type, shown, hidden) in [
+        (
+          ProviderType.individual,
+          'settings-my-studio',
+          'settings-studio-members',
+        ),
+        (ProviderType.studio, 'settings-studio-members', 'settings-my-studio'),
+      ]) {
         await open(tester, type: type);
-        for (final key in ['settings-my-studio', 'settings-studio-members']) {
-          expect(find.byKey(Key(key)), findsNothing, reason: '$type $key');
-        }
+        expect(find.byKey(Key(shown)), findsOneWidget, reason: '$type');
+        expect(find.byKey(Key(hidden)), findsNothing, reason: '$type');
         // `/verify/start` exists since #135: its row shows without overrides.
         expect(find.byKey(const Key('settings-verify')), findsOneWidget);
         await tester.pumpWidget(const SizedBox());

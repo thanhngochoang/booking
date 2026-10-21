@@ -360,6 +360,13 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 #### MetaLine · Mới
 `MetaLine(List<MetaPart> parts, {TextStyle? style, int maxLines = 1})`; `MetaPart.text(String)` và `MetaPart.tomato(int pct, {int? count})` (có `count` thì "97% (58)", dùng ở thẻ ảnh S02.01). Nối các phần bằng " · " thành một `Text.rich`, phần cà chua là `VerdictIcon(12)` + "97%" (`formatTomatoPct`) nằm giữa dòng chữ; cắt bằng dấu "…" khi quá `maxLines`. Mặc định cỡ 12 màu `foregroundSecondary`. Thay các chuỗi ghép sẵn có số sao (thẻ thợ, hàng kết quả tìm, dòng chủ sự kiện, dòng tin cậy của báo giá). Ẩn phần cà chua khi chưa đủ 5 đánh giá (`hasTomatoPct`); `MetaPart` của phần đánh giá do helper dùng chung của lõi `reviewMetaPart(summary, l10n, {withCount})` (`lib/core/review_meta.dart`) dựng, các phần chữ khác do tính năng tạo: từ 5 đánh giá là phần cà chua, 1–4 là chữ "Mới · {count} đánh giá" (`photographerReviewsNew`), 0 thì không có gì. Đọc cho trình đọc màn hình chỉ là "97%" (biểu tượng không có nhãn).
 
+---
+
+### Component của S26 (studio và thành viên) · Đã có (#136)
+
+#### MemberRow · Đã có
+`MemberRow({String? avatarUrl, required String name, ProviderMarkKind? mark, List<MetaPart> meta = const [], Widget? trailing, bool enabled = true, VoidCallback? onTap})` · `MemberRow.skeleton()`. Một người trong danh sách studio (mock `.irow2`): `AppAvatar` 40 (trang trí), tên đậm kèm `ProviderMark` khi có (tích xanh ở S26.02, con dấu studio ở S26.03), một `MetaLine` bên dưới (cà chua %, "2 việc đang giao", "Lời mời đã gửi · Hết hạn sau 5 ngày"), nút ở cuối (`trailing`: viền "Mời", chữ "Huỷ", menu "…"; nhiều nút thì truyền `Wrap` căn phải để xuống hàng khi hẹp). Phần nút rộng tối đa nửa hàng nên tên luôn còn chỗ (320dp, chữ 1,3). `enabled: false` (đang ở studio khác, đang nghỉ 7 ngày, đang ở studio thì lời mời khác mờ): mờ 50%, không nhận chạm, đọc là bị tắt; dòng meta nói lý do. Trình đọc màn hình đọc một nhãn "tên, dấu, meta" (cà chua đọc "97% cà chua"); nút ở cuối giữ nhãn riêng. Skeleton: vòng avatar và hai dòng. Dùng ở S26.01, S26.02, S26.03.
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
@@ -415,6 +422,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `VerdictIcon`, `MetaLine` | S02.01, S02.02, S02.06, S03.01, S12.02, S15.03, S26 |
 | `VerdictPad`, `VerdictLevel` | S05.05 (khối thợ và khối studio dùng `compact`) |
 | `VerdictBadge`, `TomatoRatioBar` | S03.01 (tab Đánh giá) |
+| `MemberRow` | S26.01, S26.02, S26.03 |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)

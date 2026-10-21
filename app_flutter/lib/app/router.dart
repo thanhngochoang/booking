@@ -64,6 +64,8 @@ import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
+import 'package:photobooking/features/studio/my_studio_screen.dart';
+import 'package:photobooking/features/studio/studio_members_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
 import 'package:photobooking/features/verification/verify_fee_screen.dart';
 import 'package:photobooking/features/verification/verify_identity_screen.dart';
@@ -423,6 +425,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      // S26.03 (individual, NAG) and S26.01 (studio owner); the server refuses
+      // the wrong side's calls, the settings rows pick the right screen.
+      GoRoute(
+        path: '/me/studio',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const MyStudioScreen(),
+      ),
+      GoRoute(
+        path: '/studio/members',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const StudioMembersScreen(),
+      ),
       GoRoute(
         path: '/me/addons',
         redirect: (_, _) => photographersOnly(),

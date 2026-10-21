@@ -12621,6 +12621,504 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tài khoản đang chờ xoá, không tạo bản sao mới được.'**
   String get privacyExportPending;
+
+  /// No description provided for @studioMembersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get studioMembersTitle;
+
+  /// No description provided for @studioMembersRulesA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quy định thành viên'**
+  String get studioMembersRulesA11y;
+
+  /// No description provided for @studioMembersQuota.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/{max} thợ · còn {k} thao tác hôm nay'**
+  String studioMembersQuota(int n, int max, int k);
+
+  /// No description provided for @studioMemberAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'{m} việc đang giao'**
+  String studioMemberAssigned(int m);
+
+  /// No description provided for @studioMemberNoWork.
+  ///
+  /// In vi, this message translates to:
+  /// **'chưa có việc'**
+  String get studioMemberNoWork;
+
+  /// No description provided for @studioMemberOptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuỳ chọn cho {name}'**
+  String studioMemberOptions(String name);
+
+  /// No description provided for @studioPendingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ'**
+  String get studioPendingTitle;
+
+  /// No description provided for @studioPendingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} · tối đa 5 lời mời'**
+  String studioPendingCount(int n);
+
+  /// No description provided for @studioInviteSentDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã gửi · Hết hạn sau {n} ngày'**
+  String studioInviteSentDays(int n);
+
+  /// No description provided for @studioInviteSentToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã gửi · Hết hạn trong hôm nay'**
+  String get studioInviteSentToday;
+
+  /// No description provided for @studioJoinRequestedAgo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin gia nhập · {ago}'**
+  String studioJoinRequestedAgo(String ago);
+
+  /// No description provided for @studioAgoNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'vừa xong'**
+  String get studioAgoNow;
+
+  /// No description provided for @studioAgoMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút trước'**
+  String studioAgoMinutes(int n);
+
+  /// No description provided for @studioAgoHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ trước'**
+  String studioAgoHours(int n);
+
+  /// No description provided for @studioAgoDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày trước'**
+  String studioAgoDays(int n);
+
+  /// No description provided for @studioCancelInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get studioCancelInvite;
+
+  /// No description provided for @studioDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get studioDecline;
+
+  /// No description provided for @studioApprove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt'**
+  String get studioApprove;
+
+  /// No description provided for @studioInviteAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ'**
+  String get studioInviteAction;
+
+  /// No description provided for @studioMembersEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thành viên'**
+  String get studioMembersEmpty;
+
+  /// No description provided for @studioMembersEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ ảnh bạn tin tưởng; họ nhận lời là vào studio.'**
+  String get studioMembersEmptyBody;
+
+  /// No description provided for @studioRemoveMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ khỏi studio'**
+  String get studioRemoveMember;
+
+  /// No description provided for @studioRemoveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ {name} khỏi studio?'**
+  String studioRemoveTitle(String name);
+
+  /// No description provided for @studioRemoveBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} sẽ không nhận việc của studio nữa và 7 ngày sau mới vào được studio khác.'**
+  String studioRemoveBody(String name);
+
+  /// No description provided for @studioRemoveKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get studioRemoveKeep;
+
+  /// No description provided for @studioBusyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} buổi chụp được giao'**
+  String studioBusyTitle(int n);
+
+  /// No description provided for @studioRemoveBusyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao các buổi này cho người khác hoặc chờ chụp xong rồi bỏ.'**
+  String get studioRemoveBusyBody;
+
+  /// No description provided for @studioSheetClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get studioSheetClose;
+
+  /// No description provided for @studioFullUnverified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ 3 thợ. Xác minh doanh nghiệp để nhận tới 30 thợ.'**
+  String get studioFullUnverified;
+
+  /// No description provided for @studioFullVerifyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp'**
+  String get studioFullVerifyAction;
+
+  /// No description provided for @studioQuotaOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết thao tác hôm nay. Thử lại ngày mai.'**
+  String get studioQuotaOut;
+
+  /// No description provided for @studioRulesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quy định thành viên'**
+  String get studioRulesTitle;
+
+  /// No description provided for @studioRule1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào studio cần hai bên đồng ý: studio mời và thợ nhận, hoặc thợ xin và studio duyệt.'**
+  String get studioRule1;
+
+  /// No description provided for @studioRule2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời hết hạn sau 7 ngày, tối đa 5 lời mời chờ.'**
+  String get studioRule2;
+
+  /// No description provided for @studioRule3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mỗi thợ ở tối đa một studio. Rời hoặc bị bỏ thì 7 ngày sau mới vào được studio khác.'**
+  String get studioRule3;
+
+  /// No description provided for @studioRule4.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 3 thợ khi studio chưa xác minh doanh nghiệp, 30 khi đã xác minh; tối đa 5 thao tác thành viên mỗi ngày.'**
+  String get studioRule4;
+
+  /// No description provided for @studioRule5.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không bỏ được thành viên còn buổi chụp được giao chưa xong.'**
+  String get studioRule5;
+
+  /// No description provided for @studioInviteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ'**
+  String get studioInviteTitle;
+
+  /// No description provided for @studioInviteSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm thợ theo tên'**
+  String get studioInviteSearch;
+
+  /// No description provided for @studioInviteRowAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời'**
+  String get studioInviteRowAction;
+
+  /// No description provided for @studioInviteInStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang ở {studio}'**
+  String studioInviteInStudio(String studio);
+
+  /// No description provided for @studioInviteCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời được từ {date}'**
+  String studioInviteCooldown(String date);
+
+  /// No description provided for @studioInviteInvited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get studioInviteInvited;
+
+  /// No description provided for @studioInviteMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã là thành viên'**
+  String get studioInviteMember;
+
+  /// No description provided for @studioInviteFootnote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ'**
+  String get studioInviteFootnote;
+
+  /// No description provided for @studioInviteFullPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã có 5 lời mời chờ'**
+  String get studioInviteFullPending;
+
+  /// No description provided for @studioInviteFullMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đủ {max} thợ'**
+  String studioInviteFullMembers(int max);
+
+  /// No description provided for @studioInviteNoResults.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy thợ tên này'**
+  String get studioInviteNoResults;
+
+  /// No description provided for @studioInviteDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi lời mời tới {name}'**
+  String studioInviteDone(String name);
+
+  /// No description provided for @myStudioTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio của tôi'**
+  String get myStudioTitle;
+
+  /// No description provided for @myStudioSince.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên từ {month} · {m} việc được giao'**
+  String myStudioSince(String month, int m);
+
+  /// No description provided for @myStudioView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem studio'**
+  String get myStudioView;
+
+  /// No description provided for @myStudioJobs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc studio giao'**
+  String get myStudioJobs;
+
+  /// No description provided for @myStudioAssignedBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã giao'**
+  String get myStudioAssignedBadge;
+
+  /// No description provided for @myStudioLeave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời studio'**
+  String get myStudioLeave;
+
+  /// No description provided for @myStudioInvites.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời'**
+  String get myStudioInvites;
+
+  /// No description provided for @myStudioAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get myStudioAccept;
+
+  /// No description provided for @myStudioDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get myStudioDecline;
+
+  /// No description provided for @myStudioInviteBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang ở {studio}'**
+  String myStudioInviteBlocked(String studio);
+
+  /// No description provided for @myStudioInviteExpires.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn sau {n} ngày'**
+  String myStudioInviteExpires(int n);
+
+  /// No description provided for @myStudioInviteExpiresToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn trong hôm nay'**
+  String get myStudioInviteExpiresToday;
+
+  /// No description provided for @myStudioCooldownNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời hoặc bị bỏ khỏi studio thì 7 ngày sau mới vào được studio khác.'**
+  String get myStudioCooldownNote;
+
+  /// No description provided for @myStudioNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa ở studio nào'**
+  String get myStudioNone;
+
+  /// No description provided for @myStudioNoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio mời bạn, hoặc bạn xin gia nhập từ hồ sơ studio.'**
+  String get myStudioNoneBody;
+
+  /// No description provided for @myStudioRequestPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin gia nhập {studio} · chờ duyệt'**
+  String myStudioRequestPending(String studio);
+
+  /// No description provided for @myStudioRequestSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi {ago} · hết hạn sau {n} ngày'**
+  String myStudioRequestSent(String ago, int n);
+
+  /// No description provided for @myStudioRequestSentToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi {ago} · hết hạn trong hôm nay'**
+  String myStudioRequestSentToday(String ago);
+
+  /// No description provided for @myStudioRequestCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get myStudioRequestCancel;
+
+  /// No description provided for @myStudioLeaveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời {studio}?'**
+  String myStudioLeaveTitle(String studio);
+
+  /// No description provided for @myStudioLeaveBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'7 ngày sau bạn mới vào được studio khác, kể cả {studio}.'**
+  String myStudioLeaveBody(String studio);
+
+  /// No description provided for @myStudioLeaveKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ở lại'**
+  String get myStudioLeaveKeep;
+
+  /// No description provided for @myStudioLeaveBusyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp xong hoặc nhờ studio giao người khác rồi rời.'**
+  String get myStudioLeaveBusyBody;
+
+  /// No description provided for @settingsStudioMembersQuota.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/{max} thợ'**
+  String settingsStudioMembersQuota(int n, int max);
+
+  /// No description provided for @settingsMyStudioNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ở studio nào'**
+  String get settingsMyStudioNone;
+
+  /// No description provided for @studioErr_membership_conflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đang ở một studio khác.'**
+  String get studioErr_membership_conflict;
+
+  /// No description provided for @studioErr_cooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đủ 7 ngày kể từ lần rời studio.'**
+  String get studioErr_cooldown;
+
+  /// No description provided for @studioErr_member_busy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn buổi chụp được giao chưa xong.'**
+  String get studioErr_member_busy;
+
+  /// No description provided for @studioErr_studio_full.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đủ số thợ hoặc đủ 5 lời mời chờ.'**
+  String get studioErr_studio_full;
+
+  /// No description provided for @studioErr_rate_limited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết thao tác hôm nay. Thử lại ngày mai.'**
+  String get studioErr_rate_limited;
+
+  /// No description provided for @studioErr_not_accepting_orders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này chưa xác minh nên chưa giao việc được.'**
+  String get studioErr_not_accepting_orders;
+
+  /// No description provided for @studioErr_day_taken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đã bận ngày này.'**
+  String get studioErr_day_taken;
+
+  /// No description provided for @studioErr_conflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã được xử lý trước đó.'**
+  String get studioErr_conflict;
+
+  /// No description provided for @studioErr_generic.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại.'**
+  String get studioErr_generic;
 }
 
 class _AppLocalizationsDelegate

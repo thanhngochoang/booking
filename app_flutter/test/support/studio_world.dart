@@ -1,7 +1,9 @@
 // test/support/studio_world.dart
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/booking/booking.dart';
@@ -12,11 +14,17 @@ import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
+import 'package:photobooking/features/studio/my_studio_screen.dart';
+import 'package:photobooking/features/studio/studio_members_screen.dart';
 
 import 'booking_fixtures.dart';
 import 'fake_booking_repository.dart';
+import 'screen_host.dart';
 
 /// Tuesday 21/10/2026 10:00 in Vietnam.
 final studioNow = DateTime.utc(2026, 10, 21, 3);
@@ -294,4 +302,55 @@ class StudioWorld {
     bookingRepositoryProvider.overrideWithValue(bookings),
     photographerRepositoryProvider.overrideWithValue(photographers),
   ];
+
+  /// The signed-in user's own `photographers` intro (S26.01's cap and
+  /// business link); a business-verified studio by default.
+  PhotographerIntro intro = const PhotographerIntro(
+    onboardingComplete: true,
+    verified: true,
+    businessVerified: true,
+    providerType: ProviderType.studio,
+  );
+
+  /// Whether #135's `/verify/business` route exists.
+  bool verifyRoutes = true;
+
+  late GoRouter router;
+
+  /// [overrides] plus the intro and route flag of a studio screen.
+  List<Override> get screenOverrides => [
+    ...overrides,
+    myIntroProvider.overrideWith((ref) => Stream.value(intro)),
+    verifyStartReadyProvider.overrideWithValue(verifyRoutes),
+  ];
+
+  /// S26.01 at `/studio/members` and S26.03 at `/me/studio`; other routes
+  /// print `stub <uri>`.
+  Widget app({
+    String location = '/studio/members',
+    Brightness brightness = Brightness.dark,
+    double textScale = 1.0,
+  }) {
+    Widget stub(BuildContext _, GoRouterState s) =>
+        Scaffold(body: Text('stub ${s.uri}'));
+    router = GoRouter(
+      initialLocation: location,
+      routes: [
+        GoRoute(
+          path: '/studio/members',
+          builder: (_, _) => const StudioMembersScreen(),
+        ),
+        GoRoute(path: '/me/studio', builder: (_, _) => const MyStudioScreen()),
+        GoRoute(path: '/u/:uid', builder: stub),
+        GoRoute(path: '/b/:id', builder: stub),
+        GoRoute(path: '/verify/business', builder: stub),
+      ],
+    );
+    return screenRouterApp(
+      router: router,
+      overrides: screenOverrides,
+      brightness: brightness,
+      textScale: textScale,
+    );
+  }
 }

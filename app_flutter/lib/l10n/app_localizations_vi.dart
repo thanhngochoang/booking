@@ -7262,4 +7262,317 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get privacyExportPending =>
       'Tài khoản đang chờ xoá, không tạo bản sao mới được.';
+
+  @override
+  String get studioMembersTitle => 'Thành viên';
+
+  @override
+  String get studioMembersRulesA11y => 'Quy định thành viên';
+
+  @override
+  String studioMembersQuota(int n, int max, int k) {
+    return '$n/$max thợ · còn $k thao tác hôm nay';
+  }
+
+  @override
+  String studioMemberAssigned(int m) {
+    return '$m việc đang giao';
+  }
+
+  @override
+  String get studioMemberNoWork => 'chưa có việc';
+
+  @override
+  String studioMemberOptions(String name) {
+    return 'Tuỳ chọn cho $name';
+  }
+
+  @override
+  String get studioPendingTitle => 'Đang chờ';
+
+  @override
+  String studioPendingCount(int n) {
+    return '$n · tối đa 5 lời mời';
+  }
+
+  @override
+  String studioInviteSentDays(int n) {
+    return 'Lời mời đã gửi · Hết hạn sau $n ngày';
+  }
+
+  @override
+  String get studioInviteSentToday => 'Lời mời đã gửi · Hết hạn trong hôm nay';
+
+  @override
+  String studioJoinRequestedAgo(String ago) {
+    return 'Xin gia nhập · $ago';
+  }
+
+  @override
+  String get studioAgoNow => 'vừa xong';
+
+  @override
+  String studioAgoMinutes(int n) {
+    return '$n phút trước';
+  }
+
+  @override
+  String studioAgoHours(int n) {
+    return '$n giờ trước';
+  }
+
+  @override
+  String studioAgoDays(int n) {
+    return '$n ngày trước';
+  }
+
+  @override
+  String get studioCancelInvite => 'Huỷ';
+
+  @override
+  String get studioDecline => 'Từ chối';
+
+  @override
+  String get studioApprove => 'Duyệt';
+
+  @override
+  String get studioInviteAction => 'Mời thợ';
+
+  @override
+  String get studioMembersEmpty => 'Chưa có thành viên';
+
+  @override
+  String get studioMembersEmptyBody =>
+      'Mời thợ ảnh bạn tin tưởng; họ nhận lời là vào studio.';
+
+  @override
+  String get studioRemoveMember => 'Bỏ khỏi studio';
+
+  @override
+  String studioRemoveTitle(String name) {
+    return 'Bỏ $name khỏi studio?';
+  }
+
+  @override
+  String studioRemoveBody(String name) {
+    return '$name sẽ không nhận việc của studio nữa và 7 ngày sau mới vào được studio khác.';
+  }
+
+  @override
+  String get studioRemoveKeep => 'Giữ lại';
+
+  @override
+  String studioBusyTitle(int n) {
+    return 'Còn $n buổi chụp được giao';
+  }
+
+  @override
+  String get studioRemoveBusyBody =>
+      'Giao các buổi này cho người khác hoặc chờ chụp xong rồi bỏ.';
+
+  @override
+  String get studioSheetClose => 'Đóng';
+
+  @override
+  String get studioFullUnverified =>
+      'Đã đủ 3 thợ. Xác minh doanh nghiệp để nhận tới 30 thợ.';
+
+  @override
+  String get studioFullVerifyAction => 'Xác minh doanh nghiệp';
+
+  @override
+  String get studioQuotaOut => 'Hết thao tác hôm nay. Thử lại ngày mai.';
+
+  @override
+  String get studioRulesTitle => 'Quy định thành viên';
+
+  @override
+  String get studioRule1 =>
+      'Vào studio cần hai bên đồng ý: studio mời và thợ nhận, hoặc thợ xin và studio duyệt.';
+
+  @override
+  String get studioRule2 => 'Lời mời hết hạn sau 7 ngày, tối đa 5 lời mời chờ.';
+
+  @override
+  String get studioRule3 =>
+      'Mỗi thợ ở tối đa một studio. Rời hoặc bị bỏ thì 7 ngày sau mới vào được studio khác.';
+
+  @override
+  String get studioRule4 =>
+      'Tối đa 3 thợ khi studio chưa xác minh doanh nghiệp, 30 khi đã xác minh; tối đa 5 thao tác thành viên mỗi ngày.';
+
+  @override
+  String get studioRule5 =>
+      'Không bỏ được thành viên còn buổi chụp được giao chưa xong.';
+
+  @override
+  String get studioInviteTitle => 'Mời thợ';
+
+  @override
+  String get studioInviteSearch => 'Tìm thợ theo tên';
+
+  @override
+  String get studioInviteRowAction => 'Mời';
+
+  @override
+  String studioInviteInStudio(String studio) {
+    return 'Đang ở $studio';
+  }
+
+  @override
+  String studioInviteCooldown(String date) {
+    return 'Mời được từ $date';
+  }
+
+  @override
+  String get studioInviteInvited => 'Đã mời';
+
+  @override
+  String get studioInviteMember => 'Đã là thành viên';
+
+  @override
+  String get studioInviteFootnote =>
+      'Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ';
+
+  @override
+  String get studioInviteFullPending => 'Đã có 5 lời mời chờ';
+
+  @override
+  String studioInviteFullMembers(int max) {
+    return 'Studio đã đủ $max thợ';
+  }
+
+  @override
+  String get studioInviteNoResults => 'Không tìm thấy thợ tên này';
+
+  @override
+  String studioInviteDone(String name) {
+    return 'Đã gửi lời mời tới $name';
+  }
+
+  @override
+  String get myStudioTitle => 'Studio của tôi';
+
+  @override
+  String myStudioSince(String month, int m) {
+    return 'Thành viên từ $month · $m việc được giao';
+  }
+
+  @override
+  String get myStudioView => 'Xem studio';
+
+  @override
+  String get myStudioJobs => 'Việc studio giao';
+
+  @override
+  String get myStudioAssignedBadge => 'Đã giao';
+
+  @override
+  String get myStudioLeave => 'Rời studio';
+
+  @override
+  String get myStudioInvites => 'Lời mời';
+
+  @override
+  String get myStudioAccept => 'Nhận';
+
+  @override
+  String get myStudioDecline => 'Từ chối';
+
+  @override
+  String myStudioInviteBlocked(String studio) {
+    return 'Bạn đang ở $studio';
+  }
+
+  @override
+  String myStudioInviteExpires(int n) {
+    return 'Hết hạn sau $n ngày';
+  }
+
+  @override
+  String get myStudioInviteExpiresToday => 'Hết hạn trong hôm nay';
+
+  @override
+  String get myStudioCooldownNote =>
+      'Rời hoặc bị bỏ khỏi studio thì 7 ngày sau mới vào được studio khác.';
+
+  @override
+  String get myStudioNone => 'Bạn chưa ở studio nào';
+
+  @override
+  String get myStudioNoneBody =>
+      'Studio mời bạn, hoặc bạn xin gia nhập từ hồ sơ studio.';
+
+  @override
+  String myStudioRequestPending(String studio) {
+    return 'Đã xin gia nhập $studio · chờ duyệt';
+  }
+
+  @override
+  String myStudioRequestSent(String ago, int n) {
+    return 'Gửi $ago · hết hạn sau $n ngày';
+  }
+
+  @override
+  String myStudioRequestSentToday(String ago) {
+    return 'Gửi $ago · hết hạn trong hôm nay';
+  }
+
+  @override
+  String get myStudioRequestCancel => 'Huỷ';
+
+  @override
+  String myStudioLeaveTitle(String studio) {
+    return 'Rời $studio?';
+  }
+
+  @override
+  String myStudioLeaveBody(String studio) {
+    return '7 ngày sau bạn mới vào được studio khác, kể cả $studio.';
+  }
+
+  @override
+  String get myStudioLeaveKeep => 'Ở lại';
+
+  @override
+  String get myStudioLeaveBusyBody =>
+      'Chụp xong hoặc nhờ studio giao người khác rồi rời.';
+
+  @override
+  String settingsStudioMembersQuota(int n, int max) {
+    return '$n/$max thợ';
+  }
+
+  @override
+  String get settingsMyStudioNone => 'Chưa ở studio nào';
+
+  @override
+  String get studioErr_membership_conflict => 'Thợ này đang ở một studio khác.';
+
+  @override
+  String get studioErr_cooldown => 'Chưa đủ 7 ngày kể từ lần rời studio.';
+
+  @override
+  String get studioErr_member_busy => 'Còn buổi chụp được giao chưa xong.';
+
+  @override
+  String get studioErr_studio_full =>
+      'Studio đã đủ số thợ hoặc đủ 5 lời mời chờ.';
+
+  @override
+  String get studioErr_rate_limited =>
+      'Hết thao tác hôm nay. Thử lại ngày mai.';
+
+  @override
+  String get studioErr_not_accepting_orders =>
+      'Thợ này chưa xác minh nên chưa giao việc được.';
+
+  @override
+  String get studioErr_day_taken => 'Thợ này đã bận ngày này.';
+
+  @override
+  String get studioErr_conflict => 'Yêu cầu đã được xử lý trước đó.';
+
+  @override
+  String get studioErr_generic => 'Chưa thực hiện được. Thử lại.';
 }
