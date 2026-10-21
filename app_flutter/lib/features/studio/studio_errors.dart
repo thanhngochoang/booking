@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 
 /// What a refused studio call means to the user (Contract §L10n errors);
@@ -20,10 +21,16 @@ String studioErrorText(BuildContext context, String code) {
   };
 }
 
-/// The text of any failure of a studio call: a [StudioError]'s own text, else
-/// the generic line.
+/// The text of any failure of a studio call: the own text of a
+/// [StudioError] or of a studio booking call's [BookingException]
+/// (`assignBooking`, `declineAssigneeChange`, `returnAssignment`), else the
+/// generic line.
 String studioFailureText(BuildContext context, Object error) =>
-    studioErrorText(context, error is StudioError ? error.code : '');
+    studioErrorText(context, switch (error) {
+      StudioError(:final code) => code,
+      BookingException(:final code) => code,
+      _ => '',
+    });
 
 /// Thrown inside a [showConfirmSheet] action so the sheet's SnackBar shows
 /// [text] as it is.

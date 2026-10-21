@@ -481,6 +481,8 @@ typedef TransitionCall = ({String bookingId, String action, String? reason});
 /// [FakeBookingRepository] that records `transitionBooking` calls and can
 /// hold them in flight with [gate].
 class RecordingBookingRepository extends FakeBookingRepository {
+  RecordingBookingRepository({super.customerId, super.clock});
+
   final transitions = <TransitionCall>[];
 
   /// When set, every transition waits for it before answering.

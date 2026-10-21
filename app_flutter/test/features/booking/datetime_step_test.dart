@@ -3,11 +3,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 
@@ -353,4 +358,71 @@ void main() {
       }
     },
   );
+
+  group('studio capacity (#136 Decision 26)', () {
+    /// `p1` as a studio that can staff [assignable] shoots a day.
+    Override studio(int assignable) =>
+        photographerProfileProvider('p1').overrideWith(
+          (ref) async => PhotographerProfile(
+            summary: PhotographerSummary(
+              id: 'p1',
+              displayName: 'Studio Mây',
+              verified: true,
+              businessVerified: true,
+              acceptingOrders: true,
+              providerType: ProviderType.studio,
+              memberCount: 3,
+              assignableMembers: assignable,
+            ),
+            intro: bookingProfile.intro,
+          ),
+        );
+
+    final fullDay = DateTime.utc(2026, 10, 13);
+
+    testWidgets("a studio's full day cannot be picked; a day with a free "
+        'member can', (tester) async {
+      final h = tester.ensureSemantics();
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        days: {
+          ...testDays,
+          fullDay: AvailabilityDay(day: fullDay, state: DayState.full),
+        },
+        now: now,
+        extraOverrides: [studio(3)],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('13 tháng 10, hết chỗ'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('khung 2 giờ'), findsNothing);
+
+      await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('khung 2 giờ'), findsOneWidget);
+      h.dispose();
+    });
+
+    testWidgets('a studio with nobody to assign has every day full', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        days: testDays,
+        now: now,
+        extraOverrides: [studio(0)],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('15 tháng 10, rảnh'), findsNothing);
+      await tester.tap(find.bySemanticsLabel('15 tháng 10, hết chỗ'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('khung 2 giờ'), findsNothing);
+      h.dispose();
+    });
+  });
 }

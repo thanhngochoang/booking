@@ -5,6 +5,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 
 class DateTimeStep extends ConsumerStatefulWidget {
@@ -56,6 +57,17 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         month: _month,
       )),
     );
+    // A studio nobody can shoot for has no bookable day (#136 Decision 26).
+    // The sheet loads the profile from its first frame; until it answers
+    // (or if it fails) the days stay as the server keeps them, and the
+    // server still refuses such a day with day_taken (crossed below).
+    final noMembers =
+        ref
+            .watch(photographerProfileProvider(widget.args.photographerId))
+            .value
+            ?.summary
+            .hasNoAssignableMembers ??
+        false;
 
     // Live calendar updates: if the chosen day became non-free, unselect with SnackBar
     ref.listen<AsyncValue<Map<DateTime, AvailabilityDay>>>(
@@ -166,6 +178,15 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                       for (final dayStr in state.takenDays) {
                         final d = parseDayKey(dayStr);
                         if (d != null) dayStates[d] = DayState.booked;
+                      }
+                      if (noMembers) {
+                        for (
+                          var d = _month;
+                          !d.isAfter(lastDayOfMonth(_month));
+                          d = DateTime.utc(d.year, d.month, d.day + 1)
+                        ) {
+                          dayStates[d] = DayState.full;
+                        }
                       }
 
                       return AvailabilityCalendar(

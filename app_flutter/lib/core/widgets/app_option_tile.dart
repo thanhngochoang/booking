@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
+import 'package:photobooking/core/widgets/meta_line.dart';
 
 /// One choice of a single-choice list (mock `.opt`, S02.05; later S04.02, S13.01):
 /// a bordered glass card with a radio. Selected = accent border, accent-soft
@@ -21,15 +23,29 @@ class AppOptionTile extends StatelessWidget {
     this.leading,
     this.icon,
     this.description,
+    this.meta,
+    this.enabled = true,
   }) : assert(
          icon == null || leading == null,
          'icon and leading are mutually exclusive',
+       ),
+       assert(
+         description == null || meta == null,
+         'description and meta are mutually exclusive',
        );
 
   final String label;
 
   /// Optional second line under [label] (mock `.opt .d`).
   final String? description;
+
+  /// A [MetaLine] second line instead of [description], for parts with the
+  /// tomato icon (S26.04 "Rảnh · 🍅 97%").
+  final List<MetaPart>? meta;
+
+  /// Mock `.opt.dis`: a choice that cannot be picked is dimmed, ignores taps
+  /// and is announced as disabled; its second line says why.
+  final bool enabled;
   final bool selected;
   final VoidCallback onTap;
 
@@ -52,25 +68,29 @@ class AppOptionTile extends StatelessWidget {
         ? (dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle)
         : (dark ? AppColorsDark.glass : AppColors.glass);
     final edge = selected ? scheme.primary : scheme.outline;
+    final tap = enabled ? onTap : null;
+    final second = meta == null
+        ? description
+        : metaPartsSemantics(meta!, context.l10n);
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppRadius.xl),
       side: BorderSide(color: edge),
     );
-    return Semantics(
-      enabled: true,
+    final tile = Semantics(
+      enabled: enabled,
       checked: selected,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: description == null ? label : '$label. $description',
+      label: second == null ? label : '$label. $second',
       excludeSemantics: true,
-      onTap: onTap,
+      onTap: tap,
       child: Material(
         type: MaterialType.transparency,
         child: Ink(
           decoration: ShapeDecoration(color: fill, shape: shape),
           child: InkWell(
             customBorder: shape,
-            onTap: onTap,
+            onTap: tap,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(
@@ -112,7 +132,7 @@ class AppOptionTile extends StatelessWidget {
                       const SizedBox(width: AppSpace.s2),
                     ],
                     Expanded(
-                      child: description == null
+                      child: description == null && meta == null
                           ? Text(label, style: theme.textTheme.bodyMedium)
                           : Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,14 +143,17 @@ class AppOptionTile extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                Text(
-                                  description!,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: dark
-                                        ? AppColorsDark.foregroundMuted
-                                        : AppColors.foregroundMuted,
+                                if (meta case final parts?)
+                                  MetaLine(parts)
+                                else
+                                  Text(
+                                    description!,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: dark
+                                          ? AppColorsDark.foregroundMuted
+                                          : AppColors.foregroundMuted,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                     ),
@@ -146,7 +169,11 @@ class AppOptionTile extends StatelessWidget {
         ),
       ),
     );
+    return enabled ? tile : Opacity(opacity: _dimmed, child: tile);
   }
+
+  /// Mock `.opt.dis { opacity: .5 }`.
+  static const double _dimmed = 0.5;
 }
 
 /// Mock `.rd`: 18dp ring, 2px border; selected adds a 40% accent dot.

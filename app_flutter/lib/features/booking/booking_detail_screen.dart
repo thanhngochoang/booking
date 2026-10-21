@@ -28,6 +28,7 @@ import 'package:photobooking/features/booking/widgets/booking_addons_block.dart'
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/delivery/delivery_review_screen.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
+import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/review/review_screen.dart';
@@ -207,6 +208,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         break;
       case DetailAction.viewDelivery:
         await context.push('/b/${b.id}/delivery');
+      case DetailAction.assign:
+        await showAssignSheet(context, b.id);
     }
   }
 
@@ -257,7 +260,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final menu = currentRole == null
         ? const <DetailAction>[]
         : [
-            for (final a in detailActions(current!, currentRole, now, features))
+            for (final a in detailActions(
+              current!,
+              currentRole,
+              now,
+              features,
+              assignee: isAssigneeOf(current, auth.value?.uid),
+            ))
               if (a == DetailAction.reschedule) a,
           ];
     final menuName = menu.isEmpty
@@ -300,7 +309,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   onAction: () => context.go('/home'),
                 );
               }
-              final actions = detailActions(b, role, now, features);
+              final actions = detailActions(
+                b,
+                role,
+                now,
+                features,
+                assignee: isAssigneeOf(b, auth.value?.uid),
+              );
               final name = _counterpartName(b, role);
               _maybeOpenSheet(b, role, actions, name);
               return _body(context, b, role, actions, now, name);
@@ -354,6 +369,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         : ref.watch(partyProfileProvider(b.customerId)).value?.avatarUrl;
     final paidToast =
         widget.justPaid && customer && b.status == BookingStatus.requested;
+    // The money of a studio booking is the studio's, not the assignee's.
+    final assignee = isAssigneeOf(b, ref.watch(authStateProvider).value?.uid);
 
     void run(DetailAction a) => _onAction(a, b, role, name);
 
@@ -379,7 +396,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           if (paidToast) ...[
             _PaidToast(l10n.detailPaidToast(formatMoney(b.deposit))),
             const SizedBox(height: AppSpace.s3),
-          ] else if (b.escrowStatus == EscrowStatus.held) ...[
+          ] else if (b.escrowStatus == EscrowStatus.held && !assignee) ...[
             EscrowNotice(
               text: customer
                   ? l10n.escrowNoticeHeld(formatMoney(b.deposit))
@@ -521,6 +538,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       );
     }
 
+    if (has(DetailAction.assign)) {
+      add(
+        AppButton.outline(
+          l10n.workAssignAction,
+          key: const Key('detail-assign'),
+          onPressed: busy ? null : () => run(DetailAction.assign),
+        ),
+      );
+    }
+
     if (has(DetailAction.complete)) {
       add(
         AppButton.primary(
@@ -539,7 +566,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
       );
     }
-    if (role == BookingRole.photographer) {
+    final studioSide =
+        role == BookingRole.photographer &&
+        !isAssigneeOf(b, ref.watch(authStateProvider).value?.uid);
+    if (studioSide) {
       if (b.status == BookingStatus.revisionRequested) {
         add(
           _StatusNoticeCard(

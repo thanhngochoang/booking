@@ -200,7 +200,7 @@ Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch). `As
 `StepProgress({required int current, required int total, String? label, bool showCount = true})`. Thanh `total` đoạn, các đoạn tới `current` tô gradient; chữ "n / N" bên cạnh; `Semantics(value: 'Bước n trên N')`. Dùng ở S04.01–S04.03, S08.01, S12.01, S12.02, S08.05, S08.02. Theo mock (thành phần "Bước nhiều trang"), màn nhiều bước đặt "n / N" ở góc phải thanh tiêu đề và thanh tiến độ ngay dưới thanh tiêu đề, ngoài vùng cuộn: khi đó dùng `showCount: false` (S08.05).
 
 ### AppOptionTile · Mới
-`AppOptionTile({required String label, required bool selected, required VoidCallback onTap, Widget? leading, IconData? icon, String? description})`. Một lựa chọn trong danh sách chọn một (mock `.opt`): viền 1px `outline`, radius 16, nền kính không blur (dùng được trong danh sách dài), radio 18dp viền 2px; đã chọn = viền + chấm radio primary, nền `primarySubtle`. Cao ≥ 48dp; `Semantics(checked, inMutuallyExclusiveGroup, selected)`. `icon` (mock `.opt .oi`): ô 40dp bo góc bên trái chứa biểu tượng (nền field; đã chọn thì nền primary, biểu tượng onPrimary) và radio chuyển sang bên phải; không dùng cùng `leading`. Dùng ở S02.05 và S02.06 (các sheet dịch vụ, giá, đánh giá), `icon` ở S08.01 (Hình thức) và sheet chọn hình thức trong Cài đặt; sau này S04.02, S13.01.
+`AppOptionTile({required String label, required bool selected, required VoidCallback onTap, Widget? leading, IconData? icon, String? description, List<MetaPart>? meta, bool enabled = true})`. Một lựa chọn trong danh sách chọn một (mock `.opt`): viền 1px `outline`, radius 16, nền kính không blur (dùng được trong danh sách dài), radio 18dp viền 2px; đã chọn = viền + chấm radio primary, nền `primarySubtle`. Cao ≥ 48dp; `Semantics(checked, inMutuallyExclusiveGroup, selected)`. `icon` (mock `.opt .oi`): ô 40dp bo góc bên trái chứa biểu tượng (nền field; đã chọn thì nền primary, biểu tượng onPrimary) và radio chuyển sang bên phải; không dùng cùng `leading`. `meta` thay `description` bằng một `MetaLine` (dòng có cà chua, S26.04 "Rảnh · 🍅 97%"); `enabled: false` (mock `.opt.dis`): mờ 50%, không nhận chạm, đọc là bị tắt, dòng thứ hai nói lý do. Dùng ở S02.05 và S02.06 (các sheet dịch vụ, giá, đánh giá), `icon` ở S08.01 (Hình thức) và sheet chọn hình thức trong Cài đặt; sau này S04.02, S13.01.
 
 ### AppFooterBar · Mới
 `AppFooterBar({required Widget child})`. Hàng nút dính đáy của màn biểu mẫu (mock `.foot`): nền `surface`, viền mảnh phía trên, đệm 10/16/12, có `SafeArea` dưới; đặt ngoài vùng cuộn. Màn nhiều bước: "Quay lại" `outline` rộng 36% + nút chính. Dùng ở S08.05, S09.03.
@@ -367,6 +367,9 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 #### MemberRow · Đã có
 `MemberRow({String? avatarUrl, required String name, ProviderMarkKind? mark, List<MetaPart> meta = const [], Widget? trailing, bool enabled = true, VoidCallback? onTap})` · `MemberRow.skeleton()`. Một người trong danh sách studio (mock `.irow2`): `AppAvatar` 40 (trang trí), tên đậm kèm `ProviderMark` khi có (tích xanh ở S26.02, con dấu studio ở S26.03), một `MetaLine` bên dưới (cà chua %, "2 việc đang giao", "Lời mời đã gửi · Hết hạn sau 5 ngày"), nút ở cuối (`trailing`: viền "Mời", chữ "Huỷ", menu "…"; nhiều nút thì truyền `Wrap` căn phải để xuống hàng khi hẹp). Phần nút rộng tối đa nửa hàng nên tên luôn còn chỗ (320dp, chữ 1,3). `enabled: false` (đang ở studio khác, đang nghỉ 7 ngày, đang ở studio thì lời mời khác mờ): mờ 50%, không nhận chạm, đọc là bị tắt; dòng meta nói lý do. Trình đọc màn hình đọc một nhãn "tên, dấu, meta" (cà chua đọc "97% cà chua"); nút ở cuối giữ nhãn riêng. Skeleton: vòng avatar và hai dòng. Dùng ở S26.01, S26.02, S26.03.
 
+#### MemberStrip · Đã có
+`MemberStrip({required List<MemberStripItem> members, required int total, required String label, ValueChanged<String>? onTap})` · `MemberStripItem({required String id, required String name, String? avatarUrl, int? tomatoPct})` · `MemberStrip.skeleton()`. Hàng thành viên của hồ sơ studio (mock `.mems`, S03.01-studio): tối đa 4 người, mỗi ô rộng tối đa 54dp gồm `AppAvatar` 40 (trang trí), tên (một dòng, cắt "…") và `MetaLine` cà chua (bỏ khi `tomatoPct` null, tức chưa đủ 5 đánh giá); còn lại của `total` (`memberCount`) là vòng "+n" nền field. Các ô co lại cùng nhau khi hẹp (320dp, chữ 1,3). Trình đọc màn hình: một danh sách (`SemanticsRole.list`) tên `label` ("Thành viên Studio Mây"), mỗi người là một mục đọc "tên, 97% cà chua" và bấm được (mở hồ sơ thợ qua `onTap(id)`), mục "+n" đọc "và {n} thành viên khác". Skeleton: bốn vòng avatar và một dòng. Dùng ở S03.01 (studio).
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
@@ -381,7 +384,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `AppBottomSheet` | S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04 |
 | `StepProgress` | S04.01–S04.03, S08.01, S12.01, S12.02, S08.05, S08.02 |
 | `AppFooterBar` | S08.05, S09.03 |
-| `AppOptionTile` | S02.05, S02.06, S08.01 và sheet hình thức ở Cài đặt (`icon`) (sau: S04.02, S13.01) |
+| `AppOptionTile` | S02.05, S02.06, S08.01 và sheet hình thức ở Cài đặt (`icon`), S26.04 (`meta`, `enabled`) (sau: S04.02, S13.01) |
 | `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04 |
 | `StatusTimeline` | S05.02 |
 | `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
@@ -423,6 +426,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `VerdictPad`, `VerdictLevel` | S05.05 (khối thợ và khối studio dùng `compact`) |
 | `VerdictBadge`, `TomatoRatioBar` | S03.01 (tab Đánh giá) |
 | `MemberRow` | S26.01, S26.02, S26.03 |
+| `MemberStrip` | S03.01 (studio) |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)

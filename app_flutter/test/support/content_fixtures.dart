@@ -82,6 +82,8 @@ PhotographerSummary fixturePhotographer(
   bool acceptingOrders = true,
   bool hiddenFromDiscovery = false,
   bool deletionPending = false,
+  String? studioId,
+  int memberCount = 0,
 }) => PhotographerSummary(
   id: id,
   displayName: name,
@@ -120,6 +122,8 @@ PhotographerSummary fixturePhotographer(
   providerType: providerType,
   approvedAwardCount: approvedAwards,
   studioDistrict: studioDistrict,
+  studioId: studioId,
+  memberCount: memberCount,
 );
 
 ServiceSummary fixtureService(

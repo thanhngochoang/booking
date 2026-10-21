@@ -7580,4 +7580,172 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get studioErr_generic => 'Chưa thực hiện được. Thử lại.';
+
+  @override
+  String get profileMembersTile => 'thành viên';
+
+  @override
+  String get profileYearsTile => 'hoạt động';
+
+  @override
+  String get profileMembersTitle => 'Thành viên';
+
+  @override
+  String profileMembersA11y(String studio) {
+    return 'Thành viên $studio';
+  }
+
+  @override
+  String profileMoreMembersA11y(int n) {
+    return 'và $n thành viên khác';
+  }
+
+  @override
+  String get profileJoinStudio => 'Xin gia nhập';
+
+  @override
+  String get profileJoinRequested => 'Đã xin gia nhập';
+
+  @override
+  String profileJoinSent(String studio) {
+    return 'Đã gửi yêu cầu tới $studio';
+  }
+
+  @override
+  String profileJoinCooldown(String date) {
+    return 'Bạn vào được studio từ $date';
+  }
+
+  @override
+  String profileMemberOf(String studio) {
+    return 'Thành viên của $studio';
+  }
+
+  @override
+  String get workAssignAction => 'Giao thợ';
+
+  @override
+  String workAssignedTo(String name) {
+    return 'Thợ: $name';
+  }
+
+  @override
+  String get workAssignOverdue => 'Quá hạn giao thợ';
+
+  @override
+  String workAssignDeadline(String deadline) {
+    return 'Hạn giao thợ: $deadline';
+  }
+
+  @override
+  String workChangeRequested(String time) {
+    return 'Khách xin đổi thợ · trả lời trước $time';
+  }
+
+  @override
+  String get workChangeDecline => 'Từ chối đổi';
+
+  @override
+  String get changeDeclineTitle => 'Từ chối đổi thợ?';
+
+  @override
+  String get changeDeclineReason => 'Lý do (bắt buộc)';
+
+  @override
+  String get changeDeclineBody =>
+      'Khách sẽ thấy lý do và được huỷ, hoàn 100% nếu không muốn giữ thợ hiện tại.';
+
+  @override
+  String get changeDeclineConfirm => 'Từ chối đổi';
+
+  @override
+  String get changeDeclineKeep => 'Quay lại';
+
+  @override
+  String get workReturnJob => 'Trả việc';
+
+  @override
+  String get returnJobTitle => 'Trả lại buổi chụp này?';
+
+  @override
+  String returnJobBody(String studio) {
+    return '$studio được báo để giao người khác. Bạn vẫn là thợ của buổi này tới khi studio giao lại.';
+  }
+
+  @override
+  String get returnJobReason => 'Lý do (tuỳ chọn)';
+
+  @override
+  String get returnJobConfirm => 'Trả việc';
+
+  @override
+  String get returnJobKeep => 'Giữ việc';
+
+  @override
+  String get workReturned => 'Đã trả việc · chờ studio giao lại';
+
+  @override
+  String get assignTitle => 'Giao thợ';
+
+  @override
+  String assignSummary(String service, String day, String start, String end) {
+    return '$service · $day · $start–$end';
+  }
+
+  @override
+  String assignDeadline(String deadline, String left) {
+    return 'Hạn giao thợ: $deadline (còn $left)';
+  }
+
+  @override
+  String assignDeadlinePassed(String deadline) {
+    return 'Đã quá hạn giao thợ ($deadline)';
+  }
+
+  @override
+  String assignLeftDays(int n) {
+    return '$n ngày';
+  }
+
+  @override
+  String assignLeftHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String get assignFree => 'Rảnh';
+
+  @override
+  String assignBusy(String start, String end) {
+    return 'Bận $start–$end';
+  }
+
+  @override
+  String get assignBusyAllDay => 'Bận cả ngày';
+
+  @override
+  String get assignUnverified => 'Chưa xác minh';
+
+  @override
+  String get assignCurrent => 'Đang giao';
+
+  @override
+  String assignNote(String name) {
+    return 'Khách được báo ngay; $name vào nhóm chat của buổi chụp.';
+  }
+
+  @override
+  String get assignLateWarning =>
+      'Còn dưới 24 giờ: đổi thợ lúc này thì khách được huỷ và hoàn 100%.';
+
+  @override
+  String assignAction(String name) {
+    return 'Giao cho $name';
+  }
+
+  @override
+  String get assignNoMembers => 'Studio chưa có thành viên nào để giao.';
+
+  @override
+  String get assignPickerA11y => 'Chọn thợ chụp';
 }

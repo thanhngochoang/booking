@@ -34,6 +34,16 @@ String studioAgo(AppLocalizations l, DateTime at, DateTime now) {
   return l.studioAgoDays(elapsed.inDays);
 }
 
+/// `15:30 T6 11/10`: an instant on the Vietnam clock, as the studio's
+/// assignment deadline reads (S06.01-studio, S26.04).
+String studioDeadlineText(DateTime at) {
+  final vn = toVn(at);
+  final hm =
+      '${vn.hour.toString().padLeft(2, '0')}:'
+      '${vn.minute.toString().padLeft(2, '0')}';
+  return '$hm ${formatDay(vn)}';
+}
+
 /// `02/2026`: the Vietnam month of [at].
 String studioMonth(DateTime at) {
   final vn = toVn(at);
@@ -233,4 +243,46 @@ class StudioRowsCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Longest reason the studio callables take (`declineAssigneeChange`,
+/// `returnAssignment`).
+const kStudioReasonMaxLength = 300;
+
+/// The reason box of a studio confirmation sheet ("Từ chối đổi", "Trả
+/// việc"): it writes the trimmed text to [value] as the user types.
+class StudioReasonField extends StatefulWidget {
+  const StudioReasonField({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final ValueNotifier<String> value;
+
+  @override
+  State<StudioReasonField> createState() => _StudioReasonFieldState();
+}
+
+class _StudioReasonFieldState extends State<StudioReasonField> {
+  late final _controller = TextEditingController(text: widget.value.value);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    key: const Key('studio-reason'),
+    controller: _controller,
+    minLines: 2,
+    maxLines: 4,
+    maxLength: kStudioReasonMaxLength,
+    textCapitalization: TextCapitalization.sentences,
+    decoration: InputDecoration(labelText: widget.label),
+    onChanged: (text) => widget.value.value = text.trim(),
+  );
 }

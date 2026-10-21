@@ -19,6 +19,10 @@ import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/event_manage/my_events_section.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:photobooking/features/studio/assign_sheet.dart';
+import 'package:photobooking/features/studio/decline_change_sheet.dart';
+import 'package:photobooking/features/studio/return_job_sheet.dart';
+import 'package:photobooking/features/work/studio_work_cards.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
 
@@ -132,6 +136,11 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
   String? _customerAvatar(Booking b) =>
       ref.watch(partyProfileProvider(b.customerId)).value?.avatarUrl;
 
+  /// The public name of the studio that booked [b]; '' while it loads.
+  String _studioName(Booking b) =>
+      ref.watch(partyProfileProvider(b.photographerId)).value?.displayName ??
+      '';
+
   Widget _skeleton() => ListView(
     padding: const EdgeInsets.all(AppSpace.s4),
     children: [
@@ -215,7 +224,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                   ],
                 )
               : const WorkEmptyState(),
-          data: (context, d) => _dashboard(context, d, features),
+          data: (context, d) => _dashboard(context, d, features, now),
         ),
       ),
     );
@@ -235,6 +244,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     BuildContext context,
     WorkDashboard d,
     BookingFeatures features,
+    DateTime now,
   ) {
     final l10n = context.l10n;
     final today = d.today;
@@ -246,6 +256,38 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           SectionHeader(title: l10n.workToday),
           Padding(padding: gutter, child: _todayCard(context, today, features)),
           const SizedBox(height: AppSpace.s2),
+        ],
+        // S06.01-studio: the studio's accepted bookings to staff.
+        for (final b in d.studioJobs) ...[
+          Padding(
+            padding: gutter,
+            child: StudioJobCard(
+              booking: b,
+              customerName: _customerName(b),
+              thumbUrl: _customerAvatar(b),
+              now: now,
+              onAssign: () => showAssignSheet(context, b.id),
+              onDeclineChange: () => showDeclineChangeSheet(context, b),
+            ),
+          ),
+          const SizedBox(height: AppSpace.s3),
+        ],
+        // S06.01-member: shoots a studio gave me.
+        for (final (b, studio) in [
+          for (final b in d.assignedJobs) (b, _studioName(b)),
+        ]) ...[
+          Padding(
+            padding: gutter,
+            child: AssignedJobCard(
+              booking: b,
+              customerName: _customerName(b),
+              thumbUrl: _customerAvatar(b),
+              studioName: studio,
+              onReturn: () =>
+                  showReturnJobSheet(context, booking: b, studioName: studio),
+            ),
+          ),
+          const SizedBox(height: AppSpace.s3),
         ],
         if (d.toDeliver.isNotEmpty) ...[
           Row(

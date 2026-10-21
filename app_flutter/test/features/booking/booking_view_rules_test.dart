@@ -780,4 +780,90 @@ void main() {
     expect(countdownLabel(Duration.zero, l), isNull);
     expect(countdownLabel(const Duration(seconds: -3), l), isNull);
   });
+
+  group('studio bookings (#136)', () {
+    final weekBefore = DateTime.utc(2026, 10, 5, 3);
+    Booking studio(BookingStatus status, {String? assignee}) =>
+        _b(status, photographerId: 'cuc', chatId: 'ch1').copyWith(
+          studio: StudioBookingInfo(
+            assigneeId: assignee,
+            assignStatus: assignee == null
+                ? StudioAssignStatus.unassigned
+                : StudioAssignStatus.assigned,
+            assignDeadline: DateTime.utc(2026, 10, 11, 8, 30),
+          ),
+        );
+
+    test('the assignee is on the studio side, the studio itself too', () {
+      final b = studio(BookingStatus.accepted, assignee: 'minh');
+      expect(roleIn(b, 'minh'), BookingRole.photographer);
+      expect(isAssigneeOf(b, 'minh'), isTrue);
+      expect(isAssigneeOf(b, 'cuc'), isFalse);
+      expect(roleIn(b, 'cuc'), BookingRole.photographer);
+      expect(roleIn(b, 'other'), isNull);
+    });
+
+    test('the studio can assign before the start and never reschedule', () {
+      final b = studio(BookingStatus.accepted);
+      expect(detailActions(b, BookingRole.photographer, weekBefore, _on), [
+        DetailAction.message,
+        DetailAction.contact,
+        DetailAction.assign,
+        DetailAction.cancel,
+      ]);
+      expect(
+        detailActions(b, BookingRole.customer, weekBefore, _on),
+        isNot(contains(DetailAction.reschedule)),
+      );
+    });
+
+    test('the assignee messages, reaches the customer and marks the shoot; '
+        'no cancel, assign or delivery', () {
+      final b = studio(BookingStatus.accepted, assignee: 'minh');
+      expect(
+        detailActions(
+          b,
+          BookingRole.photographer,
+          weekBefore,
+          _on,
+          assignee: true,
+        ),
+        [DetailAction.message, DetailAction.contact],
+      );
+      final shot = studio(BookingStatus.shot, assignee: 'minh');
+      expect(
+        detailActions(
+          shot,
+          BookingRole.photographer,
+          weekBefore,
+          _on,
+          assignee: true,
+        ),
+        [DetailAction.message, DetailAction.contact],
+      );
+      expect(
+        detailActions(shot, BookingRole.photographer, weekBefore, _on),
+        contains(DetailAction.deliver),
+      );
+    });
+
+    test('workDashboard lists the studio\'s jobs and the assigned ones', () {
+      final now = DateTime.utc(2026, 10, 5, 3);
+      final own = studio(BookingStatus.accepted);
+      final mine = studio(
+        BookingStatus.upcoming,
+        assignee: 'minh',
+      ).copyWith(id: 'b2');
+      final started = studio(BookingStatus.accepted)
+          .copyWith(id: 'b3', day: '2026-10-01');
+      final forStudio = workDashboard([own, started], now, uid: 'cuc');
+      expect(forStudio.studioJobs.map((b) => b.id), ['b1']);
+      expect(forStudio.assignedJobs, isEmpty);
+      final forMember = workDashboard([mine], now, uid: 'minh');
+      expect(forMember.assignedJobs.map((b) => b.id), ['b2']);
+      expect(forMember.studioJobs, isEmpty);
+      expect(forMember.requests, isEmpty);
+      expect(forMember.isEmpty, isFalse);
+    });
+  });
 }

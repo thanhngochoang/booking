@@ -13125,6 +13125,270 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa thực hiện được. Thử lại.'**
   String get studioErr_generic;
+
+  /// No description provided for @profileMembersTile.
+  ///
+  /// In vi, this message translates to:
+  /// **'thành viên'**
+  String get profileMembersTile;
+
+  /// No description provided for @profileYearsTile.
+  ///
+  /// In vi, this message translates to:
+  /// **'hoạt động'**
+  String get profileYearsTile;
+
+  /// No description provided for @profileMembersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get profileMembersTitle;
+
+  /// No description provided for @profileMembersA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên {studio}'**
+  String profileMembersA11y(String studio);
+
+  /// No description provided for @profileMoreMembersA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'và {n} thành viên khác'**
+  String profileMoreMembersA11y(int n);
+
+  /// No description provided for @profileJoinStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin gia nhập'**
+  String get profileJoinStudio;
+
+  /// No description provided for @profileJoinRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin gia nhập'**
+  String get profileJoinRequested;
+
+  /// No description provided for @profileJoinSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu tới {studio}'**
+  String profileJoinSent(String studio);
+
+  /// No description provided for @profileJoinCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn vào được studio từ {date}'**
+  String profileJoinCooldown(String date);
+
+  /// No description provided for @profileMemberOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên của {studio}'**
+  String profileMemberOf(String studio);
+
+  /// No description provided for @workAssignAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao thợ'**
+  String get workAssignAction;
+
+  /// No description provided for @workAssignedTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ: {name}'**
+  String workAssignedTo(String name);
+
+  /// No description provided for @workAssignOverdue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn giao thợ'**
+  String get workAssignOverdue;
+
+  /// No description provided for @workAssignDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn giao thợ: {deadline}'**
+  String workAssignDeadline(String deadline);
+
+  /// No description provided for @workChangeRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách xin đổi thợ · trả lời trước {time}'**
+  String workChangeRequested(String time);
+
+  /// No description provided for @workChangeDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đổi'**
+  String get workChangeDecline;
+
+  /// No description provided for @changeDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đổi thợ?'**
+  String get changeDeclineTitle;
+
+  /// No description provided for @changeDeclineReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (bắt buộc)'**
+  String get changeDeclineReason;
+
+  /// No description provided for @changeDeclineBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ thấy lý do và được huỷ, hoàn 100% nếu không muốn giữ thợ hiện tại.'**
+  String get changeDeclineBody;
+
+  /// No description provided for @changeDeclineConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đổi'**
+  String get changeDeclineConfirm;
+
+  /// No description provided for @changeDeclineKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get changeDeclineKeep;
+
+  /// No description provided for @workReturnJob.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả việc'**
+  String get workReturnJob;
+
+  /// No description provided for @returnJobTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả lại buổi chụp này?'**
+  String get returnJobTitle;
+
+  /// No description provided for @returnJobBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{studio} được báo để giao người khác. Bạn vẫn là thợ của buổi này tới khi studio giao lại.'**
+  String returnJobBody(String studio);
+
+  /// No description provided for @returnJobReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (tuỳ chọn)'**
+  String get returnJobReason;
+
+  /// No description provided for @returnJobConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả việc'**
+  String get returnJobConfirm;
+
+  /// No description provided for @returnJobKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ việc'**
+  String get returnJobKeep;
+
+  /// No description provided for @workReturned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả việc · chờ studio giao lại'**
+  String get workReturned;
+
+  /// No description provided for @assignTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao thợ'**
+  String get assignTitle;
+
+  /// No description provided for @assignSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'{service} · {day} · {start}–{end}'**
+  String assignSummary(String service, String day, String start, String end);
+
+  /// No description provided for @assignDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn giao thợ: {deadline} (còn {left})'**
+  String assignDeadline(String deadline, String left);
+
+  /// No description provided for @assignDeadlinePassed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã quá hạn giao thợ ({deadline})'**
+  String assignDeadlinePassed(String deadline);
+
+  /// No description provided for @assignLeftDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày'**
+  String assignLeftDays(int n);
+
+  /// No description provided for @assignLeftHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String assignLeftHours(int n);
+
+  /// No description provided for @assignFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh'**
+  String get assignFree;
+
+  /// No description provided for @assignBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bận {start}–{end}'**
+  String assignBusy(String start, String end);
+
+  /// No description provided for @assignBusyAllDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bận cả ngày'**
+  String get assignBusyAllDay;
+
+  /// No description provided for @assignUnverified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác minh'**
+  String get assignUnverified;
+
+  /// No description provided for @assignCurrent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giao'**
+  String get assignCurrent;
+
+  /// No description provided for @assignNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách được báo ngay; {name} vào nhóm chat của buổi chụp.'**
+  String assignNote(String name);
+
+  /// No description provided for @assignLateWarning.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn dưới 24 giờ: đổi thợ lúc này thì khách được huỷ và hoàn 100%.'**
+  String get assignLateWarning;
+
+  /// No description provided for @assignAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao cho {name}'**
+  String assignAction(String name);
+
+  /// No description provided for @assignNoMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa có thành viên nào để giao.'**
+  String get assignNoMembers;
+
+  /// No description provided for @assignPickerA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thợ chụp'**
+  String get assignPickerA11y;
 }
 
 class _AppLocalizationsDelegate

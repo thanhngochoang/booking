@@ -103,6 +103,7 @@ export 'package:photobooking/core/widgets/reorderable_row.dart';
 export 'package:photobooking/core/widgets/post_picker_grid.dart';
 export 'package:photobooking/core/widgets/meta_line.dart';
 export 'package:photobooking/core/widgets/member_row.dart';
+export 'package:photobooking/core/widgets/member_strip.dart';
 export 'package:photobooking/core/widgets/tomato_ratio_bar.dart';
 export 'package:photobooking/core/widgets/verdict_badge.dart';
 export 'package:photobooking/core/widgets/verdict_icon.dart';

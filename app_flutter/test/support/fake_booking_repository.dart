@@ -437,13 +437,21 @@ class FakeBookingRepository implements BookingRepository {
     _checkNextError();
     studioCalls.add((name, payload));
     final bookingId = payload['bookingId']! as String;
-    final b = bookings[bookingId];
+    // The assignee sees a studio booking only through the assigned stream.
+    final b =
+        bookings[bookingId] ??
+        _assigned.where((a) => a.id == bookingId).firstOrNull;
     final s = b?.studio;
     if (b == null || s == null) throw const BookingException('not_eligible');
     final now = _clock().toUtc();
     final updated = b.copyWith(studio: change(s, now), updatedAt: now);
     bookings[bookingId] = updated;
     _bookingChanges.add(bookingId);
+    if (_assigned.any((a) => a.id == bookingId)) {
+      emitAssigned([
+        for (final a in _assigned) a.id == bookingId ? updated : a,
+      ]);
+    }
     return updated;
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/data/content/provider_type.dart';
@@ -17,6 +18,7 @@ class PhotographerIntro {
     this.businessVerified = false,
     this.providerType = ProviderType.individual,
     this.studioId,
+    this.studioCooldownUntil,
   });
 
   final String bio;
@@ -44,6 +46,10 @@ class PhotographerIntro {
   /// #136); null when independent.
   final String? studioId;
 
+  /// Until when this photographer may not join a studio after leaving or
+  /// being removed (server-written, #136); null when free to join.
+  final DateTime? studioCooldownUntil;
+
   @override
   bool operator ==(Object other) =>
       other is PhotographerIntro &&
@@ -54,7 +60,8 @@ class PhotographerIntro {
       other.verified == verified &&
       other.businessVerified == businessVerified &&
       other.providerType == providerType &&
-      other.studioId == studioId;
+      other.studioId == studioId &&
+      other.studioCooldownUntil == studioCooldownUntil;
 
   @override
   int get hashCode => Object.hash(
@@ -66,6 +73,7 @@ class PhotographerIntro {
     businessVerified,
     providerType,
     studioId,
+    studioCooldownUntil,
   );
 }
 
@@ -92,8 +100,15 @@ PhotographerIntro introFromFirestore(Map<String, dynamic> d) {
     studioId: d['studioId'] is String && (d['studioId'] as String).isNotEmpty
         ? d['studioId'] as String
         : null,
+    studioCooldownUntil: _instant(d['studioCooldownUntil']),
   );
 }
+
+DateTime? _instant(Object? v) => switch (v) {
+  Timestamp() => v.toDate().toUtc(),
+  String() => DateTime.tryParse(v)?.toUtc(),
+  _ => null,
+};
 
 Map<String, dynamic> introToFirestore({
   required String bio,
@@ -174,6 +189,7 @@ class FakePhotographerIntroRepository implements PhotographerIntroRepository {
       businessVerified: old.businessVerified,
       providerType: old.providerType,
       studioId: old.studioId,
+      studioCooldownUntil: old.studioCooldownUntil,
     );
     _changes.add(uid);
   }

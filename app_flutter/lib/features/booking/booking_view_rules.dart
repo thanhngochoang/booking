@@ -30,6 +30,9 @@ enum DetailAction {
   bookAgain,
   review,
   viewReview,
+
+  /// The studio names or changes who shoots (S26.04).
+  assign,
 }
 
 bool _isActive(BookingStatus s) =>
@@ -55,12 +58,15 @@ List<DetailAction> detailActions(
   Booking b,
   BookingRole role,
   DateTime now,
-  BookingFeatures features,
-) {
+  BookingFeatures features, {
+  bool assignee = false,
+}) {
   final s = b.status;
   if (s == BookingStatus.draft) return const [];
 
   final beforeStart = now.isBefore(startsAtOf(b));
+  // A studio booking cannot be moved (the reschedule callable refuses it).
+  final canReschedule = features.reschedule && beforeStart && b.studio == null;
   final out = <DetailAction>[];
 
   if (features.chat && b.chatId != null) out.add(DetailAction.message);
@@ -74,7 +80,7 @@ List<DetailAction> detailActions(
         s == BookingStatus.approved) {
       out.add(DetailAction.contact);
     }
-    if (_isActive(s) && features.reschedule && beforeStart) {
+    if (_isActive(s) && canReschedule) {
       out.add(DetailAction.reschedule);
     }
     if (_isActive(s) && _inDirectionsWindow(b, now)) {
@@ -98,6 +104,17 @@ List<DetailAction> detailActions(
     return out;
   }
 
+  // The member a studio assigned (Decisions 14, 15, 17): messages, the
+  // customer's contact and "Đã chụp"; the studio answers, moves, cancels and
+  // delivers (no S06.07 entry), and "Trả việc" is on S06.01.
+  if (assignee) {
+    if (_isActive(s) || s == BookingStatus.shot) out.add(DetailAction.contact);
+    if (_isActive(s) && BookingRules.canPhotographerComplete(b, now)) {
+      out.add(DetailAction.markShot);
+    }
+    return out;
+  }
+
   // Photographer.
   if (s == BookingStatus.requested) {
     final deadline = b.acceptDeadline;
@@ -110,7 +127,8 @@ List<DetailAction> detailActions(
   }
   if (_isActive(s)) {
     out.add(DetailAction.contact);
-    if (features.reschedule && beforeStart) out.add(DetailAction.reschedule);
+    if (canReschedule) out.add(DetailAction.reschedule);
+    if (b.studio != null && beforeStart) out.add(DetailAction.assign);
     if (BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
     }
@@ -376,6 +394,8 @@ class WorkDashboard {
     required this.heldVnd,
     required this.upcomingCount,
     this.toDeliver = const [],
+    this.studioJobs = const [],
+    this.assignedJobs = const [],
   });
 
   /// accepted/upcoming on today's Vietnamese date, earliest start.
@@ -391,9 +411,22 @@ class WorkDashboard {
   /// Bookings waiting for delivery actions (shot, revisionRequested, or delivered with pending extra round).
   final List<Booking> toDeliver;
 
+  /// A studio's own accepted bookings before their start, earliest first,
+  /// except today's (S06.01-studio: "Giao thợ", deadline, change request).
+  final List<Booking> studioJobs;
+
+  /// Accepted bookings a studio gave this photographer, before their start,
+  /// earliest first, except today's (S06.01-member: "Trả việc").
+  final List<Booking> assignedJobs;
+
   /// No shoot today, no requests, nothing to deliver and nothing upcoming.
   bool get isEmpty =>
-      today == null && requests.isEmpty && toDeliver.isEmpty && upcomingCount == 0;
+      today == null &&
+      requests.isEmpty &&
+      toDeliver.isEmpty &&
+      studioJobs.isEmpty &&
+      assignedJobs.isEmpty &&
+      upcomingCount == 0;
 }
 
 const _heldEscrow = {
@@ -469,13 +502,27 @@ WorkDashboard workDashboard(
     }
   }
 
+  final today = todays.isEmpty ? null : todays.first;
+  List<Booking> ahead(bool Function(Booking) where) => [
+    for (final b in active)
+      if (b.studio != null &&
+          b.id != today?.id &&
+          now.isBefore(startsAtOf(b)) &&
+          where(b))
+        b,
+  ]..sort((a, b) => startsAtOf(a).compareTo(startsAtOf(b)));
+
   return WorkDashboard(
-    today: todays.isEmpty ? null : todays.first,
+    today: today,
     requests: requests,
     monthRevenueVnd: month,
     heldVnd: held,
     upcomingCount: active.length,
     toDeliver: toDeliver,
+    studioJobs: ahead((b) => b.photographerId == uid),
+    assignedJobs: ahead(
+      (b) => b.photographerId != uid && b.studio!.assigneeId == uid,
+    ),
   );
 }
 
@@ -494,8 +541,15 @@ BookingRole? roleIn(Booking b, String? uid) {
   if (uid == null) return null;
   if (b.customerId == uid) return BookingRole.customer;
   if (b.photographerId == uid) return BookingRole.photographer;
+  // The member a studio assigned works on the studio's side (Decision 16).
+  if (isAssigneeOf(b, uid)) return BookingRole.photographer;
   return null;
 }
+
+/// True when [uid] shoots [b] for the studio that was booked (not the
+/// studio itself).
+bool isAssigneeOf(Booking b, String? uid) =>
+    uid != null && b.photographerId != uid && b.studio?.assigneeId == uid;
 
 /// [BookingCard] data with the day as the mock writes it ("T2 12/10").
 /// [name] is the other party: the photographer for the customer and the
