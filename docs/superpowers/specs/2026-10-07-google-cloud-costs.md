@@ -8,8 +8,8 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
 
 ## 0. Hình dạng sử dụng của repo (đọc từ code)
 
-- `app_flutter/firebase/functions/src/index.ts`: **41 callable**, **18 trigger Firestore** (`onDocumentCreated`/`onDocumentWritten`, thêm các trigger cập nhật chỉ số S02 ở #132), **7 hàm lập lịch**. Runtime nodejs22, region `asia-southeast1`, mặc định 256 MiB, `minInstances: 0` (`config.ts`).
-- 7 lịch (= 7 job Cloud Scheduler):
+- `app_flutter/firebase/functions/src/index.ts`: **41 callable**, **18 trigger Firestore** (`onDocumentCreated`/`onDocumentWritten`, thêm các trigger cập nhật chỉ số S02 ở #132), **10 hàm lập lịch**. Runtime nodejs22, region `asia-southeast1`, mặc định 256 MiB, `minInstances: 0` (`config.ts`).
+- 10 lịch (= 10 job Cloud Scheduler; bảng dưới liệt kê 7 từ ngày 2026-10-07 và thêm `rankSpots` của #194; `paymentClock` và `createPayouts` chưa vào bảng):
   | Hàm | Lịch | Lần chạy/tháng |
   |---|---|---|
   | `releaseEventHolds` | every 1 minutes | ~43.200 |
@@ -19,6 +19,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
   | `purgeAwardProofs` | every day 03:00 | 30 |
   | `reconcileBadges` | 03:30 hằng ngày, Asia/Ho_Chi_Minh | 30 |
   | `pruneNotifications` | 03:45 hằng ngày, Asia/Ho_Chi_Minh | 30 |
+  | `rankSpots` | 03:00 hằng ngày, Asia/Ho_Chi_Minh (#194, sau `BLAZE_ENABLED`) | 30 |
 - Secret: `PAYOUT_ACCOUNT_KEY` (Secret Manager); spec định danh nhắc mã hoá CCCD bằng KMS (Cloud KMS).
 - 52 composite index trong `firestore.indexes.json`.
 - Firestore và Storage: `docs/FIREBASE-SETUP.md` ghi location **asia-southeast1 (Singapore)**, không đổi được sau khi tạo.

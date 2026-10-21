@@ -1,6 +1,6 @@
 # Điểm chụp đang hot (S29)
 
-Ngày: 2026-10-08 · Trạng thái: thiết kế đã chốt với chủ dự án (brainstorm 2026-10-08) · Dựa trên: `2026-10-08-booking-addons-design.md` (dịch vụ đi kèm, mã S04.06), `2026-10-06-payments-payouts-design.md` (trả 100% trước, giữ, nhả hai mốc), `2026-10-06-studio-members-design.md` (S26), `2026-10-05-provider-types-portfolio-jobs-design.md`, spec chính `2026-10-01-remaining-screens.md` (sự kiện S11–S12, vị trí gần đúng, recommender), plan `2026-10-07-s04-booking-payment.md` (`buildBookingDraft`).
+Ngày: 2026-10-08 · Trạng thái: đang làm ([#194](https://github.com/thanhngochoang/booking/issues/194), PR [#282](https://github.com/thanhngochoang/booking/pull/282)); thiết kế đã chốt với chủ dự án (brainstorm 2026-10-08) · Dựa trên: `2026-10-08-booking-addons-design.md` (dịch vụ đi kèm, mã S04.06), `2026-10-06-payments-payouts-design.md` (trả 100% trước, giữ, nhả hai mốc), `2026-10-06-studio-members-design.md` (S26), `2026-10-05-provider-types-portfolio-jobs-design.md`, spec chính `2026-10-01-remaining-screens.md` (sự kiện S11–S12, vị trí gần đúng, recommender), plan `2026-10-07-s04-booking-payment.md` (`buildBookingDraft`).
 
 ## 1. Mục tiêu
 
