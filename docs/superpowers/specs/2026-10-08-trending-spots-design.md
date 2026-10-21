@@ -147,6 +147,7 @@ S06.01 chỉ thêm một dòng lối vào "Lịch tại điểm" (không cần f
 - Trang chủ: 1 lượt đọc `spot_rankings` mỗi lần mở.
 - Trang điểm: ≈ 50–60 lượt đọc (điểm, ≤ 20 lịch, gói chia suất, `spot_days` các ngày đang xem, ≤ 10 sự kiện, 20 bài).
 - Job `rankSpots`: ≈ 4 truy vấn đếm × số điểm (≈ 200) + ghi `spot_rankings` ≈ 1.000 lượt đọc/ngày ≈ 30.000/tháng. Scheduler: job thứ 10, +$0,10/tháng.
+- Chọn suất (S29.06): ≤ 15 lượt đọc `spot_days` khi mở (các ngày của lịch từ hôm nay đến hôm nay + 14).
 - Đặt lịch tại điểm: thêm 1–2 lượt đọc/ghi `spot_days` mỗi booking.
 - Ước tính: **(b) 1.000 MAU ≈ +$0,3/tháng; (c) 10.000 MAU ≈ +$2,1/tháng** (giả sử 5 lần mở trang điểm/người/tháng). Dưới ngưỡng $5.
 
