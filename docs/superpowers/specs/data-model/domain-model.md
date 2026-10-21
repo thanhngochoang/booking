@@ -327,7 +327,11 @@ completed ──(review)──▶ reviewed
 
 requested/accepted/upcoming ──(customer cancels)──▶ cancelled (refund by policy)
 accepted/upcoming ──(photographer cancels)──▶ cancelled (refund 100%)
+requested/accepted/upcoming ──(customer, studio fault, before start: cancel_studio_fault)──▶ cancelled (refund 100%)
+requested/accepted (studio, no assignee) ──(system at startAt: cancel_unassigned_at_start)──▶ cancelled (refund 100%, by studio_fault, reason assign_overdue)
 ```
+
+Booking studio chưa có `assigneeId` không sang `shot` (`mark_shot`/`complete` bị từ chối `not_eligible` với mọi vai trò, kể cả hệ thống) và không sang `upcoming`.
 
 Bảng chuyển hợp lệ do use case `transition_booking` thực thi và test. Mỗi chuyển ghi `BookingEvent`, cập nhật `AvailabilityDay`, gửi `Notification`.
 
@@ -444,5 +448,6 @@ Quote:   submitted ─▶ withdrawn | accepted | not_selected | declined
 31. Số thành viên `active` cộng lời mời `invited` còn hạn ≤ tối đa theo xác minh (3 chưa xác minh doanh nghiệp, 30 đã xác minh); mỗi studio tối đa 5 thao tác và mỗi thợ 3 thao tác mỗi ngày VN; rời hoặc bị bỏ thì 7 ngày sau mới vào studio nào, và không rời hoặc bị bỏ được khi thợ còn booking studio được giao chưa xong (trạng thái chưa đóng).
 32. Booking studio chưa có `assigneeId` thì không sang `upcoming`; `assigneeId` luôn là thành viên `active` của studio tại lúc giao (kiểm lại trong giao dịch); thợ được giao đứng về phía nhà cung cấp trong chat và đọc booking, không đọc `private/delivery`.
 33. Số thợ rảnh một ngày của studio là sức chứa: booking mới bị từ chối `day_taken` khi số booking chưa giao ≥ số thợ rảnh; booking cá nhân của thợ không được làm studio thiếu người (số chưa giao tại ngày đó < số thợ rảnh khi tính cả thợ này).
-34. Khách chỉ có tối đa một `changeRequest` mỗi booking studio; `respondBy = min(at + 6 giờ, startAt)`. Quyền huỷ hoàn 100% (`studio_fault`) chỉ tới trước giờ bắt đầu.
+34. Khách chỉ có tối đa một `changeRequest` mỗi booking studio; `respondBy = min(at + 6 giờ, startAt)`. Quyền huỷ hoàn 100% (`studio_fault`) chỉ tới trước giờ bắt đầu; từ giờ bắt đầu, booking vẫn chưa giao thợ bị hệ thống huỷ hoàn 100% (`cancel_unassigned_at_start`, `cancel.at ≥ startAt`).
+34a. Không có `shot`/`complete` (nên không có mốc chi trả nào) cho booking studio chưa có `assigneeId`.
 35. Booking studio có đúng hai `Review` khi đủ cả hai bên: `{bookingId}` và `{bookingId}_studio`; đánh giá thợ cộng vào hồ sơ thợ, đánh giá studio cộng vào hồ sơ studio.

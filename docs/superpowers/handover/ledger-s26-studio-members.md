@@ -102,6 +102,7 @@ Checked on develop 6ef387f (with #130 reviews, #152 delivery, #198 order gate, #
 17. S05.05-studio keeps the shared "Chia sẻ ảnh" section (spec §6 is explicit) and the mock frame `#S05.05-studio` gained it, following the rule "update the mock when the spec is newer". Costs a mock edit.
 18. S26.05 keeps the mock's fixed "Studio trả lời trong 6 giờ." with no `respondBy`; the mock wins on copy. The owner may want "trước {respondBy}" (open question below).
 19. An unassigned booking past its start does not show the `overdue` copy promising a 100% cancel, because the fault right ends at the start. New keys `reviewNoAssigneeTitle` and `reviewNoAssigneeBody` cover it.
+20. Payout ruling (final review): an unassigned studio booking is auto-cancelled at its start with a 100% refund (`cancel.by = studio_fault`, `reason = assign_overdue`, `cancel.at ≥ startAt`; action `cancel_unassigned_at_start` through `commitTransition`, `bookingClock` step `studioStartCancels`, index `bookings (assignStatus, status, day)`), counting `lateAssignCount` once if the overdue sweep had not; `shot`/`complete` are refused without an assignee for every role including system, and the app hides "Đã chụp". Both the customer and the studio get the system cancel notice ("Lịch … đã bị huỷ"), the customer also the refund notice; a customer's own `cancel_studio_fault` still tells only the studio. Money rule (100% held up front) and Decision 12. Costs: a studio that shoots without recording an assignee loses the booking; the owner may prefer keeping a cancellable fault after the start instead.
 
 ## Deferred minors (final review or later)
 
@@ -114,6 +115,9 @@ Checked on develop 6ef387f (with #130 reviews, #152 delivery, #198 order gate, #
 - Task 7: the S26.01 zero-size `AsyncView` pattern; an optional raw assigned provider in `booking_providers.dart`; spacing gap 2 to 4 dp and icons 16/18 to 20 (tokens). `_JobCard` is kept because the compact `BookingCard` shows place, a fixed title and a yellow badge against the mock.
 - Task 8: "Mới · n đánh giá" for 1 to 4 reviews in the S26.04 meta; the studio card should show "đã trả việc" beside the assignee; the change row should be actionable only while now is before `respondBy`; unit tests for `myWorkBookingsProvider`; S04.02 preset day before the profile loads, past days painted full, next-free-date for `assignableMembers == 0`; `profileStudioNameProvider` duplicates `partyProfileProvider`; undisposed `ValueNotifier`s in the decline and return sheets; the S06.01 assigned stream swallows errors (consider surfacing).
 - Task 9: a title-only `VerifyAlert` renders lighter than the mock `.warnc`; the 3-member chat display (owner and assignee as two provider-side senders) is unchecked.
+
+- Final review: pre-existing, Firestore `findAutoCompletions` ignores its `cutoff` and stops at 100 results (unassigned studio bookings are now filtered after the query) — follow-up issue.
+- Final review: the chat's `?reschedule=1` deep link reads the thread and booking with `ref.read` in the first post-frame callback, before their streams answer; in the widget test harness it opens nothing even for an individual booking, so it may be a no-op in the app too (studio bookings are now skipped explicitly) — check and follow up.
 
 ## Open questions for the owner
 

@@ -1242,6 +1242,7 @@ alter table bookings
   add column assignment_returned jsonb;                                       -- {at, reason}
 create index ix_bookings_assignee_status on bookings (assignee_id, status) where assignee_id is not null;
 create index ix_bookings_assign_sweep on bookings (assign_status, assign_overdue, status, assign_deadline) where is_studio;
+create index ix_bookings_unassigned_start on bookings (assign_status, status, day) where is_studio;   -- huỷ booking chưa giao thợ tới giờ chụp (studioStartCancels); Firestore: (assignStatus, status, day)
 
 create table booking_assignments (
   booking_id    text not null references bookings(id) on delete cascade,
