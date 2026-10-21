@@ -164,6 +164,18 @@ void main() {
   });
 
   group('filters', () {
+    test('drops hiddenFromDiscovery and deletionPending candidates', () async {
+      final r = make(
+        photographers: [
+          fixturePhotographer('visible'),
+          fixturePhotographer('hidden', hiddenFromDiscovery: true),
+          fixturePhotographer('pending', deletionPending: true),
+        ],
+      );
+      final res = await r.recommendPhotographers(const RecommendationQuery());
+      expect(ids(res), ['visible']);
+    });
+
     final pool = [
       fixturePhotographer(
         'p',
@@ -547,6 +559,19 @@ void main() {
   });
 
   group('similar', () {
+    test('drops hiddenFromDiscovery and deletionPending candidates', () async {
+      final r = make(
+        photographers: [
+          fixturePhotographer('me', specialties: const ['portrait']),
+          fixturePhotographer('sim1', specialties: const ['portrait']),
+          fixturePhotographer('sim_hidden', specialties: const ['portrait'], hiddenFromDiscovery: true),
+          fixturePhotographer('sim_pending', specialties: const ['portrait'], deletionPending: true),
+        ],
+      );
+      final res = await r.similar('me');
+      expect(ids(res), ['sim1']);
+    });
+
     test(
       'shares a specialty, excludes itself, closest overlap first',
       () async {

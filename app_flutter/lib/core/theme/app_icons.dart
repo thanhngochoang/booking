@@ -116,6 +116,9 @@ abstract final class AppIcons {
   static const IconData supportAgent = Symbols.support_agent_rounded;
   static const IconData link = Symbols.link_rounded;
   static const IconData brokenImage = Symbols.broken_image_rounded;
+  static const IconData privacy = Symbols.privacy_tip_rounded;
+  static const IconData download = Symbols.download_rounded;
+  static const IconData restore = Symbols.restore_rounded;
 }
 
 /// Icon sizes (logical pixels).

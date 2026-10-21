@@ -68,6 +68,10 @@ Future<Widget> _app({
             path: 'notifications',
             builder: (_, _) => const Text('notification settings'),
           ),
+          GoRoute(
+            path: 'privacy',
+            builder: (_, _) => const Text('privacy settings'),
+          ),
         ],
       ),
       GoRoute(
@@ -878,6 +882,25 @@ void main() {
       );
     });
 
+    testWidgets('"Quyền riêng tư & dữ liệu" opens /settings/privacy and customer sees custom subtitle', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+
+      expect(find.byKey(const Key('settings-group-paymentsData')), findsOneWidget);
+      expect(find.text('THANH TOÁN VÀ DỮ LIỆU'), findsOneWidget);
+      expect(find.byKey(const Key('settings-privacy')), findsOneWidget);
+      expect(find.text('Tải bản sao dữ liệu, xoá tài khoản'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('settings-privacy')));
+      await tester.pumpAndSettle();
+      expect(find.text('privacy settings'), findsOneWidget);
+    });
+
     testWidgets('sign-out unregisters the device first', (tester) async {
       final (auth, users) = await _signedIn();
       final devices = FakeDeviceRegistry();
@@ -1156,7 +1179,7 @@ void main() {
         type: ProviderType.studio,
         district: 'Thành phố Thủ Đức',
         flags: true,
-        size: const Size(320, 4000),
+        size: const Size(320, 4800),
         textScale: 1.3,
       );
       expect(tester.takeException(), isNull);

@@ -7007,4 +7007,256 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deliveryReportSuccess => 'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.';
+
+  @override
+  String get settingsPaymentsData => 'Thanh toán và dữ liệu';
+
+  @override
+  String get settingsPaymentHistory => 'Lịch sử thanh toán';
+
+  @override
+  String get settingsPaymentHistoryBody => 'Khoản đã trả, đang giữ, đang hoàn';
+
+  @override
+  String get settingsPrivacy => 'Quyền riêng tư & dữ liệu';
+
+  @override
+  String get settingsPrivacyBody =>
+      'Ẩn hồ sơ, tải bản sao dữ liệu, xoá tài khoản';
+
+  @override
+  String get settingsPrivacyBodyCustomer =>
+      'Tải bản sao dữ liệu, xoá tài khoản';
+
+  @override
+  String get deleteAccountTitle => 'Xoá tài khoản';
+
+  @override
+  String get deleteBlockedTitle => 'Chưa xoá được tài khoản';
+
+  @override
+  String get deleteBlockedBody => 'Xong các việc dưới đây rồi quay lại.';
+
+  @override
+  String deleteBlockBooking(int count) {
+    return '$count buổi chụp chưa xong';
+  }
+
+  @override
+  String deleteBlockJob(int count) {
+    return '$count buổi chụp khách đã đặt';
+  }
+
+  @override
+  String deleteBlockJobPost(int count) {
+    return '$count tin tìm thợ đang mở';
+  }
+
+  @override
+  String get deleteBlockJobPostBody => 'Đóng tin hoặc chọn thợ trước.';
+
+  @override
+  String deleteBlockQuote(int count) {
+    return '$count báo giá đang chờ khách';
+  }
+
+  @override
+  String get deleteBlockQuoteBody => 'Rút báo giá hoặc đợi khách chọn.';
+
+  @override
+  String deleteBlockInstant(int count) {
+    return '$count yêu cầu Chụp ngay chưa xong';
+  }
+
+  @override
+  String deleteBlockStudio(int count) {
+    return '$count quan hệ studio đang hoạt động';
+  }
+
+  @override
+  String get deleteBlockStudioBody => 'Rời studio hoặc gỡ thành viên trước.';
+
+  @override
+  String deleteBlockCollab(int count) {
+    return '$count cộng tác đang mở';
+  }
+
+  @override
+  String get deleteBlockCollabBody =>
+      'Kết thúc cộng tác và xong các việc được giao.';
+
+  @override
+  String deleteBlockTicket(int count) {
+    return '$count vé sự kiện chưa diễn ra';
+  }
+
+  @override
+  String deleteBlockEvent(int count) {
+    return '$count sự kiện bạn tổ chức còn mở';
+  }
+
+  @override
+  String deleteBlockDispute(int count) {
+    return '$count khiếu nại đang mở';
+  }
+
+  @override
+  String deleteBlockHeld(String amount) {
+    return '$amount đang được giữ';
+  }
+
+  @override
+  String get deleteBlockHeldBody => 'Đợi tiền được chuyển xong rồi xoá.';
+
+  @override
+  String deleteBlockRefund(String amount) {
+    return '$amount đang hoàn';
+  }
+
+  @override
+  String get deleteBlockRefundBody => 'Đợi tiền hoàn về tài khoản của bạn.';
+
+  @override
+  String deleteBlockEarnings(String amount) {
+    return '$amount chờ chi trả';
+  }
+
+  @override
+  String get deleteBlockEarningsBody =>
+      'Thêm tài khoản nhận tiền hoặc đợi lần chi tới.';
+
+  @override
+  String get deleteConsequencesTitle => 'Khi xoá tài khoản';
+
+  @override
+  String get deleteConsequence1 =>
+      'Tài khoản bị khoá ngay; hồ sơ không còn hiện với người khác.';
+
+  @override
+  String get deleteConsequence2 =>
+      'Tin nhắn bạn đã gửi vẫn còn ở phía người nhận, tên hiện là \"Người dùng đã xoá\".';
+
+  @override
+  String get deleteConsequence3 =>
+      'Đánh giá bạn đã viết được giữ, không kèm tên.';
+
+  @override
+  String get deleteConsequence4 =>
+      'Lịch sử giao dịch được giữ ẩn danh theo quy định kế toán.';
+
+  @override
+  String get deleteConsequence5 =>
+      'Trong 30 ngày, đăng nhập lại để khôi phục. Sau 30 ngày, hồ sơ, ảnh đại diện, số điện thoại và bài đăng bị xoá hẳn, không khôi phục được.';
+
+  @override
+  String get deleteExportHint => 'Muốn giữ dữ liệu? Tải bản sao trước khi xoá.';
+
+  @override
+  String get deleteExportHintLink => 'Tải bản sao dữ liệu';
+
+  @override
+  String get deleteAction => 'Xoá tài khoản';
+
+  @override
+  String get deleteConfirmTitle => 'Xoá tài khoản?';
+
+  @override
+  String get deleteConfirmBody =>
+      'Tài khoản bị khoá ngay và xoá hẳn sau 30 ngày. Trong 30 ngày, đăng nhập lại để khôi phục. Bạn có thể cần đăng nhập lại để xác nhận.';
+
+  @override
+  String get deleteConfirmKeep => 'Giữ tài khoản';
+
+  @override
+  String deleteAccountDone(String date) {
+    return 'Tài khoản đã khoá, sẽ xoá hẳn vào $date.';
+  }
+
+  @override
+  String get deleteAccountFailed => 'Chưa xoá được, thử lại sau.';
+
+  @override
+  String get privacyTitle => 'Quyền riêng tư & dữ liệu';
+
+  @override
+  String get privacyProfile => 'Hồ sơ';
+
+  @override
+  String get privacyHide => 'Ẩn hồ sơ khỏi gợi ý và tìm kiếm';
+
+  @override
+  String get privacyHideBody =>
+      'Hồ sơ không hiện trong Tìm thợ và gợi ý. Khách cũ vẫn mở được hồ sơ và đặt lại; bài đăng vẫn hiện như thường.';
+
+  @override
+  String get privacyData => 'Dữ liệu của bạn';
+
+  @override
+  String get privacyExport => 'Tải bản sao dữ liệu';
+
+  @override
+  String get privacyExportBody =>
+      'Hồ sơ, đặt lịch, vé, thanh toán, bài đăng, đánh giá và tin nhắn bạn đã gửi, trong một tệp JSON.';
+
+  @override
+  String get privacyExportCreate => 'Tạo bản sao';
+
+  @override
+  String get privacyExportCreating => 'Đang tạo bản sao…';
+
+  @override
+  String privacyExportReady(String time, String date) {
+    return 'Bản sao tạo lúc $time · tải được tới $date';
+  }
+
+  @override
+  String get privacyExportDownload => 'Tải xuống';
+
+  @override
+  String get privacyExportCooldown => 'Mỗi 24 giờ tạo được một bản sao.';
+
+  @override
+  String get privacyExportLimit => 'Bạn vừa tạo bản sao, thử lại sau 24 giờ.';
+
+  @override
+  String get privacyExportFailed => 'Chưa tạo được bản sao, thử lại sau.';
+
+  @override
+  String get privacyDelete => 'Xoá tài khoản';
+
+  @override
+  String get restoreAccountTitle => 'Tài khoản đang chờ xoá';
+
+  @override
+  String restoreAccountBody(String date) {
+    return 'Tài khoản của bạn sẽ bị xoá hẳn vào $date. Khôi phục để dùng tiếp như cũ: hồ sơ, lịch sử và tin nhắn vẫn còn nguyên.';
+  }
+
+  @override
+  String get restoreAccountAction => 'Khôi phục tài khoản';
+
+  @override
+  String get restoreAccountContinue => 'Tiếp tục xoá';
+
+  @override
+  String restoreAccountContinueNote(String date) {
+    return 'Bạn sẽ được đăng xuất; tài khoản vẫn bị xoá vào $date.';
+  }
+
+  @override
+  String get restoreAccountExport => 'Tải bản sao dữ liệu';
+
+  @override
+  String get restoreAccountDone => 'Đã khôi phục tài khoản.';
+
+  @override
+  String get restoreAccountExpired =>
+      'Đã quá 30 ngày, tài khoản không khôi phục được nữa.';
+
+  @override
+  String get restoreAccountFailed => 'Chưa khôi phục được, thử lại sau.';
+
+  @override
+  String get privacyExportPending =>
+      'Tài khoản đang chờ xoá, không tạo bản sao mới được.';
 }
