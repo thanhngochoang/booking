@@ -103,23 +103,11 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             backgroundColor: Colors.transparent,
             title: Text(l.deleteAccountTitle),
           ),
-          body: blockersAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(l.deleteAccountFailed),
-                  const SizedBox(height: AppSpace.s2),
-                  AppButton.outline(
-                    'Thử lại',
-                    onPressed: () =>
-                        ref.read(deleteAccountControllerProvider.notifier).reload(),
-                  ),
-                ],
-              ),
-            ),
-            data: (blockers) {
+          body: AsyncView(
+            value: blockersAsync,
+            onRetry: () =>
+                ref.read(deleteAccountControllerProvider.notifier).reload(),
+            data: (context, blockers) {
               final hasBlockers = blockers.isNotEmpty;
               return RefreshIndicator(
                 onRefresh: () =>
