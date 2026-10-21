@@ -9,6 +9,7 @@ import {
   dayConflicts,
   dayHolderOf,
   priceFromOf,
+  minutesOf,
   scheduleEditBlocks,
   validateScheduleInput,
   MAX_OPEN_SCHEDULES,
@@ -92,11 +93,17 @@ export async function saveSpotSchedule(
     }
 
     const activeSrvs = await tx.activeServices(callerId);
-    const priceFrom = priceFromOf(activeSrvs, input.serviceIds);
+    const priceFrom = priceFromOf(
+      activeSrvs,
+      input.serviceIds,
+      minutesOf(input.window.end) - minutesOf(input.window.start),
+    );
 
+    // Past days are history: the client cannot send them (validation refuses
+    // days before today), so they are never "removed" and never re-checked.
     const existingDays = existing ? existing.days : [];
     const addedDays = input.days.filter((d) => !existingDays.includes(d));
-    const removedDays = existingDays.filter((d) => !input.days.includes(d));
+    const removedDays = existingDays.filter((d) => d >= today && !input.days.includes(d));
 
     const availRecords = new Map<string, AvailabilityDayRecord | null>();
     for (const d of input.days) {
@@ -109,7 +116,9 @@ export async function saveSpotSchedule(
 
     if (existing) {
       const spotDaysToCheck = new Map<string, SpotDay | null>();
-      const allDaysToInspect = Array.from(new Set([...existingDays, ...input.days]));
+      const allDaysToInspect = Array.from(new Set([...existingDays, ...input.days])).filter(
+        (d) => d >= today,
+      );
       for (const d of allDaysToInspect) {
         spotDaysToCheck.set(d, await tx.getSpotDay(existing.id, d));
       }

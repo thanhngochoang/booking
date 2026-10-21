@@ -14647,7 +14647,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotScheduleConflictHint.
   ///
   /// In vi, this message translates to:
-  /// **'Bỏ ngày đỏ để mở lịch.'**
+  /// **'Bỏ ngày này để mở lịch.'**
   String get spotScheduleConflictHint;
 
   /// No description provided for @spotScheduleRemoveDay.
@@ -14760,7 +14760,7 @@ abstract class AppLocalizations {
   /// No description provided for @slotOfferPrice.
   ///
   /// In vi, this message translates to:
-  /// **'Giá mỗi suất (₫)'**
+  /// **'Giá mỗi suất'**
   String get slotOfferPrice;
 
   /// No description provided for @slotOfferDelivery.
@@ -14942,6 +14942,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Nhận chụp ở điểm đang hot'**
   String get workSpotSchedulesSub;
+
+  /// No description provided for @spotSchedulePackagesInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có gói không dùng được trong khung giờ này. Chọn lại gói.'**
+  String get spotSchedulePackagesInvalid;
+
+  /// No description provided for @spotScheduleAddOffer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói chia suất'**
+  String get spotScheduleAddOffer;
+
+  /// No description provided for @spotNameCity.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {city}'**
+  String spotNameCity(String name, String city);
+
+  /// No description provided for @spotCitySeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'{city} · {season}'**
+  String spotCitySeason(String city, String season);
+
+  /// No description provided for @spotScheduleConflictDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} ×'**
+  String spotScheduleConflictDay(String day);
+
+  /// No description provided for @workSpotSchedulesOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm · {count} đang mở'**
+  String workSpotSchedulesOpen(int count);
 }
 
 class _AppLocalizationsDelegate

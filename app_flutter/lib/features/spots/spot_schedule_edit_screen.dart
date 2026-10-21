@@ -18,6 +18,7 @@ import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
+import 'package:photobooking/features/spots/slot_offer_sheet.dart';
 import 'package:photobooking/features/spots/spot_format.dart';
 import 'package:photobooking/features/spots/spot_schedule_edit_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -153,16 +154,32 @@ class _FormState extends ConsumerState<_Form> {
     final l = context.l10n;
     final editing = widget.args.existing != null;
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await _ctl.submit();
+    // The sheet opened from the SnackBar outlives this screen: it is shown on
+    // the navigator, over S29.03.
+    final nav = Navigator.of(context);
+    final ctl = _ctl;
+    final ok = await ctl.submit();
     if (!ok || !mounted) return;
+    final saved = ctl.saved;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(editing ? l.spotScheduleUpdated : l.spotScheduleSaved),
+          action: editing || saved == null
+              ? null
+              : SnackBarAction(
+                  key: const Key('spot-schedule-add-offer'),
+                  label: l.spotScheduleAddOffer,
+                  onPressed: () =>
+                      showSlotOfferSheet(nav.context, schedule: saved),
+                ),
         ),
       );
-    if (context.canPop()) {
+    // Opened from a spot page (S29.02): back to S29.03, not to the spot.
+    if (!editing && widget.args.spotId != null) {
+      context.pushReplacement('/me/spot-schedules');
+    } else if (context.canPop()) {
       context.pop(true);
     } else {
       context.go('/me/spot-schedules');
@@ -225,23 +242,11 @@ class _FormState extends ConsumerState<_Form> {
         SpotScheduleFailure.memberNotAccepting =>
           l.spotScheduleMemberNotAccepting,
         SpotScheduleFailure.archived => l.bookSpotArchived,
-        SpotScheduleFailure.noPackages => l.spotScheduleNoPackages,
-        SpotScheduleFailure.hasBookings => _hasBookings(l, s.bookingCounts),
+        SpotScheduleFailure.packagesInvalid => l.spotSchedulePackagesInvalid,
+        SpotScheduleFailure.hasBookings =>
+          spotHasBookingsText(l, s.bookingCounts) ?? l.spotScheduleError,
         SpotScheduleFailure.generic => l.spotScheduleError,
       };
-
-  String _hasBookings(AppLocalizations l, Map<String, int> counts) {
-    final days = [
-      for (final e in counts.entries)
-        if (e.value > 0) e.key,
-    ]..sort();
-    if (days.isEmpty) return l.spotScheduleError;
-    final date = parseDayKey(days.first);
-    return l.spotScheduleHasBookings(
-      counts[days.first]!,
-      date == null ? days.first : formatDay(date),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -252,8 +257,7 @@ class _FormState extends ConsumerState<_Form> {
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final s = ref.watch(spotScheduleEditControllerProvider(widget.args));
-    final directory = ref.watch(spotDirectoryProvider).value;
-    final spot = directory?.where((e) => e.spotId == s.spotId).firstOrNull;
+    final directory = ref.watch(spotDirectoryProvider);
     final conflicts = s.conflicts;
     final days = s.days;
     final limitReached = !s.editing && widget.openCount >= kSpotScheduleMaxOpen;
@@ -265,7 +269,9 @@ class _FormState extends ConsumerState<_Form> {
                   live == SpotScheduleFailure.windowInvalid
               ? _failureText(l, s.copyWith(failure: live))
               : (limitReached ? l.spotScheduleLimit : null));
-    final offSeason =
+    SpotEntry? spotIn(List<SpotEntry> all) =>
+        all.where((e) => e.spotId == s.spotId).firstOrNull;
+    bool offSeason(SpotEntry? spot) =>
         spot != null &&
         spot.seasonMonths.isNotEmpty &&
         days.any((d) {
@@ -295,14 +301,23 @@ class _FormState extends ConsumerState<_Form> {
               AppSpace.s4,
             ),
             children: [
-              _FieldBox(
-                key: const Key('spot-schedule-spot'),
-                label: l.spotScheduleSpot,
-                value: spot == null
-                    ? (s.spotId == null ? l.spotScheduleSpotPick : '')
-                    : '${spot.name} · ${spot.city}',
-                trailing: s.spotLocked ? AppIcons.lock : AppIcons.chevron,
-                onTap: s.spotLocked || s.saving ? null : () => _pickSpot(s),
+              AsyncView<List<SpotEntry>>(
+                value: directory,
+                skeleton: (_) =>
+                    AppSkeleton.box(height: 56, radius: AppRadius.control),
+                onRetry: () => ref.invalidate(spotDirectoryProvider),
+                data: (context, all) {
+                  final spot = spotIn(all);
+                  return _FieldBox(
+                    key: const Key('spot-schedule-spot'),
+                    label: l.spotScheduleSpot,
+                    value: spot == null
+                        ? l.spotScheduleSpotPick
+                        : l.spotNameCity(spot.name, spot.city),
+                    trailing: s.spotLocked ? AppIcons.lock : AppIcons.chevron,
+                    onTap: s.spotLocked || s.saving ? null : () => _pickSpot(s),
+                  );
+                },
               ),
               if (s.studio) ...[
                 label(l.spotScheduleMember),
@@ -398,26 +413,37 @@ class _FormState extends ConsumerState<_Form> {
                   onRemove: _ctl.toggleDay,
                 ),
               ),
-              if (offSeason) ...[
-                const SizedBox(height: AppSpace.s2),
-                Row(
-                  key: const Key('spot-schedule-offseason'),
-                  children: [
-                    AppIcon(AppIcons.eco, size: 18, color: muted),
-                    const SizedBox(width: AppSpace.s2),
-                    Expanded(
-                      child: Text(
-                        l.spotScheduleOffSeason(
-                          formatSeasonRange(spot.seasonMonths),
+              AsyncView<List<SpotEntry>>(
+                value: directory,
+                skeleton: (_) => const SizedBox.shrink(),
+                error: (_, _, _) => const SizedBox.shrink(),
+                data: (context, all) {
+                  final spot = spotIn(all);
+                  if (spot == null || !offSeason(spot)) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: AppSpace.s2),
+                    child: Row(
+                      key: const Key('spot-schedule-offseason'),
+                      children: [
+                        AppIcon(AppIcons.eco, size: 18, color: muted),
+                        const SizedBox(width: AppSpace.s2),
+                        Expanded(
+                          child: Text(
+                            l.spotScheduleOffSeason(
+                              formatSeasonRange(spot.seasonMonths),
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: muted,
+                            ),
+                          ),
                         ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  );
+                },
+              ),
               if (message != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpace.s3),
@@ -765,7 +791,7 @@ class _DayChip extends StatelessWidget {
           vertical: AppSpace.s1,
         ),
         child: Text(
-          red ? '$text ×' : text,
+          red ? l.spotScheduleConflictDay(text) : text,
           style: theme.textTheme.labelSmall?.copyWith(
             color: red ? bad : null,
             fontWeight: red ? FontWeight.w600 : null,
@@ -1018,7 +1044,10 @@ class _SpotPickerState extends ConsumerState<_SpotPicker> {
                         selected: s.spotId == widget.selected,
                         title: Text(s.name),
                         subtitle: Text(
-                          '${s.city} · ${seasonLabel(l, s.seasonMonths, month)}',
+                          l.spotCitySeason(
+                            s.city,
+                            seasonLabel(l, s.seasonMonths, month),
+                          ),
                         ),
                         onTap: () => Navigator.of(context).pop(s.spotId),
                       ),

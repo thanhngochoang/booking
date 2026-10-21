@@ -7,6 +7,8 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_repository.dart';
@@ -20,6 +22,21 @@ final _now = DateTime.utc(2026, 10, 8, 2);
 const _uid = 'provider_1';
 
 DateTime _d(String key) => parseDayKey(key)!;
+
+const _packages = [
+  ServicePackage(
+    id: 'pkg1',
+    name: 'Chân dung 2 giờ',
+    priceVnd: 900000,
+    durationMinutes: 120,
+  ),
+  ServicePackage(
+    id: 'pkg4',
+    name: 'Cặp đôi 4 giờ',
+    priceVnd: 2500000,
+    durationMinutes: 240,
+  ),
+];
 
 class _H {
   _H(this.c, this.args);
@@ -49,6 +66,7 @@ void main() {
         clockProvider.overrideWithValue(() => _now),
         availabilityRepositoryProvider.overrideWithValue(availability),
         spotRepositoryProvider.overrideWithValue(spots),
+        myPackagesProvider.overrideWith((ref) => Stream.value(_packages)),
       ],
     );
     addTearDown(c.dispose);
@@ -213,6 +231,22 @@ void main() {
     expect(studioInput.serviceIds, ['pkg1', 'pkg2']);
     expect(studioInput.days, ['2026-10-10', '2026-10-11', '2026-10-18']);
   });
+
+  test(
+    'narrowing the window drops a ticked package that no longer fits',
+    () async {
+      final h = await open(spotId: 'spot_1');
+      ctl(h)
+        ..togglePackage('pkg1')
+        ..togglePackage('pkg4')
+        ..setWindow(const SpotWindow(start: '06:00', end: '09:00'));
+      expect(st(h).serviceIds, {'pkg1'});
+      expect(await ctl(h).submit(), isTrue);
+      expect(spots.saveScheduleCalls.single.serviceIds, ['pkg1']);
+      expect(ctl(h).saved?.id, 'schedule_1');
+      expect(ctl(h).saved?.serviceIds, ['pkg1']);
+    },
+  );
 
   test(
     'editing keeps the spot and the future days, and sends the id',

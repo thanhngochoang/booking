@@ -8516,7 +8516,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get spotScheduleConflictHint => 'Bỏ ngày đỏ để mở lịch.';
+  String get spotScheduleConflictHint => 'Bỏ ngày này để mở lịch.';
 
   @override
   String spotScheduleRemoveDay(String day) {
@@ -8586,7 +8586,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get slotOfferName => 'Tên gói';
 
   @override
-  String get slotOfferPrice => 'Giá mỗi suất (₫)';
+  String get slotOfferPrice => 'Giá mỗi suất';
 
   @override
   String get slotOfferDelivery => 'Giao ảnh trong';
@@ -8685,4 +8685,31 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workSpotSchedulesSub => 'Nhận chụp ở điểm đang hot';
+
+  @override
+  String get spotSchedulePackagesInvalid =>
+      'Có gói không dùng được trong khung giờ này. Chọn lại gói.';
+
+  @override
+  String get spotScheduleAddOffer => 'Thêm gói chia suất';
+
+  @override
+  String spotNameCity(String name, String city) {
+    return '$name · $city';
+  }
+
+  @override
+  String spotCitySeason(String city, String season) {
+    return '$city · $season';
+  }
+
+  @override
+  String spotScheduleConflictDay(String day) {
+    return '$day ×';
+  }
+
+  @override
+  String workSpotSchedulesOpen(int count) {
+    return 'Lịch tại điểm · $count đang mở';
+  }
 }

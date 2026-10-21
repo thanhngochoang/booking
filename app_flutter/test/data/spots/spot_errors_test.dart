@@ -112,5 +112,33 @@ void main() {
         SpotErrorCode.notAcceptingOrders,
       );
     });
+
+    test('not_accepting_orders keeps the field (a studio member refused)', () {
+      final e = spotErrorOf(
+        FirebaseFunctionsException(
+          message: 'not_accepting_orders',
+          code: 'failed-precondition',
+          details: {'code': 'not_accepting_orders', 'field': 'assigneeId'},
+        ),
+      );
+      expect(e.code, SpotErrorCode.notAcceptingOrders);
+      expect(e.field, 'assigneeId');
+    });
+
+    test('schedule_has_bookings without a field (cancel) keeps the days', () {
+      final e = spotErrorOf(
+        FirebaseFunctionsException(
+          message: 'schedule_has_bookings',
+          code: 'failed-precondition',
+          details: {
+            'code': 'schedule_has_bookings',
+            'days': [
+              {'day': '2026-10-18', 'count': 2},
+            ],
+          },
+        ),
+      );
+      expect(e.bookingCounts, {'2026-10-18': 2});
+    });
   });
 }

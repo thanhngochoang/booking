@@ -317,6 +317,11 @@ void main() {
     expect(spots.saveScheduleCalls.single.serviceIds, isEmpty);
     expect(find.text('stub /me/spot-schedules'), findsOneWidget);
     expect(find.text('Đã mở lịch tại điểm'), findsOneWidget);
+
+    // S29.04 caption: back on S29.03, offer the slot offer sheet.
+    await tester.tap(find.text('Thêm gói chia suất'));
+    await _settle(tester);
+    expect(find.byKey(const Key('slot-offer-save')), findsOneWidget);
   });
 
   testWidgets('editing opens on "Chọn ngày" with "Lưu thay đổi"', (

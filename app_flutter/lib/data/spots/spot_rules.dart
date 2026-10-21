@@ -358,3 +358,44 @@ SpotEntry? suggestSpotForPost({
   }
   return best;
 }
+
+/// Domain limits (`spot_schedule.ts`, spec §5.1).
+const int kSpotScheduleMaxDays = 40;
+const int kSpotScheduleDaysAhead = 60;
+const int kSpotScheduleMaxOpen = 8;
+const String kSpotWindowEarliest = '05:00';
+const String kSpotWindowLatest = '21:00';
+const int kSpotWindowMinMinutes = 60;
+const int kSpotWindowMaxMinutes = 720;
+const int kSpotWindowStepMinutes = 15;
+
+/// Domain limits (`spot_slots.ts`, spec §5.2).
+const int kSlotNameMin = 3;
+const int kSlotNameMax = 60;
+const int kSlotPriceMin = 10000;
+const int kSlotPriceMax = 100000000;
+const int kSlotMinutesMin = 15;
+const int kSlotMinutesMax = 90;
+const int kSlotGapMax = 30;
+const int kSlotStepMinutes = 5;
+const int kSlotPhotosMax = 500;
+const int kSlotDeliveryMax = 30;
+
+/// Whether [window] is on the 15-minute grid, inside 05:00–21:00 and 1–12 h.
+bool spotWindowValid(SpotWindow window) {
+  final start = minutesOfTime(window.start);
+  final end = minutesOfTime(window.end);
+  final length = end - start;
+  return start % kSpotWindowStepMinutes == 0 &&
+      end % kSpotWindowStepMinutes == 0 &&
+      start >= minutesOfTime(kSpotWindowEarliest) &&
+      end <= minutesOfTime(kSpotWindowLatest) &&
+      length >= kSpotWindowMinMinutes &&
+      length <= kSpotWindowMaxMinutes;
+}
+
+/// Open schedules of the signed-in provider with a day from today: the
+/// "{n} / 8" count (`schedule_limit` counts the same).
+int openScheduleCount(List<SpotSchedule> schedules, String today) => schedules
+    .where((s) => s.open && s.days.any((d) => d.compareTo(today) >= 0))
+    .length;

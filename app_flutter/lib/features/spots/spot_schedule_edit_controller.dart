@@ -11,37 +11,15 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_repository.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 
-/// Domain limits (`spot_schedule.ts`, spec §5.1).
-const int kSpotScheduleMaxDays = 40;
-const int kSpotScheduleDaysAhead = 60;
-const int kSpotScheduleMaxOpen = 8;
-const String kSpotWindowEarliest = '05:00';
-const String kSpotWindowLatest = '21:00';
-const int kSpotWindowMinMinutes = 60;
-const int kSpotWindowMaxMinutes = 720;
-const int kSpotWindowStepMinutes = 15;
-
 /// The day key [days] after the Vietnamese calendar day [day].
 String _plusDays(DateTime day, int days) =>
     dayKeyOf(DateTime.utc(day.year, day.month, day.day + days));
-
-/// Whether [window] is on the 15-minute grid, inside 05:00–21:00 and 1–12 h.
-bool spotWindowValid(SpotWindow window) {
-  final start = minutesOfTime(window.start);
-  final end = minutesOfTime(window.end);
-  final length = end - start;
-  return start % kSpotWindowStepMinutes == 0 &&
-      end % kSpotWindowStepMinutes == 0 &&
-      start >= minutesOfTime(kSpotWindowEarliest) &&
-      end <= minutesOfTime(kSpotWindowLatest) &&
-      length >= kSpotWindowMinMinutes &&
-      length <= kSpotWindowMaxMinutes;
-}
 
 /// The non-free days of [uid] from today (Vietnam) to the last day a
 /// schedule may hold: the S29.04 conflict source.
@@ -94,7 +72,7 @@ enum SpotScheduleFailure {
   memberNotAccepting,
   archived,
   hasBookings,
-  noPackages,
+  packagesInvalid,
   generic,
 }
 
@@ -253,6 +231,10 @@ class SpotScheduleEditController extends Notifier<SpotScheduleEditState> {
   final SpotScheduleEditArgs args;
 
   late String _uid;
+
+  /// The schedule as the last successful [submit] sent it (S29.04 offers
+  /// "Thêm gói chia suất" for it).
+  SpotSchedule? saved;
   ProviderSubscription<AsyncValue<Map<DateTime, AvailabilityDay>>>? _days;
 
   @override
@@ -291,6 +273,8 @@ class SpotScheduleEditController extends Notifier<SpotScheduleEditState> {
             serviceIds: {...s.serviceIds},
             assigneeId: s.assigneeId,
           );
+    // Keeps the provider's packages loaded for [_fitting].
+    ref.listen(myPackagesProvider, (_, _) {});
     return initial.copyWith(availability: _listenHolder(initial.assigneeId));
   }
 
@@ -347,7 +331,29 @@ class SpotScheduleEditController extends Notifier<SpotScheduleEditState> {
     }
   }
 
-  void setWindow(SpotWindow window) => _edit(state.copyWith(window: window));
+  /// A package that no longer fits in the window cannot be booked under it:
+  /// it is dropped from the ticked ones (the server refuses it too).
+  void setWindow(SpotWindow window) => _edit(
+    state.copyWith(
+      window: window,
+      serviceIds: _fitting(state.serviceIds, window),
+    ),
+  );
+
+  /// [ids] without the provider's packages longer than [window].
+  Set<String> _fitting(Set<String> ids, SpotWindow window) {
+    final packages = ref.read(myPackagesProvider).value;
+    if (packages == null || ids.isEmpty) return ids;
+    final length = minutesOfTime(window.end) - minutesOfTime(window.start);
+    final tooLong = {
+      for (final p in packages)
+        if (p.durationMinutes > length) p.id,
+    };
+    return {
+      for (final id in ids)
+        if (!tooLong.contains(id)) id,
+    };
+  }
 
   /// No package ticked means every active package.
   void togglePackage(String serviceId) {
@@ -383,8 +389,9 @@ class SpotScheduleEditController extends Notifier<SpotScheduleEditState> {
     }
     if (s.conflicts.isNotEmpty) return false;
     state = s.copyWith(phase: SpotSchedulePhase.saving, failure: null);
+    final serviceIds = [..._fitting(s.serviceIds, s.window)]..sort();
     try {
-      await ref
+      final res = await ref
           .read(spotRepositoryProvider)
           .saveSchedule(
             SpotScheduleInput(
@@ -392,10 +399,21 @@ class SpotScheduleEditController extends Notifier<SpotScheduleEditState> {
               spotId: s.spotId!,
               days: s.days,
               window: s.window,
-              serviceIds: [...s.serviceIds]..sort(),
+              serviceIds: serviceIds,
               assigneeId: s.studio ? s.assigneeId : null,
             ),
           );
+      saved = SpotSchedule(
+        id: res.scheduleId,
+        providerId: _uid,
+        spotId: s.spotId!,
+        assigneeId: s.studio ? s.assigneeId : null,
+        days: s.days,
+        window: s.window,
+        serviceIds: serviceIds,
+        priceFrom: null,
+        open: true,
+      );
       if (!ref.mounted) return true;
       state = state.copyWith(phase: SpotSchedulePhase.done);
       return true;
@@ -434,7 +452,7 @@ class SpotScheduleEditController extends Notifier<SpotScheduleEditState> {
           'window' => SpotScheduleFailure.windowInvalid,
           'assigneeId' => SpotScheduleFailure.memberRequired,
           'spotId' => SpotScheduleFailure.spotRequired,
-          'serviceIds' => SpotScheduleFailure.noPackages,
+          'serviceIds' => SpotScheduleFailure.packagesInvalid,
           _ => SpotScheduleFailure.generic,
         },
       ),
@@ -449,9 +467,3 @@ final spotScheduleEditControllerProvider = NotifierProvider.autoDispose
       SpotScheduleEditState,
       SpotScheduleEditArgs
     >(SpotScheduleEditController.new);
-
-/// Open schedules of the signed-in provider with a day from today: the
-/// "{n} / 8" count (`schedule_limit` counts the same).
-int openScheduleCount(List<SpotSchedule> schedules, String today) => schedules
-    .where((s) => s.open && s.days.any((d) => d.compareTo(today) >= 0))
-    .length;

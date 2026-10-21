@@ -117,6 +117,15 @@ describe('toHttpsError', () => {
       days: [{ day: '2026-10-18', count: 2 }],
     });
 
+    // cancelSpotSchedule: no field, the blocked days still travel.
+    const cancel = toHttpsError(
+      new DomainError('schedule_has_bookings', undefined, { days: [{ day: '2026-10-18', count: 2 }] }),
+    );
+    assert.deepEqual(cancel.details, {
+      code: 'schedule_has_bookings',
+      days: [{ day: '2026-10-18', count: 2 }],
+    });
+
     const e3 = toHttpsError(new DomainError('contact_leak', 'name'));
     assert.equal(e3.code, 'invalid-argument');
     assert.deepEqual(e3.details, { code: 'contact_leak', field: 'name' });

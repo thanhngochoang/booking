@@ -183,11 +183,19 @@ export function dayConflicts(
   return conflicts;
 }
 
+/**
+ * The lowest price a customer can book under the schedule. With
+ * [windowMinutes], only packages that fit in the window count: a listed
+ * package longer than the window is `invalid_argument` (`serviceIds`).
+ */
 export function priceFromOf(
   active: readonly ServiceRecord[],
   serviceIds: readonly string[],
+  windowMinutes?: number,
 ): number {
-  const activeOnly = active.filter((s) => s.active !== false);
+  const fits = (s: ServiceRecord): boolean =>
+    windowMinutes === undefined || s.durationMinutes <= windowMinutes;
+  const activeOnly = active.filter((s) => s.active !== false && (serviceIds.length > 0 || fits(s)));
   if (activeOnly.length === 0) {
     throw new DomainError('invalid_argument', 'serviceIds');
   }
@@ -200,7 +208,7 @@ export function priceFromOf(
   const matchedPrices: number[] = [];
   for (const sid of serviceIds) {
     const s = activeMap.get(sid);
-    if (!s) {
+    if (!s || !fits(s)) {
       throw new DomainError('invalid_argument', 'serviceIds');
     }
     matchedPrices.push(s.price);

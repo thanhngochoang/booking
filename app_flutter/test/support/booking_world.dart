@@ -40,6 +40,7 @@ import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/skills/skills_server_info.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -68,6 +69,7 @@ import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
 import 'fake_chat_repository.dart';
 import 'fake_review_repository.dart';
+import 'fake_spot_repository.dart';
 import 'screen_host.dart';
 
 final worldBookingToday = DateTime.utc(2026, 10, 3, 10, 0);
@@ -711,6 +713,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
 
   /// Other users' public profiles (e.g. the studio that assigned a booking).
   List<AuthUser> otherUsers = const [],
+
+  /// Spot schedules for the S06.01 "Lịch tại điểm · {n} đang mở" line.
+  FakeSpotRepository? spots,
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
   tester.view.physicalSize = viewSize;
@@ -789,6 +794,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
       ),
     ),
     photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
+    spotRepositoryProvider.overrideWithValue(spots ?? FakeSpotRepository()),
     ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];

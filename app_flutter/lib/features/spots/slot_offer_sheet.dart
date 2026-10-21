@@ -13,18 +13,6 @@ import 'package:photobooking/data/spots/spot_repository.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/features/spots/spot_format.dart';
 
-/// Domain limits (`spot_slots.ts`, spec §5.2).
-const int kSlotNameMin = 3;
-const int kSlotNameMax = 60;
-const int kSlotPriceMin = 10000;
-const int kSlotPriceMax = 100000000;
-const int kSlotMinutesMin = 15;
-const int kSlotMinutesMax = 90;
-const int kSlotGapMax = 30;
-const int kSlotStepMinutes = 5;
-const int kSlotPhotosMax = 500;
-const int kSlotDeliveryMax = 30;
-
 /// Opens S29.05 over S29.03: a new offer for [schedule], or [offer] to edit
 /// (adds the red "Đóng gói"). The result is said in a SnackBar below.
 Future<void> showSlotOfferSheet(
@@ -240,14 +228,6 @@ class _SlotOfferSheetState extends ConsumerState<SlotOfferSheet> {
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final s = widget.schedule;
-    final spotName =
-        ref
-            .watch(spotDirectoryProvider)
-            .value
-            ?.where((e) => e.spotId == s.spotId)
-            .firstOrNull
-            ?.name ??
-        '';
     final slots = _slots;
     const tabular = TextStyle(fontFeatures: [FontFeature.tabularFigures()]);
 
@@ -309,14 +289,21 @@ class _SlotOfferSheetState extends ConsumerState<SlotOfferSheet> {
                 ),
               ],
             ),
-            Text(
-              l.slotOfferScheduleLine(
-                spotName,
-                scheduleWeekdays(s.days),
-                s.window.start,
-                s.window.end,
+            // The spot name comes from the (cached) directory.
+            AsyncView<List<SpotEntry>>(
+              value: ref.watch(spotDirectoryProvider),
+              skeleton: (_) => AppSkeleton.line(width: 200),
+              error: (_, _, _) => const SizedBox.shrink(),
+              data: (context, all) => Text(
+                l.slotOfferScheduleLine(
+                  all.where((e) => e.spotId == s.spotId).firstOrNull?.name ??
+                      '',
+                  scheduleWeekdays(s.days),
+                  s.window.start,
+                  s.window.end,
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
               ),
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
             ),
             const SizedBox(height: AppSpace.s3),
             TextField(

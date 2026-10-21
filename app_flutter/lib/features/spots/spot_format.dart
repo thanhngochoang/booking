@@ -99,3 +99,18 @@ String slotPreviewTimes(List<({String start, String end})> slots) {
   if (starts.length <= 5) return starts.join(', ');
   return '${starts.take(4).join(', ')} … ${starts.last}';
 }
+
+/// "Còn {n} booking ngày {ngày}. …" for the first day of [counts] that still
+/// has bookings (S29.03 cancel, S29.04 edit); null when none has.
+String? spotHasBookingsText(AppLocalizations l, Map<String, int> counts) {
+  final days = [
+    for (final e in counts.entries)
+      if (e.value > 0) e.key,
+  ]..sort();
+  if (days.isEmpty) return null;
+  final date = parseDayKey(days.first);
+  return l.spotScheduleHasBookings(
+    counts[days.first]!,
+    date == null ? days.first : formatDay(date),
+  );
+}

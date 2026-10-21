@@ -506,6 +506,86 @@ describe('spot_schedule_use_cases', () => {
     assert.equal(sched?.status, 'open');
   });
 
+  function seedPastBooked(store: MemorySpotStore): void {
+    store.seedSchedule({
+      id: 'sched-edit',
+      providerId: 'p-individual',
+      assigneeId: null,
+      spotId: 'spot-1',
+      days: ['2026-10-10', '2026-10-17', '2026-10-18'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+      priceFrom: 600_000,
+      status: 'open',
+      createdAt: '2026-10-01T00:00:00Z',
+      updatedAt: '2026-10-01T00:00:00Z',
+    });
+    store.seedSpotDay({
+      scheduleId: 'sched-edit',
+      spotId: 'spot-1',
+      providerId: 'p-individual',
+      day: '2026-10-10',
+      taken: [{ start: '06:00', end: '07:00' }],
+      updatedAt: '2026-10-09T00:00:00Z',
+    });
+  }
+
+  it('removing a future day is not blocked by an interval on a past day, which stays stored', async () => {
+    const { store, deps } = setupWorld();
+    seedPastBooked(store);
+
+    await saveSpotSchedule(deps, 'p-individual', {
+      scheduleId: 'sched-edit',
+      spotId: 'spot-1',
+      days: ['2026-10-17'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+    });
+
+    assert.deepEqual(store.getScheduleSync('sched-edit')?.days, ['2026-10-10', '2026-10-17']);
+  });
+
+  it('narrowing the window is not blocked by an interval on a past day', async () => {
+    const { store, deps } = setupWorld();
+    seedPastBooked(store);
+
+    await saveSpotSchedule(deps, 'p-individual', {
+      scheduleId: 'sched-edit',
+      spotId: 'spot-1',
+      days: ['2026-10-17', '2026-10-18'],
+      window: { start: '08:00', end: '11:00' },
+      serviceIds: [],
+    });
+
+    assert.deepEqual(store.getScheduleSync('sched-edit')?.window, { start: '08:00', end: '11:00' });
+  });
+
+  it('a listed package longer than the window is invalid_argument serviceIds; priceFrom counts fitting packages only', async () => {
+    const { store, deps } = setupWorld();
+    store.seedServices('p-individual', [
+      ...activeServices,
+      { id: 'srv-long', photographerId: 'p-individual', name: 'Cả ngày', price: 100_000, durationMinutes: 480, active: true },
+    ]);
+
+    await assert.rejects(
+      saveSpotSchedule(deps, 'p-individual', {
+        spotId: 'spot-1',
+        days: ['2026-10-17'],
+        window: { start: '06:00', end: '11:00' },
+        serviceIds: ['srv-long'],
+      }),
+      (err: unknown) => isDomainError(err) && err.code === 'invalid_argument' && err.field === 'serviceIds',
+    );
+
+    const res = await saveSpotSchedule(deps, 'p-individual', {
+      spotId: 'spot-1',
+      days: ['2026-10-17'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+    });
+    assert.equal(store.getScheduleSync(res.scheduleId)?.priceFrom, 600_000);
+  });
+
   it('cancelSpotSchedule ignores intervals on past days', async () => {
     const { store, deps } = setupWorld();
     store.seedSchedule({

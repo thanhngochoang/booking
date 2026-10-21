@@ -22,8 +22,6 @@ import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/spots/slot_offer_sheet.dart';
 import 'package:photobooking/features/spots/spot_format.dart';
-import 'package:photobooking/features/spots/spot_schedule_edit_controller.dart';
-import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Day chips shown on a card before "+{n} ngày".
 const _shownDays = 4;
@@ -137,20 +135,6 @@ class MySpotSchedulesScreen extends ConsumerWidget {
       ..showSnackBar(SnackBar(content: Text(text)));
   }
 
-  /// "Còn {n} booking ngày {ngày}…" for the first day in [counts].
-  String? _hasBookings(AppLocalizations l, Map<String, int> counts) {
-    final days = [
-      for (final e in counts.entries)
-        if (e.value > 0) e.key,
-    ]..sort();
-    if (days.isEmpty) return null;
-    final date = parseDayKey(days.first);
-    return l.spotScheduleHasBookings(
-      counts[days.first]!,
-      date == null ? days.first : formatDay(date),
-    );
-  }
-
   Future<void> _cancel(
     BuildContext context,
     WidgetRef ref, {
@@ -160,7 +144,7 @@ class MySpotSchedulesScreen extends ConsumerWidget {
   }) async {
     final l = context.l10n;
     // Bookings the provider can already see block the cancel outright.
-    if (_hasBookings(l, upcoming) case final blocked?) {
+    if (spotHasBookingsText(l, upcoming) case final blocked?) {
       _say(context, blocked);
       return;
     }
@@ -187,7 +171,7 @@ class MySpotSchedulesScreen extends ConsumerWidget {
     }
     final e = spotErrorOf(error);
     final text = e.code == SpotErrorCode.scheduleHasBookings
-        ? _hasBookings(
+        ? spotHasBookingsText(
             l,
             e.bookingCounts.isNotEmpty ? e.bookingCounts : upcoming,
           )
@@ -366,8 +350,10 @@ class _ScheduleCard extends ConsumerWidget {
         : AppColors.foregroundSecondary;
     final s = schedule;
     // An archived spot is out of the directory: one read of its document.
-    final name =
-        spot?.name ?? ref.watch(spotProvider(s.spotId)).value?.name ?? '';
+    final entry = spot;
+    final name = entry != null
+        ? AsyncValue<String>.data(entry.name)
+        : ref.watch(spotProvider(s.spotId)).whenData((x) => x?.name ?? '');
     final upcomingDays = [
       for (final d in [...s.days]..sort())
         if (d.compareTo(today) >= 0) d,
@@ -403,12 +389,17 @@ class _ScheduleCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      AsyncView<String>(
+                        value: name,
+                        skeleton: (_) => AppSkeleton.line(width: 140),
+                        error: (_, _, _) => const SizedBox.shrink(),
+                        data: (context, text) => Text(
+                          text,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       Text(scheduleDaysLabel(l, s.days), style: meta),
@@ -493,7 +484,9 @@ class _ScheduleCard extends ConsumerWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: theme.colorScheme.error,
                   ),
-                  onPressed: () => onCancel(name, upcoming),
+                  onPressed: name.hasValue
+                      ? () => onCancel(name.requireValue, upcoming)
+                      : null,
                 ),
               ],
             ),
