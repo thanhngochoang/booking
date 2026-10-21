@@ -30,6 +30,7 @@ echo "== 5/5 Environment (JAVA_HOME, ANDROID_HOME, truststore, PATH)"
 source scripts/env.sh
 yes | flutter doctor --android-licenses >/dev/null 2>&1 || true
 flutter doctor
+scripts/flutter-host-arm64.sh   # Apple silicon without Rosetta (macOS 27): arm64 flutter_tester, impellerc, font-subset
 scripts/machine-env.sh
 cat <<EOF
 
