@@ -1183,7 +1183,7 @@ create table report_quotas (
   primary key (user_id, day)
 );
 
--- 2.10 Điểm chụp và lịch tại điểm (2026-10-08, #194)
+-- Điểm chụp và lịch tại điểm (2026-10-08, #194; `domain-model.md` mục 2.11)
 create table spots (
   id             text primary key,
   name           text not null,
