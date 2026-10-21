@@ -156,6 +156,14 @@ export interface Booking {
   readonly extraRound?: ExtraRound | null;
   readonly samplesPurgeAfter?: string | null;
   readonly samplesPurged?: boolean;
+  /** #139: order source ('package' is default/undefined, 'quote' for job quote checkout, 'instant' for instant booking). */
+  readonly source?: 'package' | 'quote' | 'instant';
+  /** #139: linked job post when source is quote. */
+  readonly jobId?: string;
+  /** #139: accepted quote id when source is quote. */
+  readonly quoteId?: string;
+  /** #139: booking terms agreed from quote. */
+  readonly terms?: import('./job.js').BookingTerms;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;

@@ -19,6 +19,8 @@ import { requireCustomerPhone } from './require_phone.js';
 
 // ── Draft slots: imports (one block per unit; edit only your own) ──
 // slot #139 (quotes)
+import { quoteDraftFields } from './quote_use_cases.js';
+import type { BookingTerms } from './job.js';
 
 // slot #136 (studio)
 
@@ -42,7 +44,8 @@ export interface BookingDraftCore {
 
 /** Core + the optional fields of later units, one slot each (Decision 2). */
 export interface BookingDraftInput extends BookingDraftCore {
-  // slot #139 (quotes): readonly quote?: { jobId: string; quoteId: string; terms: BookingTerms };
+  // slot #139 (quotes):
+  readonly quote?: { jobId: string; quoteId: string; terms: BookingTerms };
 
   // slot #136 (studio): readonly providerType?: ProviderType | null;
 
@@ -100,7 +103,8 @@ export function buildBookingDraft(i: BookingDraftInput): Booking {
   const core = coreDraft(i);
   return {
     ...core,
-    // slot #139 (quotes): ...quoteDraftFields(i),
+    // slot #139 (quotes):
+    ...quoteDraftFields(i),
 
     // slot #136 (studio): ...studioDraftFields(i, core),
 

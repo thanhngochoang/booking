@@ -20,8 +20,16 @@ export interface Chat {
   readonly bookingId: string | null;
   /** BookingStatus code of bookingId, mirrored for the chat list; null for inquiries. */
   readonly bookingStatus: string | null;
+  /** #139: Optional job post id if this chat was opened for / linked to a job inquiry. */
+  readonly jobId?: string | null;
+  /** #139: Who started the inquiry: 'customer' or 'photographer'. Defaults to 'customer' if absent. */
+  readonly startedBy?: 'customer' | 'photographer';
   readonly photographerRepliedAt: Date | null;
   readonly customerMessagesBeforeReply: number;
+  /** #139: When photographer started the inquiry, tracks customer's reply time. */
+  readonly customerRepliedAt?: Date | null;
+  /** #139: When photographer started the inquiry, tracks count of messages photographer sent before customer replied. */
+  readonly photographerMessagesBeforeReply?: number;
   readonly lastMessageAt: Date | null;
   readonly lastMessagePreview: string | null;
   readonly lastSenderId: string | null;
@@ -111,28 +119,57 @@ export function assertCanSend(chat: Chat, senderId: string, now: Date): void {
   if (chat.readOnlyAt !== null && now.getTime() >= chat.readOnlyAt.getTime()) {
     throw new DomainError('not_eligible');
   }
-  if (
-    chat.kind === 'inquiry' &&
-    role === 'customer' &&
-    chat.photographerRepliedAt === null &&
-    chat.customerMessagesBeforeReply >= INQUIRY_MAX_UNANSWERED
-  ) {
-    throw new DomainError('limit_exceeded');
+  if (chat.kind === 'inquiry') {
+    const startedBy = chat.startedBy ?? 'customer';
+    if (startedBy === 'customer') {
+      if (
+        role === 'customer' &&
+        chat.photographerRepliedAt === null &&
+        chat.customerMessagesBeforeReply >= INQUIRY_MAX_UNANSWERED
+      ) {
+        throw new DomainError('limit_exceeded');
+      }
+    } else {
+      // Photographer-started inquiry: photographer capped at INQUIRY_MAX_UNANSWERED until customer replies
+      if (
+        role === 'photographer' &&
+        !chat.customerRepliedAt &&
+        (chat.photographerMessagesBeforeReply ?? 0) >= INQUIRY_MAX_UNANSWERED
+      ) {
+        throw new DomainError('limit_exceeded');
+      }
+    }
   }
 }
 
 export function afterMessage(chat: Chat, m: Message, now: Date): Chat {
   let customerMessagesBeforeReply = chat.customerMessagesBeforeReply;
   let photographerRepliedAt = chat.photographerRepliedAt;
+  let customerRepliedAt = chat.customerRepliedAt ?? null;
+  let photographerMessagesBeforeReply = chat.photographerMessagesBeforeReply ?? 0;
 
   if (chat.kind === 'inquiry') {
-    if (m.senderId === chat.photographerId) {
-      if (photographerRepliedAt === null) {
-        photographerRepliedAt = now;
+    const startedBy = chat.startedBy ?? 'customer';
+    if (startedBy === 'customer') {
+      if (m.senderId === chat.photographerId) {
+        if (photographerRepliedAt === null) {
+          photographerRepliedAt = now;
+        }
+      } else if (m.senderId === chat.customerId) {
+        if (photographerRepliedAt === null) {
+          customerMessagesBeforeReply += 1;
+        }
       }
-    } else if (m.senderId === chat.customerId) {
-      if (photographerRepliedAt === null) {
-        customerMessagesBeforeReply += 1;
+    } else {
+      // Photographer started
+      if (m.senderId === chat.customerId) {
+        if (customerRepliedAt === null) {
+          customerRepliedAt = now;
+        }
+      } else if (m.senderId === chat.photographerId) {
+        if (customerRepliedAt === null) {
+          photographerMessagesBeforeReply += 1;
+        }
       }
     }
   }
@@ -141,6 +178,8 @@ export function afterMessage(chat: Chat, m: Message, now: Date): Chat {
     ...chat,
     photographerRepliedAt,
     customerMessagesBeforeReply,
+    customerRepliedAt,
+    photographerMessagesBeforeReply,
     lastMessageAt: m.createdAt,
     lastMessagePreview: previewOf(m),
     lastSenderId: m.senderId,

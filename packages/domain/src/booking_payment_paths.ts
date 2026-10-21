@@ -38,7 +38,7 @@ export function paymentReceivedEntry(deps: BookingDeps, payment: Payment, amount
   };
 }
 
-/** Normal path: the paid draft becomes `requested` with its accept deadline, escrow `held`, one booking event. */
+/** Normal path: the paid draft becomes `requested` (or `accepted` if quote), with its accept deadline, escrow `held`, one booking event. */
 export async function moveDraftToRequested(
   tx: BookingTx,
   deps: BookingDeps,
@@ -46,22 +46,33 @@ export async function moveDraftToRequested(
   payment: Payment,
   now: Date,
 ): Promise<Booking> {
-  const acceptDeadline = computeAcceptDeadline(now, parseVnDateTime(booking.day, booking.start));
+  const isQuote = booking.source === 'quote';
+  const nextStatus = isQuote ? 'accepted' : 'requested';
+  const acceptDeadline = isQuote
+    ? undefined
+    : computeAcceptDeadline(now, parseVnDateTime(booking.day, booking.start)).toISOString();
+
   const updated: Booking = {
     ...booking,
-    status: 'requested',
+    status: nextStatus,
     depositProvider: payment.provider,
     depositPaidAt: now.toISOString(),
-    acceptDeadline: acceptDeadline.toISOString(),
+    acceptDeadline,
     escrowStatus: 'held',
     version: booking.version + 1,
     updatedAt: now.toISOString(),
   };
   await tx.setBooking(updated);
+  if (isQuote) {
+    await tx.setAvailabilityDay(booking.photographerId, booking.day, {
+      state: 'booked',
+      bookingId: booking.id,
+    });
+  }
   await tx.addBookingEvent({
     id: deps.ids.newId(),
     bookingId: booking.id,
-    status: 'requested',
+    status: nextStatus,
     at: now.toISOString(),
   });
   return updated;

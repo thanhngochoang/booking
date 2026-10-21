@@ -151,3 +151,5 @@ export * from './memory_job_store.js';
 export * from './job_use_cases.js';
 export * from './job_sweeps.js';
 export * from './job_notices.js';
+export * from './quote_use_cases.js';
+export * from './open_job_inquiry.js';
