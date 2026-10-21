@@ -46,6 +46,7 @@ class _DelayReviewRepository implements ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
+    StudioReviewDraft? studio,
   }) async => null;
 }
 
@@ -89,6 +90,7 @@ class _PagingReviewRepository implements ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
+    StudioReviewDraft? studio,
   }) async => null;
 }
 

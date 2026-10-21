@@ -260,4 +260,40 @@ class FirestoreBookingRepository implements BookingRepository {
       return booking;
     });
   }
+
+  Booking _bookingOf(dynamic raw) {
+    final map = (raw as Map).cast<String, dynamic>();
+    final booking = bookingFromFirestore(map['id'] as String, map);
+    if (booking == null) throw const BookingException('invalid_response');
+    return booking;
+  }
+
+  @override
+  Future<Booking> assign(String bookingId, String assigneeId) => _call(
+    'assignBooking',
+    {'bookingId': bookingId, 'assigneeId': assigneeId},
+    _bookingOf,
+  );
+
+  @override
+  Future<Booking> requestChange(String bookingId, {String? note}) => _call(
+    'requestAssigneeChange',
+    {'bookingId': bookingId, 'note': ?note},
+    _bookingOf,
+  );
+
+  @override
+  Future<Booking> declineChange(String bookingId, String reason) => _call(
+    'declineAssigneeChange',
+    {'bookingId': bookingId, 'reason': reason},
+    _bookingOf,
+  );
+
+  @override
+  Future<Booking> returnAssignment(String bookingId, {String? reason}) =>
+      _call(
+        'returnAssignment',
+        {'bookingId': bookingId, 'reason': ?reason},
+        _bookingOf,
+      );
 }

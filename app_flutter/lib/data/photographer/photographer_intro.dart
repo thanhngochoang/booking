@@ -16,6 +16,7 @@ class PhotographerIntro {
     this.verified = false,
     this.businessVerified = false,
     this.providerType = ProviderType.individual,
+    this.studioId,
   });
 
   final String bio;
@@ -39,6 +40,10 @@ class PhotographerIntro {
   /// `setProviderType` callable, never written here.
   final ProviderType providerType;
 
+  /// The studio this photographer is an active member of (server-written,
+  /// #136); null when independent.
+  final String? studioId;
+
   @override
   bool operator ==(Object other) =>
       other is PhotographerIntro &&
@@ -48,7 +53,8 @@ class PhotographerIntro {
       other.acceptingOrders == acceptingOrders &&
       other.verified == verified &&
       other.businessVerified == businessVerified &&
-      other.providerType == providerType;
+      other.providerType == providerType &&
+      other.studioId == studioId;
 
   @override
   int get hashCode => Object.hash(
@@ -59,6 +65,7 @@ class PhotographerIntro {
     verified,
     businessVerified,
     providerType,
+    studioId,
   );
 }
 
@@ -82,6 +89,9 @@ PhotographerIntro introFromFirestore(Map<String, dynamic> d) {
     verified: verified,
     businessVerified: d['businessVerified'] == true,
     providerType: ProviderType.fromCode(d['providerType']),
+    studioId: d['studioId'] is String && (d['studioId'] as String).isNotEmpty
+        ? d['studioId'] as String
+        : null,
   );
 }
 
@@ -163,6 +173,7 @@ class FakePhotographerIntroRepository implements PhotographerIntroRepository {
       verified: old.verified,
       businessVerified: old.businessVerified,
       providerType: old.providerType,
+      studioId: old.studioId,
     );
     _changes.add(uid);
   }

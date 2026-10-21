@@ -204,9 +204,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             // Reverse for reverse ListView: newest is at index 0 (bottom)
             final reversedMessages = allMessages.reversed.toList();
 
-            final counterpartId = currentUserId == thread.customerId
-                ? thread.photographerId
-                : thread.customerId;
+            final counterpartId = thread.counterpartIdOf(currentUserId);
             final counterpartProfile = ref
                 .watch(partyProfileProvider(counterpartId))
                 .value;
@@ -479,9 +477,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return AppBar();
     }
 
-    final counterpartId = currentUserId == thread.customerId
-        ? thread.photographerId
-        : thread.customerId;
+    final counterpartId = thread.counterpartIdOf(currentUserId);
     final counterpartProfile = ref
         .watch(partyProfileProvider(counterpartId))
         .value;
@@ -610,7 +606,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   String _counterpartName(ChatThread thread, AppLocalizations l10n) {
     final uid = ref.read(authStateProvider).value?.uid ?? '';
     final isCustomer = uid == thread.customerId;
-    final id = isCustomer ? thread.photographerId : thread.customerId;
+    final id = thread.counterpartIdOf(uid);
     return ref.read(partyProfileProvider(id)).value?.displayName ??
         (isCustomer ? l10n.profileRolePhotographer : l10n.profileRoleCustomer);
   }
@@ -632,7 +628,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     final byRole = sys.proposal!.byRole;
-    final myRole = currentUserId == thread.photographerId
+    // The studio's assignee answers for the photographer side too.
+    final myRole = thread.isProviderSide(currentUserId)
         ? 'photographer'
         : 'customer';
 

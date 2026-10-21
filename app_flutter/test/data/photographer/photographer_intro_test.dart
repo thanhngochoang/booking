@@ -3,6 +3,17 @@ import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 
 void main() {
+  test('reads the studio a member belongs to (#136)', () {
+    expect(introFromFirestore({'studioId': 'cuc'}).studioId, 'cuc');
+    expect(introFromFirestore({'studioId': ''}).studioId, isNull);
+    expect(introFromFirestore({}).studioId, isNull);
+    expect(
+      const PhotographerIntro(studioId: 'cuc') ==
+          const PhotographerIntro(studioId: 'may'),
+      isFalse,
+    );
+  });
+
   test('reads what is there and falls back for the rest', () {
     expect(
       introFromFirestore({

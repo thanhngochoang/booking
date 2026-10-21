@@ -41,6 +41,13 @@ void main() {
       },
     );
 
+    test('a studio day the server marked full maps to full', () {
+      expect(
+        availabilityDayFromFirestore('2026-10-16', {'state': 'full'}),
+        AvailabilityDay(day: _d(16), state: DayState.full),
+      );
+    });
+
     test('the client writes nothing but the off state', () {
       expect(offDayToFirestore(), {'state': 'off'});
     });

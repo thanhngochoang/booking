@@ -1305,6 +1305,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dayStateOff => 'Nghỉ';
 
   @override
+  String get calendarDayFull => 'Hết chỗ';
+
+  @override
   String calendarDaySemantics(String day, String month, String state) {
     return '$day tháng $month, $state';
   }

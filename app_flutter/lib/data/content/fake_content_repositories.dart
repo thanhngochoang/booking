@@ -331,6 +331,21 @@ class FakePhotographerRepository
         .take(clampPageSize(limit, 200))
         .toList();
   }
+
+  /// Members in the order they were added (the stand-in for join order).
+  @override
+  Future<List<PhotographerSummary>> membersOf(
+    String studioId, {
+    int limit = 10,
+  }) async {
+    if (failWith != null) {
+      throw failWith!;
+    }
+    return _all
+        .where((p) => p.studioId == studioId)
+        .take(clampPageSize(limit))
+        .toList();
+  }
 }
 
 class FakeServiceRepository implements ServiceRepository {

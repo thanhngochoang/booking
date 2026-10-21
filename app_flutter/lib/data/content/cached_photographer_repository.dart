@@ -45,4 +45,10 @@ class CachedPhotographerRepository
     int limit = 12,
   }) =>
       inner.freeThisWeek(now: now, limit: limit);
+
+  @override
+  Future<List<PhotographerSummary>> membersOf(
+    String studioId, {
+    int limit = 10,
+  }) => inner.membersOf(studioId, limit: limit);
 }

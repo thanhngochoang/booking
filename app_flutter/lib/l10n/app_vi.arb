@@ -526,6 +526,7 @@
   "dayStatePending": "Chờ nhận",
   "dayStateBooked": "Đã đặt",
   "dayStateOff": "Nghỉ",
+  "calendarDayFull": "Hết chỗ",
   "calendarDaySemantics": "{day} tháng {month}, {state}",
   "@calendarDaySemantics": {"placeholders": {"day": {"type": "String"}, "month": {"type": "String"}, "state": {"type": "String"}}},
   "calendarHasEvent": "có sự kiện",

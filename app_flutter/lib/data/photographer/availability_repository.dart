@@ -33,8 +33,9 @@ class AvailabilityDay {
   int get hashCode => Object.hash(day, state, bookingId, eventId);
 }
 
-/// `availability/{uid}/days/{yyyy-MM-dd}` → [AvailabilityDay]. A document
-/// whose state the app does not know blocks the day (counted as booked).
+/// `availability/{uid}/days/{yyyy-MM-dd}` → [AvailabilityDay]. A studio's
+/// `full` day (server-written) reads as [DayState.full]. A document whose
+/// state the app does not know blocks the day (counted as booked).
 AvailabilityDay? availabilityDayFromFirestore(
   String id,
   Map<String, dynamic> d,
@@ -46,6 +47,7 @@ AvailabilityDay? availabilityDayFromFirestore(
   final state = switch (d['state']) {
     'off' => DayState.off,
     'pending' => DayState.pending,
+    'full' => DayState.full,
     _ => DayState.booked,
   };
   final booking = d['bookingId'];

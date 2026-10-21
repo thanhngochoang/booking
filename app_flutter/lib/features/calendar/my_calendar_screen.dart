@@ -130,7 +130,7 @@ class _MyCalendarScreenState extends ConsumerState<MyCalendarScreen> {
         _mark([day], off: true);
       case DayState.off:
         _mark([day], off: false);
-      case DayState.booked || DayState.pending:
+      case DayState.booked || DayState.pending || DayState.full:
         // The day section says "Ngày này đã có lịch" and links to the
         // booking; a snackbar would cover that link.
         ScaffoldMessenger.of(context).hideCurrentSnackBar();

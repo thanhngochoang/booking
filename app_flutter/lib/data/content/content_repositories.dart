@@ -103,6 +103,14 @@ abstract class PhotographerRepository {
   /// (`acceptingOrders == true`). The one list whose [limit] is clamped to
   /// 1..200 instead of 1..[kMaxPageSize].
   Future<List<PhotographerSummary>> candidates({int limit = 200});
+
+  /// Active members of a studio (`studioId` on their public document), the
+  /// longest-standing first; [limit] is clamped to 1..[kMaxPageSize]. Empty
+  /// for an id that cannot name a document.
+  Future<List<PhotographerSummary>> membersOf(
+    String studioId, {
+    int limit = 10,
+  });
 }
 
 abstract class ServiceRepository {

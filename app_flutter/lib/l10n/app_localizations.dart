@@ -2374,6 +2374,12 @@ abstract class AppLocalizations {
   /// **'Nghỉ'**
   String get dayStateOff;
 
+  /// No description provided for @calendarDayFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết chỗ'**
+  String get calendarDayFull;
+
   /// No description provided for @calendarDaySemantics.
   ///
   /// In vi, this message translates to:
