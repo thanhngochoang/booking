@@ -7,6 +7,7 @@ import {
   isReviewable,
   REVIEW_HITS_MAX,
   reviewDocId,
+  STUDIO_BRICK_REASONS,
   validateReviewInput,
 } from '../src/review.js';
 
@@ -345,5 +346,66 @@ describe('validateReviewInput', () => {
     );
     assert.equal(res.postId, null);
     assert.equal(res.photos.length, 0);
+  });
+});
+
+describe('validateReviewInput studio block', () => {
+  const base = { bookingId: 'book1', verdict: 'tomato', hits: 3, text: 'Buổi chụp rất ổn, cảm ơn!' };
+  const studioBrick = { verdict: 'brick', hits: 2, reasons: ['slow_response'], text: 'Tư vấn trả lời chậm quá.' };
+  const bad = (raw: unknown, studio: boolean) =>
+    assert.throws(
+      () => validateReviewInput(raw, 'cust1', prefixes, { studio }),
+      (e: unknown) => e instanceof DomainError && e.code === 'invalid_argument'
+    );
+
+  it('an individual booking accepts no studio block (invalid_argument)', () => {
+    bad({ ...base, studio: studioBrick }, false);
+    assert.equal(validateReviewInput(base, 'cust1', prefixes).studio, null);
+  });
+
+  it('a studio booking needs the studio block (invalid_argument without)', () => {
+    bad(base, true);
+    bad({ ...base, studio: 'x' }, true);
+  });
+
+  it('studio brick reasons are the five studio codes; a photographer code is invalid there', () => {
+    assert.deepEqual(STUDIO_BRICK_REASONS, [
+      'late_assignment',
+      'slow_response',
+      'price_changed',
+      'poor_assignment',
+      'other',
+    ]);
+    for (const code of STUDIO_BRICK_REASONS) {
+      const out = validateReviewInput(
+        { ...base, studio: { ...studioBrick, reasons: [code] } },
+        'cust1',
+        prefixes,
+        { studio: true }
+      );
+      assert.deepEqual(out.studio?.reasons, [code]);
+    }
+    bad({ ...base, studio: { ...studioBrick, reasons: ['late'] } }, true);
+    bad({ ...base, studio: { ...studioBrick, reasons: [] } }, true);
+    bad({ ...base, studio: { ...studioBrick, reasons: ['other', 'other'] } }, true);
+    // a studio code is not valid in the photographer block
+    bad({ ...base, verdict: 'brick', reasons: ['slow_response'], studio: studioBrick }, true);
+  });
+
+  it('a studio tomato block with reasons is invalid', () => {
+    bad({ ...base, studio: { ...studioBrick, verdict: 'tomato' } }, true);
+    const ok = validateReviewInput(
+      { ...base, studio: { ...studioBrick, verdict: 'tomato', reasons: [] } },
+      'cust1',
+      prefixes,
+      { studio: true }
+    );
+    assert.equal(ok.studio?.verdict, 'tomato');
+  });
+
+  it('the studio block validates hits and text like the main block', () => {
+    bad({ ...base, studio: { ...studioBrick, hits: 0 } }, true);
+    bad({ ...base, studio: { ...studioBrick, hits: 11 } }, true);
+    bad({ ...base, studio: { ...studioBrick, text: 'ngắn' } }, true);
   });
 });

@@ -26,6 +26,16 @@ export const REVIEW_REASONS = [
 ] as const;
 export type ReviewReason = (typeof REVIEW_REASONS)[number];
 
+/** Brick reasons for the studio block of a studio booking (#136 Decision 21). */
+export const STUDIO_BRICK_REASONS = [
+  'late_assignment',
+  'slow_response',
+  'price_changed',
+  'poor_assignment',
+  'other',
+] as const;
+export type StudioBrickReason = (typeof STUDIO_BRICK_REASONS)[number];
+
 export const REVIEW_SUBJECT_TYPES = ['photographer', 'studio'] as const;
 export type ReviewSubjectType = (typeof REVIEW_SUBJECT_TYPES)[number];
 
@@ -57,12 +67,22 @@ export interface ReviewPhoto {
   readonly h: number | null;
 }
 
+/** One verdict with its own hits, reasons and text (the studio block of a studio booking). */
+export interface StudioVerdictBlock {
+  readonly verdict: Verdict;
+  readonly hits: number;
+  readonly reasons: readonly StudioBrickReason[];
+  readonly text: string;
+}
+
 export interface ReviewInput {
   readonly bookingId: string;
   readonly verdict: Verdict;
   readonly hits: number;
   readonly reasons: readonly ReviewReason[];
   readonly text: string;
+  /** The studio block; null unless validated with `{ studio: true }`. */
+  readonly studio: StudioVerdictBlock | null;
   readonly postId: string | null;
   readonly photos: readonly ReviewPhoto[];
 }
@@ -86,8 +106,14 @@ export interface Review {
   readonly hits: number;
   /** Server only: `intensityOf(hits)`. */
   readonly intensity: number;
-  readonly reasons: readonly ReviewReason[];
+  readonly reasons: readonly (ReviewReason | StudioBrickReason)[];
   readonly text: string;
+  /** Member review of a studio booking: the studio it was booked through. */
+  readonly viaStudioId?: string;
+  readonly viaStudioName?: string;
+  /** Studio review of a studio booking: who shot it. */
+  readonly assigneeId?: string;
+  readonly assigneeName?: string;
   readonly photoPostId: string | null;
   readonly createdAt: Date;
   readonly countedAt: Date | null;
@@ -99,6 +125,8 @@ export interface RealShootPost {
   readonly photographerId: string;
   readonly serviceId: string;
   readonly bookingId: string;
+  /** Studio booking: who shot it (`photographerId` stays the studio). */
+  readonly assigneeId?: string;
   readonly imageUrls: readonly string[];
   readonly imageMeta: readonly {
     blurHash: string | null;
@@ -113,7 +141,8 @@ export interface RealShootPost {
 export function validateReviewInput(
   raw: unknown,
   callerId: string,
-  urlPrefixes: readonly string[]
+  urlPrefixes: readonly string[],
+  opts: { readonly studio?: boolean } = {}
 ): ReviewInput {
   if (typeof raw !== 'object' || raw === null) {
     throw new DomainError('invalid_argument');
@@ -140,17 +169,9 @@ export function validateReviewInput(
   }
   const hits = r.hits;
 
-  const reasons = validateReasons(verdict, r.reasons);
-
-  if (typeof r.text !== 'string') {
-    throw new DomainError('invalid_argument');
-  }
-
-  const trimmed = r.text.trim();
-  const textLength = graphemeCount(trimmed);
-  if (textLength < REVIEW_TEXT_MIN || textLength > REVIEW_TEXT_MAX) {
-    throw new DomainError('invalid_argument');
-  }
+  const reasons = validateReasons(verdict, r.reasons, REVIEW_REASONS);
+  const trimmed = validateText(r.text);
+  const studio = validateStudioBlock(r.studio, opts.studio === true);
 
   const rawPhotos = r.photos;
   let photosList: unknown[] = [];
@@ -172,6 +193,7 @@ export function validateReviewInput(
       hits,
       reasons,
       text: trimmed,
+      studio,
       postId: null,
       photos: [],
     };
@@ -230,24 +252,71 @@ export function validateReviewInput(
     hits,
     reasons,
     text: trimmed,
+    studio,
     postId,
     photos: validatedPhotos,
   };
 }
 
+function validateText(raw: unknown): string {
+  if (typeof raw !== 'string') {
+    throw new DomainError('invalid_argument');
+  }
+  const trimmed = raw.trim();
+  const textLength = graphemeCount(trimmed);
+  if (textLength < REVIEW_TEXT_MIN || textLength > REVIEW_TEXT_MAX) {
+    throw new DomainError('invalid_argument');
+  }
+  return trimmed;
+}
+
+/** A studio booking needs the block; any other booking accepts none. */
+function validateStudioBlock(raw: unknown, expected: boolean): StudioVerdictBlock | null {
+  if (!expected) {
+    if (raw === undefined || raw === null) return null;
+    throw new DomainError('invalid_argument');
+  }
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new DomainError('invalid_argument');
+  }
+  const b = raw as Record<string, unknown>;
+  const verdict = VERDICTS.find((v) => v === b.verdict);
+  if (verdict === undefined) {
+    throw new DomainError('invalid_argument');
+  }
+  if (
+    typeof b.hits !== 'number' ||
+    !Number.isInteger(b.hits) ||
+    b.hits < 1 ||
+    b.hits > REVIEW_HITS_MAX
+  ) {
+    throw new DomainError('invalid_argument');
+  }
+  return {
+    verdict,
+    hits: b.hits,
+    reasons: validateReasons(verdict, b.reasons, STUDIO_BRICK_REASONS),
+    text: validateText(b.text),
+  };
+}
+
 /** A brick needs one or more distinct known reasons; a tomato has none. */
-function validateReasons(verdict: Verdict, raw: unknown): readonly ReviewReason[] {
+function validateReasons<T extends string>(
+  verdict: Verdict,
+  raw: unknown,
+  allowed: readonly T[]
+): readonly T[] {
   if (verdict === 'tomato') {
     if (raw === undefined || raw === null) return [];
     if (Array.isArray(raw) && raw.length === 0) return [];
     throw new DomainError('invalid_argument');
   }
-  if (!Array.isArray(raw) || raw.length === 0 || raw.length > REVIEW_REASONS.length) {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > allowed.length) {
     throw new DomainError('invalid_argument');
   }
-  const reasons: ReviewReason[] = [];
+  const reasons: T[] = [];
   for (const item of raw) {
-    const reason = REVIEW_REASONS.find((x) => x === item);
+    const reason = allowed.find((x) => x === item);
     if (reason === undefined || reasons.includes(reason)) {
       throw new DomainError('invalid_argument');
     }
