@@ -20,6 +20,7 @@ import {
   inviteCandidateState,
   isStudio,
   providerTypeOf,
+  scheduleReachesDay,
   type AssigneeKind,
   type DailyQuota,
   type InviteCandidateState,
@@ -192,18 +193,20 @@ export class FirestoreStudioStore implements StudioStore {
           return snap.size;
         },
         countOpenSpotSchedules: async (studioId, memberId, today) => {
-          // At most 8 open schedules per provider (#194); the days are filtered here.
+          // Open schedules naming the member that still reach today (#194):
+          // a range on lastDay, no limit, so old schedules never crowd out a
+          // current one. Index (providerId, assigneeId, status, lastDay).
           const snap = await fTx.get(
             this.firestore
               .collection(SPOT_SCHEDULES_COLLECTION)
               .where('providerId', '==', studioId)
               .where('assigneeId', '==', memberId)
               .where('status', '==', 'open')
-              .limit(20),
+              .where('lastDay', '>=', today),
           );
           return snap.docs.filter((d) => {
-            const days: unknown = d.data().days;
-            return Array.isArray(days) && days.some((day) => typeof day === 'string' && day >= today);
+            const s = scheduleFromFirestore(d.id, d.data());
+            return s !== null && scheduleReachesDay(s, today);
           }).length;
         },
         getQuota: async (uid) => {

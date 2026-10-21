@@ -4,7 +4,7 @@
  */
 
 import type { Spot } from './spot.js';
-import type { SpotSchedule } from './spot_schedule.js';
+import { scheduleReachesDay, type SpotSchedule } from './spot_schedule.js';
 import type { SlotOffer } from './spot_slots.js';
 import type { SpotDay } from './spot_booking.js';
 import type { AvailabilityDayRecord, ServiceRecord } from './booking_ports.js';
@@ -103,7 +103,7 @@ export class MemorySpotStore implements SpotScheduleStore {
               (s) =>
                 s.providerId === providerId &&
                 s.status === 'open' &&
-                s.days.some((d) => d >= today),
+                scheduleReachesDay(s, today),
             )
             .map((s) => ({ ...s }));
         },

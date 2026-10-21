@@ -18,6 +18,8 @@ import {
   type SpotScheduleTx,
   type AvailabilityDayRecord,
   type ServiceRecord,
+  scheduleLastDay,
+  scheduleReachesDay,
 } from '@photobooking/domain';
 import { db } from './admin.js';
 import { serviceRecordOf } from './booking_readers.js';
@@ -168,6 +170,8 @@ export function scheduleFromFirestore(id: string, d: DocumentData | undefined): 
     status,
     createdAt,
     updatedAt,
+    // Older documents have no lastDay: scheduleLastDay falls back to days.
+    ...(typeof d.lastDay === 'string' ? { lastDay: d.lastDay } : {}),
   };
 }
 
@@ -183,6 +187,9 @@ export function scheduleToFirestore(s: SpotSchedule): DocumentData {
     status: s.status,
     createdAt: toTimestamp(s.createdAt),
     updatedAt: toTimestamp(s.updatedAt),
+    // Always written (from days when the caller left it out) so the
+    // "open with a day from today" queries are one range on lastDay.
+    lastDay: scheduleLastDay(s),
   };
 }
 
@@ -297,16 +304,19 @@ export class FirestoreSpotScheduleStore implements SpotScheduleStore {
           return scheduleFromFirestore(snap.id, snap.data());
         },
         openSchedulesOf: async (providerId: string, today: string): Promise<SpotSchedule[]> => {
+          // Only schedules still reaching today (≤ 8 by the limit), never the
+          // provider's whole history; index (providerId, status, lastDay).
           const snap = await fTx.get(
             this.firestore
               .collection(SPOT_SCHEDULES_COLLECTION)
               .where('providerId', '==', providerId)
-              .where('status', '==', 'open'),
+              .where('status', '==', 'open')
+              .where('lastDay', '>=', today),
           );
           const out: SpotSchedule[] = [];
           for (const doc of snap.docs) {
             const s = scheduleFromFirestore(doc.id, doc.data());
-            if (s && s.days.some((d) => d >= today)) {
+            if (s && scheduleReachesDay(s, today)) {
               out.push(s);
             }
           }

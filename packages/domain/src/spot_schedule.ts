@@ -34,6 +34,33 @@ export interface SpotSchedule {
   readonly status: 'open' | 'cancelled';
   readonly createdAt: string;
   readonly updatedAt: string;
+  /**
+   * The latest day in `days` (`yyyy-MM-dd`), written on every save so the
+   * stores can ask for "open schedules with a day from today" with one range
+   * query instead of reading every historical schedule. Older documents may
+   * lack it: read through [scheduleLastDay], which falls back to `days`.
+   */
+  readonly lastDay?: string | null;
+}
+
+/** The latest of [days], or null when there is none. */
+export function lastDayOf(days: readonly string[]): string | null {
+  let last: string | null = null;
+  for (const d of days) {
+    if (last === null || d > last) last = d;
+  }
+  return last;
+}
+
+/** The schedule's stored `lastDay`, or the latest of its days when missing. */
+export function scheduleLastDay(s: Pick<SpotSchedule, 'days' | 'lastDay'>): string | null {
+  return typeof s.lastDay === 'string' ? s.lastDay : lastDayOf(s.days);
+}
+
+/** True when the schedule still has a day on or after [today] (VN day). */
+export function scheduleReachesDay(s: Pick<SpotSchedule, 'days' | 'lastDay'>, today: string): boolean {
+  const last = scheduleLastDay(s);
+  return last !== null && last >= today;
 }
 
 export interface SpotScheduleInput {

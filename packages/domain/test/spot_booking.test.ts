@@ -605,6 +605,78 @@ describe('spot_booking use cases', () => {
     assert.ok(draft.assignedAt);
   });
 
+  it('a slot price edited after the first read is price_changed (checked against the offer read in the transaction)', async () => {
+    const world = setupWorld();
+    let reads = 0;
+    const orig = world.store.getSlotOffer.bind(world.store);
+    world.store.getSlotOffer = async (id: string) => {
+      const o = await orig(id);
+      // The provider edits the price between the pre-read and the transaction.
+      if (reads++ === 0) world.store.offers.set(id, { ...binhMinhOffer, price: 590_000 });
+      return o;
+    };
+    const req = {
+      customerId: 'c1',
+      photographerId: 'p-an',
+      serviceId: 'offer-binh-minh',
+      day: '2026-10-17',
+      start: '06:00',
+      place: { name: 'ignored' },
+      spotScheduleId: 'sched-an-ho-tay',
+      slotOfferId: 'offer-binh-minh',
+    };
+    await assert.rejects(
+      createBookingDraft(world.deps, { ...req, expectedPrice: 490_000 }),
+      (err: unknown) => isDomainError(err) && err.code === 'price_changed',
+    );
+    assert.equal(world.store.bookings.size, 0);
+
+    // Without expectedPrice the booking is priced from the offer as it is in the transaction.
+    const draft = await createBookingDraft(world.deps, req);
+    assert.equal(draft.serviceSnapshot.price, 590_000);
+  });
+
+  it('a studio spot booking whose member stopped accepting orders is not_accepting_orders; one whose member is blocked with the customer is blocked; nothing is written', async () => {
+    const world = setupWorld();
+    withSchedule(world, { ...hoTaySchedule, id: 'sched-studio', providerId: 'studio_1', assigneeId: 'member_1' });
+    world.providers.set('studio_1', { verified: true, onboardingComplete: true });
+    world.providerTypes.set('studio_1', 'studio');
+    world.services.set('seed-service-portrait', { ...portraitService, photographerId: 'studio_1' });
+    world.store.availability.set('member_1_2026-10-17', {
+      state: 'spot',
+      scheduleId: 'sched-studio',
+      spotId: 'spot-ho-tay',
+    });
+    const req = {
+      customerId: 'c1',
+      photographerId: 'studio_1',
+      serviceId: 'seed-service-portrait',
+      day: '2026-10-17',
+      start: '06:00',
+      place: { name: 'ignored' },
+      spotScheduleId: 'sched-studio',
+    };
+
+    world.providers.set('member_1', { verified: false, onboardingComplete: true });
+    await assert.rejects(
+      createBookingDraft(world.deps, req),
+      (err: unknown) => isDomainError(err) && err.code === 'not_accepting_orders',
+    );
+
+    world.providers.set('member_1', { verified: true, onboardingComplete: true });
+    world.blocks.block('member_1', 'c1');
+    await assert.rejects(
+      createBookingDraft(world.deps, req),
+      (err: unknown) => isDomainError(err) && err.code === 'blocked',
+    );
+    assert.equal(world.store.bookings.size, 0);
+    assert.equal(world.store.spotDays.size, 0);
+
+    world.blocks.unblock('member_1', 'c1');
+    const draft = await createBookingDraft(world.deps, req);
+    assert.equal(draft.assigneeId, 'member_1');
+  });
+
   it('spotBusyAt is true inside the window of today\'s spot day and false outside it or on another day', () => {
     const rec = { state: 'spot' as const, scheduleId: 'sched-an-ho-tay', spotId: 'spot-ho-tay' };
     const sched: SpotSchedule = {

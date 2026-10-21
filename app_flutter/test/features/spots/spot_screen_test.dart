@@ -6,6 +6,8 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -14,6 +16,7 @@ import 'package:photobooking/features/spots/spot_screen.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
+import '../../support/fake_safety_repository.dart';
 import '../../support/fake_spot_repository.dart';
 import '../../support/screen_host.dart';
 
@@ -796,6 +799,7 @@ void main() {
     fakeSpots.seedPosts('spot1', [
       fixturePost('post-ok', photographerId: 'p1'),
       fixturePost('post-blocked', photographerId: 'blocked-user'),
+      fixturePost('post-blocked-author', authorId: 'blocker-of-me'),
     ]);
 
     final router = GoRouter(
@@ -817,7 +821,16 @@ void main() {
         router: router,
         overrides: [
           ...world.overrides,
-          hiddenUsersProvider.overrideWithValue(const {'blocked-user'}),
+          // The real #144 block index (people I blocked + people who
+          // blocked me) feeds the S29.02 posts, not a stub.
+          safetyRepositoryProvider.overrideWithValue(
+            FakeSafetyRepository(
+              initialIndex: const BlockIndex(
+                blockedIds: {'blocked-user'},
+                blockedByIds: {'blocker-of-me'},
+              ),
+            ),
+          ),
           spotRepositoryProvider.overrideWithValue(fakeSpots),
         ],
       ),
@@ -826,6 +839,10 @@ void main() {
 
     expect(find.byKey(const Key('spot-photo-post-ok')), findsOneWidget);
     expect(find.byKey(const Key('spot-photo-post-blocked')), findsNothing);
+    expect(
+      find.byKey(const Key('spot-photo-post-blocked-author')),
+      findsNothing,
+    );
   });
 
   testWidgets('share copies the link and shows SnackBar', (tester) async {

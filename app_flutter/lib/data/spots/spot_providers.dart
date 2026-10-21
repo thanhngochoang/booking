@@ -90,9 +90,6 @@ final mySlotOffersProvider =
   },
 );
 
-/// Set of user ids hidden/blocked by current user (#144).
-final hiddenUsersProvider = Provider<Set<String>>((ref) => const <String>{});
-
 final spotPhotographerSummariesProvider =
     FutureProvider.autoDispose.family<Map<String, PhotographerSummary>, String>(
   (ref, key) async {

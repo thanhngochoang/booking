@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import type { Spot, SpotSchedule, SlotOffer, SpotDay } from '@photobooking/domain';
 import {
@@ -13,6 +14,7 @@ import {
   spotDayFromFirestore,
   FirestoreSpotScheduleStore,
 } from '../../src/infra/spot_firestore.js';
+import { MemoryFirestore } from './support/memory_firestore.js';
 
 describe('spot_firestore mappers', () => {
   const sampleSpot: Spot = {
@@ -92,9 +94,11 @@ describe('spot_firestore mappers', () => {
     const d1 = scheduleToFirestore(scheduleWithAssignee);
     assert.equal(d1.assigneeId, 'photog_member');
     assert.ok(d1.createdAt instanceof Timestamp);
+    // lastDay is always written, from days when the schedule has none yet.
+    assert.equal(d1.lastDay, '2026-10-25');
     const r1 = scheduleFromFirestore('sched_01', d1);
     assert.ok(r1);
-    assert.deepEqual(r1, scheduleWithAssignee);
+    assert.deepEqual(r1, { ...scheduleWithAssignee, lastDay: '2026-10-25' });
 
     const scheduleWithoutAssignee: SpotSchedule = {
       ...scheduleWithAssignee,
@@ -107,7 +111,30 @@ describe('spot_firestore mappers', () => {
     assert.equal(d2.priceFrom, null);
     const r2 = scheduleFromFirestore('sched_01', d2);
     assert.ok(r2);
-    assert.deepEqual(r2, scheduleWithoutAssignee);
+    assert.deepEqual(r2, { ...scheduleWithoutAssignee, lastDay: '2026-10-25' });
+  });
+
+  it('a stored lastDay wins; an older document without lastDay reads without it', () => {
+    const base: SpotSchedule = {
+      id: 'sched_02',
+      providerId: 'photog_01',
+      assigneeId: null,
+      spotId: 'spot_01',
+      days: ['2026-10-18'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+      priceFrom: null,
+      status: 'open',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+      lastDay: '2026-10-18',
+    };
+    assert.equal(scheduleToFirestore(base).lastDay, '2026-10-18');
+    const legacy = scheduleToFirestore(base);
+    delete legacy.lastDay;
+    const r = scheduleFromFirestore('sched_02', legacy);
+    assert.ok(r);
+    assert.equal('lastDay' in r, false);
   });
 
   it('offer round-trips', () => {
@@ -234,5 +261,50 @@ describe('spot_firestore mappers', () => {
       'get:photographers/ph1/private/spot_schedules',
       'set:photographers/ph1/private/spot_schedules',
     ]);
+  });
+});
+
+describe('FirestoreSpotScheduleStore.openSchedulesOf', () => {
+  it('reads only open schedules whose lastDay reaches today, however many past ones exist', async () => {
+    const db = new MemoryFirestore();
+    const base: SpotSchedule = {
+      id: 'x',
+      providerId: 'ph1',
+      assigneeId: null,
+      spotId: 'spot_01',
+      days: ['2026-10-12'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+      priceFrom: null,
+      status: 'open',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    for (let i = 0; i < 25; i++) {
+      db.seed(`spot_schedules/old_${String(i).padStart(2, '0')}`, scheduleToFirestore({ ...base, days: [`2026-09-${String(i + 1).padStart(2, '0')}`] }));
+    }
+    db.seed('spot_schedules/zz_ahead', scheduleToFirestore({ ...base, days: ['2026-09-01', '2026-10-12'] }));
+    db.seed('spot_schedules/zz_cancelled', scheduleToFirestore({ ...base, status: 'cancelled' }));
+    db.seed('spot_schedules/zz_other', scheduleToFirestore({ ...base, providerId: 'ph2' }));
+    const store = new FirestoreSpotScheduleStore(db as never);
+    const open = await store.runTransaction((tx) => tx.openSchedulesOf('ph1', '2026-10-10'));
+    assert.deepEqual(open.map((s) => s.id), ['zz_ahead']);
+  });
+});
+
+describe('spot indexes', () => {
+  it('the bounded open-schedule queries have their composite indexes', () => {
+    const json = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as {
+      indexes: { collectionGroup: string; queryScope: string; fields: { fieldPath: string; order?: string }[] }[];
+    };
+    const shapes = json.indexes
+      .filter((i) => i.queryScope === 'COLLECTION')
+      .map((i) => `${i.collectionGroup}: ${i.fields.map((f) => `${f.fieldPath} ${f.order}`).join(', ')}`);
+    for (const shape of [
+      'spot_schedules: providerId ASCENDING, status ASCENDING, lastDay ASCENDING',
+      'spot_schedules: providerId ASCENDING, assigneeId ASCENDING, status ASCENDING, lastDay ASCENDING',
+    ]) {
+      assert.ok(shapes.includes(shape), shape);
+    }
   });
 });

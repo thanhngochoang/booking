@@ -94,6 +94,25 @@ describe('notifyStudioBookingChange', () => {
     });
   });
 
+  it('a studio spot booking created already assigned tells the member when it leaves the draft, once (#194)', async () => {
+    const draft: Booking = { ...withA1, status: 'draft', spotScheduleId: 'sched_1', spotId: 'spot_1', source: 'spot' };
+    const requested: Booking = { ...draft, status: 'requested' };
+    assert.deepEqual(studioBookingNotices(null, draft), []);
+    assert.deepEqual(studioBookingNotices(draft, { ...draft, version: 2 }), []);
+    assert.deepEqual(studioBookingNotices(draft, { ...draft, status: 'expired' }), []);
+    assert.deepEqual(studioBookingNotices(requested, { ...requested, status: 'accepted' }), []);
+    assert.deepEqual(studioBookingNotices({ ...draft, assigneeId: null }, { ...requested, assigneeId: null }), []);
+
+    const n = world();
+    await notifyStudioBookingChange(n.deps, draft, requested);
+    // A retry of the same write is the same dedupe key: still one row each.
+    await notifyStudioBookingChange(n.deps, draft, requested);
+    assert.deepEqual(rowsByUser(n), {
+      c1: ['n_booking_assigned_b1_a1_customer'],
+      a1: ['n_booking_assigned_b1_a1_assignee'],
+    });
+  });
+
   it('reassigned → customer, old and new', async () => {
     const n = world();
     await notifyStudioBookingChange(n.deps, withA1, withA2);

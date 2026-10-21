@@ -1,6 +1,7 @@
 // lib/features/spots/spot_posts_controller.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 
 class SpotPostsController extends AsyncNotifier<List<PostSummary>> {

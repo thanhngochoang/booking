@@ -8,6 +8,7 @@ import { formatVnDate } from './booking_policy.js';
 import {
   dayConflicts,
   dayHolderOf,
+  lastDayOf,
   priceFromOf,
   minutesOf,
   scheduleEditBlocks,
@@ -157,6 +158,7 @@ export async function saveSpotSchedule(
       status: 'open',
       createdAt: existing ? existing.createdAt : nowIso,
       updatedAt: nowIso,
+      lastDay: lastDayOf(finalDays),
     };
     tx.putSchedule(newSchedule);
 
@@ -271,9 +273,11 @@ export async function saveSlotOffer(
       }
     }
 
+    // Saving always leaves the offer open, so a new offer and a closed one
+    // being reopened both count against the other open offers (≤ 2).
     const allOffers = await tx.offersOf(schedule.id);
-    const openOffers = allOffers.filter((o) => o.status === 'open');
-    if (!existingOffer && openOffers.length >= MAX_OFFERS_PER_SCHEDULE) {
+    const otherOpen = allOffers.filter((o) => o.status === 'open' && o.id !== existingOffer?.id);
+    if (existingOffer?.status !== 'open' && otherOpen.length >= MAX_OFFERS_PER_SCHEDULE) {
       throw new DomainError('limit_exceeded');
     }
 

@@ -5,6 +5,7 @@ import {
   type StudioRelation,
 } from './studio_membership.js';
 import type { StudioStore, StudioTx } from './studio_ports.js';
+import { scheduleReachesDay } from './spot_schedule.js';
 
 const DUE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -103,7 +104,7 @@ export class MemoryStudioStore implements StudioStore {
       countOpenSpotSchedules: async (studioId, memberId, today) => {
         guardRead('countOpenSpotSchedules');
         return (this.openSpotScheduleDays.get(`${studioId}/${memberId}`) ?? []).filter((days) =>
-          days.some((d) => d >= today),
+          scheduleReachesDay({ days }, today),
         ).length;
       },
       getQuota: async (uid) => {

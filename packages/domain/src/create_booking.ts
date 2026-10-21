@@ -14,7 +14,7 @@ import {
 import type { BookingDeps, ServiceRecord } from './booking_ports.js';
 import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
-import { profileOrderBlocker } from './order_gate.js';
+import { orderBlocker, profileOrderBlocker } from './order_gate.js';
 import { requireCustomerPhone } from './require_phone.js';
 import type { Spot } from './spot.js';
 import { dayHolderOf, type SpotSchedule } from './spot_schedule.js';
@@ -128,6 +128,18 @@ export function buildBookingDraft(i: BookingDraftInput): Booking {
   };
 }
 
+/** The synthetic package of a slot offer (Decision 8, the #139 quote pattern). */
+function slotService(offer: SlotOffer, photographerId: string): ServiceRecord {
+  return {
+    id: offer.id,
+    photographerId,
+    name: offer.name,
+    price: offer.price,
+    durationMinutes: offer.slotMinutes,
+    active: true,
+  };
+}
+
 function spotDraftFields(i: BookingDraftInput): Partial<Booking> {
   if (!i.spot) return {};
   const at = i.now.toISOString();
@@ -167,14 +179,8 @@ export async function createBookingDraft(
     if (preOffer.status !== 'open') {
       throw new DomainError('outside_schedule');
     }
-    service = {
-      id: preOffer.id,
-      photographerId: input.photographerId,
-      name: preOffer.name,
-      price: preOffer.price,
-      durationMinutes: preOffer.slotMinutes,
-      active: true,
-    };
+    // Re-built from the offer read inside the transaction below (price and length may change meanwhile).
+    service = slotService(preOffer, input.photographerId);
   } else {
     const s = await deps.services.getService(input.photographerId, input.serviceId);
     if (!s || !s.active || s.photographerId !== input.photographerId) {
@@ -212,7 +218,7 @@ export async function createBookingDraft(
   const phone = await requireCustomerPhone(deps.contacts, input.customerId);
   const contactRecord = await deps.contacts.get(input.customerId);
 
-  const end = addMinutesToTime(input.start, service.durationMinutes);
+  let end = addMinutesToTime(input.start, service.durationMinutes);
 
   // 3. Transactional availability hold and booking creation
   return deps.store.runTransaction(async (tx) => {
@@ -228,6 +234,15 @@ export async function createBookingDraft(
       if (!schedule || schedule.providerId !== input.photographerId) {
         throw new DomainError('outside_schedule');
       }
+      // A studio's spot booking comes already assigned to the schedule's member (Decision 7), so the member
+      // passes the same gate assignBooking applies (verified, not blocked with the customer) before any write.
+      if (schedule.assigneeId) {
+        const memberBlocker = await orderBlocker(deps, {
+          customerId: input.customerId,
+          providerId: schedule.assigneeId,
+        });
+        if (memberBlocker) throw new DomainError(memberBlocker);
+      }
       const spot = await tx.getSpot(schedule.spotId);
       if (!spot) {
         throw new DomainError('not_found');
@@ -238,6 +253,17 @@ export async function createBookingDraft(
         if (!offer || offer.scheduleId !== schedule.id) {
           throw new DomainError('outside_schedule');
         }
+        // The price the customer saw is checked against the offer as it is now, not the read before the
+        // transaction; the booking is priced and timed from this same read.
+        // A slot booking carries no add-ons (T6), so its total is the offer price too.
+        if (
+          (input.expectedPrice !== undefined && input.expectedPrice !== offer.price) ||
+          (input.expectedTotal !== undefined && input.expectedTotal !== offer.price)
+        ) {
+          throw new DomainError('price_changed');
+        }
+        service = slotService(offer, input.photographerId);
+        end = addMinutesToTime(input.start, service.durationMinutes);
       }
       const spotDay = await tx.getSpotDay(schedule.id, input.day);
       ctx = { schedule, spot, offer, spotDay };

@@ -782,4 +782,103 @@ describe('spot_schedule_use_cases', () => {
     // Closing twice is fine
     await assert.doesNotReject(closeSlotOffer(deps, 'p-individual', { offerId: o1.offerId }));
   });
+  it('saveSpotSchedule stores lastDay = the latest day, and an edit that drops the last day lowers it', async () => {
+    const { store, deps } = setupWorld();
+    const res = await saveSpotSchedule(deps, 'p-individual', {
+      spotId: 'spot-1',
+      days: ['2026-10-24', '2026-10-17'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+    });
+    assert.equal(store.getScheduleSync(res.scheduleId)?.lastDay, '2026-10-24');
+
+    await saveSpotSchedule(deps, 'p-individual', {
+      scheduleId: res.scheduleId,
+      spotId: 'spot-1',
+      days: ['2026-10-17'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+    });
+    assert.equal(store.getScheduleSync(res.scheduleId)?.lastDay, '2026-10-17');
+  });
+
+  it('the open-schedule count goes by lastDay; a schedule saved before lastDay existed falls back to its days', async () => {
+    const { store, deps } = setupWorld();
+    const base = {
+      providerId: 'p-individual',
+      assigneeId: null,
+      spotId: 'spot-1',
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+      priceFrom: 600_000,
+      status: 'open' as const,
+      createdAt: '2026-10-01T00:00:00Z',
+      updatedAt: '2026-10-01T00:00:00Z',
+    };
+    // 7 current schedules: 6 with lastDay ahead, 1 legacy (no lastDay) with a day ahead.
+    for (let i = 1; i <= 6; i++) {
+      const day = `2026-10-${String(15 + i).padStart(2, '0')}`;
+      store.seedSchedule({ ...base, id: `cur-${i}`, days: ['2026-10-01', day], lastDay: day });
+    }
+    store.seedSchedule({ ...base, id: 'legacy-ahead', days: ['2026-10-01', '2026-10-30'] });
+    // Not counted: history only.
+    store.seedSchedule({ ...base, id: 'legacy-past', days: ['2026-10-01'] });
+    store.seedSchedule({ ...base, id: 'past', days: ['2026-10-02'], lastDay: '2026-10-02' });
+
+    await saveSpotSchedule(deps, 'p-individual', {
+      spotId: 'spot-1',
+      days: ['2026-11-01'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+    });
+    await assert.rejects(
+      saveSpotSchedule(deps, 'p-individual', {
+        spotId: 'spot-1',
+        days: ['2026-11-02'],
+        window: { start: '06:00', end: '11:00' },
+        serviceIds: [],
+      }),
+      (err: unknown) => isDomainError(err) && err.code === 'schedule_limit',
+    );
+  });
+
+  it('reopening a closed offer while 2 others are open is limit_exceeded; reopening with room succeeds; editing an open offer at 2 open is fine', async () => {
+    const { store, deps } = setupWorld();
+    const saveRes = await saveSpotSchedule(deps, 'p-individual', {
+      spotId: 'spot-1',
+      days: ['2026-10-17'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+    });
+    const offer = (name: string, offerId?: string) =>
+      saveSlotOffer(deps, 'p-individual', {
+        ...(offerId !== undefined ? { offerId } : {}),
+        scheduleId: saveRes.scheduleId,
+        name,
+        price: 200_000,
+        slotMinutes: 30,
+        gapMinutes: 0,
+        photoCount: 20,
+        editedCount: 5,
+        deliveryDays: 2,
+      });
+
+    const a = await offer('Gói A');
+    await closeSlotOffer(deps, 'p-individual', { offerId: a.offerId });
+    const b = await offer('Gói B');
+    await offer('Gói C');
+
+    await assert.rejects(
+      offer('Gói A mở lại', a.offerId),
+      (err: unknown) => isDomainError(err) && err.code === 'limit_exceeded',
+    );
+    assert.equal(store.getOfferSync(a.offerId)?.status, 'closed');
+
+    // Editing an open offer at the limit is not a new open offer.
+    await assert.doesNotReject(offer('Gói B sửa', b.offerId));
+
+    await closeSlotOffer(deps, 'p-individual', { offerId: b.offerId });
+    await offer('Gói A mở lại', a.offerId);
+    assert.equal(store.getOfferSync(a.offerId)?.status, 'open');
+  });
 });

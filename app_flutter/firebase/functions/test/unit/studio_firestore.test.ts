@@ -163,6 +163,16 @@ describe('FirestoreStudioStore', () => {
     assert.equal(n, 1);
   });
 
+  it('countOpenSpotSchedules still finds a current schedule behind 25 past ones (no limit, range on lastDay)', async () => {
+    for (let i = 0; i < 25; i++) {
+      const day = `2026-09-${String(i + 1).padStart(2, '0')}`;
+      db.seed(`spot_schedules/s_old_${String(i).padStart(2, '0')}`, scheduleToFirestore({ ...SPOT_SCHEDULE, id: `s_old_${i}`, days: [day] }));
+    }
+    db.seed('spot_schedules/s_zz_ahead', scheduleToFirestore({ ...SPOT_SCHEDULE, id: 's_zz_ahead', days: ['2026-10-12'] }));
+    const n = await deps.studios.runTransaction((tx) => tx.countOpenSpotSchedules(STUDIO, 'm1', '2026-10-10'));
+    assert.equal(n, 1);
+  });
+
   it('dueRelations merges the expire and announce queries, soonest first, once each', async () => {
     const at = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString();
     seedRelation(db, relation({ id: 'r_expired_1', expiresAt: at(-1) }));
@@ -430,6 +440,7 @@ describe('studio indexes', () => {
       'studio_members: memberId ASCENDING, status ASCENDING, createdAt DESCENDING',
       'photographers: studioId ASCENDING, studioJoinedAt ASCENDING',
       'studio_day_load: studioId ASCENDING, day ASCENDING',
+      'spot_schedules: providerId ASCENDING, assigneeId ASCENDING, status ASCENDING, lastDay ASCENDING',
     ]) {
       assert.ok(shapes.includes(shape), shape);
     }
