@@ -1,5 +1,6 @@
 import { FieldValue, GeoPoint, Timestamp, type Firestore } from 'firebase-admin/firestore';
 import {
+  chatMembers,
   type Chat,
   type ChatStore,
   type ChatTx,
@@ -17,7 +18,7 @@ export function toFirestoreChat(chat: Chat): Record<string, unknown> {
     photographerId: chat.photographerId,
     // The studio booking's assignee is a member too (#136 Decision 16); a reassignment drops the old one.
     assigneeId: chat.assigneeId,
-    members: chat.assigneeId ? [chat.customerId, chat.photographerId, chat.assigneeId] : [chat.customerId, chat.photographerId],
+    members: chatMembers(chat),
     bookingId: chat.bookingId ?? null,
     bookingStatus: chat.bookingStatus ?? null,
     photographerRepliedAt: chat.photographerRepliedAt

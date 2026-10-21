@@ -171,6 +171,8 @@ export interface StudioBookingTx extends BookingTx {
   setStudioDayLoad(load: StudioDayLoad): Promise<void>;
   /** Every active member of the studio with whether they can be assigned and whether their own day is empty. */
   getMemberDays(studioId: string, day: string): Promise<StudioDayFacts['memberDays']>;
+  /** `photographers/{uid}.studioId`: the studio the photographer is an active member of (the membership lock). */
+  getMemberStudio(uid: string): Promise<string | null>;
 }
 
 export interface BookingStore {

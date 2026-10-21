@@ -422,4 +422,36 @@ describe('sendMessage (Task 2)', () => {
       (err: unknown) => err instanceof DomainError && err.code === 'blocked',
     );
   });
+
+  describe('studio assignee (#136)', () => {
+    async function studioChat() {
+      const world = createChatWorld();
+      const { chatId } = await openInquiry(world.deps, { customerId: 'cust1', photographerId: 'phot1' });
+      const chat = world.chats.chats.get(chatId);
+      assert.ok(chat);
+      world.chats.chats.set(chatId, { ...chat, kind: 'booking', bookingId: 'book_1', bookingStatus: 'accepted', assigneeId: 'asg1' });
+      return { ...world, chatId };
+    }
+    const text = (n: number) => ({ type: 'text', body: `Tin ${n}`, clientId: `c_${n}` });
+
+    it('a customer message counts unread for the studio and the assignee', async () => {
+      const { deps, chats, chatId } = await studioChat();
+      await sendMessage(deps, { senderId: 'cust1', chatId, message: text(1) });
+      assert.equal(chats.unread.get(chatId)?.get('phot1'), 1);
+      assert.equal(chats.unread.get(chatId)?.get('asg1'), 1);
+      assert.equal(chats.unread.get(chatId)?.get('cust1') ?? 0, 0);
+    });
+
+    it('the assignee counts for the customer and the studio; the studio for the customer and the assignee', async () => {
+      const { deps, chats, chatId } = await studioChat();
+      await sendMessage(deps, { senderId: 'asg1', chatId, message: text(1) });
+      assert.equal(chats.unread.get(chatId)?.get('cust1'), 1);
+      assert.equal(chats.unread.get(chatId)?.get('phot1'), 1);
+      assert.equal(chats.unread.get(chatId)?.get('asg1') ?? 0, 0);
+      await sendMessage(deps, { senderId: 'phot1', chatId, message: text(2) });
+      assert.equal(chats.unread.get(chatId)?.get('cust1'), 2);
+      assert.equal(chats.unread.get(chatId)?.get('asg1'), 1);
+      assert.equal(chats.unread.get(chatId)?.get('phot1'), 1);
+    });
+  });
 });

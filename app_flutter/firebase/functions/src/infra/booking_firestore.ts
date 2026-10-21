@@ -733,6 +733,11 @@ export class FirestoreBookingStore implements BookingStore {
             updatedAt: toTimestamp(load.updatedAt),
           });
         },
+        getMemberStudio: async (uid) => {
+          const snap = await fTx.get(this.firestore.collection('photographers').doc(uid));
+          const studioId = snap.data()?.studioId;
+          return typeof studioId === 'string' && studioId !== '' ? studioId : null;
+        },
         getMemberDays: async (studioId, day) => {
           // Active members carry `studioId` on their public photographer document (#136 Decision 2).
           const members = await fTx.get(

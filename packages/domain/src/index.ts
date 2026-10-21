@@ -67,6 +67,7 @@ export * from './memory_studio_store.js';
 export * from './studio_use_cases.js';
 export * from './studio_capacity.js';
 export * from './studio_assignment.js';
+export * from './studio_booking_sweeps.js';
 export * from './studio_notifications.js';
 export * from './album.js';
 export * from './album_ports.js';

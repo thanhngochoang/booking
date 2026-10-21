@@ -65,6 +65,10 @@ export class MemoryBookingStore implements StudioBookingStore {
           assignedIds: [...load.assignedIds],
         });
       },
+      getMemberStudio: async (uid) => {
+        for (const [studioId, members] of this.studioMembers) if (members.includes(uid)) return studioId;
+        return null;
+      },
       getMemberDays: async (studioId, day) =>
         (this.studioMembers.get(studioId) ?? []).map((uid) => ({
           uid,

@@ -27,7 +27,8 @@ export function studioBookingNotices(before: Booking | null, after: Booking | nu
   const wasStatus = before.changeRequest?.status ?? null;
   const nowStatus = after.changeRequest?.status ?? null;
   if (wasStatus === null && nowStatus === 'pending') out.push('change_requested');
-  if (wasStatus === 'pending' && nowStatus !== null && nowStatus !== 'pending') out.push('change_answered');
+  // A reassignment answers the request through `booking_reassigned` alone.
+  if (wasStatus === 'pending' && (nowStatus === 'declined' || nowStatus === 'expired')) out.push('change_answered');
   if (!before.assignmentReturned && after.assignmentReturned) out.push('assignment_returned');
   return out;
 }
@@ -68,7 +69,7 @@ export async function notifyStudioBookingChange(
       );
     } else if (n === 'change_requested' && change) {
       jobs.push(notifyChangeRequested(deps, { ...common, day: after.day, respondBy: vnHourDay(change.respondBy) }));
-    } else if (n === 'change_answered' && change && change.status !== 'pending') {
+    } else if (n === 'change_answered' && (change?.status === 'declined' || change?.status === 'expired')) {
       jobs.push(notifyChangeAnswered(deps, { ...common, outcome: change.status }));
     } else if (n === 'assignment_returned' && assignee) {
       jobs.push(notifyAssignmentReturned(deps, { bookingId: after.id, studioId: after.photographerId, assigneeId: assignee, ...slot }));

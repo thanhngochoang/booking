@@ -1,29 +1,24 @@
 /**
  * Studio bookings (#136, spec §5): the studio fields every order path gets through the booking-draft builder,
- * assignment of a member, the customer's one change request, "Trả việc", the studio-fault refund right and the
- * clock sweeps. Every transaction reads everything before its first write (Firestore rule).
+ * assignment of a member, the customer's one change request, "Trả việc" and the studio-fault refund right (the
+ * clock sweeps are in studio_booking_sweeps.ts). Every transaction reads everything before its first write.
  */
 
-import type { AssignReminder, Booking, StudioAssignment, StudioFaultKind } from './booking.js';
+import type { Booking, StudioAssignment, StudioFaultKind } from './booking.js';
 import { parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps, StudioBookingStore } from './booking_ports.js';
 import { DomainError } from './errors.js';
-import { isId } from './ids.js';
-import { notifyAssignOverdue, notifyAssignReminder } from './notification_hooks.js';
-import type { NotifyDeps } from './notification_ports.js';
 import { orderBlocker } from './order_gate.js';
 import type { ProviderType } from './provider_type.js';
 import { studioDayLoadWith } from './studio_capacity.js';
+import { fields, idField, optionalText, requiredText } from './studio_input.js';
 import type { StudioRoster } from './studio_ports.js';
 
 export const STUDIO_ASSIGN_LEAD_HOURS = 24,
   STUDIO_LATE_BOOKING_GRACE_HOURS = 2,
   CHANGE_RESPOND_HOURS = 6,
   ASSIGN_REMINDER_HOURS = [48, 26] as const;
-/** Change-request note, decline reason and return reason. */
-export const STUDIO_NOTE_MAX_LENGTH = 300;
-/** Bookings handled per sweep step and run. */
-export const STUDIO_SWEEP_LIMIT = 200;
+export { STUDIO_NOTE_MAX_LENGTH } from './studio_input.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 const ASSIGNABLE_STATUSES: readonly string[] = ['accepted', 'upcoming'];
@@ -77,34 +72,6 @@ export function studioFaultOf(b: Booking, now: Date): StudioFaultKind | null {
   return null;
 }
 
-// ── input parsing ──
-
-function record(raw: unknown): Record<string, unknown> {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new DomainError('invalid_argument');
-  return raw as Record<string, unknown>;
-}
-
-function idField(r: Record<string, unknown>, key: string): string {
-  const v = r[key];
-  if (!isId(v)) throw new DomainError('invalid_argument');
-  return v;
-}
-
-/** Optional text: absent, null or blank → null; longer than the limit → invalid_argument. */
-function optionalText(v: unknown): string | null {
-  if (v === undefined || v === null) return null;
-  if (typeof v !== 'string') throw new DomainError('invalid_argument');
-  const t = v.trim();
-  if (t.length > STUDIO_NOTE_MAX_LENGTH) throw new DomainError('invalid_argument');
-  return t.length === 0 ? null : t;
-}
-
-function requiredText(v: unknown): string {
-  const t = optionalText(v);
-  if (t === null) throw new DomainError('invalid_argument');
-  return t;
-}
-
 /** The booking of a studio, or not_found (an individual booking has nothing to assign). */
 async function studioBooking(deps: Pick<BookingDeps, 'store'>, bookingId: string): Promise<Booking> {
   const b = await deps.store.getBooking(bookingId);
@@ -116,7 +83,8 @@ function startOf(b: Booking): Date {
   return parseVnDateTime(b.day, b.start);
 }
 
-function isOpenForAssignment(b: Booking, now: Date): boolean {
+/** accepted or upcoming, before the start: the window for assigning, changing and returning. */
+export function isOpenForAssignment(b: Booking, now: Date): boolean {
   return ASSIGNABLE_STATUSES.includes(b.status) && now.getTime() < startOf(b).getTime();
 }
 
@@ -127,7 +95,7 @@ function isOpenForAssignment(b: Booking, now: Date): boolean {
  * assignee passes #198's gate (verified, not blocked with the customer) and must be free that day.
  */
 export async function assignBooking(deps: StudioBookingDeps, callerId: string, raw: unknown): Promise<Booking> {
-  const r = record(raw);
+  const r = fields(raw);
   const bookingId = idField(r, 'bookingId');
   const assigneeId = idField(r, 'assigneeId');
   const now = deps.clock.now();
@@ -147,6 +115,10 @@ export async function assignBooking(deps: StudioBookingDeps, callerId: string, r
     const startsAt = startOf(b);
     if (!isOpenForAssignment(b, now)) throw new DomainError('not_eligible');
     if (b.assigneeId === assigneeId) throw new DomainError('conflict');
+    // The member may have been removed since the roster check: the member document is the membership lock.
+    if (kind === 'member' && (await tx.getMemberStudio(assigneeId)) !== b.photographerId) {
+      throw new DomainError('permission_denied');
+    }
     const day = await tx.getAvailabilityDay(assigneeId, b.day);
     if (day && day.bookingId !== b.id) throw new DomainError('day_taken');
     const oldDay = b.assigneeId ? await tx.getAvailabilityDay(b.assigneeId, b.day) : null;
@@ -221,7 +193,7 @@ export async function assignmentOptions(
   callerId: string,
   raw: unknown,
 ): Promise<AssignmentOption[]> {
-  const bookingId = idField(record(raw), 'bookingId');
+  const bookingId = idField(fields(raw), 'bookingId');
   const b = await studioBooking(deps, bookingId);
   if (b.photographerId !== callerId) throw new DomainError('permission_denied');
 
@@ -256,7 +228,7 @@ export async function assignmentOptions(
 
 /** The customer's one change request (Decision 13): booking assigned, accepted or upcoming, before the start. */
 export async function requestAssigneeChange(deps: StudioBookingDeps, customerId: string, raw: unknown): Promise<Booking> {
-  const r = record(raw);
+  const r = fields(raw);
   const bookingId = idField(r, 'bookingId');
   const note = optionalText(r.note);
   const now = deps.clock.now();
@@ -291,7 +263,7 @@ export async function requestAssigneeChange(deps: StudioBookingDeps, customerId:
 
 /** The studio keeps the assignee (reason 1–300): the customer gains the 100% cancel right (change_declined). */
 export async function declineAssigneeChange(deps: StudioBookingDeps, studioId: string, raw: unknown): Promise<Booking> {
-  const r = record(raw);
+  const r = fields(raw);
   const bookingId = idField(r, 'bookingId');
   const reason = requiredText(r.reason);
   const now = deps.clock.now();
@@ -325,7 +297,7 @@ export async function declineAssigneeChange(deps: StudioBookingDeps, studioId: s
 
 /** The assignee hands the job back (Decision 14): the studio is told; `assigneeId` stays until it reassigns. */
 export async function returnAssignment(deps: StudioBookingDeps, assigneeId: string, raw: unknown): Promise<Booking> {
-  const r = record(raw);
+  const r = fields(raw);
   const bookingId = idField(r, 'bookingId');
   const reason = optionalText(r.reason);
   const now = deps.clock.now();
@@ -349,136 +321,4 @@ export async function returnAssignment(deps: StudioBookingDeps, assigneeId: stri
     await tx.setBooking(next);
     return next;
   });
-}
-
-// ── sweeps (bookingClock, Decision 20) ──
-
-export interface StudioBookingSweepResults {
-  readonly overdue: number;
-  readonly reminders: number;
-  readonly changesExpired: number;
-}
-
-type AssignSweepOutcome =
-  | { readonly kind: 'overdue'; readonly booking: Booking; readonly notify: boolean }
-  | { readonly kind: 'reminder'; readonly booking: Booking; readonly hours: 48 | 26 }
-  | null;
-
-/**
- * Each step is idempotent (the marks live on the booking): (a) unassigned bookings near their deadline get the
- * 48 h and 26 h reminders once each, and past the deadline are marked overdue once (fault, `lateAssignCount`,
- * customer and studio told while the shoot is still ahead); (b) pending change requests past `respondBy` expire
- * (fault `change_expired`, `changeDeclinedCount`; the customer hears it through the booking write). With
- * `notify`, the sweep calls #138's hooks after each commit; a failing item never stops the batch.
- */
-export async function runStudioBookingSweeps(
-  deps: StudioBookingDeps,
-  notify?: NotifyDeps,
-): Promise<StudioBookingSweepResults> {
-  const now = deps.clock.now();
-  const nowIso = now.toISOString();
-  let overdue = 0;
-  let reminders = 0;
-  let changesExpired = 0;
-
-  for (const due of await deps.store.findUnassignedStudioBookingsDue(now, STUDIO_SWEEP_LIMIT)) {
-    try {
-      const outcome = await deps.store.runTransaction(async (tx): Promise<AssignSweepOutcome> => {
-        const b = await tx.getBooking(due.id);
-        if (
-          !b ||
-          b.isStudio !== true ||
-          b.assignStatus !== 'unassigned' ||
-          b.assignOverdue === true ||
-          (b.status !== 'requested' && b.status !== 'accepted') ||
-          !b.assignDeadline
-        ) {
-          return null;
-        }
-        const deadline = Date.parse(b.assignDeadline);
-        const sent = b.assignRemindersSent ?? [];
-        if (now.getTime() >= deadline) {
-          tx.incrementStudioCounter(b.photographerId, 'lateAssignCount');
-          const next: Booking = {
-            ...b,
-            assignOverdue: true,
-            studioFault: b.studioFault ?? { kind: 'assign_overdue', at: nowIso },
-            assignRemindersSent: ['h48', 'h26'],
-            version: b.version + 1,
-            updatedAt: nowIso,
-          };
-          await tx.setBooking(next);
-          return { kind: 'overdue', booking: next, notify: now.getTime() < startOf(b).getTime() };
-        }
-        // Only the latest due reminder is sent; an earlier one that was never sent is recorded with it.
-        let hours: 48 | 26 | null = null;
-        let marks: AssignReminder[] = [...sent];
-        if (now.getTime() >= deadline - 2 * HOUR_MS) {
-          if (!sent.includes('h26')) {
-            hours = 26;
-            marks = ['h48', 'h26'];
-          }
-        } else if (now.getTime() >= deadline - STUDIO_ASSIGN_LEAD_HOURS * HOUR_MS && !sent.includes('h48')) {
-          hours = 48;
-          marks = [...sent, 'h48'];
-        }
-        if (hours === null) return null;
-        const next: Booking = { ...b, assignRemindersSent: marks, version: b.version + 1, updatedAt: nowIso };
-        await tx.setBooking(next);
-        return { kind: 'reminder', booking: next, hours };
-      });
-      if (outcome === null) continue;
-      const b = outcome.booking;
-      if (outcome.kind === 'overdue') {
-        overdue += 1;
-        if (notify && outcome.notify) {
-          await notifyAssignOverdue(notify, {
-            bookingId: b.id,
-            customerId: b.customerId,
-            studioId: b.photographerId,
-            day: b.day,
-            start: b.start,
-          });
-        }
-      } else {
-        reminders += 1;
-        if (notify) {
-          await notifyAssignReminder(notify, {
-            bookingId: b.id,
-            studioId: b.photographerId,
-            hours: outcome.hours,
-            day: b.day,
-            start: b.start,
-          });
-        }
-      }
-    } catch {
-      // Swallowed so one failed item does not stop the batch; the hooks' dedupe keys cover a retried notice.
-    }
-  }
-
-  for (const due of await deps.store.findDueChangeRequests(now, STUDIO_SWEEP_LIMIT)) {
-    try {
-      const expired = await deps.store.runTransaction(async (tx) => {
-        const b = await tx.getBooking(due.id);
-        const cr = b?.changeRequest;
-        if (!b || !cr || cr.status !== 'pending' || Date.parse(cr.respondBy) > now.getTime()) return false;
-        const open = isOpenForAssignment(b, now);
-        if (open) tx.incrementStudioCounter(b.photographerId, 'changeDeclinedCount');
-        await tx.setBooking({
-          ...b,
-          changeRequest: { ...cr, status: 'expired', answeredAt: nowIso },
-          studioFault: open ? { kind: 'change_expired', at: nowIso } : (b.studioFault ?? null),
-          version: b.version + 1,
-          updatedAt: nowIso,
-        });
-        return true;
-      });
-      if (expired) changesExpired += 1;
-    } catch {
-      // Swallowed, as above.
-    }
-  }
-
-  return { overdue, reminders, changesExpired };
 }

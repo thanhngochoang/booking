@@ -1,5 +1,4 @@
 import { DomainError } from './errors.js';
-import { isId } from './ids.js';
 import {
   canJoinAsMember,
   cooldownUntil,
@@ -15,6 +14,7 @@ import {
   type StudioProfile,
   type StudioRelation,
 } from './studio_membership.js';
+import { fields, idField } from './studio_input.js';
 import type { StudioDeps, StudioTx } from './studio_ports.js';
 
 // S26 membership use cases (spec §3.2–3.3, plan #136 Decisions 1–7). Each runs in one transaction with
@@ -37,17 +37,6 @@ export const MEMBERSHIP_SWEEP_LIMIT = 200;
 // Relation ids are `{studioId}_{memberId}_{ms}`: longer than `isId` allows with 28-character uids. Ending in
 // digits also keeps Firestore-reserved `__x__` ids out (invalid_argument, not a transport error).
 const RELATION_ID = /^[A-Za-z0-9_-]{1,160}_\d{1,16}$/;
-
-function fields(raw: unknown): Record<string, unknown> {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new DomainError('invalid_argument');
-  return raw as Record<string, unknown>;
-}
-
-function uidField(raw: unknown, key: string): string {
-  const v = fields(raw)[key];
-  if (!isId(v)) throw new DomainError('invalid_argument', key);
-  return v;
-}
 
 function relationIdField(raw: unknown): string {
   const v = fields(raw).relationId;
@@ -164,7 +153,7 @@ async function readNewPair(
 
 /** Studio invites a photographer (`{memberId}`); counts a studio action. */
 export async function inviteMember(deps: StudioDeps, studioId: string, raw: unknown): Promise<RelationChange> {
-  const memberId = uidField(raw, 'memberId');
+  const memberId = idField(raw, 'memberId');
   if (memberId === studioId) throw new DomainError('invalid_argument', 'memberId');
   const now = deps.clock.now();
   return deps.studios.runTransaction(async (tx) => {
@@ -206,7 +195,7 @@ export async function cancelInvite(deps: StudioDeps, studioId: string, raw: unkn
 
 /** Photographer asks to join a studio (`{studioId}`); counts a member action; no seat is held until approval. */
 export async function requestToJoin(deps: StudioDeps, memberId: string, raw: unknown): Promise<RelationChange> {
-  const studioId = uidField(raw, 'studioId');
+  const studioId = idField(raw, 'studioId');
   if (studioId === memberId) throw new DomainError('invalid_argument', 'studioId');
   const now = deps.clock.now();
   return deps.studios.runTransaction(async (tx) => {
@@ -367,7 +356,7 @@ export async function leaveStudio(deps: StudioDeps, memberId: string): Promise<R
 
 /** The studio removes a member (`{memberId}`); counts a studio action; the member waits 7 days. */
 export async function removeMember(deps: StudioDeps, studioId: string, raw: unknown): Promise<RelationChange> {
-  const memberId = uidField(raw, 'memberId');
+  const memberId = idField(raw, 'memberId');
   const now = deps.clock.now();
   return deps.studios.runTransaction(async (tx) => {
     const member = await tx.getProfile(memberId);

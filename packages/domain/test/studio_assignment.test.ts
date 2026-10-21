@@ -229,6 +229,21 @@ describe('assignBooking', () => {
     assert.ok(w.store.events.some((e) => e.bookingId === b.id && e.status === 'upcoming' && e.actorId === 's1'));
   });
 
+  it('a member removed between the roster check and the transaction is permission_denied', async () => {
+    const w = world();
+    const b = await acceptedStudioBooking(w);
+    const original = w.store.runTransaction.bind(w.store);
+    w.store.runTransaction = async <T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> => {
+      // removeMember commits here: the member document no longer names the studio
+      w.store.studioMembers.set('s1', ['m2', 'm3']);
+      w.memberships.delete('m1');
+      return original(fn);
+    };
+    await rejectsWith(assign(w, b.id, 'm1'), 'permission_denied');
+    assert.equal(await w.store.getAvailabilityDay('m1', DAY), null);
+    assert.deepEqual(await w.store.getBooking(b.id), b);
+  });
+
   it('a stale version is conflict', async () => {
     const w = world();
     const b = await acceptedStudioBooking(w);

@@ -68,6 +68,13 @@ export interface Message {
 export const chatIdFor = (customerId: string, photographerId: string): string =>
   `${customerId}_${photographerId}`;
 
+/** Everyone in the chat: the two parties and, on a studio booking, the assignee (#136 Decision 16). */
+export function chatMembers(chat: Pick<Chat, 'customerId' | 'photographerId' | 'assigneeId'>): string[] {
+  return chat.assigneeId !== null && chat.assigneeId !== chat.photographerId && chat.assigneeId !== chat.customerId
+    ? [chat.customerId, chat.photographerId, chat.assigneeId]
+    : [chat.customerId, chat.photographerId];
+}
+
 export function roleInChat(chat: Chat, uid: string): 'customer' | 'photographer' | null {
   if (uid === chat.customerId) return 'customer';
   if (uid === chat.photographerId) return 'photographer';

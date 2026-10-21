@@ -1,11 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  assignBooking,
-  requestAssigneeChange,
-  runStudioBookingSweeps,
-  studioFaultOf,
-} from '../src/studio_assignment.js';
+import { assignBooking, requestAssigneeChange, studioFaultOf } from '../src/studio_assignment.js';
+import { assignSweepActionOf, runStudioBookingSweeps } from '../src/studio_booking_sweeps.js';
+import type { NotifyDeps } from '../src/notification_ports.js';
+import type { StudioBookingTx } from '../src/booking_ports.js';
 import { studioBookingNotices } from '../src/studio_notifications.js';
 import { acceptedStudioBooking, createBookingWorld, withStudio, type BookingWorld } from './support/booking_world.js';
 import { createNotifyWorld, type NotifyWorld } from './support/notify_world.js';
@@ -36,7 +34,7 @@ describe('runStudioBookingSweeps', () => {
     const { w, n } = worlds();
     const b = await acceptedStudioBooking(w);
     const first = await sweepAt(w, n, DEADLINE_MS);
-    assert.deepEqual(first, { overdue: 1, reminders: 0, changesExpired: 0 });
+    assert.deepEqual(first, { overdue: 1, reminders: 0, changesExpired: 0, notifyFailed: 0 });
     const after = await w.store.getBooking(b.id);
     assert.equal(after?.assignOverdue, true);
     assert.deepEqual(after?.studioFault, { kind: 'assign_overdue', at: '2026-10-14T07:00:00.000Z' });
@@ -47,7 +45,7 @@ describe('runStudioBookingSweeps', () => {
     assert.equal(studioFaultOf(after, w.clock.now()), 'assign_overdue');
 
     const second = await sweepAt(w, n, DEADLINE_MS + HOUR);
-    assert.deepEqual(second, { overdue: 0, reminders: 0, changesExpired: 0 });
+    assert.deepEqual(second, { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
     assert.equal(w.store.counterOf('s1', 'lateAssignCount'), 1);
     assert.equal((await w.store.getBooking(b.id))?.version, after?.version);
   });
@@ -55,11 +53,11 @@ describe('runStudioBookingSweeps', () => {
   it('reminders at 48 h and 26 h fire once each', async () => {
     const { w, n } = worlds();
     const b = await acceptedStudioBooking(w);
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 24 * HOUR - 1), { overdue: 0, reminders: 0, changesExpired: 0 });
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 24 * HOUR), { overdue: 0, reminders: 1, changesExpired: 0 });
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 20 * HOUR), { overdue: 0, reminders: 0, changesExpired: 0 });
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 2 * HOUR), { overdue: 0, reminders: 1, changesExpired: 0 });
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 0, changesExpired: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 24 * HOUR - 1), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 24 * HOUR), { overdue: 0, reminders: 1, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 20 * HOUR), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - 2 * HOUR), { overdue: 0, reminders: 1, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
     assert.deepEqual((await w.store.getBooking(b.id))?.assignRemindersSent, ['h48', 'h26']);
     assert.deepEqual(ids(n, 's1'), [`n_assign_reminder_${b.id}_26`, `n_assign_reminder_${b.id}_48`]);
     assert.deepEqual(ids(n, 'c1'), []);
@@ -68,7 +66,7 @@ describe('runStudioBookingSweeps', () => {
   it('a booking first seen at the 26 h mark gets only that reminder', async () => {
     const { w, n } = worlds();
     const b = await acceptedStudioBooking(w);
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 1, changesExpired: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 1, changesExpired: 0, notifyFailed: 0 });
     assert.deepEqual(ids(n, 's1'), [`n_assign_reminder_${b.id}_26`]);
     assert.deepEqual((await w.store.getBooking(b.id))?.assignRemindersSent, ['h48', 'h26']);
   });
@@ -77,8 +75,8 @@ describe('runStudioBookingSweeps', () => {
     const { w, n } = worlds();
     const b = await acceptedStudioBooking(w);
     await assignBooking(w.studioDeps, 's1', { bookingId: b.id, assigneeId: 'm1' });
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 0, changesExpired: 0 });
-    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS + HOUR), { overdue: 0, reminders: 0, changesExpired: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS + HOUR), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
     assert.deepEqual(ids(n, 's1'), []);
   });
 
@@ -88,8 +86,8 @@ describe('runStudioBookingSweeps', () => {
     await assignBooking(w.studioDeps, 's1', { bookingId: b.id, assigneeId: 'm1' });
     const asked = await requestAssigneeChange(w.studioDeps, 'c1', { bookingId: b.id });
     const respondBy = Date.parse(asked.changeRequest?.respondBy ?? '');
-    assert.deepEqual(await sweepAt(w, n, respondBy - 1), { overdue: 0, reminders: 0, changesExpired: 0 });
-    assert.deepEqual(await sweepAt(w, n, respondBy), { overdue: 0, reminders: 0, changesExpired: 1 });
+    assert.deepEqual(await sweepAt(w, n, respondBy - 1), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, respondBy), { overdue: 0, reminders: 0, changesExpired: 1, notifyFailed: 0 });
     const after = await w.store.getBooking(b.id);
     assert.ok(after);
     assert.equal(after.changeRequest?.status, 'expired');
@@ -108,10 +106,10 @@ describe('runStudioBookingSweeps', () => {
     await assignBooking(w.studioDeps, 's1', { bookingId: changed.id, assigneeId: 'm1' });
     await requestAssigneeChange(w.studioDeps, 'c2', { bookingId: changed.id });
     const at = DEADLINE_MS + HOUR;
-    assert.deepEqual(await sweepAt(w, n, at), { overdue: 1, reminders: 0, changesExpired: 1 });
+    assert.deepEqual(await sweepAt(w, n, at), { overdue: 1, reminders: 0, changesExpired: 1, notifyFailed: 0 });
     const snapshot = [await w.store.getBooking(overdue.id), await w.store.getBooking(changed.id)];
     const rows = n.store.rows.size;
-    assert.deepEqual(await sweepAt(w, n, at), { overdue: 0, reminders: 0, changesExpired: 0 });
+    assert.deepEqual(await sweepAt(w, n, at), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
     assert.deepEqual([await w.store.getBooking(overdue.id), await w.store.getBooking(changed.id)], snapshot);
     assert.equal(n.store.rows.size, rows);
     assert.equal(w.store.counterOf('s1', 'lateAssignCount'), 1);
@@ -122,7 +120,68 @@ describe('runStudioBookingSweeps', () => {
     const { w } = worlds();
     const b = await acceptedStudioBooking(w);
     w.clock.setTime(new Date(DEADLINE_MS));
-    assert.deepEqual(await runStudioBookingSweeps(w.studioDeps), { overdue: 1, reminders: 0, changesExpired: 0 });
+    assert.deepEqual(await runStudioBookingSweeps(w.studioDeps), { overdue: 1, reminders: 0, changesExpired: 0, notifyFailed: 0 });
     assert.equal((await w.store.getBooking(b.id))?.assignOverdue, true);
+  });
+
+  it('a notice that fails is sent on the next run, exactly once overall', async () => {
+    const { w, n } = worlds();
+    const b = await acceptedStudioBooking(w);
+    let failures = 1;
+    const flaky: NotifyDeps = {
+      ...n.deps,
+      users: {
+        get: async (uid) => {
+          if (failures > 0) {
+            failures -= 1;
+            throw new Error('directory down');
+          }
+          return n.users.get(uid);
+        },
+      },
+    };
+    w.clock.setTime(new Date(DEADLINE_MS));
+    n.clock.setTime(new Date(DEADLINE_MS));
+    assert.deepEqual(await runStudioBookingSweeps(w.studioDeps, flaky), {
+      overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 1,
+    });
+    assert.equal((await w.store.getBooking(b.id))?.assignOverdue, false);
+    assert.equal(w.store.counterOf('s1', 'lateAssignCount'), 0);
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS + 15 * 60 * 1000), {
+      overdue: 1, reminders: 0, changesExpired: 0, notifyFailed: 0,
+    });
+    await sweepAt(w, n, DEADLINE_MS + 30 * 60 * 1000);
+    assert.deepEqual(ids(n, 'c1'), [`n_assign_overdue_${b.id}_customer`]);
+    assert.deepEqual(ids(n, 's1'), [`n_assign_overdue_${b.id}_studio`]);
+    assert.equal(w.store.counterOf('s1', 'lateAssignCount'), 1);
+  });
+
+  it('a failed mark after a sent notice resends as a duplicate, not a second notice', async () => {
+    const { w, n } = worlds();
+    const b = await acceptedStudioBooking(w);
+    const original = w.store.runTransaction.bind(w.store);
+    let fail = true;
+    w.store.runTransaction = async <T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> => {
+      if (fail) {
+        fail = false;
+        throw new Error('store down');
+      }
+      return original(fn);
+    };
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 0, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(await sweepAt(w, n, DEADLINE_MS - HOUR), { overdue: 0, reminders: 1, changesExpired: 0, notifyFailed: 0 });
+    assert.deepEqual(ids(n, 's1'), [`n_assign_reminder_${b.id}_26`]);
+    assert.equal(n.store.rowsOf('s1')[0]?.count, 1);
+  });
+
+  it('assignSweepActionOf: nothing for assigned, overdue-marked or individual bookings', async () => {
+    const { w } = worlds();
+    const b = await acceptedStudioBooking(w);
+    const at = new Date(DEADLINE_MS);
+    assert.deepEqual(assignSweepActionOf(b, at), { kind: 'overdue', notify: true });
+    assert.equal(assignSweepActionOf({ ...b, assignOverdue: true }, at), null);
+    assert.equal(assignSweepActionOf({ ...b, assignStatus: 'assigned' }, at), null);
+    assert.equal(assignSweepActionOf({ ...b, isStudio: undefined }, at), null);
+    assert.deepEqual(assignSweepActionOf(b, new Date(Date.parse('2026-10-15T07:00:00.000Z'))), { kind: 'overdue', notify: false });
   });
 });

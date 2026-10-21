@@ -67,7 +67,7 @@ describe('studioBookingNotices', () => {
     assert.deepEqual(studioBookingNotices(withA1, pending), ['change_requested']);
     assert.deepEqual(studioBookingNotices(pending, answered('declined')), ['change_answered']);
     assert.deepEqual(studioBookingNotices(pending, answered('expired')), ['change_answered']);
-    assert.deepEqual(studioBookingNotices(pending, { ...answered('reassigned'), assigneeId: 'a2' }), ['reassigned', 'change_answered']);
+    assert.deepEqual(studioBookingNotices(pending, { ...answered('reassigned'), assigneeId: 'a2' }), ['reassigned']);
     assert.deepEqual(
       studioBookingNotices(withA1, { ...withA1, assignmentReturned: { at: 'x', reason: null } }),
       ['assignment_returned'],
@@ -119,6 +119,17 @@ describe('notifyStudioBookingChange', () => {
       await notifyStudioBookingChange(n.deps, pending, answered(status));
       assert.deepEqual(rowsByUser(n), { c1: [`n_change_answered_b1_${status}`] });
     }
+  });
+
+  it('a reassign that answers a change request sends only booking_reassigned', async () => {
+    const n = world();
+    await notifyStudioBookingChange(n.deps, pending, { ...answered('reassigned'), assigneeId: 'a2' });
+    const at = '2026-10-10T10:00:00.000Z'.replace(/:/g, '_');
+    assert.deepEqual(rowsByUser(n), {
+      c1: [`n_booking_reassigned_b1_a1_a2_${at}_customer`],
+      a1: [`n_booking_reassigned_b1_a1_a2_${at}_old`],
+      a2: [`n_booking_reassigned_b1_a1_a2_${at}_new`],
+    });
   });
 
   it('returned → studio', async () => {
