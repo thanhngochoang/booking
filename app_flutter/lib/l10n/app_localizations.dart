@@ -9442,6 +9442,114 @@ abstract class AppLocalizations {
   /// **'Nhập đủ cả câu hỏi và câu trả lời.'**
   String get createEventErrFaq;
 
+  /// No description provided for @eventSpotLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp · bắt buộc'**
+  String get eventSpotLabel;
+
+  /// No description provided for @eventSpotPlaceholder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn điểm chụp'**
+  String get eventSpotPlaceholder;
+
+  /// No description provided for @eventSpotSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get eventSpotSheetTitle;
+
+  /// No description provided for @eventSpotSheetHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện gắn điểm hiện ở trang điểm chụp và được tính vào độ hot.'**
+  String get eventSpotSheetHint;
+
+  /// No description provided for @eventSpotSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm điểm chụp'**
+  String get eventSpotSearch;
+
+  /// No description provided for @eventSpotClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get eventSpotClose;
+
+  /// No description provided for @eventSpotNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thuộc điểm chụp nào'**
+  String get eventSpotNone;
+
+  /// No description provided for @eventSpotNoneHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện không hiện ở trang điểm nào'**
+  String get eventSpotNoneHint;
+
+  /// No description provided for @eventSpotPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn {name}'**
+  String eventSpotPick(String name);
+
+  /// No description provided for @eventSpotPickNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gắn điểm'**
+  String get eventSpotPickNone;
+
+  /// No description provided for @eventSpotNoMatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có điểm chụp nào khớp.'**
+  String get eventSpotNoMatch;
+
+  /// No description provided for @eventSpotLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách điểm chụp.'**
+  String get eventSpotLoadError;
+
+  /// No description provided for @eventSpotRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm chụp, hoặc “Không thuộc điểm chụp nào”'**
+  String get eventSpotRequired;
+
+  /// No description provided for @eventSpotFar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm nằm ngoài điểm chụp đã chọn. Sửa địa điểm hoặc chọn điểm khác.'**
+  String get eventSpotFar;
+
+  /// No description provided for @eventSpotArchived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp này không còn nhận lịch mới. Chọn điểm khác.'**
+  String get eventSpotArchived;
+
+  /// No description provided for @eventSpotGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy điểm chụp này. Chọn điểm khác.'**
+  String get eventSpotGone;
+
+  /// No description provided for @postSpotChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gắn với {name}'**
+  String postSpotChip(String name);
+
+  /// No description provided for @postSpotChipRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ gắn {name}'**
+  String postSpotChipRemove(String name);
+
   /// No description provided for @bookNotAcceptingOrders.
   ///
   /// In vi, this message translates to:

@@ -326,7 +326,7 @@ service cloud.firestore {
       let uid = request.auth.uid;
       return d.keys().hasOnly(['kind', 'authorId', 'photographerId', 'serviceId', 'specialty',
                                'imageUrls', 'imageMeta', 'caption', 'location', 'style',
-                               'hashtags', 'inPortfolio', 'albumId', 'likeCount', 'saveCount', 'createdAt'])
+                               'hashtags', 'inPortfolio', 'albumId', 'spotId', 'likeCount', 'saveCount', 'createdAt'])
         && d.keys().hasAll(['kind', 'authorId', 'photographerId', 'serviceId', 'imageUrls',
                             'caption', 'likeCount', 'saveCount', 'createdAt'])
         && d.kind == 'work'
@@ -345,6 +345,10 @@ service cloud.firestore {
              && d.albumId.matches('[A-Za-z0-9_-]{1,64}')
              && (!exists(/databases/$(database)/documents/albums/$(d.albumId))
                  || get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == uid)))
+        && (!('spotId' in d) || (d.spotId is string
+             && d.spotId.matches('[A-Za-z0-9_-]{1,64}')
+             && exists(/databases/$(database)/documents/spots/$(d.spotId))
+             && get(/databases/$(database)/documents/spots/$(d.spotId)).data.status == 'active'))
         && d.likeCount == 0 && d.saveCount == 0
         && d.createdAt == request.time;
     }

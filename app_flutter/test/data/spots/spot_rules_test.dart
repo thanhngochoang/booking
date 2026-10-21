@@ -5,6 +5,8 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 
+import '../../support/spot_entry_fixture.dart';
+
 void main() {
   group('regionOfArea & regionForLocation', () {
     test('regionOfArea mirrors the server (hcm-q1 → hcm, hue → hue, null → all)', () {
@@ -223,6 +225,60 @@ void main() {
       expect(conflicts.containsKey('2026-10-14'), isFalse);
       // 2026-10-15 has no record => free!
       expect(conflicts.containsKey('2026-10-15'), isFalse);
+    });
+  });
+
+  group('suggestSpotForPost (S10.01)', () {
+    final spots = [
+      spotEntryFixture(
+        id: 'cau-dat',
+        name: 'Đồi chè Cầu Đất',
+        lat: 11.85,
+        lng: 108.55,
+      ),
+      spotEntryFixture(id: 'ho-tay', name: 'Hồ Tây'),
+      spotEntryFixture(id: 'ho-tay-tay', name: 'Hồ Tây Tây', lat: 10, lng: 106),
+    ];
+
+    String? id(String text, {double? lat, double? lng}) => suggestSpotForPost(
+      locationText: text,
+      lat: lat,
+      lng: lng,
+      spots: spots,
+    )?.spotId;
+
+    test('the spot name inside the text wins, with or without accents', () {
+      expect(id('Đồi chè Cầu Đất buổi sáng'), 'cau-dat');
+      expect(id('doi che cau dat'), 'cau-dat');
+      expect(id('ho tay'), 'ho-tay');
+    });
+
+    test('the longest name inside the text wins', () {
+      expect(id('Hồ Tây Tây lúc hoàng hôn'), 'ho-tay-tay');
+    });
+
+    test('a text inside one name suggests the shortest such name', () {
+      expect(id('cau dat'), 'cau-dat');
+    });
+
+    test('too short a text or no match suggests nothing', () {
+      expect(id(''), isNull);
+      expect(id('ho'), isNull);
+      expect(id('Quán cà phê'), isNull);
+    });
+
+    test(
+      'the device position inside a radius is the fallback, nearest first',
+      () {
+        expect(id('Gần nhà', lat: 21.0502, lng: 105.8203), 'ho-tay');
+        expect(id('Gần nhà', lat: 15, lng: 100), isNull);
+        // Text still wins over the position.
+        expect(id('Cầu Đất', lat: 21.05, lng: 105.82), 'cau-dat');
+      },
+    );
+
+    test('without a location text there is no suggestion even at the spot', () {
+      expect(id('', lat: 21.05, lng: 105.82), isNull);
     });
   });
 }

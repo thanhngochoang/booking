@@ -17,12 +17,19 @@ import 'package:photobooking/data/payments/payment_instructions.dart';
 /// `day_taken`, `conflict`, `not_eligible`, `limit_exceeded`, `not_found`,
 /// `permission_denied`, `invalid_argument`, or `network` / `unknown`.
 class EventError implements Exception {
-  const EventError(this.code);
+  const EventError(this.code, {this.field});
   final String code;
+
+  /// The input the server refused (`details.field`, e.g. `spotId`); never user text.
+  final String? field;
 
   @override
   String toString() => 'EventError($code)';
 }
+
+/// The refused input named by a repository error (`spotId`), or null.
+String? eventErrorFieldOf(Object error) =>
+    error is EventError ? error.field : null;
 
 /// The error code of anything thrown by a repository call, for screens.
 String eventErrorCodeOf(Object error) {
@@ -445,6 +452,8 @@ class FakeEventRepository implements EventRepository {
       coverPath: e.coverPath,
       priceSet: e.priceSet,
       capacitySet: e.capacitySet,
+      spotId: e.spotId,
+      spotDecided: e.spotDecided,
     );
   }
 

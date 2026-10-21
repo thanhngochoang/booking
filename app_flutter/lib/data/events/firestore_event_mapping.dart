@@ -103,6 +103,12 @@ EventDetail? eventDetailFromFirestore(String id, Map<String, dynamic>? d) {
     coverPath: _str(d['coverPath']),
     priceSet: d['price'] is num,
     capacitySet: d['capacity'] is num,
+    spotId: _str(d['spotId']),
+    // The server writes `spotId: null` on every save; a draft only counts as
+    // decided once a spot is chosen, a published event once it carries the key.
+    spotDecided:
+        _str(d['spotId']) != null ||
+        (d.containsKey('spotId') && summary.status != EventStatus.draft),
   );
 }
 

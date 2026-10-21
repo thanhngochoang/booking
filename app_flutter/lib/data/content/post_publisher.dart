@@ -20,6 +20,7 @@ class PostDraft {
     this.styleId,
     this.inPortfolio = true,
     this.albumId,
+    this.spotId,
   });
 
   /// A ULID created on the device; publishing the same id again overwrites.
@@ -37,6 +38,10 @@ class PostDraft {
 
   /// Optional album to file the post in; the server sets its position.
   final String? albumId;
+
+  /// The photo spot the post is tagged with (S10.01 chip); null = none. The
+  /// rules accept only the id of an active spot.
+  final String? spotId;
 }
 
 abstract class PostPublisher {

@@ -166,6 +166,39 @@ void main() {
       expect(await repo.watchEvent('nope').first, isNull);
       expect(await repo.watchEvent('a/b').first, isNull);
     });
+
+    test('eventDetailFromFirestore reads spotId', () async {
+      await seed('sp1', {...eventDoc(), 'spotId': 'ho-tay'});
+      final tagged = (await repo.watchEvent('sp1').first)!;
+      expect(tagged.spotId, 'ho-tay');
+      expect(tagged.spotDecided, isTrue);
+
+      // The key is there with null: decided for a published event, not for a draft.
+      await seed('sp2', {...eventDoc(), 'spotId': null});
+      final none = (await repo.watchEvent('sp2').first)!;
+      expect(none.spotId, isNull);
+      expect(none.spotDecided, isTrue);
+      await seed('sp3', {...eventDoc(status: 'draft'), 'spotId': null});
+      expect((await repo.watchEvent('sp3').first)!.spotDecided, isFalse);
+
+      // An event made before S29 has no key.
+      await seed('sp4', eventDoc());
+      final old = (await repo.watchEvent('sp4').first)!;
+      expect(old.spotId, isNull);
+      expect(old.spotDecided, isFalse);
+    });
+
+    test('EventDraft sends spotId (null included) only once decided', () async {
+      answer({'eventId': 'e' * 24, 'hashtag': 'X'});
+      await repo.saveDraft(const EventDraft(title: 'A', spotDecided: true));
+      verify(() => callable.call<Object?>({'title': 'A', 'spotId': null}))
+          .called(1);
+      await repo.saveDraft(const EventDraft(title: 'B', spotId: 'ho-tay'));
+      verify(() => callable.call<Object?>({'title': 'B', 'spotId': 'ho-tay'}))
+          .called(1);
+      await repo.saveDraft(const EventDraft(title: 'C'));
+      verify(() => callable.call<Object?>({'title': 'C'})).called(1);
+    });
   });
 
   group('list', () {

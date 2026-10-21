@@ -70,7 +70,19 @@ Future<void> _stepOne(WidgetTester tester, {bool cover = true}) async {
     find.byKey(const Key('create-event-title')),
     'Photo walk phố cổ',
   );
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('create-event-type-photo_walk')),
+    100,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.ensureVisible(
+    find.byKey(const Key('create-event-type-photo_walk')),
+  );
+  await tester.pump();
   await tester.tap(find.byKey(const Key('create-event-type-photo_walk')));
+  await settle(tester);
+  // S29: "Không thuộc điểm chụp nào" (the sheet has its own tests).
+  _ctl(tester).setSpot(null);
   await settle(tester);
 }
 
@@ -770,6 +782,7 @@ void main() {
           status: EventStatus.draft,
           createdBy: 'u1',
           hostId: 'u1',
+          spotId: 'cau-dat',
         ),
       );
       await w.pump(

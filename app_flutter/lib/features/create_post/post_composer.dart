@@ -16,8 +16,13 @@ import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
+import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/features/create_post/create_post_providers.dart';
+import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 enum ComposerImageStatus { local, uploading, uploaded, failed }
@@ -63,6 +68,7 @@ class ComposerState {
     this.locationName,
     this.styleId,
     this.albumId,
+    this.spotOffId,
     this.publishing = false,
   });
 
@@ -80,6 +86,10 @@ class ComposerState {
   /// album that was deleted since; the screen and [PostComposerController.publish]
   /// check it against the user's albums.
   final String? albumId;
+
+  /// The spot whose "Gắn với {tên điểm}" chip the user removed (S10.01); the
+  /// chip stays off while that spot is the suggestion.
+  final String? spotOffId;
   final bool publishing;
 
   bool get canPublish =>
@@ -102,6 +112,7 @@ class ComposerState {
     locationName: locationName,
     styleId: styleId,
     albumId: albumId,
+    spotOffId: spotOffId,
     publishing: publishing ?? this.publishing,
   );
 
@@ -114,6 +125,7 @@ class ComposerState {
     locationName: locationName,
     styleId: styleId,
     albumId: albumId,
+    spotOffId: spotOffId,
     publishing: publishing,
   );
 
@@ -126,6 +138,7 @@ class ComposerState {
     locationName: v,
     styleId: styleId,
     albumId: albumId,
+    spotOffId: spotOffId,
     publishing: publishing,
   );
 
@@ -138,11 +151,25 @@ class ComposerState {
     locationName: locationName,
     styleId: v,
     albumId: albumId,
+    spotOffId: spotOffId,
     publishing: publishing,
   );
 }
 
 extension on ComposerState {
+  ComposerState withSpotOff(String? id) => ComposerState(
+    draftId: draftId,
+    images: images,
+    caption: caption,
+    serviceId: serviceId,
+    specialtyId: specialtyId,
+    locationName: locationName,
+    styleId: styleId,
+    albumId: albumId,
+    spotOffId: id,
+    publishing: publishing,
+  );
+
   ComposerState withAlbum(String? id) => ComposerState(
     draftId: draftId,
     images: images,
@@ -152,6 +179,7 @@ extension on ComposerState {
     locationName: locationName,
     styleId: styleId,
     albumId: id,
+    spotOffId: spotOffId,
     publishing: publishing,
   );
 }
@@ -363,6 +391,21 @@ class PostComposerController extends Notifier<ComposerState> {
     _persist();
   }
 
+  /// What the S10.01 chip shows now; the post is tagged with it on publish.
+  SpotEntry? _suggestedSpot() => spotSuggestionFor(
+    state,
+    spots: ref.read(spotDirectoryProvider).value,
+    device: ref.read(locationControllerProvider).location,
+  );
+
+  /// "×" on the "Gắn với {tên điểm}" chip: the post is not tagged.
+  void dismissSpot(String spotId) {
+    if (state.publishing) {
+      return;
+    }
+    state = state.withSpotOff(spotId);
+  }
+
   void setAlbum(String? albumId) {
     if (state.publishing) {
       return;
@@ -503,6 +546,7 @@ class PostComposerController extends Notifier<ComposerState> {
       return const PostPublishResult(PublishOutcome.notReady);
     }
     final s = state;
+    final spotId = _suggestedSpot()?.spotId;
     try {
       final post = await publisher.publish(
         PostDraft(
@@ -522,6 +566,7 @@ class PostComposerController extends Notifier<ComposerState> {
           locationName: s.locationName,
           styleId: s.styleId,
           albumId: albumId,
+          spotId: spotId,
         ),
       );
       if (ref.mounted) {
@@ -554,3 +599,35 @@ final postComposerProvider =
     NotifierProvider<PostComposerController, ComposerState>(
       PostComposerController.new,
     );
+
+/// The spot S10.01 suggests for the post being written (the "Gắn với {tên
+/// điểm} ×" chip), or null: no location text, none fits, the directory is not
+/// there yet, or the user removed it.
+SpotEntry? spotSuggestionFor(
+  ComposerState s, {
+  required List<SpotEntry>? spots,
+  required ApproxLocation? device,
+}) {
+  final text = s.locationName;
+  if (text == null || spots == null) {
+    return null;
+  }
+  final spot = suggestSpotForPost(
+    locationText: text,
+    lat: device?.lat,
+    lng: device?.lng,
+    spots: spots,
+  );
+  return spot == null || spot.spotId == s.spotOffId ? null : spot;
+}
+
+/// [spotSuggestionFor] for the screen; rebuilds when the text, the removal,
+/// the directory or the device position change.
+final postSpotSuggestionProvider = Provider.autoDispose<SpotEntry?>((ref) {
+  final s = ref.watch(postComposerProvider);
+  return spotSuggestionFor(
+    s,
+    spots: ref.watch(spotDirectoryProvider).value,
+    device: ref.watch(locationControllerProvider.select((l) => l.location)),
+  );
+});

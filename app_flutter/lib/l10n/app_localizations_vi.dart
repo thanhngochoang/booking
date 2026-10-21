@@ -5379,6 +5379,70 @@ class AppLocalizationsVi extends AppLocalizations {
   String get createEventErrFaq => 'Nhập đủ cả câu hỏi và câu trả lời.';
 
   @override
+  String get eventSpotLabel => 'Điểm chụp · bắt buộc';
+
+  @override
+  String get eventSpotPlaceholder => 'Chọn điểm chụp';
+
+  @override
+  String get eventSpotSheetTitle => 'Điểm chụp';
+
+  @override
+  String get eventSpotSheetHint =>
+      'Sự kiện gắn điểm hiện ở trang điểm chụp và được tính vào độ hot.';
+
+  @override
+  String get eventSpotSearch => 'Tìm điểm chụp';
+
+  @override
+  String get eventSpotClose => 'Đóng';
+
+  @override
+  String get eventSpotNone => 'Không thuộc điểm chụp nào';
+
+  @override
+  String get eventSpotNoneHint => 'Sự kiện không hiện ở trang điểm nào';
+
+  @override
+  String eventSpotPick(String name) {
+    return 'Chọn $name';
+  }
+
+  @override
+  String get eventSpotPickNone => 'Không gắn điểm';
+
+  @override
+  String get eventSpotNoMatch => 'Không có điểm chụp nào khớp.';
+
+  @override
+  String get eventSpotLoadError => 'Không tải được danh sách điểm chụp.';
+
+  @override
+  String get eventSpotRequired =>
+      'Chọn một điểm chụp, hoặc “Không thuộc điểm chụp nào”';
+
+  @override
+  String get eventSpotFar =>
+      'Địa điểm nằm ngoài điểm chụp đã chọn. Sửa địa điểm hoặc chọn điểm khác.';
+
+  @override
+  String get eventSpotArchived =>
+      'Điểm chụp này không còn nhận lịch mới. Chọn điểm khác.';
+
+  @override
+  String get eventSpotGone => 'Không tìm thấy điểm chụp này. Chọn điểm khác.';
+
+  @override
+  String postSpotChip(String name) {
+    return 'Gắn với $name';
+  }
+
+  @override
+  String postSpotChipRemove(String name) {
+    return 'Bỏ gắn $name';
+  }
+
+  @override
   String get bookNotAcceptingOrders => 'Nhiếp ảnh gia này chưa nhận đặt lịch.';
 
   @override

@@ -15,6 +15,7 @@ import { GROUP_READONLY_DAYS } from './event_chat.js';
 import { hashtagBase, hashtagKeyOf, hashtagWithSuffix } from './event_hashtag.js';
 import type { EventDeps, EventGroupChatSeed, EventTx } from './event_ports.js';
 import { isId } from './ids.js';
+import { SPOT_EVENT_SLACK_M, spotCovers } from './spot.js';
 
 const HOUR_MS = 3_600_000;
 const CLIENT_EVENT_ID = /^[A-Za-z0-9_-]{20,64}$/;
@@ -79,6 +80,24 @@ function checkCoverAndFaq(deps: EventDeps, caller: EventCaller, f: EventFields, 
     if (host.type !== 'platform') throw new DomainError('invalid_argument');
   }
 }
+
+/**
+ * Reads only (Decision 14). A tagged spot must exist, be active, and (once the event has a place)
+ * cover it within the radius plus SPOT_EVENT_SLACK_M.
+ */
+async function checkSpot(tx: EventTx, f: EventFields): Promise<void> {
+  if (f.spotId === null) return;
+  const spot = await tx.getSpot(f.spotId);
+  if (spot === null) throw new DomainError('not_found', 'spotId');
+  if (spot.status !== 'active') throw new DomainError('spot_archived', 'spotId');
+  if (f.location !== null && !spotCovers(spot, { lat: f.location.lat, lng: f.location.lng }, SPOT_EVENT_SLACK_M)) {
+    throw new DomainError('invalid_argument', 'spotId');
+  }
+}
+
+/** Whether a save must re-check the spot: the tag or the place moved (an old tag of a later archived spot stays). */
+const spotNeedsCheck = (existing: EventRecord | null, f: EventFields): boolean =>
+  f.spotId !== (existing?.spotId ?? null) || JSON.stringify(f.location) !== JSON.stringify(existing?.location ?? null);
 
 function materialChange(e: EventRecord, f: EventFields): boolean {
   return f.title !== e.title || f.description !== e.description || f.type !== e.type
@@ -159,13 +178,14 @@ export async function saveEventDraft(
     const host = existing?.host ?? (created as NonNullable<typeof created>).host;
     checkCoverAndFaq(deps, caller, f, host, existing?.createdBy ?? caller.uid, eventId);
     const plan = await planHashtag(tx, existing, f, eventId, now);
+    if (spotNeedsCheck(existing, f)) await checkSpot(tx, f);
 
     const base = {
       title: f.title, description: f.description, type: f.type,
       coverUrl: f.coverUrl, coverPath: f.coverPath,
       startAt: f.startAt, endAt: f.endAt, dayKey: f.dayKey,
       location: f.location, capacity: f.capacity, price: f.price,
-      registrationDeadline: f.registrationDeadline, faq: f.faq,
+      registrationDeadline: f.registrationDeadline, faq: f.faq, spotId: f.spotId,
       hashtag: plan.tag, hashtagKey: plan.key, updatedAt: now,
     };
     writeHashtag(tx, plan, eventId, existing === null);
@@ -221,6 +241,7 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
     const dayKey = f.dayKey as string;
     const av = hostId === null ? null : await tx.availability(hostId, dayKey);
     if (av !== null && (av.state === 'booked' || av.state === 'pending' || av.state === 'spot')) throw new DomainError('day_taken');
+    await checkSpot(tx, f);
 
     const chatId = `event_${ev.id}`;
     const moderators = [...new Set([hostId, ev.createdBy].filter((x): x is string => x !== null))];
@@ -269,6 +290,7 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
     if (f.price !== ev.price && sold > 0) throw new DomainError('conflict');
 
     const plan = await planHashtag(tx, ev, f, ev.id, now);
+    if (spotNeedsCheck(ev, f)) await checkSpot(tx, f);
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
     const moveDay = hostId !== null && f.dayKey !== ev.dayKey;
     const newDay = moveDay ? await tx.availability(hostId, f.dayKey as string) : null;
@@ -288,7 +310,7 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
       coverUrl: f.coverUrl, coverPath: f.coverPath,
       startAt: f.startAt, endAt: f.endAt, dayKey: f.dayKey,
       location: f.location, capacity: f.capacity, price: f.price,
-      registrationDeadline: f.registrationDeadline, faq: f.faq,
+      registrationDeadline: f.registrationDeadline, faq: f.faq, spotId: f.spotId,
       hashtag: plan.tag, hashtagKey: plan.key,
       version: ev.version + 1, updatedAt: now,
     };

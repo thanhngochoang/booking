@@ -37,6 +37,7 @@ const event = (over: Partial<EventRecord> = {}): EventRecord => ({
   hashtag: 'PhotoWalk1012',
   hashtagKey: 'photowalk1012',
   hashtagLocked: false,
+  spotId: 'spot-ho-guom',
   status: 'draft',
   registeredCount: 0,
   heldCount: 0,
@@ -102,6 +103,12 @@ describe('Firestore mapping for events', () => {
     const e = event({ startAt: null, endAt: null, dayKey: null, location: null, capacity: null, price: null,
       registrationDeadline: null, coverUrl: null, coverPath: null });
     assert.deepEqual(eventFromFirestore('ev1', eventToFirestore(e)), e);
+  });
+
+  it('an event without spotId reads null', () => {
+    const doc = eventToFirestore(event());
+    delete doc.spotId;
+    assert.equal(eventFromFirestore('ev1', doc).spotId, null);
   });
 
   it('soonNoticeAt round-trips; absent reads null', () => {

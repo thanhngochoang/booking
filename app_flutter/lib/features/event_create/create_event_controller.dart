@@ -15,6 +15,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/features/event_create/event_draft_store.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
@@ -23,6 +24,9 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 enum EventField {
   cover(1),
   title(1),
+
+  /// S12.01 "Điểm chụp" (S29): a spot, or "Không thuộc điểm chụp nào".
+  spot(1),
   type(1),
   description(1),
   day(2),
@@ -61,7 +65,7 @@ final _hashtagPattern = RegExp(r'^[A-Za-z0-9]{3,40}$');
 
 /// What is wrong with [d], keyed by field; the value is a code:
 /// `required`, `too_long`, `end_before_start`, `same_day`, `start_soon`,
-/// `range`, `step`, `after_start`, `format`. Pure and total: it checks the
+/// `range`, `step`, `after_start`, `format`. (`spot`: `required`.) Pure and total: it checks the
 /// draft as the server checks it at publish (complete, start at least 2 hours
 /// ahead, one day, deadline not after the start). Empty means publishable.
 Map<EventField, String> createEventErrors(
@@ -80,6 +84,9 @@ Map<EventField, String> createEventErrors(
   }
   if (d.type == null) {
     errors[EventField.type] = 'required';
+  }
+  if (!d.spotDecided) {
+    errors[EventField.spot] = 'required';
   }
   if ((d.description ?? '').trim().characters.length > eventDescriptionMax) {
     errors[EventField.description] = 'too_long';
@@ -406,6 +413,25 @@ class CreateEventController extends Notifier<CreateEventState> {
     );
   }
 
+  /// S12.01 "Điểm chụp": [spot] is the chosen spot, null is "Không thuộc điểm
+  /// chụp nào". A spot also fills an empty place with itself (the organizer
+  /// can edit it inside the spot's radius).
+  void setSpot(SpotEntry? spot) {
+    var form = state.form.copyWith(spotId: spot?.spotId);
+    if (spot != null &&
+        form.placeName.trim().isEmpty &&
+        form.lat == null &&
+        form.lng == null) {
+      form = form.copyWith(
+        placeName: spot.name,
+        areaId: null,
+        lat: spot.lat,
+        lng: spot.lng,
+      );
+    }
+    _edit(form, field: EventField.spot, clearServer: {EventField.spot});
+  }
+
   /// The place's name and meeting point as typed.
   void setPlaceText({String? name, String? meetingPoint}) => _edit(
     state.form.copyWith(placeName: name, meetingPoint: meetingPoint),
@@ -506,6 +532,12 @@ class CreateEventController extends Notifier<CreateEventState> {
           serverErrors: {...state.serverErrors, EventField.hashtag: 'taken'},
           failure: CreateEventFailure.none,
         );
+      case 'spot_archived':
+        _spotRefused('archived');
+      case 'not_found' when eventErrorFieldOf(error) == 'spotId':
+        _spotRefused('gone');
+      case 'invalid_argument' when eventErrorFieldOf(error) == 'spotId':
+        _spotRefused('far');
       case 'network':
         state = state.copyWith(failure: CreateEventFailure.network);
       default:
@@ -517,9 +549,22 @@ class CreateEventController extends Notifier<CreateEventState> {
     }
   }
 
+  void _spotRefused(String code) => state = state.copyWith(
+    serverErrors: {...state.serverErrors, EventField.spot: code},
+    failure: CreateEventFailure.none,
+  );
+
   /// S12.01 "Tiếp tục": saves the draft (and the cover), then step 2.
   Future<bool> next() async {
     if (state.busy || !state.stepOneReady) {
+      return false;
+    }
+    if (!state.form.spotDecided) {
+      // The choice is required: show "Chọn một điểm chụp…" under the field.
+      state = state.copyWith(
+        touched: {...state.touched, EventField.spot},
+        failure: CreateEventFailure.none,
+      );
       return false;
     }
     state = state.copyWith(busy: true, failure: CreateEventFailure.none);

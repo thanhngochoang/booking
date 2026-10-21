@@ -52,6 +52,7 @@ abstract final class AppIcons {
 
   // Places.
   static const IconData place = Symbols.location_on_rounded;
+  static const IconData placeOff = Symbols.location_off_rounded;
   static const IconData nearMe = Symbols.near_me_rounded;
   static const IconData myLocation = Symbols.my_location_rounded;
   static const IconData city = Symbols.location_city_rounded;

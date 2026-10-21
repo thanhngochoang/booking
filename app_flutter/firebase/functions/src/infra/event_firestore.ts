@@ -37,6 +37,7 @@ import {
   transferRecordFromFirestore,
   transferRecordToFirestore,
 } from './booking_firestore.js';
+import { SPOTS_COLLECTION, spotFromFirestore } from './spot_firestore.js';
 
 export const EVENTS_COLLECTION = 'events';
 export const EVENT_HASHTAGS = 'event_hashtags';
@@ -97,6 +98,7 @@ export function eventToFirestore(e: EventRecord): DocumentData {
     hashtag: e.hashtag,
     hashtagKey: e.hashtagKey,
     hashtagLocked: e.hashtagLocked,
+    spotId: e.spotId ?? null,
     status: e.status,
     registeredCount: e.registeredCount,
     heldCount: e.heldCount,
@@ -159,6 +161,7 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
     hashtag: String(d.hashtag ?? ''),
     hashtagKey: String(d.hashtagKey ?? ''),
     hashtagLocked: d.hashtagLocked === true,
+    spotId: str(d.spotId),
     status: (str(d.status) ?? 'draft') as EventRecord['status'],
     registeredCount: int(d.registeredCount),
     heldCount: int(d.heldCount),
@@ -308,6 +311,10 @@ export class FirestoreEventStore implements EventStore {
           const s = await fTx.get(eventRef(id));
           const d = s.data();
           return s.exists && d ? eventFromFirestore(id, d) : null;
+        },
+        getSpot: async (id) => {
+          const snap = await fTx.get(fs.collection(SPOTS_COLLECTION).doc(id));
+          return spotFromFirestore(snap.id, snap.data());
         },
         hashtagOwner: async (key) => {
           const s = await fTx.get(fs.collection(EVENT_HASHTAGS).doc(key));

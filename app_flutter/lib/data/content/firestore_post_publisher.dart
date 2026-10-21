@@ -37,6 +37,7 @@ class FirestorePostPublisher implements PostPublisher {
       'hashtags': hashtags,
       'inPortfolio': d.inPortfolio,
       if (d.albumId != null) 'albumId': d.albumId,
+      if (d.spotId != null) 'spotId': d.spotId,
       'likeCount': 0,
       'saveCount': 0,
       'createdAt': FieldValue.serverTimestamp(),

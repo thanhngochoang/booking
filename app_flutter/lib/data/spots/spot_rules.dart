@@ -1,5 +1,6 @@
 // lib/data/spots/spot_rules.dart
 import 'package:photobooking/core/geo.dart';
+import 'package:photobooking/core/text_fold.dart';
 import 'package:photobooking/core/widgets/availability_calendar.dart';
 import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
@@ -167,11 +168,7 @@ List<({String start, String end, bool free})> freeSlots(
   final slots = slotsFor(window, offer.slotMinutes, offer.gapMinutes);
   return slots.map((s) {
     final iv = SpotInterval(start: s.start, end: s.end, offerId: offer.id);
-    return (
-      start: s.start,
-      end: s.end,
-      free: !clashes(iv, taken),
-    );
+    return (start: s.start, end: s.end, free: !clashes(iv, taken));
   }).toList();
 }
 
@@ -184,15 +181,15 @@ List<SpotEntry> orderSpots(
 }) {
   final pinned = all.where((s) => !s.hidden && s.pinned).toList();
 
-  final hot = all.where((s) {
-    if (s.hidden || s.pinned || s.hotScore <= 0) return false;
-    return s.seasonMonths.isEmpty || inSeason(s.seasonMonths, month);
-  }).toList()
-    ..sort((a, b) {
-      final scoreCmp = b.hotScore.compareTo(a.hotScore);
-      if (scoreCmp != 0) return scoreCmp;
-      return a.name.compareTo(b.name);
-    });
+  final hot =
+      all.where((s) {
+        if (s.hidden || s.pinned || s.hotScore <= 0) return false;
+        return s.seasonMonths.isEmpty || inSeason(s.seasonMonths, month);
+      }).toList()..sort((a, b) {
+        final scoreCmp = b.hotScore.compareTo(a.hotScore);
+        if (scoreCmp != 0) return scoreCmp;
+        return a.name.compareTo(b.name);
+      });
 
   final pinnedOrHotIds = <String>{
     ...pinned.map((s) => s.spotId),
@@ -279,4 +276,85 @@ Map<String, SpotDayConflictReason> scheduleConflicts(
   }
 
   return conflicts;
+}
+
+/// Domain `SPOT_EVENT_SLACK_M`: an event may sit this far outside a spot's radius.
+const int spotEventSlackM = 500;
+
+double _metersBetween(double lat1, double lng1, double lat2, double lng2) =>
+    haversineKm(lat1, lng1, lat2, lng2) * 1000;
+
+/// S12.01 "Điểm chụp": the spots to offer, best first. With a point (the
+/// event place, or the organizer's device position), spots whose radius plus
+/// [spotEventSlackM] reaches it come first, nearest first, then the others by
+/// distance; without a point, the hottest first (name as the last tie-break).
+List<SpotEntry> spotsForEvent(List<SpotEntry> all, {double? lat, double? lng}) {
+  final list = [...all];
+  if (lat == null || lng == null) {
+    list.sort((a, b) {
+      final cmp = b.hotScore.compareTo(a.hotScore);
+      return cmp != 0 ? cmp : a.name.compareTo(b.name);
+    });
+    return list;
+  }
+  double dist(SpotEntry s) => _metersBetween(lat, lng, s.lat, s.lng);
+  bool covers(SpotEntry s) => dist(s) <= s.radiusM + spotEventSlackM;
+  list.sort((a, b) {
+    final ca = covers(a);
+    final cb = covers(b);
+    if (ca != cb) return ca ? -1 : 1;
+    final cmp = dist(a).compareTo(dist(b));
+    return cmp != 0 ? cmp : a.name.compareTo(b.name);
+  });
+  return list;
+}
+
+/// S10.01 "Gắn với {tên điểm}": the spot to suggest for a post. Needs a
+/// location text. The spot whose accent-folded name is contained in the text
+/// (the longest name wins) or that contains the text wins first; otherwise the
+/// nearest spot whose radius holds the device position. Null when none fits.
+SpotEntry? suggestSpotForPost({
+  required String locationText,
+  double? lat,
+  double? lng,
+  required List<SpotEntry> spots,
+}) {
+  final text = foldVietnamese(locationText.trim());
+  if (text.length < 3) {
+    return null;
+  }
+  SpotEntry? nameInText;
+  var nameInTextLen = 0;
+  SpotEntry? textInName;
+  var textInNameLen = 1 << 30;
+  for (final s in spots) {
+    final name = foldVietnamese(s.name.trim());
+    if (name.isEmpty) continue;
+    if (text.contains(name)) {
+      if (name.length > nameInTextLen) {
+        nameInText = s;
+        nameInTextLen = name.length;
+      }
+    } else if (name.contains(text) && name.length < textInNameLen) {
+      textInName = s;
+      textInNameLen = name.length;
+    }
+  }
+  final byText = nameInText ?? textInName;
+  if (byText != null) {
+    return byText;
+  }
+  if (lat == null || lng == null) {
+    return null;
+  }
+  SpotEntry? best;
+  var bestDist = double.infinity;
+  for (final s in spots) {
+    final d = _metersBetween(lat, lng, s.lat, s.lng);
+    if (d <= s.radiusM && d < bestDist) {
+      best = s;
+      bestDist = d;
+    }
+  }
+  return best;
 }

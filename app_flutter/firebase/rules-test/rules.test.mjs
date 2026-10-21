@@ -970,6 +970,34 @@ test('posts still cannot be updated', async () => {
   await assertFails(updateDoc(doc(db, 'posts/post-alb6'), { albumPosition: 1 }));
 });
 
+async function seedSpot(id, status) {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `spots/${id}`), { name: 'Hồ Tây', status }));
+}
+
+test('a photographer creates a post with spotId of an active spot', async () => {
+  await seedShooter('sp1');
+  await seedSpot('spot-active', 'active');
+  const db = env.authenticatedContext('sp1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-spot1'), validPost('sp1', { spotId: 'spot-active' })));
+});
+
+test('spotId of an archived or missing spot is refused', async () => {
+  await seedShooter('sp2');
+  await seedSpot('spot-old', 'archived');
+  const db = env.authenticatedContext('sp2').firestore();
+  await assertFails(setDoc(doc(db, 'posts/post-spot2'), validPost('sp2', { spotId: 'spot-old' })));
+  await assertFails(setDoc(doc(db, 'posts/post-spot3'), validPost('sp2', { spotId: 'spot-missing' })));
+  await assertFails(setDoc(doc(db, 'posts/post-spot4'), validPost('sp2', { spotId: 'a/b' })));
+  await assertFails(setDoc(doc(db, 'posts/post-spot5'), validPost('sp2', { spotId: 5 })));
+});
+
+test('a post without spotId still passes', async () => {
+  await seedShooter('sp3');
+  const db = env.authenticatedContext('sp3').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-spot6'), validPost('sp3', {})));
+});
+
 // ---- Plan 2d2: avatars ----
 const ulidJpg = '01JB0Z8K3V5N6Q7R8S9T0V1W2X.jpg';
 
