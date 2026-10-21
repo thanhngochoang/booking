@@ -383,6 +383,9 @@ Thẻ điểm chụp ảnh dạng ngang (ở Home và S02.04, `compact: true`, r
 #### SeasonTag · Mới
 Tag chỉ báo thời điểm vào mùa của điểm chụp. `SeasonTag({String? label, int? monthTo})`. Nền subtle, viền mảnh, biểu tượng lá `AppIcons.eco`. Khi `monthTo != null` hiển thị "Đang vào mùa · tới cuối tháng {m}", hoặc nhãn tuỳ biến `label` ("Đang vào mùa"). Dùng ở `SpotCard` và đầu trang `SpotScreen` (S29.02).
 
+#### SlotGrid · Mới
+Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({required List<({String start, String end, bool free})> slots, String? selected, required ValueChanged<String> onPick, String? semanticsLabel})`. Bốn cột (ba cột khi rộng dưới 300dp), ô bo 14dp nền kính viền mảnh: giờ bắt đầu đậm 13,5 và "–{giờ kết thúc}" 11 bên dưới; ô đang chọn viền màu nhấn, nền nhấn nhạt; suất kín mờ 50% kèm chữ "Đã kín", không chạm được. Mỗi ô là một radio (`inMutuallyExclusiveGroup`, `checked`), đọc "06:00–06:30" hoặc "06:40, Đã kín". Danh sách suất do `freeSlots(window, offer, taken)` của `spot_rules.dart` dựng; skeleton là các ô `AppSkeleton.box` cùng cỡ do màn tự vẽ.
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
@@ -442,6 +445,7 @@ Tag chỉ báo thời điểm vào mùa của điểm chụp. `SeasonTag({String
 | `MemberStrip` | S03.01 (studio) |
 | `AssigneeCard` | S05.02 (booking studio, phía khách) |
 | `SpotCard`, `SeasonTag` | S02.01, S02.03, S02.04, S29.01, S29.02 |
+| `SlotGrid` | S29.06 |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)

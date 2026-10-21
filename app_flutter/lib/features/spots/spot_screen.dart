@@ -15,6 +15,7 @@ import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/explore/event_routes.dart';
+import 'package:photobooking/features/spots/slot_pick_sheet.dart';
 import 'package:photobooking/features/spots/spot_format.dart';
 import 'package:photobooking/features/spots/spot_posts_controller.dart';
 import 'package:photobooking/features/spots/widgets/spot_offer_card.dart';
@@ -746,9 +747,19 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                                     summaries[offer.providerId]?.displayName,
                                 freeSlotsCount: freeCount,
                                 dayFormatted: dayFmt,
-                                onPickSlot: () {
-                                  // Task 7 connects to showSlotPickSheet
-                                },
+                                onPickSlot: schedule == null
+                                    ? null
+                                    : () => showSlotPickSheet(
+                                        context,
+                                        ref,
+                                        offer: offer,
+                                        schedule: schedule,
+                                        spotName: spot.name,
+                                        day: effectiveDay,
+                                        providerName: summaries[
+                                                offer.providerId]
+                                            ?.displayName,
+                                      ),
                               ),
                             );
                           },

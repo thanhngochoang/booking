@@ -93,6 +93,8 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
       pickupError = null;
     }
     final transport = state.transportAddon;
+    // From a spot the place is the spot itself (Decision 9).
+    final locked = state.spot != null;
 
     return ScreenCode(
       ScreenCodes.bookPlace,
@@ -123,18 +125,48 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: AppSpace.s2),
-                  TextField(
-                    controller: _controller,
-                    maxLength: kPlaceMaxLength,
-                    autofocus: true,
-                    onChanged: _onChanged,
-                    decoration: InputDecoration(
-                      hintText: l10n.bookPlaceHint,
-                      errorText: hasError ? l10n.bookPlaceTooShort : null,
-                      counterText: '',
+                  if (locked) ...[
+                    TextField(
+                      key: const Key('book-place-locked'),
+                      controller: _controller,
+                      readOnly: true,
+                      enabled: false,
+                      decoration: const InputDecoration(counterText: ''),
                     ),
-                  ),
-                  if (suggestions.isNotEmpty) ...[
+                    const SizedBox(height: AppSpace.s3),
+                    Row(
+                      key: const Key('book-place-locked-note'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppIcon(
+                          AppIcons.lock,
+                          size: AppSpace.s4,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpace.s2),
+                        Expanded(
+                          child: Text(
+                            l10n.bookSpotPlaceLocked,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else
+                    TextField(
+                      controller: _controller,
+                      maxLength: kPlaceMaxLength,
+                      autofocus: true,
+                      onChanged: _onChanged,
+                      decoration: InputDecoration(
+                        hintText: l10n.bookPlaceHint,
+                        errorText: hasError ? l10n.bookPlaceTooShort : null,
+                        counterText: '',
+                      ),
+                    ),
+                  if (suggestions.isNotEmpty && !locked) ...[
                     const SizedBox(height: AppSpace.s3),
                     Wrap(
                       spacing: AppSpace.s2,

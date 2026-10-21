@@ -8181,4 +8181,60 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get spotSeeMore => 'Xem thêm';
+
+  @override
+  String get slotPickTitle => 'Chọn suất';
+
+  @override
+  String get slotTaken => 'Đã kín';
+
+  @override
+  String slotContinue(String price) {
+    return 'Tiếp tục · $price';
+  }
+
+  @override
+  String get slotTakenError => 'Suất này vừa có người đặt. Chọn suất khác.';
+
+  @override
+  String slotPickDayLine(String day, int free, int total) {
+    return '$day · còn $free / $total suất';
+  }
+
+  @override
+  String slotPickOfferMeta(String spot, int edited, int days) {
+    return 'Tại $spot · $edited ảnh chỉnh · giao trong $days ngày. Gói chia suất không kèm dịch vụ đi kèm.';
+  }
+
+  @override
+  String get slotPickDays => 'Ngày chụp';
+
+  @override
+  String get slotPickTimes => 'Giờ bắt đầu';
+
+  @override
+  String bookAtSpot(String spot) {
+    return 'Tại $spot';
+  }
+
+  @override
+  String get bookSpotPlaceLocked => 'Địa điểm là điểm chụp, không đổi được.';
+
+  @override
+  String bookSpotWindow(String start, String end) {
+    return 'Khung giờ tại điểm $start–$end';
+  }
+
+  @override
+  String get bookSpotDaysOnly => 'Chỉ ngày có lịch tại điểm';
+
+  @override
+  String get bookOutsideSchedule =>
+      'Lịch tại điểm vừa thay đổi. Chọn lại ngày giờ.';
+
+  @override
+  String get bookSlotTaken => 'Giờ này vừa có người đặt. Chọn giờ khác.';
+
+  @override
+  String get bookSpotArchived => 'Điểm này không còn nhận lịch mới.';
 }

@@ -14103,6 +14103,96 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xem thêm'**
   String get spotSeeMore;
+
+  /// No description provided for @slotPickTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn suất'**
+  String get slotPickTitle;
+
+  /// No description provided for @slotTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã kín'**
+  String get slotTaken;
+
+  /// No description provided for @slotContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục · {price}'**
+  String slotContinue(String price);
+
+  /// No description provided for @slotTakenError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Suất này vừa có người đặt. Chọn suất khác.'**
+  String get slotTakenError;
+
+  /// No description provided for @slotPickDayLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · còn {free} / {total} suất'**
+  String slotPickDayLine(String day, int free, int total);
+
+  /// No description provided for @slotPickOfferMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại {spot} · {edited} ảnh chỉnh · giao trong {days} ngày. Gói chia suất không kèm dịch vụ đi kèm.'**
+  String slotPickOfferMeta(String spot, int edited, int days);
+
+  /// No description provided for @slotPickDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp'**
+  String get slotPickDays;
+
+  /// No description provided for @slotPickTimes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ bắt đầu'**
+  String get slotPickTimes;
+
+  /// No description provided for @bookAtSpot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại {spot}'**
+  String bookAtSpot(String spot);
+
+  /// No description provided for @bookSpotPlaceLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm là điểm chụp, không đổi được.'**
+  String get bookSpotPlaceLocked;
+
+  /// No description provided for @bookSpotWindow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khung giờ tại điểm {start}–{end}'**
+  String bookSpotWindow(String start, String end);
+
+  /// No description provided for @bookSpotDaysOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ ngày có lịch tại điểm'**
+  String get bookSpotDaysOnly;
+
+  /// No description provided for @bookOutsideSchedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm vừa thay đổi. Chọn lại ngày giờ.'**
+  String get bookOutsideSchedule;
+
+  /// No description provided for @bookSlotTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ này vừa có người đặt. Chọn giờ khác.'**
+  String get bookSlotTaken;
+
+  /// No description provided for @bookSpotArchived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này không còn nhận lịch mới.'**
+  String get bookSpotArchived;
 }
 
 class _AppLocalizationsDelegate

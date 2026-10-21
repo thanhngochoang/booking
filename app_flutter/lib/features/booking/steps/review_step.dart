@@ -159,7 +159,11 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                       day: formattedDay,
                       start: state.start ?? '',
                       end: state.end ?? '',
-                      placeName: state.placeName,
+                      // From a spot the place line reads "Tại {spot}".
+                      placeName: switch (state.spot) {
+                        final spot? => l10n.bookAtSpot(spot.spotName),
+                        null => state.placeName,
+                      },
                       extraLine: state.needsPickup
                           ? l10n.bookPickupLine(state.pickupName.trim())
                           : null,

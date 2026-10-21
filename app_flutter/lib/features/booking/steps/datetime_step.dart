@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
+import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
@@ -14,6 +15,17 @@ class DateTimeStep extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<DateTimeStep> createState() => _DateTimeStepState();
+}
+
+/// The calendar of a spot booking: the schedule's [days] free (the step
+/// greys out every other day).
+Map<DateTime, AvailabilityDay> _spotMonth(List<String> days) {
+  final map = <DateTime, AvailabilityDay>{};
+  for (final key in days) {
+    final d = parseDayKey(key);
+    if (d != null) map[d] = AvailabilityDay(day: d, state: DayState.free);
+  }
+  return map;
 }
 
 class _DateTimeStepState extends ConsumerState<DateTimeStep> {
@@ -54,23 +66,30 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
       bookingFlowControllerProvider(widget.args).notifier,
     );
 
-    final availabilityAsync = ref.watch(
-      availabilityMonthProvider((
-        uid: widget.args.photographerId,
-        month: _month,
-      )),
-    );
+    // From a spot (#S04.02-spot) only the schedule's days can be chosen; the
+    // photographer's own calendar marks those days `spot`, so it is not read.
+    final spot = state.spot;
+    final availabilityAsync = spot != null
+        ? AsyncData(_spotMonth(spot.daysFrom(dayKeyOf(today))))
+        : ref.watch(
+            availabilityMonthProvider((
+              uid: widget.args.photographerId,
+              month: _month,
+            )),
+          );
     // A studio nobody can shoot for has no bookable day (#136 Decision 26).
     // The sheet loads the profile from its first frame; until it answers
     // (or if it fails) the days stay as the server keeps them, and the
-    // server still refuses such a day with day_taken (crossed below).
+    // server still refuses such a day with day_taken (crossed below). A spot
+    // booking only offers the schedule's days, held by a named member (#194).
     final noMembers =
-        ref
-            .watch(photographerProfileProvider(widget.args.photographerId))
-            .value
-            ?.summary
-            .hasNoAssignableMembers ??
-        false;
+        spot == null &&
+        (ref
+                .watch(photographerProfileProvider(widget.args.photographerId))
+                .value
+                ?.summary
+                .hasNoAssignableMembers ??
+            false);
 
     // Every day is full: a day preset by the flow (or chosen before the
     // profile answered) cannot be booked, so it is cleared once the profile
@@ -89,36 +108,71 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     }
 
     // Live calendar updates: if the chosen day became non-free, unselect with SnackBar
-    ref.listen<AsyncValue<Map<DateTime, AvailabilityDay>>>(
-      availabilityMonthProvider((
-        uid: widget.args.photographerId,
-        month: _month,
-      )),
-      (prev, next) {
-        if (next.hasValue) {
-          final chosenDayStr = ref
-              .read(bookingFlowControllerProvider(widget.args))
-              .day;
-          if (chosenDayStr != null) {
-            final chosenDate = parseDayKey(chosenDayStr)!;
-            final map = next.value!;
-            final record = map[chosenDate];
-            if (record != null && record.state != DayState.free) {
-              controller.clearDay(chosenDayStr, taken: false);
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(l10n.bookDayGone)));
+    if (spot == null) {
+      ref.listen<AsyncValue<Map<DateTime, AvailabilityDay>>>(
+        availabilityMonthProvider((
+          uid: widget.args.photographerId,
+          month: _month,
+        )),
+        (prev, next) {
+          if (next.hasValue) {
+            final chosenDayStr = ref
+                .read(bookingFlowControllerProvider(widget.args))
+                .day;
+            if (chosenDayStr != null) {
+              final chosenDate = parseDayKey(chosenDayStr)!;
+              final map = next.value!;
+              final record = map[chosenDate];
+              if (record != null && record.state != DayState.free) {
+                controller.clearDay(chosenDayStr, taken: false);
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(l10n.bookDayGone)));
+              }
             }
           }
-        }
-      },
-    );
+        },
+      );
+    }
 
     final canPrev = !addMonths(_month, -1).isBefore(monthOf(today));
     final canNext = !addMonths(_month, 1).isAfter(monthOf(maxDate));
 
     final selectedDate = state.day != null ? parseDayKey(state.day!) : null;
     final duration = state.durationMinutes ?? 0;
-    final slots = daySlots(duration);
+    final day = state.day;
+    // At a spot: the free starts of the chosen day, once its `spot_days` is read.
+    final AsyncValue<List<String>> startsAsync;
+    if (spot == null || day == null) {
+      startsAsync = AsyncData(daySlots(duration));
+    } else if (spot.failedDays.contains(day)) {
+      startsAsync = AsyncError(StateError('spot_days $day'), StackTrace.empty);
+    } else {
+      final starts = state.availableStarts(ref.watch(clockProvider)());
+      startsAsync = starts == null ? const AsyncLoading() : AsyncData(starts);
+    }
+
+    Widget times(List<String> slots) {
+      if (slots.isEmpty) {
+        return Text(
+          l10n.bookNoSlots,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        );
+      }
+      return Wrap(
+        spacing: AppSpace.s2,
+        runSpacing: AppSpace.s2,
+        children: [
+          for (final slot in slots)
+            AppChip(
+              label: slot,
+              selected: state.start == slot,
+              onChanged: (_) => controller.selectStart(slot),
+            ),
+        ],
+      );
+    }
 
     return ScreenCode(
       ScreenCodes.bookDateTime,
@@ -126,6 +180,44 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (spot != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s4,
+                AppSpace.s2,
+                AppSpace.s4,
+                0,
+              ),
+              child: Row(
+                key: const Key('book-spot-line'),
+                children: [
+                  AppIcon(AppIcons.place, size: 20, color: scheme.primary),
+                  const SizedBox(width: AppSpace.s2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          spot.spotName,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          l10n.bookSpotWindow(
+                            spot.schedule.window.start,
+                            spot.schedule.window.end,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s4,
@@ -168,7 +260,15 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     ),
                   ],
                 ),
-                const AvailabilityLegend(),
+                if (spot == null)
+                  const AvailabilityLegend()
+                else
+                  Text(
+                    l10n.bookSpotDaysOnly,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -190,7 +290,11 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                       )),
                     ),
                     data: (context, knownDays) {
-                      final dayStates = <DateTime, DayState>{};
+                      final dayStates = <DateTime, DayState>{
+                        // At a spot every other day is greyed out.
+                        if (spot != null)
+                          for (final d in monthGrid(_month)) d: DayState.off,
+                      };
                       for (final e in knownDays.entries) {
                         dayStates[e.key] = e.value.state;
                       }
@@ -258,26 +362,25 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                       ),
                     ),
                     const SizedBox(height: AppSpace.s2),
-                    if (slots.isEmpty)
-                      Text(
-                        l10n.bookNoSlots,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      )
-                    else
-                      Wrap(
+                    AsyncView<List<String>>(
+                      value: startsAsync,
+                      skeleton: (_) => Wrap(
                         spacing: AppSpace.s2,
                         runSpacing: AppSpace.s2,
                         children: [
-                          for (final slot in slots)
-                            AppChip(
-                              label: slot,
-                              selected: state.start == slot,
-                              onChanged: (_) => controller.selectStart(slot),
+                          for (var i = 0; i < 4; i++)
+                            AppSkeleton.box(
+                              width: 64,
+                              height: 32,
+                              radius: AppRadius.full,
                             ),
                         ],
                       ),
+                      onRetry: day == null
+                          ? null
+                          : () => controller.refreshSpotDay(day),
+                      data: (_, slots) => times(slots),
+                    ),
                     if (state.start != null && state.end != null) ...[
                       const SizedBox(height: AppSpace.s2),
                       Text(

@@ -126,7 +126,9 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
                 onRetry: () => ref.invalidate(
                   profilePackagesProvider(widget.args.photographerId),
                 ),
-                isEmpty: (list) => list.isEmpty,
+                // From a spot: only the packages its schedule takes.
+                isEmpty: (list) =>
+                    (state.spot?.packagesOf(list) ?? list).isEmpty,
                 empty: (emptyContext) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
                   child: EmptyState(
@@ -136,7 +138,8 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
                     onAction: () => Navigator.of(context).maybePop(),
                   ),
                 ),
-                data: (context, packages) {
+                data: (context, all) {
+                  final packages = state.spot?.packagesOf(all) ?? all;
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

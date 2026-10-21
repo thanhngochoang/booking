@@ -238,6 +238,9 @@ Future<BookingWorldHandles> pumpBookingRoute(
 
   /// Active add-ons of `p1` (S04.01); none by default.
   List<ServiceAddon> addons = const [],
+
+  /// More pages, e.g. a stand-in for S29.02 that opens S29.06.
+  List<RouteBase> extraRoutes = const [],
 }) async {
   final effectiveNow = now ?? worldBookingToday;
   final effectiveBookings = bookings ?? FakeBookingRepository();
@@ -300,6 +303,9 @@ Future<BookingWorldHandles> pumpBookingRoute(
                 state.uri.queryParameters['day'] ??
                 state.uri.queryParameters['date'],
             area: state.uri.queryParameters['area'],
+            scheduleId: state.uri.queryParameters['scheduleId'],
+            slotOfferId: state.uri.queryParameters['offerId'],
+            start: state.uri.queryParameters['start'],
           ),
         ),
       ),
@@ -343,6 +349,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
       ...bookingDetailRoutes(),
       for (final p in ['/home', '/profile/phone', '/bookings'])
         GoRoute(path: p, builder: stub),
+      ...extraRoutes,
     ],
   );
 

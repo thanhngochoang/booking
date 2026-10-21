@@ -63,6 +63,7 @@ export 'package:photobooking/core/widgets/segmented_tabs.dart';
 export 'package:photobooking/core/widgets/sliver_adaptive_rows.dart';
 export 'package:photobooking/core/widgets/stat_tile.dart';
 export 'package:photobooking/core/widgets/skill_chip.dart';
+export 'package:photobooking/core/widgets/slot_grid.dart';
 export 'package:photobooking/core/widgets/status_badge.dart';
 export 'package:photobooking/core/widgets/step_progress.dart';
 export 'package:photobooking/core/widgets/tab_badge.dart';

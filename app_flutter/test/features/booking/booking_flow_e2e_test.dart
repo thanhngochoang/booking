@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
@@ -10,6 +11,7 @@ import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
@@ -21,12 +23,14 @@ import 'package:photobooking/features/booking/steps/review_step.dart';
 import 'package:photobooking/features/booking/steps/service_step.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
+import 'package:photobooking/features/spots/slot_pick_sheet.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../support/booking_world.dart';
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/spot_booking_fixtures.dart';
 
 /// Records the write calls of the booking port in the order they happen.
 class _OrderedBookingRepository extends FakeBookingRepository {
@@ -332,4 +336,99 @@ void main() {
       expect(created.expectedTotal, 3400000);
     },
   );
+
+  group('booking from a spot', () {
+    testWidgets(
+      'spot package path S04.01 → S04.02-spot → S04.06 → S04.03 → GoToPayment',
+      (tester) async {
+        final repo = _OrderedBookingRepository();
+        await walkSpotPackage(
+          tester,
+          until: BookingStep.review,
+          car: true,
+          bookings: repo,
+        );
+
+        expect(find.byType(ReviewStep), findsOneWidget);
+        expect(find.text('Tại Hồ Tây'), findsOneWidget);
+        await _tapButton(tester, 'Thanh toán 1.800.000₫');
+        await _pumpWhileWaiting(tester);
+
+        expect(repo.log, ['createBooking', 'createPayment(bank_qr)']);
+        expect(find.byType(PaymentScreen), findsOneWidget);
+        final created = repo.createCalls.single;
+        expect(created.spotScheduleId, spotBookingScheduleId);
+        expect(created.slotOfferId, isNull);
+        expect(created.serviceId, 's1');
+        expect(created.day, spotBookingDay1);
+        expect(created.start, '06:00');
+        expect(created.placeName, 'Hồ Tây');
+        expect(created.addons.single.addonId, 'a_car');
+        expect(created.pickup?.name, 'Ga Hà Nội, Đống Đa');
+      },
+    );
+
+    testWidgets('slot path S29.06 → S04.03 → GoToPayment', (tester) async {
+      final repo = _OrderedBookingRepository();
+      await pumpBookingRoute(
+        tester,
+        path: '/spots/$spotBookingSpotId',
+        bookings: repo,
+        addons: [addonMakeup, addonTransport],
+        extraOverrides: [
+          spotRepositoryProvider.overrideWithValue(spotBookingRepo()),
+        ],
+        extraRoutes: [
+          // Stand-in for S29.02: its "Chọn suất" opens S29.06.
+          GoRoute(
+            path: '/spots/:spotId',
+            builder: (_, _) => Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => TextButton(
+                  onPressed: () => showSlotPickSheet(
+                    context,
+                    ref,
+                    offer: spotBookingOffer,
+                    schedule: spotBookingSchedule(),
+                    spotName: 'Hồ Tây',
+                    day: spotBookingDay1,
+                  ),
+                  child: const Text('Chọn suất'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chọn suất'));
+      await tester.pumpAndSettle();
+
+      // S29.06: pick 07:20, then straight to S04.03.
+      await tester.tap(find.text('07:20'));
+      await tester.pump();
+      await _tapButton(tester, 'Tiếp tục · 490.000₫');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReviewStep), findsOneWidget);
+      expect(find.text('Tại Hồ Tây'), findsOneWidget);
+      expect(find.textContaining('Bình minh Hồ Tây 30 phút'), findsWidgets);
+      expect(find.byType(ServiceStep), findsNothing);
+      await _tapButton(tester, 'Thanh toán 490.000₫');
+      await _pumpWhileWaiting(tester);
+
+      expect(repo.log, ['createBooking', 'createPayment(bank_qr)']);
+      expect(find.byType(PaymentScreen), findsOneWidget);
+      final created = repo.createCalls.single;
+      expect(created.spotScheduleId, spotBookingScheduleId);
+      expect(created.slotOfferId, spotBookingOfferId);
+      expect(created.serviceId, spotBookingOfferId);
+      expect(created.expectedPrice, 490000);
+      expect(created.day, spotBookingDay1);
+      expect(created.start, '07:20');
+      expect(created.addons, isEmpty);
+      expect(created.pickup, isNull);
+      expect(created.expectedTotal, isNull);
+    });
+  });
 }

@@ -9,6 +9,7 @@ import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/spots/slot_pick_sheet.dart';
 import 'package:photobooking/features/spots/spot_screen.dart';
 
 import '../../support/content_fixtures.dart';
@@ -1040,5 +1041,57 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Hồ Tây'), findsWidgets);
     }
+  });
+
+  testWidgets('"Chọn suất" opens S29.06 on the viewed day', (tester) async {
+    final world = await _makeWorld();
+    final fakeSpots = FakeSpotRepository()
+      ..seedSpot(_spot())
+      ..seedSchedule(_schedule())
+      ..seedOffer(_offer());
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/spots/:spotId',
+          builder: (_, state) => SpotScreen(
+            spotId: state.pathParameters['spotId']!,
+            date: '2026-10-18',
+          ),
+        ),
+      ],
+      initialLocation: '/spots/spot1',
+    );
+    tester.view.physicalSize = const Size(390, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: router,
+        overrides: [
+          ...world.overrides,
+          spotRepositoryProvider.overrideWithValue(fakeSpots),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Chọn suất'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SlotPickSheet), findsOneWidget);
+    final sheet = find.byType(SlotPickSheet);
+    expect(
+      find.descendant(of: sheet, matching: find.widgetWithText(AppChip, 'CN 18/10')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: sheet,
+        matching: find.widgetWithText(AppButton, 'Tiếp tục · 490.000₫'),
+      ),
+      findsOneWidget,
+    );
   });
 }
