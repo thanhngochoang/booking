@@ -2,9 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/data/account/account_repository.dart';
 import 'package:photobooking/data/account/firebase_account_repository.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/media/media_providers.dart';
 
 final accountRepositoryProvider = Provider<AccountRepository>((ref) {
-  return FirebaseAccountRepository();
+  return FirebaseAccountRepository(
+    urlResolver: ref.watch(mediaUrlResolverProvider),
+  );
 });
 
 final accountLockProvider = StreamProvider<AccountLock?>((ref) async* {

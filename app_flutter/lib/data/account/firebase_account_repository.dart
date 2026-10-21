@@ -2,21 +2,21 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:photobooking/data/account/account_repository.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
 
 class FirebaseAccountRepository implements AccountRepository {
   FirebaseAccountRepository({
     FirebaseFirestore? db,
     FirebaseFunctions? functions,
-    FirebaseStorage? storage,
+    MediaUrlResolver? urlResolver,
   })  : _db = db ?? FirebaseFirestore.instance,
         _functions = functions ?? FirebaseFunctions.instanceFor(region: 'asia-southeast1'),
-        _storage = storage ?? FirebaseStorage.instance;
+        _urlResolver = urlResolver ?? FakeMediaUrlResolver();
 
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
-  final FirebaseStorage _storage;
+  final MediaUrlResolver _urlResolver;
 
   AccountException _mapError(Object e) {
     if (e is FirebaseFunctionsException) {
@@ -119,8 +119,7 @@ class FirebaseAccountRepository implements AccountRepository {
 
   @override
   Future<Uri> exportDownloadUrl(String path) async {
-    final ref = _storage.ref(path);
-    final urlStr = await ref.getDownloadURL();
+    final urlStr = await _urlResolver.downloadUrl(path);
     return Uri.parse(urlStr);
   }
 
