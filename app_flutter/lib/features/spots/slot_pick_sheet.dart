@@ -98,11 +98,13 @@ class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
         ),
     ];
 
-    // Chips: the schedule's days from today that still have a free slot
-    // (mock caption); a day shows until its read says it is full.
+    // Chips: the schedule's days from today to today + 14 (S29.02's window,
+    // so at most 15 spot_days reads) that still have a free slot (mock
+    // caption); a day shows until its read says it is full.
+    final cutoff = vnDateKey(now.add(const Duration(days: 14)));
     final reads = {
       for (final d in [...schedule.days]..sort())
-        if (d.compareTo(today) >= 0)
+        if (d.compareTo(today) >= 0 && d.compareTo(cutoff) <= 0)
           d: ref.watch(spotDayProvider((scheduleId: schedule.id, day: d))),
     };
     final days = [

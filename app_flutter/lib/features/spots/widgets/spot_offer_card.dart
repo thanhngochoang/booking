@@ -20,6 +20,9 @@ class SpotOfferCard extends StatelessWidget {
   final String dayFormatted;
   final VoidCallback? onPickSlot;
 
+  /// The card's shape while S29.02's offers load.
+  static Widget skeleton({Key? key}) => _SpotOfferCardSkeleton(key: key);
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -112,6 +115,36 @@ class SpotOfferCard extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpotOfferCardSkeleton extends StatelessWidget {
+  const _SpotOfferCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Material(
+      color: dark ? AppColorsDark.glass : AppColors.glass,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSkeleton.line(widthFactor: 0.6),
+            const SizedBox(height: AppSpace.s2),
+            AppSkeleton.line(widthFactor: 0.9, height: 10),
+            const SizedBox(height: AppSpace.s2),
+            AppSkeleton.line(widthFactor: 0.4, height: 10),
           ],
         ),
       ),

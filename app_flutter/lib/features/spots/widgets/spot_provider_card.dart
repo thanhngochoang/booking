@@ -23,6 +23,9 @@ class SpotProviderCard extends StatelessWidget {
   final VoidCallback? onProfile;
   final VoidCallback? onBook;
 
+  /// The card's shape while S29.02's providers load.
+  static Widget skeleton({Key? key}) => _SpotProviderCardSkeleton(key: key);
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -185,6 +188,44 @@ class SpotProviderCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpotProviderCardSkeleton extends StatelessWidget {
+  const _SpotProviderCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Material(
+      color: dark ? AppColorsDark.glass : AppColors.glass,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s3),
+        child: Row(
+          children: [
+            AppSkeleton.circle(size: 40),
+            const SizedBox(width: AppSpace.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppSkeleton.line(widthFactor: 0.5),
+                  const SizedBox(height: AppSpace.s2),
+                  AppSkeleton.line(widthFactor: 0.8, height: 10),
+                  const SizedBox(height: AppSpace.s2),
+                  AppSkeleton.line(widthFactor: 0.4, height: 10),
+                ],
+              ),
             ),
           ],
         ),

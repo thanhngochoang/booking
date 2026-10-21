@@ -11,6 +11,12 @@ import 'package:photobooking/data/spots/spot_repository.dart';
 class _MockFunctions extends Mock implements FirebaseFunctions {}
 class _MockCallable extends Mock implements HttpsCallable {}
 class _MockResult extends Mock implements HttpsCallableResult<dynamic> {}
+class _MockDb extends Mock implements FirebaseFirestore {}
+// ignore: subtype_of_sealed_class
+class _MockCollection extends Mock
+    implements CollectionReference<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
+class _MockDoc extends Mock implements DocumentReference<Map<String, dynamic>> {}
 
 void main() {
   late FakeFirebaseFirestore db;
@@ -30,6 +36,38 @@ void main() {
   });
 
   group('FirestoreSpotRepository', () {
+    test('a refused schedule or offer read (cancelled / closed) is null; other errors still throw', () async {
+      final mockDb = _MockDb();
+      final refused = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'permission-denied',
+      );
+      for (final name in ['spot_schedules', 'spot_slot_offers']) {
+        final col = _MockCollection();
+        final doc = _MockDoc();
+        when(() => mockDb.collection(name)).thenReturn(col);
+        when(() => col.doc(any())).thenReturn(doc);
+        when(() => doc.get()).thenThrow(refused);
+      }
+      final refusedRepo =
+          FirestoreSpotRepository(db: mockDb, functions: functions);
+
+      expect(await refusedRepo.schedule('sched_cancelled'), isNull);
+      expect(await refusedRepo.offer('offer_closed'), isNull);
+
+      final col = _MockCollection();
+      final doc = _MockDoc();
+      when(() => mockDb.collection('spot_schedules')).thenReturn(col);
+      when(() => col.doc(any())).thenReturn(doc);
+      when(() => doc.get()).thenThrow(
+        FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
+      );
+      await expectLater(
+        refusedRepo.schedule('sched_1'),
+        throwsA(isA<FirebaseException>()),
+      );
+    });
+
     test('hot reads spot_rankings/{key} and falls back to all when missing', () async {
       await db.collection('spot_rankings').doc('hn').set({
         'entries': [

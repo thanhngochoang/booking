@@ -8122,6 +8122,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get spotSeasonAllYear => 'Đẹp quanh năm';
 
   @override
+  String spotPhotoAlt(String name) {
+    return 'Ảnh chụp tại $name';
+  }
+
+  @override
   String get spotArchivedBand => 'Điểm này không còn nhận lịch mới';
 
   @override

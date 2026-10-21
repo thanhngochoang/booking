@@ -33,6 +33,7 @@ void main() {
   Future<GoRouter> pumpSheet(
     WidgetTester tester, {
     FakeSpotRepository? spots,
+    SpotSchedule? schedule,
   }) async {
     final router = GoRouter(
       initialLocation: '/spots/spot1',
@@ -47,7 +48,7 @@ void main() {
                     context,
                     ref,
                     offer: spotBookingOffer,
-                    schedule: spotBookingSchedule(),
+                    schedule: schedule ?? spotBookingSchedule(),
                     spotName: 'Hồ Tây',
                     day: spotBookingDay1,
                     providerName: 'Minh Trí',
@@ -139,6 +140,26 @@ void main() {
       find.byKey(const Key('slot-pick-days')),
     );
     expect(row.scrollDirection, Axis.horizontal);
+  });
+
+  testWidgets('a 40-day schedule reads at most 15 days: today to today + 14', (
+    tester,
+  ) async {
+    // Today is 03/10 in Vietnam; the schedule runs 40 days from it.
+    final days = [
+      for (var i = 0; i < 40; i++)
+        vnDateKey(now.add(Duration(days: i))),
+    ];
+    final spots = repo();
+    await pumpSheet(tester, spots: spots, schedule: spotBookingSchedule(days: days));
+
+    expect(spots.spotDayReads.toSet().length, 15);
+    expect(
+      spots.spotDayReads.every((r) => r.compareTo('${spotBookingScheduleId}_2026-10-17') <= 0),
+      isTrue,
+    );
+    expect(find.widgetWithText(AppChip, 'T7 17/10'), findsOneWidget);
+    expect(find.widgetWithText(AppChip, 'CN 18/10'), findsNothing);
   });
 
   testWidgets('changing the date chip reads that day', (tester) async {

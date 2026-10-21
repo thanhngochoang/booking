@@ -40,8 +40,7 @@ String seasonLabel(
     final end = seasonRunEnd(seasonMonths, currentMonth);
     return l.spotSeasonEnding(end ?? currentMonth);
   }
-  final range = formatSeasonRange(seasonMonths);
-  return l.spotSeasonBest('tháng $range');
+  return l.spotSeasonList(formatSeasonRange(seasonMonths));
 }
 
 /// e.g. "3 thợ · 1 sự kiện sắp tới"

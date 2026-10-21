@@ -66,8 +66,15 @@ class FakeSpotRepository implements SpotRepository {
     return spots[spotId];
   }
 
+  /// Thrown by the S29.02 section reads while set (a failed read).
+  Object? openSchedulesError;
+  Object? openOffersError;
+  Object? eventsError;
+  Object? postsError;
+
   @override
   Future<List<SpotSchedule>> openSchedulesAt(String spotId) async {
+    if (openSchedulesError case final e?) throw e;
     return schedules.values
         .where((s) => s.spotId == spotId && s.open)
         .toList();
@@ -75,6 +82,7 @@ class FakeSpotRepository implements SpotRepository {
 
   @override
   Future<List<SlotOffer>> openOffersAt(String spotId) async {
+    if (openOffersError case final e?) throw e;
     return offers.values
         .where((o) => o.spotId == spotId && o.open)
         .toList();
@@ -109,6 +117,7 @@ class FakeSpotRepository implements SpotRepository {
     DateTime? before,
     int limit = 20,
   }) async {
+    if (postsError case final e?) throw e;
     var list = posts[spotId] ?? const [];
     if (before != null) {
       list = list.where((p) => p.createdAt.isBefore(before)).toList();
@@ -118,6 +127,7 @@ class FakeSpotRepository implements SpotRepository {
 
   @override
   Future<List<EventSummary>> eventsAt(String spotId, {int limit = 10}) async {
+    if (eventsError case final e?) throw e;
     final now = DateTime.now();
     final list = events[spotId] ?? const [];
     return list

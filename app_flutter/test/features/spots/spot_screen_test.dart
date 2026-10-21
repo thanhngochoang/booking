@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
@@ -789,6 +792,131 @@ void main() {
 
     expect(find.byKey(const Key('spot-photo-post-9')), findsOneWidget);
     expect(find.byKey(const Key('spot-photo-post-11')), findsOneWidget);
+  });
+
+  Future<void> pumpSpot(
+    WidgetTester tester,
+    FakeSpotRepository fakeSpots, {
+    List<Override> extra = const [],
+  }) async {
+    final world = await _makeWorld();
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/spots/:spotId',
+          builder: (_, state) => SpotScreen(
+            spotId: state.pathParameters['spotId']!,
+            date: '2026-10-18',
+          ),
+        ),
+      ],
+      initialLocation: '/spots/spot1',
+    );
+    tester.view.physicalSize = const Size(390, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: router,
+        overrides: [
+          ...world.overrides,
+          spotRepositoryProvider.overrideWithValue(fakeSpots),
+          ...extra,
+        ],
+      ),
+    );
+  }
+
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+  }
+
+  testWidgets('a failed schedules read shows the providers error with retry, not "no providers"', (tester) async {
+    final fakeSpots = FakeSpotRepository()
+      ..seedSpot(_spot())
+      ..seedSchedule(_schedule())
+      ..openSchedulesError = Exception('boom');
+    await pumpSpot(tester, fakeSpots);
+    await settle(tester);
+
+    expect(find.byKey(const Key('spot-providers-error')), findsOneWidget);
+    expect(find.text('Chưa có thợ nhận chụp ngày này · Xem ngày khác'), findsNothing);
+    expect(find.byKey(const Key('spot-provider-sched1')), findsNothing);
+
+    fakeSpots.openSchedulesError = null;
+    await tester.tap(find.descendant(
+      of: find.byKey(const Key('spot-providers-error')),
+      matching: find.byKey(const Key('error-retry')),
+    ));
+    await settle(tester);
+
+    expect(find.byKey(const Key('spot-providers-error')), findsNothing);
+    expect(find.byKey(const Key('spot-provider-sched1')), findsOneWidget);
+  });
+
+  testWidgets('a failed offers read shows the offers error with retry; the providers still show', (tester) async {
+    final fakeSpots = FakeSpotRepository()
+      ..seedSpot(_spot())
+      ..seedSchedule(_schedule())
+      ..seedOffer(_offer())
+      ..openOffersError = Exception('boom');
+    await pumpSpot(tester, fakeSpots);
+    await settle(tester);
+
+    expect(find.byKey(const Key('spot-offers-error')), findsOneWidget);
+    expect(find.text('Gói chụp tại điểm'), findsOneWidget);
+    expect(find.byKey(const Key('spot-offer-off1')), findsNothing);
+    expect(find.byKey(const Key('spot-provider-sched1')), findsOneWidget);
+
+    fakeSpots.openOffersError = null;
+    await tester.tap(find.descendant(
+      of: find.byKey(const Key('spot-offers-error')),
+      matching: find.byKey(const Key('error-retry')),
+    ));
+    await settle(tester);
+
+    expect(find.byKey(const Key('spot-offers-error')), findsNothing);
+    expect(find.byKey(const Key('spot-offer-off1')), findsOneWidget);
+  });
+
+  testWidgets('failed events and photos reads show their own errors', (tester) async {
+    final fakeSpots = FakeSpotRepository()
+      ..seedSpot(_spot())
+      ..eventsError = Exception('boom')
+      ..postsError = Exception('boom');
+    await pumpSpot(tester, fakeSpots);
+    await settle(tester);
+
+    expect(find.byKey(const Key('spot-events-error')), findsOneWidget);
+    expect(find.byKey(const Key('spot-photos-error')), findsOneWidget);
+  });
+
+  testWidgets('while schedules and offers load, their blocks show skeletons', (tester) async {
+    final fakeSpots = FakeSpotRepository()..seedSpot(_spot());
+    final schedules = Completer<List<SpotSchedule>>();
+    final offers = Completer<List<SlotOffer>>();
+    await pumpSpot(tester, fakeSpots, extra: [
+      spotSchedulesAtProvider.overrideWith((ref, spotId) => schedules.future),
+      spotOffersAtProvider.overrideWith((ref, spotId) => offers.future),
+    ]);
+    // The spot loads, then each block waits 150 ms before its skeleton shows.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byKey(const Key('spot-providers-skeleton')), findsOneWidget);
+    expect(find.byKey(const Key('spot-offers-skeleton')), findsOneWidget);
+    expect(find.text('Chưa có thợ nhận chụp ngày này · Xem ngày khác'), findsNothing);
+
+    schedules.complete([_schedule()]);
+    offers.complete([_offer()]);
+    await settle(tester);
+
+    expect(find.byKey(const Key('spot-providers-skeleton')), findsNothing);
+    expect(find.byKey(const Key('spot-provider-sched1')), findsOneWidget);
+    expect(find.byKey(const Key('spot-offer-off1')), findsOneWidget);
   });
 
   testWidgets('posts by blocked users are hidden', (tester) async {

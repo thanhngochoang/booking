@@ -14002,6 +14002,12 @@ abstract class AppLocalizations {
   /// **'Đẹp quanh năm'**
   String get spotSeasonAllYear;
 
+  /// No description provided for @spotPhotoAlt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh chụp tại {name}'**
+  String spotPhotoAlt(String name);
+
   /// No description provided for @spotArchivedBand.
   ///
   /// In vi, this message translates to:

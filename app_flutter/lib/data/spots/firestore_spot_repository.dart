@@ -88,14 +88,33 @@ class FirestoreSpotRepository implements SpotRepository {
 
   @override
   Future<SpotSchedule?> schedule(String scheduleId) async {
-    final doc = await _db.collection('spot_schedules').doc(scheduleId).get();
-    return spotScheduleFromMap(scheduleId, doc.data());
+    final data = await _publicOrNull(
+      _db.collection('spot_schedules').doc(scheduleId),
+    );
+    return spotScheduleFromMap(scheduleId, data);
   }
 
   @override
   Future<SlotOffer?> offer(String offerId) async {
-    final doc = await _db.collection('spot_slot_offers').doc(offerId).get();
-    return slotOfferFromMap(offerId, doc.data());
+    final data = await _publicOrNull(
+      _db.collection('spot_slot_offers').doc(offerId),
+    );
+    return slotOfferFromMap(offerId, data);
+  }
+
+  /// Rules let anyone read an `open` schedule or offer; a cancelled schedule
+  /// or a closed offer is refused to everyone but its provider. For a
+  /// customer that refusal means "no longer bookable", the same as a missing
+  /// document, so it reads as null (S04 says the schedule changed).
+  Future<Map<String, dynamic>?> _publicOrNull(
+    DocumentReference<Map<String, dynamic>> ref,
+  ) async {
+    try {
+      return (await ref.get()).data();
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
+      rethrow;
+    }
   }
 
   @override

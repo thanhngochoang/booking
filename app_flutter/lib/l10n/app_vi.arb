@@ -3572,6 +3572,8 @@
   "spotSeasonBest": "Mùa đẹp: {range}",
   "@spotSeasonBest": {"placeholders": {"range": {"type": "String"}}},
   "spotSeasonAllYear": "Đẹp quanh năm",
+  "spotPhotoAlt": "Ảnh chụp tại {name}",
+  "@spotPhotoAlt": {"placeholders": {"name": {"type": "String"}}},
   "spotArchivedBand": "Điểm này không còn nhận lịch mới",
   "spotArchivedNotice": "Điểm này không còn nhận lịch mới",
   "spotsCardStats": "{providers} thợ · {events} sự kiện sắp tới",

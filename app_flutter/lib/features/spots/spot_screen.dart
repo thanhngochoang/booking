@@ -8,7 +8,9 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/events/event_card_data_of.dart';
+import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
@@ -72,12 +74,12 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
     await ref.read(externalLauncherProvider).open(uri);
   }
 
-  Future<void> _pickDate(DateTime initialDate, List<String> availableDays) async {
+  Future<void> _pickDate(DateTime initialDate, DateTime now) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 60)),
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 60)),
     );
     if (picked != null && mounted) {
       setState(() {
@@ -121,25 +123,19 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
               );
             }
 
-            final schedules =
-                ref.watch(spotSchedulesAtProvider(widget.spotId)).value ??
-                    const [];
-            final offers =
-                ref.watch(spotOffersAtProvider(widget.spotId)).value ??
-                    const [];
-            final events =
-                ref.watch(spotEventsProvider(widget.spotId)).value ??
-                    const [];
-            final posts =
-                ref.watch(spotPostsProvider(widget.spotId)).value ??
-                    const [];
+            final schedulesAsync =
+                ref.watch(spotSchedulesAtProvider(widget.spotId));
+            // The day chips and the default day follow the loaded schedules;
+            // the sections below wait on their own reads (AsyncView).
+            final loadedSchedules =
+                schedulesAsync.value ?? const <SpotSchedule>[];
             final profile = ref.watch(currentProfileProvider).value;
             final isPhotographer = profile?.role == UserRole.photographer;
 
             // Collect schedule days within next 14 days
             final cutoffStr = vnDateKey(now.add(const Duration(days: 14)));
             final upcomingScheduleDays = <String>{};
-            for (final s in schedules) {
+            for (final s in loadedSchedules) {
               for (final d in s.days) {
                 if (d.compareTo(todayStr) >= 0 && d.compareTo(cutoffStr) <= 0) {
                   upcomingScheduleDays.add(d);
@@ -154,25 +150,31 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                     ? todayStr
                     : (sortedDays.isNotEmpty ? sortedDays.first : todayStr));
 
-            // Load summaries for providers at this spot
-            final providerIds = (schedules.map((s) => s.providerId).toSet().toList()..sort()).join(',');
-            final summaries = ref
-                    .watch(spotPhotographerSummariesProvider(providerIds))
-                    .value ??
-                const <String, PhotographerSummary>{};
+            // Providers need their public summaries (name, acceptingOrders)
+            // before the block draws: schedules and summaries load together.
+            final providerIds = (loadedSchedules
+                    .map((s) => s.providerId)
+                    .toSet()
+                    .toList()
+                  ..sort())
+                .join(',');
+            final providersView = _both(
+              schedulesAsync,
+              ref.watch(spotPhotographerSummariesProvider(providerIds)),
+            );
+            void retryProviders() {
+              ref.invalidate(spotSchedulesAtProvider(widget.spotId));
+              ref.invalidate(spotPhotographerSummariesProvider(providerIds));
+            }
 
-            // Filter schedules for effective day and visible providers
-            final daySchedules = schedules
-                .where((s) => s.days.contains(effectiveDay))
-                .where((s) {
-                  final summary = summaries[s.providerId];
-                  // If photographer is known and acceptingOrders is explicitly false, hide them
-                  if (summary != null && !summary.acceptingOrders) {
-                    return false;
-                  }
-                  return true;
-                })
-                .toList();
+            final offersView = _both(
+              ref.watch(spotOffersAtProvider(widget.spotId)),
+              providersView,
+            );
+            void retryOffers() {
+              ref.invalidate(spotOffersAtProvider(widget.spotId));
+              if (providersView.hasError) retryProviders();
+            }
 
             return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -191,12 +193,16 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                                 semanticLabel: spot.name,
                               )
                             : Container(
-                                color: const Color(0xFF2C3E50),
-                                child: const Center(
+                                color: dark
+                                    ? AppColorsDark.surfaceMuted
+                                    : AppColors.surfaceMuted,
+                                child: Center(
                                   child: AppIcon(
                                     AppIcons.landscape,
                                     size: 48,
-                                    color: Colors.white38,
+                                    color: dark
+                                        ? AppColorsDark.foregroundMuted
+                                        : AppColors.foregroundMuted,
                                   ),
                                 ),
                               ),
@@ -212,17 +218,17 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                             children: [
                               IconButton(
                                 icon: const AppIcon(AppIcons.back),
-                                color: Colors.white,
+                                color: AppColors.onScrim,
                                 style: IconButton.styleFrom(
-                                  backgroundColor: const Color(0x66000000),
+                                  backgroundColor: AppColors.overlay,
                                 ),
                                 onPressed: _back,
                               ),
                               IconButton(
                                 icon: const AppIcon(AppIcons.share),
-                                color: Colors.white,
+                                color: AppColors.onScrim,
                                 style: IconButton.styleFrom(
-                                  backgroundColor: const Color(0x66000000),
+                                  backgroundColor: AppColors.overlay,
                                 ),
                                 onPressed: () => _share(spot),
                               ),
@@ -315,8 +321,8 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  l.spotSeasonBest(
-                                    'tháng ${formatSeasonRange(spot.seasonMonths)}',
+                                  l.spotSeasonList(
+                                    formatSeasonRange(spot.seasonMonths),
                                   ),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 12,
@@ -491,149 +497,32 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                       ),
                     ),
                   ),
-                  // Date selection chips
+                  // Date chips and the providers of the chosen day
                   SliverToBoxAdapter(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s4,
-                        vertical: AppSpace.s1,
+                    child: AsyncView<
+                        (List<SpotSchedule>, Map<String, PhotographerSummary>)>(
+                      value: providersView,
+                      skeleton: (_) => const _CardsSkeleton(
+                        key: Key('spot-providers-skeleton'),
+                        card: _SkeletonCard.provider,
                       ),
-                      child: Row(
-                        children: [
-                          AppChip(
-                            key: const Key('chip-day-today'),
-                            label: l.spotDayToday,
-                            selected: effectiveDay == todayStr,
-                            onChanged: (_) {
-                              setState(() => _selectedDay = todayStr);
-                            },
-                          ),
-                          const SizedBox(width: AppSpace.s2),
-                          for (final day in sortedDays)
-                            if (day != todayStr) ...[
-                              AppChip(
-                                key: Key('chip-day-$day'),
-                                label: formatDay(parseDayKey(day)!),
-                                selected: effectiveDay == day,
-                                onChanged: (_) {
-                                  setState(() => _selectedDay = day);
-                                },
-                              ),
-                              const SizedBox(width: AppSpace.s2),
-                            ],
-                          AppChip(
-                            key: const Key('chip-day-pick'),
-                            label: l.spotDayPick,
-                            selected: false,
-                            leading: const AppIcon(AppIcons.calendar, size: 14),
-                            onChanged: (_) => _pickDate(
-                              parseDayKey(effectiveDay) ?? now,
-                              sortedDays,
-                            ),
-                          ),
-                        ],
+                      onRetry: retryProviders,
+                      error: (context, err, _) => ErrorState(
+                        key: const Key('spot-providers-error'),
+                        message: errorMessage(err, l),
+                        onRetry: retryProviders,
+                      ),
+                      data: (context, v) => _providersBlock(
+                        context,
+                        schedules: v.$1,
+                        summaries: v.$2,
+                        todayStr: todayStr,
+                        sortedDays: sortedDays,
+                        effectiveDay: effectiveDay,
+                        now: now,
                       ),
                     ),
                   ),
-
-                  // Providers list for effectiveDay
-                  if (daySchedules.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpace.s4,
-                          AppSpace.s2,
-                          AppSpace.s4,
-                          0,
-                        ),
-                        child: Material(
-                          color: dark ? AppColorsDark.glass : AppColors.glass,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            side: BorderSide(color: scheme.outlineVariant),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s3,
-                              vertical: AppSpace.s4,
-                            ),
-                            child: Column(
-                              children: [
-                                AppIcon(
-                                  AppIcons.eventBusy,
-                                  size: 28,
-                                  color: dark
-                                      ? AppColorsDark.foregroundMuted
-                                      : AppColors.foregroundMuted,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  l.spotNoProviderDay,
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                if (sortedDays.isNotEmpty &&
-                                    sortedDays.first != effectiveDay) ...[
-                                  const SizedBox(height: 4),
-                                  TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedDay = sortedDays.first;
-                                      });
-                                    },
-                                    child: Text(l.spotEmptyDayAction),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpace.s4,
-                        AppSpace.s2,
-                        AppSpace.s4,
-                        0,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final schedule = daySchedules[index];
-                            final summary = summaries[schedule.providerId] ??
-                                PhotographerSummary(
-                                  id: schedule.providerId,
-                                  displayName: 'Nhiếp ảnh gia',
-                                );
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: AppSpace.s2),
-                              child: SpotProviderCard(
-                                key: Key('spot-provider-${schedule.id}'),
-                                summary: summary,
-                                schedule: schedule,
-                                day: effectiveDay,
-                                onProfile: () =>
-                                    context.push('/u/${schedule.providerId}'),
-                                onBook: () => startBooking(
-                                  context,
-                                  ref,
-                                  photographerId: schedule.providerId,
-                                  scheduleId: schedule.id,
-                                  date: parseDayKey(effectiveDay),
-                                ),
-                              ),
-                            );
-                          },
-                          childCount: daySchedules.length,
-                        ),
-                      ),
-                    ),
 
                   // Provider hint for photographers
                   if (isPhotographer)
@@ -687,237 +576,124 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                     ),
 
                   // 7. Slot Offers Block ("Gói chụp tại điểm")
-                  if (offers.isNotEmpty) ...[
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpace.s4,
-                          AppSpace.s5,
-                          AppSpace.s4,
-                          AppSpace.s2,
-                        ),
-                        child: Text(
-                          l.spotOffersTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                  SliverToBoxAdapter(
+                    child: AsyncView<
+                        (
+                          List<SlotOffer>,
+                          (
+                            List<SpotSchedule>,
+                            Map<String, PhotographerSummary>
+                          )
+                        )>(
+                      value: offersView,
+                      skeleton: (_) => _Section(
+                        title: l.spotOffersTitle,
+                        child: const _CardsSkeleton(
+                          key: Key('spot-offers-skeleton'),
+                          card: _SkeletonCard.offer,
+                          count: 1,
                         ),
                       ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s4,
+                      onRetry: retryOffers,
+                      error: (context, err, _) => _Section(
+                        title: l.spotOffersTitle,
+                        child: ErrorState(
+                          key: const Key('spot-offers-error'),
+                          message: errorMessage(err, l),
+                          onRetry: retryOffers,
+                        ),
                       ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final offer = offers[index];
-                            final schedule = schedules
-                                .where((s) => s.id == offer.scheduleId)
-                                .firstOrNull;
-
-                            var freeCount = 0;
-                            if (schedule != null) {
-                              final spotDay = ref
-                                  .watch(spotDayProvider((
-                                    scheduleId: schedule.id,
-                                    day: effectiveDay,
-                                  )))
-                                  .value;
-                              final taken = spotDay?.taken ?? const [];
-                              final slots = freeSlots(
-                                schedule.window,
-                                offer,
-                                taken,
-                              );
-                              freeCount = slots.where((s) => s.free).length;
-                            }
-
-                            final dayDate = parseDayKey(effectiveDay);
-                            final dayFmt = dayDate != null
-                                ? formatDay(dayDate)
-                                : effectiveDay;
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: AppSpace.s2),
-                              child: SpotOfferCard(
-                                key: Key('spot-offer-${offer.id}'),
-                                offer: offer,
-                                providerName:
-                                    summaries[offer.providerId]?.displayName,
-                                freeSlotsCount: freeCount,
-                                dayFormatted: dayFmt,
-                                onPickSlot: schedule == null
-                                    ? null
-                                    : () => showSlotPickSheet(
-                                        context,
-                                        ref,
-                                        offer: offer,
-                                        schedule: schedule,
-                                        spotName: spot.name,
-                                        day: effectiveDay,
-                                        providerName: summaries[
-                                                offer.providerId]
-                                            ?.displayName,
-                                      ),
-                              ),
-                            );
-                          },
-                          childCount: offers.length,
+                      isEmpty: (v) => v.$1.isEmpty,
+                      empty: (_) => const SizedBox.shrink(),
+                      data: (context, v) => _Section(
+                        title: l.spotOffersTitle,
+                        child: _offersBlock(
+                          context,
+                          spot: spot,
+                          offers: v.$1,
+                          schedules: v.$2.$1,
+                          summaries: v.$2.$2,
+                          effectiveDay: effectiveDay,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ],
 
                 // 8. Events Block ("Sự kiện ở đây")
-                if (events.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpace.s4,
-                        AppSpace.s5,
-                        AppSpace.s4,
-                        AppSpace.s2,
-                      ),
-                      child: Text(
-                        l.spotEventsTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                SliverToBoxAdapter(
+                  child: AsyncView<List<EventSummary>>(
+                    value: ref.watch(spotEventsProvider(widget.spotId)),
+                    skeleton: (_) => _Section(
+                      title: l.spotEventsTitle,
+                      child: AppSkeleton.group(
+                        child: EventCard.skeleton(
+                          key: const Key('spot-events-skeleton'),
                         ),
                       ),
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s4,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final e = events[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpace.s2),
-                            child: EventCard(
-                              key: Key('spot-event-${e.id}'),
-                              data: eventCardDataOf(e, l),
-                              onTap: () => context.push(eventPath(e.id)),
-                              size: EventCardSize.row,
-                            ),
-                          );
-                        },
-                        childCount: events.length,
+                    onRetry: () =>
+                        ref.invalidate(spotEventsProvider(widget.spotId)),
+                    error: (context, err, _) => _Section(
+                      title: l.spotEventsTitle,
+                      child: ErrorState(
+                        key: const Key('spot-events-error'),
+                        message: errorMessage(err, l),
+                        onRetry: () =>
+                            ref.invalidate(spotEventsProvider(widget.spotId)),
                       ),
                     ),
-                  ),
-                ],
-
-                // 9. Photos Block ("Ảnh chụp ở đây")
-                if (posts.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpace.s4,
-                        AppSpace.s5,
-                        AppSpace.s4,
-                        AppSpace.s2,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    isEmpty: (events) => events.isEmpty,
+                    empty: (_) => const SizedBox.shrink(),
+                    data: (context, events) => _Section(
+                      title: l.spotEventsTitle,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            l.spotPhotosTitle,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          for (final e in events)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSpace.s2),
+                              child: EventCard(
+                                key: Key('spot-event-${e.id}'),
+                                data: eventCardDataOf(e, l),
+                                onTap: () => context.push(eventPath(e.id)),
+                                size: EventCardSize.row,
+                              ),
                             ),
-                          ),
-                          Text(
-                            l.spotPhotosCount(posts.length),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: dark
-                                  ? AppColorsDark.foregroundMuted
-                                  : AppColors.foregroundMuted,
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s4,
-                    ),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: AppSpace.s2,
-                        mainAxisSpacing: AppSpace.s2,
-                        childAspectRatio: 3 / 4,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final post = posts[index];
-                          final cover = post.images.firstOrNull;
-                          return Semantics(
-                            link: true,
-                            label: post.caption.isNotEmpty
-                                ? post.caption
-                                : 'Ảnh chụp tại ${spot.name}',
-                            child: Material(
-                              color: dark
-                                  ? AppColorsDark.glass
-                                  : AppColors.glass,
-                              clipBehavior: Clip.antiAlias,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                              child: InkWell(
-                                key: Key('spot-photo-${post.id}'),
-                                onTap: () => context.push('/p/${post.id}'),
-                                child: cover != null
-                                    ? NetworkPhoto(
-                                        url: cover.url,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : const Center(
-                                        child: AppIcon(
-                                          AppIcons.image,
-                                          size: 28,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          );
-                        },
-                        childCount: _expandedPhotos
-                            ? posts.length
-                            : (posts.length > 9 ? 9 : posts.length),
+                ),
+
+                // 9. Photos Block ("Ảnh chụp ở đây")
+                SliverToBoxAdapter(
+                  child: AsyncView<List<PostSummary>>(
+                    value: ref.watch(spotPostsProvider(widget.spotId)),
+                    skeleton: (_) => _Section(
+                      title: l.spotPhotosTitle,
+                      child: const _PhotosSkeleton(
+                        key: Key('spot-photos-skeleton'),
                       ),
                     ),
+                    onRetry: () =>
+                        ref.invalidate(spotPostsProvider(widget.spotId)),
+                    error: (context, err, _) => _Section(
+                      title: l.spotPhotosTitle,
+                      child: ErrorState(
+                        key: const Key('spot-photos-error'),
+                        message: errorMessage(err, l),
+                        onRetry: () =>
+                            ref.invalidate(spotPostsProvider(widget.spotId)),
+                      ),
+                    ),
+                    isEmpty: (posts) => posts.isEmpty,
+                    empty: (_) => const SizedBox.shrink(),
+                    data: (context, posts) =>
+                        _photosBlock(context, spot: spot, posts: posts),
                   ),
-                  if (posts.length > 9 && !_expandedPhotos)
-                    SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s3,
-                          ),
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() => _expandedPhotos = true);
-                              ref
-                                  .read(
-                                    spotPostsProvider(widget.spotId).notifier,
-                                  )
-                                  .loadMore();
-                            },
-                            child: Text(l.spotSeeMore),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
 
                 const SliverToBoxAdapter(
                   child: SizedBox(height: AppSpace.s8),
@@ -926,6 +702,425 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// Day chips, then the providers of [effectiveDay] (or the empty card).
+  Widget _providersBlock(
+    BuildContext context, {
+    required List<SpotSchedule> schedules,
+    required Map<String, PhotographerSummary> summaries,
+    required String todayStr,
+    required List<String> sortedDays,
+    required String effectiveDay,
+    required DateTime now,
+  }) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
+
+    // Schedules of the day whose provider still takes orders (spec §12).
+    final daySchedules = schedules
+        .where((s) => s.days.contains(effectiveDay))
+        .where((s) => summaries[s.providerId]?.acceptingOrders != false)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s4,
+            vertical: AppSpace.s1,
+          ),
+          child: Row(
+            children: [
+              AppChip(
+                key: const Key('chip-day-today'),
+                label: l.spotDayToday,
+                selected: effectiveDay == todayStr,
+                onChanged: (_) {
+                  setState(() => _selectedDay = todayStr);
+                },
+              ),
+              const SizedBox(width: AppSpace.s2),
+              for (final day in sortedDays)
+                if (day != todayStr) ...[
+                  AppChip(
+                    key: Key('chip-day-$day'),
+                    label: formatDay(parseDayKey(day)!),
+                    selected: effectiveDay == day,
+                    onChanged: (_) {
+                      setState(() => _selectedDay = day);
+                    },
+                  ),
+                  const SizedBox(width: AppSpace.s2),
+                ],
+              AppChip(
+                key: const Key('chip-day-pick'),
+                label: l.spotDayPick,
+                selected: false,
+                leading: const AppIcon(AppIcons.calendar, size: 14),
+                onChanged: (_) => _pickDate(
+                  parseDayKey(effectiveDay) ?? now,
+                  now,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s4,
+            AppSpace.s2,
+            AppSpace.s4,
+            0,
+          ),
+          child: daySchedules.isEmpty
+              ? Material(
+                  color: dark ? AppColorsDark.glass : AppColors.glass,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    side: BorderSide(color: scheme.outlineVariant),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s3,
+                      vertical: AppSpace.s4,
+                    ),
+                    child: Column(
+                      children: [
+                        AppIcon(
+                          AppIcons.eventBusy,
+                          size: 28,
+                          color: dark
+                              ? AppColorsDark.foregroundMuted
+                              : AppColors.foregroundMuted,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          l.spotNoProviderDay,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (sortedDays.isNotEmpty &&
+                            sortedDays.first != effectiveDay) ...[
+                          const SizedBox(height: 4),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedDay = sortedDays.first;
+                              });
+                            },
+                            child: Text(l.spotEmptyDayAction),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final schedule in daySchedules)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpace.s2),
+                        child: SpotProviderCard(
+                          key: Key('spot-provider-${schedule.id}'),
+                          summary: summaries[schedule.providerId] ??
+                              PhotographerSummary(
+                                id: schedule.providerId,
+                                displayName: l.profileRolePhotographer,
+                              ),
+                          schedule: schedule,
+                          day: effectiveDay,
+                          onProfile: () =>
+                              context.push('/u/${schedule.providerId}'),
+                          onBook: () => startBooking(
+                            context,
+                            ref,
+                            photographerId: schedule.providerId,
+                            scheduleId: schedule.id,
+                            date: parseDayKey(effectiveDay),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// The open slot offers with their free slots on [effectiveDay].
+  Widget _offersBlock(
+    BuildContext context, {
+    required Spot spot,
+    required List<SlotOffer> offers,
+    required List<SpotSchedule> schedules,
+    required Map<String, PhotographerSummary> summaries,
+    required String effectiveDay,
+  }) {
+    final dayDate = parseDayKey(effectiveDay);
+    final dayFmt = dayDate != null ? formatDay(dayDate) : effectiveDay;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final offer in offers)
+          Builder(
+            builder: (context) {
+              final schedule = schedules
+                  .where((s) => s.id == offer.scheduleId)
+                  .firstOrNull;
+
+              var freeCount = 0;
+              if (schedule != null) {
+                final spotDay = ref
+                    .watch(spotDayProvider((
+                      scheduleId: schedule.id,
+                      day: effectiveDay,
+                    )))
+                    .value;
+                final taken = spotDay?.taken ?? const [];
+                freeCount = freeSlots(schedule.window, offer, taken)
+                    .where((s) => s.free)
+                    .length;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s2),
+                child: SpotOfferCard(
+                  key: Key('spot-offer-${offer.id}'),
+                  offer: offer,
+                  providerName: summaries[offer.providerId]?.displayName,
+                  freeSlotsCount: freeCount,
+                  dayFormatted: dayFmt,
+                  onPickSlot: schedule == null
+                      ? null
+                      : () => showSlotPickSheet(
+                            context,
+                            ref,
+                            offer: offer,
+                            schedule: schedule,
+                            spotName: spot.name,
+                            day: effectiveDay,
+                            providerName:
+                                summaries[offer.providerId]?.displayName,
+                          ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  /// Photos tagged at the spot: 9 tiles, then all after "Xem thêm".
+  Widget _photosBlock(
+    BuildContext context, {
+    required Spot spot,
+    required List<PostSummary> posts,
+  }) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final shown = _expandedPhotos ? posts : posts.take(9).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s4,
+            AppSpace.s5,
+            AppSpace.s4,
+            AppSpace.s2,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l.spotPhotosTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                l.spotPhotosCount(posts.length),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: dark
+                      ? AppColorsDark.foregroundMuted
+                      : AppColors.foregroundMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: AppSpace.s2,
+          mainAxisSpacing: AppSpace.s2,
+          childAspectRatio: 3 / 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+          children: [
+            for (final post in shown)
+              Semantics(
+                link: true,
+                label: post.caption.isNotEmpty
+                    ? post.caption
+                    : l.spotPhotoAlt(spot.name),
+                child: Material(
+                  color: dark ? AppColorsDark.glass : AppColors.glass,
+                  clipBehavior: Clip.antiAlias,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  child: InkWell(
+                    key: Key('spot-photo-${post.id}'),
+                    onTap: () => context.push('/p/${post.id}'),
+                    child: post.images.firstOrNull != null
+                        ? NetworkPhoto(
+                            url: post.images.first.url,
+                            fit: BoxFit.cover,
+                          )
+                        : const Center(
+                            child: AppIcon(AppIcons.image, size: 28),
+                          ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (posts.length > 9 && !_expandedPhotos)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.s3),
+              child: TextButton(
+                onPressed: () {
+                  setState(() => _expandedPhotos = true);
+                  ref
+                      .read(spotPostsProvider(widget.spotId).notifier)
+                      .loadMore();
+                },
+                child: Text(l.spotSeeMore),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Both values once both have loaded; otherwise the first error, else loading.
+AsyncValue<(A, B)> _both<A, B>(AsyncValue<A> a, AsyncValue<B> b) {
+  if (a.hasValue && b.hasValue) {
+    return AsyncData((a.requireValue, b.requireValue));
+  }
+  if (a.hasError) return AsyncError(a.error!, a.stackTrace ?? StackTrace.empty);
+  if (b.hasError) return AsyncError(b.error!, b.stackTrace ?? StackTrace.empty);
+  return const AsyncLoading();
+}
+
+/// A titled S29.02 block (title row above [child]).
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s4,
+            AppSpace.s5,
+            AppSpace.s4,
+            AppSpace.s2,
+          ),
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+enum _SkeletonCard { provider, offer }
+
+/// Stand-ins for provider or offer cards while their block loads.
+class _CardsSkeleton extends StatelessWidget {
+  const _CardsSkeleton({super.key, required this.card, this.count = 2});
+
+  final _SkeletonCard card;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final one = switch (card) {
+      _SkeletonCard.provider => SpotProviderCard.skeleton(),
+      _SkeletonCard.offer => SpotOfferCard.skeleton(),
+    };
+    return AppSkeleton.group(
+      child: Padding(
+        padding: card == _SkeletonCard.provider
+            ? const EdgeInsets.fromLTRB(
+                AppSpace.s4,
+                AppSpace.s2,
+                AppSpace.s4,
+                0,
+              )
+            : EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < count; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s2),
+                child: one,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Two photo tiles while the photos block loads.
+class _PhotosSkeleton extends StatelessWidget {
+  const _PhotosSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSkeleton.group(
+      child: Row(
+        children: [
+          for (var i = 0; i < 2; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpace.s2),
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 3 / 4,
+                child: AppSkeleton.box(height: 1, radius: AppRadius.card),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
