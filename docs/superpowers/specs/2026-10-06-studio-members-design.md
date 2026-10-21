@@ -27,7 +27,7 @@ Một studio có nhiều thợ. Studio chốt giá với khách rồi giao buổ
 
 ### 3.1 Dữ liệu
 
-`studio_members/{studioId}_{uid}` (SQL: bảng `studio_members`, khoá `(studio_id, member_id, created_at)`). Chỉ server ghi; rules cho studio và thợ trong quan hệ đọc.
+`studio_members/{studioId}_{memberId}_{createdAtMs}` (mỗi quan hệ một id mới, Decision 1 của plan #136; SQL: bảng `studio_members`, khoá `(studio_id, member_id, created_at)`). Chỉ server ghi; rules cho studio và thợ trong quan hệ đọc.
 
 | Trường | Ghi chú |
 |---|---|
@@ -36,7 +36,9 @@ Một studio có nhiều thợ. Studio chốt giá với khách rồi giao buổ
 | `initiatedBy` | `studio` \| `member` |
 | `createdAt`, `expiresAt` (= tạo + 7 ngày), `respondedAt?`, `joinedAt?`, `endedAt?`, `endedBy?` | |
 
-Một quan hệ kết thúc rồi mở lại thì tạo bản ghi mới (id thêm hậu tố thời gian); lịch sử giữ nguyên để tính thời gian nghỉ và giới hạn theo ngày.
+Mọi quan hệ có id mới `{studioId}_{memberId}_{createdAtMs}`; một quan hệ kết thúc rồi mở lại thì tạo bản ghi mới, lịch sử giữ nguyên để tính thời gian nghỉ và giới hạn theo ngày. "Một quan hệ mở mỗi cặp" và "một studio `active` mỗi thợ" do domain giữ trong transaction: `photographers/{memberId}.studioId` là khoá chung nên hai lời nhận song song chỉ một cái thành công (cái kia `membership_conflict`).
+
+**Thành viên công khai** đọc từ `photographers/{uid}.studioId` (công khai, chỉ server ghi, kèm `studioJoinedAt`), không đọc từ `studio_members` (chỉ hai bên xem được, §8). Hàng "Thành viên" ở S03.01 truy vấn `photographers` theo `studioId == studio`, sắp theo `studioJoinedAt`, tối đa 10; `memberCount` của studio cho số "+n".
 
 Thêm vào hồ sơ: thợ có `studioId?`; studio có `memberCount`, và bộ đếm vi phạm `lateAssignCount`, `changeDeclinedCount`, `lateReassignCount`, `lateDeliveryCount` (chỉ server ghi, staff xem; chưa hiện công khai, chưa dùng xếp hạng).
 
@@ -94,7 +96,8 @@ Dùng luồng hiện có: gói của studio hoặc báo giá (S16, báo giá tro
 
 ### 5.2 Giao thợ
 
-Booking thêm: `assigneeId?`, `assignDeadline` (= `startAt` − 24 giờ), `assignments: [{assigneeId, at, by, reason?}]`, `assignOverdue: bool`.
+Booking thêm: `assigneeId?`, `assigneeKind?` (chỉ `member` ở S26; S27 thêm `collaborator`), `assignDeadline`, `assignments: [{assigneeId, assigneeKind, at, by, reason?, late}]`, `assignOverdue: bool`.
+- **Hạn giao** (Decision 8 của plan #136): `assignDeadline = max(startAt − 24 giờ, lúc tạo + 2 giờ)`, không vượt `startAt`. Booking đặt khi còn dưới 24 giờ thì studio có 2 giờ để giao thay vì bị từ chối (mặc định của "Needs the owner 1"). Các trường studio do bộ dựng booking nháp dùng chung ghi khi `providerType = studio`, nên báo giá hay cộng tác viên của studio cũng có cùng trường.
 
 - **S26.04** (sheet, chủ studio, mở từ chi tiết booking và từ S06.01): tóm tắt booking, "Hạn giao thợ: {giờ ngày} (còn {x})"; danh sách thành viên chọn đơn, kèm trạng thái rảnh đúng khung giờ và % cà chua; thành viên bận (booking cá nhân hoặc studio khác trùng giờ) hiện mờ "Bận {giờ}"; nút chính "Giao cho {tên}".
 - Callable `assignBooking`: kiểm tra thành viên `active`, rảnh, booking chưa qua `shot`. Ghi `assigneeId`, thêm vào `assignments`, chặn lịch của thợ, thêm thợ vào hội thoại booking, báo khách.
@@ -136,11 +139,11 @@ Thợ được giao không thấy lối vào S06.07. Chuyển ảnh gốc từ t
 
 ### 5.7 Liên hệ
 
-Gọi/Zalo/WhatsApp của studio mở sau khi thanh toán (luật hiện có). Của thợ được giao mở khi đã giao và đã thanh toán; đổi thợ thì đóng với thợ cũ. Số điện thoại vẫn không nằm trong hồ sơ công khai.
+Gọi/Zalo/WhatsApp của studio mở sau khi thanh toán (luật hiện có). Thợ được giao đọc liên hệ của khách theo cùng luật mở khoá như studio (người gặp khách cần số, Decision 17 của plan #136) và thấy booking, sự kiện của booking; đổi thợ thì thợ cũ mất quyền đọc. Chiều ngược lại (khách nhận kênh gọi/Zalo/WhatsApp riêng của thợ được giao) **chưa làm** trong S26: mock không có nút, khách nói chuyện với thợ trong chat của booking. Số điện thoại vẫn không nằm trong hồ sơ công khai.
 
 ## 6. Đánh giá hai bên
 
-- Với booking studio, S05.05 có **hai khối** xếp dọc: "Thợ {tên}" (lý do gạch như spec cà chua/gạch §3.1) và "Studio {tên}" (lý do gạch riêng: `slow_response` Tư vấn/phản hồi chậm, `price_changed` Đổi giá, `late_assignment` Báo thợ trễ, `poor_assignment` Giao thợ không hợp, `other` Khác). Mỗi khối có `VerdictPad`, chip lý do khi là gạch, và **ô nhận xét riêng** (10–1000 ký tự). Chia sẻ ảnh giữ một section chung; bài "Buổi chụp thật" gắn tag cả thợ và studio. Nút chính "Gửi 2 đánh giá" chỉ bật khi đủ cả hai khối; dòng nhắc nói khối nào còn thiếu.
+- Với booking studio, S05.05 có **hai khối** xếp dọc: "Thợ {tên}" (lý do gạch như spec cà chua/gạch §3.1) và "Studio {tên}" (lý do gạch riêng: `slow_response` Tư vấn chậm (nhãn theo mock), `price_changed` Đổi giá, `late_assignment` Báo thợ trễ, `poor_assignment` Giao thợ không hợp, `other` Khác). Mỗi khối có `VerdictPad`, chip lý do khi là gạch, và **ô nhận xét riêng** (10–1000 ký tự). Chia sẻ ảnh giữ một section chung; bài "Buổi chụp thật" gắn tag cả thợ và studio. Nút chính "Gửi 2 đánh giá" chỉ bật khi đủ cả hai khối; dòng nhắc nói khối nào còn thiếu.
 - Người được đánh giá là thợ **cuối cùng** được giao.
 - Dữ liệu (mở rộng spec cà chua/gạch §3.1): review thêm `subjectType: photographer | studio`, `subjectId`. Booking studio có hai bản ghi trong cùng transaction của `submitReview`: `reviews/{bookingId}` (thợ) và `reviews/{bookingId}_studio` (studio). Thiếu một trong hai → `invalid_argument`. Booking cá nhân giữ một bản ghi. Luật đổi thành "**một đánh giá cho mỗi đối tượng** trong một booking".
 - Thống kê: đánh giá thợ cộng vào % cá nhân của thợ; đánh giá studio cộng vào % của studio; không trộn.

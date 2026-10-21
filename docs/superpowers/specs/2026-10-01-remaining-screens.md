@@ -222,11 +222,11 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · khớp mock (#145) | — |
 | S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · có mock | — |
 | **S26** | **Studio và thành viên** | | | | | |
-| S26.01 | Thành viên studio | `/studio/members` | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.02 | Mời thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.03 | Studio của tôi | `/me/studio` | thợ ảnh | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.04 | Giao thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.05 | Xin đổi thợ (sheet) | — (sheet) | khách | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
+| S26.01 | Thành viên studio | `/studio/members` | studio | spec 10-06 Studio | ⬜ có mock, đang làm (#136) | — |
+| S26.02 | Mời thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, đang làm (#136) | — |
+| S26.03 | Studio của tôi | `/me/studio` | thợ ảnh | spec 10-06 Studio | ⬜ có mock, đang làm (#136) | — |
+| S26.04 | Giao thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, đang làm (#136) | — |
+| S26.05 | Xin đổi thợ (sheet) | — (sheet) | khách | spec 10-06 Studio | ⬜ có mock, đang làm (#136) | — |
 | **S27** | **Studio tuyển thợ** | | | | | |
 | S27.01 | Tin tuyển: danh sách, lọc khu vực / thể loại / loại (tab "Tuyển thợ" trong S06.01) | `/recruit` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.02 | Chi tiết tin tuyển | `/recruit/:postId` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
