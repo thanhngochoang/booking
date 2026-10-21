@@ -1,44 +1,51 @@
-# Dependabot version updates. Security alerts/updates are a repository setting
-# (Settings → Code security), not configured here.
+# Dependabot version and security updates.
+#
+# One PR per ecosystem for every minor and patch bump: the four npm packages
+# share one entry (`directories`), so a package used in several of them is
+# bumped everywhere in the same PR. Security fixes are grouped the same way
+# (`applies-to: security-updates`). Major bumps stay one PR each, because
+# each needs its own review (API changes, Node or JDK requirements).
+#
+# Alerts and security updates themselves are repository settings
+# (Settings → Code security), enabled on 2026-10-18.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
     groups:
-      actions: { patterns: ["*"] }
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: npm
-    directory: /packages/domain
+    directories:
+      - /packages/domain
+      - /app_flutter/firebase/functions
+      - /app_flutter/firebase/rules-test
+      - /services/api
     schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     groups:
-      minor-and-patch: { update-types: [minor, patch] }
-
-  - package-ecosystem: npm
-    directory: /app_flutter/firebase/functions
-    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
-    open-pull-requests-limit: 5
-    groups:
-      minor-and-patch: { update-types: [minor, patch] }
-
-  - package-ecosystem: npm
-    directory: /app_flutter/firebase/rules-test
-    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
-    open-pull-requests-limit: 3
-    groups:
-      minor-and-patch: { update-types: [minor, patch] }
-
-  - package-ecosystem: npm
-    directory: /services/api
-    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
-    open-pull-requests-limit: 3
-    groups:
-      minor-and-patch: { update-types: [minor, patch] }
+      npm-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # firebase-tools 15 needs JDK 21 for the emulators; the move is PR #266.
+      # Remove this block once #266 is merged.
+      - dependency-name: firebase-tools
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pub
     directory: /app_flutter
     schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
     open-pull-requests-limit: 5
     groups:
-      minor-and-patch: { update-types: [minor, patch] }
+      pub-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      pub-security:
+        applies-to: security-updates
+        patterns: ["*"]
