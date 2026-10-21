@@ -16,6 +16,15 @@ class FakeSpotRepository implements SpotRepository {
   final Map<String, List<PostSummary>> posts = {};
   final Map<String, List<EventSummary>> events = {};
 
+  /// The signed-in provider that saves schedules and offers.
+  String ownerId = 'provider_1';
+
+  /// Thrown by the four writes while set (a refused callable).
+  Object? saveScheduleError;
+  Object? cancelScheduleError;
+  Object? saveOfferError;
+  Object? closeOfferError;
+
   final List<SpotScheduleInput> saveScheduleCalls = [];
   final List<String> cancelScheduleCalls = [];
   final List<SlotOfferInput> saveOfferCalls = [];
@@ -122,10 +131,7 @@ class FakeSpotRepository implements SpotRepository {
     List<SpotSchedule> mine() =>
         schedules.values.where((s) => s.providerId == uid && s.open).toList();
 
-    return _scheduleChanges.stream
-        .where((pId) => pId == uid)
-        .map((_) => mine())
-        .transform(_startWith(mine()));
+    return _startWith(mine, _scheduleChanges.stream.where((pId) => pId == uid));
   }
 
   @override
@@ -133,10 +139,7 @@ class FakeSpotRepository implements SpotRepository {
     List<SlotOffer> mine() =>
         offers.values.where((o) => o.providerId == uid && o.open).toList();
 
-    return _offerChanges.stream
-        .where((pId) => pId == uid)
-        .map((_) => mine())
-        .transform(_startWith(mine()));
+    return _startWith(mine, _offerChanges.stream.where((pId) => pId == uid));
   }
 
   @override
@@ -144,10 +147,11 @@ class FakeSpotRepository implements SpotRepository {
     SpotScheduleInput input,
   ) async {
     saveScheduleCalls.add(input);
+    if (saveScheduleError case final e?) throw e;
     final id = input.scheduleId ?? 'schedule_${_nextScheduleId++}';
     final s = SpotSchedule(
       id: id,
-      providerId: 'provider_1',
+      providerId: ownerId,
       spotId: input.spotId,
       assigneeId: input.assigneeId,
       days: input.days,
@@ -164,6 +168,7 @@ class FakeSpotRepository implements SpotRepository {
   @override
   Future<void> cancelSchedule(String scheduleId) async {
     cancelScheduleCalls.add(scheduleId);
+    if (cancelScheduleError case final e?) throw e;
     final s = schedules[scheduleId];
     if (s != null) {
       schedules[scheduleId] = SpotSchedule(
@@ -184,12 +189,13 @@ class FakeSpotRepository implements SpotRepository {
   @override
   Future<String> saveOffer(SlotOfferInput input) async {
     saveOfferCalls.add(input);
+    if (saveOfferError case final e?) throw e;
     final id = input.offerId ?? 'offer_${_nextOfferId++}';
     final o = SlotOffer(
       id: id,
-      providerId: 'provider_1',
+      providerId: ownerId,
       scheduleId: input.scheduleId,
-      spotId: 'spot_1',
+      spotId: schedules[input.scheduleId]?.spotId ?? 'spot_1',
       name: input.name,
       price: input.price,
       slotMinutes: input.slotMinutes,
@@ -207,6 +213,7 @@ class FakeSpotRepository implements SpotRepository {
   @override
   Future<void> closeOffer(String offerId) async {
     closeOfferCalls.add(offerId);
+    if (closeOfferError case final e?) throw e;
     final o = offers[offerId];
     if (o != null) {
       offers[offerId] = SlotOffer(
@@ -227,10 +234,12 @@ class FakeSpotRepository implements SpotRepository {
     }
   }
 
-  static StreamTransformer<T, T> _startWith<T>(T initial) {
-    return StreamTransformer<T, T>.fromHandlers(
-      handleData: (data, sink) => sink.add(data),
-      handleDone: (sink) => sink.close(),
-    );
+  /// The current list now, then again after every change.
+  static Stream<List<T>> _startWith<T>(
+    List<T> Function() current,
+    Stream<String> changes,
+  ) async* {
+    yield current();
+    yield* changes.map((_) => current());
   }
 }

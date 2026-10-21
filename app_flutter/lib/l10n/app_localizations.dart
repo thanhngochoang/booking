@@ -14307,6 +14307,641 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Điểm này không còn nhận lịch mới.'**
   String get bookSpotArchived;
+
+  /// No description provided for @spotSchedulesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm'**
+  String get spotSchedulesTitle;
+
+  /// No description provided for @spotSchedulesOpenCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} / 8 lịch đang mở'**
+  String spotSchedulesOpenCount(int count);
+
+  /// No description provided for @spotSchedulesAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm lịch tại điểm'**
+  String get spotSchedulesAdd;
+
+  /// No description provided for @spotSchedulesVerify.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh để mở lịch'**
+  String get spotSchedulesVerify;
+
+  /// No description provided for @spotSchedulesEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lịch tại điểm'**
+  String get spotSchedulesEmptyTitle;
+
+  /// No description provided for @spotSchedulesEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm chụp đang hot và mở lịch cuối tuần để khách đặt.'**
+  String get spotSchedulesEmptyBody;
+
+  /// No description provided for @spotSchedulesRule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày tại điểm chỉ nhận booking ở điểm đó, nhiều booking không chồng giờ. Ngày đó bạn không nhận booking ở nơi khác.'**
+  String get spotSchedulesRule;
+
+  /// No description provided for @spotScheduleDaysRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekdays} · {from}–{to}'**
+  String spotScheduleDaysRange(String weekdays, String from, String to);
+
+  /// No description provided for @spotScheduleDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ngày · {start}–{end}'**
+  String spotScheduleDays(int count, String start, String end);
+
+  /// No description provided for @spotScheduleSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'{days} · {packages}'**
+  String spotScheduleSummary(String days, String packages);
+
+  /// No description provided for @spotSchedulePackagesCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} gói'**
+  String spotSchedulePackagesCount(int count);
+
+  /// No description provided for @spotSchedulePackagesAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'mọi gói'**
+  String get spotSchedulePackagesAll;
+
+  /// No description provided for @spotScheduleDayCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · {count} booking'**
+  String spotScheduleDayCount(String day, int count);
+
+  /// No description provided for @spotScheduleMoreDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'+{count} ngày'**
+  String spotScheduleMoreDays(int count);
+
+  /// No description provided for @spotScheduleDayCountsLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Booking theo ngày'**
+  String get spotScheduleDayCountsLabel;
+
+  /// No description provided for @spotScheduleNoBookings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có booking'**
+  String get spotScheduleNoBookings;
+
+  /// No description provided for @spotScheduleNoOffers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có gói chia suất'**
+  String get spotScheduleNoOffers;
+
+  /// No description provided for @spotScheduleNoBookingsNoOffers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có booking · chưa có gói chia suất'**
+  String get spotScheduleNoBookingsNoOffers;
+
+  /// No description provided for @spotScheduleOfferMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} · {count} suất/ngày'**
+  String spotScheduleOfferMeta(String price, int count);
+
+  /// No description provided for @spotScheduleEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get spotScheduleEdit;
+
+  /// No description provided for @spotScheduleOffersAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chia suất'**
+  String get spotScheduleOffersAction;
+
+  /// No description provided for @spotScheduleCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ lịch'**
+  String get spotScheduleCancel;
+
+  /// No description provided for @spotScheduleCancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ lịch tại {spot}?'**
+  String spotScheduleCancelTitle(String spot);
+
+  /// No description provided for @spotScheduleCancelBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ không đặt được các ngày còn lại của lịch này.'**
+  String get spotScheduleCancelBody;
+
+  /// No description provided for @spotScheduleCancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ lịch'**
+  String get spotScheduleCancelConfirm;
+
+  /// No description provided for @spotScheduleCancelKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get spotScheduleCancelKeep;
+
+  /// No description provided for @spotScheduleHasBookings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {count} booking ngày {day}. Liên hệ khách hoặc huỷ từng booking (khách được hoàn 100%).'**
+  String spotScheduleHasBookings(int count, String day);
+
+  /// No description provided for @spotScheduleCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ lịch tại điểm'**
+  String get spotScheduleCancelled;
+
+  /// No description provided for @spotScheduleCancelFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không huỷ được lịch. Thử lại.'**
+  String get spotScheduleCancelFailed;
+
+  /// No description provided for @spotScheduleNewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm lịch tại điểm'**
+  String get spotScheduleNewTitle;
+
+  /// No description provided for @spotScheduleEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa lịch tại điểm'**
+  String get spotScheduleEditTitle;
+
+  /// No description provided for @spotScheduleLimitCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} / 8'**
+  String spotScheduleLimitCount(int count);
+
+  /// No description provided for @spotScheduleSpot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get spotScheduleSpot;
+
+  /// No description provided for @spotScheduleSpotPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn điểm chụp'**
+  String get spotScheduleSpotPick;
+
+  /// No description provided for @spotScheduleSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm theo tên điểm'**
+  String get spotScheduleSearch;
+
+  /// No description provided for @spotScheduleSpotNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có điểm nào khớp'**
+  String get spotScheduleSpotNone;
+
+  /// No description provided for @spotScheduleSpotRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm chụp'**
+  String get spotScheduleSpotRequired;
+
+  /// No description provided for @spotScheduleMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ chụp'**
+  String get spotScheduleMember;
+
+  /// No description provided for @spotScheduleMemberRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thợ chụp ở điểm này'**
+  String get spotScheduleMemberRequired;
+
+  /// No description provided for @spotScheduleNoMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa có thợ để giao lịch.'**
+  String get spotScheduleNoMembers;
+
+  /// No description provided for @spotScheduleMemberNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này chưa được duyệt nhận đơn. Chọn thợ khác.'**
+  String get spotScheduleMemberNotAccepting;
+
+  /// No description provided for @spotScheduleDaysLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày'**
+  String get spotScheduleDaysLabel;
+
+  /// No description provided for @spotScheduleRepeat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lặp lại'**
+  String get spotScheduleRepeat;
+
+  /// No description provided for @spotSchedulePickDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get spotSchedulePickDays;
+
+  /// No description provided for @spotScheduleWeekdays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ trong tuần'**
+  String get spotScheduleWeekdays;
+
+  /// No description provided for @spotScheduleFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ ngày'**
+  String get spotScheduleFrom;
+
+  /// No description provided for @spotScheduleTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tới ngày'**
+  String get spotScheduleTo;
+
+  /// No description provided for @spotScheduleStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu'**
+  String get spotScheduleStart;
+
+  /// No description provided for @spotScheduleEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get spotScheduleEnd;
+
+  /// No description provided for @spotSchedulePackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói đặt được'**
+  String get spotSchedulePackages;
+
+  /// No description provided for @spotScheduleAllPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi gói đang bật'**
+  String get spotScheduleAllPackages;
+
+  /// No description provided for @spotScheduleConflictBooked.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} đã có booking ở nơi khác.'**
+  String spotScheduleConflictBooked(String day);
+
+  /// No description provided for @spotScheduleConflictPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} đang có booking chờ nhận.'**
+  String spotScheduleConflictPending(String day);
+
+  /// No description provided for @spotScheduleConflictOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} bạn đã đánh dấu nghỉ.'**
+  String spotScheduleConflictOff(String day);
+
+  /// No description provided for @spotScheduleConflictSpot.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} đã có lịch tại điểm khác.'**
+  String spotScheduleConflictSpot(String day);
+
+  /// No description provided for @spotScheduleConflictFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} studio hết chỗ.'**
+  String spotScheduleConflictFull(String day);
+
+  /// No description provided for @spotScheduleConflictHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ngày đỏ để mở lịch.'**
+  String get spotScheduleConflictHint;
+
+  /// No description provided for @spotScheduleRemoveDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} trùng lịch, chạm để bỏ'**
+  String spotScheduleRemoveDay(String day);
+
+  /// No description provided for @spotScheduleOffSeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này đẹp nhất tháng {months}'**
+  String spotScheduleOffSeason(String months);
+
+  /// No description provided for @spotScheduleOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở lịch'**
+  String get spotScheduleOpen;
+
+  /// No description provided for @spotScheduleSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get spotScheduleSave;
+
+  /// No description provided for @spotScheduleSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mở lịch tại điểm'**
+  String get spotScheduleSaved;
+
+  /// No description provided for @spotScheduleUpdated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu lịch tại điểm'**
+  String get spotScheduleUpdated;
+
+  /// No description provided for @spotScheduleLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có 8 lịch tại điểm đang mở. Huỷ bớt một lịch để mở lịch mới.'**
+  String get spotScheduleLimit;
+
+  /// No description provided for @spotScheduleNoDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất một ngày'**
+  String get spotScheduleNoDays;
+
+  /// No description provided for @spotScheduleTooMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 40 ngày mỗi lịch, trong 60 ngày tới'**
+  String get spotScheduleTooMany;
+
+  /// No description provided for @spotScheduleWindowInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khung giờ từ 05:00 tới 21:00, dài 1–12 giờ'**
+  String get spotScheduleWindowInvalid;
+
+  /// No description provided for @spotScheduleNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần được duyệt nhận đơn trước khi mở lịch tại điểm.'**
+  String get spotScheduleNotAccepting;
+
+  /// No description provided for @spotScheduleError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được. Thử lại.'**
+  String get spotScheduleError;
+
+  /// No description provided for @spotScheduleNoPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật ít nhất một gói chụp trước khi mở lịch tại điểm.'**
+  String get spotScheduleNoPackages;
+
+  /// No description provided for @slotOfferTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chia suất'**
+  String get slotOfferTitle;
+
+  /// No description provided for @slotOfferDismiss.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get slotOfferDismiss;
+
+  /// No description provided for @slotOfferScheduleLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{spot} · {weekdays} · {start}–{end}'**
+  String slotOfferScheduleLine(
+    String spot,
+    String weekdays,
+    String start,
+    String end,
+  );
+
+  /// No description provided for @slotOfferName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên gói'**
+  String get slotOfferName;
+
+  /// No description provided for @slotOfferPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá mỗi suất (₫)'**
+  String get slotOfferPrice;
+
+  /// No description provided for @slotOfferDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao ảnh trong'**
+  String get slotOfferDelivery;
+
+  /// No description provided for @slotOfferDeliveryUnit.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngày'**
+  String get slotOfferDeliveryUnit;
+
+  /// No description provided for @slotOfferPhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh'**
+  String get slotOfferPhotos;
+
+  /// No description provided for @slotOfferEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh chỉnh'**
+  String get slotOfferEdited;
+
+  /// No description provided for @slotOfferMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thời lượng suất'**
+  String get slotOfferMinutes;
+
+  /// No description provided for @slotOfferMinutesRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'15–90 phút'**
+  String get slotOfferMinutesRange;
+
+  /// No description provided for @slotOfferGap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ giữa suất'**
+  String get slotOfferGap;
+
+  /// No description provided for @slotOfferGapRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'0–30 phút'**
+  String get slotOfferGapRange;
+
+  /// No description provided for @slotOfferMinutesValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} phút'**
+  String slotOfferMinutesValue(int count);
+
+  /// No description provided for @slotOfferLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt'**
+  String get slotOfferLess;
+
+  /// No description provided for @slotOfferMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm'**
+  String get slotOfferMore;
+
+  /// No description provided for @slotOfferPreview.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} suất/ngày: {times}'**
+  String slotOfferPreview(int count, String times);
+
+  /// No description provided for @slotOfferNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chia suất không kèm dịch vụ đi kèm. Tối đa 2 gói mỗi lịch.'**
+  String get slotOfferNote;
+
+  /// No description provided for @slotOfferSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get slotOfferSave;
+
+  /// No description provided for @slotOfferClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng gói'**
+  String get slotOfferClose;
+
+  /// No description provided for @slotOfferCloseTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng gói {name}?'**
+  String slotOfferCloseTitle(String name);
+
+  /// No description provided for @slotOfferCloseBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã đặt vẫn giữ suất của mình.'**
+  String get slotOfferCloseBody;
+
+  /// No description provided for @slotOfferKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get slotOfferKeep;
+
+  /// No description provided for @slotOfferLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mỗi lịch tối đa 2 gói chia suất'**
+  String get slotOfferLimit;
+
+  /// No description provided for @slotOfferErrorName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên 3–60 ký tự'**
+  String get slotOfferErrorName;
+
+  /// No description provided for @slotOfferErrorPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá từ 10.000₫ tới 100.000.000₫'**
+  String get slotOfferErrorPrice;
+
+  /// No description provided for @slotOfferErrorFit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khung giờ không đủ cho một suất'**
+  String get slotOfferErrorFit;
+
+  /// No description provided for @slotOfferErrorContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại, Zalo hoặc link ra khỏi tên gói'**
+  String get slotOfferErrorContact;
+
+  /// No description provided for @slotOfferErrorPhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh từ 1 tới 500'**
+  String get slotOfferErrorPhotos;
+
+  /// No description provided for @slotOfferErrorEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh chỉnh không quá số ảnh'**
+  String get slotOfferErrorEdited;
+
+  /// No description provided for @slotOfferErrorDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao ảnh trong 1–30 ngày'**
+  String get slotOfferErrorDelivery;
+
+  /// No description provided for @slotOfferSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu gói chia suất'**
+  String get slotOfferSaved;
+
+  /// No description provided for @slotOfferClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng gói chia suất'**
+  String get slotOfferClosed;
+
+  /// No description provided for @workSpotSchedules.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm'**
+  String get workSpotSchedules;
+
+  /// No description provided for @workSpotSchedulesSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận chụp ở điểm đang hot'**
+  String get workSpotSchedulesSub;
 }
 
 class _AppLocalizationsDelegate

@@ -220,10 +220,17 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
               ? ListView(
                   children: const [
                     SizedBox(height: 480, child: WorkEmptyState()),
+                    _SpotSchedulesEntry(),
                     MyEventsSection(),
                   ],
                 )
-              : const WorkEmptyState(),
+              : const Column(
+                  children: [
+                    Expanded(child: WorkEmptyState()),
+                    _SpotSchedulesEntry(),
+                    SizedBox(height: AppSpace.s4),
+                  ],
+                ),
           data: (context, d) => _dashboard(context, d, features, now),
         ),
       ),
@@ -381,6 +388,9 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ],
           ),
         ),
+        // S29.03's entry (spec §8: one line under the numbers, no frame).
+        const SizedBox(height: AppSpace.s2),
+        const _SpotSchedulesEntry(),
         if (widget.showEvents) ...[
           const SizedBox(height: AppSpace.s2),
           const MyEventsSection(),
@@ -431,6 +441,60 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "Lịch tại điểm": opens S29.03 (`/me/spot-schedules`).
+class _SpotSchedulesEntry extends StatelessWidget {
+  const _SpotSchedulesEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final secondary = theme.brightness == Brightness.dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: const Key('open-spot-schedules'),
+          onTap: () => context.push('/me/spot-schedules'),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s3),
+            child: Row(
+              children: [
+                AppIcon(AppIcons.place, size: 20, color: secondary),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.workSpotSchedules,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        l10n.workSpotSchedulesSub,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppIcon(AppIcons.chevron, size: 18, color: secondary),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

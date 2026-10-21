@@ -758,6 +758,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
         '/events/mine',
         '/events/new',
         '/events/:id/manage',
+        '/me/spot-schedules',
       ])
         GoRoute(path: p, builder: stub),
     ],

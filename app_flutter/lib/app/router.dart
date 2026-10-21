@@ -66,7 +66,9 @@ import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
 import 'package:photobooking/features/studio/my_studio_screen.dart';
 import 'package:photobooking/features/studio/studio_members_screen.dart';
+import 'package:photobooking/features/spots/my_spot_schedules_screen.dart';
 import 'package:photobooking/features/spots/spot_screen.dart';
+import 'package:photobooking/features/spots/spot_schedule_edit_screen.dart';
 import 'package:photobooking/features/spots/spots_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
 import 'package:photobooking/features/verification/verify_fee_screen.dart';
@@ -459,6 +461,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/me/addons',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const AddonsScreen(),
+      ),
+      // S29.03 and S29.04 (#194); `new` before `:scheduleId`.
+      GoRoute(
+        path: '/me/spot-schedules',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const MySpotSchedulesScreen(),
+      ),
+      GoRoute(
+        path: '/me/spot-schedules/new',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => SpotScheduleEditScreen(
+          spotId: state.uri.queryParameters['spotId'],
+        ),
+      ),
+      GoRoute(
+        path: '/me/spot-schedules/:scheduleId',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => SpotScheduleEditScreen(
+          scheduleId: state.pathParameters['scheduleId'],
+        ),
       ),
       GoRoute(
         path: '/me/saved',

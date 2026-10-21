@@ -496,11 +496,43 @@ describe('spot_schedule_use_cases', () => {
 
     await assert.rejects(
       cancelSpotSchedule(deps, 'p-individual', { scheduleId: saveRes.scheduleId }),
-      (err: unknown) => isDomainError(err) && err.code === 'schedule_has_bookings',
+      (err: unknown) =>
+        isDomainError(err) &&
+        err.code === 'schedule_has_bookings' &&
+        JSON.stringify(err.details) === JSON.stringify({ days: [{ day: '2026-10-17', count: 1 }] }),
     );
 
     const sched = store.getScheduleSync(saveRes.scheduleId);
     assert.equal(sched?.status, 'open');
+  });
+
+  it('cancelSpotSchedule ignores intervals on past days', async () => {
+    const { store, deps } = setupWorld();
+    store.seedSchedule({
+      id: 'sched-past',
+      providerId: 'p-individual',
+      assigneeId: null,
+      spotId: 'spot-1',
+      days: ['2026-10-10', '2026-10-17'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: [],
+      priceFrom: 1_000_000,
+      status: 'open',
+      createdAt: '2026-10-01T00:00:00Z',
+      updatedAt: '2026-10-01T00:00:00Z',
+    });
+    store.seedSpotDay({
+      scheduleId: 'sched-past',
+      spotId: 'spot-1',
+      providerId: 'p-individual',
+      day: '2026-10-10',
+      taken: [{ start: '07:00', end: '08:00' }],
+      updatedAt: '2026-10-09T00:00:00Z',
+    });
+
+    await cancelSpotSchedule(deps, 'p-individual', { scheduleId: 'sched-past' });
+
+    assert.equal(store.getScheduleSync('sched-past')?.status, 'cancelled');
   });
 
   it('cancelSpotSchedule without bookings: status cancelled, every future spot record deleted, its open offers closed', async () => {

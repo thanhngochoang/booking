@@ -681,4 +681,18 @@ void main() {
       expect(find.byKey(const Key('to-deliver-section')), findsNothing);
     });
   });
+
+  testWidgets('the "Lịch tại điểm" entry opens /me/spot-schedules for a '
+      'provider', (tester) async {
+    final h = await _pump(
+      tester,
+      _repo(_busy()),
+      viewSize: const Size(390, 2400),
+    );
+    await _settle(tester);
+    expect(find.text('Lịch tại điểm'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('open-spot-schedules')));
+    await _settle(tester);
+    expect(h.location, '/me/spot-schedules');
+  });
 }

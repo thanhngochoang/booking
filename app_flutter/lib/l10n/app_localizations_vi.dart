@@ -8309,4 +8309,380 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get bookSpotArchived => 'Điểm này không còn nhận lịch mới.';
+
+  @override
+  String get spotSchedulesTitle => 'Lịch tại điểm';
+
+  @override
+  String spotSchedulesOpenCount(int count) {
+    return '$count / 8 lịch đang mở';
+  }
+
+  @override
+  String get spotSchedulesAdd => 'Thêm lịch tại điểm';
+
+  @override
+  String get spotSchedulesVerify => 'Xác minh để mở lịch';
+
+  @override
+  String get spotSchedulesEmptyTitle => 'Chưa có lịch tại điểm';
+
+  @override
+  String get spotSchedulesEmptyBody =>
+      'Chọn một điểm chụp đang hot và mở lịch cuối tuần để khách đặt.';
+
+  @override
+  String get spotSchedulesRule =>
+      'Ngày tại điểm chỉ nhận booking ở điểm đó, nhiều booking không chồng giờ. Ngày đó bạn không nhận booking ở nơi khác.';
+
+  @override
+  String spotScheduleDaysRange(String weekdays, String from, String to) {
+    return '$weekdays · $from–$to';
+  }
+
+  @override
+  String spotScheduleDays(int count, String start, String end) {
+    return '$count ngày · $start–$end';
+  }
+
+  @override
+  String spotScheduleSummary(String days, String packages) {
+    return '$days · $packages';
+  }
+
+  @override
+  String spotSchedulePackagesCount(int count) {
+    return '$count gói';
+  }
+
+  @override
+  String get spotSchedulePackagesAll => 'mọi gói';
+
+  @override
+  String spotScheduleDayCount(String day, int count) {
+    return '$day · $count booking';
+  }
+
+  @override
+  String spotScheduleMoreDays(int count) {
+    return '+$count ngày';
+  }
+
+  @override
+  String get spotScheduleDayCountsLabel => 'Booking theo ngày';
+
+  @override
+  String get spotScheduleNoBookings => 'Chưa có booking';
+
+  @override
+  String get spotScheduleNoOffers => 'Chưa có gói chia suất';
+
+  @override
+  String get spotScheduleNoBookingsNoOffers =>
+      'Chưa có booking · chưa có gói chia suất';
+
+  @override
+  String spotScheduleOfferMeta(String price, int count) {
+    return '$price · $count suất/ngày';
+  }
+
+  @override
+  String get spotScheduleEdit => 'Sửa';
+
+  @override
+  String get spotScheduleOffersAction => 'Gói chia suất';
+
+  @override
+  String get spotScheduleCancel => 'Huỷ lịch';
+
+  @override
+  String spotScheduleCancelTitle(String spot) {
+    return 'Huỷ lịch tại $spot?';
+  }
+
+  @override
+  String get spotScheduleCancelBody =>
+      'Khách sẽ không đặt được các ngày còn lại của lịch này.';
+
+  @override
+  String get spotScheduleCancelConfirm => 'Huỷ lịch';
+
+  @override
+  String get spotScheduleCancelKeep => 'Giữ lại';
+
+  @override
+  String spotScheduleHasBookings(int count, String day) {
+    return 'Còn $count booking ngày $day. Liên hệ khách hoặc huỷ từng booking (khách được hoàn 100%).';
+  }
+
+  @override
+  String get spotScheduleCancelled => 'Đã huỷ lịch tại điểm';
+
+  @override
+  String get spotScheduleCancelFailed => 'Không huỷ được lịch. Thử lại.';
+
+  @override
+  String get spotScheduleNewTitle => 'Thêm lịch tại điểm';
+
+  @override
+  String get spotScheduleEditTitle => 'Sửa lịch tại điểm';
+
+  @override
+  String spotScheduleLimitCount(int count) {
+    return '$count / 8';
+  }
+
+  @override
+  String get spotScheduleSpot => 'Điểm chụp';
+
+  @override
+  String get spotScheduleSpotPick => 'Chọn điểm chụp';
+
+  @override
+  String get spotScheduleSearch => 'Tìm theo tên điểm';
+
+  @override
+  String get spotScheduleSpotNone => 'Không có điểm nào khớp';
+
+  @override
+  String get spotScheduleSpotRequired => 'Chọn một điểm chụp';
+
+  @override
+  String get spotScheduleMember => 'Thợ chụp';
+
+  @override
+  String get spotScheduleMemberRequired => 'Chọn thợ chụp ở điểm này';
+
+  @override
+  String get spotScheduleNoMembers => 'Studio chưa có thợ để giao lịch.';
+
+  @override
+  String get spotScheduleMemberNotAccepting =>
+      'Thợ này chưa được duyệt nhận đơn. Chọn thợ khác.';
+
+  @override
+  String get spotScheduleDaysLabel => 'Ngày';
+
+  @override
+  String get spotScheduleRepeat => 'Lặp lại';
+
+  @override
+  String get spotSchedulePickDays => 'Chọn ngày';
+
+  @override
+  String get spotScheduleWeekdays => 'Thứ trong tuần';
+
+  @override
+  String get spotScheduleFrom => 'Từ ngày';
+
+  @override
+  String get spotScheduleTo => 'Tới ngày';
+
+  @override
+  String get spotScheduleStart => 'Bắt đầu';
+
+  @override
+  String get spotScheduleEnd => 'Kết thúc';
+
+  @override
+  String get spotSchedulePackages => 'Gói đặt được';
+
+  @override
+  String get spotScheduleAllPackages => 'Mọi gói đang bật';
+
+  @override
+  String spotScheduleConflictBooked(String day) {
+    return '$day đã có booking ở nơi khác.';
+  }
+
+  @override
+  String spotScheduleConflictPending(String day) {
+    return '$day đang có booking chờ nhận.';
+  }
+
+  @override
+  String spotScheduleConflictOff(String day) {
+    return '$day bạn đã đánh dấu nghỉ.';
+  }
+
+  @override
+  String spotScheduleConflictSpot(String day) {
+    return '$day đã có lịch tại điểm khác.';
+  }
+
+  @override
+  String spotScheduleConflictFull(String day) {
+    return '$day studio hết chỗ.';
+  }
+
+  @override
+  String get spotScheduleConflictHint => 'Bỏ ngày đỏ để mở lịch.';
+
+  @override
+  String spotScheduleRemoveDay(String day) {
+    return '$day trùng lịch, chạm để bỏ';
+  }
+
+  @override
+  String spotScheduleOffSeason(String months) {
+    return 'Điểm này đẹp nhất tháng $months';
+  }
+
+  @override
+  String get spotScheduleOpen => 'Mở lịch';
+
+  @override
+  String get spotScheduleSave => 'Lưu thay đổi';
+
+  @override
+  String get spotScheduleSaved => 'Đã mở lịch tại điểm';
+
+  @override
+  String get spotScheduleUpdated => 'Đã lưu lịch tại điểm';
+
+  @override
+  String get spotScheduleLimit =>
+      'Bạn đã có 8 lịch tại điểm đang mở. Huỷ bớt một lịch để mở lịch mới.';
+
+  @override
+  String get spotScheduleNoDays => 'Chọn ít nhất một ngày';
+
+  @override
+  String get spotScheduleTooMany =>
+      'Tối đa 40 ngày mỗi lịch, trong 60 ngày tới';
+
+  @override
+  String get spotScheduleWindowInvalid =>
+      'Khung giờ từ 05:00 tới 21:00, dài 1–12 giờ';
+
+  @override
+  String get spotScheduleNotAccepting =>
+      'Bạn cần được duyệt nhận đơn trước khi mở lịch tại điểm.';
+
+  @override
+  String get spotScheduleError => 'Không lưu được. Thử lại.';
+
+  @override
+  String get spotScheduleNoPackages =>
+      'Bật ít nhất một gói chụp trước khi mở lịch tại điểm.';
+
+  @override
+  String get slotOfferTitle => 'Gói chia suất';
+
+  @override
+  String get slotOfferDismiss => 'Đóng';
+
+  @override
+  String slotOfferScheduleLine(
+    String spot,
+    String weekdays,
+    String start,
+    String end,
+  ) {
+    return '$spot · $weekdays · $start–$end';
+  }
+
+  @override
+  String get slotOfferName => 'Tên gói';
+
+  @override
+  String get slotOfferPrice => 'Giá mỗi suất (₫)';
+
+  @override
+  String get slotOfferDelivery => 'Giao ảnh trong';
+
+  @override
+  String get slotOfferDeliveryUnit => 'ngày';
+
+  @override
+  String get slotOfferPhotos => 'Số ảnh';
+
+  @override
+  String get slotOfferEdited => 'Số ảnh chỉnh';
+
+  @override
+  String get slotOfferMinutes => 'Thời lượng suất';
+
+  @override
+  String get slotOfferMinutesRange => '15–90 phút';
+
+  @override
+  String get slotOfferGap => 'Nghỉ giữa suất';
+
+  @override
+  String get slotOfferGapRange => '0–30 phút';
+
+  @override
+  String slotOfferMinutesValue(int count) {
+    return '$count phút';
+  }
+
+  @override
+  String get slotOfferLess => 'Bớt';
+
+  @override
+  String get slotOfferMore => 'Thêm';
+
+  @override
+  String slotOfferPreview(int count, String times) {
+    return '$count suất/ngày: $times';
+  }
+
+  @override
+  String get slotOfferNote =>
+      'Gói chia suất không kèm dịch vụ đi kèm. Tối đa 2 gói mỗi lịch.';
+
+  @override
+  String get slotOfferSave => 'Lưu';
+
+  @override
+  String get slotOfferClose => 'Đóng gói';
+
+  @override
+  String slotOfferCloseTitle(String name) {
+    return 'Đóng gói $name?';
+  }
+
+  @override
+  String get slotOfferCloseBody => 'Khách đã đặt vẫn giữ suất của mình.';
+
+  @override
+  String get slotOfferKeep => 'Giữ lại';
+
+  @override
+  String get slotOfferLimit => 'Mỗi lịch tối đa 2 gói chia suất';
+
+  @override
+  String get slotOfferErrorName => 'Tên 3–60 ký tự';
+
+  @override
+  String get slotOfferErrorPrice => 'Giá từ 10.000₫ tới 100.000.000₫';
+
+  @override
+  String get slotOfferErrorFit => 'Khung giờ không đủ cho một suất';
+
+  @override
+  String get slotOfferErrorContact =>
+      'Bỏ số điện thoại, Zalo hoặc link ra khỏi tên gói';
+
+  @override
+  String get slotOfferErrorPhotos => 'Số ảnh từ 1 tới 500';
+
+  @override
+  String get slotOfferErrorEdited => 'Số ảnh chỉnh không quá số ảnh';
+
+  @override
+  String get slotOfferErrorDelivery => 'Giao ảnh trong 1–30 ngày';
+
+  @override
+  String get slotOfferSaved => 'Đã lưu gói chia suất';
+
+  @override
+  String get slotOfferClosed => 'Đã đóng gói chia suất';
+
+  @override
+  String get workSpotSchedules => 'Lịch tại điểm';
+
+  @override
+  String get workSpotSchedulesSub => 'Nhận chụp ở điểm đang hot';
 }

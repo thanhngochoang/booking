@@ -182,11 +182,18 @@ export async function cancelSpotSchedule(
 
     const holderId = dayHolderOf(schedule);
 
+    // Every day from today still holding an interval (S29.03 names the
+    // first one). Past days are history: cancelling leaves them as they are.
+    const blocks: { day: string; count: number }[] = [];
     for (const d of schedule.days) {
+      if (d < today) continue;
       const sd = await tx.getSpotDay(schedule.id, d);
       if (sd && sd.taken.length > 0) {
-        throw new DomainError('schedule_has_bookings');
+        blocks.push({ day: d, count: sd.taken.length });
       }
+    }
+    if (blocks.length > 0) {
+      throw new DomainError('schedule_has_bookings', undefined, { days: blocks });
     }
 
     const offers = await tx.offersOf(schedule.id);

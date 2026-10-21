@@ -241,7 +241,8 @@ SpotError _codeToSpotError(
     case 'contact_leak':
       return SpotError(SpotErrorCode.contactLeak, field: field);
     case 'not_accepting_orders':
-      return const SpotError(SpotErrorCode.notAcceptingOrders);
+      // field `assigneeId`: the studio's chosen member is the one refused.
+      return SpotError(SpotErrorCode.notAcceptingOrders, field: field);
     case 'not_found':
     case 'not-found':
       return SpotError(SpotErrorCode.notFound, field: field);
