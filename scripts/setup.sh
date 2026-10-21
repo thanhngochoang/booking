@@ -5,11 +5,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-echo "== 1/5 Checking prerequisites (git, curl, unzip, python3, JDK 17)"
+echo "== 1/5 Checking prerequisites (git, curl, unzip, python3, JDK 21)"
 for c in git curl unzip python3; do command -v "$c" >/dev/null || { echo "missing: $c"; exit 1; }; done
-if [ ! -x "$ROOT/.jdk/Contents/Home/bin/java" ] && [ ! -x "$ROOT/.jdk/bin/java" ] && [ ! -d /opt/homebrew/opt/openjdk@17 ] && [ ! -d /usr/local/opt/openjdk@17 ]; then
-  echo "JDK 17 not found. Either: brew install openjdk@17   (user-owned Homebrew, no sudo)"
-  echo "  or download a JDK 17 .tar.gz (Temurin/Zulu, macOS, your CPU arch) and extract it so that .jdk/Contents/Home/bin/java exists."
+if [ ! -x "$ROOT/.jdk/Contents/Home/bin/java" ] && [ ! -x "$ROOT/.jdk/bin/java" ] && [ ! -d /opt/homebrew/opt/openjdk@21 ] && [ ! -d /usr/local/opt/openjdk@21 ]; then
+  echo "JDK 21 not found. Either: brew install openjdk@21   (user-owned Homebrew, no sudo)"
+  echo "  or download a JDK 21 .tar.gz (Temurin/Zulu, macOS, your CPU arch) and extract it so that .jdk/Contents/Home/bin/java exists."
   exit 1
 fi
 if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 22 ]; then

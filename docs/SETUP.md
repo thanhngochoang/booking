@@ -7,7 +7,7 @@ Chi tiết sâu hơn: `README.md` (toolchain, `.env`), `docs/FIREBASE-SETUP.md` 
 ## Tóm tắt
 
 ```bash
-brew install openjdk@17 node@22                 # 1. công cụ nền (hoặc cách khác, xem bước 1)
+brew install openjdk@21 node@22                 # 1. công cụ nền (hoặc cách khác, xem bước 1)
 git clone https://github.com/thanhngochoang/booking.git && cd booking
 git checkout flutter-rewrite
 scripts/setup.sh                                # 2. Android SDK, Flutter, font; 3. tự ghi biến môi trường vào ~/.zshrc (scripts/machine-env.sh)
@@ -22,7 +22,7 @@ cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analy
 | Công cụ | Dùng cho | Cài |
 |---|---|---|
 | `git`, `curl`, `unzip`, `python3` | script cài đặt | macOS có sẵn (`xcode-select --install` nếu thiếu `git`) |
-| JDK 17 | Gradle/Android, Firestore emulator | `brew install openjdk@17`, hoặc giải nén Temurin/Zulu 17 (tar.gz) vào `.jdk/` sao cho có `.jdk/Contents/Home/bin/java`. AGP chỉ chạy trên JDK 17–21. |
+| JDK 21 | Gradle/Android, Firebase emulators | `brew install openjdk@21`, hoặc giải nén Temurin/Zulu 21 (tar.gz) vào `.jdk/` sao cho có `.jdk/Contents/Home/bin/java`. Firebase CLI 15 đòi Java 21+, AGP chỉ chạy trên JDK 17–21. |
 | Node.js 22+ | Firebase CLI, Cloud Functions, backend local | `brew install node@22` hoặc nvm |
 | VS Code + extension **Flutter** (Dart-Code) | debug app | — |
 
@@ -114,7 +114,7 @@ Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run` (hỏi
 | Emulator bật lên rồi tắt ngay khi F5 (log `.home/emulator.log`: "emulator ran for just 6xx ms") | Bản cũ của `scripts/start-emulator.sh` để emulator dính vào terminal của task, terminal đóng thì emulator tắt theo. Pull bản mới (emulator chạy trong session riêng). |
 | `adb devices` thấy emulator là `unauthorized` hoặc `offline` | `adb kill-server`, rồi chạy lại `scripts/start-emulator.sh`. |
 | Gradle báo `PKIX path building failed` | Mạng công ty ký lại HTTPS. Chạy `source scripts/env.sh` một lần để tạo `.certs/truststore.jks`; nếu vẫn lỗi, xoá `.certs/` rồi chạy lại. |
-| `JDK 17 not found` khi chạy `setup.sh` | Cài theo bước 1. |
+| `JDK 21 not found` khi chạy `setup.sh` | Cài theo bước 1. |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | App trên thiết bị được ký bằng khoá khác (bản cài trước khi có khoá debug dùng chung, hoặc build bằng `flutter` của hệ thống). Gỡ một lần: `adb uninstall com.thanhbk.photobooking` (mất dữ liệu app trên thiết bị đó). |
 | App chạy nhưng không kết nối backend local | Chưa chạy `scripts/backend-local.sh`, hoặc thiết bị cắm sau khi F5: chạy `scripts/adb-reverse.sh`. `scripts/check-device.sh` cho biết `adb-reverse:on/off` của từng thiết bị. |
 | Thiết bị lúc thấy lúc không, `adb server version doesn't match` | Hai adb server chạy cùng lúc (thường là của Genymotion). Trỏ Genymotion vào `.android-sdk` của repo (bước 4), rồi `adb kill-server`. |
