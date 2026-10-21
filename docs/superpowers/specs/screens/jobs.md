@@ -30,7 +30,7 @@ Màn S15–S16 của phần D trong [`../2026-10-05-provider-types-portfolio-job
 ### Chi tiết việc (của khách)
 - **Thông tin**: `/jobs/:id` (khách là chủ) · khách · D4 · Chưa có.
 - **Bố cục**: Back · "…"; tag + `StatusBadge`; tiêu đề (Fraunces 21); "Đăng {ngày} · còn {n} ngày nhận báo giá"; ba `StatTile` Báo giá · Lượt xem · Đã mời; `SectionHeader` "Báo giá mới" + "Xem tất cả"; hai dòng báo giá mới nhất (avatar, tên + `ProviderMark`, bàn giao tóm tắt, giá); dòng tóm tắt việc (ngày giờ, quận, ngân sách, bàn giao); nút viền "Mời thợ ảnh báo giá"; nút chính "So sánh {n} báo giá" (vô hiệu khi 0, chữ "Chưa có báo giá").
-- **Tương tác**: "Mời thợ ảnh báo giá" → sheet gợi ý từ `recommend` (chọn tối đa 5 − đã mời; mỗi người một `JobInvite`); "…" → Sửa (chỉ khi 0 báo giá), Gia hạn 7 ngày (một lần), Đóng việc (`ConfirmSheet` nút đỏ "Đóng việc", báo người đã báo giá).
+- **Tương tác**: "Mời thợ ảnh báo giá" → sheet gợi ý từ `recommend` (`#S15.02-invite`, chọn tối đa 5 − đã mời; mỗi người một `JobInvite`); "…" → Sửa (chỉ khi 0 báo giá), Gia hạn 7 ngày (một lần), Đóng việc (`ConfirmSheet` nút đỏ "Đóng việc", báo người đã báo giá).
 - **Chuỗi**: `s1502_tabJobs` "Việc đăng", `s1502_open` "Đang nhận báo giá", `s1502_awarded` "Đã chọn thợ", `s1502_closed` "Đã đóng", `s1502_expired` "Hết hạn", `s1502_quotes` "{n} báo giá", `s1502_new` "{n} mới", `s1502_left` "còn {n} ngày", `s1502_views` "Lượt xem", `s1502_invited` "Đã mời", `s1502_latest` "Báo giá mới", `s1502_invite` "Mời thợ ảnh báo giá", `s1502_compare` "So sánh {n} báo giá", `s1502_repost` "Đăng lại", `s1502_close` "Đóng việc", `s1502_extend` "Gia hạn 7 ngày".
 - **Phân tích**: `job_view_own{status, quotes}`, `job_invite{count}`, `job_close`, `job_extend`.
 - **Chấp nhận**: số báo giá cập nhật trực tiếp (nghe `jobs/{id}`); không sửa được nội dung khi đã có báo giá.
@@ -48,12 +48,12 @@ Màn S15–S16 của phần D trong [`../2026-10-05-provider-types-portfolio-job
 
 ## S15.04 · Chi tiết báo giá
 
-- **Thông tin**: `/jobs/:id/applications/:quoteId` · khách · D4 · Chưa có.
+- **Thông tin**: `/jobs/:id/applications/:quoteId`, checkout `/jobs/:id/applications/:quoteId/pay` · khách · D4 · Chưa có.
 - **Mục đích**: đọc báo giá như một hợp đồng ngắn rồi chọn và trả tiền.
-- **Bố cục**: Back · "Báo giá {i} / {n}" · "…"; hàng người báo giá (avatar, tên + `ProviderMark`, loại · % cà chua · số buổi, nút viền "Hồ sơ" → S03.01); thẻ giá: số tiền (Fraunces 24) + so với ngân sách, `MilestoneTable` hai dòng ("1 · Sau buổi chụp · thả cho thợ ảnh", "2 · Khi bạn duyệt ảnh · hoặc tự duyệt sau 3 ngày"); bốn ô bàn giao (ảnh chỉnh, ảnh gốc, ngày giao, lần sửa); lời nhắn dạng bong bóng; album đính kèm (→ S24.01); ghi chú khoá "Bạn trả {giá} ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc."; `AppFooterBar` nút chat + "Chọn và thanh toán {giá}".
-- **Tương tác**: vuốt ngang sang báo giá kế (theo thứ tự đang sắp ở S15.03); nút chat mở chat hỏi trước gắn `jobId`; "Chọn và thanh toán" → kiểm SĐT (S04.05) → bước xem lại dùng layout S04.03 (`BookingCard` theo `terms`, ô địa chỉ cụ thể bắt buộc, `MilestoneTable`, `PolicyTable`, `ProviderPicker` MoMo / VNPay) → `acceptQuote` → cổng thanh toán → S04.04 → S05.02. "…" → Từ chối báo giá (lý do tuỳ chọn, thợ ảnh nhận `quote_not_selected`), Báo cáo (S20.01).
+- **Bố cục**: Back · "Báo giá {i} / {n}" · "…"; hàng người báo giá (avatar, tên + `ProviderMark`, loại · % cà chua · số buổi, nút viền "Hồ sơ" → S03.01); thẻ giá: số tiền (Fraunces 24) + so với ngân sách, `MilestoneTable` hai dòng ("1 · Sau buổi chụp · thả cho thợ ảnh", "2 · Khi bạn đồng ý ảnh + 48 giờ kiểm tra · hoặc tự đồng ý sau 3 ngày" theo spec bàn giao 2026-10-06); bốn ô bàn giao (ảnh chỉnh, ảnh gốc, ngày giao, lần sửa); lời nhắn dạng bong bóng; album đính kèm (→ S24.01); ghi chú khoá "Bạn trả {giá} ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc."; `AppFooterBar` nút chat + "Chọn và thanh toán {giá}".
+- **Tương tác**: vuốt ngang sang báo giá kế (theo thứ tự đang sắp ở S15.03); nút chat mở chat hỏi trước gắn `jobId`; "Chọn và thanh toán" → kiểm SĐT (S04.05) → bước xem lại dùng layout S04.03 (`#S15.04-pay`, `BookingCard` theo `terms`, ô địa chỉ cụ thể bắt buộc, `MilestoneTable`, `PolicyTable`, Phương thức thanh toán) → `acceptQuote` → cổng thanh toán → S04.04 → S05.02. "…" → Từ chối báo giá (lý do tuỳ chọn, thợ ảnh nhận `quote_not_selected`), Báo cáo (S20.01).
 - **Trạng thái**: báo giá đã bị rút hoặc việc không còn mở → nút chính vô hiệu kèm lý do; thợ ảnh vừa nhận booking khác trùng ngày → `day_taken` "Thợ ảnh này đã kín lịch ngày đó" và báo giá chuyển "Đã rút".
-- **Chuỗi**: `s1504_counter` "Báo giá {i} / {n}", `s1504_profile` "Hồ sơ", `s1504_m1` "Sau buổi chụp", `s1504_m1Sub` "thả cho thợ ảnh", `s1504_m2` "Khi bạn duyệt ảnh", `s1504_m2Sub` "hoặc tự duyệt sau {days} ngày", `s1504_edited` "ảnh chỉnh", `s1504_raw` "ảnh gốc", `s1504_days` "ngày giao", `s1504_revisions` "lần sửa", `s1504_album` "Album · {name}", `s1504_escrow` (ghi chú trên), `s1504_choose` "Chọn và thanh toán {amount}", `s1504_decline` "Từ chối báo giá".
+- **Chuỗi**: `s1504_counter` "Báo giá {i} / {n}", `s1504_profile` "Hồ sơ", `s1504_m1` "Sau buổi chụp", `s1504_m1Sub` "thả cho thợ ảnh", `s1504_m2` "Khi bạn đồng ý ảnh + 48 giờ kiểm tra", `s1504_m2Sub` "hoặc tự đồng ý sau 3 ngày", `s1504_edited` "ảnh chỉnh", `s1504_raw` "ảnh gốc", `s1504_days` "ngày giao", `s1504_revisions` "lần sửa", `s1504_album` "Album · {name}", `s1504_escrow` (ghi chú trên), `s1504_choose` "Chọn và thanh toán {amount}", `s1504_decline` "Từ chối báo giá".
 - **Phân tích**: `quote_view{fit, inBudget}`, `quote_accept_start`, `quote_accept_paid`, `quote_decline`.
 - **Chấp nhận**: hai mốc cộng đúng bằng giá (làm tròn đồng: mốc 2 nhận phần dư); trả xong việc thành "Đã chọn thợ", booking ở `accepted`, các báo giá khác `not_selected`.
 
@@ -61,13 +61,13 @@ Màn S15–S16 của phần D trong [`../2026-10-05-provider-types-portfolio-job
 
 ## S16.02 · Việc đang tuyển
 
-- **Thông tin**: `/work?tab=jobs` · thợ ảnh · D5 · Chưa có.
+- **Thông tin**: `/bookings?tab=jobs`, `?tab=quotes` · thợ ảnh · D5 · Chưa có.
 - **Mục đích**: tìm việc hợp với mình để báo giá.
-- **Bố cục**: thanh đầu "Công việc · Việc đang tuyển" (không có chuông; số thông báo nằm trên tab Hồ sơ); `SegmentedTabs` Hôm nay / Việc tuyển · {n} / Báo giá (S06.01 thêm hàng tab này; "Hôm nay" là nội dung S06.01 cũ); chip lọc Hợp với bạn (mặc định) / Gần tôi / thể loại / Ngân sách; danh sách `JobCard` (thợ ảnh): tag thể loại + "Bạn được mời" khi có, `FitPill`, tiêu đề, "ngày · giờ · quận · khoảng cách", ngân sách (hoặc "Để thợ báo giá"), "{n} báo giá · còn {m} ngày". Việc "Chỉ Nhiếp ảnh gia" với thợ ảnh chưa là NAG: thẻ mờ, `ProviderTag` vàng "Chỉ Nhiếp ảnh gia", dòng khoá "Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa" → S25.01.
-- **Tab "Báo giá"**: các báo giá của mình chia Đang chờ / Được chọn / Không được chọn / Đã rút, mỗi dòng mở S16.01.
+- **Bố cục**: thanh đầu "Công việc · Việc đang tuyển" (không có chuông; số thông báo nằm trên tab Hồ sơ); `SegmentedTabs` Hôm nay / Việc đang tuyển · {n} / Báo giá của tôi (S06.01 thêm hàng tab này; "Hôm nay" là nội dung S06.01 cũ); chip lọc Hợp với bạn (mặc định) / Gần tôi / thể loại / Ngân sách; danh sách `JobCard` (thợ ảnh): tag thể loại + "Bạn được mời" khi có, `FitPill`, tiêu đề, "ngày · giờ · quận · khoảng cách", ngân sách (hoặc "Để thợ báo giá"), "{n} báo giá · còn {m} ngày". Việc "Chỉ Nhiếp ảnh gia" với thợ ảnh chưa là NAG: thẻ mờ, `ProviderTag` vàng "Chỉ Nhiếp ảnh gia", dòng khoá "Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa" → S25.01.
+- **Tab "Báo giá của tôi"** (`#S16.02-quotes`): các báo giá của mình chia Đang chờ / Được chọn / Không được chọn / Đã rút, mỗi dòng mở S16.01.
 - **Dữ liệu**: `openJobsProvider(filter)` lấy từ `recommend` cho "Hợp với bạn", truy vấn geohash cho "Gần tôi"; chấm số trên tab Công việc cộng thêm số lời mời chưa xem.
 - **Trạng thái**: hồ sơ chưa hoàn tất → `EmptyState` "Hoàn tất hồ sơ để thấy việc đang tuyển" + nút S08.01; không có việc → "Chưa có việc hợp với bạn. Thêm thể loại hoặc mở rộng khu vực." + nút S08.02.
-- **Chuỗi**: `s1602_tabToday` "Hôm nay", `s1602_tabJobs` "Việc tuyển · {n}", `s1602_tabQuotes` "Báo giá", `s1602_fit` "Hợp với bạn", `s1602_near` "Gần tôi", `s1602_invited` "Bạn được mời", `s1602_openBudget` "Để thợ báo giá", `s1602_meta` "{n} báo giá · còn {m} ngày", `s1602_artistOnly` "Chỉ Nhiếp ảnh gia", `s1602_artistLock` "Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa".
+- **Chuỗi**: `s1602_tabToday` "Hôm nay", `s1602_tabJobs` "Việc đang tuyển · {n}", `s1602_tabQuotes` "Báo giá của tôi", `s1602_fit` "Hợp với bạn", `s1602_near` "Gần tôi", `s1602_invited` "Bạn được mời", `s1602_openBudget` "Để thợ báo giá", `s1602_meta` "{n} báo giá · còn {m} ngày", `s1602_artistOnly` "Chỉ Nhiếp ảnh gia", `s1602_artistLock` "Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa".
 - **Phân tích**: `open_jobs_view{filter, count}`.
 - **Chấp nhận**: "Bạn được mời" luôn ở đầu; không hiện việc ngoài khu vực phục vụ; việc sai loại nhà cung cấp (trừ "Chỉ Nhiếp ảnh gia" với Cá nhân) không hiện.
 
@@ -76,7 +76,7 @@ Màn S15–S16 của phần D trong [`../2026-10-05-provider-types-portfolio-job
 - **Thông tin**: `/jobs/:id` (thợ ảnh) · thợ ảnh · D5 · Chưa có. Đích của `job_match`, `job_invited`, `quote_not_selected`.
 - **Mục đích**: quyết định có báo giá không trong một cuộn.
 - **Bố cục**: Back · lưu · "…"; tag + "Bạn được mời" + `FitPill`; tiêu đề; hàng người đăng (avatar, tên, "Đã thuê {n} lần · SĐT đã xác minh", không có số); `irow` ngày giờ + dòng lịch của mình ("Bạn rảnh ngày này" xanh / "Bạn đã có lịch" đỏ / "Bạn có yêu cầu đang chờ"); `irow` quận + khoảng cách + "Địa chỉ cụ thể gửi khi bạn được chọn"; `irow` ngân sách + bàn giao mong muốn; mô tả; ảnh tham khảo (3 cột, chạm phóng to); "{n} thợ ảnh đã báo giá · còn {m} ngày"; `AppFooterBar` nút chat ("Hỏi khách") + "Gửi báo giá".
-- **Khi đã báo giá**: thẻ "Báo giá của bạn · {giá} · {trạng thái}" trên nút; nút chính thành "Sửa báo giá"; chữ đỏ "Rút báo giá" (`ConfirmSheet`). Được chọn → thẻ "Khách đã chọn bạn" + "Mở buổi chụp" (S05.02).
+- **Khi đã báo giá** (`#S16.01-mine`): thẻ "Báo giá của bạn · {giá} · {trạng thái}" trên nút; nút chính thành "Sửa báo giá"; chữ đỏ "Rút báo giá" (`ConfirmSheet`). Được chọn → thẻ "Khách đã chọn bạn" + "Mở buổi chụp" (S05.02).
 - **Trạng thái**: ngày đã kín → nút chính vô hiệu "Ngày này bạn đã có lịch"; việc "Chỉ Nhiếp ảnh gia" mà mình là Cá nhân → nút vô hiệu + lối S25.01; việc đã đóng → chỉ đọc, "Việc đã đóng".
 - **Chuỗi**: `s1601_hirer` "Đã thuê {n} lần", `s1601_phoneOk` "SĐT đã xác minh", `s1601_free` "Bạn rảnh ngày này", `s1601_busy` "Bạn đã có lịch", `s1601_pending` "Bạn có yêu cầu đang chờ", `s1601_areaSub` "Địa chỉ cụ thể gửi khi bạn được chọn", `s1601_competition` "{n} thợ ảnh đã báo giá · còn {m} ngày", `s1601_ask` "Hỏi khách", `s1601_quote` "Gửi báo giá", `s1601_edit` "Sửa báo giá", `s1601_withdraw` "Rút báo giá", `s1601_mine` "Báo giá của bạn · {amount} · {status}", `s1601_chosen` "Khách đã chọn bạn", `s1601_closed` "Việc đã đóng".
 - **Phân tích**: `job_view{fit, invited}`, `job_ask`, `quote_withdraw`.
@@ -85,9 +85,20 @@ Màn S15–S16 của phần D trong [`../2026-10-05-provider-types-portfolio-job
 ## S16.03 · Gửi báo giá (sheet)
 
 - **Thông tin**: sheet cao tối đa 95% trên S16.01 · thợ ảnh · D5 · Chưa có.
-- **Bố cục**: tiêu đề "Gửi báo giá" + "Ngân sách khách {khoảng}"; ô "Dựa trên gói · tuỳ chọn" (mở danh sách gói `active`; chọn thì điền giá, ảnh chỉnh, hạn giao, lần sửa); ô "Giá báo · bắt buộc" (VND, bàn phím số); dòng mốc tự tính "Mốc 1 sau buổi chụp {a} · Mốc 2 khi khách duyệt ảnh {b}"; hàng ba ô Ảnh chỉnh / Giao trong / Sửa; ô "Lời nhắn · bắt buộc" (20–500, đếm); ô "Album đính kèm · tuỳ chọn" (một album không trống của mình); ghi chú "Khách chọn và trả tiền thì buổi chụp được xác nhận luôn. Sửa hoặc rút báo giá được tới lúc đó."; nút chính "Gửi báo giá" (sửa: "Lưu báo giá").
+- **Bố cục**: tiêu đề "Gửi báo giá" + "Ngân sách khách {khoảng}"; ô "Dựa trên gói · tuỳ chọn" (mở danh sách gói `active`; chọn thì điền giá, ảnh chỉnh, hạn giao, lần sửa); việc Linh hoạt (`#S16.03-flex`): thêm ô chọn ngày đề xuất trong khoảng của việc và giờ bắt đầu (giờ kết thúc theo thời lượng); ô "Giá báo · bắt buộc" (VND, bàn phím số); dòng mốc tự tính "Mốc 1 sau buổi chụp {a} · Mốc 2 khi khách duyệt ảnh {b}"; hàng ba ô Ảnh chỉnh / Giao trong / Sửa; ô "Lời nhắn · bắt buộc" (20–500, đếm); ô "Album đính kèm · tuỳ chọn" (một album không trống của mình); ghi chú "Khách chọn và trả tiền thì buổi chụp được xác nhận luôn. Sửa hoặc rút báo giá được tới lúc đó."; nút chính "Gửi báo giá" (sửa: "Lưu báo giá").
 - **Kiểm tra**: giá > 0; lần sửa 0–5; ngày giao 1–60; lời nhắn có số điện thoại/link → lỗi dưới ô "Bỏ số điện thoại hoặc link khỏi lời nhắn"; vượt 20 báo giá đang mở → `limit_exceeded`; sai loại nhà cung cấp → `not_eligible`; ngày kín → `day_taken`.
-- **Dữ liệu**: `submitQuote({jobId, terms, message, albumId?, basedOnServiceId?})`; sửa dùng cùng callable (ghi đè báo giá của mình).
+- **Dữ liệu**: `submitQuote({jobId, terms, message, albumId?, basedOnServiceId?, proposal?})`; sửa dùng cùng callable (ghi đè báo giá của mình).
 - **Chuỗi**: `s1603_title` "Gửi báo giá", `s1603_budget` "Ngân sách khách {range}", `s1603_basedOn` "Dựa trên gói · tuỳ chọn", `s1603_price` "Giá báo · bắt buộc", `s1603_milestones` "Mốc 1 sau buổi chụp {a} · Mốc 2 khi khách duyệt ảnh {b}", `s1603_edited` "Ảnh chỉnh", `s1603_delivery` "Giao trong", `s1603_revisions` "Sửa", `s1603_message` "Lời nhắn · bắt buộc", `s1603_album` "Album đính kèm · tuỳ chọn", `s1603_note` (ghi chú trên), `s1603_send` "Gửi báo giá", `s1603_save` "Lưu báo giá".
 - **Phân tích**: `quote_submit{basedOnService, hasAlbum, inBudget}`, `quote_error{code}`.
 - **Chấp nhận**: mốc hiện ngay khi gõ giá và cộng đúng bằng giá; đóng khi đã nhập hỏi "Bỏ báo giá?"; gửi xong khách nhận `quote_new` (gộp theo việc).
+
+---
+
+## Quyết định khi viết plan (2026-10-07)
+
+- **Quyết định 3 (Giao diện & nội dung)**: Giao diện và từ ngữ theo sát mock (các tab S16.02, mốc 2 ở S15.04 theo spec bàn giao 2026-10-06).
+- **Quyết định 4 (Việc linh hoạt)**: Thợ ảnh đề xuất ngày chụp cụ thể trong khoảng thời gian khách đưa ra.
+- **Quyết định 6 (Độ phù hợp)**: Tính điểm phù hợp (fit 0–100) trên server để khách và thợ thấy cùng một số thống nhất.
+- **Quyết định 9 (Khoá thanh toán)**: Khách chọn báo giá được giữ chỗ 30 phút để thanh toán, trong lúc này báo giá không bị sửa hay rút.
+- **Quyết định 12 (Trùng ngày)**: Báo giá không giữ chỗ trên lịch, nhưng từ chối gửi nếu ngày đó thợ đã kín lịch hoặc nghỉ.
+- **Quyết định 22 (Điểm vào)**: Danh sách mời gợi ý từ `recommend` theo thể loại, khu vực và ngày của việc.

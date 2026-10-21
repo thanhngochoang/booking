@@ -198,6 +198,7 @@ Quote:   submitted ─(sửa)─▶ submitted   submitted ─(rút)─▶ withdr
 
 ### 5.3 Quy tắc
 
+- **Quy tắc chi tiết đã chốt**: xem kế hoạch thực hiện `docs/superpowers/plans/2026-10-07-s15-s16-job-posts.md` (Decisions 3–5, 9, 12: mock thắng text trên UI, thợ đề xuất ngày khi việc linh hoạt, khoảng cách theo geo/cityKey, khoá thanh toán 30 phút, báo giá không giữ chỗ nhưng kiểm tra trùng ngày).
 - **Ai thấy việc**: thợ ảnh đã hoàn tất hồ sơ, việc nằm trong khu vực phục vụ (`serviceArea` chứa quận của việc) và đúng `allowedProviders` (`all`, `artist`, `studio`). Việc "Chỉ Nhiếp ảnh gia" vẫn hiện mờ với `individual` kèm lối lên NAG (S25.01), không gửi được báo giá.
 - **Thông tin riêng tư**: việc chỉ lộ quận và khoảng ngày giờ; địa chỉ cụ thể nhập ở bước thanh toán (S04.03), chỉ người được chọn thấy. Người đăng chỉ hiện tên, avatar, số lần đã thuê, cờ SĐT đã xác minh. Không bao giờ có số điện thoại trong việc, báo giá hay lời nhắn: server lọc số điện thoại, email, link ngoài trong tiêu đề, mô tả, lời nhắn (trả `invalid_argument` kèm trường).
 - **Một báo giá cho mỗi (việc, thợ ảnh)**; sửa và rút được khi việc còn `open` và báo giá chưa được chọn. Không xem được giá của người khác; chỉ thấy số báo giá.

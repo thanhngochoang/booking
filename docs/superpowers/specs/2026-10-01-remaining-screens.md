@@ -157,10 +157,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S15.01 | Đăng việc (2 bước: việc gì; khi nào, ở đâu, ngân sách, ai được báo giá) | `/jobs/new` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S56 |
 | S15.02 | Việc của tôi (tab "Việc đăng" của S05.01) / chi tiết việc | `/bookings?tab=jobs`, `/jobs/:id` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S57 |
 | S15.03 | Danh sách báo giá | `/jobs/:id/applications` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S58 |
-| S15.04 | Chi tiết báo giá ("Chọn và thanh toán") | `/jobs/:id/applications/:quoteId` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S59 |
+| S15.04 | Chi tiết báo giá ("Chọn và thanh toán") | `/jobs/:id/applications/:quoteId`, `…/:quoteId/pay` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S59 |
 | **S16** | **Nhận việc đăng (thợ ảnh)** | | | | | |
 | S16.01 | Chi tiết việc (thợ ảnh) | `/jobs/:id` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S60 |
-| S16.02 | Việc đang tuyển (tab trong Công việc) | `/work?tab=jobs` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
+| S16.02 | Việc đang tuyển (tab trong Công việc) | `/bookings?tab=jobs`, `?tab=quotes` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
 | S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S62 |
 | **S17** | **Thông báo** | | | | | |
 | S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ✅ đã làm (10a) · đủ loại + hook (#138) | S63 |
