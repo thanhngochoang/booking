@@ -175,7 +175,10 @@ service cloud.firestore {
         ? request.resource.data.keys()
         : request.resource.data.diff(resource.data).affectedKeys();
       return !changed.hasAny(['providerType', 'artistSince', 'studioDistrict', 'studioCity', 'approvedAwardCount',
-                              'acceptingOrders', 'followerCount', 'followerCountAt', 'businessVerified', 'deletionPending']);
+                              'acceptingOrders', 'followerCount', 'followerCountAt', 'businessVerified', 'deletionPending',
+                              // S26 studio members (#136): membership, studio counters and the invite-search key.
+                              'studioId', 'studioJoinedAt', 'studioCooldownUntil', 'memberCount', 'lateAssignCount',
+                              'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey']);
     }
 
     // Setup, once finished, stays finished: an update may not move onboardingComplete from true
@@ -466,11 +469,13 @@ service cloud.firestore {
     }
 
     // bookings: the customer, the photographer (or studio) and, for a studio booking, the member it
-    // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The
-    // private/contact and events sub-rules are #136's and stay customer/photographer only.
+    // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The assignee
+    // also reads the events and, under the photographer's unlock rule, the customer's contact (#136
+    // Decision 17); a reassigned member loses all of it with `assigneeId`. Deliveries stay the studio's.
     match /bookings/{bookingId} {
       function bk() { return get(/databases/$(database)/documents/bookings/$(bookingId)).data; }
       function isParty() { return signedIn() && (bk().customerId == request.auth.uid || bk().photographerId == request.auth.uid); }
+      function isAssignee(b) { return signedIn() && b.get('assigneeId', null) == request.auth.uid; }
 
       allow read: if signedIn()
         && (resource.data.customerId == request.auth.uid
@@ -482,7 +487,7 @@ service cloud.firestore {
         allow read: if signedIn() && (
           (docId == 'contact'
             && (bk().customerId == request.auth.uid
-                || (bk().photographerId == request.auth.uid && isBookingContactUnlocked(bk()))))
+                || ((bk().photographerId == request.auth.uid || isAssignee(bk())) && isBookingContactUnlocked(bk()))))
           || (docId == 'delivery'
             && (bk().photographerId == request.auth.uid
                 || (bk().customerId == request.auth.uid && bk().status in ['approved', 'completed']))));
@@ -494,11 +499,28 @@ service cloud.firestore {
       match /milestones/{kind} { allow read: if isParty(); allow write: if false; }
 
       match /events/{eventId} {
-        allow read: if signedIn()
-          && (get(/databases/$(database)/documents/bookings/$(bookingId)).data.customerId == request.auth.uid
-              || get(/databases/$(database)/documents/bookings/$(bookingId)).data.photographerId == request.auth.uid);
+        allow read: if isParty() || isAssignee(bk());
         allow write: if false;
       }
+    }
+
+    // S26 studio members (#136, spec §8). A relation is read by its two parties only (public
+    // membership is photographers/{uid}.studioId); everything is written by the Functions.
+    match /studio_members/{relationId} {
+      allow read: if signedIn()
+        && (resource.data.studioId == request.auth.uid || resource.data.memberId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Daily membership actions of `uid` (studio or member side).
+    match /studio_quota/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // A studio's open bookings of one day (capacity, Decision 26): server only.
+    match /studio_day_load/{id} {
+      allow read, write: if false;
     }
 
     match /payments/{paymentId} {
@@ -668,7 +690,8 @@ service cloud.firestore {
 
     // availability/{uid}/days/{yyyy-MM-dd}; no document means free. The
     // photographer only marks free days off and frees them again; booked and
-    // pending days come from bookings and events (server only).
+    // pending days come from bookings and events, and a studio's `full` day from
+    // its capacity (#136 Decision 26) (server only).
     match /availability/{uid}/days/{dayKey} {
       allow read: if signedIn();
       allow create: if isOwner(uid)

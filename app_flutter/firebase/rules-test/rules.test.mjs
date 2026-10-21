@@ -2371,3 +2371,101 @@ test('owner can set hiddenFromDiscovery to a bool, not a string', async () => {
   await assertFails(updateDoc(doc(db, 'photographers/p1'), { hiddenFromDiscovery: 'true' }));
   await assertFails(updateDoc(doc(db, 'photographers/p1'), { deletionPending: true }));
 });
+
+// ---- S26 #136: studio members, quota, day load, assignee reads, server fields on photographers ----
+const studioRel = (studioId, memberId, status = 'invited') => ({
+  studioId, memberId, status, initiatedBy: 'studio', createdAt: Timestamp.fromDate(new Date('2026-10-10T03:00:00Z')),
+  expiresAt: Timestamp.fromDate(new Date('2026-10-17T03:00:00Z')), expiringNotifiedAt: null, version: 1,
+});
+test('the studio and the member read their relation; a third user cannot', async () => {
+  await seedDoc('studio_members/sm_s1_m1_1', studioRel('sm_s1', 'sm_m1'));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sm_s1').firestore(), 'studio_members/sm_s1_m1_1')));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sm_m1').firestore(), 'studio_members/sm_s1_m1_1')));
+  await assertFails(getDoc(doc(env.authenticatedContext('sm_x').firestore(), 'studio_members/sm_s1_m1_1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'studio_members/sm_s1_m1_1')));
+  // The app's listeners: the studio's own relations and the member's own; never someone else's.
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('sm_s1').firestore(), 'studio_members'), where('studioId', '==', 'sm_s1'))));
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('sm_m1').firestore(), 'studio_members'), where('memberId', '==', 'sm_m1'))));
+  await assertFails(getDocs(query(collection(env.authenticatedContext('sm_x').firestore(), 'studio_members'), where('studioId', '==', 'sm_s1'))));
+});
+test('nobody writes studio_members or studio_quota; studio_day_load is closed', async () => {
+  const studio = env.authenticatedContext('sm_s2').firestore();
+  const member = env.authenticatedContext('sm_m2').firestore();
+  await assertFails(setDoc(doc(studio, 'studio_members/sm_s2_m2_1'), studioRel('sm_s2', 'sm_m2')));
+  await assertFails(setDoc(doc(member, 'studio_members/sm_s2_m2_2'), { ...studioRel('sm_s2', 'sm_m2', 'active') }));
+  await seedDoc('studio_members/sm_s2_m2_3', studioRel('sm_s2', 'sm_m2'));
+  await assertFails(updateDoc(doc(member, 'studio_members/sm_s2_m2_3'), { status: 'active' }));
+  await assertFails(deleteDoc(doc(studio, 'studio_members/sm_s2_m2_3')));
+  await assertFails(setDoc(doc(studio, 'studio_quota/sm_s2'), { dayKey: '2026-10-10', studioActions: 0, memberActions: 0 }));
+  await seedDoc('studio_day_load/sm_s2_2026-10-14', { studioId: 'sm_s2', day: '2026-10-14', unassignedIds: ['b1'], assignedIds: [] });
+  await assertFails(getDoc(doc(studio, 'studio_day_load/sm_s2_2026-10-14')));
+  await assertFails(setDoc(doc(studio, 'studio_day_load/sm_s2_2026-10-15'), { unassignedIds: [] }));
+});
+test('the owner reads their quota; nobody else does', async () => {
+  await seedDoc('studio_quota/sm_s3', { dayKey: '2026-10-10', studioActions: 2, memberActions: 0 });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sm_s3').firestore(), 'studio_quota/sm_s3')));
+  await assertFails(getDoc(doc(env.authenticatedContext('sm_m3').firestore(), 'studio_quota/sm_s3')));
+});
+test('the assignee reads the booking and its events', async () => {
+  await seedDoc('bookings/b_sa1', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam1', isStudio: true, status: 'upcoming' });
+  await seedDoc('bookings/b_sa1/events/e1', { status: 'upcoming', at: Timestamp.now() });
+  const db = env.authenticatedContext('sam1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_sa1')));
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_sa1/events/e1')));
+  await assertSucceeds(getDocs(collection(db, 'bookings/b_sa1/events')));
+  // Another member of the studio does not.
+  await assertFails(getDoc(doc(env.authenticatedContext('sam2').firestore(), 'bookings/b_sa1/events/e1')));
+  // Deliveries stay the studio's.
+  await seedDoc('bookings/b_sa1/deliverySamples/f1', { path: 'x' });
+  await assertFails(getDoc(doc(db, 'bookings/b_sa1/deliverySamples/f1')));
+});
+test('a former assignee cannot read the booking, its events or the booking chat', async () => {
+  await seedDoc('bookings/b_sa2', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam2', isStudio: true, status: 'upcoming' });
+  await seedDoc('bookings/b_sa2/events/e1', { status: 'upcoming', at: Timestamp.now() });
+  await seedDoc('chats/sac1_sas1', { kind: 'booking', customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam2', members: ['sac1', 'sas1', 'sam2'] });
+  await seedDoc('chats/sac1_sas1/messages/m1', { senderId: 'sac1', type: 'text', body: 'Xin chào' });
+  const old = env.authenticatedContext('sam1').firestore();
+  await assertFails(getDoc(doc(old, 'bookings/b_sa2')));
+  await assertFails(getDoc(doc(old, 'bookings/b_sa2/events/e1')));
+  await assertFails(getDoc(doc(old, 'chats/sac1_sas1')));
+  await assertFails(getDoc(doc(old, 'chats/sac1_sas1/messages/m1')));
+  // The chat accepts three members: the new assignee reads it and its messages.
+  const now = env.authenticatedContext('sam2').firestore();
+  await assertSucceeds(getDoc(doc(now, 'chats/sac1_sas1')));
+  await assertSucceeds(getDoc(doc(now, 'chats/sac1_sas1/messages/m1')));
+});
+test('the assignee reads the customer contact only while unlocked', async () => {
+  await seedDoc('bookings/b_sa3', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam3', isStudio: true, status: 'accepted' });
+  await seedDoc('bookings/b_sa3/private/contact', { name: 'Lan', phone: '+84903000001' });
+  await seedDoc('bookings/b_sa4', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam3', isStudio: true, status: 'cancelled' });
+  await seedDoc('bookings/b_sa4/private/contact', { name: 'Lan', phone: '+84903000001' });
+  const db = env.authenticatedContext('sam3').firestore();
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_sa3/private/contact')));
+  await assertFails(getDoc(doc(db, 'bookings/b_sa4/private/contact')));
+  await assertFails(getDoc(doc(env.authenticatedContext('sam4').firestore(), 'bookings/b_sa3/private/contact')));
+  // The delivery document stays the studio's and the customer's.
+  await seedDoc('bookings/b_sa3/private/delivery', { url: 'https://x' });
+  await assertFails(getDoc(doc(db, 'bookings/b_sa3/private/delivery')));
+});
+test('a client cannot set studioId, memberCount, nameKey or the counters on photographers', async () => {
+  await asPhotographer('sp1');
+  await seedDoc('photographers/sp1', { onboardingComplete: true, verified: false, bio: 'x' });
+  const db = env.authenticatedContext('sp1').firestore();
+  for (const field of ['studioId', 'studioJoinedAt', 'studioCooldownUntil', 'memberCount', 'lateAssignCount',
+    'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey']) {
+    await assertFails(updateDoc(doc(db, 'photographers/sp1'), { [field]: field === 'studioId' || field === 'nameKey' ? 'x' : 1 }));
+  }
+  await assertSucceeds(updateDoc(doc(db, 'photographers/sp1'), { bio: 'y' }));
+  // A server-written value stays when the client saves other fields.
+  await seedDoc('photographers/sp1', { onboardingComplete: true, verified: false, bio: 'y', studioId: 'sas1', nameKey: 'sp1', memberCount: 0 });
+  await assertSucceeds(updateDoc(doc(db, 'photographers/sp1'), { bio: 'z' }));
+  await assertFails(updateDoc(doc(db, 'photographers/sp1'), { studioId: null }));
+});
+test("a studio's full day is server-written: the client cannot create, change or delete it", async () => {
+  await asPhotographer('sfs1');
+  await seedDoc('availability/sfs1/days/2026-10-14', { state: 'full' });
+  const db = env.authenticatedContext('sfs1').firestore();
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-15'), { state: 'full' }));
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'off' }));
+  await assertFails(deleteDoc(doc(db, 'availability/sfs1/days/2026-10-14')));
+});
