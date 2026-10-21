@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
@@ -15,6 +16,9 @@ import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
+import 'package:photobooking/features/booking/steps/datetime_step.dart';
+import 'package:photobooking/features/booking/steps/review_step.dart';
+import 'package:photobooking/features/booking/steps/service_step.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
 import '../../support/booking_world.dart';
@@ -308,7 +312,144 @@ void main() {
     expect(read(archived, pkgArgs).error, BookingErrorCode.spotArchived);
   });
 
+  test('refreshSpotDay invalidates spotDayProvider', () async {
+    final c = makeContainer();
+    final ctrl = await open(c, pkgArgs);
+    const key = (scheduleId: spotBookingScheduleId, day: spotBookingDay1);
+    final sub = c.listen(spotDayProvider(key), (_, _) {});
+    addTearDown(sub.close);
+    await settle();
+    expect(c.read(spotDayProvider(key)).value, isNull);
+
+    spots.seedSpotDay(
+      const SpotDay(
+        scheduleId: spotBookingScheduleId,
+        day: spotBookingDay1,
+        taken: [SpotInterval(start: '07:00', end: '08:00')],
+      ),
+    );
+    await ctrl.refreshSpotDay(spotBookingDay1);
+    await settle();
+    expect(c.read(spotDayProvider(key)).value?.taken, hasLength(1));
+  });
+
+  test(
+    'slot entry with a day no longer in the schedule never reaches S04.03 or submit',
+    () async {
+      final c = makeContainer();
+      const gone = BookingFlowArgs(
+        photographerId: 'p1',
+        scheduleId: spotBookingScheduleId,
+        slotOfferId: spotBookingOfferId,
+        day: '2026-10-17',
+        start: '06:40',
+      );
+      final ctrl = await open(c, gone);
+      expect(c.read(bookingSpotContextProvider(gone)).value, isNull);
+      final s = read(c, gone);
+      expect(s.spot, isNull);
+      expect(s.step, isNot(BookingStep.review));
+      await ctrl.submit();
+      expect(bookings.createCalls, isEmpty);
+    },
+  );
+
+  test('a closed schedule gives no context', () async {
+    final c = makeContainer();
+    spots.seedSchedule(spotBookingSchedule(open: false));
+    await open(c, pkgArgs);
+    expect(c.read(bookingSpotContextProvider(pkgArgs)).value, isNull);
+    expect(read(c, pkgArgs).spot, isNull);
+  });
+
   group('the sheet', () {
+    testWidgets('a closed schedule shows the EmptyState', (tester) async {
+      await pumpBookingRoute(
+        tester,
+        path: spotBookingPath(),
+        extraOverrides: [
+          spotRepositoryProvider.overrideWithValue(
+            spotBookingRepo(open: false),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EmptyState), findsOneWidget);
+      expect(
+        find.text('Lịch tại điểm vừa thay đổi. Chọn lại ngày giờ.'),
+        findsOneWidget,
+      );
+      expect(find.byType(ServiceStep), findsNothing);
+      await tester.tap(find.text('Đóng'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BookingSheet), findsNothing);
+    });
+
+    testWidgets('a slot whose day left the schedule shows the EmptyState, not S04.03', (
+      tester,
+    ) async {
+      final repo = FakeBookingRepository();
+      await pumpBookingRoute(
+        tester,
+        path: spotBookingPath(day: '2026-10-17', start: '06:40'),
+        bookings: repo,
+        extraOverrides: [
+          spotRepositoryProvider.overrideWithValue(spotBookingRepo()),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EmptyState), findsOneWidget);
+      expect(find.byType(ReviewStep), findsNothing);
+      expect(repo.createCalls, isEmpty);
+    });
+
+    testWidgets('outside_schedule in the slot path closes it', (tester) async {
+      final repo = FakeBookingRepository()
+        ..nextError = BookingErrorCode.outsideSchedule;
+      await pumpBookingRoute(
+        tester,
+        path: spotBookingPath(start: '06:40'),
+        bookings: repo,
+        extraOverrides: [
+          spotRepositoryProvider.overrideWithValue(spotBookingRepo()),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thanh toán 490.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BookingSheet), findsNothing);
+      expect(
+        find.text('Lịch tại điểm vừa thay đổi. Chọn lại ngày giờ.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a failed spot_days read shows the retry on S04.02', (
+      tester,
+    ) async {
+      final spotRepo = spotBookingRepo()..spotDayError = Exception('offline');
+      await walkSpotPackage(
+        tester,
+        until: BookingStep.datetime,
+        spots: spotRepo,
+      );
+
+      expect(find.byType(DateTimeStep), findsOneWidget);
+      expect(find.byType(ErrorState), findsOneWidget);
+      expect(find.widgetWithText(AppChip, '06:00'), findsNothing);
+
+      spotRepo.spotDayError = null;
+      await tester.ensureVisible(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ErrorState), findsNothing);
+      expect(find.widgetWithText(AppChip, '06:00'), findsOneWidget);
+    });
+
     testWidgets('slot_taken in the slot path closes it with slotTakenError', (
       tester,
     ) async {

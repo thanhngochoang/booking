@@ -30,7 +30,10 @@ void main() {
     },
   );
 
-  Future<GoRouter> pumpSheet(WidgetTester tester) async {
+  Future<GoRouter> pumpSheet(
+    WidgetTester tester, {
+    FakeSpotRepository? spots,
+  }) async {
     final router = GoRouter(
       initialLocation: '/spots/spot1',
       routes: [
@@ -69,7 +72,7 @@ void main() {
         router: router,
         overrides: [
           clockProvider.overrideWithValue(() => now),
-          spotRepositoryProvider.overrideWithValue(repo()),
+          spotRepositoryProvider.overrideWithValue(spots ?? repo()),
           currentContactProvider.overrideWithValue(
             const AsyncData(UserContact(phone: '+84912345678')),
           ),
@@ -106,6 +109,36 @@ void main() {
     expect(find.widgetWithText(AppChip, 'T7 10/10'), findsOneWidget);
     expect(find.widgetWithText(AppChip, 'CN 11/10'), findsOneWidget);
     expect(find.widgetWithText(AppChip, 'T4 30/09'), findsNothing);
+  });
+
+  testWidgets('a day without a free slot has no chip; chips scroll in one row', (
+    tester,
+  ) async {
+    final spots = repo()
+      ..seedSpotDay(
+        SpotDay(
+          scheduleId: spotBookingScheduleId,
+          day: spotBookingDay2,
+          taken: [
+            for (final s in const [
+              '06:00', '06:40', '07:20', '08:00', '08:40', '09:20', '10:00',
+            ])
+              SpotInterval(
+                start: s,
+                end: '${s.substring(0, 3)}${(int.parse(s.substring(3)) + 30).toString().padLeft(2, '0')}',
+                offerId: spotBookingOfferId,
+              ),
+          ],
+        ),
+      );
+    await pumpSheet(tester, spots: spots);
+
+    expect(find.widgetWithText(AppChip, 'T7 10/10'), findsOneWidget);
+    expect(find.widgetWithText(AppChip, 'CN 11/10'), findsNothing);
+    final row = tester.widget<SingleChildScrollView>(
+      find.byKey(const Key('slot-pick-days')),
+    );
+    expect(row.scrollDirection, Axis.horizontal);
   });
 
   testWidgets('changing the date chip reads that day', (tester) async {

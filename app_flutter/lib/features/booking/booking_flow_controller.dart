@@ -44,15 +44,19 @@ final class NeedPhone extends SubmitOutcome {
 }
 
 /// The schedule, spot and (slot path) offer of a booking from a spot, each
-/// read once; null when the schedule, spot or offer no longer exists or does
-/// not belong to the flow's photographer.
+/// read once; null (the sheet says the schedule changed) when the schedule
+/// is closed, the schedule, spot or offer no longer exists or does not belong
+/// to the flow's photographer, or a slot's day is no longer a schedule day.
 final bookingSpotContextProvider = FutureProvider.autoDispose
     .family<SpotBookingContext?, BookingFlowArgs>((ref, args) async {
       final scheduleId = args.scheduleId;
       if (scheduleId == null) return null;
+      final today = dayKeyOf(ref.watch(calendarTodayProvider));
       final repo = ref.watch(spotRepositoryProvider);
       final schedule = await repo.schedule(scheduleId);
-      if (schedule == null || schedule.providerId != args.photographerId) {
+      if (schedule == null ||
+          !schedule.open ||
+          schedule.providerId != args.photographerId) {
         return null;
       }
       final offerId = args.slotOfferId;
@@ -61,9 +65,18 @@ final bookingSpotContextProvider = FutureProvider.autoDispose
         offerId == null ? Future<SlotOffer?>.value() : repo.offer(offerId),
       ).wait;
       if (spot == null) return null;
-      if (offerId != null &&
-          (offer == null || offer.scheduleId != schedule.id || !offer.open)) {
-        return null;
+      if (offerId != null) {
+        if (offer == null || offer.scheduleId != schedule.id || !offer.open) {
+          return null;
+        }
+        // The slot was picked for one day and time: never another one.
+        final day = args.day;
+        if (day == null ||
+            args.start == null ||
+            day.compareTo(today) < 0 ||
+            !schedule.days.contains(day)) {
+          return null;
+        }
       }
       return SpotBookingContext(
         schedule: schedule,
@@ -137,7 +150,12 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       ref.listen(contextProvider, (prev, next) {
         if (next.isLoading) return;
         final ctx = next.value;
-        if (ctx != null) applySpotContext(ctx);
+        if (ctx != null) {
+          applySpotContext(ctx);
+        } else if (next.hasValue && state.spot != null) {
+          // A reload found the schedule (or the slot's day) gone.
+          _scheduleGone();
+        }
       });
       final now = ref.read(contextProvider);
       if (!now.isLoading) readyContext = now.value;
@@ -226,12 +244,14 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   BookingFlowState _withSpot(BookingFlowState s, SpotBookingContext ctx) {
     final first = s.spot == null;
     final days = ctx.daysFrom(_today);
+    final offer = ctx.offer;
     final String? day;
     if (first) {
       final want = args.day;
       day = want != null && days.contains(want)
           ? want
-          : (days.isEmpty ? null : days.first);
+          // A slot is for its own day only (the provider checks it too).
+          : (days.isEmpty || offer != null ? null : days.first);
     } else {
       day = days.contains(s.day) ? s.day : null;
     }
@@ -241,17 +261,20 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       day: day,
       clearDay: day == null,
       clearStart: day != s.day,
-      error: ctx.archived ? BookingErrorCode.spotArchived : null,
+      error: ctx.archived
+          ? BookingErrorCode.spotArchived
+          : (offer != null && day == null
+                ? BookingErrorCode.outsideSchedule
+                : null),
     );
-    final offer = ctx.offer;
     if (offer != null) {
       next = next.copyWith(
         serviceId: offer.id,
         priceVnd: offer.price,
         durationMinutes: offer.slotMinutes,
         serviceName: offer.name,
-        start: first ? args.start : null,
-        step: first ? BookingStep.review : null,
+        start: first && day != null ? args.start : null,
+        step: first && day != null ? BookingStep.review : null,
         priceChanged: !first && offer.price != s.priceVnd,
         picks: const {},
         pickupName: '',
@@ -267,6 +290,20 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       Future.microtask(() => _loadSpotDay(d));
     }
     return next;
+  }
+
+  /// The spot schedule is no longer bookable: the slot path's sheet closes,
+  /// the package path goes back to S04.02.
+  void _scheduleGone() {
+    final slot = state.isSlot;
+    state = state.copyWith(
+      step: slot ? null : BookingStep.datetime,
+      clearDay: !slot,
+      clearStart: !slot,
+      clearBookingId: true,
+      phase: SubmitPhase.idle,
+      error: BookingErrorCode.outsideSchedule,
+    );
   }
 
   /// Keeps the chosen package only when the spot schedule takes it; picks

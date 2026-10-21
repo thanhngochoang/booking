@@ -48,6 +48,7 @@ Spot spotBookingSpot({bool archived = false}) => Spot(
 SpotSchedule spotBookingSchedule({
   List<String> days = const ['2026-09-30', spotBookingDay1, spotBookingDay2],
   List<String> serviceIds = const ['s1'],
+  bool open = true,
 }) => SpotSchedule(
   id: spotBookingScheduleId,
   providerId: 'p1',
@@ -57,7 +58,7 @@ SpotSchedule spotBookingSchedule({
   window: const SpotWindow(start: '06:00', end: '11:00'),
   serviceIds: serviceIds,
   priceFrom: 1500000,
-  open: true,
+  open: open,
 );
 
 const spotBookingOffer = SlotOffer(
@@ -78,12 +79,13 @@ const spotBookingOffer = SlotOffer(
 /// A fake spot repository holding the spot, schedule and offer above.
 FakeSpotRepository spotBookingRepo({
   bool archived = false,
+  bool open = true,
   List<String> serviceIds = const ['s1'],
   Map<String, List<SpotInterval>> taken = const {},
 }) {
   final repo = FakeSpotRepository()
     ..seedSpot(spotBookingSpot(archived: archived))
-    ..seedSchedule(spotBookingSchedule(serviceIds: serviceIds))
+    ..seedSchedule(spotBookingSchedule(serviceIds: serviceIds, open: open))
     ..seedOffer(spotBookingOffer);
   for (final MapEntry(key: day, value: list) in taken.entries) {
     repo.seedSpotDay(
@@ -112,6 +114,7 @@ Future<void> walkSpotPackage(
   bool car = false,
   Map<String, List<SpotInterval>> taken = const {},
   FakeBookingRepository? bookings,
+  FakeSpotRepository? spots,
 }) async {
   await pumpBookingRoute(
     tester,
@@ -119,7 +122,9 @@ Future<void> walkSpotPackage(
     bookings: bookings,
     addons: car ? [addonTransport] : const [],
     extraOverrides: [
-      spotRepositoryProvider.overrideWithValue(spotBookingRepo(taken: taken)),
+      spotRepositoryProvider.overrideWithValue(
+        spots ?? spotBookingRepo(taken: taken),
+      ),
     ],
   );
   await tester.pumpAndSettle();

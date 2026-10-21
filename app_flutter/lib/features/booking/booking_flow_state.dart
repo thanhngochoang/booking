@@ -270,6 +270,7 @@ class BookingFlowState {
       case BookingStep.review:
         final p = phone;
         if (p == null || busy) return false;
+        if (serviceId == null || day == null || start == null) return false;
         return normalizePhone(p, international: true) != null ||
             phoneFromField(p) != null;
     }

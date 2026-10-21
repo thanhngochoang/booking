@@ -14164,11 +14164,23 @@ abstract class AppLocalizations {
   /// **'Địa điểm là điểm chụp, không đổi được.'**
   String get bookSpotPlaceLocked;
 
-  /// No description provided for @bookSpotWindow.
+  /// No description provided for @bookSpotScheduleLine.
   ///
   /// In vi, this message translates to:
-  /// **'Khung giờ tại điểm {start}–{end}'**
-  String bookSpotWindow(String start, String end);
+  /// **'Lịch tại điểm · {days} · {start}–{end}'**
+  String bookSpotScheduleLine(String days, String start, String end);
+
+  /// No description provided for @bookSpotEndsAt.
+  ///
+  /// In vi, this message translates to:
+  /// **'{start}–{end} · chỉ giờ còn trống trong khung {from}–{to} của {name}'**
+  String bookSpotEndsAt(
+    String start,
+    String end,
+    String from,
+    String to,
+    String name,
+  );
 
   /// No description provided for @bookSpotDaysOnly.
   ///

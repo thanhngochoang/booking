@@ -24,7 +24,7 @@ class SlotGrid extends StatelessWidget {
   /// Name of the radio group for screen readers ("Giờ bắt đầu").
   final String? semanticsLabel;
 
-  static const double _gap = 6;
+  static const double _gap = AppSpace.s2;
 
   @override
   Widget build(BuildContext context) {

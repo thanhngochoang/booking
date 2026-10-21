@@ -93,8 +93,9 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
     final dark = theme.brightness == Brightness.dark;
     final scheme = theme.colorScheme;
     final now = ref.watch(clockProvider)();
-    final todayStr = dayKeyOf(now);
-    final currentMonth = now.month;
+    // Days are Vietnamese calendar days, not UTC ones.
+    final todayStr = vnDateKey(now);
+    final currentMonth = toVn(now).month;
 
     final spotAsync = ref.watch(spotProvider(widget.spotId));
 
@@ -136,8 +137,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
             final isPhotographer = profile?.role == UserRole.photographer;
 
             // Collect schedule days within next 14 days
-            final cutoffDate = now.add(const Duration(days: 14));
-            final cutoffStr = dayKeyOf(cutoffDate);
+            final cutoffStr = vnDateKey(now.add(const Duration(days: 14)));
             final upcomingScheduleDays = <String>{};
             for (final s in schedules) {
               for (final d in s.days) {

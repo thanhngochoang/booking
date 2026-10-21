@@ -1094,4 +1094,46 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('"Hôm nay" is the Vietnamese day: 18:00Z on 17/10 is 18/10', (
+    tester,
+  ) async {
+    final world = DiscoveryWorld(clock: () => DateTime.utc(2026, 10, 17, 18));
+    await world.init();
+    final fakeSpots = FakeSpotRepository()
+      ..seedSpot(_spot())
+      ..seedSchedule(_schedule(days: const ['2026-10-18', '2026-10-19']));
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/spots/:spotId',
+          builder: (_, state) =>
+              SpotScreen(spotId: state.pathParameters['spotId']!),
+        ),
+      ],
+      initialLocation: '/spots/spot1',
+    );
+    tester.view.physicalSize = const Size(390, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: router,
+        overrides: [
+          ...world.overrides,
+          spotRepositoryProvider.overrideWithValue(fakeSpots),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 18/10 is today, so it has no chip of its own and is the chosen day.
+    final today = tester.widget<AppChip>(find.byKey(const Key('chip-day-today')));
+    expect(today.selected, isTrue);
+    expect(find.byKey(const Key('chip-day-2026-10-18')), findsNothing);
+    expect(find.byKey(const Key('chip-day-2026-10-19')), findsOneWidget);
+    expect(find.textContaining('CN 18/10'), findsWidgets);
+  });
 }

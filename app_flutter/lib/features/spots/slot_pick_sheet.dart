@@ -67,7 +67,10 @@ class SlotPickSheet extends ConsumerStatefulWidget {
 
 class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
   String? _day;
-  String? _start;
+
+  /// The picked slot, with its day: a start picked on one day never carries
+  /// over to another.
+  ({String day, String start})? _picked;
 
   @override
   Widget build(BuildContext context) {
@@ -79,40 +82,56 @@ class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
 
     final now = ref.watch(clockProvider)();
     final today = vnDateKey(now);
-    final days = [
-      for (final d in schedule.days)
-        if (d.compareTo(today) >= 0) d,
-    ]..sort();
-    final day =
-        _day ??
-        (days.contains(widget.day) ? widget.day : days.firstOrNull);
-
-    final dayKey = day == null
-        ? null
-        : (scheduleId: schedule.id, day: day);
-    final spotDayAsync = dayKey == null
-        ? const AsyncData<SpotDay?>(null)
-        : ref.watch(spotDayProvider(dayKey));
 
     // A slot that has started is as good as taken.
-    List<({String start, String end, bool free})> slotsOf(SpotDay? spotDay) => [
+    List<({String start, String end, bool free})> slotsOf(
+      String day,
+      SpotDay? spotDay,
+    ) => [
       for (final s in freeSlots(schedule.window, offer, spotDay?.taken ?? []))
         (
           start: s.start,
           end: s.end,
           free:
               s.free &&
-              day != null &&
               BookingRules.parseBookingDateTime(day, s.start).isAfter(now),
         ),
     ];
-    final loaded = spotDayAsync.hasValue && !spotDayAsync.isLoading;
-    final picked = _start;
+
+    // Chips: the schedule's days from today that still have a free slot
+    // (mock caption); a day shows until its read says it is full.
+    final reads = {
+      for (final d in [...schedule.days]..sort())
+        if (d.compareTo(today) >= 0)
+          d: ref.watch(spotDayProvider((scheduleId: schedule.id, day: d))),
+    };
+    final days = [
+      for (final MapEntry(key: d, value: read) in reads.entries)
+        if (!read.hasValue ||
+            read.isLoading ||
+            slotsOf(d, read.value).any((s) => s.free))
+          d,
+    ];
+    final day = days.contains(_day)
+        ? _day
+        : (days.contains(widget.day) ? widget.day : days.firstOrNull);
+
+    final dayKey = day == null ? null : (scheduleId: schedule.id, day: day);
+    final spotDayAsync = day == null
+        ? const AsyncData<SpotDay?>(null)
+        : reads[day]!;
+
+    final picked = _picked;
     final canContinue =
         day != null &&
         picked != null &&
-        loaded &&
-        slotsOf(spotDayAsync.value).any((s) => s.free && s.start == picked);
+        picked.day == day &&
+        spotDayAsync.hasValue &&
+        !spotDayAsync.isLoading &&
+        slotsOf(
+          day,
+          spotDayAsync.value,
+        ).any((s) => s.free && s.start == picked.start);
 
     final header = [
       offer.name,
@@ -174,23 +193,40 @@ class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
                   Semantics(
                     label: l.slotPickDays,
                     container: true,
-                    child: Wrap(
-                      spacing: AppSpace.s2,
-                      runSpacing: AppSpace.s2,
-                      children: [
-                        for (final d in days)
-                          if (parseDayKey(d) case final date?)
-                            AppChip(
-                              label: formatDay(date),
-                              selected: d == day,
-                              onChanged: (_) => setState(() {
-                                _day = d;
-                                _start = null;
-                              }),
-                            ),
-                      ],
+                    child: SingleChildScrollView(
+                      key: const Key('slot-pick-days'),
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final d in days)
+                            if (parseDayKey(d) case final date?)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  right: AppSpace.s2,
+                                ),
+                                child: AppChip(
+                                  label: formatDay(date),
+                                  selected: d == day,
+                                  onChanged: (_) => setState(() {
+                                    _day = d;
+                                    _picked = null;
+                                  }),
+                                ),
+                              ),
+                        ],
+                      ),
                     ),
                   ),
+                  if (days.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpace.s2),
+                      child: Text(
+                        l.spotSlotsFull,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: AppSpace.s3),
                   if (dayKey != null)
                     AsyncView<SpotDay?>(
@@ -201,15 +237,15 @@ class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
                         children: [
                           for (var i = 0; i < 8; i++)
                             AppSkeleton.box(
-                              width: 72,
-                              height: 48,
+                              width: AppSpace.s16,
+                              height: AppSpace.s12,
                               radius: AppRadius.control,
                             ),
                         ],
                       ),
                       onRetry: () => ref.invalidate(spotDayProvider(dayKey)),
                       data: (context, spotDay) {
-                        final slots = slotsOf(spotDay);
+                        final slots = slotsOf(dayKey.day, spotDay);
                         final date = parseDayKey(dayKey.day)!;
                         return Column(
                           mainAxisSize: MainAxisSize.min,
@@ -229,9 +265,13 @@ class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
                             const SizedBox(height: AppSpace.s2),
                             SlotGrid(
                               slots: slots,
-                              selected: _start,
+                              selected: picked?.day == dayKey.day
+                                  ? picked?.start
+                                  : null,
                               semanticsLabel: l.slotPickTimes,
-                              onPick: (start) => setState(() => _start = start),
+                              onPick: (start) => setState(
+                                () => _picked = (day: dayKey.day, start: start),
+                              ),
                             ),
                           ],
                         );
@@ -257,7 +297,7 @@ class _SlotPickSheetState extends ConsumerState<SlotPickSheet> {
             child: AppButton.primary(
               l.slotContinue(formatMoney(offer.price)),
               onPressed: canContinue
-                  ? () => Navigator.of(context).pop((day: day, start: picked))
+                  ? () => Navigator.of(context).pop(picked)
                   : null,
             ),
           ),

@@ -8221,8 +8221,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get bookSpotPlaceLocked => 'Địa điểm là điểm chụp, không đổi được.';
 
   @override
-  String bookSpotWindow(String start, String end) {
-    return 'Khung giờ tại điểm $start–$end';
+  String bookSpotScheduleLine(String days, String start, String end) {
+    return 'Lịch tại điểm · $days · $start–$end';
+  }
+
+  @override
+  String bookSpotEndsAt(
+    String start,
+    String end,
+    String from,
+    String to,
+    String name,
+  ) {
+    return '$start–$end · chỉ giờ còn trống trong khung $from–$to của $name';
   }
 
   @override

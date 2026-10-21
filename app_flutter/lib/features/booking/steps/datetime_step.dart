@@ -8,6 +8,7 @@ import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 class DateTimeStep extends ConsumerStatefulWidget {
   const DateTimeStep({super.key, required this.args});
@@ -26,6 +27,17 @@ Map<DateTime, AvailabilityDay> _spotMonth(List<String> days) {
     if (d != null) map[d] = AvailabilityDay(day: d, state: DayState.free);
   }
   return map;
+}
+
+/// "T7, CN": the weekdays of [days] (`yyyy-MM-dd`), Monday first.
+String _weekdays(List<String> days, AppLocalizations l10n) {
+  final weekdays = {
+    for (final d in days)
+      if (parseDayKey(d) case final date?) date.weekday,
+  }.toList()..sort();
+  return [
+    for (final w in weekdays) l10n.calendarWeekdayShort(weekdayCode(w)),
+  ].join(', ');
 }
 
 class _DateTimeStepState extends ConsumerState<DateTimeStep> {
@@ -140,6 +152,13 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     final selectedDate = state.day != null ? parseDayKey(state.day!) : null;
     final duration = state.durationMinutes ?? 0;
     final day = state.day;
+    final providerName = spot == null
+        ? null
+        : ref
+              .watch(photographerProfileProvider(widget.args.photographerId))
+              .value
+              ?.summary
+              .displayName;
     // At a spot: the free starts of the chosen day, once its `spot_days` is read.
     final AsyncValue<List<String>> startsAsync;
     if (spot == null || day == null) {
@@ -204,7 +223,8 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                           ),
                         ),
                         Text(
-                          l10n.bookSpotWindow(
+                          l10n.bookSpotScheduleLine(
+                            _weekdays(spot.daysFrom(dayKeyOf(today)), l10n),
                             spot.schedule.window.start,
                             spot.schedule.window.end,
                           ),
@@ -370,8 +390,8 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                         children: [
                           for (var i = 0; i < 4; i++)
                             AppSkeleton.box(
-                              width: 64,
-                              height: 32,
+                              width: AppSpace.s16,
+                              height: AppSpace.s8,
                               radius: AppRadius.full,
                             ),
                         ],
@@ -384,7 +404,16 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     if (state.start != null && state.end != null) ...[
                       const SizedBox(height: AppSpace.s2),
                       Text(
-                        l10n.bookEndsAt(state.start!, state.end!),
+                        spot != null && providerName != null
+                            // Mock #S04.02-spot: whose window the times are in.
+                            ? l10n.bookSpotEndsAt(
+                                state.start!,
+                                state.end!,
+                                spot.schedule.window.start,
+                                spot.schedule.window.end,
+                                providerName,
+                              )
+                            : l10n.bookEndsAt(state.start!, state.end!),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),

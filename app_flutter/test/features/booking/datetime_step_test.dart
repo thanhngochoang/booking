@@ -505,7 +505,7 @@ void main() {
     });
   });
 
-  testWidgets('spot context shows "Khung giờ tại điểm 06:00–11:00"', (
+  testWidgets('spot context shows "Lịch tại điểm · T7, CN · 06:00–11:00"', (
     tester,
   ) async {
     final h = tester.ensureSemantics();
@@ -519,7 +519,7 @@ void main() {
 
     expect(find.byType(DateTimeStep), findsOneWidget);
     expect(find.text('Hồ Tây'), findsOneWidget);
-    expect(find.text('Khung giờ tại điểm 06:00–11:00'), findsOneWidget);
+    expect(find.text('Lịch tại điểm · T7, CN · 06:00–11:00'), findsOneWidget);
     expect(find.text('Chỉ ngày có lịch tại điểm'), findsOneWidget);
     // The viewed day is chosen; only its free times are offered.
     expect(find.textContaining('Thứ 7, 10/10'), findsOneWidget);
@@ -528,6 +528,14 @@ void main() {
         .map((c) => c.label)
         .toList();
     expect(chips, ['08:30', '09:00']);
+    await tester.tap(find.widgetWithText(AppChip, '08:30'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        '08:30–10:30 · chỉ giờ còn trống trong khung 06:00–11:00 của Minh Trí',
+      ),
+      findsOneWidget,
+    );
 
     // A day outside the schedule cannot be chosen.
     await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));

@@ -71,8 +71,16 @@ class FakeSpotRepository implements SpotRepository {
         .toList();
   }
 
+  /// Thrown by [spotDay] while set (a failed `spot_days` read).
+  Object? spotDayError;
+
+  /// Every `spot_days` read, as `{scheduleId}_{day}`.
+  final List<String> spotDayReads = [];
+
   @override
   Future<SpotDay?> spotDay(String scheduleId, String day) async {
+    spotDayReads.add('${scheduleId}_$day');
+    if (spotDayError case final e?) throw e;
     return spotDays['${scheduleId}_$day'];
   }
 
