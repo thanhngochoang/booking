@@ -23,13 +23,18 @@ class FakeReviewRepository implements ReviewRepository {
 
   final List<Map<String, dynamic>> submitCalls = [];
 
+  /// Stores [review] under its document id: `{bookingId}` for a member or
+  /// individual review, `{bookingId}_studio` for a studio review.
   void seedReview(Review review) {
-    reviews[review.bookingId] = review;
-    _notifyReview(review.bookingId);
+    final id = review.isStudioReview
+        ? studioReviewDocId(review.bookingId)
+        : review.bookingId;
+    reviews[id] = review;
+    _notifyReview(id);
   }
 
-  void _notifyReview(String bookingId) {
-    _reviewControllers[bookingId]?.add(reviews[bookingId]);
+  void _notifyReview(String reviewId) {
+    _reviewControllers[reviewId]?.add(reviews[reviewId]);
   }
 
   @override
@@ -154,7 +159,7 @@ class FakeReviewRepository implements ReviewRepository {
 
     seedReview(review);
     if (studio != null) {
-      reviews['${bookingId}_studio'] = Review(
+      seedReview(Review(
         bookingId: bookingId,
         subjectType: 'studio',
         customerId: currentUserId,
@@ -166,7 +171,7 @@ class FakeReviewRepository implements ReviewRepository {
         text: studio.text,
         createdAt: DateTime.now(),
         assigneeId: assigneeId,
-      );
+      ));
     }
 
     if (bookingRepository != null &&

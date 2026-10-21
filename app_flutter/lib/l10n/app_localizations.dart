@@ -13389,6 +13389,354 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn thợ chụp'**
   String get assignPickerA11y;
+
+  /// No description provided for @changeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin đổi thợ chụp'**
+  String get changeTitle;
+
+  /// No description provided for @changeCurrent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ hiện tại'**
+  String get changeCurrent;
+
+  /// No description provided for @changeReasonLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (tuỳ chọn)'**
+  String get changeReasonLabel;
+
+  /// No description provided for @changeNoteRespond.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio trả lời trong 6 giờ.'**
+  String get changeNoteRespond;
+
+  /// No description provided for @changeNoteRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu studio từ chối hoặc không trả lời, bạn được huỷ và hoàn 100%.'**
+  String get changeNoteRefund;
+
+  /// No description provided for @changeOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chỉ xin đổi được 1 lần.'**
+  String get changeOnce;
+
+  /// No description provided for @changeSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi yêu cầu đổi'**
+  String get changeSend;
+
+  /// No description provided for @changeSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu đổi thợ'**
+  String get changeSent;
+
+  /// No description provided for @assigneeSection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ chụp cho bạn'**
+  String get assigneeSection;
+
+  /// No description provided for @assigneeAssignedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao {date}'**
+  String assigneeAssignedOn(String date);
+
+  /// No description provided for @assigneeWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio sẽ báo thợ chụp trước {deadline}'**
+  String assigneeWaiting(String deadline);
+
+  /// No description provided for @assigneeMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{shoots} buổi · thợ của {studio}'**
+  String assigneeMeta(int shoots, String studio);
+
+  /// No description provided for @assigneeViewProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ'**
+  String get assigneeViewProfile;
+
+  /// No description provided for @assigneeChange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin đổi thợ (1 lần)'**
+  String get assigneeChange;
+
+  /// No description provided for @assigneeChangePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin đổi · chờ studio'**
+  String get assigneeChangePending;
+
+  /// No description provided for @assigneeOverdueLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn'**
+  String get assigneeOverdueLabel;
+
+  /// No description provided for @assigneeOverdueTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa báo thợ chụp đúng hạn (trước {deadline})'**
+  String assigneeOverdueTitle(String deadline);
+
+  /// No description provided for @assigneeOverdueBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có thể chờ thêm hoặc huỷ và được hoàn 100%.'**
+  String get assigneeOverdueBody;
+
+  /// No description provided for @assigneeCancelFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn 100%'**
+  String get assigneeCancelFull;
+
+  /// No description provided for @assigneeReminded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhắc {studio} lúc {first} và {second}.'**
+  String assigneeReminded(String studio, String first, String second);
+
+  /// No description provided for @assigneeChangeDeclinedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio không đổi thợ chụp'**
+  String get assigneeChangeDeclinedTitle;
+
+  /// No description provided for @assigneeChangeDeclinedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}. Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.'**
+  String assigneeChangeDeclinedBody(String reason);
+
+  /// No description provided for @assigneeChangeExpiredTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa trả lời yêu cầu đổi thợ'**
+  String get assigneeChangeExpiredTitle;
+
+  /// No description provided for @assigneeChangeExpiredBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.'**
+  String get assigneeChangeExpiredBody;
+
+  /// No description provided for @assigneeLateReassignTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đổi thợ khi còn dưới 24 giờ'**
+  String get assigneeLateReassignTitle;
+
+  /// No description provided for @assigneeLateReassignBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có thể huỷ và được hoàn 100%.'**
+  String get assigneeLateReassignBody;
+
+  /// No description provided for @timelineAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã giao thợ chụp'**
+  String get timelineAssigned;
+
+  /// No description provided for @timelineAssignedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã vào nhóm chat của buổi chụp'**
+  String timelineAssignedBody(String name);
+
+  /// No description provided for @timelineAwaitAssign.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ studio giao thợ chụp'**
+  String get timelineAwaitAssign;
+
+  /// No description provided for @timelineAwaitAssignBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn từ {deadline}'**
+  String timelineAwaitAssignBody(String deadline);
+
+  /// No description provided for @detailMessageStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn studio'**
+  String get detailMessageStudio;
+
+  /// No description provided for @cancelStudioFaultTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn 100%?'**
+  String get cancelStudioFaultTitle;
+
+  /// No description provided for @cancelStudioFaultLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn 100% số đã trả'**
+  String get cancelStudioFaultLine;
+
+  /// No description provided for @cancelStudioFaultBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa giữ đúng cam kết về thợ chụp nên bạn được hoàn toàn bộ số đã trả.'**
+  String get cancelStudioFaultBody;
+
+  /// No description provided for @cancelStudioFaultConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn 100%'**
+  String get cancelStudioFaultConfirm;
+
+  /// No description provided for @cancelStudioFaultKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lịch'**
+  String get cancelStudioFaultKeep;
+
+  /// No description provided for @reviewCardAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · thợ {name}'**
+  String reviewCardAssignee(String day, String name);
+
+  /// No description provided for @reviewBlockAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ {name}'**
+  String reviewBlockAssignee(String name);
+
+  /// No description provided for @reviewBlockAssigneeNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tính cho hồ sơ thợ'**
+  String get reviewBlockAssigneeNote;
+
+  /// No description provided for @reviewBlockStudioNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tính cho studio'**
+  String get reviewBlockStudioNote;
+
+  /// No description provided for @reviewNoteForAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận xét cho thợ'**
+  String get reviewNoteForAssignee;
+
+  /// No description provided for @reviewNoteForStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận xét cho studio'**
+  String get reviewNoteForStudio;
+
+  /// No description provided for @reviewSubmitTwo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi 2 đánh giá'**
+  String get reviewSubmitTwo;
+
+  /// No description provided for @reviewMissingAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn thiếu đánh giá cho thợ'**
+  String get reviewMissingAssignee;
+
+  /// No description provided for @reviewMissingStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn thiếu đánh giá cho studio'**
+  String get reviewMissingStudio;
+
+  /// No description provided for @reviewStudioReason_late_assignment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo thợ trễ'**
+  String get reviewStudioReason_late_assignment;
+
+  /// No description provided for @reviewStudioReason_slow_response.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tư vấn chậm'**
+  String get reviewStudioReason_slow_response;
+
+  /// No description provided for @reviewStudioReason_price_changed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi giá'**
+  String get reviewStudioReason_price_changed;
+
+  /// No description provided for @reviewStudioReason_poor_assignment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao thợ không hợp'**
+  String get reviewStudioReason_poor_assignment;
+
+  /// No description provided for @reviewStudioReason_other.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get reviewStudioReason_other;
+
+  /// No description provided for @reviewA11yTomatoFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ném cà chua cho {who}, {n} trên 10'**
+  String reviewA11yTomatoFor(String who, int n);
+
+  /// No description provided for @reviewA11yBrickFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ném gạch cho {who}, {n} trên 10'**
+  String reviewA11yBrickFor(String who, int n);
+
+  /// No description provided for @reviewShotBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name}'**
+  String reviewShotBy(String name);
+
+  /// No description provided for @reviewViaStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Qua {studio}'**
+  String reviewViaStudio(String studio);
+
+  /// No description provided for @reviewWhoAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'thợ'**
+  String get reviewWhoAssignee;
+
+  /// No description provided for @reviewWhoStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'studio'**
+  String get reviewWhoStudio;
+
+  /// No description provided for @reviewGroupAssigneeA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá thợ {name}'**
+  String reviewGroupAssigneeA11y(String name);
+
+  /// No description provided for @reviewGroupStudioA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá {studio}'**
+  String reviewGroupStudioA11y(String studio);
 }
 
 class _AppLocalizationsDelegate

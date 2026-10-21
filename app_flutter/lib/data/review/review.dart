@@ -96,6 +96,10 @@ class StudioReviewDraft {
   int get hashCode => Object.hash(verdict, hits, Object.hashAll(reasons), text);
 }
 
+/// The document of a studio booking's studio review (Decision 21): the
+/// member review keeps `reviews/{bookingId}`.
+String studioReviewDocId(String bookingId) => '${bookingId}_studio';
+
 /// Most taps on one side of the pad.
 const int kReviewHitsMax = kVerdictHitsMax;
 

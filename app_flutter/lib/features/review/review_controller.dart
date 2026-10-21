@@ -51,6 +51,10 @@ enum ReviewPhase { idle, submitting, done, error }
 /// What still blocks the submit button, in the order the screen names it.
 enum ReviewBlock { verdict, reason, text }
 
+/// The two blocks of a studio booking's review (#136 Decision 21): the
+/// member who shot it and the studio.
+enum ReviewSubject { assignee, studio }
+
 @immutable
 class ReviewState {
   const ReviewState({
@@ -64,6 +68,10 @@ class ReviewState {
     this.error,
     this.isConflict = false,
     this.submittedShare,
+    this.studioVerdict,
+    this.studioHits = 0,
+    this.studioReasons = const {},
+    this.studioText = '',
   });
 
   /// The side picked on the pad; null exactly when [hits] is 0.
@@ -86,10 +94,16 @@ class ReviewState {
   /// "chỉ đánh giá"; null before the first submit.
   final bool? submittedShare;
 
-  /// The first thing still missing, or null when the review can be sent.
-  ReviewBlock? get missing {
-    if (verdict == null) return ReviewBlock.verdict;
-    if (verdict == Verdict.brick && reasons.isEmpty) return ReviewBlock.reason;
+  /// The studio block of a studio booking (same rules as the member block,
+  /// its own brick reasons); unused on an individual booking.
+  final Verdict? studioVerdict;
+  final int studioHits;
+  final Set<StudioReviewReason> studioReasons;
+  final String studioText;
+
+  static ReviewBlock? _missingOf(Verdict? v, bool noReason, String text) {
+    if (v == null) return ReviewBlock.verdict;
+    if (v == Verdict.brick && noReason) return ReviewBlock.reason;
     if (text.trim().characters.length < ReviewController.minTextLength ||
         text.characters.length > ReviewController.maxTextLength) {
       return ReviewBlock.text;
@@ -97,11 +111,31 @@ class ReviewState {
     return null;
   }
 
+  /// The first thing still missing, or null when the review can be sent
+  /// (the member block of a studio booking).
+  ReviewBlock? get missing => _missingOf(verdict, reasons.isEmpty, text);
+
+  /// The same for the studio block.
+  ReviewBlock? get studioMissing =>
+      _missingOf(studioVerdict, studioReasons.isEmpty, studioText);
+
+  /// On a studio booking, the first block still incomplete (the member's,
+  /// then the studio's); null when both can be sent.
+  ReviewSubject? get missingSubject => missing != null
+      ? ReviewSubject.assignee
+      : (studioMissing != null ? ReviewSubject.studio : null);
+
   bool get canSubmitReviewOnly =>
       missing == null && phase != ReviewPhase.submitting;
 
-  bool get canSubmitWithShare =>
-      canSubmitReviewOnly &&
+  /// "Gửi 2 đánh giá": both blocks complete.
+  bool get canSubmitTwo => canSubmitReviewOnly && studioMissing == null;
+
+  bool get canSubmitWithShare => canSubmitReviewOnly && _photosReady;
+
+  bool get canSubmitTwoWithShare => canSubmitTwo && _photosReady;
+
+  bool get _photosReady =>
       photos.isNotEmpty &&
       !photos.any(
         (p) =>
@@ -123,6 +157,11 @@ class ReviewState {
     Object? error,
     bool? isConflict,
     bool? submittedShare,
+    Verdict? studioVerdict,
+    bool clearStudioVerdict = false,
+    int? studioHits,
+    Set<StudioReviewReason>? studioReasons,
+    String? studioText,
   }) {
     return ReviewState(
       verdict: clearVerdict ? null : verdict ?? this.verdict,
@@ -135,6 +174,12 @@ class ReviewState {
       error: error,
       isConflict: isConflict ?? this.isConflict,
       submittedShare: submittedShare ?? this.submittedShare,
+      studioVerdict: clearStudioVerdict
+          ? null
+          : studioVerdict ?? this.studioVerdict,
+      studioHits: studioHits ?? this.studioHits,
+      studioReasons: studioReasons ?? this.studioReasons,
+      studioText: studioText ?? this.studioText,
     );
   }
 }
@@ -200,6 +245,31 @@ class ReviewController extends Notifier<ReviewState> {
   void setText(String val) {
     if (state.phase == ReviewPhase.submitting) return;
     state = state.copyWith(text: val);
+  }
+
+  /// The studio block's pad (studio booking only).
+  void setStudioVerdict(Verdict? verdict, int hits) {
+    if (state.phase == ReviewPhase.submitting) return;
+    final cleared = verdict == null || hits <= 0;
+    state = state.copyWith(
+      studioVerdict: cleared ? null : verdict,
+      clearStudioVerdict: cleared,
+      studioHits: cleared ? 0 : hits.clamp(1, kReviewHitsMax),
+    );
+  }
+
+  void resetStudio() => setStudioVerdict(null, 0);
+
+  void toggleStudioReason(StudioReviewReason reason) {
+    if (state.phase == ReviewPhase.submitting) return;
+    final next = {...state.studioReasons};
+    if (!next.remove(reason)) next.add(reason);
+    state = state.copyWith(studioReasons: next);
+  }
+
+  void setStudioText(String val) {
+    if (state.phase == ReviewPhase.submitting) return;
+    state = state.copyWith(studioText: val);
   }
 
   Future<void> pickPhotos() async {
@@ -341,9 +411,32 @@ class ReviewController extends Notifier<ReviewState> {
         ]
       : const [];
 
-  Future<bool> submit({required bool share}) async {
+  /// The studio block as sent: brick reasons in the catalogue order.
+  StudioReviewDraft? get _studioDraft {
+    final v = state.studioVerdict;
+    if (v == null) return null;
+    return StudioReviewDraft(
+      verdict: v,
+      hits: state.studioHits,
+      reasons: v == Verdict.brick
+          ? [
+              for (final r in StudioReviewReason.values)
+                if (state.studioReasons.contains(r)) r,
+            ]
+          : const [],
+      text: state.studioText.trim(),
+    );
+  }
+
+  /// Sends the review; with [studio] (a studio booking) the studio block
+  /// goes in the same call and both blocks must be complete.
+  Future<bool> submit({required bool share, bool studio = false}) async {
     final verdict = state.verdict;
     if (state.phase == ReviewPhase.submitting || verdict == null) return false;
+    final studioDraft = studio ? _studioDraft : null;
+    if (studio && (studioDraft == null || state.studioMissing != null)) {
+      return false;
+    }
     final hits = state.hits;
     final reasons = _reasons;
     state = state.copyWith(
@@ -363,6 +456,7 @@ class ReviewController extends Notifier<ReviewState> {
               text: state.text.trim(),
               postId: null,
               photos: const [],
+              studio: studioDraft,
             );
         _discardSharedFiles();
       } else {
@@ -380,6 +474,7 @@ class ReviewController extends Notifier<ReviewState> {
               text: state.text.trim(),
               postId: state.postId,
               photos: photos,
+              studio: studioDraft,
             );
         _filesAttached = true;
         // The server created the real-shoot post: S09.01 reads it again.

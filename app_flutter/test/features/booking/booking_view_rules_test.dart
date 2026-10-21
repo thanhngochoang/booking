@@ -865,5 +865,157 @@ void main() {
       expect(forMember.requests, isEmpty);
       expect(forMember.isEmpty, isFalse);
     });
+
+    group('customer block (Task 9)', () {
+      // Deadline Sunday 11/10 15:30 Vietnam; shoot Monday 12/10 15:30.
+      final afterDeadline = DateTime.utc(2026, 10, 11, 9);
+      final afterStart = DateTime.utc(2026, 10, 12, 9);
+      Booking withFault(StudioFaultKind kind, {String? assignee = 'minh'}) {
+        final b = studio(BookingStatus.accepted, assignee: assignee);
+        return b.copyWith(
+          studio: b.studio!.copyWith(
+            studioFault: StudioFault(kind: kind, at: weekBefore),
+          ),
+        );
+      }
+
+      test('studioFaultOf: overdue unassigned even before the sweep, the '
+          'stored fault, nothing after the start', () {
+        final open = studio(BookingStatus.accepted);
+        expect(studioFaultOf(open, weekBefore), isNull);
+        expect(
+          studioFaultOf(open, afterDeadline),
+          StudioFaultKind.assignOverdue,
+        );
+        expect(studioFaultOf(open, afterStart), isNull);
+        expect(
+          studioFaultOf(withFault(StudioFaultKind.changeDeclined), weekBefore),
+          StudioFaultKind.changeDeclined,
+        );
+        expect(
+          studioFaultOf(
+            studio(BookingStatus.accepted, assignee: 'minh'),
+            afterDeadline,
+          ),
+          isNull,
+        );
+        expect(
+          studioFaultOf(_b(BookingStatus.accepted), afterDeadline),
+          isNull,
+        );
+      });
+
+      test('studioBlockStateOf covers the seven states', () {
+        expect(
+          studioBlockStateOf(_b(BookingStatus.accepted), weekBefore),
+          isNull,
+        );
+        expect(
+          studioBlockStateOf(studio(BookingStatus.accepted), weekBefore),
+          StudioBlockState.waiting,
+        );
+        expect(
+          studioBlockStateOf(studio(BookingStatus.accepted), afterDeadline),
+          StudioBlockState.overdue,
+        );
+        final assigned = studio(BookingStatus.accepted, assignee: 'minh');
+        expect(
+          studioBlockStateOf(assigned, weekBefore),
+          StudioBlockState.assigned,
+        );
+        final pending = assigned.copyWith(
+          studio: assigned.studio!.copyWith(
+            changeRequest: StudioChangeRequest(
+              at: weekBefore,
+              respondBy: weekBefore.add(const Duration(hours: 6)),
+            ),
+          ),
+        );
+        expect(
+          studioBlockStateOf(pending, weekBefore),
+          StudioBlockState.changePending,
+        );
+        expect(
+          studioBlockStateOf(
+            withFault(StudioFaultKind.changeDeclined),
+            weekBefore,
+          ),
+          StudioBlockState.changeDeclined,
+        );
+        expect(
+          studioBlockStateOf(
+            withFault(StudioFaultKind.changeExpired),
+            weekBefore,
+          ),
+          StudioBlockState.changeExpired,
+        );
+        expect(
+          studioBlockStateOf(
+            withFault(StudioFaultKind.lateReassign),
+            weekBefore,
+          ),
+          StudioBlockState.lateReassign,
+        );
+        // The right ends at the start: the card stays.
+        expect(
+          studioBlockStateOf(
+            withFault(StudioFaultKind.lateReassign),
+            afterStart,
+          ),
+          StudioBlockState.assigned,
+        );
+      });
+
+      test('the customer gets Huỷ và hoàn 100% instead of the usual cancel '
+          'while a fault lasts', () {
+        final open = studio(BookingStatus.accepted);
+        expect(
+          detailActions(open, BookingRole.customer, weekBefore, _on),
+          allOf(
+            contains(DetailAction.cancel),
+            isNot(contains(DetailAction.cancelStudioFault)),
+          ),
+        );
+        expect(
+          detailActions(open, BookingRole.customer, afterDeadline, _on),
+          allOf(
+            contains(DetailAction.cancelStudioFault),
+            isNot(contains(DetailAction.cancel)),
+          ),
+        );
+        // The studio's own cancel is unchanged.
+        expect(
+          detailActions(open, BookingRole.photographer, afterDeadline, _on),
+          contains(DetailAction.cancel),
+        );
+      });
+
+      test('a change can be asked once, while assigned and before the '
+          'start', () {
+        final assigned = studio(BookingStatus.accepted, assignee: 'minh');
+        expect(canRequestAssigneeChange(assigned, weekBefore), isTrue);
+        expect(canRequestAssigneeChange(assigned, afterStart), isFalse);
+        expect(
+          canRequestAssigneeChange(studio(BookingStatus.accepted), weekBefore),
+          isFalse,
+        );
+        expect(
+          canRequestAssigneeChange(
+            withFault(StudioFaultKind.changeDeclined).copyWith(
+              studio: withFault(StudioFaultKind.changeDeclined).studio!
+                  .copyWith(
+                    changeRequest: StudioChangeRequest(
+                      at: weekBefore,
+                      respondBy: weekBefore,
+                      status: ChangeRequestStatus.declined,
+                    ),
+                  ),
+            ),
+            weekBefore,
+          ),
+          isFalse,
+        );
+      });
+    });
   });
 }

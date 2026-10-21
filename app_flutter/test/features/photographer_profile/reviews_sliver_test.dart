@@ -907,4 +907,91 @@ void main() {
       expect(find.byType(VerdictBadge), findsOneWidget);
     });
   });
+
+  group('studio booking reviews (#136)', () {
+    Future<void> pumpTile(WidgetTester tester, Review review) =>
+        tester.pumpWidget(
+          MaterialApp(
+            theme: buildDarkTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ReviewTile(review: review, name: 'Lan Anh'),
+            ),
+          ),
+        );
+
+    testWidgets("a studio's review shows Chụp bởi {name}; a member's review "
+        'from a studio booking shows Qua {studio}', (tester) async {
+      await pumpTile(
+        tester,
+        Review(
+          bookingId: 'b1',
+          subjectType: 'studio',
+          customerId: 'c1',
+          photographerId: 'cuc',
+          serviceId: 's1',
+          verdict: Verdict.brick,
+          studioReasons: const [StudioReviewReason.lateAssignment],
+          text: 'Báo thợ trễ, phải nhắn hỏi nhiều lần.',
+          createdAt: DateTime(2026, 10, 14),
+          assigneeId: 'minh',
+          assigneeName: 'Minh Trí',
+        ),
+      );
+      expect(find.text('Chụp bởi Minh Trí'), findsOneWidget);
+      expect(find.text('Báo thợ trễ'), findsOneWidget);
+
+      await pumpTile(
+        tester,
+        Review(
+          bookingId: 'b1',
+          customerId: 'c1',
+          photographerId: 'minh',
+          serviceId: 's1',
+          verdict: Verdict.tomato,
+          text: 'Chụp khéo, hai bên gia đình đều ưng.',
+          createdAt: DateTime(2026, 10, 14),
+          viaStudioId: 'cuc',
+          viaStudioName: 'Studio Mây',
+        ),
+      );
+      expect(find.text('Qua Studio Mây'), findsOneWidget);
+      expect(find.textContaining('Chụp bởi'), findsNothing);
+    });
+
+    testWidgets('no snapshot name and individual reviews show no tag', (
+      tester,
+    ) async {
+      await pumpTile(
+        tester,
+        Review(
+          bookingId: 'b1',
+          subjectType: 'studio',
+          customerId: 'c1',
+          photographerId: 'cuc',
+          serviceId: 's1',
+          verdict: Verdict.tomato,
+          text: 'Studio tư vấn rất nhanh.',
+          createdAt: DateTime(2026, 10, 14),
+          assigneeId: 'minh',
+        ),
+      );
+      expect(find.byKey(const Key('review-studio-tag')), findsNothing);
+
+      await pumpTile(
+        tester,
+        Review(
+          bookingId: 'b2',
+          customerId: 'c1',
+          photographerId: 'p1',
+          serviceId: 's1',
+          verdict: Verdict.tomato,
+          text: 'Chụp rất đẹp, rất vui.',
+          createdAt: DateTime(2026, 10, 14),
+        ),
+      );
+      expect(find.byKey(const Key('review-studio-tag')), findsNothing);
+    });
+  });
 }

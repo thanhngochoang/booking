@@ -26,6 +26,7 @@ class VerdictPad extends StatelessWidget {
     required this.onChanged,
     this.compact = false,
     this.enabled = true,
+    this.subject,
   });
 
   final VerdictKind? kind;
@@ -33,6 +34,11 @@ class VerdictPad extends StatelessWidget {
   final void Function(VerdictKind? kind, int hits) onChanged;
   final bool compact;
   final bool enabled;
+
+  /// Who the pad is about when a screen has two ("thợ", "studio" on a
+  /// studio booking's S05.05): the sides then read "Ném cà chua cho thợ, 8
+  /// trên 10". Null keeps "Ném cà chua, 8 trên 10".
+  final String? subject;
 
   void _tap(VerdictKind side) {
     if (!enabled) return;
@@ -63,6 +69,7 @@ class VerdictPad extends StatelessWidget {
         hits: kind == side ? hits : 0,
         compact: compact,
         enabled: enabled,
+        subject: subject,
         onTap: () => _tap(side),
         onDecrease: () => _decrease(side),
       ),
@@ -89,11 +96,13 @@ class _VerdictButton extends StatefulWidget {
     required this.hits,
     required this.compact,
     required this.enabled,
+    required this.subject,
     required this.onTap,
     required this.onDecrease,
   });
 
   final VerdictKind side;
+  final String? subject;
 
   /// 0 when this side is not the selected one.
   final int hits;
@@ -228,9 +237,12 @@ class _VerdictButtonState extends State<_VerdictButton>
       container: true,
       slider: true,
       enabled: enabled,
-      label: tomato
-          ? l.reviewA11yTomato(widget.hits)
-          : l.reviewA11yBrick(widget.hits),
+      label: switch ((tomato, widget.subject)) {
+        (true, null) => l.reviewA11yTomato(widget.hits),
+        (false, null) => l.reviewA11yBrick(widget.hits),
+        (true, final who?) => l.reviewA11yTomatoFor(who, widget.hits),
+        (false, final who?) => l.reviewA11yBrickFor(who, widget.hits),
+      },
       onTap: enabled ? widget.onTap : null,
       onIncrease: enabled ? widget.onTap : null,
       onDecrease: enabled ? widget.onDecrease : null,

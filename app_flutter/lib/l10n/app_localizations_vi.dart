@@ -7748,4 +7748,216 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get assignPickerA11y => 'Chọn thợ chụp';
+
+  @override
+  String get changeTitle => 'Xin đổi thợ chụp';
+
+  @override
+  String get changeCurrent => 'Thợ hiện tại';
+
+  @override
+  String get changeReasonLabel => 'Lý do (tuỳ chọn)';
+
+  @override
+  String get changeNoteRespond => 'Studio trả lời trong 6 giờ.';
+
+  @override
+  String get changeNoteRefund =>
+      'Nếu studio từ chối hoặc không trả lời, bạn được huỷ và hoàn 100%.';
+
+  @override
+  String get changeOnce => 'Bạn chỉ xin đổi được 1 lần.';
+
+  @override
+  String get changeSend => 'Gửi yêu cầu đổi';
+
+  @override
+  String get changeSent => 'Đã gửi yêu cầu đổi thợ';
+
+  @override
+  String get assigneeSection => 'Thợ chụp cho bạn';
+
+  @override
+  String assigneeAssignedOn(String date) {
+    return 'Giao $date';
+  }
+
+  @override
+  String assigneeWaiting(String deadline) {
+    return 'Studio sẽ báo thợ chụp trước $deadline';
+  }
+
+  @override
+  String assigneeMeta(int shoots, String studio) {
+    return '$shoots buổi · thợ của $studio';
+  }
+
+  @override
+  String get assigneeViewProfile => 'Xem hồ sơ';
+
+  @override
+  String get assigneeChange => 'Xin đổi thợ (1 lần)';
+
+  @override
+  String get assigneeChangePending => 'Đã xin đổi · chờ studio';
+
+  @override
+  String get assigneeOverdueLabel => 'Quá hạn';
+
+  @override
+  String assigneeOverdueTitle(String deadline) {
+    return 'Studio chưa báo thợ chụp đúng hạn (trước $deadline)';
+  }
+
+  @override
+  String get assigneeOverdueBody =>
+      'Bạn có thể chờ thêm hoặc huỷ và được hoàn 100%.';
+
+  @override
+  String get assigneeCancelFull => 'Huỷ và hoàn 100%';
+
+  @override
+  String assigneeReminded(String studio, String first, String second) {
+    return 'Đã nhắc $studio lúc $first và $second.';
+  }
+
+  @override
+  String get assigneeChangeDeclinedTitle => 'Studio không đổi thợ chụp';
+
+  @override
+  String assigneeChangeDeclinedBody(String reason) {
+    return 'Lý do: $reason. Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.';
+  }
+
+  @override
+  String get assigneeChangeExpiredTitle =>
+      'Studio chưa trả lời yêu cầu đổi thợ';
+
+  @override
+  String get assigneeChangeExpiredBody =>
+      'Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.';
+
+  @override
+  String get assigneeLateReassignTitle =>
+      'Studio đã đổi thợ khi còn dưới 24 giờ';
+
+  @override
+  String get assigneeLateReassignBody => 'Bạn có thể huỷ và được hoàn 100%.';
+
+  @override
+  String get timelineAssigned => 'Đã giao thợ chụp';
+
+  @override
+  String timelineAssignedBody(String name) {
+    return '$name đã vào nhóm chat của buổi chụp';
+  }
+
+  @override
+  String get timelineAwaitAssign => 'Chờ studio giao thợ chụp';
+
+  @override
+  String timelineAwaitAssignBody(String deadline) {
+    return 'Quá hạn từ $deadline';
+  }
+
+  @override
+  String get detailMessageStudio => 'Nhắn studio';
+
+  @override
+  String get cancelStudioFaultTitle => 'Huỷ và hoàn 100%?';
+
+  @override
+  String get cancelStudioFaultLine => 'Hoàn 100% số đã trả';
+
+  @override
+  String get cancelStudioFaultBody =>
+      'Studio chưa giữ đúng cam kết về thợ chụp nên bạn được hoàn toàn bộ số đã trả.';
+
+  @override
+  String get cancelStudioFaultConfirm => 'Huỷ và hoàn 100%';
+
+  @override
+  String get cancelStudioFaultKeep => 'Giữ lịch';
+
+  @override
+  String reviewCardAssignee(String day, String name) {
+    return '$day · thợ $name';
+  }
+
+  @override
+  String reviewBlockAssignee(String name) {
+    return 'Thợ $name';
+  }
+
+  @override
+  String get reviewBlockAssigneeNote => 'Tính cho hồ sơ thợ';
+
+  @override
+  String get reviewBlockStudioNote => 'Tính cho studio';
+
+  @override
+  String get reviewNoteForAssignee => 'Nhận xét cho thợ';
+
+  @override
+  String get reviewNoteForStudio => 'Nhận xét cho studio';
+
+  @override
+  String get reviewSubmitTwo => 'Gửi 2 đánh giá';
+
+  @override
+  String get reviewMissingAssignee => 'Còn thiếu đánh giá cho thợ';
+
+  @override
+  String get reviewMissingStudio => 'Còn thiếu đánh giá cho studio';
+
+  @override
+  String get reviewStudioReason_late_assignment => 'Báo thợ trễ';
+
+  @override
+  String get reviewStudioReason_slow_response => 'Tư vấn chậm';
+
+  @override
+  String get reviewStudioReason_price_changed => 'Đổi giá';
+
+  @override
+  String get reviewStudioReason_poor_assignment => 'Giao thợ không hợp';
+
+  @override
+  String get reviewStudioReason_other => 'Khác';
+
+  @override
+  String reviewA11yTomatoFor(String who, int n) {
+    return 'Ném cà chua cho $who, $n trên 10';
+  }
+
+  @override
+  String reviewA11yBrickFor(String who, int n) {
+    return 'Ném gạch cho $who, $n trên 10';
+  }
+
+  @override
+  String reviewShotBy(String name) {
+    return 'Chụp bởi $name';
+  }
+
+  @override
+  String reviewViaStudio(String studio) {
+    return 'Qua $studio';
+  }
+
+  @override
+  String get reviewWhoAssignee => 'thợ';
+
+  @override
+  String get reviewWhoStudio => 'studio';
+
+  @override
+  String reviewGroupAssigneeA11y(String name) {
+    return 'Đánh giá thợ $name';
+  }
+
+  @override
+  String reviewGroupStudioA11y(String studio) {
+    return 'Đánh giá $studio';
+  }
 }
