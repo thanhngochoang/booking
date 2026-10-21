@@ -33,6 +33,9 @@ enum BookingErrorCode {
   addonChanged,
   addonNotApplicable,
   pickupRequired,
+  outsideSchedule,
+  slotTaken,
+  spotArchived,
   network,
   unknown,
 }
@@ -99,6 +102,12 @@ BookingErrorCode _codeToBookingError(String code) {
       return BookingErrorCode.addonNotApplicable;
     case 'pickup_required':
       return BookingErrorCode.pickupRequired;
+    case 'outside_schedule':
+      return BookingErrorCode.outsideSchedule;
+    case 'slot_taken':
+      return BookingErrorCode.slotTaken;
+    case 'spot_archived':
+      return BookingErrorCode.spotArchived;
     case 'unavailable':
     case 'deadline-exceeded':
     case 'network':
@@ -173,6 +182,8 @@ abstract class BookingRepository {
     List<AddonPick> addons = const [],
     BookingPlace? pickup,
     int? expectedTotal,
+    String? spotScheduleId,
+    String? slotOfferId,
   });
 
   /// Starts (or restarts, "Tạo QR mới") the payment of a draft booking. The

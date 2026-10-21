@@ -42,6 +42,8 @@ export interface CreateBookingDraftInput {
   readonly pickup?: { readonly name: string; readonly point?: { readonly lat: number; readonly lng: number } };
   /** Staleness check on the total (package + add-ons), never a price source. */
   readonly expectedTotal?: number;
+  readonly spotScheduleId?: string;
+  readonly slotOfferId?: string;
 }
 
 /** A place-shaped value: `name` 3–120 graphemes (trimmed), optional `point {lat, lng}`. */
@@ -86,7 +88,21 @@ export function validateCreateBookingDraftInput(
     throw new DomainError('invalid_argument');
   }
 
-  const { customerId, photographerId, serviceId, day, start, place, note, expectedPrice, addons, pickup, expectedTotal } = raw as Record<string, unknown>;
+  const {
+    customerId,
+    photographerId,
+    serviceId,
+    day,
+    start,
+    place,
+    note,
+    expectedPrice,
+    addons,
+    pickup,
+    expectedTotal,
+    spotScheduleId,
+    slotOfferId,
+  } = raw as Record<string, unknown>;
 
   if (!isId(customerId) || !isId(photographerId) || !isId(serviceId)) {
     throw new DomainError('invalid_argument');
@@ -141,6 +157,36 @@ export function validateCreateBookingDraftInput(
     validatedExpectedTotal = expectedTotal;
   }
 
+  let validatedSpotScheduleId: string | undefined;
+  if (spotScheduleId !== undefined && spotScheduleId !== null) {
+    if (!isId(spotScheduleId)) {
+      throw new DomainError('invalid_argument');
+    }
+    validatedSpotScheduleId = spotScheduleId;
+  }
+
+  let validatedSlotOfferId: string | undefined;
+  if (slotOfferId !== undefined && slotOfferId !== null) {
+    if (!isId(slotOfferId)) {
+      throw new DomainError('invalid_argument');
+    }
+    if (!validatedSpotScheduleId) {
+      throw new DomainError('invalid_argument');
+    }
+    validatedSlotOfferId = slotOfferId;
+
+    // Slot booking does not allow addons or pickup (T6)
+    const rawRecord = raw as Record<string, unknown>;
+    if (rawRecord.addons !== undefined && rawRecord.addons !== null) {
+      if (Array.isArray(rawRecord.addons) && rawRecord.addons.length > 0) {
+        throw new DomainError('invalid_argument');
+      }
+    }
+    if (rawRecord.pickup !== undefined && rawRecord.pickup !== null) {
+      throw new DomainError('invalid_argument');
+    }
+  }
+
   return {
     customerId,
     photographerId,
@@ -153,5 +199,7 @@ export function validateCreateBookingDraftInput(
     addons: parseAddonPicks(addons),
     pickup: pickup === undefined || pickup === null ? undefined : parsePlaceLike(pickup),
     expectedTotal: validatedExpectedTotal,
+    spotScheduleId: validatedSpotScheduleId,
+    slotOfferId: validatedSlotOfferId,
   };
 }

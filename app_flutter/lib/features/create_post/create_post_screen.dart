@@ -364,6 +364,18 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     Expanded(child: style),
                   ],
                 ),
+              if (ref.watch(postSpotSuggestionProvider) case final spot?) ...[
+                const SizedBox(height: AppSpace.s1),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: _SpotChip(
+                    name: spot.name,
+                    onRemove: s.publishing
+                        ? null
+                        : () => ctl.dismissSpot(spot.spotId),
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpace.s2),
               _PickField(
                 key: const Key('create-album'),
@@ -384,6 +396,75 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               key: const Key('create-publish'),
               loading: s.publishing,
               onPressed: s.canPublish && chosen != null ? _publish : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S10.01-spot: "Gắn với {tên điểm} ×". Selected context chip (accent subtle
+/// fill and border); one tap on it removes the tag.
+class _SpotChip extends StatelessWidget {
+  const _SpotChip({required this.name, required this.onRemove});
+
+  final String name;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subtle = theme.brightness == Brightness.dark
+        ? AppColorsDark.primarySubtle
+        : AppColors.primarySubtle;
+    return Semantics(
+      button: true,
+      enabled: onRemove != null,
+      label: l.postSpotChipRemove(name),
+      excludeSemantics: true,
+      onTap: onRemove,
+      child: GestureDetector(
+        key: const Key('create-spot-chip'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onRemove,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Center(
+            widthFactor: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: subtle,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(color: scheme.primary),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s3,
+                  vertical: AppSpace.s2,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppIcon(AppIcons.place, size: 14, color: scheme.primary),
+                    const SizedBox(width: AppSpace.s1),
+                    Flexible(
+                      child: Text(
+                        l.postSpotChip(name),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s1),
+                    AppIcon(AppIcons.close, size: 14, color: scheme.primary),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

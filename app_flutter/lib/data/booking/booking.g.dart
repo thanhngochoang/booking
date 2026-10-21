@@ -252,6 +252,10 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
       ? null
       : DateTime.parse(json['reviewedAt'] as String),
   chatId: json['chatId'] as String?,
+  spotId: json['spotId'] as String?,
+  spotScheduleId: json['spotScheduleId'] as String?,
+  slotOfferId: json['slotOfferId'] as String?,
+  source: json['source'] as String?,
   studio: json['studio'] == null
       ? null
       : StudioBookingInfo.fromJson(json['studio'] as Map<String, dynamic>),
@@ -299,6 +303,10 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'completedAt': instance.completedAt?.toIso8601String(),
   'reviewedAt': instance.reviewedAt?.toIso8601String(),
   'chatId': instance.chatId,
+  'spotId': instance.spotId,
+  'spotScheduleId': instance.spotScheduleId,
+  'slotOfferId': instance.slotOfferId,
+  'source': instance.source,
   'studio': instance.studio,
   'version': instance.version,
   'createdAt': instance.createdAt.toIso8601String(),

@@ -291,6 +291,9 @@ tile('stepprogress', 'StepProgress', 'StepProgress({current, total, label, showC
 tile('phonefield', 'PhoneField', 'PhoneField({controller, errorText, international, label, ...})', 'S04.03, S04.05, S08.05, S09.03, S11.03',
      '<div class="row" style="gap:8px"><div class="field" style="flex:0 0 72px"><small>Mã</small>+84</div><div class="field grow foc"><small>Số điện thoại</small><span class="tn">903 123 456</span></div></div>',
      f'<div class="row" style="gap:8px">{sk("72px","48px","16px")}{sk("100%","48px","16px")}</div>')
+tile('slotgrid', 'SlotGrid', 'SlotGrid({required slots, String? selected, required onPick, semanticsLabel})', 'S29.06',
+     '<div class="pkg tn" style="grid-template-columns:repeat(4,1fr)"><div><b>06:00</b>–06:30</div><div style="opacity:.5"><b>06:40</b>Đã kín</div><div><b>07:20</b>–07:50</div><div style="opacity:.5"><b>08:00</b>Đã kín</div><div class="on"><b>08:40</b>–09:10</div><div><b>09:20</b>–09:50</div><div style="opacity:.5"><b>10:00</b>Đã kín</div></div>',
+     '<div class="row" style="gap:6px">' + ''.join(sk('25%', '44px', '14px') for _ in range(4)) + '</div>')
 tile('qtystepper', 'QtyStepper', 'QtyStepper({value, onChanged, valueLabel, decrementLabel, incrementLabel, min = 1, max, enabled = true, keyPrefix = "qty"})', 'S04.01, S11.03',
      '<div class="row3"><figure><div class="stepper"><span>−</span><b>2</b><span>+</span></div>giữa khoảng</figure><figure><div class="stepper"><span style="opacity:.4">−</span><b>1</b><span>+</span></div>tại min</figure><figure><div class="stepper"><span>−</span><b>4</b><span style="opacity:.4">+</span></div>tại max</figure></div>',
      '<div class="meta">Điều khiển nhỏ, không có skeleton: hiện cùng hàng chứa nó.</div>')

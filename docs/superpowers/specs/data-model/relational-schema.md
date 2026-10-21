@@ -995,7 +995,7 @@ create table job_invites (
 
 -- Hợp đồng (đề xuất)
 alter table bookings
-  add column source          text not null default 'package' check (source in ('package','quote','instant')),
+  add column source          text not null default 'package' check (source in ('package','quote','instant','spot','spot_slot')),
   add column terms           jsonb,              -- BookingTerms; null với booking cũ (đọc service_snapshot)
   add column job_id          text references jobs(id),
   add column quote_id        text references quotes(id),
@@ -1182,6 +1182,92 @@ create table report_quotas (
   count           smallint not null default 0 check (count between 0 and 20),
   primary key (user_id, day)
 );
+
+-- Điểm chụp và lịch tại điểm (2026-10-08, #194; `domain-model.md` mục 2.11)
+create table spots (
+  id             text primary key,
+  name           text not null,
+  city           text not null,
+  area_code      text not null,
+  lat            double precision not null,
+  lng            double precision not null,
+  geohash        text not null,
+  radius_m       int not null check (radius_m between 100 and 3000),
+  cover_url      text,
+  cover_card_url text,
+  cover_path     text,
+  description    text not null default '',
+  tips           jsonb not null default '[]'::jsonb,
+  season_months  jsonb not null default '[]'::jsonb,
+  pinned         boolean not null default false,
+  hidden         boolean not null default false,
+  status         text not null default 'active' check (status in ('active','archived')),
+  hot_score      int not null default 0,
+  stats          jsonb not null default '{"posts14d":0,"events":0,"bookings14d":0,"openSchedules":0,"providersWeek":0,"providersWeekend":0}'::jsonb,
+  ranked_at      timestamptz,
+  updated_by     text not null,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create table spot_schedules (
+  id             text primary key,
+  provider_id    text not null references photographers(user_id) on delete cascade,
+  assignee_id    text references photographers(user_id) on delete cascade,
+  spot_id        text not null references spots(id) on delete restrict,
+  window_start   time not null,
+  window_end     time not null check (window_end > window_start),
+  service_ids    jsonb not null default '[]'::jsonb,
+  price_from     bigint,
+  status         text not null default 'open' check (status in ('open','cancelled')),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create table spot_schedule_days (
+  schedule_id    text not null references spot_schedules(id) on delete cascade,
+  day            date not null,
+  primary key (schedule_id, day)
+);
+
+create table spot_slot_offers (
+  id             text primary key,
+  provider_id    text not null references photographers(user_id) on delete cascade,
+  schedule_id    text not null references spot_schedules(id) on delete cascade,
+  spot_id        text not null references spots(id) on delete restrict,
+  name           text not null,
+  price          bigint not null check (price >= 10000 and price <= 100000000),
+  slot_minutes   smallint not null check (slot_minutes between 15 and 90),
+  gap_minutes    smallint not null check (gap_minutes between 0 and 30),
+  photo_count    smallint not null check (photo_count >= 1),
+  edited_count   smallint not null check (edited_count >= 0 and edited_count <= photo_count),
+  delivery_days  smallint not null check (delivery_days between 1 and 30),
+  status         text not null default 'open' check (status in ('open','closed')),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+-- spot_day_intervals: khoảng thời gian đã được giữ chỗ/đặt tại điểm.
+-- Ghi chú: hình chiếu công khai trên Firestore (/spot_days/{id}) lược bỏ booking_id để bảo vệ quyền riêng tư.
+create table spot_day_intervals (
+  id             text primary key,
+  schedule_id    text not null references spot_schedules(id) on delete cascade,
+  day            date not null,
+  start_time     time not null,
+  end_time       time not null check (end_time > start_time),
+  offer_id       text references spot_slot_offers(id) on delete set null,
+  booking_id     text references bookings(id) on delete cascade,
+  created_at     timestamptz not null default now()
+);
+
+-- Mở rộng bookings cho điểm chụp và chia suất (#194)
+alter table bookings
+  add column spot_id          text references spots(id),
+  add column spot_schedule_id text references spot_schedules(id),
+  add column slot_offer_id    text references spot_slot_offers(id),
+  add column assignee_id      text references photographers(user_id),
+  add column assignee_kind    text check (assignee_kind in ('solo','member')),
+  add column assigned_at      timestamptz;
 ```
 
 ### 2.12 Studio và thành viên (S26, #136)
@@ -1330,6 +1416,12 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
+| `spots/{id}` | `spots` | Điểm chụp |
+| `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
+| `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |
+| `spot_schedules/{id}` | `spot_schedules` + `spot_schedule_days` | `days[]` → `spot_schedule_days` |
+| `spot_slot_offers/{id}` | `spot_slot_offers` | Gói chia suất tại điểm |
+| `spot_days/{id}` | `spot_day_intervals` | Hình chiếu công khai của các khoảng giờ đã kín trong ngày; doc id `{scheduleId}_{day}`, không lưu `booking_id` |
 | `config/{key}` | `app_config` | |
 | `blocks/{blockerId}_{blockedId}` | `blocks` | Id ghép `blockerId_blockedId`; `source`, `createdAt` |
 | `users/{uid}/private/blocks` | (dẫn xuất từ `blocks`) | Chỉ mục hai chiều do server duy trì; không có bảng riêng (được tạo bởi query/trigger trên `blocks`) |
@@ -1355,7 +1447,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `photographers` và bảng con → `services` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `studio_members`, `bookings`(+con, `booking_assignments`) → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `studio_members`, `bookings`(+con, `booking_assignments`) → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

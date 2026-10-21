@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photobooking/core/payments.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
@@ -17,6 +17,8 @@ import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -41,6 +43,51 @@ final class NeedPhone extends SubmitOutcome {
   const NeedPhone();
 }
 
+/// The schedule, spot and (slot path) offer of a booking from a spot, each
+/// read once; null (the sheet says the schedule changed) when the schedule
+/// is closed, the schedule, spot or offer no longer exists or does not belong
+/// to the flow's photographer, or a slot's day is no longer a schedule day.
+final bookingSpotContextProvider = FutureProvider.autoDispose
+    .family<SpotBookingContext?, BookingFlowArgs>((ref, args) async {
+      final scheduleId = args.scheduleId;
+      if (scheduleId == null) return null;
+      final today = dayKeyOf(ref.watch(calendarTodayProvider));
+      final repo = ref.watch(spotRepositoryProvider);
+      final schedule = await repo.schedule(scheduleId);
+      if (schedule == null ||
+          !schedule.open ||
+          schedule.providerId != args.photographerId) {
+        return null;
+      }
+      final offerId = args.slotOfferId;
+      final (spot, offer) = await (
+        repo.spot(schedule.spotId),
+        offerId == null ? Future<SlotOffer?>.value() : repo.offer(offerId),
+      ).wait;
+      if (spot == null) return null;
+      if (offerId != null) {
+        if (offer == null || offer.scheduleId != schedule.id || !offer.open) {
+          return null;
+        }
+        // The slot was picked for one day and time: never another one.
+        final day = args.day;
+        if (day == null ||
+            args.start == null ||
+            day.compareTo(today) < 0 ||
+            !schedule.days.contains(day)) {
+          return null;
+        }
+      }
+      return SpotBookingContext(
+        schedule: schedule,
+        spotName: spot.name,
+        lat: spot.lat,
+        lng: spot.lng,
+        offer: offer,
+        archived: spot.archived,
+      );
+    });
+
 final bookingFlowControllerProvider = NotifierProvider.autoDispose
     .family<BookingFlowController, BookingFlowState, BookingFlowArgs>(
   BookingFlowController.new,
@@ -62,6 +109,9 @@ class BookingFlowController extends Notifier<BookingFlowState> {
 
   /// The add-on list has loaded at least once.
   bool _addonsLoaded = false;
+
+  /// Today (`yyyy-MM-dd`), as of the last build.
+  String _today = '';
 
   @override
   BookingFlowState build() {
@@ -86,9 +136,29 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     final todayStr =
         '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
+    _today = todayStr;
+
     String? initialDay;
     if (args.day != null && args.day!.compareTo(todayStr) >= 0) {
       initialDay = args.day;
+    }
+
+    // Booking from a spot: listened, not watched, like the contact above.
+    SpotBookingContext? readyContext;
+    if (args.scheduleId != null) {
+      final contextProvider = bookingSpotContextProvider(args);
+      ref.listen(contextProvider, (prev, next) {
+        if (next.isLoading) return;
+        final ctx = next.value;
+        if (ctx != null) {
+          applySpotContext(ctx);
+        } else if (next.hasValue && state.spot != null) {
+          // A reload found the schedule (or the slot's day) gone.
+          _scheduleGone();
+        }
+      });
+      final now = ref.read(contextProvider);
+      if (!now.isLoading) readyContext = now.value;
     }
 
     ref.listen(
@@ -150,7 +220,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       serviceName = s.name;
     }
 
-    return BookingFlowState(
+    final initial = BookingFlowState(
       step: initialStep,
       serviceId: serviceId,
       priceVnd: priceVnd,
@@ -160,6 +230,151 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       phone: initialPhone,
       addons: addons ?? const [],
     );
+    return readyContext == null ? initial : _withSpot(initial, readyContext);
+  }
+
+  /// Applies the spot context: the place is the spot (Decision 9), the day one
+  /// of the schedule's, and on the slot path the offer is the package and the
+  /// flow opens on S04.03 without add-ons (T6). A second call (after
+  /// `outside_schedule`) keeps the customer's choices that still fit.
+  void applySpotContext(SpotBookingContext ctx) {
+    state = _withSpot(state, ctx);
+  }
+
+  BookingFlowState _withSpot(BookingFlowState s, SpotBookingContext ctx) {
+    final first = s.spot == null;
+    final days = ctx.daysFrom(_today);
+    final offer = ctx.offer;
+    final String? day;
+    if (first) {
+      final want = args.day;
+      day = want != null && days.contains(want)
+          ? want
+          // A slot is for its own day only (the provider checks it too).
+          : (days.isEmpty || offer != null ? null : days.first);
+    } else {
+      day = days.contains(s.day) ? s.day : null;
+    }
+    var next = s.copyWith(
+      spot: ctx,
+      placeName: ctx.spotName,
+      day: day,
+      clearDay: day == null,
+      clearStart: day != s.day,
+      error: ctx.archived
+          ? BookingErrorCode.spotArchived
+          : (offer != null && day == null
+                ? BookingErrorCode.outsideSchedule
+                : null),
+    );
+    if (offer != null) {
+      next = next.copyWith(
+        serviceId: offer.id,
+        priceVnd: offer.price,
+        durationMinutes: offer.slotMinutes,
+        serviceName: offer.name,
+        start: first && day != null ? args.start : null,
+        step: first && day != null ? BookingStep.review : null,
+        priceChanged: !first && offer.price != s.priceVnd,
+        picks: const {},
+        pickupName: '',
+      );
+    } else {
+      final packages = ref
+          .read(profilePackagesProvider(args.photographerId))
+          .value;
+      if (packages != null) next = _fitPackage(next, ctx.packagesOf(packages));
+    }
+    if (day case final d?) {
+      // After the current build or state change: it writes the state.
+      Future.microtask(() => _loadSpotDay(d));
+    }
+    return next;
+  }
+
+  /// The spot schedule is no longer bookable: the slot path's sheet closes,
+  /// the package path goes back to S04.02.
+  void _scheduleGone() {
+    final slot = state.isSlot;
+    state = state.copyWith(
+      step: slot ? null : BookingStep.datetime,
+      clearDay: !slot,
+      clearStart: !slot,
+      clearBookingId: true,
+      phase: SubmitPhase.idle,
+      error: BookingErrorCode.outsideSchedule,
+    );
+  }
+
+  /// Keeps the chosen package only when the spot schedule takes it; picks
+  /// the schedule's only package for the customer.
+  BookingFlowState _fitPackage(
+    BookingFlowState s,
+    List<ServiceSummary> allowed,
+  ) {
+    final id = s.serviceId;
+    if (id != null && allowed.any((p) => p.id == id)) return s;
+    if (allowed.length == 1) {
+      final p = allowed.single;
+      return s.copyWith(
+        serviceId: p.id,
+        priceVnd: p.priceVnd,
+        durationMinutes: p.durationMinutes,
+        serviceName: p.name,
+        clearStart: p.durationMinutes != s.durationMinutes,
+        picks: _fit(s.picks, s.addons, p.id).picks,
+      );
+    }
+    if (id == null) return s;
+    return s.copyWith(
+      clearServiceId: true,
+      clearStart: true,
+      picks: const {},
+      pickupName: '',
+    );
+  }
+
+  /// Reads `spot_days/{scheduleId}_{day}` again (after `slot_taken`, or the
+  /// S04.02 retry) and has S29.02/S29.06 read it again too.
+  Future<void> refreshSpotDay(String day) => _loadSpotDay(day, fresh: true);
+
+  /// Reads `spot_days/{scheduleId}_{day}` into the context; S04.02 shows the
+  /// day's times once it is back.
+  Future<void> _loadSpotDay(String day, {bool fresh = false}) async {
+    if (!ref.mounted) return;
+    final ctx = state.spot;
+    if (ctx == null) return;
+    final scheduleId = ctx.schedule.id;
+    state = state.copyWith(
+      spot: ctx.copyWith(
+        takenByDay: {...ctx.takenByDay}..remove(day),
+        failedDays: {...ctx.failedDays}..remove(day),
+      ),
+    );
+    if (fresh) {
+      // S29.02 and S29.06 read the same document through this provider.
+      ref.invalidate(spotDayProvider((scheduleId: scheduleId, day: day)));
+    }
+    try {
+      final spotDay = await ref
+          .read(spotRepositoryProvider)
+          .spotDay(scheduleId, day);
+      if (!ref.mounted) return;
+      final cur = state.spot;
+      if (cur == null || cur.schedule.id != scheduleId) return;
+      state = state.copyWith(
+        spot: cur.copyWith(
+          takenByDay: {...cur.takenByDay, day: spotDay?.taken ?? const []},
+        ),
+      );
+    } catch (_) {
+      if (!ref.mounted) return;
+      final cur = state.spot;
+      if (cur == null) return;
+      state = state.copyWith(
+        spot: cur.copyWith(failedDays: {...cur.failedDays, day}),
+      );
+    }
   }
 
   /// Decision 11: entering with a preselected package opens on S04.01 when
@@ -283,7 +498,8 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     state = state.copyWith(droppedAddonNames: const []);
   }
 
-  void applyPackages(List<ServiceSummary> list) {
+  void applyPackages(List<ServiceSummary> all) {
+    final list = state.spot?.packagesOf(all) ?? all;
     if (state.serviceId == null) {
       if (args.serviceId != null) {
         for (final s in list) {
@@ -332,6 +548,10 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       day: day,
       clearStart: clearStart,
     );
+    final ctx = state.spot;
+    if (ctx != null && !ctx.takenByDay.containsKey(day)) {
+      _loadSpotDay(day);
+    }
   }
 
   void selectStart(String start) {
@@ -350,6 +570,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   }
 
   void setPlace(String name) {
+    if (state.spot != null) return; // Decision 9: the place is the spot
     _userActed = true;
     state = state.copyWith(placeName: name);
   }
@@ -388,6 +609,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     _userActed = true;
     switch (state.step) {
       case BookingStep.review:
+        if (state.isSlot) return false; // S29.06 opened S04.03 directly
         state = state.copyWith(step: BookingStep.place);
         return true;
       case BookingStep.place:
@@ -429,13 +651,18 @@ class BookingFlowController extends Notifier<BookingFlowState> {
           if ((s.picks[a.id] ?? 0) > 0) AddonPick(a.id, s.picks[a.id]!),
       ];
       final repo = ref.read(bookingRepositoryProvider);
+      final spot = s.spot;
       final bookingId = s.bookingId ??
           (await repo.createBooking(
             photographerId: args.photographerId,
             serviceId: s.serviceId!,
             day: s.day!,
             start: s.start!,
-            place: BookingPlace(name: s.placeName.trim()),
+            place: BookingPlace(
+              name: s.placeName.trim(),
+              lat: spot?.lat,
+              lng: spot?.lng,
+            ),
             note: s.note.trim().isEmpty ? null : s.note.trim(),
             expectedPrice: s.priceVnd!,
             addons: picks,
@@ -443,6 +670,8 @@ class BookingFlowController extends Notifier<BookingFlowState> {
                 ? BookingPlace(name: s.pickupName.trim())
                 : null,
             expectedTotal: picks.isEmpty ? null : s.totalVnd,
+            spotScheduleId: spot?.schedule.id,
+            slotOfferId: spot?.offer?.id,
           ))
               .id;
 
@@ -478,6 +707,14 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.phoneRequired:
         state = state.copyWith(phase: SubmitPhase.idle, error: BookingErrorCode.phoneRequired);
         _outcomesController.add(const NeedPhone());
+      case BookingErrorCode.priceChanged when state.isSlot:
+        // The offer's price changed: reload it, stay on S04.03.
+        state = state.copyWith(
+          clearBookingId: true,
+          phase: SubmitPhase.idle,
+          error: BookingErrorCode.priceChanged,
+        );
+        ref.invalidate(bookingSpotContextProvider(args));
       case BookingErrorCode.priceChanged:
         state = state.copyWith(
           step: BookingStep.service,
@@ -520,6 +757,30 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         }
         state = state.copyWith(
           step: BookingStep.place,
+          clearBookingId: true,
+          phase: SubmitPhase.idle,
+          error: err,
+        );
+      case BookingErrorCode.slotTaken:
+      case BookingErrorCode.outsideSchedule:
+        // Package path: back to S04.02 with fresh times; the slot path's
+        // sheet closes (S29.06 shows the fresh grid).
+        final slot = state.isSlot;
+        final day = state.day;
+        state = state.copyWith(
+          step: slot ? null : BookingStep.datetime,
+          clearStart: !slot,
+          clearBookingId: true,
+          phase: SubmitPhase.idle,
+          error: err,
+        );
+        if (err == BookingErrorCode.outsideSchedule) {
+          ref.invalidate(bookingSpotContextProvider(args));
+        } else if (day != null) {
+          refreshSpotDay(day);
+        }
+      case BookingErrorCode.spotArchived:
+        state = state.copyWith(
           clearBookingId: true,
           phase: SubmitPhase.idle,
           error: err,

@@ -52,9 +52,16 @@ abstract final class AppIcons {
 
   // Places.
   static const IconData place = Symbols.location_on_rounded;
+  static const IconData placeOff = Symbols.location_off_rounded;
   static const IconData nearMe = Symbols.near_me_rounded;
   static const IconData myLocation = Symbols.my_location_rounded;
   static const IconData city = Symbols.location_city_rounded;
+  static const IconData directions = Symbols.directions_rounded;
+  static const IconData landscape = Symbols.landscape_rounded;
+  static const IconData eco = Symbols.eco_rounded;
+  static const IconData lightbulb = Symbols.lightbulb_rounded;
+  static const IconData eventBusy = Symbols.event_busy_rounded;
+  static const IconData timer = Symbols.timer_rounded;
 
   // Content.
   static const IconData camera = Symbols.photo_camera_rounded;

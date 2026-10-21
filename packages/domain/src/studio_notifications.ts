@@ -17,6 +17,8 @@ import type { NotifyDeps } from './notification_ports.js';
 
 export type StudioNotice = 'assigned' | 'reassigned' | 'change_requested' | 'change_answered' | 'assignment_returned';
 
+const LIVE_AFTER_DRAFT: ReadonlySet<Booking['status']> = new Set(['requested', 'accepted', 'upcoming']);
+
 /** Creation and deletion send nothing; neither does an individual booking. */
 export function studioBookingNotices(before: Booking | null, after: Booking | null): StudioNotice[] {
   if (!before || !after || after.isStudio !== true) return [];
@@ -24,6 +26,11 @@ export function studioBookingNotices(before: Booking | null, after: Booking | nu
   const was = before.assigneeId ?? null;
   const now = after.assigneeId ?? null;
   if (now !== null && now !== was) out.push(was === null ? 'assigned' : 'reassigned');
+  // A studio spot booking is created already assigned (#194 Decision 7): the member is told when the paid
+  // booking leaves the draft (a draft is only a hold), through the same hook and dedupe key.
+  else if (now !== null && now === was && before.status === 'draft' && LIVE_AFTER_DRAFT.has(after.status)) {
+    out.push('assigned');
+  }
   const wasStatus = before.changeRequest?.status ?? null;
   const nowStatus = after.changeRequest?.status ?? null;
   if (wasStatus === null && nowStatus === 'pending') out.push('change_requested');

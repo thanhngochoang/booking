@@ -144,6 +144,8 @@ class FirestoreBookingRepository implements BookingRepository {
     List<AddonPick> addons = const [],
     BookingPlace? pickup,
     int? expectedTotal,
+    String? spotScheduleId,
+    String? slotOfferId,
   }) async {
     return _call(
       'createBooking',
@@ -168,6 +170,8 @@ class FirestoreBookingRepository implements BookingRepository {
               'point': {'lat': pickup.lat, 'lng': pickup.lng},
           },
         'expectedTotal': ?expectedTotal,
+        'spotScheduleId': ?spotScheduleId,
+        'slotOfferId': ?slotOfferId,
       },
       (raw) {
         final map = (raw as Map).cast<String, dynamic>();

@@ -174,6 +174,10 @@ abstract class Booking with _$Booking {
     DateTime? completedAt,
     DateTime? reviewedAt,
     String? chatId,
+    String? spotId,
+    String? spotScheduleId,
+    String? slotOfferId,
+    String? source,
 
     /// The studio part (#136); null for an individual booking.
     StudioBookingInfo? studio,
@@ -344,6 +348,10 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       reviewedAt: toDateTime(data['reviewedAt']),
       chatId: data['chatId'] as String?,
       studio: studioBookingInfoFrom(data),
+      spotId: data['spotId'] as String?,
+      spotScheduleId: data['spotScheduleId'] as String?,
+      slotOfferId: data['slotOfferId'] as String?,
+      source: data['source'] as String?,
       checkout: bookingCheckoutFrom(data['checkout']),
       version: (data['version'] as num?)?.toInt() ?? 1,
       createdAt: createdAt,

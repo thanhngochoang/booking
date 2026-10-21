@@ -5,6 +5,7 @@ import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactReader } from './ports.js';
 import type { RandomBytes } from './ids.js';
+import type { Spot } from './spot.js';
 
 /** Thrown inside a transaction to ask the adapter to run it again (it holds no state of its own). */
 export class RetryableConflict extends Error {
@@ -14,7 +15,7 @@ export class RetryableConflict extends Error {
   }
 }
 
-export type AvailabilityRecord = { state: 'off' | 'booked' | 'pending'; eventId?: string; bookingId?: string };
+export type AvailabilityRecord = { state: 'off' | 'booked' | 'pending' | 'spot'; eventId?: string; bookingId?: string };
 
 /** Decision 18 shape, created at publish (`chats/event_{eventId}`). */
 export interface EventGroupChatSeed {
@@ -39,6 +40,8 @@ export interface EventGroupChatSeed {
 /** Every read must come before the first write (Firestore transactions; the memory store enforces it). */
 export interface EventTx {
   getEvent(id: string): Promise<EventRecord | null>;
+  /** `spots/{id}` (S29): an event may be tagged with an active spot that covers its place. */
+  getSpot(id: string): Promise<Spot | null>;
   /** `event_hashtags/{key}.eventId`. */
   hashtagOwner(key: string): Promise<string | null>;
   ticketCodeTaken(code: string): Promise<boolean>;

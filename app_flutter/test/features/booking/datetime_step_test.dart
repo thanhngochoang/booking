@@ -17,6 +17,9 @@ import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 
 import '../../support/booking_world.dart';
+import '../../support/spot_booking_fixtures.dart';
+
+import 'package:photobooking/data/spots/spot.dart';
 
 void main() {
   final now = DateTime.utc(2026, 10, 5);
@@ -500,5 +503,50 @@ void main() {
       expect(find.bySemanticsLabel('31 tháng 10, hết chỗ'), findsOneWidget);
       h.dispose();
     });
+  });
+
+  testWidgets('spot context shows "Lịch tại điểm · T7, CN · 06:00–11:00"', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    await walkSpotPackage(
+      tester,
+      until: BookingStep.datetime,
+      taken: {
+        spotBookingDay1: [const SpotInterval(start: '07:00', end: '08:00')],
+      },
+    );
+
+    expect(find.byType(DateTimeStep), findsOneWidget);
+    expect(find.text('Hồ Tây'), findsOneWidget);
+    expect(find.text('Lịch tại điểm · T7, CN · 06:00–11:00'), findsOneWidget);
+    expect(find.text('Chỉ ngày có lịch tại điểm'), findsOneWidget);
+    // The viewed day is chosen; only its free times are offered.
+    expect(find.textContaining('Thứ 7, 10/10'), findsOneWidget);
+    final chips = tester
+        .widgetList<AppChip>(find.byType(AppChip))
+        .map((c) => c.label)
+        .toList();
+    expect(chips, ['08:30', '09:00']);
+    await tester.tap(find.widgetWithText(AppChip, '08:30'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        '08:30–10:30 · chỉ giờ còn trống trong khung 06:00–11:00 của Minh Trí',
+      ),
+      findsOneWidget,
+    );
+
+    // A day outside the schedule cannot be chosen.
+    await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Thứ 7, 10/10'), findsOneWidget);
+
+    // The other schedule day reads its own times.
+    await tester.tap(find.bySemanticsLabel('11 tháng 10, rảnh'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Chủ nhật, 11/10'), findsOneWidget);
+    expect(find.widgetWithText(AppChip, '06:00'), findsOneWidget);
+    h.dispose();
   });
 }

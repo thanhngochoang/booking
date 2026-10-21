@@ -1,3 +1,4 @@
+import { formatVnDate } from './booking_policy.js';
 import { DomainError } from './errors.js';
 import {
   canJoinAsMember,
@@ -326,11 +327,12 @@ export async function respondJoinRequest(deps: StudioDeps, studioId: string, raw
   return answered(a);
 }
 
-/** Reads the member's active relation and open studio bookings; refuses `member_busy`. */
+/** Reads the member's active relation, open studio bookings and open spot schedules; refuses `member_busy`. */
 async function readActive(
   tx: StudioTx,
   member: StudioProfile | null,
   studioId: string | null,
+  now: Date,
 ): Promise<StudioRelation> {
   if (member === null || studioId === null) throw new DomainError('not_found');
   // The caller is the member (studioId is theirs) or a studio removing someone who is not its member.
@@ -338,6 +340,10 @@ async function readActive(
   const rel = await tx.openRelationOf(studioId, member.uid);
   if (rel === null || rel.status !== 'active') throw new DomainError('not_found');
   if ((await tx.countOpenAssignments(studioId, member.uid)) > 0) throw new DomainError('member_busy');
+  // #194 Decision 7: a member named on an open spot schedule with a day still ahead holds that day for the studio.
+  if ((await tx.countOpenSpotSchedules(studioId, member.uid, formatVnDate(now))) > 0) {
+    throw new DomainError('member_busy');
+  }
   return rel;
 }
 
@@ -346,7 +352,7 @@ export async function leaveStudio(deps: StudioDeps, memberId: string): Promise<R
   const now = deps.clock.now();
   return deps.studios.runTransaction(async (tx) => {
     const member = await tx.getProfile(memberId);
-    const rel = await readActive(tx, member, member?.studioId ?? null);
+    const rel = await readActive(tx, member, member?.studioId ?? null, now);
     const quota = await tx.getQuota(memberId);
     // ---- all reads above ----
     assertQuota(quota, 'member', now);
@@ -362,7 +368,7 @@ export async function removeMember(deps: StudioDeps, studioId: string, raw: unkn
   const now = deps.clock.now();
   return deps.studios.runTransaction(async (tx) => {
     const member = await tx.getProfile(memberId);
-    const rel = await readActive(tx, member, studioId);
+    const rel = await readActive(tx, member, studioId, now);
     const quota = await tx.getQuota(studioId);
     // ---- all reads above ----
     assertQuota(quota, 'studio', now);

@@ -5,6 +5,7 @@ import {
   type StudioRelation,
 } from './studio_membership.js';
 import type { StudioStore, StudioTx } from './studio_ports.js';
+import { scheduleReachesDay } from './spot_schedule.js';
 
 const DUE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -16,6 +17,8 @@ export class MemoryStudioStore implements StudioStore {
   readonly quotas = new Map<string, DailyQuota>();
   /** Seed: open studio bookings assigned to a member, key `${studioId}/${memberId}`. */
   readonly openAssignments = new Map<string, number>();
+  /** Seed (#194): the days of each open spot schedule naming a member, key `${studioId}/${memberId}`. */
+  readonly openSpotScheduleDays = new Map<string, string[][]>();
   /** Committed write count. */
   writes = 0;
   /** Transactions opened (committed or not). */
@@ -29,6 +32,12 @@ export class MemoryStudioStore implements StudioStore {
 
   setOpenAssignments(studioId: string, memberId: string, n: number): void {
     this.openAssignments.set(`${studioId}/${memberId}`, n);
+  }
+
+  /** Adds one open spot schedule of `studioId` assigned to `memberId` with these days (#194). */
+  addOpenSpotSchedule(studioId: string, memberId: string, days: string[]): void {
+    const key = `${studioId}/${memberId}`;
+    this.openSpotScheduleDays.set(key, [...(this.openSpotScheduleDays.get(key) ?? []), days]);
   }
 
   async dueRelations(now: Date, limit: number): Promise<StudioRelation[]> {
@@ -91,6 +100,12 @@ export class MemoryStudioStore implements StudioStore {
       countOpenAssignments: async (studioId, memberId) => {
         guardRead('countOpenAssignments');
         return this.openAssignments.get(`${studioId}/${memberId}`) ?? 0;
+      },
+      countOpenSpotSchedules: async (studioId, memberId, today) => {
+        guardRead('countOpenSpotSchedules');
+        return (this.openSpotScheduleDays.get(`${studioId}/${memberId}`) ?? []).filter((days) =>
+          scheduleReachesDay({ days }, today),
+        ).length;
       },
       getQuota: async (uid) => {
         guardRead('getQuota');

@@ -123,6 +123,8 @@ export async function assignBooking(deps: StudioBookingDeps, callerId: string, r
 
   const booking = await studioBooking(deps, bookingId);
   if (booking.photographerId !== callerId) throw new DomainError('permission_denied');
+  // #194 Decision 7: a spot booking keeps the schedule's member (cancel and book again to change it).
+  if (booking.spotScheduleId !== undefined) throw new DomainError('not_eligible');
   const kind = await deps.roster.relationOf(booking.photographerId, assigneeId);
   if (kind === null) throw new DomainError('permission_denied');
   if (!(await deps.providers.acceptsOrders(booking.photographerId))) throw new DomainError('not_accepting_orders');
@@ -200,10 +202,11 @@ export interface AssignmentOption {
 export interface MemberDayReader {
   /** Active member uids. */
   members(studioId: string): Promise<string[]>;
+  /** `spot` (#194 Decision 6): the member holds the day for an open spot schedule; start/end = its window. */
   day(
     uid: string,
     day: string,
-  ): Promise<{ state: 'off' | 'booked' | 'pending'; start: string | null; end: string | null } | null>;
+  ): Promise<{ state: 'off' | 'booked' | 'pending' | 'spot'; start: string | null; end: string | null } | null>;
   stats(uid: string): Promise<{ tomatoPct: number | null; reviewCount: number }>;
 }
 
@@ -256,6 +259,8 @@ export async function requestAssigneeChange(deps: StudioBookingDeps, customerId:
 
   const pre = await studioBooking(deps, bookingId);
   if (pre.customerId !== customerId) throw new DomainError('permission_denied');
+  // #194 Decision 7: a spot booking keeps the schedule's member (cancel and book again to change it).
+  if (pre.spotScheduleId !== undefined) throw new DomainError('not_eligible');
 
   return deps.store.runTransaction(async (tx) => {
     const b = await tx.getBooking(bookingId);
@@ -325,6 +330,8 @@ export async function returnAssignment(deps: StudioBookingDeps, assigneeId: stri
 
   const pre = await studioBooking(deps, bookingId);
   if (!pre.assigneeId || pre.assigneeId !== assigneeId) throw new DomainError('permission_denied');
+  // #194 Decision 7: a spot booking keeps the schedule's member (cancel and book again to change it).
+  if (pre.spotScheduleId !== undefined) throw new DomainError('not_eligible');
 
   return deps.store.runTransaction(async (tx) => {
     const b = await tx.getBooking(bookingId);

@@ -112,7 +112,7 @@ Dữ liệu dùng chung: `spotRankingProvider(areaCode)` (một tài liệu `spo
 - **Thông tin**: sheet trên S29.02 · khách · spec 10-08 · Chưa có.
 - **Mục đích**: chọn một suất và đi thẳng tới thanh toán.
 - **Bố cục**: dòng "{gói} · {thợ}"; tiêu đề "Chọn suất"; chip ngày (ngày của lịch còn suất); dòng "{Thứ}, {ngày} · còn {n} / {tổng} suất"; lưới suất 4 cột (giờ bắt đầu + giờ kết thúc; suất kín mờ với chữ "Đã kín", không chọn được); dòng "Tại {điểm} · {k} ảnh chỉnh · giao trong {d} ngày. Gói chia suất không kèm dịch vụ đi kèm."; nút chính "Tiếp tục · {giá}".
-- **Dữ liệu**: `spotSlotOffersProvider`, `spotDaysProvider(scheduleId, day)`.
+- **Dữ liệu**: `spotSlotOffersProvider`, `spotDaysProvider(scheduleId, day)`; chip ngày chỉ gồm các ngày của lịch từ hôm nay đến hôm nay + 14 (như S29.02), nên mở sheet đọc tối đa 15 tài liệu `spot_days`.
 - **Tương tác**: "Tiếp tục" → S04.03 (bỏ S04.01, S04.02, S04.06; dòng "Tại {điểm}"); booking lưu `spotId`, `source = spot_slot`, `slotOfferId`, qua `buildBookingDraft` + `assertOrderAllowed`. Hai khách cùng suất: người sau nhận `slot_taken` → SnackBar "Suất này vừa có người đặt. Chọn suất khác." và lưới tải lại.
 - **Chuỗi**: `s2906_title` "Chọn suất", `s2906_left` "{day} · còn {n} / {total} suất", `s2906_full` "Đã kín", `s2906_note` (dòng trên), `s2906_continue` "Tiếp tục · {price}", `s2906_taken` "Suất này vừa có người đặt. Chọn suất khác.".
 - **Phân tích**: `spot_slot_pick{offerId, day}`.

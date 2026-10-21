@@ -57,6 +57,10 @@ describe('Firestore <-> Domain booking mappers', () => {
     autoApproveAt: '2026-10-19T16:00:00.000Z',
     autoApproveNoticeAt: '2026-10-18T16:00:00.000Z',
     deliveryRound: 2,
+    source: 'spot_slot',
+    spotId: 'spot_01',
+    spotScheduleId: 'sched_01',
+    slotOfferId: 'offer_01',
     revisionsIncluded: 2,
     revisionsUsed: 1,
     revisionsGranted: 1,
@@ -90,6 +94,10 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(docData.revisionsUsed, 1);
     assert.equal(docData.revisionsGranted, 1);
     assert.equal(docData.samplesPurged, false);
+    assert.equal(docData.source, 'spot_slot');
+    assert.equal(docData.spotId, 'spot_01');
+    assert.equal(docData.spotScheduleId, 'sched_01');
+    assert.equal(docData.slotOfferId, 'offer_01');
 
     const restored = bookingFromFirestore('b_01', docData);
     assert.ok(restored);
@@ -110,6 +118,10 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(restored.autoApproveAt, sampleBooking.autoApproveAt);
     assert.equal(restored.autoApproveNoticeAt, sampleBooking.autoApproveNoticeAt);
     assert.equal(restored.deliveryRound, 2);
+    assert.equal(restored.source, 'spot_slot');
+    assert.equal(restored.spotId, 'spot_01');
+    assert.equal(restored.spotScheduleId, 'sched_01');
+    assert.equal(restored.slotOfferId, 'offer_01');
     assert.equal(restored.revisionsIncluded, 2);
     assert.equal(restored.revisionsUsed, 1);
     assert.equal(restored.revisionsGranted, 1);
@@ -185,6 +197,88 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.ok(restored);
     assert.equal(restored.addons, undefined);
     assert.equal(restored.pickup, undefined);
+  });
+
+  it('getAvailabilityDay returns scheduleId and spotId for a spot day', async () => {
+    const firestore = {
+      collection: () => ({
+        doc: () => ({
+          collection: () => ({
+            doc: () => ({
+              get: async () => ({
+                exists: true,
+                data: () => ({
+                  state: 'spot',
+                  scheduleId: 'sched_01',
+                  spotId: 'spot_01',
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+    const store = new FirestoreBookingStore(firestore as never);
+    const rec = await store.getAvailabilityDay('ph1', '2026-10-18');
+    assert.deepEqual(rec, {
+      state: 'spot',
+      bookingId: undefined,
+      scheduleId: 'sched_01',
+      spotId: 'spot_01',
+    });
+  });
+
+  it('FirestoreBookingStore reads availability/{holder}/days/{day} and spot_days in the spot transaction', async () => {
+    const reads: string[] = [];
+    const writes: string[] = [];
+    const fTx = {
+      get: async (ref: { path: string }) => {
+        reads.push(ref.path);
+        return {
+          exists: true,
+          data: () => ({
+            scheduleId: 'sched_01',
+            spotId: 'spot_01',
+            providerId: 'ph1',
+            day: '2026-10-18',
+            taken: [],
+            updatedAt: Timestamp.now(),
+          }),
+        };
+      },
+      set: (ref: { path: string }) => {
+        writes.push(ref.path);
+      },
+    };
+    const firestore = {
+      runTransaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(fTx),
+      collection: (col: string) => ({
+        doc: (id: string) => ({
+          path: `${col}/${id}`,
+          collection: (sub: string) => ({
+            doc: (day: string) => ({ path: `${col}/${id}/${sub}/${day}` }),
+          }),
+        }),
+      }),
+    };
+    const store = new FirestoreBookingStore(firestore as never);
+    await store.runTransaction(async (tx) => {
+      await tx.getAvailabilityDay('ph1', '2026-10-18');
+      await tx.getSpotDay('sched_01', '2026-10-18');
+      await tx.setSpotDay({
+        scheduleId: 'sched_01',
+        spotId: 'spot_01',
+        providerId: 'ph1',
+        day: '2026-10-18',
+        taken: [{ start: '06:00', end: '08:00' }],
+        updatedAt: '2026-10-15T00:00:00.000Z',
+      });
+    });
+    assert.deepEqual(reads, [
+      'availability/ph1/days/2026-10-18',
+      'spot_days/sched_01_2026-10-18',
+    ]);
+    assert.deepEqual(writes, ['spot_days/sched_01_2026-10-18']);
   });
 
   it('a booking without revisionsIncluded reads it as undefined', () => {

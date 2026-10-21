@@ -144,6 +144,7 @@ export interface StudioFault {
 }
 
 export type AssignReminder = 'h48' | 'h26';
+export type BookingSource = 'package' | 'quote' | 'instant' | 'spot' | 'spot_slot';
 
 export interface Booking {
   readonly id: string;
@@ -173,6 +174,10 @@ export interface Booking {
   readonly completedAt?: string;
   readonly reviewedAt?: string;
   readonly chatId?: string;
+  readonly source?: BookingSource;
+  readonly spotId?: string;
+  readonly spotScheduleId?: string;
+  readonly slotOfferId?: string;
   /** Draft only: the payment the customer is paying now. */
   readonly checkout?: BookingCheckout;
   /**
@@ -214,3 +219,4 @@ export interface Booking {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+

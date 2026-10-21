@@ -52,18 +52,26 @@ export const ERROR_CODES = [
   'member_busy',
   /** Studio membership (#136): members + open invites reached the cap (3, or 30 business-verified), or 5 open invites. */
   'studio_full',
+  'outside_schedule',
+  'slot_taken',
+  'day_conflict',
+  'schedule_limit',
+  'spot_archived',
+  'schedule_has_bookings',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
 /**
  * A refused use case. The message is the code itself, so nothing else can leak. `field` names the
- * offending input field for form errors (never user text).
+ * offending input field for form errors (never user text); `details` carries structured, non-user
+ * data the caller needs to explain the refusal (e.g. the conflicting days of a spot schedule).
  */
 export class DomainError extends Error {
   constructor(
     readonly code: ErrorCode,
     readonly field?: string,
+    readonly details?: Readonly<Record<string, unknown>>,
   ) {
     super(code);
     this.name = 'DomainError';

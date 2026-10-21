@@ -326,7 +326,7 @@ service cloud.firestore {
       let uid = request.auth.uid;
       return d.keys().hasOnly(['kind', 'authorId', 'photographerId', 'serviceId', 'specialty',
                                'imageUrls', 'imageMeta', 'caption', 'location', 'style',
-                               'hashtags', 'inPortfolio', 'albumId', 'likeCount', 'saveCount', 'createdAt'])
+                               'hashtags', 'inPortfolio', 'albumId', 'spotId', 'likeCount', 'saveCount', 'createdAt'])
         && d.keys().hasAll(['kind', 'authorId', 'photographerId', 'serviceId', 'imageUrls',
                             'caption', 'likeCount', 'saveCount', 'createdAt'])
         && d.kind == 'work'
@@ -345,6 +345,10 @@ service cloud.firestore {
              && d.albumId.matches('[A-Za-z0-9_-]{1,64}')
              && (!exists(/databases/$(database)/documents/albums/$(d.albumId))
                  || get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == uid)))
+        && (!('spotId' in d) || (d.spotId is string
+             && d.spotId.matches('[A-Za-z0-9_-]{1,64}')
+             && exists(/databases/$(database)/documents/spots/$(d.spotId))
+             && get(/databases/$(database)/documents/spots/$(d.spotId)).data.status == 'active'))
         && d.likeCount == 0 && d.saveCount == 0
         && d.createdAt == request.time;
     }
@@ -825,6 +829,34 @@ service cloud.firestore {
     // Account deletions (S22.05): client cannot read or write account_deletions; handled via Cloud Functions / Admin SDK only.
     match /account_deletions/{uid} {
       allow read, write: if false;
+    }
+
+    // Spots (spec 2026-10-08 S29). Written only by the server (CLI, rankSpots, callables).
+    match /spots/{spotId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /spot_rankings/{key} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /spot_directory/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /spot_schedules/{id} {
+      allow read: if signedIn() && (resource.data.status == 'open'
+        || resource.data.providerId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
+      allow write: if false;
+    }
+    match /spot_slot_offers/{id} {
+      allow read: if signedIn() && (resource.data.status == 'open' || resource.data.providerId == request.auth.uid);
+      allow write: if false;
+    }
+    // Public projection of a spot day: times only, never who booked (Global Constraints).
+    match /spot_days/{id} {
+      allow read: if signedIn();
+      allow write: if false;
     }
 
     match /{document=**} {

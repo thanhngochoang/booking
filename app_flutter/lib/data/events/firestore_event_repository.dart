@@ -305,7 +305,11 @@ class FirestoreEventRepository implements EventRepository {
     } on FirebaseFunctionsException catch (e) {
       final details = e.details;
       if (details is Map && details['code'] is String) {
-        throw EventError(details['code'] as String);
+        final field = details['field'];
+        throw EventError(
+          details['code'] as String,
+          field: field is String ? field : null,
+        );
       }
       if (e.code == 'unavailable' || e.code == 'deadline-exceeded') {
         throw const EventError('network');

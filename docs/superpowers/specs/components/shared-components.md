@@ -150,7 +150,7 @@ Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nh�
 `CompletenessMeter({required int? percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. `percent` là số server ghi (`skills.completeness`); `null` (chưa tính) hiện "Chưa có điểm" và thanh rỗng. Dùng ở S08.02, S09.02, S06.02.
 
 ### AvailabilityCalendar · Mới
-Lưới tháng 7 cột (T2…CN). `AvailabilityCalendar({required DateTime month, required Map<DateTime, DayState> states, DateTime? selected, ValueChanged<DateTime>? onSelect, ValueChanged<DateTime>? onLongPress, bool editable = false, ValueChanged<DateTime>? onMonthChanged, DateTime? minDate, DateTime? maxDate, DateTime? today, Set<DateTime> eventDays = const {}, DateTime? rangeStart, bool showHeader = true})`. `DayState`: `free` (mặc định), `pending` (viền đứt primary), `booked` (gạch ngang), `off` (nền mờ). Ngày chọn tô gradient; `pending/booked/off` không chọn được ở chế độ đặt (`editable: false`), `editable: true` cho NAG đổi `free ⇄ off`. Mỗi ô ≥ 44dp; ô có `Semantics` "12 tháng 10, rảnh". Điều hướng tháng bằng nút và vuốt; chọn dải: nhấn giữ ngày đầu (`onLongPress`, vòng `rangeStart`) rồi chạm ngày cuối. Giờ không nằm trong lưới. Dùng ở S02.06 (chọn ngày), S04.02, S06.04, S03.01 (tab Lịch). Ngày là ngày lịch (UTC 00:00, khoá `yyyy-MM-dd`). Ô cao 44dp, rộng bằng 1/7 hàng (≈ 41dp ở 320dp). Ô là hình chữ nhật bo góc theo mock (chọn = gradient, nghỉ = nền mờ, đã đặt = gạch ngang, chờ = viền đứt màu nhấn). `AvailabilityLegend` hiện bốn trạng thái kèm chữ, mỗi tên tô kiểu như trạng thái của nó. Đã có trong code (kế hoạch 2d1).
+Lưới tháng 7 cột (T2…CN). `AvailabilityCalendar({required DateTime month, required Map<DateTime, DayState> states, DateTime? selected, Set<DateTime> selectedDays = const {}, ValueChanged<DateTime>? onSelect, ValueChanged<DateTime>? onLongPress, bool editable = false, ValueChanged<DateTime>? onMonthChanged, DateTime? minDate, DateTime? maxDate, DateTime? today, Set<DateTime> eventDays = const {}, DateTime? rangeStart, bool showHeader = true})`. `DayState`: `free` (mặc định), `pending` (viền đứt primary), `booked` (gạch ngang), `off` (nền mờ). Ngày chọn tô gradient; `pending/booked/off` không chọn được ở chế độ đặt (`editable: false`), `editable: true` cho NAG đổi `free ⇄ off`. Mỗi ô ≥ 44dp; ô có `Semantics` "12 tháng 10, rảnh". Điều hướng tháng bằng nút và vuốt; chọn dải: nhấn giữ ngày đầu (`onLongPress`, vòng `rangeStart`) rồi chạm ngày cuối. Giờ không nằm trong lưới. Chọn nhiều ngày: `selectedDays` tô gradient như `selected`, màn tự bật/tắt ngày trong `onSelect` (S29.04 "Chọn ngày"). Dùng ở S02.06 (chọn ngày), S04.02, S06.04, S03.01 (tab Lịch), S29.04. Ngày là ngày lịch (UTC 00:00, khoá `yyyy-MM-dd`). Ô cao 44dp, rộng bằng 1/7 hàng (≈ 41dp ở 320dp). Ô là hình chữ nhật bo góc theo mock (chọn = gradient, nghỉ = nền mờ, đã đặt = gạch ngang, chờ = viền đứt màu nhấn). `AvailabilityLegend` hiện bốn trạng thái kèm chữ, mỗi tên tô kiểu như trạng thái của nó. Đã có trong code (kế hoạch 2d1).
 
 ---
 
@@ -373,6 +373,19 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 #### AssigneeCard · Đã có
 `AssigneeCard({required AssigneeSummary summary, required String studioName, required VoidCallback onViewProfile, String? changeLabel, VoidCallback? onChange})` · `AssigneeSummary({required String id, required String name, String? avatarUrl, bool verified = false, int? tomatoPct, int shoots = 0})` · `AssigneeCard.skeleton()`. Thẻ "Thợ chụp cho bạn" của booking studio phía khách (mock `#S05.02-studio`): `AppAvatar` 48 (trang trí), tên đậm kèm tích xanh khi `verified`, `MetaLine` "🍅 97% · 112 buổi · thợ của Studio Mây" (bỏ phần cà chua khi `tomatoPct` null, tức chưa đủ 5 đánh giá; `studioName` rỗng thì chỉ "112 buổi"), nút viền xsmall "Xem hồ sơ" bên phải (rộng tối đa nửa hàng), và dưới cùng nút viền small `changeLabel` ("Xin đổi thợ (1 lần)"; `onChange` null thì tắt, ví dụ "Đã xin đổi · chờ studio"; `changeLabel` null thì không có nút). Nhãn "Giao {ngày}" và tiêu đề khối nằm ở màn hình (`StudioAssigneeBlock` của S05.02), không trong thẻ. Trình đọc màn hình đọc người là một nhãn "tên, Đã xác minh, 97% cà chua · 112 buổi · thợ của Studio Mây"; mỗi nút giữ nhãn riêng và vùng chạm 48dp. Skeleton: vòng avatar và hai dòng trong khung thẻ (khi hồ sơ thợ đang tải). Dùng ở S05.02 (booking studio, phía khách).
 
+---
+
+### Component của spec 10-08 (điểm chụp đang hot) · Mới
+
+#### SpotCard · Mới
+Thẻ điểm chụp ảnh dạng ngang (ở Home và S02.04, `compact: true`, rộng 200dp) hoặc dạng lớn/dọc (ở S29.01, `compact: false`). Hiển thị ảnh cover `cardUrl`, tên điểm `name`, thành phố `city`, nhãn mùa `SeasonTag` khi `inSeason`, và dòng trạng thái (`spotCardStats(l, entry)`: `{n} thợ · {m} sự kiện sắp tới`). `SpotCard({required SpotEntry entry, VoidCallback? onTap, bool compact = false})`.
+
+#### SeasonTag · Mới
+Tag chỉ báo thời điểm vào mùa của điểm chụp. `SeasonTag({String? label, int? monthTo})`. Nền subtle, viền mảnh, biểu tượng lá `AppIcons.eco`. Khi `monthTo != null` hiển thị "Đang vào mùa · tới cuối tháng {m}", hoặc nhãn tuỳ biến `label` ("Đang vào mùa"). Dùng ở `SpotCard` và đầu trang `SpotScreen` (S29.02).
+
+#### SlotGrid · Mới
+Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({required List<({String start, String end, bool free})> slots, String? selected, required ValueChanged<String> onPick, String? semanticsLabel})`. Bốn cột (ba cột khi rộng dưới 300dp), ô bo 14dp nền kính viền mảnh: giờ bắt đầu đậm 13,5 và "–{giờ kết thúc}" 11 bên dưới; ô đang chọn viền màu nhấn, nền nhấn nhạt; suất kín mờ 50% kèm chữ "Đã kín", không chạm được. Mỗi ô là một radio (`inMutuallyExclusiveGroup`, `checked`), đọc "06:00–06:30" hoặc "06:40, Đã kín". Danh sách suất do `freeSlots(window, offer, taken)` của `spot_rules.dart` dựng; skeleton là các ô `AppSkeleton.box` cùng cỡ do màn tự vẽ.
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
@@ -388,7 +401,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `StepProgress` | S04.01–S04.03, S08.01, S12.01, S12.02, S08.05, S08.02 |
 | `AppFooterBar` | S08.05, S09.03 |
 | `AppOptionTile` | S02.05, S02.06, S08.01 và sheet hình thức ở Cài đặt (`icon`), S26.04 (`meta`, `enabled`) (sau: S04.02, S13.01) |
-| `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04 |
+| `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04, S29.04 |
 | `StatusTimeline` | S05.02 |
 | `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
 | `EarningRow` | S06.05, S22.01 |
@@ -431,6 +444,8 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `MemberRow` | S26.01, S26.02, S26.03 |
 | `MemberStrip` | S03.01 (studio) |
 | `AssigneeCard` | S05.02 (booking studio, phía khách) |
+| `SpotCard`, `SeasonTag` | S02.01, S02.03, S02.04, S29.01, S29.02 |
+| `SlotGrid` | S29.06 |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)
@@ -541,3 +556,9 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.car` | `directions_car` | `directions_car` (có trong mock) | — |
 | `AppIcons.checkroom` | `checkroom` | `checkroom` (có trong mock) | — |
 | `AppIcons.addCircle` | `add_circle` | (mới, chưa có trong mock) | — |
+| `AppIcons.directions` | `directions` | (mới, chưa có trong mock) | `Icons.directions_rounded` |
+| `AppIcons.landscape` | `landscape` | (mới, chưa có trong mock) | `Icons.landscape_rounded` |
+| `AppIcons.eco` | `eco` | (mới, chưa có trong mock) | `Icons.eco_rounded` |
+| `AppIcons.lightbulb` | `lightbulb` | (mới, chưa có trong mock) | `Icons.lightbulb_rounded` |
+| `AppIcons.eventBusy` | `event_busy` | (mới, chưa có trong mock) | `Icons.event_busy_rounded` |
+| `AppIcons.timer` | `timer` | (mới, chưa có trong mock) | `Icons.timer_rounded` |

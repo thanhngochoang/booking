@@ -36,6 +36,8 @@ class FakeBookingRepository implements BookingRepository {
           List<AddonPick> addons,
           BookingPlace? pickup,
           int? expectedTotal,
+          String? spotScheduleId,
+          String? slotOfferId,
         })
       >[];
   final paymentCalls = <({String bookingId, PayMethod method})>[];
@@ -94,6 +96,9 @@ class FakeBookingRepository implements BookingRepository {
       BookingErrorCode.addonChanged => 'addon_changed',
       BookingErrorCode.addonNotApplicable => 'addon_not_applicable',
       BookingErrorCode.pickupRequired => 'pickup_required',
+      BookingErrorCode.outsideSchedule => 'outside_schedule',
+      BookingErrorCode.slotTaken => 'slot_taken',
+      BookingErrorCode.spotArchived => 'spot_archived',
       BookingErrorCode.network => 'unavailable',
       BookingErrorCode.unknown => 'unknown',
     };
@@ -213,6 +218,8 @@ class FakeBookingRepository implements BookingRepository {
     List<AddonPick> addons = const [],
     BookingPlace? pickup,
     int? expectedTotal,
+    String? spotScheduleId,
+    String? slotOfferId,
   }) async {
     _checkNextError();
     createCalls.add((
@@ -226,6 +233,8 @@ class FakeBookingRepository implements BookingRepository {
       addons: addons,
       pickup: pickup,
       expectedTotal: expectedTotal,
+      spotScheduleId: spotScheduleId,
+      slotOfferId: slotOfferId,
     ));
     final id = 'booking_${bookings.length + 1}';
     final now = DateTime.now().toUtc();
@@ -247,6 +256,8 @@ class FakeBookingRepository implements BookingRepository {
       status: BookingStatus.draft,
       deposit: 1000000,
       remaining: 0,
+      spotScheduleId: spotScheduleId,
+      slotOfferId: slotOfferId,
       createdAt: now,
       updatedAt: now,
     );

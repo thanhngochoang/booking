@@ -23,6 +23,7 @@ PostDraft draft({
   bool portfolio = true,
   int images = 2,
   String? albumId,
+  String? spotId,
 }) => PostDraft(
   id: id,
   photographerId: 'p1',
@@ -37,6 +38,7 @@ PostDraft draft({
   styleId: style,
   inPortfolio: portfolio,
   albumId: albumId,
+  spotId: spotId,
 );
 
 typedef Env = ({PostPublisher publisher, PostRepository reader});
@@ -143,6 +145,20 @@ void main() {
       final doc = await db.collection('posts').doc(draft().id).get();
       expect(doc.data()!.containsKey('albumId'), isFalse);
       expect(doc.data()!.containsKey('albumPosition'), isFalse);
+    });
+  });
+
+  group('spot field', () {
+    test('FirestorePostPublisher writes spotId only when set', () async {
+      final db = FakeFirebaseFirestore();
+      await FirestorePostPublisher(db: db).publish(draft(spotId: 'ho-tay'));
+      final tagged = await db.collection('posts').doc(draft().id).get();
+      expect(tagged.data()!['spotId'], 'ho-tay');
+
+      final db2 = FakeFirebaseFirestore();
+      await FirestorePostPublisher(db: db2).publish(draft());
+      final plain = await db2.collection('posts').doc(draft().id).get();
+      expect(plain.data()!.containsKey('spotId'), isFalse);
     });
   });
 

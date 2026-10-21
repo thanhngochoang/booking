@@ -14,8 +14,20 @@ import {
   studioFaultOf,
   type MemberDayReader,
 } from '../src/studio_assignment.js';
+import { EMPTY_SPOT_STATS, type Spot } from '../src/spot.js';
+import type { SpotSchedule } from '../src/spot_schedule.js';
+import { transitionBooking } from '../src/transition_booking.js';
 import { makeTestBooking } from './support/booking_fixtures.js';
-import { acceptedStudioBooking, createBookingWorld, withStudio, type BookingWorld } from './support/booking_world.js';
+import {
+  acceptedStudioBooking,
+  createBookingWorld,
+  newDraft,
+  payDraft,
+  withSchedule,
+  withSpot,
+  withStudio,
+  type BookingWorld,
+} from './support/booking_world.js';
 
 const DAY = '2026-10-15';
 // 2026-10-15 14:00 VN = 07:00Z; deadline 2026-10-14T07:00Z; the world clock starts 2026-10-10T10:00Z.
@@ -395,5 +407,118 @@ describe('returnAssignment ("Trả việc")', () => {
     const b = await assigned(w, 'm1');
     w.clock.setTime(START);
     await rejectsWith(returnAssignment(w.studioDeps, 'm1', { bookingId: b.id }), 'not_eligible');
+  });
+});
+
+describe('spot bookings of a studio (#194 Decision 7)', () => {
+  const spot: Spot = {
+    id: 'spot-ho-tay',
+    name: 'Hồ Tây',
+    city: 'Hà Nội',
+    areaCode: 'hn',
+    point: { lat: 21.05, lng: 105.82 },
+    geohash: 'w7e5q',
+    radiusM: 1000,
+    cover: null,
+    description: '',
+    tips: [],
+    seasonMonths: [],
+    pinned: false,
+    hidden: false,
+    status: 'active',
+    hotScore: 0,
+    stats: EMPTY_SPOT_STATS,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    rankedAt: null,
+    updatedBy: 'staff',
+  };
+  const schedule: SpotSchedule = {
+    id: 'sched-s1-m1',
+    providerId: 's1',
+    assigneeId: 'm1',
+    spotId: spot.id,
+    days: [DAY],
+    window: { start: '06:00', end: '11:00' },
+    serviceIds: ['srv_s1'],
+    priceFrom: 1_000_000,
+    status: 'open',
+    createdAt: '2026-10-08T00:00:00.000Z',
+    updatedAt: '2026-10-08T00:00:00.000Z',
+  };
+
+  /** Studio s1 with m1 holding DAY for the schedule at Hồ Tây, and c1's paid, accepted 07:00 spot booking. */
+  async function spotWorld(): Promise<{ w: BookingWorld; b: Booking }> {
+    const w = withSchedule(withSpot(world(), spot), schedule);
+    w.store.availability.set(`m1_${DAY}`, { state: 'spot', scheduleId: schedule.id, spotId: spot.id });
+    const draft = await newDraft(w, {
+      photographerId: 's1',
+      serviceId: 'srv_s1',
+      day: DAY,
+      start: '07:00',
+      spotScheduleId: schedule.id,
+    });
+    await payDraft(w, draft.id);
+    const b = await transitionBooking(w.deps, { bookingId: draft.id, action: 'accept', actorId: 's1' });
+    return { w, b };
+  }
+
+  it('is created already assigned to the schedule member and never enters the studio day load', async () => {
+    const { w, b } = await spotWorld();
+    assert.equal(b.status, 'accepted');
+    assert.equal(b.isStudio, true);
+    assert.equal(b.assigneeId, 'm1');
+    assert.equal(b.assigneeKind, 'member');
+    assert.equal(b.assignStatus, 'assigned');
+    assert.equal(b.assignedAt, '2026-10-10T10:00:00.000Z');
+    assert.deepEqual(
+      b.assignments?.map((a) => [a.assigneeId, a.by, a.late]),
+      [['m1', 's1', false]],
+    );
+    assert.equal(w.store.getStudioDayLoad('s1', DAY), null);
+    // accept wrote nothing: the member's day still holds the schedule
+    assert.equal((await w.store.getAvailabilityDay('m1', DAY))?.state, 'spot');
+    assert.equal(await w.store.getAvailabilityDay('s1', DAY), null);
+  });
+
+  it('assignBooking, requestAssigneeChange and returnAssignment on it are not_eligible', async () => {
+    const { w, b } = await spotWorld();
+    await rejectsWith(assign(w, b.id, 'm2'), 'not_eligible');
+    await rejectsWith(requestAssigneeChange(w.studioDeps, 'c1', { bookingId: b.id }), 'not_eligible');
+    await rejectsWith(returnAssignment(w.studioDeps, 'm1', { bookingId: b.id }), 'not_eligible');
+  });
+
+  it('a member on a spot day cannot be assigned another studio booking that day (day_taken)', async () => {
+    const { w } = await spotWorld();
+    const other = await acceptedStudioBooking(w, { customerId: 'c2', day: DAY, start: '14:00' });
+    await rejectsWith(assign(w, other.id, 'm1'), 'day_taken');
+    assert.equal((await assign(w, other.id, 'm2')).assigneeId, 'm2');
+  });
+
+  it('assignmentOptions shows the member busy with the schedule window', async () => {
+    const { w } = await spotWorld();
+    const other = await acceptedStudioBooking(w, { customerId: 'c2', day: DAY, start: '14:00' });
+    const reader: MemberDayReader = {
+      members: async () => ['m1', 'm2'],
+      day: async (uid) => (uid === 'm1' ? { state: 'spot', start: '06:00', end: '11:00' } : null),
+      stats: async () => ({ tomatoPct: null, reviewCount: 0 }),
+    };
+    const options = await assignmentOptions({ ...w.studioDeps, availability: reader }, 's1', { bookingId: other.id });
+    assert.deepEqual(
+      options.map((o) => [o.uid, o.state, o.busyStart, o.busyEnd]),
+      [
+        ['m1', 'busy', '06:00', '11:00'],
+        ['m2', 'free', null, null],
+      ],
+    );
+  });
+
+  it('a cancel removes its interval and leaves the member day and the studio load alone', async () => {
+    const { w, b } = await spotWorld();
+    assert.equal((await w.store.getSpotDay(schedule.id, DAY))?.taken.length, 1);
+    await transitionBooking(w.deps, { bookingId: b.id, action: 'cancel', actorId: 'c1' });
+    assert.equal((await w.store.getSpotDay(schedule.id, DAY))?.taken.length, 0);
+    assert.equal((await w.store.getAvailabilityDay('m1', DAY))?.state, 'spot');
+    assert.equal(w.store.getStudioDayLoad('s1', DAY), null);
   });
 });

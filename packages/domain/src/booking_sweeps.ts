@@ -6,6 +6,7 @@ import { AUTO_COMPLETE_DELAY_HOURS } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { escrowRefundedTotal, releaseEscrowPayment } from './escrow.js';
 import { releaseDueMilestones } from './milestones.js';
+import { withoutInterval } from './spot_booking.js';
 import { transitionBooking } from './transition_booking.js';
 import { approveDelivery } from './delivery_use_cases.js';
 import { studioDayLoadWith } from './studio_capacity.js';
@@ -35,10 +36,17 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
       if (b && b.status === 'draft' && b.payableUntil && Date.parse(b.payableUntil) <= now.getTime()) {
         // Every read before the first write (Firestore transactions refuse reads after writes).
         const day = await tx.getAvailabilityDay(draft.photographerId, draft.day);
-        const load = b.isStudio === true ? await tx.getStudioDayLoad(draft.photographerId, draft.day) : null;
+        const spotDay = b.spotScheduleId !== undefined ? await tx.getSpotDay(b.spotScheduleId, b.day) : null;
+        // A studio spot booking is pre-assigned and never on the studio's day load (#194 Decision 7).
+        const load =
+          b.isStudio === true && b.spotScheduleId === undefined
+            ? await tx.getStudioDayLoad(draft.photographerId, draft.day)
+            : null;
         await tx.deleteBooking(draft.id);
         await tx.deleteContactSnapshot(draft.id);
-        if (day && day.bookingId === draft.id) {
+        if (b.spotScheduleId !== undefined && spotDay) {
+          await tx.setSpotDay(withoutInterval(spotDay, b, now.toISOString()));
+        } else if (day && day.bookingId === draft.id) {
           await tx.deleteAvailabilityDay(draft.photographerId, draft.day);
         }
         if (load) {

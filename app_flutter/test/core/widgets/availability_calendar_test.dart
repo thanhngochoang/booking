@@ -1,4 +1,6 @@
 // test/core/widgets/availability_calendar_test.dart
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
@@ -66,6 +68,32 @@ void main() {
     await tester.tap(find.bySemanticsLabel('11 tháng 10, chờ nhận'));
     await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));
     expect(picked, [_d(13)]);
+    h.dispose();
+  });
+
+  testWidgets('selectedDays marks several days selected (S29.04)', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(
+          month: _oct,
+          states: _states,
+          selectedDays: {_d(17), _d(18)},
+          onSelect: (_) {},
+        ),
+      ),
+    );
+    bool selected(String label) =>
+        tester
+            .getSemantics(find.bySemanticsLabel(label))
+            .flagsCollection
+            .isSelected ==
+        Tristate.isTrue;
+    expect(selected('17 tháng 10, rảnh'), isTrue);
+    expect(selected('18 tháng 10, rảnh'), isTrue);
+    expect(selected('19 tháng 10, rảnh'), isFalse);
     h.dispose();
   });
 

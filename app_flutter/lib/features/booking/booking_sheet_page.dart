@@ -101,9 +101,12 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         final date = state.day != null ? parseDayKey(state.day!) : null;
         final returnTo = bookingPath(
           photographerId: widget.args.photographerId,
-          serviceId: state.serviceId,
+          serviceId: state.isSlot ? null : state.serviceId,
           date: date,
           area: widget.args.area,
+          scheduleId: widget.args.scheduleId,
+          slotOfferId: widget.args.slotOfferId,
+          start: state.isSlot ? state.start : null,
         );
         context.push('/profile/phone?returnTo=${Uri.encodeComponent(returnTo)}');
     }
@@ -157,6 +160,24 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookAddonsChanged)),
         );
+      case BookingErrorCode.slotTaken:
+      case BookingErrorCode.outsideSchedule:
+        // The slot path closes back to S29.02, whose grid reads again.
+        final slot = ref
+            .read(bookingFlowControllerProvider(widget.args))
+            .isSlot;
+        final message = err == BookingErrorCode.outsideSchedule
+            ? l10n.bookOutsideSchedule
+            : (slot ? l10n.slotTakenError : l10n.bookSlotTaken);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        if (slot) _dismiss();
+      case BookingErrorCode.spotArchived:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookSpotArchived)),
+        );
+        _dismiss();
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
@@ -202,6 +223,11 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
     if (didStepBack) return;
 
     final state = ref.read(bookingFlowControllerProvider(widget.args));
+    if (state.isSlot) {
+      // S29.06 opened S04.03 directly: back returns to the slot picker's page.
+      _dismiss();
+      return;
+    }
     if (state.hasChoices) {
       final l10n = context.l10n;
       final discard = await showConfirmSheet(
@@ -219,28 +245,37 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
     }
   }
 
+  static Widget _skeleton(BuildContext _) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (var i = 0; i < 3; i++) ...[
+        AppOptionTile.skeleton(withThumb: true),
+        if (i < 2) const SizedBox(height: AppSpace.s2),
+      ],
+    ],
+  );
+
+  /// The sheet frame around [child] while the flow cannot start yet (a
+  /// Scaffold, so a closing SnackBar has somewhere to go).
+  Widget _waiting(Widget child) => Scaffold(
+    backgroundColor: Colors.transparent,
+    body: Align(
+      alignment: Alignment.bottomCenter,
+      child: AppSheetFrame(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.s4),
+          child: child,
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final contactAsync = ref.watch(currentContactProvider);
 
     if (contactAsync.isLoading) {
-      return Align(
-        alignment: Alignment.bottomCenter,
-        child: AppSheetFrame(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.s4),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < 3; i++) ...[
-                  AppOptionTile.skeleton(withThumb: true),
-                  if (i < 2) const SizedBox(height: AppSpace.s2),
-                ],
-              ],
-            ),
-          ),
-        ),
-      );
+      return _waiting(_skeleton(context));
     }
 
     if (contactAsync.hasError || contactAsync.value == null) {
@@ -256,6 +291,27 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
 
     final l10n = context.l10n;
     final state = ref.watch(bookingFlowControllerProvider(widget.args));
+
+    // From a spot: nothing to choose until the schedule (and offer) is read.
+    if (widget.args.scheduleId != null && state.spot == null) {
+      final contextProvider = bookingSpotContextProvider(widget.args);
+      return _waiting(
+        AsyncView<SpotBookingContext?>(
+          value: ref.watch(contextProvider),
+          skeleton: _skeleton,
+          onRetry: () => ref.invalidate(contextProvider),
+          data: (context, ctx) => ctx != null
+              ? _skeleton(context)
+              : EmptyState(
+                  title: l10n.bookOutsideSchedule,
+                  body: '',
+                  actionLabel: l10n.bookClose,
+                  onAction: _dismiss,
+                ),
+        ),
+      );
+    }
+
     final profileAsync = ref.watch(
       photographerProfileProvider(widget.args.photographerId),
     );

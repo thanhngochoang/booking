@@ -11,12 +11,14 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
 import '../../support/event_world.dart' as ev;
+import '../../support/fake_spot_repository.dart';
 
 /// Thursday 08/10 09:00 in Vietnam.
 final _now = DateTime.utc(2026, 10, 8, 2);
@@ -680,5 +682,79 @@ void main() {
       await _settle(tester);
       expect(find.byKey(const Key('to-deliver-section')), findsNothing);
     });
+  });
+
+  testWidgets('the "Lịch tại điểm" entry opens /me/spot-schedules for a '
+      'provider', (tester) async {
+    final h = await _pump(
+      tester,
+      _repo(_busy()),
+      viewSize: const Size(390, 2400),
+    );
+    await _settle(tester);
+    expect(find.text('Lịch tại điểm'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('open-spot-schedules')));
+    await _settle(tester);
+    expect(h.location, '/me/spot-schedules');
+  });
+
+  testWidgets('the entry reads "Lịch tại điểm · 2 đang mở" with open '
+      'schedules', (tester) async {
+    SpotSchedule schedule(String id, List<String> days) => SpotSchedule(
+      id: id,
+      providerId: detailPhotographerUid,
+      spotId: 'spot_1',
+      assigneeId: null,
+      days: days,
+      window: const SpotWindow(start: '06:00', end: '11:00'),
+      serviceIds: const [],
+      priceFrom: null,
+      open: true,
+    );
+    final spots = FakeSpotRepository()
+      ..ownerId = detailPhotographerUid
+      ..seedSchedule(schedule('a', ['2026-10-10']))
+      ..seedSchedule(schedule('b', ['2026-10-01', '2026-10-24']))
+      ..seedSchedule(schedule('past', ['2026-10-01']));
+    await pumpBookingsTab(
+      tester,
+      uid: detailPhotographerUid,
+      role: UserRole.photographer,
+      bookings: _repo(_busy()),
+      clock: TestClock(_now),
+      portfolioPhotos: 8,
+      packages: const [workPackage],
+      completeness: 90,
+      viewSize: const Size(390, 2400),
+      spots: spots,
+    );
+    await _settle(tester);
+    expect(find.text('Lịch tại điểm · 2 đang mở'), findsOneWidget);
+    expect(find.text('Nhận chụp ở điểm đang hot'), findsNothing);
+  });
+
+  testWidgets('S06.02 keeps the entry under the empty state at 320 dp and '
+      '1.3× text', (tester) async {
+    final h = await _pump(
+      tester,
+      _repo(const []),
+      textScale: 1.3,
+      viewSize: const Size(320, 640),
+    );
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    final entry = find.byKey(const Key('open-spot-schedules'));
+    await tester.scrollUntilVisible(
+      entry,
+      200,
+      scrollable: find
+          .ancestor(of: entry, matching: find.byType(Scrollable))
+          .first,
+    );
+    expect(find.text('Lịch tại điểm'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(entry);
+    await _settle(tester);
+    expect(h.location, '/me/spot-schedules');
   });
 }

@@ -17,6 +17,7 @@
     "seed": "node --import tsx seed/seed.ts",
     "awards": "tsx tools/awards.ts",
     "verifications": "tsx tools/verifications.ts",
+    "spots": "tsx tools/spots.ts",
     "payouts": "tsx tools/payouts.ts",
     "support": "tsx tools/support.ts",
     "clock": "tsx tools/clock.ts",

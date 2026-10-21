@@ -7,6 +7,7 @@ import {
   inviteMember,
   isOpenBookingStatus,
   respondInvite,
+  type SpotSchedule,
   type StudioDeps,
   type StudioRelation,
 } from '@photobooking/domain';
@@ -28,6 +29,21 @@ import { FirestoreProviderOrderGate } from '../../src/infra/booking_readers.js';
 import { studioRelationBlockers } from '../../src/infra/account_firestore.js';
 import { MemoryFirestore } from './support/memory_firestore.js';
 import { NOW, STUDIO, seedBooking, seedPerson, seedStudio, studioBooking } from './support/studio_fixtures.js';
+import { scheduleToFirestore } from '../../src/infra/spot_firestore.js';
+
+const SPOT_SCHEDULE: SpotSchedule = {
+  id: 'sched',
+  providerId: STUDIO,
+  assigneeId: 'm1',
+  spotId: 'spot_1',
+  days: ['2026-10-12'],
+  window: { start: '06:00', end: '11:00' },
+  serviceIds: ['srv_1'],
+  priceFrom: 1_000_000,
+  status: 'open',
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+};
 
 const DAY_MS = 86_400_000;
 
@@ -135,6 +151,28 @@ describe('FirestoreStudioStore', () => {
     assert.equal(n, 2);
   });
 
+  it('countOpenSpotSchedules counts the studio\'s open spot schedules naming the member with a day ahead (#194)', async () => {
+    const sched = (id: string, over: Partial<SpotSchedule>) =>
+      db.seed(`spot_schedules/${id}`, scheduleToFirestore({ ...SPOT_SCHEDULE, id, ...over }));
+    sched('s_ahead', { days: ['2026-10-09', '2026-10-12'] });
+    sched('s_past', { days: ['2026-10-09'] });
+    sched('s_cancelled', { status: 'cancelled', days: ['2026-10-12'] });
+    sched('s_other_member', { assigneeId: 'm2', days: ['2026-10-12'] });
+    sched('s_other_studio', { providerId: 'other', days: ['2026-10-12'] });
+    const n = await deps.studios.runTransaction((tx) => tx.countOpenSpotSchedules(STUDIO, 'm1', '2026-10-10'));
+    assert.equal(n, 1);
+  });
+
+  it('countOpenSpotSchedules still finds a current schedule behind 25 past ones (no limit, range on lastDay)', async () => {
+    for (let i = 0; i < 25; i++) {
+      const day = `2026-09-${String(i + 1).padStart(2, '0')}`;
+      db.seed(`spot_schedules/s_old_${String(i).padStart(2, '0')}`, scheduleToFirestore({ ...SPOT_SCHEDULE, id: `s_old_${i}`, days: [day] }));
+    }
+    db.seed('spot_schedules/s_zz_ahead', scheduleToFirestore({ ...SPOT_SCHEDULE, id: 's_zz_ahead', days: ['2026-10-12'] }));
+    const n = await deps.studios.runTransaction((tx) => tx.countOpenSpotSchedules(STUDIO, 'm1', '2026-10-10'));
+    assert.equal(n, 1);
+  });
+
   it('dueRelations merges the expire and announce queries, soonest first, once each', async () => {
     const at = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString();
     seedRelation(db, relation({ id: 'r_expired_1', expiresAt: at(-1) }));
@@ -239,6 +277,17 @@ describe('studio readers', () => {
     assert.deepEqual(await reader.stats('m1'), { tomatoPct: 90, reviewCount: 10 });
   });
 
+  it('the member day reader reads a spot day as busy with the schedule window (#194 Decision 6)', async () => {
+    const db = new MemoryFirestore();
+    seedStudio(db, ['m1']);
+    db.seed('spot_schedules/sched_1', scheduleToFirestore({ ...SPOT_SCHEDULE, id: 'sched_1' }));
+    db.seed('availability/m1/days/2026-10-12', { state: 'spot', scheduleId: 'sched_1', spotId: 'spot_1' });
+    db.seed('availability/m1/days/2026-10-13', { state: 'spot' });
+    const reader = new FirestoreMemberDayReader(db.asFirestore());
+    assert.deepEqual(await reader.day('m1', '2026-10-12'), { state: 'spot', start: '06:00', end: '11:00' });
+    assert.deepEqual(await reader.day('m1', '2026-10-13'), { state: 'spot', start: null, end: null });
+  });
+
   it('nameKeys: update only, a deleted photographer document is not recreated', async () => {
     const db = new MemoryFirestore();
     seedPerson(db, 'p1', 'Hồng Nhung');
@@ -298,6 +347,13 @@ describe('recomputeStudioDay (Decision 26)', () => {
     load([], ['b1']);
     db.seed(`availability/m1/days/${DAY}`, { state: 'booked', bookingId: 'b1' });
     assert.equal(await recomputeStudioDay(db.asFirestore(), STUDIO, DAY), 'clear_full');
+  });
+
+  it('a member holding the day for a spot schedule is busy, not free (#194 Decision 6)', async () => {
+    load(['b1']);
+    db.seed(`availability/m2/days/${DAY}`, { state: 'spot', scheduleId: 'sched_1', spotId: 'spot_1' });
+    assert.equal(await recomputeStudioDay(db.asFirestore(), STUDIO, DAY), 'set_full');
+    assert.equal(db.data(`availability/m2/days/${DAY}`)?.state, 'spot', 'the member record is left alone');
   });
 
   it('a studio off day is never touched; a provider that is no longer a studio only loses a stale mark', async () => {
@@ -384,6 +440,7 @@ describe('studio indexes', () => {
       'studio_members: memberId ASCENDING, status ASCENDING, createdAt DESCENDING',
       'photographers: studioId ASCENDING, studioJoinedAt ASCENDING',
       'studio_day_load: studioId ASCENDING, day ASCENDING',
+      'spot_schedules: providerId ASCENDING, assigneeId ASCENDING, status ASCENDING, lastDay ASCENDING',
     ]) {
       assert.ok(shapes.includes(shape), shape);
     }

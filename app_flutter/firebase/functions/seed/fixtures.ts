@@ -59,6 +59,10 @@ import {
   type ReviewReason,
   type Verdict,
   type VerificationRecord,
+  EMPTY_SPOT_STATS,
+  type Spot,
+  type SpotSchedule,
+  type SlotOffer,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
@@ -69,6 +73,12 @@ import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
 import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
 import { relationToFirestore } from '../src/infra/studio_firestore.js';
+import {
+  spotToFirestore,
+  scheduleToFirestore,
+  offerToFirestore,
+  spotDayToFirestore,
+} from '../src/infra/spot_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -377,14 +387,24 @@ export interface SeedPost {
   readonly caption: string;
   /** Album the post sits in and its 1-based place there; null = timeline only. */
   readonly album: { readonly id: string; readonly position: number } | null;
+  readonly spotId?: string;
 }
 
 export const SEED_ALBUM_FAMILY = 'seed-album-an-family';
 export const SEED_ALBUM_STREET = 'seed-album-an-street';
 
+export const SEED_SPOT_CAU_DAT = 'seed-spot-cau-dat';
+export const SEED_SPOT_HOI_AN = 'seed-spot-hoi-an';
+export const SEED_SPOT_HO_TAY = 'seed-spot-ho-tay';
+export const SEED_SPOT_CAU_VANG = 'seed-spot-cau-vang';
+export const SEED_SPOT_MU_CANG_CHAI = 'seed-spot-mu-cang-chai';
+
+export const SEED_SCHEDULE_AN_HO_TAY = 'seed-schedule-an-ho-tay';
+export const SEED_OFFER_AN_BINH_MINH = 'seed-offer-an-binh-minh';
+
 /** An's `work` posts: two in "Gia đình", one in "Đường phố", two only on the timeline. */
 export const SEED_POSTS: readonly SeedPost[] = [
-  { id: 'seed-post-an-1', photographerId: AN, images: 3, caption: 'Buổi chiều ở Hồ Tây', album: { id: SEED_ALBUM_FAMILY, position: 1 } },
+  { id: 'seed-post-an-1', photographerId: AN, images: 3, caption: 'Buổi chiều ở Hồ Tây', album: { id: SEED_ALBUM_FAMILY, position: 1 }, spotId: SEED_SPOT_HO_TAY },
   { id: 'seed-post-an-2', photographerId: AN, images: 2, caption: 'Gia đình nhỏ', album: { id: SEED_ALBUM_FAMILY, position: 2 } },
   { id: 'seed-post-an-3', photographerId: AN, images: 1, caption: 'Phố cổ sớm mai', album: { id: SEED_ALBUM_STREET, position: 1 } },
   { id: 'seed-post-an-4', photographerId: AN, images: 4, caption: 'Chân dung ánh sáng tự nhiên', album: null },
@@ -767,6 +787,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
         likeCount,
         saveCount,
         ...(p.album !== null ? { albumId: p.album.id, albumPosition: p.album.position } : {}),
+        ...(p.spotId !== undefined ? { spotId: p.spotId } : {}),
         createdAt: at,
       },
     });
@@ -1869,5 +1890,262 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
     },
   });
 
+  const atIso = now.toISOString();
+  const today = formatVnDate(now);
+  const spots = seedSpots(now);
+  for (const s of spots) {
+    docs.push({ path: `spots/${s.id}`, data: spotToFirestore(s) as Record<string, unknown> });
+  }
+
+  const anBlockedDays = new Set<string>();
+  for (const d of existing) {
+    const m = new RegExp(`^availability/${AN}/days/(\\d{4}-\\d{2}-\\d{2})$`).exec(d.path);
+    const day = m?.[1];
+    if (day) anBlockedDays.add(day);
+  }
+  for (const e of [free, paid, soon]) {
+    if (e.dayKey) anBlockedDays.add(e.dayKey);
+  }
+  const anWeekendDays = seedWeekendDays(today, anBlockedDays);
+  const anSchedule: SpotSchedule = {
+    id: SEED_SCHEDULE_AN_HO_TAY,
+    providerId: AN,
+    assigneeId: null,
+    spotId: SEED_SPOT_HO_TAY,
+    days: anWeekendDays,
+    window: { start: '06:00', end: '11:00' },
+    serviceIds: ['seed-service-portrait'],
+    priceFrom: 1500000,
+    status: 'open',
+    createdAt: atIso,
+    updatedAt: atIso,
+  };
+  docs.push({ path: `spot_schedules/${SEED_SCHEDULE_AN_HO_TAY}`, data: scheduleToFirestore(anSchedule) as Record<string, unknown> });
+
+  const anOffer: SlotOffer = {
+    id: SEED_OFFER_AN_BINH_MINH,
+    providerId: AN,
+    scheduleId: SEED_SCHEDULE_AN_HO_TAY,
+    spotId: SEED_SPOT_HO_TAY,
+    name: 'Bình minh Hồ Tây 30 phút',
+    price: 490000,
+    slotMinutes: 30,
+    gapMinutes: 10,
+    photoCount: 30,
+    editedCount: 10,
+    deliveryDays: 3,
+    status: 'open',
+    createdAt: atIso,
+    updatedAt: atIso,
+  };
+  docs.push({ path: `spot_slot_offers/${SEED_OFFER_AN_BINH_MINH}`, data: offerToFirestore(anOffer) as Record<string, unknown> });
+
+  for (const day of anWeekendDays) {
+    docs.push({
+      path: `availability/${AN}/days/${day}`,
+      data: {
+        photographerId: AN,
+        day,
+        state: 'spot',
+        scheduleId: SEED_SCHEDULE_AN_HO_TAY,
+        spotId: SEED_SPOT_HO_TAY,
+        updatedAt: now,
+      },
+    });
+    docs.push({
+      path: `spot_days/${SEED_SCHEDULE_AN_HO_TAY}_${day}`,
+      data: spotDayToFirestore({
+        scheduleId: SEED_SCHEDULE_AN_HO_TAY,
+        spotId: SEED_SPOT_HO_TAY,
+        providerId: AN,
+        day,
+        taken: [],
+        updatedAt: atIso,
+      }) as Record<string, unknown>,
+    });
+  }
+
+  const binhP = SEED_PHOTOGRAPHERS.find((p) => p.uid === BINH);
+  const binhAccepts = binhP ? acceptsOrders({ verified: binhP.verified, onboardingComplete: true }) : false;
+  if (binhAccepts) {
+    const nextSat = anWeekendDays[0] ?? today;
+    docs.push({
+      path: `spot_schedules/seed-schedule-binh-cau-vang`,
+      data: scheduleToFirestore({
+        id: 'seed-schedule-binh-cau-vang',
+        providerId: BINH,
+        assigneeId: null,
+        spotId: SEED_SPOT_CAU_VANG,
+        days: [nextSat],
+        window: { start: '15:00', end: '18:00' },
+        serviceIds: [],
+        priceFrom: null,
+        status: 'open',
+        createdAt: atIso,
+        updatedAt: atIso,
+      }) as Record<string, unknown>,
+    });
+  }
+
   return docs;
+}
+
+export function seedWeekendDays(today: string, excludedDays: ReadonlySet<string> = new Set()): string[] {
+  const parts = today.split('-').map(Number);
+  const y = parts[0] ?? 2026;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  const out: string[] = [];
+  let offset = 0;
+  while (out.length < 4 && offset < 60) {
+    const dt = new Date(Date.UTC(y, m - 1, d + offset));
+    const dow = dt.getUTCDay();
+    if (dow === 6) {
+      const satStr = formatVnDate(dt);
+      const sun = new Date(Date.UTC(y, m - 1, d + offset + 1));
+      const sunStr = formatVnDate(sun);
+      if (!excludedDays.has(satStr) && !excludedDays.has(sunStr)) {
+        out.push(satStr, sunStr);
+      }
+      offset += 6;
+    }
+    offset += 1;
+  }
+  return out;
+}
+
+export function seedSpots(now: Date): Spot[] {
+  const at = now.toISOString();
+  return [
+    {
+      id: SEED_SPOT_CAU_DAT,
+      name: 'Đồi chè Cầu Đất',
+      city: 'Đà Lạt',
+      areaCode: 'da-lat',
+      point: { lat: 11.9012, lng: 108.5123 },
+      geohash: encodeGeohash(11.9012, 108.5123),
+      radiusM: 1500,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_CAU_DAT}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_CAU_DAT}/card.jpg`,
+        path: `spots/${SEED_SPOT_CAU_DAT}/cover.jpg`,
+      },
+      description: 'Đồi chè bạt ngàn trong sương sớm, điểm săn mây và chụp ảnh lãng mạn tại Đà Lạt.',
+      tips: ['Đi sáng sớm săn mây từ 5:30 đến 7:00', 'Mang áo khoác ấm vì sáng sớm khá lạnh'],
+      seasonMonths: [10, 11, 12],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_HOI_AN,
+      name: 'Phố cổ Hội An',
+      city: 'Hội An',
+      areaCode: 'hoi-an',
+      point: { lat: 15.877, lng: 108.326 },
+      geohash: encodeGeohash(15.877, 108.326),
+      radiusM: 1000,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_HOI_AN}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_HOI_AN}/card.jpg`,
+        path: `spots/${SEED_SPOT_HOI_AN}/cover.jpg`,
+      },
+      description: 'Khu phố cổ rực rỡ lồng đèn bên dòng sông Hoài, nét đẹp hoài niệm vượt thời gian.',
+      tips: ['Chụp áo dài rất đẹp vào sáng sớm hoặc hoàng hôn', 'Thả hoa đăng buổi tối trên sông Hoài'],
+      seasonMonths: [],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_HO_TAY,
+      name: 'Hồ Tây',
+      city: 'Hà Nội',
+      areaCode: 'hn',
+      point: { lat: 21.055, lng: 105.823 },
+      geohash: encodeGeohash(21.055, 105.823),
+      radiusM: 2000,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_HO_TAY}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_HO_TAY}/card.jpg`,
+        path: `spots/${SEED_SPOT_HO_TAY}/cover.jpg`,
+      },
+      description: 'Hồ nước ngọt tự nhiên lớn nhất thủ đô, góc ngắm hoàng hôn và chụp ảnh phong cảnh đa dạng.',
+      tips: ['Bến Hàn Quốc và đường Thanh Niên ngắm hoàng hôn đẹp nhất', 'Mùa hè có đầm sen nở rộ'],
+      seasonMonths: [],
+      pinned: true,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_CAU_VANG,
+      name: 'Cầu Vàng',
+      city: 'Đà Nẵng',
+      areaCode: 'dn',
+      point: { lat: 15.995, lng: 107.9967 },
+      geohash: encodeGeohash(15.995, 107.9967),
+      radiusM: 800,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_CAU_VANG}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_CAU_VANG}/card.jpg`,
+        path: `spots/${SEED_SPOT_CAU_VANG}/cover.jpg`,
+      },
+      description: 'Đôi bàn tay khổng lồ nâng đỡ cây cầu vàng uốn lượn giữa mây trời Bà Nà Hills.',
+      tips: ['Lên chuyến cáp treo đầu tiên để tránh đông đúc', 'Chụp góc nghiêng bắt trọn đôi bàn tay đá'],
+      seasonMonths: [],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_MU_CANG_CHAI,
+      name: 'Mù Cang Chải',
+      city: 'Yên Bái',
+      areaCode: 'yen-bai',
+      point: { lat: 21.854, lng: 104.088 },
+      geohash: encodeGeohash(21.854, 104.088),
+      radiusM: 2000,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_MU_CANG_CHAI}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_MU_CANG_CHAI}/card.jpg`,
+        path: `spots/${SEED_SPOT_MU_CANG_CHAI}/cover.jpg`,
+      },
+      description: 'Những nấc thang vàng óng ánh trên ruộng bậc thang La Pán Tẩn mùa lúa chín vàng.',
+      tips: ['Thời điểm lúa chín đẹp nhất từ giữa tháng 9 đến đầu tháng 10', 'Đồi mâm xôi và đồi móng ngựa chụp góc toàn cảnh'],
+      seasonMonths: [9, 10],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+  ];
 }

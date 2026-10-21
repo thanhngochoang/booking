@@ -11,6 +11,9 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
+import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/features/addons/addon_format.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
@@ -216,14 +219,15 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           onRetry: () =>
               ref.invalidate(myBookingsProvider(BookingRole.photographer)),
           isEmpty: (d) => d.isEmpty,
-          empty: (_) => widget.showEvents
-              ? ListView(
-                  children: const [
-                    SizedBox(height: 480, child: WorkEmptyState()),
-                    MyEventsSection(),
-                  ],
-                )
-              : const WorkEmptyState(),
+          // Scrolls, so the entry under S06.02 fits 320 dp at 1.3× text.
+          empty: (_) => ListView(
+            children: [
+              const SizedBox(height: 480, child: WorkEmptyState()),
+              const _SpotSchedulesEntry(),
+              if (widget.showEvents) const MyEventsSection(),
+              const SizedBox(height: AppSpace.s4),
+            ],
+          ),
           data: (context, d) => _dashboard(context, d, features, now),
         ),
       ),
@@ -381,6 +385,9 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ],
           ),
         ),
+        // S29.03's entry (spec §8: one line under the numbers, no frame).
+        const SizedBox(height: AppSpace.s2),
+        const _SpotSchedulesEntry(),
         if (widget.showEvents) ...[
           const SizedBox(height: AppSpace.s2),
           const MyEventsSection(),
@@ -432,6 +439,78 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Lịch tại điểm · {n} đang mở" (mock S06.01 caption): opens S29.03
+/// (`/me/spot-schedules`). Without an open schedule, or while the list
+/// loads, the plain line.
+class _SpotSchedulesEntry extends ConsumerWidget {
+  const _SpotSchedulesEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final secondary = theme.brightness == Brightness.dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    final uid = ref.watch(authStateProvider).value?.uid;
+
+    Widget row(String title, String? sub) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: const Key('open-spot-schedules'),
+          onTap: () => context.push('/me/spot-schedules'),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s3),
+            child: Row(
+              children: [
+                AppIcon(AppIcons.place, size: 20, color: secondary),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (sub != null)
+                        Text(
+                          sub,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: secondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                AppIcon(AppIcons.chevron, size: 18, color: secondary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final plain = row(l10n.workSpotSchedules, l10n.workSpotSchedulesSub);
+    if (uid == null) return plain;
+    final today = vnDateKey(ref.watch(clockProvider)());
+    return AsyncView<List<SpotSchedule>>(
+      value: ref.watch(mySpotSchedulesProvider(uid)),
+      skeleton: (_) => row(l10n.workSpotSchedules, null),
+      error: (_, _, _) => plain,
+      data: (context, list) {
+        final open = openScheduleCount(list, today);
+        return open == 0 ? plain : row(l10n.workSpotSchedulesOpen(open), null);
+      },
     );
   }
 }

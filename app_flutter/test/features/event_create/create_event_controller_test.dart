@@ -36,6 +36,7 @@ EventDraft _complete({int priceVnd = 250000}) => EventDraft(
   place: const EventPlace(name: 'Hồ', lat: 21, lng: 105),
   capacity: 20,
   priceVnd: priceVnd,
+  spotDecided: true,
 );
 
 Future<(ProviderContainer, FakeEventRepository)> _container({
@@ -323,6 +324,7 @@ void main() {
       ctl.setPrice(0);
       ctl.setPlaceText(name: 'Hồ');
       ctl.chooseArea('hn-hoan-kiem', lat: 21, lng: 105);
+      ctl.setSpot(null);
       // The cover is already saved on the server in this scenario.
       final id = await _publishWithCover(c, repo);
       expect(id, isNotNull);
@@ -429,7 +431,8 @@ Future<String?> _publishWithCover(
     ..setCapacity(20)
     ..setPrice(250000)
     ..setPlaceText(name: 'Hồ')
-    ..chooseArea('hn-hoan-kiem', lat: 21, lng: 105);
+    ..chooseArea('hn-hoan-kiem', lat: 21, lng: 105)
+    ..setSpot(null);
   // The cover is part of the saved form (as after "Tiếp tục").
   c.read(p.notifier);
   final state = c.read(p);
