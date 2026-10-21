@@ -25,8 +25,8 @@ jobs:
       run:
         working-directory: app_flutter
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '21' }
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
@@ -60,7 +60,7 @@ jobs:
       run:
         working-directory: app_flutter
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: subosito/flutter-action@v2
@@ -101,7 +101,7 @@ jobs:
       run:
         working-directory: app_flutter
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
       - run: flutter pub get
@@ -168,7 +168,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-shard-${{ matrix.shard }}
           path: app_flutter/test-results/
@@ -178,10 +178,10 @@ jobs:
   firestore-rules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '21' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: '22' }
       - name: Firestore rules tests (emulator)
         working-directory: app_flutter/firebase/rules-test
@@ -193,16 +193,16 @@ jobs:
     needs: test
     if: always() && needs.test.result != 'skipped'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Download all shard results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: test-results-shard-*
           merge-multiple: true
           path: test-results
 
       - name: Publish test report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: '🧪 Flutter Test Report'
           path: test-results/**/*.xml
@@ -213,8 +213,8 @@ jobs:
   domain:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: '22' }
       - name: Domain package (pure TypeScript)
         working-directory: packages/domain
@@ -227,8 +227,8 @@ jobs:
   functions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: '22' }
       - name: Cloud Functions (lint, typecheck, unit)
         working-directory: app_flutter/firebase/functions
