@@ -31,6 +31,7 @@ import 'package:photobooking/features/delivery/delivery_review_screen.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/change_request_sheet.dart';
+import 'package:photobooking/features/studio/return_job_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/review/review_screen.dart';
@@ -223,6 +224,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ref.read(bookingProvider(b.id)).value?.depositRefunded ??
             b.deposit;
         _say(l10n.cancelDoneToast(formatMoney(refunded)));
+      case DetailAction.returnJob:
+        await showReturnJobSheet(
+          context,
+          booking: b,
+          studioName:
+              ref.read(partyProfileProvider(b.photographerId)).value?.displayName ??
+              '',
+        );
     }
   }
 
@@ -727,6 +736,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       );
     }
 
+    if (has(DetailAction.returnJob)) {
+      // Kept alive here so the sheet reads the studio's name on tap.
+      ref.watch(partyProfileProvider(b.photographerId));
+      final dark = Theme.of(context).brightness == Brightness.dark;
+      add(
+        AppButton.text(
+          l10n.workReturnJob,
+          key: const Key('detail-return-job'),
+          size: AppButtonSize.small,
+          style: ButtonStyle(
+            foregroundColor: WidgetStatePropertyAll(
+              dark ? AppColorsDark.destructive : AppColors.destructive,
+            ),
+          ),
+          onPressed: busy ? null : () => run(DetailAction.returnJob),
+        ),
+      );
+    }
     if (has(DetailAction.cancel)) {
       final dark = Theme.of(context).brightness == Brightness.dark;
       final now =

@@ -22,6 +22,8 @@ Future<bool> showDeclineChangeSheet(BuildContext context, Booking booking) {
   final reason = ValueNotifier<String>('');
   final valid = ValueNotifier<bool>(false);
   reason.addListener(() => valid.value = reason.value.isNotEmpty);
+  // Disposed once the sheet is closed (removeListener after dispose is allowed
+  // for the widgets still on screen during the exit animation).
   return showConfirmSheet(
     context,
     title: l.changeDeclineTitle,
@@ -39,5 +41,8 @@ Future<bool> showDeclineChangeSheet(BuildContext context, Booking booking) {
         throw StudioFailure(studioFailureText(context, e));
       }
     },
-  );
+  ).whenComplete(() {
+    reason.dispose();
+    valid.dispose();
+  });
 }

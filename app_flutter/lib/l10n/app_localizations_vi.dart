@@ -7685,6 +7685,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get workReturned => 'Đã trả việc · chờ studio giao lại';
 
   @override
+  String workAssigneeReturned(String name) {
+    return '$name đã trả việc';
+  }
+
+  @override
+  String get workAssigneeReturnedNoName => 'Thợ đã trả việc';
+
+  @override
   String get assignTitle => 'Giao thợ';
 
   @override

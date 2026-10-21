@@ -20,6 +20,9 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
   late DateTime _month;
   bool _tappedPending = false;
 
+  /// A post-frame clear of a chosen day is scheduled (no-member studio).
+  bool _clearScheduled = false;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +71,22 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
             ?.summary
             .hasNoAssignableMembers ??
         false;
+
+    // Every day is full: a day preset by the flow (or chosen before the
+    // profile answered) cannot be booked, so it is cleared once the profile
+    // says so. After the frame: a provider is not changed while building.
+    final chosen = state.day;
+    if (noMembers && chosen != null && !_clearScheduled) {
+      _clearScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _clearScheduled = false;
+        if (!mounted) return;
+        if (ref.read(bookingFlowControllerProvider(widget.args)).day ==
+            chosen) {
+          controller.clearDay(chosen, taken: false);
+        }
+      });
+    }
 
     // Live calendar updates: if the chosen day became non-free, unselect with SnackBar
     ref.listen<AsyncValue<Map<DateTime, AvailabilityDay>>>(
@@ -180,8 +199,9 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                         if (d != null) dayStates[d] = DayState.booked;
                       }
                       if (noMembers) {
+                        // From today on: a past day stays a past day.
                         for (
-                          var d = _month;
+                          var d = _month.isBefore(today) ? today : _month;
                           !d.isAfter(lastDayOfMonth(_month));
                           d = DateTime.utc(d.year, d.month, d.day + 1)
                         ) {

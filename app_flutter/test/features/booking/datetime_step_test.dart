@@ -424,5 +424,81 @@ void main() {
       expect(find.textContaining('khung 2 giờ'), findsNothing);
       h.dispose();
     });
+
+    testWidgets('a preset day is cleared once the profile says nobody can '
+        'shoot', (tester) async {
+      final profile = Completer<PhotographerProfile>();
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1&date=2026-10-15',
+        days: testDays,
+        now: now,
+        extraOverrides: [
+          photographerProfileProvider('p1')
+              .overrideWith((ref) => profile.future),
+        ],
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('khung 2 giờ'), findsOneWidget);
+
+      profile.complete(
+        PhotographerProfile(
+          summary: const PhotographerSummary(
+            id: 'p1',
+            displayName: 'Studio Mây',
+            verified: true,
+            businessVerified: true,
+            acceptingOrders: true,
+            providerType: ProviderType.studio,
+            memberCount: 3,
+            assignableMembers: 0,
+          ),
+          intro: bookingProfile.intro,
+        ),
+      );
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('khung 2 giờ'), findsNothing);
+    });
+
+    testWidgets('a preset day is cleared when the profile is already known', (
+      tester,
+    ) async {
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1&date=2026-10-15',
+        days: testDays,
+        now: now,
+        extraOverrides: [studio(0)],
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('khung 2 giờ'), findsNothing);
+    });
+
+    testWidgets('past days of a no-member studio stay past, not Hết chỗ', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        days: const {},
+        now: now,
+        extraOverrides: [studio(0)],
+      );
+      await tester.pumpAndSettle();
+
+      // now = 05/10: the 3rd is past, today and later are full.
+      expect(find.bySemanticsLabel('3 tháng 10, hết chỗ'), findsNothing);
+      expect(find.bySemanticsLabel('3 tháng 10, rảnh'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r'^5 tháng 10.*hết chỗ')),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('6 tháng 10, hết chỗ'), findsOneWidget);
+      expect(find.bySemanticsLabel('31 tháng 10, hết chỗ'), findsOneWidget);
+      h.dispose();
+    });
   });
 }

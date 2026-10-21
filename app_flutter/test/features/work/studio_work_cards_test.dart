@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/booking/booking_parties.dart';
 
 import '../../support/booking_world.dart';
 import '../../support/studio_world.dart';
@@ -112,6 +114,35 @@ void main() {
       expect(find.textContaining('Hạn giao thợ'), findsNothing);
       // "Giao thợ" also changes who shoots.
       expect(find.byKey(const Key('work-assign-sb1')), findsOneWidget);
+    });
+
+    testWidgets('a returned job shows {name} đã trả việc in red so the studio '
+        'reassigns', (tester) async {
+      final b = makeStudioBooking(assigneeId: 'minh');
+      await _studio(tester, [
+        b.copyWith(studio: b.studio!.copyWith(returnedAt: studioNow)),
+      ]);
+
+      final line = find.byKey(const Key('work-assignee-returned'));
+      expect(line, findsOneWidget);
+      expect(find.text('Minh Trí đã trả việc'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text('Minh Trí đã trả việc')).style?.color,
+        AppColorsDark.destructive,
+      );
+      expect(find.text('Thợ: Minh Trí'), findsNothing);
+      expect(find.byKey(const Key('work-assign-sb1')), findsOneWidget);
+    });
+
+    testWidgets('a returned job without a known name reads Thợ đã trả việc', (
+      tester,
+    ) async {
+      final b = makeStudioBooking(assigneeId: 'ghost');
+      await _studio(tester, [
+        b.copyWith(studio: b.studio!.copyWith(returnedAt: studioNow)),
+      ]);
+
+      expect(find.text('Thợ đã trả việc'), findsOneWidget);
     });
 
     testWidgets('a pending change shows the request row; Từ chối đổi needs a '
@@ -332,5 +363,84 @@ void main() {
     await _settle(tester);
 
     expect(find.byKey(const Key('detail-assign')), findsOneWidget);
+  });
+
+  group('Trả việc on S05.02 (assignee)', () {
+    Future<RecordingBookingRepository> detail(
+      WidgetTester tester,
+      Booking b, {
+      String uid = 'minh',
+      DateTime? now,
+    }) async {
+      final repo = RecordingBookingRepository(clock: () => now ?? studioNow)
+        ..seedBooking(b);
+      await pumpBookingDetail(
+        tester,
+        uid: uid,
+        bookings: repo,
+        clock: TestClock(now ?? studioNow),
+        extraOverrides: [
+          partyProfileProvider.overrideWith((ref, id) async* {
+            yield UserProfile(
+              uid: id,
+              displayName: id == 'cuc' ? 'Studio Mây' : 'Thanh Hà',
+              avatarUrl: null,
+              role: UserRole.photographer,
+            );
+          }),
+        ],
+      );
+      await _settle(tester);
+      return repo;
+    }
+
+    final returnJob = find.byKey(const Key('detail-return-job'));
+
+    testWidgets('before the start: the red text opens the sheet and hands the '
+        'job back', (tester) async {
+      final repo = await detail(
+        tester,
+        makeStudioBooking(id: 'b1', assigneeId: 'minh'),
+      );
+
+      expect(returnJob, findsOneWidget);
+      await tester.ensureVisible(returnJob);
+      await tester.tap(returnJob);
+      await _settle(tester);
+      expect(_inSheet(find.text('Trả lại buổi chụp này?')), findsOneWidget);
+      expect(
+        _inSheet(find.textContaining('Studio Mây được báo')),
+        findsOneWidget,
+      );
+      await tester.tap(_redButton('Trả việc'));
+      await _settle(tester);
+
+      final (call, payload) = repo.studioCalls.single;
+      expect(call, 'returnAssignment');
+      expect(payload, {'bookingId': 'b1'});
+      expect(returnJob, findsNothing);
+    });
+
+    testWidgets('hidden once returned', (tester) async {
+      final b = makeStudioBooking(id: 'b1', assigneeId: 'minh');
+      await detail(
+        tester,
+        b.copyWith(studio: b.studio!.copyWith(returnedAt: studioNow)),
+      );
+      expect(returnJob, findsNothing);
+    });
+
+    testWidgets('hidden from the start on', (tester) async {
+      final b = makeStudioBooking(id: 'b1', assigneeId: 'minh');
+      await detail(tester, b, now: startsAtOf(b));
+      expect(returnJob, findsNothing);
+    });
+
+    testWidgets('never for the studio itself', (tester) async {
+      final b = makeStudioBooking(id: 'b1', assigneeId: 'minh');
+      await detail(tester, b, uid: 'cuc');
+      expect(returnJob, findsNothing);
+      expect(find.byKey(const Key('detail-assign')), findsOneWidget);
+    });
   });
 }

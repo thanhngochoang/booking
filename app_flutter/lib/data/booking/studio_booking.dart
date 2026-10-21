@@ -146,10 +146,7 @@ StudioBookingInfo? studioBookingInfoFrom(Map<String, dynamic> data) {
   if (data['isStudio'] != true) return null;
   final deadline =
       _date(data['assignDeadline']) ??
-      _startInstant(
-        data['day'] as String? ?? '',
-        data['start'] as String? ?? '',
-      );
+      _startInstant(_str(data['day']) ?? '', _str(data['start']) ?? '');
   if (deadline == null) return null;
 
   final assignments = <StudioAssignment>[];
@@ -165,7 +162,7 @@ StudioBookingInfo? studioBookingInfoFrom(Map<String, dynamic> data) {
           assigneeId: id,
           assigneeKind: _str(a['assigneeKind']) ?? 'member',
           at: at,
-          by: a['by'] as String? ?? '',
+          by: _str(a['by']) ?? '',
           reason: _str(a['reason']),
           late: a['late'] == true,
         ),

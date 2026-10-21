@@ -44,6 +44,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isLoadingOlder = false;
   final List<ChatMessage> _olderMessages = [];
 
+  /// Who wrote a message that is not mine. A studio booking chat has three
+  /// members (customer, studio, assignee): each message is named after its
+  /// own sender, so the studio and its assignee are told apart; a two-member
+  /// chat names the counterpart as before.
+  String _senderName(
+    String? senderId,
+    ChatThread thread,
+    String counterpartId,
+    String counterpartName,
+    AppLocalizations l10n,
+  ) {
+    if (senderId == null || senderId == counterpartId) return counterpartName;
+    return ref.watch(partyProfileProvider(senderId)).value?.displayName ??
+        (thread.isProviderSide(senderId)
+            ? l10n.profileRolePhotographer
+            : l10n.profileRoleCustomer);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -313,7 +331,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                           .value
                                           ?.displayName ??
                                       l10n.chatMe)
-                                : counterpartName;
+                                : _senderName(
+                                    msg.senderId,
+                                    thread,
+                                    counterpartId,
+                                    counterpartName,
+                                    l10n,
+                                  );
 
                             final systemActions = _buildSystemActions(
                               context,

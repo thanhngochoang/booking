@@ -13294,6 +13294,18 @@ abstract class AppLocalizations {
   /// **'Đã trả việc · chờ studio giao lại'**
   String get workReturned;
 
+  /// No description provided for @workAssigneeReturned.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã trả việc'**
+  String workAssigneeReturned(String name);
+
+  /// No description provided for @workAssigneeReturnedNoName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ đã trả việc'**
+  String get workAssigneeReturnedNoName;
+
   /// No description provided for @assignTitle.
   ///
   /// In vi, this message translates to:

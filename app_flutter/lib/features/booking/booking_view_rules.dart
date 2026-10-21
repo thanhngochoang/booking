@@ -38,6 +38,10 @@ enum DetailAction {
   /// "Huỷ và hoàn 100%": the customer's cancel after a studio fault
   /// (Decision 12); replaces [cancel] while the right lasts.
   cancelStudioFault,
+
+  /// "Trả việc": the assignee hands the job back before the start
+  /// (Decision 14), once.
+  returnJob,
 }
 
 bool _isActive(BookingStatus s) =>
@@ -117,12 +121,16 @@ List<DetailAction> detailActions(
   }
 
   // The member a studio assigned (Decisions 14, 15, 17): messages, the
-  // customer's contact and "Đã chụp"; the studio answers, moves, cancels and
-  // delivers (no S06.07 entry), and "Trả việc" is on S06.01.
+  // customer's contact, "Đã chụp" and, before the start, "Trả việc" (as on
+  // S06.01); the studio answers, moves, cancels and delivers (no S06.07
+  // entry).
   if (assignee) {
     if (_isActive(s) || s == BookingStatus.shot) out.add(DetailAction.contact);
     if (_isActive(s) && BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
+    }
+    if (_isActive(s) && beforeStart && !(b.studio?.isReturned ?? false)) {
+      out.add(DetailAction.returnJob);
     }
     return out;
   }

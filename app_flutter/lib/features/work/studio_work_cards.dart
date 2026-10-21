@@ -11,7 +11,8 @@ import 'package:photobooking/features/studio/studio_common.dart';
 
 /// A studio's accepted booking before its start (mock `#S06.01-studio`): the
 /// deadline to name who shoots ("Quá hạn giao thợ" in red once it passed),
-/// or "Thợ: {name}"; a customer's pending change request with the small
+/// "Thợ: {name}", or "{name} đã trả việc" in red once the assignee handed it
+/// back; a customer's pending change request with the small
 /// outline "Từ chối đổi"; and the outline "Giao thợ" (S26.04), which is also
 /// how the studio agrees to a change. No gradient button.
 class StudioJobCard extends ConsumerWidget {
@@ -66,6 +67,16 @@ class StudioJobCard extends ConsumerWidget {
                   l.workAssignDeadline(studioDeadlineText(s.assignDeadline)),
                   key: const Key('work-assign-deadline'),
                 )
+        // The assignee handed it back (Decision 14): red, so the studio
+        // names someone else with "Giao thợ".
+        else if (s.isReturned)
+          _Line(
+            assignee == null || assignee.isEmpty
+                ? l.workAssigneeReturnedNoName
+                : l.workAssigneeReturned(assignee),
+            key: const Key('work-assignee-returned'),
+            color: red,
+          )
         else if (assignee != null && assignee.isNotEmpty)
           _Line(l.workAssignedTo(assignee), key: const Key('work-assignee')),
       ],

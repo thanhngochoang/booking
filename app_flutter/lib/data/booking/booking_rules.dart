@@ -140,11 +140,15 @@ class BookingRules {
   }
 
   /// Checks if photographer can complete the booking (after shoot ends).
+  /// Never a studio booking without an assignee: nobody shot it, the server
+  /// refuses `mark_shot` and cancels it at the start (#136).
   static bool canPhotographerComplete(Booking booking, DateTime now) {
     if (booking.status != BookingStatus.upcoming &&
         booking.status != BookingStatus.accepted) {
       return false;
     }
+    final studio = booking.studio;
+    if (studio != null && studio.assigneeId == null) return false;
     final endsAt = parseBookingDateTime(booking.day, booking.end);
     return now.isAfter(endsAt) || now.isAtSameMomentAs(endsAt);
   }

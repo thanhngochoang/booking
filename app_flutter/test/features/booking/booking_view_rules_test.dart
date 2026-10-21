@@ -828,7 +828,7 @@ void main() {
           _on,
           assignee: true,
         ),
-        [DetailAction.message, DetailAction.contact],
+        [DetailAction.message, DetailAction.contact, DetailAction.returnJob],
       );
       final shot = studio(BookingStatus.shot, assignee: 'minh');
       expect(
@@ -844,6 +844,63 @@ void main() {
       expect(
         detailActions(shot, BookingRole.photographer, weekBefore, _on),
         contains(DetailAction.deliver),
+      );
+    });
+
+    test('"Trả việc" for the assignee while active, before the start and '
+        'not returned; never for the studio or the customer', () {
+      final b = studio(BookingStatus.upcoming, assignee: 'minh');
+      List<DetailAction> forAssignee(Booking x, DateTime at) =>
+          detailActions(x, BookingRole.photographer, at, _on, assignee: true);
+      expect(forAssignee(b, weekBefore), contains(DetailAction.returnJob));
+      expect(
+        forAssignee(b, startsAt.subtract(const Duration(minutes: 1))),
+        contains(DetailAction.returnJob),
+      );
+      expect(forAssignee(b, startsAt), isNot(contains(DetailAction.returnJob)));
+      final returned = b.copyWith(
+        studio: b.studio!.copyWith(returnedAt: weekBefore),
+      );
+      expect(
+        forAssignee(returned, weekBefore),
+        isNot(contains(DetailAction.returnJob)),
+      );
+      expect(
+        forAssignee(studio(BookingStatus.shot, assignee: 'minh'), weekBefore),
+        isNot(contains(DetailAction.returnJob)),
+      );
+      expect(
+        detailActions(b, BookingRole.photographer, weekBefore, _on),
+        isNot(contains(DetailAction.returnJob)),
+      );
+      expect(
+        detailActions(b, BookingRole.customer, weekBefore, _on),
+        isNot(contains(DetailAction.returnJob)),
+      );
+    });
+
+    test('no "Đã chụp" for the studio while nobody is assigned (#136: no '
+        'payout without an assignee)', () {
+      final unassigned = studio(BookingStatus.accepted);
+      expect(
+        detailActions(unassigned, BookingRole.photographer, endsAt, _on),
+        isNot(contains(DetailAction.markShot)),
+      );
+      expect(BookingRules.canPhotographerComplete(unassigned, endsAt), isFalse);
+      final assigned = studio(BookingStatus.upcoming, assignee: 'minh');
+      expect(
+        detailActions(assigned, BookingRole.photographer, endsAt, _on),
+        contains(DetailAction.markShot),
+      );
+      expect(
+        detailActions(
+          assigned,
+          BookingRole.photographer,
+          endsAt,
+          _on,
+          assignee: true,
+        ),
+        contains(DetailAction.markShot),
       );
     });
 

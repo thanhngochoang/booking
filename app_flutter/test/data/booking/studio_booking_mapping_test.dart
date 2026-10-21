@@ -146,6 +146,25 @@ void main() {
       expect(b.studio!.assignDeadline, _utc(24, 8));
     });
 
+    test('malformed fields are skipped, never drop the booking', () {
+      final b = bookingFromFirestore('b7', {
+        ..._base(),
+        'isStudio': true,
+        'assignDeadline': _ts(_utc(23, 8)),
+        'assignments': [
+          {'assigneeId': 'an', 'at': _ts(_utc(21, 2)), 'by': 42},
+        ],
+      });
+      expect(b, isNotNull);
+      expect(b!.studio!.assignments.single.by, '');
+      // Without a deadline, non-string day/start give no studio info rather
+      // than a type error.
+      expect(
+        studioBookingInfoFrom({'isStudio': true, 'day': 20261024, 'start': 9}),
+        isNull,
+      );
+    });
+
     test('an individual booking has studio == null', () {
       expect(bookingFromFirestore('b5', _base())!.studio, isNull);
       expect(

@@ -22,6 +22,8 @@ Future<bool> showReturnJobSheet(
     listen: false,
   ).read(bookingRepositoryProvider);
   final reason = ValueNotifier<String>('');
+  // Disposed once the sheet is closed (removeListener after dispose is allowed
+  // for the field still on screen during the exit animation).
   return showConfirmSheet(
     context,
     title: l.returnJobTitle,
@@ -41,5 +43,5 @@ Future<bool> showReturnJobSheet(
         throw StudioFailure(studioFailureText(context, e));
       }
     },
-  );
+  ).whenComplete(reason.dispose);
 }
