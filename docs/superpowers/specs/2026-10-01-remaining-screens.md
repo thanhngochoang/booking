@@ -184,10 +184,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
 | S22.01 | Lịch sử thanh toán: đã trả, đang giữ (kể cả Chụp ngay chưa tìm được người), hoàn tiền, phương thức, trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ có mock (2026-10-07), có plan (#141) | — |
-| S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ⬜ có mock (2026-10-07), có plan (#141) | — |
-| S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ⬜ có mock (2026-10-07), có plan (#141) | — |
+| S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ✅ đã làm (#205) | — |
+| S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ✅ đã làm (#205) · link tải trong app | — |
 | S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | ⬜ có mock (2026-10-07), có plan (#141) | — |
-| S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ⬜ có mock (2026-10-07), có plan (#141) | — |
+| S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ✅ đã làm (#205) | — |
 | **S23** | **Vận hành nội bộ (staff)** | | | | | |
 | S23.01 | Khiếu nại: hàng đợi và chi tiết (bằng chứng, hai mốc tiền, hội thoại ba bên, thả / hoàn / chia; hoàn từ 10 triệu cần người thứ hai) | `/staff/disputes` (web) | admin · support (quyết định) · finance (xem số tiền) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
 | S23.02 | Chi trả: duyệt lần chi đầu, tạm giữ, thất bại, đang xử lý quá lâu | `/staff/payouts` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
