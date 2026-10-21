@@ -40,6 +40,11 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   addon_limit: 'resource-exhausted',
   // Free text carries a phone number, e-mail or link; `details.field` names the input.
   contact_leak: 'invalid-argument',
+  // S26 studio membership (#136): another studio, 7-day cooldown, open assigned bookings; caps and full studio.
+  membership_conflict: 'failed-precondition',
+  cooldown: 'failed-precondition',
+  member_busy: 'failed-precondition',
+  studio_full: 'resource-exhausted',
 };
 
 /**

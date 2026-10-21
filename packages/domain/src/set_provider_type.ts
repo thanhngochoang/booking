@@ -8,7 +8,10 @@ function parseChoice(raw: unknown): 'individual' | 'studio' {
   throw new DomainError('invalid_argument');
 }
 
-/** A provider picks individual or studio; only with no open work or held money. */
+/**
+ * A provider picks individual or studio; only with no open work or held money, and (#136 Decision 7)
+ * no members and no open studio relation: a studio keeps its members, a member stays a photographer.
+ */
 export async function setProviderType(
   deps: ProviderDeps,
   callerId: string,
@@ -24,11 +27,13 @@ export async function setProviderType(
     }
     // Always checked, whatever onboardingComplete says: a client could
     // write it back to false to skip the check. A new profile has no work.
-    const [bookings, held] = await Promise.all([
+    const [bookings, held, relations] = await Promise.all([
       tx.countActiveBookings(callerId),
       tx.countHeldPayments(callerId),
+      tx.countOpenRelations(callerId),
     ]);
     if (bookings > 0 || held > 0) throw new DomainError('not_eligible');
+    if (p.memberCount > 0 || relations > 0) throw new DomainError('membership_conflict');
     tx.setProviderType(callerId, wanted, deps.clock.now());
     return { changed: true, type: wanted as ProviderType };
   });

@@ -1,0 +1,417 @@
+import { DomainError } from './errors.js';
+import { isId } from './ids.js';
+import {
+  canJoinAsMember,
+  cooldownUntil,
+  inCooldown,
+  inviteExpiresAt,
+  isStudio,
+  MAX_PENDING_INVITES,
+  maxMembers,
+  quotaLeft,
+  relationId,
+  spendQuota,
+  type DailyQuota,
+  type StudioProfile,
+  type StudioRelation,
+} from './studio_membership.js';
+import type { StudioDeps, StudioTx } from './studio_ports.js';
+
+// S26 membership use cases (spec §3.2–3.3, plan #136 Decisions 1–7). Each runs in one transaction with
+// every read before the first write; the daily quota is read and spent in the same transaction.
+
+/** Every use case returns the relation before and after, for `membershipNotices`. */
+export interface RelationChange {
+  readonly before: StudioRelation | null;
+  readonly after: StudioRelation;
+}
+
+export type MembershipNotice = 'invite' | 'join_request' | 'invite_accepted' | 'join_approved' | 'removed';
+
+/** Relations sent to the sweep per run. */
+export const MEMBERSHIP_SWEEP_LIMIT = 200;
+
+// Relation ids are `{studioId}_{memberId}_{ms}`: longer than `isId` allows with 28-character uids.
+const RELATION_ID = /^[A-Za-z0-9_-]{1,200}$/;
+
+function fields(raw: unknown): Record<string, unknown> {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new DomainError('invalid_argument');
+  return raw as Record<string, unknown>;
+}
+
+function uidField(raw: unknown, key: string): string {
+  const v = fields(raw)[key];
+  if (!isId(v)) throw new DomainError('invalid_argument', key);
+  return v;
+}
+
+function relationIdField(raw: unknown): string {
+  const v = fields(raw).relationId;
+  if (typeof v !== 'string' || !RELATION_ID.test(v)) throw new DomainError('invalid_argument', 'relationId');
+  return v;
+}
+
+function acceptField(raw: unknown): boolean {
+  const v = fields(raw).accept;
+  if (typeof v !== 'boolean') throw new DomainError('invalid_argument', 'accept');
+  return v;
+}
+
+function requireStudio(p: StudioProfile | null): StudioProfile {
+  if (p === null) throw new DomainError('not_found');
+  if (!isStudio(p)) throw new DomainError('invalid_argument');
+  return p;
+}
+
+function requireJoinable(p: StudioProfile | null): StudioProfile {
+  if (p === null) throw new DomainError('not_found');
+  if (!canJoinAsMember(p)) throw new DomainError('invalid_argument');
+  return p;
+}
+
+/** One studio and one member per photographer; 7 days off after leaving. */
+function assertFreeToJoin(member: StudioProfile, now: Date): void {
+  if (member.studioId !== null) throw new DomainError('membership_conflict');
+  if (inCooldown(member, now)) throw new DomainError('cooldown');
+}
+
+function assertQuota(q: DailyQuota | null, side: 'studio' | 'member', now: Date): void {
+  if (quotaLeft(q, side, now) <= 0) throw new DomainError('rate_limited');
+}
+
+const isExpired = (r: StudioRelation, now: Date): boolean => Date.parse(r.expiresAt) <= now.getTime();
+
+function expired(r: StudioRelation, nowIso: string): StudioRelation {
+  return { ...r, status: 'expired', endedAt: nowIso, endedBy: 'system', version: r.version + 1 };
+}
+
+function openRelation(
+  studio: StudioProfile,
+  member: StudioProfile,
+  initiatedBy: 'studio' | 'member',
+  now: Date,
+): StudioRelation {
+  return {
+    id: relationId(studio.uid, member.uid, now),
+    studioId: studio.uid,
+    memberId: member.uid,
+    status: initiatedBy === 'studio' ? 'invited' : 'requested',
+    initiatedBy,
+    createdAt: now.toISOString(),
+    expiresAt: inviteExpiresAt(now),
+    respondedAt: null,
+    joinedAt: null,
+    endedAt: null,
+    endedBy: null,
+    expiringNotifiedAt: null,
+    studioName: studio.name,
+    studioAvatarUrl: studio.avatarUrl,
+    memberName: member.name,
+    memberAvatarUrl: member.avatarUrl,
+    version: 1,
+  };
+}
+
+/** Writes an active relation, the member's lock and the studio's count. */
+function join(tx: StudioTx, rel: StudioRelation, nowIso: string): RelationChange {
+  const after: StudioRelation = {
+    ...rel,
+    status: 'active',
+    respondedAt: nowIso,
+    joinedAt: nowIso,
+    version: rel.version + 1,
+  };
+  tx.putRelation(after);
+  tx.setMemberStudio(rel.memberId, { studioId: rel.studioId, studioJoinedAt: nowIso });
+  tx.addMemberCount(rel.studioId, 1);
+  return { before: rel, after };
+}
+
+/** Ends an active relation (left or removed) and starts the member's 7-day cooldown. */
+function end(tx: StudioTx, rel: StudioRelation, by: 'member' | 'studio', now: Date): RelationChange {
+  const nowIso = now.toISOString();
+  const after: StudioRelation = {
+    ...rel,
+    status: by === 'member' ? 'left' : 'removed',
+    endedAt: nowIso,
+    endedBy: by,
+    version: rel.version + 1,
+  };
+  tx.putRelation(after);
+  tx.setMemberStudio(rel.memberId, { studioId: null, studioJoinedAt: null, studioCooldownUntil: cooldownUntil(now) });
+  tx.addMemberCount(rel.studioId, -1);
+  return { before: rel, after };
+}
+
+/** A new relation for a pair; refuses a second open one and an id already taken in the same millisecond. */
+async function readNewPair(
+  tx: StudioTx,
+  studioId: string,
+  memberId: string,
+  now: Date,
+): Promise<{ studio: StudioProfile; member: StudioProfile }> {
+  const studio = requireStudio(await tx.getProfile(studioId));
+  const member = requireJoinable(await tx.getProfile(memberId));
+  const open = await tx.openRelationOf(studioId, memberId);
+  const sameId = await tx.getRelation(relationId(studioId, memberId, now));
+  if (open !== null || sameId !== null) throw new DomainError('conflict');
+  return { studio, member };
+}
+
+/** Studio invites a photographer (`{memberId}`); counts a studio action. */
+export async function inviteMember(deps: StudioDeps, studioId: string, raw: unknown): Promise<RelationChange> {
+  const memberId = uidField(raw, 'memberId');
+  if (memberId === studioId) throw new DomainError('invalid_argument', 'memberId');
+  const now = deps.clock.now();
+  return deps.studios.runTransaction(async (tx) => {
+    const { studio, member } = await readNewPair(tx, studioId, memberId, now);
+    const openInvites = await tx.countOpenInvites(studioId);
+    const quota = await tx.getQuota(studioId);
+    // ---- all reads above ----
+    assertFreeToJoin(member, now);
+    if (openInvites >= MAX_PENDING_INVITES || studio.memberCount + openInvites >= maxMembers(studio)) {
+      throw new DomainError('studio_full');
+    }
+    assertQuota(quota, 'studio', now);
+    const after = openRelation(studio, member, 'studio', now);
+    tx.putRelation(after);
+    tx.putQuota(studioId, spendQuota(quota, 'studio', now));
+    return { before: null, after };
+  });
+}
+
+/** Studio withdraws its own open invite (`{relationId}`); counts a studio action. */
+export async function cancelInvite(deps: StudioDeps, studioId: string, raw: unknown): Promise<RelationChange> {
+  const id = relationIdField(raw);
+  const now = deps.clock.now();
+  return deps.studios.runTransaction(async (tx) => {
+    const rel = await tx.getRelation(id);
+    const quota = await tx.getQuota(studioId);
+    // ---- all reads above ----
+    if (rel === null) throw new DomainError('not_found');
+    if (rel.studioId !== studioId) throw new DomainError('permission_denied');
+    if (rel.status !== 'invited') throw new DomainError('conflict');
+    assertQuota(quota, 'studio', now);
+    const nowIso = now.toISOString();
+    const after: StudioRelation = { ...rel, status: 'cancelled', endedAt: nowIso, endedBy: 'studio', version: rel.version + 1 };
+    tx.putRelation(after);
+    tx.putQuota(studioId, spendQuota(quota, 'studio', now));
+    return { before: rel, after };
+  });
+}
+
+/** Photographer asks to join a studio (`{studioId}`); counts a member action; no seat is held until approval. */
+export async function requestToJoin(deps: StudioDeps, memberId: string, raw: unknown): Promise<RelationChange> {
+  const studioId = uidField(raw, 'studioId');
+  if (studioId === memberId) throw new DomainError('invalid_argument', 'studioId');
+  const now = deps.clock.now();
+  return deps.studios.runTransaction(async (tx) => {
+    const { studio, member } = await readNewPair(tx, studioId, memberId, now);
+    const quota = await tx.getQuota(memberId);
+    // ---- all reads above ----
+    assertFreeToJoin(member, now);
+    assertQuota(quota, 'member', now);
+    const after = openRelation(studio, member, 'member', now);
+    tx.putRelation(after);
+    tx.putQuota(memberId, spendQuota(quota, 'member', now));
+    return { before: null, after };
+  });
+}
+
+/** Photographer withdraws their own open request (`{relationId}`); counts a member action. */
+export async function cancelJoinRequest(deps: StudioDeps, memberId: string, raw: unknown): Promise<RelationChange> {
+  const id = relationIdField(raw);
+  const now = deps.clock.now();
+  return deps.studios.runTransaction(async (tx) => {
+    const rel = await tx.getRelation(id);
+    const quota = await tx.getQuota(memberId);
+    // ---- all reads above ----
+    if (rel === null) throw new DomainError('not_found');
+    if (rel.memberId !== memberId) throw new DomainError('permission_denied');
+    if (rel.status !== 'requested') throw new DomainError('conflict');
+    assertQuota(quota, 'member', now);
+    const nowIso = now.toISOString();
+    const after: StudioRelation = { ...rel, status: 'cancelled', endedAt: nowIso, endedBy: 'member', version: rel.version + 1 };
+    tx.putRelation(after);
+    tx.putQuota(memberId, spendQuota(quota, 'member', now));
+    return { before: rel, after };
+  });
+}
+
+type Answer = { outcome: 'ok'; change: RelationChange } | { outcome: 'expired' };
+
+/** Records `expired` (the transaction commits) and then refuses `deadline_passed`. */
+function answered(a: Answer): RelationChange {
+  if (a.outcome === 'expired') throw new DomainError('deadline_passed');
+  return a.change;
+}
+
+/** The invited photographer accepts or declines (`{relationId, accept}`); free of the daily quota. */
+export async function respondInvite(deps: StudioDeps, memberId: string, raw: unknown): Promise<RelationChange> {
+  const id = relationIdField(raw);
+  const accept = acceptField(raw);
+  const now = deps.clock.now();
+  const nowIso = now.toISOString();
+  const a = await deps.studios.runTransaction(async (tx): Promise<Answer> => {
+    const rel = await tx.getRelation(id);
+    if (rel === null || rel.memberId !== memberId) throw new DomainError('not_found');
+    if (rel.status !== 'invited') throw new DomainError('conflict');
+    const member = await tx.getProfile(memberId);
+    const studio = await tx.getProfile(rel.studioId);
+    // ---- all reads above ----
+    if (member === null || studio === null) throw new DomainError('not_found');
+    if (isExpired(rel, now)) {
+      tx.putRelation(expired(rel, nowIso));
+      return { outcome: 'expired' };
+    }
+    if (!accept) {
+      const after: StudioRelation = {
+        ...rel,
+        status: 'declined',
+        respondedAt: nowIso,
+        endedAt: nowIso,
+        endedBy: 'member',
+        version: rel.version + 1,
+      };
+      tx.putRelation(after);
+      return { outcome: 'ok', change: { before: rel, after } };
+    }
+    assertFreeToJoin(member, now);
+    // The invite already holds its seat, so only the members count.
+    if (studio.memberCount >= maxMembers(studio)) throw new DomainError('studio_full');
+    return { outcome: 'ok', change: join(tx, rel, nowIso) };
+  });
+  return answered(a);
+}
+
+/** The studio approves (a studio action, cap checked) or declines (free) a request (`{relationId, accept}`). */
+export async function respondJoinRequest(deps: StudioDeps, studioId: string, raw: unknown): Promise<RelationChange> {
+  const id = relationIdField(raw);
+  const accept = acceptField(raw);
+  const now = deps.clock.now();
+  const nowIso = now.toISOString();
+  const a = await deps.studios.runTransaction(async (tx): Promise<Answer> => {
+    const rel = await tx.getRelation(id);
+    if (rel === null || rel.studioId !== studioId) throw new DomainError('not_found');
+    if (rel.status !== 'requested') throw new DomainError('conflict');
+    const member = await tx.getProfile(rel.memberId);
+    const studio = await tx.getProfile(studioId);
+    const openInvites = await tx.countOpenInvites(studioId);
+    const quota = await tx.getQuota(studioId);
+    // ---- all reads above ----
+    if (member === null || studio === null) throw new DomainError('not_found');
+    if (isExpired(rel, now)) {
+      tx.putRelation(expired(rel, nowIso));
+      return { outcome: 'expired' };
+    }
+    if (!accept) {
+      const after: StudioRelation = {
+        ...rel,
+        status: 'declined',
+        respondedAt: nowIso,
+        endedAt: nowIso,
+        endedBy: 'studio',
+        version: rel.version + 1,
+      };
+      tx.putRelation(after);
+      return { outcome: 'ok', change: { before: rel, after } };
+    }
+    assertFreeToJoin(member, now);
+    if (studio.memberCount + openInvites >= maxMembers(studio)) throw new DomainError('studio_full');
+    assertQuota(quota, 'studio', now);
+    const change = join(tx, rel, nowIso);
+    tx.putQuota(studioId, spendQuota(quota, 'studio', now));
+    return { outcome: 'ok', change };
+  });
+  return answered(a);
+}
+
+/** Reads the member's active relation and open studio bookings; refuses `member_busy`. */
+async function readActive(
+  tx: StudioTx,
+  member: StudioProfile | null,
+  studioId: string | null,
+): Promise<StudioRelation> {
+  if (member === null || studioId === null || member.studioId !== studioId) throw new DomainError('not_found');
+  const rel = await tx.openRelationOf(studioId, member.uid);
+  if (rel === null || rel.status !== 'active') throw new DomainError('not_found');
+  if ((await tx.countOpenAssignments(studioId, member.uid)) > 0) throw new DomainError('member_busy');
+  return rel;
+}
+
+/** A member leaves their studio; counts a member action; 7 days before joining any studio. */
+export async function leaveStudio(deps: StudioDeps, memberId: string): Promise<RelationChange> {
+  const now = deps.clock.now();
+  return deps.studios.runTransaction(async (tx) => {
+    const member = await tx.getProfile(memberId);
+    const rel = await readActive(tx, member, member?.studioId ?? null);
+    const quota = await tx.getQuota(memberId);
+    // ---- all reads above ----
+    assertQuota(quota, 'member', now);
+    const change = end(tx, rel, 'member', now);
+    tx.putQuota(memberId, spendQuota(quota, 'member', now));
+    return change;
+  });
+}
+
+/** The studio removes a member (`{memberId}`); counts a studio action; the member waits 7 days. */
+export async function removeMember(deps: StudioDeps, studioId: string, raw: unknown): Promise<RelationChange> {
+  const memberId = uidField(raw, 'memberId');
+  const now = deps.clock.now();
+  return deps.studios.runTransaction(async (tx) => {
+    const member = await tx.getProfile(memberId);
+    const rel = await readActive(tx, member, studioId);
+    const quota = await tx.getQuota(studioId);
+    // ---- all reads above ----
+    assertQuota(quota, 'studio', now);
+    const change = end(tx, rel, 'studio', now);
+    tx.putQuota(studioId, spendQuota(quota, 'studio', now));
+    return change;
+  });
+}
+
+/**
+ * bookingClock step (Decision 20c), idempotent: invites and requests past `expiresAt` become `expired`;
+ * invites within 24 h of it are marked `expiringNotifiedAt` once and listed for `notifyStudioInviteExpiring`.
+ */
+export async function runMembershipSweeps(
+  deps: StudioDeps,
+): Promise<{ expired: RelationChange[]; expiring: StudioRelation[] }> {
+  const now = deps.clock.now();
+  const nowIso = now.toISOString();
+  const due = await deps.studios.dueRelations(now, MEMBERSHIP_SWEEP_LIMIT);
+  const out: { expired: RelationChange[]; expiring: StudioRelation[] } = { expired: [], expiring: [] };
+  for (const d of due) {
+    const change = await deps.studios.runTransaction(async (tx): Promise<RelationChange | null> => {
+      const rel = await tx.getRelation(d.id);
+      if (rel === null || (rel.status !== 'invited' && rel.status !== 'requested')) return null;
+      if (isExpired(rel, now)) {
+        const after = expired(rel, nowIso);
+        tx.putRelation(after);
+        return { before: rel, after };
+      }
+      if (rel.status === 'invited' && rel.expiringNotifiedAt === null) {
+        const after: StudioRelation = { ...rel, expiringNotifiedAt: nowIso, version: rel.version + 1 };
+        tx.putRelation(after);
+        return { before: rel, after };
+      }
+      return null;
+    });
+    if (change === null) continue;
+    if (change.after.status === 'expired') out.expired.push(change);
+    else out.expiring.push(change.after);
+  }
+  return out;
+}
+
+/** Which #138 hook the callable adapter calls after commit (the expiring notice comes from the sweep). */
+export function membershipNotices(c: RelationChange): MembershipNotice[] {
+  const from = c.before?.status ?? null;
+  const to = c.after.status;
+  if (from === null && to === 'invited') return ['invite'];
+  if (from === null && to === 'requested') return ['join_request'];
+  if (from === 'invited' && to === 'active') return ['invite_accepted'];
+  if (from === 'requested' && to === 'active') return ['join_approved'];
+  if (from === 'active' && to === 'removed') return ['removed'];
+  return [];
+}

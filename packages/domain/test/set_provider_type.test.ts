@@ -16,6 +16,7 @@ function profile(over: Partial<ProviderProfile> = {}): ProviderProfile {
     artistSince: null,
     studioDistrict: null,
     studioCity: null,
+    memberCount: 0,
     ...over,
   };
 }
@@ -127,6 +128,32 @@ describe('setProviderType', () => {
     assert.deepEqual(r, { providerType: 'individual' });
     assert.deepEqual(recomputed, ['p1']);
     assert.deepEqual(store.log, ['setProviderType', 'recompute']);
+  });
+
+  it('a studio with members cannot become individual (membership_conflict)', async () => {
+    store.seedProfile(profile({ providerType: 'studio', memberCount: 2 }));
+    await refused(setProviderType(deps, 'p1', { type: 'individual' }), 'membership_conflict');
+    assert.equal(store.profiles.get('p1')?.providerType, 'studio');
+    assert.equal(store.writes, 0);
+    assert.deepEqual(recomputed, []);
+  });
+
+  it('a member cannot become a studio', async () => {
+    store.seedProfile(profile());
+    store.openRelations.set('p1', 1); // the active membership
+    await refused(setProviderType(deps, 'p1', { type: 'studio' }), 'membership_conflict');
+    assert.equal(store.profiles.get('p1')?.providerType, 'individual');
+  });
+
+  it('an open invite also blocks', async () => {
+    // A studio with no member but one invite waiting, and a photographer holding an invite.
+    store.seedProfile(profile({ providerType: 'studio' }));
+    store.seedProfile(profile({ uid: 'p2' }));
+    store.openRelations.set('p1', 1);
+    store.openRelations.set('p2', 1);
+    await refused(setProviderType(deps, 'p1', { type: 'individual' }), 'membership_conflict');
+    await refused(setProviderType(deps, 'p2', { type: 'studio' }), 'membership_conflict');
+    assert.equal(store.writes, 0);
   });
 
   it('unknown caller is not_found', async () => {

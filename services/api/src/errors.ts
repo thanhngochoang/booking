@@ -47,6 +47,11 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   contact_leak: 422,
   // Delivery error codes (#152)
   not_ready: 422,
+  // Studio membership error codes (#136)
+  membership_conflict: 409,
+  cooldown: 422,
+  member_busy: 409,
+  studio_full: 429,
   internal: 500,
 };
 
