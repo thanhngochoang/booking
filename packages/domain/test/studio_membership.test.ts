@@ -4,6 +4,7 @@ import {
   canJoinAsMember,
   foldNameKey,
   inCooldown,
+  inviteCandidateState,
   isOpenBookingStatus,
   maxMembers,
   quotaLeft,
@@ -71,5 +72,28 @@ describe('studio membership rules', () => {
 
   it('relationId is studio, member and creation time in ms', () => {
     assert.equal(relationId('s1', 'm1', new Date('2026-10-10T10:00:00.000Z')), 's1_m1_1791626400000');
+  });
+
+  it('inviteCandidateState: member, in_studio, cooldown, invited, invitable (S26.02, Decision 19)', () => {
+    const now = new Date('2026-10-10T10:00:00.000Z');
+    const free = { studioId: null, studioCooldownUntil: null };
+    assert.equal(inviteCandidateState('s1', { ...free, studioId: 's1' }, null, now), 'member');
+    assert.equal(inviteCandidateState('s1', { ...free, studioId: 's2' }, null, now), 'in_studio');
+    assert.equal(
+      inviteCandidateState('s1', { ...free, studioCooldownUntil: '2026-10-12T10:00:00.000Z' }, null, now),
+      'cooldown',
+    );
+    // A cooldown that ended is invitable again.
+    assert.equal(
+      inviteCandidateState('s1', { ...free, studioCooldownUntil: '2026-10-10T10:00:00.000Z' }, null, now),
+      'invitable',
+    );
+    const open = { status: 'invited' as const, expiresAt: '2026-10-11T10:00:00.000Z' };
+    assert.equal(inviteCandidateState('s1', free, open, now), 'invited');
+    // The photographer's own pending request also blocks a second relation of the pair.
+    assert.equal(inviteCandidateState('s1', free, { ...open, status: 'requested' }, now), 'invited');
+    // An invite past expiresAt (not swept yet) no longer counts.
+    assert.equal(inviteCandidateState('s1', free, { ...open, expiresAt: '2026-10-10T10:00:00.000Z' }, now), 'invitable');
+    assert.equal(inviteCandidateState('s1', free, null, now), 'invitable');
   });
 });

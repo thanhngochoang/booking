@@ -8,6 +8,20 @@ import {
   type PayerMoneyItem,
 } from '@photobooking/domain';
 
+/**
+ * Active studio relations of `uid` (#136): as the member (`memberId`, titled with the studio) and as the studio
+ * (`studioId`, titled with the member). Relations carry no `userId` field (#205).
+ */
+export async function studioRelationBlockers(firestore: Firestore, uid: string): Promise<BlockerItem[]> {
+  const active = (field: 'memberId' | 'studioId') =>
+    firestore.collection('studio_members').where(field, '==', uid).where('status', '==', 'active').limit(5).get();
+  const [asMember, asStudio] = await Promise.all([active('memberId'), active('studioId')]);
+  return [
+    ...asMember.docs.map((doc) => ({ id: doc.id, title: (doc.data().studioName as string | undefined) || doc.id, day: null })),
+    ...asStudio.docs.map((doc) => ({ id: doc.id, title: (doc.data().memberName as string | undefined) || doc.id, day: null })),
+  ];
+}
+
 export class FirestoreAccountDeletionDeps implements AccountDeletionDeps {
   constructor(private readonly firestore: Firestore = db()) {}
 
@@ -139,25 +153,7 @@ export class FirestoreAccountDeletionDeps implements AccountDeletionDeps {
     }
 
     // 6. studioRelations (#136, #151): member or owner
-    const studioRelations: BlockerItem[] = [];
-    try {
-      const smSnap = await this.firestore
-        .collection('studio_members')
-        .where('userId', '==', uid)
-        .where('status', '==', 'active')
-        .limit(5)
-        .get();
-      for (const doc of smSnap.docs) {
-        const d = doc.data();
-        studioRelations.push({
-          id: doc.id,
-          title: d.studioName ?? doc.id,
-          day: null,
-        });
-      }
-    } catch {
-      // collection might not exist
-    }
+    const studioRelations = await studioRelationBlockers(this.firestore, uid);
 
     // 7. openCollabs (#136, #151)
     const openCollabs: BlockerItem[] = [];

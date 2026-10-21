@@ -132,3 +132,26 @@ export function isOpenBookingStatus(s: string): boolean {
 export function foldNameKey(displayName: string): string {
   return foldVietnamese(displayName.trim()).toLowerCase();
 }
+
+/** A photographer row of the invite search (S26.02, Decision 19). */
+export type InviteCandidateState = 'invitable' | 'in_studio' | 'cooldown' | 'invited' | 'member';
+
+/**
+ * Whether studio `studioId` can invite this photographer now: already ours, active elsewhere, in the 7-day
+ * cooldown, or with an open invite or join request of the pair (an unswept invite past `expiresAt` no longer
+ * counts). `open` is the pair's invited or requested relation, if any.
+ */
+export function inviteCandidateState(
+  studioId: string,
+  p: Pick<StudioProfile, 'studioId' | 'studioCooldownUntil'>,
+  open: Pick<StudioRelation, 'status' | 'expiresAt'> | null,
+  now: Date,
+): InviteCandidateState {
+  if (p.studioId === studioId) return 'member';
+  if (p.studioId !== null) return 'in_studio';
+  if (inCooldown(p, now)) return 'cooldown';
+  if (open !== null && (open.status === 'invited' || open.status === 'requested') && Date.parse(open.expiresAt) > now.getTime()) {
+    return 'invited';
+  }
+  return 'invitable';
+}

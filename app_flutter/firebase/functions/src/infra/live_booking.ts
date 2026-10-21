@@ -30,7 +30,8 @@ export function liveAccountCipher(): AccountCipher {
   return lazyAccountCipher(() => PAYOUT_ACCOUNT_KEY.value());
 }
 
-export function liveBookingDeps(): BookingDeps {
+/** `store` is the Firestore store, which also runs the studio sweep queries (StudioBookingStore). */
+export function liveBookingDeps(): BookingDeps & { readonly store: FirestoreBookingStore } {
   const firestore = db();
   return {
     store: new FirestoreBookingStore(firestore),

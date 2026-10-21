@@ -54,7 +54,8 @@ export interface CustomerContactReader {
 }
 
 export interface AvailabilityDayRecord {
-  readonly state: 'off' | 'booked' | 'pending';
+  /** `full`: derived by the server on a studio's day when its free members are all taken (#136 Decision 26). */
+  readonly state: 'off' | 'booked' | 'pending' | 'full';
   readonly bookingId?: string;
 }
 

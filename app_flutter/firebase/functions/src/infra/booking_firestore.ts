@@ -28,7 +28,7 @@ import {
   type EscrowStatus,
   type PaymentProvider,
   type AvailabilityDayRecord,
-  type BookingStore,
+  type StudioBookingStore,
   type StudioBookingTx,
   type StudioDayLoad,
   type Payment,
@@ -711,7 +711,16 @@ function paymentsOf(docs: readonly { id: string; data(): DocumentData }[]): Paym
   return res;
 }
 
-export class FirestoreBookingStore implements BookingStore {
+function bookingsOf(docs: readonly { id: string; data(): DocumentData }[]): Booking[] {
+  const res: Booking[] = [];
+  for (const doc of docs) {
+    const b = bookingFromFirestore(doc.id, doc.data());
+    if (b) res.push(b);
+  }
+  return res;
+}
+
+export class FirestoreBookingStore implements StudioBookingStore {
   constructor(private readonly firestore: Firestore) {}
 
   async runTransaction<T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> {
@@ -1187,6 +1196,36 @@ export class FirestoreBookingStore implements BookingStore {
       if (b) res.push(b);
     }
     return res;
+  }
+
+  /**
+   * Studio bookings with assign work (#136 Decision 20a): unassigned, not yet overdue, requested | accepted, deadline
+   * within 24 h, soonest first (index `assignStatus, assignOverdue, status, assignDeadline`). Filtering the status
+   * here keeps cancelled and expired unassigned bookings from filling the page forever.
+   */
+  async findUnassignedStudioBookingsDue(now: Date, limit: number): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('assignStatus', '==', 'unassigned')
+      .where('assignOverdue', '==', false)
+      .where('status', 'in', ['requested', 'accepted'])
+      .where('assignDeadline', '<=', Timestamp.fromDate(new Date(now.getTime() + 24 * 3600 * 1000)))
+      .orderBy('assignDeadline')
+      .limit(limit)
+      .get();
+    return bookingsOf(snap.docs);
+  }
+
+  /** Pending change requests past `respondBy`, oldest first (index `changeRequest.status, changeRequest.respondBy`). */
+  async findDueChangeRequests(now: Date, limit: number): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('changeRequest.status', '==', 'pending')
+      .where('changeRequest.respondBy', '<=', Timestamp.fromDate(now))
+      .orderBy('changeRequest.respondBy')
+      .limit(limit)
+      .get();
+    return bookingsOf(snap.docs);
   }
 
   async findDueAutoApproveNotices(now: Date, limit = 100): Promise<readonly Booking[]> {

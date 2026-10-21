@@ -72,13 +72,38 @@ import { liveAcceptingOrdersWriter, liveSkillsDeps } from './infra/live_skills.j
 import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
-import { handlePhotographerEvent } from './triggers/photographer_write.js';
+import { handlePhotographerEvent, healNameKey, studiosToRecompute } from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
 import { handleReviewWrite } from './triggers/review_write.js';
 import { liveReviewDeps, liveStatsStore } from './infra/live_review.js';
 import { handleSetProviderType, handleSetStudioAddress } from './callables/provider.js';
 import { liveProviderDeps } from './infra/live_provider.js';
+import {
+  handleAssignBooking,
+  handleAssignmentOptions,
+  handleCancelInvite,
+  handleCancelJoinRequest,
+  handleDeclineAssigneeChange,
+  handleInviteMember,
+  handleLeaveStudio,
+  handleRemoveMember,
+  handleRequestAssigneeChange,
+  handleRequestToJoin,
+  handleRespondInvite,
+  handleRespondJoinRequest,
+  handleReturnAssignment,
+  handleSearchPhotographersToInvite,
+} from './callables/studio.js';
+import {
+  liveAssignmentOptionsDeps,
+  liveStudioBookingDeps,
+  liveStudioClockExtras,
+  liveStudioDeps,
+} from './infra/live_studio.js';
+import { FirestoreNameKeys, studioSideOf } from './infra/studio_firestore.js';
+import { recomputeStudioDay, recomputeStudioDays } from './infra/studio_capacity_firestore.js';
+import { handleUserWrite } from './triggers/user_write.js';
 import {
   handleCreateAlbum,
   handleDeleteAlbum,
@@ -94,7 +119,7 @@ import { liveAddonDeps } from './infra/live_addon.js';
 import { FirestoreFollowerCounter } from './infra/follower_counter.js';
 import { handleFollowWrite } from './triggers/engagement_counters.js';
 import { liveDiscoveryDeps } from './infra/live_discovery.js';
-import { handleAvailabilityWrite } from './triggers/availability_write.js';
+import { handleAvailabilityWrite, handleStudioDayWrite } from './triggers/availability_write.js';
 import { handleEngagementWrite } from './triggers/engagement_write.js';
 import { handleRollNextFree } from './scheduled/roll_next_free.js';
 import { handleServiceDiscovery } from './triggers/service_write.js';
@@ -236,6 +261,7 @@ export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
       notify: liveNotifyDeps(),
       purge: { db: db(), bucket: (await import('firebase-admin/storage')).getStorage().bucket(), now: new Date() },
     },
+    studio: liveStudioClockExtras(),
   });
 });
 
@@ -260,6 +286,10 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {
     await evaluateUserBadges(liveBadgeDeps(), uid);
   }
+  // S26 (#136): a missing invite-search key is healed once; membership and gate changes move studio capacity.
+  const write = { uid, before: event.data?.before.data(), after: live?.data() };
+  await healNameKey(write, new FirestoreNameKeys(db()));
+  for (const studioId of studiosToRecompute(write)) await recomputeStudioDays(db(), studioId, new Date());
 });
 
 /** Open chat inquiry between customer and photographer */
@@ -296,6 +326,7 @@ export const onBookingWrite = onDocumentWritten(
       {
         notify: liveNotifyDeps(),
         badges: liveBadgeDeps(),
+        studioDays: (studioId, day) => recomputeStudioDay(db(), studioId, day),
       },
       liveDiscoveryDeps(),
     );
@@ -331,6 +362,78 @@ export const setProviderType = onCall(CALLABLE_OPTIONS, (request) =>
 /** Studio saves its private address; the district and city go public. */
 export const setStudioAddress = onCall(CALLABLE_OPTIONS, (request) =>
   handleSetStudioAddress(request, liveProviderDeps()),
+);
+
+// ---- studio members and assignment (S26, #136) ----
+
+/** Studio invites a photographer: `{memberId}` → `{relationId}`. */
+export const inviteMember = onCall(CALLABLE_OPTIONS, (request) =>
+  handleInviteMember(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Studio withdraws an open invite: `{relationId}` → `{}`. */
+export const cancelInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelInvite(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Photographer asks to join a studio: `{studioId}` → `{relationId}`. */
+export const requestToJoin = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRequestToJoin(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Photographer withdraws their request: `{relationId}` → `{}`. */
+export const cancelJoinRequest = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelJoinRequest(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Invited photographer answers: `{relationId, accept}` → `{status}`. */
+export const respondInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondInvite(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Studio answers a join request: `{relationId, accept}` → `{status}`. */
+export const respondJoinRequest = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondJoinRequest(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Member leaves their studio: `{}` → `{}`; 7 days before another studio. */
+export const leaveStudio = onCall(CALLABLE_OPTIONS, (request) =>
+  handleLeaveStudio(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Studio removes a member: `{memberId}` → `{}`; refused while the member has open studio bookings. */
+export const removeMember = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRemoveMember(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** S26.02: `{query}` (≥ 2 characters) → `{rows}` with each photographer's invite state for the calling studio. */
+export const searchPhotographersToInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSearchPhotographersToInvite(request, { firestore: db(), clock: { now: () => new Date() } }),
+);
+
+/** S26.04: `{bookingId}` → `{deadline, options}`; each member free, busy (with times), off, unverified or current. */
+export const assignmentOptions = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAssignmentOptions(request, liveAssignmentOptionsDeps()),
+);
+
+/** Studio assigns or reassigns a member: `{bookingId, assigneeId}` → Booking. */
+export const assignBooking = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAssignBooking(request, liveStudioBookingDeps()),
+);
+
+/** S26.05, customer: `{bookingId, note?}` → Booking; one change request per booking. */
+export const requestAssigneeChange = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRequestAssigneeChange(request, liveStudioBookingDeps()),
+);
+
+/** Studio keeps the assignee: `{bookingId, reason}` → Booking; the customer gains the 100% cancel right. */
+export const declineAssigneeChange = onCall(CALLABLE_OPTIONS, (request) =>
+  handleDeclineAssigneeChange(request, liveStudioBookingDeps()),
+);
+
+/** "Trả việc", assignee: `{bookingId, reason?}` → Booking; the studio is told. */
+export const returnAssignment = onCall(CALLABLE_OPTIONS, (request) =>
+  handleReturnAssignment(request, liveStudioBookingDeps()),
 );
 
 // ---- service add-ons (S08.06, #190) ----
@@ -544,6 +647,18 @@ export const onDeviceWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: '
 /** A new account earns `new_member`. */
 export const onUserCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'users/{uid}' }, async (event) => {
   await handleUserCreated(event.params.uid, liveBadgeDeps());
+});
+
+/** A changed `displayName` refreshes `photographers/{uid}.nameKey` (S26.02 invite search, #136 Decision 19). */
+export const onUserWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'users/{uid}' }, async (event) => {
+  await handleUserWrite(
+    {
+      uid: event.params.uid,
+      before: event.data?.before.exists ? event.data.before.data() : undefined,
+      after: event.data?.after.exists ? event.data.after.data() : undefined,
+    },
+    new FirestoreNameKeys(db()),
+  );
 });
 
 /** Package changes can complete `complete_profile` and refresh discovery starting price and catalog. */
@@ -761,11 +876,23 @@ export const onFollowWrite = onDocumentWritten(
   },
 );
 
-/** An availability day write updates nextFreeDate when inside the horizon. */
+/** An availability day write updates nextFreeDate when inside the horizon, and the studio's derived full day. */
 export const onAvailabilityWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'availability/{uid}/days/{dayKey}' },
   async (event) => {
     await handleAvailabilityWrite(event.params.uid, event.params.dayKey, liveDiscoveryDeps());
+    // A member's day (or a studio's own off day) changes what the studio can take (#136 Decision 26).
+    await handleStudioDayWrite(
+      event.params.uid,
+      event.params.dayKey,
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      {
+        now: () => new Date(),
+        profile: (uid) => studioSideOf(db(), uid),
+        recompute: (studioId, day) => recomputeStudioDay(db(), studioId, day),
+      },
+    );
   },
 );
 
