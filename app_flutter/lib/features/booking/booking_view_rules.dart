@@ -7,7 +7,8 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
-import 'package:photobooking/features/studio/studio_common.dart' show studioDeadlineText;
+import 'package:photobooking/features/studio/studio_common.dart'
+    show studioDeadlineText;
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// "#A1F3": the last 4 characters of the booking id, upper-cased.
@@ -75,7 +76,12 @@ List<DetailAction> detailActions(
 
   final beforeStart = now.isBefore(startsAtOf(b));
   // A studio booking cannot be moved (the reschedule callable refuses it).
-  final canReschedule = features.reschedule && beforeStart && b.studio == null;
+  // A spot booking keeps its interval of the schedule (#194 Decision 16).
+  final canReschedule =
+      features.reschedule &&
+      beforeStart &&
+      b.studio == null &&
+      b.spotScheduleId == null;
   final out = <DetailAction>[];
 
   if (features.chat && b.chatId != null) out.add(DetailAction.message);
@@ -129,7 +135,11 @@ List<DetailAction> detailActions(
     if (_isActive(s) && BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
     }
-    if (_isActive(s) && beforeStart && !(b.studio?.isReturned ?? false)) {
+    // A studio's spot booking keeps the schedule's member (#194 Decision 7).
+    if (_isActive(s) &&
+        beforeStart &&
+        !(b.studio?.isReturned ?? false) &&
+        b.spotScheduleId == null) {
       out.add(DetailAction.returnJob);
     }
     return out;
@@ -148,7 +158,9 @@ List<DetailAction> detailActions(
   if (_isActive(s)) {
     out.add(DetailAction.contact);
     if (canReschedule) out.add(DetailAction.reschedule);
-    if (b.studio != null && beforeStart) out.add(DetailAction.assign);
+    if (b.studio != null && b.spotScheduleId == null && beforeStart) {
+      out.add(DetailAction.assign);
+    }
     if (BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
     }
@@ -310,10 +322,10 @@ List<TimelineStep> timelineSteps(
     subtitle: st == done && b.completedAt != null
         ? _when(b.completedAt!, now, l)
         : (st == current && s == BookingStatus.approved
-            ? l.timelineCheck
-            : (b.remaining > 0
-                ? l.timelinePayAtShoot(formatMoney(b.remaining))
-                : null)),
+              ? l.timelineCheck
+              : (b.remaining > 0
+                    ? l.timelinePayAtShoot(formatMoney(b.remaining))
+                    : null)),
     state: st,
   );
   TimelineStep step7(TimelineStepState st) =>
@@ -341,7 +353,9 @@ List<TimelineStep> timelineSteps(
       TimelineStep(
         title: l.timelineAwaitAssign,
         subtitle: overdue
-            ? l.timelineAwaitAssignBody(studioDeadlineText(studio.assignDeadline))
+            ? l.timelineAwaitAssignBody(
+                studioDeadlineText(studio.assignDeadline),
+              )
             : null,
         state: current,
       ),
@@ -729,10 +743,12 @@ StudioBlockState? studioBlockStateOf(Booking b, DateTime now) {
 }
 
 /// Whether the customer may still ask once to change who shoots [b]
-/// (Decision 13): assigned, confirmed, before the start, not asked yet.
+/// (Decision 13): assigned, confirmed, before the start, not asked yet. Never
+/// for a spot booking, whose member is the schedule's (#194 Decision 7).
 bool canRequestAssigneeChange(Booking b, DateTime now) {
   final s = b.studio;
   return s != null &&
+      b.spotScheduleId == null &&
       s.assignStatus == StudioAssignStatus.assigned &&
       s.assigneeId != null &&
       _isActive(b.status) &&

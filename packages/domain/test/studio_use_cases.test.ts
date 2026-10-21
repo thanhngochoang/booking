@@ -415,6 +415,17 @@ describe('studio membership use cases', () => {
       assert.equal((await leaveStudio(w.deps, 'm1')).after.status, 'left');
     });
 
+    it('leave and remove are member_busy while the member is named on an open spot schedule with a day ahead (#194)', async () => {
+      await joinByInvite('s1', 'm1');
+      w.clock.setTime(new Date('2026-10-12T08:00:00.000Z')); // 15:00 VN on 2026-10-12
+      w.store.addOpenSpotSchedule('s1', 'm1', ['2026-10-11', '2026-10-12']);
+      await refused(leaveStudio(w.deps, 'm1'), 'member_busy');
+      await refused(removeMember(w.deps, 's1', { memberId: 'm1' }), 'member_busy');
+      // once its last day is past (or it is cancelled: no longer open), the member may go
+      w.clock.setTime(new Date('2026-10-12T17:00:00.000Z')); // 00:00 VN on 2026-10-13
+      assert.equal((await leaveStudio(w.deps, 'm1')).after.status, 'left');
+    });
+
     it('leaving with no studio is not_found', async () => {
       await refused(leaveStudio(w.deps, 'm1'), 'not_found');
     });

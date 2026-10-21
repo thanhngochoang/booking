@@ -34,6 +34,7 @@ import {
 } from '@photobooking/domain';
 import type { NameKeyStore } from '../triggers/user_write.js';
 import { AVAILABILITY_COLLECTION, BOOKINGS_COLLECTION } from './booking_firestore.js';
+import { SPOT_SCHEDULES_COLLECTION, scheduleFromFirestore } from './spot_firestore.js';
 
 export const STUDIO_MEMBERS_COLLECTION = 'studio_members';
 export const STUDIO_QUOTA_COLLECTION = 'studio_quota';
@@ -190,6 +191,21 @@ export class FirestoreStudioStore implements StudioStore {
           );
           return snap.size;
         },
+        countOpenSpotSchedules: async (studioId, memberId, today) => {
+          // At most 8 open schedules per provider (#194); the days are filtered here.
+          const snap = await fTx.get(
+            this.firestore
+              .collection(SPOT_SCHEDULES_COLLECTION)
+              .where('providerId', '==', studioId)
+              .where('assigneeId', '==', memberId)
+              .where('status', '==', 'open')
+              .limit(20),
+          );
+          return snap.docs.filter((d) => {
+            const days: unknown = d.data().days;
+            return Array.isArray(days) && days.some((day) => typeof day === 'string' && day >= today);
+          }).length;
+        },
         getQuota: async (uid) => {
           const snap = await fTx.get(this.firestore.collection(STUDIO_QUOTA_COLLECTION).doc(uid));
           return snap.exists ? quotaFromFirestore(snap.data()) : null;
@@ -295,11 +311,22 @@ export class FirestoreMemberDayReader implements MemberDayReader {
   async day(
     uid: string,
     day: string,
-  ): Promise<{ state: 'off' | 'booked' | 'pending'; start: string | null; end: string | null } | null> {
+  ): Promise<{ state: 'off' | 'booked' | 'pending' | 'spot'; start: string | null; end: string | null } | null> {
     const snap = await this.firestore.collection(AVAILABILITY_COLLECTION).doc(uid).collection('days').doc(day).get();
     if (!snap.exists) return null;
     const d = snap.data() ?? {};
     if (d.state === 'off') return { state: 'off', start: null, end: null };
+    // A spot day (#194 Decision 6) is busy with the schedule's window.
+    if (d.state === 'spot') {
+      const scheduleId = str(d.scheduleId);
+      const schedule = scheduleId
+        ? scheduleFromFirestore(
+            scheduleId,
+            (await this.firestore.collection(SPOT_SCHEDULES_COLLECTION).doc(scheduleId).get()).data(),
+          )
+        : null;
+      return { state: 'spot', start: schedule?.window.start ?? null, end: schedule?.window.end ?? null };
+    }
     const state = d.state === 'pending' ? 'pending' : 'booked';
     const bookingId = str(d.bookingId);
     if (bookingId === null) return { state, start: null, end: null };

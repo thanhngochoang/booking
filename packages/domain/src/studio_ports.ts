@@ -15,6 +15,11 @@ export interface StudioTx {
   countOpenInvites(studioId: string, now: Date): Promise<number>;
   /** Bookings with photographerId == studio, assigneeId == member, isOpenBookingStatus (Decision 6). */
   countOpenAssignments(studioId: string, memberId: string): Promise<number>;
+  /**
+   * #194 Decision 7: the studio's `open` spot schedules naming the member as assignee with a day >= `today`
+   * (yyyy-MM-dd, Vietnam). At most 8 open schedules per provider.
+   */
+  countOpenSpotSchedules(studioId: string, memberId: string, today: string): Promise<number>;
   getQuota(uid: string): Promise<DailyQuota | null>;
   putRelation(r: StudioRelation): void;
   /** `studioCooldownUntil` left out keeps the stored value. */

@@ -847,6 +847,54 @@ void main() {
       );
     });
 
+    test('a studio spot booking keeps the schedule member: no assign, no '
+        '"Trả việc", no change request, no reschedule (#194 Decision 7)', () {
+      final b = studio(
+        BookingStatus.accepted,
+        assignee: 'minh',
+      ).copyWith(spotId: 'spot-ho-tay', spotScheduleId: 'sched-1');
+      expect(
+        detailActions(b, BookingRole.photographer, weekBefore, _on),
+        isNot(contains(DetailAction.assign)),
+      );
+      expect(
+        detailActions(
+          b,
+          BookingRole.photographer,
+          weekBefore,
+          _on,
+          assignee: true,
+        ),
+        [DetailAction.message, DetailAction.contact],
+      );
+      expect(canRequestAssigneeChange(b, weekBefore), isFalse);
+      expect(
+        detailActions(b, BookingRole.customer, weekBefore, _on),
+        isNot(contains(DetailAction.reschedule)),
+      );
+    });
+
+    test(
+      'an individual spot booking cannot be rescheduled (#194 Decision 16)',
+      () {
+        final b = _b(BookingStatus.accepted)
+            .copyWith(spotId: 'spot-ho-tay', spotScheduleId: 'sched-1');
+        expect(
+          detailActions(b, BookingRole.customer, weekBefore, _on),
+          isNot(contains(DetailAction.reschedule)),
+        );
+        expect(
+          detailActions(
+            _b(BookingStatus.accepted),
+            BookingRole.customer,
+            weekBefore,
+            _on,
+          ),
+          contains(DetailAction.reschedule),
+        );
+      },
+    );
+
     test('"Trả việc" for the assignee while active, before the start and '
         'not returned; never for the studio or the customer', () {
       final b = studio(BookingStatus.upcoming, assignee: 'minh');

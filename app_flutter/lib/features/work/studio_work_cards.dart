@@ -100,12 +100,14 @@ class StudioJobCard extends ConsumerWidget {
               ),
             ],
           ),
-        AppButton.outline(
-          l.workAssignAction,
-          key: Key('work-assign-${booking.id}'),
-          size: AppButtonSize.small,
-          onPressed: onAssign,
-        ),
+        // A spot booking keeps the schedule's member (#194 Decision 7).
+        if (booking.spotScheduleId == null)
+          AppButton.outline(
+            l.workAssignAction,
+            key: Key('work-assign-${booking.id}'),
+            size: AppButtonSize.small,
+            onPressed: onAssign,
+          ),
       ],
     );
   }
@@ -154,7 +156,8 @@ class AssignedJobCard extends StatelessWidget {
         if (studioName.isNotEmpty) _StudioTag(l.workAssignedBy(studioName)),
       ],
       below: [
-        if (!returned)
+        // A spot booking keeps the schedule's member (#194 Decision 7).
+        if (!returned && booking.spotScheduleId == null)
           AppButton.text(
             l.workReturnJob,
             key: Key('work-return-${booking.id}'),
