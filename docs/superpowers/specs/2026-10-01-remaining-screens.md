@@ -78,12 +78,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S01.04 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S41 |
 | S01.05 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S29 |
 | **S02** | **Khám phá & tìm thợ** | | | | | |
-| S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S01 |
+| S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · Chụp ngay: [#140](https://github.com/thanhngochoang/booking/issues/140) | S01 |
 | S02.02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) · vuốt trong phạm vi album hoãn (plan C, quyết định 9: S24.01 mở `/p/:id` như Dòng thời gian) | S02 |
 | S02.03 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S13 |
 | S02.04 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S35 |
 | S02.05 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S36 |
-| S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) | S04 |
+| S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) · Chụp ngay: [#140](https://github.com/thanhngochoang/booking/issues/140) | S04 |
 | S02.07 | Tìm kiếm: ô tìm, nhóm Dịch vụ / Phong cách / Địa điểm / Thợ ảnh, không kết quả có "Xem tất cả thợ ảnh" | `/explore/search` | cả hai | 3 | ⬜ có mock, có plan (#132) | — |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
 | S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm · khớp mock: nút lưu & chia sẻ/tuỳ chọn trên ảnh bìa, nút theo dõi xs, bố cục header · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S03 |
