@@ -405,17 +405,36 @@ class FirestoreInstantRepository implements InstantRepository {
         .collection('instant_requests')
         .where('photographerId', isEqualTo: me)
         .where('active', isEqualTo: true)
-        .limit(1)
+        .limit(_activeJobsCap)
         .snapshots()
         .map(
-          (q) => q.docs.isEmpty
-              ? null
-              : instantRequestFromFirestore(
-                  q.docs.first.id,
-                  q.docs.first.data(),
-                ),
+          (q) => pickActiveJob([
+            for (final d in q.docs)
+              ?instantRequestFromFirestore(d.id, d.data()),
+          ]),
         );
   }
+}
+
+/// Upper bound on a photographer's active requests: at most one job in hand
+/// plus the `finished` ones still waiting for the customer's confirmation
+/// (auto-completed after 2 h).
+const _activeJobsCap = 10;
+
+/// The job S06.01 should show: the photographer is freed at "Hoàn thành", so
+/// a newer job can be active next to `finished` ones awaiting confirmation.
+/// Prefer a job not yet finished, then the latest assignment.
+InstantRequest? pickActiveJob(List<InstantRequest> jobs) {
+  if (jobs.isEmpty) return null;
+  int rank(InstantRequest r) => r.status == InstantStatus.finished ? 0 : 1;
+  final sorted = [...jobs]
+    ..sort((a, b) {
+      final byStatus = rank(b).compareTo(rank(a));
+      if (byStatus != 0) return byStatus;
+      final never = DateTime.utc(0);
+      return (b.assignedAt ?? never).compareTo(a.assignedAt ?? never);
+    });
+  return sorted.first;
 }
 
 /// A document listener whose rules can stop allowing the read (a track

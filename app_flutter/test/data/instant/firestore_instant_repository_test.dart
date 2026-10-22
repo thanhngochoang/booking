@@ -414,6 +414,49 @@ void main() {
       },
     );
 
+    test('watchMyActiveJob prefers the job in hand over a finished one awaiting confirmation', () async {
+      Map<String, Object?> job(String status, int assignedMin) => {
+        'customerId': 'cus1',
+        'photographerId': 'ph1',
+        'active': true,
+        'status': status,
+        'genre': 'portrait',
+        'meetPoint': {'lat': 1, 'lng': 2, 'name': 'X'},
+        'assignedAt': _ts(8, assignedMin),
+      };
+      // ULID order puts the older finished job first.
+      await db.doc('instant_requests/a_old').set(job('finished', 1));
+      await db.doc('instant_requests/b_new').set(job('assigned', 5));
+      expect((await repo(uid: 'ph1').watchMyActiveJob().first)!.id, 'b_new');
+    });
+
+    test('pickActiveJob takes the latest assignment among equals', () {
+      InstantRequest r(String id, InstantStatus s, int min) => InstantRequest(
+        id: id,
+        customerId: 'c',
+        status: s,
+        packageCode: 'p60',
+        genre: InstantGenre.portrait,
+        meetPoint: const InstantMeetPoint(lat: 1, lng: 2, name: 'X'),
+        assignedAt: DateTime.utc(2026, 10, 22, 8, min),
+      );
+      expect(pickActiveJob(const []), isNull);
+      expect(
+        pickActiveJob([
+          r('f1', InstantStatus.finished, 1),
+          r('f2', InstantStatus.finished, 9),
+        ])!.id,
+        'f2',
+      );
+      expect(
+        pickActiveJob([
+          r('f', InstantStatus.finished, 9),
+          r('e', InstantStatus.enRoute, 2),
+        ])!.id,
+        'e',
+      );
+    });
+
     test('a missing config is not_eligible', () async {
       await expectLater(
         repo().config(),

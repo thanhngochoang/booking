@@ -69,6 +69,7 @@
 
 - **Rà soát cuối (controller, 2026-10-22):**
   - **S1 — thợ rảnh ngay khi xong việc.** Spec §2.2 mục 5 ("Sau khi hoàn thành, trạng thái sẵn sàng trở lại như trước") là chuẩn hành vi; plan chỉ giải phóng presence lúc `completed` là lỗ hổng của plan (thợ bị chặn lời mời mới tới ~2 giờ 15 phút sau "Hoàn thành"). `finish` và hẹn giờ buổi chụp (`in_progress → finished`) xoá `presence.activeRequestId`; xác nhận và tự hoàn tất vẫn giải phóng, chỉ khi presence còn trỏ vào yêu cầu này (không ghi đè việc mới). Decision 8 của plan, bất biến 39 của mô hình miền và `screens/instant.md` đã ghi theo (f418d184, 63abf340).
+  - **Hệ quả của S1 ở app (re-review):** thợ có thể có nhiều yêu cầu `active` cùng lúc (việc đang làm + việc `finished` chờ khách xác nhận). `watchMyActiveJob` (thẻ S06.01) không còn `limit(1)`: đọc tối đa 10 yêu cầu active, chọn việc chưa `finished` trước rồi việc được giao gần nhất (`pickActiveJob`), không cần index mới.
   - **S2 — quyền tối thiểu.** `inviteInstant`, `answerInstantOffer`, `cancelInstantRequest`, `confirmInstantComplete` chạy với `CONTENDED_CALLABLE_OPTIONS` (30 giây, không secret `PAYOUT_ACCOUNT_KEY`) vì #140 không chuyển tiền; **#202 chuyển `cancelInstantRequest` và `confirmInstantComplete` về `PAYMENT_CALLABLE_OPTIONS`** khi có hoàn tiền và thả tiền (`checkInstantPayment` cũng dùng `PAYMENT_CALLABLE_OPTIONS`). Plan (Contract, Task 11) đã ghi (f418d184, 63abf340).
 
 ## Bỏ qua theo quy tắc chung
