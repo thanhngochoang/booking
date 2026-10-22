@@ -288,7 +288,8 @@ npm run stats -- recompute
 
 The emulators never fire scheduled functions. `npm run clock -- events` runs the event clock once
 (close, complete, refunds, then the 48-hour `event_soon` reminders) and prints the counts;
-`npm run clock -- bookings` runs the booking clock once (sweeps, shoot reminders and the studio sweeps). The tool
+`npm run clock -- bookings` runs the booking clock once (sweeps, shoot reminders, the studio sweeps and the
+Chụp ngay timers, step `instantSweep`). The tool
 refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` point at a local host;
 push is only logged.
 
@@ -351,3 +352,27 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
 
 Đăng nhập Lan, Trang chủ → Điểm chụp đang hot → Hồ Tây để thử S29.02 và đặt suất (S29.06).
 Chạy `scripts/spots-local.sh rank` sau khi đổi dữ liệu để cập nhật bảng xếp hạng trên emulator.
+
+## Chụp ngay (S13–S14, #140)
+
+| Document | Value (test values) |
+|---|---|
+| `instant_config/current` | `enabled: true`, price list `priceListVersion: 1`, `platformFeeBp: 0` (everything to the photographer), `instantArrivedCancelPhotographerPercent: 50`; packages `p30` 30 phút · 15 ảnh · 390.000₫, `p60` 60 phút · 30 ảnh · 690.000₫, `p120` 120 phút · 60 ảnh · 1.190.000₫; cities `hcm` TP.HCM, `hn` Hà Nội, `dn` Đà Nẵng (bounding boxes, surge ×1.0); the twelve built-in areas of `lib/data/location/area.dart` for the offer's area label |
+
+#140 moves no money: invites send the offers at once, only on a `demo-*` emulator or the dev project
+(`inviteInstant` answers `not_eligible` anywhere else). Nobody is online at seeding: a photographer
+turns Live Shutter on in S14.01 (Cúc in TP.HCM has a phone; accept the price list first).
+
+Dev CLI (emulators only; refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`
+point at a local host; push is only logged): `offer` creates a request for the customer 500 m north of
+an online photographer (meet point "Điểm hẹn thử (CLI)") and sends them the offer, so S14.02/S14.03
+can be tried before the customer app exists; `status` prints the request and its offer rows.
+
+```bash
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>
+npm run instant -- offer --photographer seed-photographer-cuc [--customer seed-customer-lan] [--package p60] [--genre portrait]
+# request 01J…
+# offer 01J…
+npm run instant -- status <requestId>
+npm run clock -- bookings   # settles requests whose timers ran out (offers, search window, auto-complete)
+```

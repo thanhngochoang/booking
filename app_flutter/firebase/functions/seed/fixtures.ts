@@ -552,6 +552,42 @@ function reviewDocuments(now: Date): SeedDocument[] {
   });
 }
 
+/**
+ * `instant_config/current` (#140 Decisions 6, 9, 19, 27; test values): three packages, three cities by
+ * bounding box with surge ×1.0, and the twelve built-in areas of `lib/data/location/area.dart`
+ * (names and centres copied) for the offer's area label.
+ */
+export const SEED_INSTANT_CONFIG = {
+  enabled: true,
+  priceListVersion: 1,
+  platformFeeBp: 0,
+  instantArrivedCancelPhotographerPercent: 50,
+  packages: [
+    { code: 'p30', durationMin: 30, photos: 15, priceVnd: 390_000 },
+    { code: 'p60', durationMin: 60, photos: 30, priceVnd: 690_000 },
+    { code: 'p120', durationMin: 120, photos: 60, priceVnd: 1_190_000 },
+  ],
+  cities: [
+    { id: 'hcm', name: 'TP.HCM', south: 10.35, west: 106.36, north: 11.17, east: 107.03, surgeBp: 10_000 },
+    { id: 'hn', name: 'Hà Nội', south: 20.56, west: 105.28, north: 21.39, east: 106.02, surgeBp: 10_000 },
+    { id: 'dn', name: 'Đà Nẵng', south: 15.92, west: 107.82, north: 16.2, east: 108.33, surgeBp: 10_000 },
+  ],
+  areas: [
+    { name: 'Quận 1, TP.HCM', lat: 10.7769, lng: 106.7009 },
+    { name: 'Quận 3, TP.HCM', lat: 10.784, lng: 106.6842 },
+    { name: 'Quận 7, TP.HCM', lat: 10.734, lng: 106.7219 },
+    { name: 'Bình Thạnh, TP.HCM', lat: 10.8106, lng: 106.7091 },
+    { name: 'Thủ Đức, TP.HCM', lat: 10.8494, lng: 106.7537 },
+    { name: 'Hoàn Kiếm, Hà Nội', lat: 21.0285, lng: 105.8542 },
+    { name: 'Ba Đình, Hà Nội', lat: 21.034, lng: 105.819 },
+    { name: 'Cầu Giấy, Hà Nội', lat: 21.0333, lng: 105.794 },
+    { name: 'Hải Châu, Đà Nẵng', lat: 16.0471, lng: 108.2208 },
+    { name: 'Huế', lat: 16.4637, lng: 107.5909 },
+    { name: 'Đà Lạt', lat: 11.9404, lng: 108.4583 },
+    { name: 'Nha Trang', lat: 12.2388, lng: 109.1967 },
+  ],
+} as const;
+
 export interface SeedDocument {
   readonly path: string;
   readonly data: Record<string, unknown>;
@@ -1112,6 +1148,9 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
     if (l.full) docs.push({ path: `availability/${CUC}/days/${l.day}`, data: { state: 'full', updatedAt: now } });
   }
+
+  // Chụp ngay server config (#140, plan Task 4): price list v1, fee 0, arrived-cancel split 50.
+  docs.push({ path: 'instant_config/current', data: { ...SEED_INSTANT_CONFIG, updatedAt: at } });
 
   // Explore catalog document (S02)
   docs.push({

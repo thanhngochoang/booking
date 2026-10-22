@@ -1,4 +1,5 @@
 import { describe, test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import type { Timestamp } from 'firebase-admin/firestore';
 import {
@@ -15,6 +16,7 @@ import {
   isTicketCode,
   isVnE164,
   MemoryNotificationStore,
+  parseInstantConfig,
   MemoryPushSender,
   MemoryUserDirectory,
   mentionsPunctual,
@@ -38,6 +40,7 @@ import {
   SEED_CREATED_AT,
   SEED_EVENT_SOON,
   SEED_PASSWORD,
+  SEED_INSTANT_CONFIG,
   SEED_PHOTOGRAPHERS,
   SEED_REGISTRATION_LAN_SOON,
   SEED_REVIEWS,
@@ -67,6 +70,33 @@ function bookingDoc(id: string): { status: string; timeline: { status: string; a
 }
 
 describe('seed fixtures', () => {
+  test('seed has a valid instant config', () => {
+    const doc = seedDocuments(NOW).find((d) => d.path === 'instant_config/current');
+    assert.ok(doc !== undefined);
+    const cfg = parseInstantConfig(doc.data);
+    assert.equal(cfg.enabled, true);
+    assert.equal(cfg.priceListVersion, 1);
+    assert.equal(cfg.platformFeeBp, 0);
+    assert.equal(cfg.instantArrivedCancelPhotographerPercent, 50);
+    assert.deepEqual(cfg.packages.map((p) => [p.code, p.durationMin, p.photos, p.priceVnd]), [
+      ['p30', 30, 15, 390_000], ['p60', 60, 30, 690_000], ['p120', 120, 60, 1_190_000],
+    ]);
+    assert.deepEqual(cfg.cities.map((c) => c.id), ['hcm', 'hn', 'dn']);
+    assert.equal(cfg.areas.length, 12);
+    assert.equal(SEED_INSTANT_CONFIG.areas[0]?.name, 'Quận 1, TP.HCM');
+  });
+
+  test('instant config areas are the built-in areas of the app (names and centres)', () => {
+    const dart = readFileSync(new URL('../../../../lib/data/location/area.dart', import.meta.url), 'utf8');
+    const list = dart.slice(dart.indexOf('builtInAreas'));
+    const areas = [...list.matchAll(/name:\s*'([^']+)',\s*lat:\s*([\d.]+),\s*lng:\s*([\d.]+)/g)].map((m) => ({
+      name: m[1],
+      lat: Number(m[2]),
+      lng: Number(m[3]),
+    }));
+    assert.deepEqual(SEED_INSTANT_CONFIG.areas, areas);
+  });
+
   test('seed photographers carry acceptingOrders equal to the rule (An true, Bình false)', () => {
     const accepting = (uid: string) =>
       (seedDocuments(NOW).find((d) => d.path === `photographers/${uid}`)?.data as { acceptingOrders?: boolean }).acceptingOrders;

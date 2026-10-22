@@ -61,6 +61,15 @@ describe('toHttpsError', () => {
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });
 
+  test('no_match, offer_expired, already_assigned, outside_service_area map to failed-precondition', () => {
+    for (const code of ['no_match', 'offer_expired', 'already_assigned', 'outside_service_area'] as const) {
+      const e = toHttpsError(new DomainError(code));
+      assert.equal(e.code, 'failed-precondition', code);
+      assert.equal(e.message, code);
+      assert.deepEqual(e.details, { code });
+    }
+  });
+
   test('reauth_required maps to failed-precondition with details.code', () => {
     const e = toHttpsError(new DomainError('reauth_required'));
     assert.equal(e.code, 'failed-precondition');

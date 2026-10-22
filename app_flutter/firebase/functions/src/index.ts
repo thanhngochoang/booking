@@ -72,6 +72,19 @@ import { liveAcceptingOrdersWriter, liveSkillsDeps } from './infra/live_skills.j
 import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
+import {
+  handleAnswerInstantOffer,
+  handleCancelInstantRequest,
+  handleConfirmInstantComplete,
+  handleCreateInstantRequest,
+  handleInviteInstant,
+  handleNextInstantCandidates,
+  handleSaveInstantSettings,
+  handleSetLiveShutter,
+  handleTickInstantRequest,
+  handleUpdateInstantJob,
+} from './callables/instant.js';
+import { liveInstantDeps } from './infra/live_instant.js';
 import { handlePhotographerEvent, healNameKey, studiosToRecompute } from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
@@ -1045,3 +1058,29 @@ export const rankSpots = onSchedule(
     await handleRankSpots(liveRankSpotsDeps());
   },
 );
+
+// ---------------------------------------------------------------- Chụp ngay (S13–S14, #140)
+// Payment-touching and contended callables use PAYMENT_CALLABLE_OPTIONS (30 s), the others CALLABLE_OPTIONS.
+// The 15-minute `bookingClock` settles due requests (step `instantSweep`); no scheduler of its own.
+
+export const createInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleCreateInstantRequest(request, liveInstantDeps()));
+
+export const nextInstantCandidates = onCall(CALLABLE_OPTIONS, (request) => handleNextInstantCandidates(request, liveInstantDeps()));
+
+export const inviteInstant = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
+
+export const cancelInstantRequest = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+
+export const confirmInstantComplete = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleConfirmInstantComplete(request, liveInstantDeps()),
+);
+
+export const tickInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleTickInstantRequest(request, liveInstantDeps()));
+
+export const setLiveShutter = onCall(CALLABLE_OPTIONS, (request) => handleSetLiveShutter(request, liveInstantDeps()));
+
+export const saveInstantSettings = onCall(CALLABLE_OPTIONS, (request) => handleSaveInstantSettings(request, liveInstantDeps()));
+
+export const answerInstantOffer = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
+
+export const updateInstantJob = onCall(CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
