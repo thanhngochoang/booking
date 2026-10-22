@@ -119,6 +119,35 @@ void main() {
     await _end(tester, w);
   });
 
+  testWidgets('summary: the refund bold, the fee tabular but not bold', (
+    tester,
+  ) async {
+    final w = InstantCustomerWorld();
+    w.repo.cancelQuote = const InstantCancelQuote(
+      rule: InstantCancelRule.enRoute,
+      refundPercent: 80,
+      refundVnd: 552000,
+      feeVnd: 138000,
+      amountVnd: 690000,
+    );
+    await _open(tester, w, _request());
+    final line = tester.widget<Text>(
+      find.text(
+        'Bạn sẽ được hoàn 552.000₫; 138.000₫ là phí đi lại trả cho Minh Trí.',
+      ),
+    );
+    final spans = {
+      for (final s in (line.textSpan! as TextSpan).children!.cast<TextSpan>())
+        s.text!: s.style,
+    };
+    const tabular = FontFeature.tabularFigures();
+    expect(spans['552.000₫']?.fontWeight, FontWeight.w700);
+    expect(spans['552.000₫']?.fontFeatures, contains(tabular));
+    expect(spans['138.000₫']?.fontWeight, isNot(FontWeight.w700));
+    expect(spans['138.000₫']?.fontFeatures, contains(tabular));
+    await _end(tester, w);
+  });
+
   for (final (rule, index, text) in [
     (InstantCancelRule.freeWindow, 0, _rowFree),
     (InstantCancelRule.fullRefund, 0, _rowFree),

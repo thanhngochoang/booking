@@ -10,6 +10,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/choose_controller.dart';
 import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
+import 'package:photobooking/features/instant/instant_icon_disc.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -829,30 +830,13 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpace.s6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: AppIcon(
-                  AppIcons.personSearch,
-                  size: 40,
-                  color: dark
-                      ? AppColorsDark.foregroundSecondary
-                      : AppColors.foregroundSecondary,
-                ),
-              ),
-            ),
+            const InstantIconDisc(AppIcons.personSearch),
             const SizedBox(height: AppSpace.s4),
             Text(
               l.chooseEmptyTitle,

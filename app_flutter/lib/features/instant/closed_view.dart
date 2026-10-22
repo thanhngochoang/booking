@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
+import 'package:photobooking/features/instant/instant_icon_disc.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Where a refund goes ("về MoMo"): the method the request was paid with.
@@ -56,8 +57,6 @@ class ClosedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
     final (title, body) = _texts(l);
     return ScreenCode(
       ScreenCodes.instantCancel,
@@ -74,23 +73,7 @@ class ClosedView extends StatelessWidget {
           body: EmptyState(
             title: title,
             body: body,
-            illustration: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: AppIcon(
-                  AppIcons.eventBusy,
-                  size: 40,
-                  color: dark
-                      ? AppColorsDark.foregroundSecondary
-                      : AppColors.foregroundSecondary,
-                ),
-              ),
-            ),
+            illustration: const InstantIconDisc(AppIcons.eventBusy),
           ),
           bottomNavigationBar: AppFooterBar(
             child: Column(

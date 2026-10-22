@@ -296,15 +296,16 @@ class _QuoteContent extends StatelessWidget {
           Text(l.cancelInstantUnpaid, style: lineStyle)
         else if (quote.feeVnd > 0 &&
             quote.rule != InstantCancelRule.photographerLate)
-          _Bold(
+          _Amounts(
             l.cancelInstantRefundFee(refund, fee, name),
-            bold: [refund, fee],
+            refund: refund,
+            fee: fee,
             style: lineStyle,
           )
         else
-          _Bold(
+          _Amounts(
             l.cancelInstantRefundAll(refund),
-            bold: [refund],
+            refund: refund,
             style: lineStyle,
           ),
         if (error != null) ...[
@@ -337,29 +338,31 @@ class _QuoteContent extends StatelessWidget {
   }
 }
 
-/// [text] with each of [bold] (in order) in bold, tabular figures: the
-/// amounts of the summary line.
-class _Bold extends StatelessWidget {
-  const _Bold(this.text, {required this.bold, this.style});
+/// The summary line with its amounts in tabular figures (mock `.tn`): the
+/// [refund] bold, the [fee] not (mock `#S13.08`).
+class _Amounts extends StatelessWidget {
+  const _Amounts(this.text, {required this.refund, this.fee, this.style});
 
   final String text;
-  final List<String> bold;
+  final String refund;
+  final String? fee;
   final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
-    final strong = TextStyle(
+    const tabular = TextStyle(fontFeatures: [FontFeature.tabularFigures()]);
+    final strong = tabular.copyWith(
       fontWeight: FontWeight.w700,
       color: Theme.of(context).colorScheme.onSurface,
-      fontFeatures: const [FontFeature.tabularFigures()],
     );
     final spans = <InlineSpan>[];
     var from = 0;
-    for (final part in bold) {
+    for (final (part, partStyle) in [(refund, strong), (fee, tabular)]) {
+      if (part == null) continue;
       final at = text.indexOf(part, from);
       if (at < 0) continue;
       if (at > from) spans.add(TextSpan(text: text.substring(from, at)));
-      spans.add(TextSpan(text: part, style: strong));
+      spans.add(TextSpan(text: part, style: partStyle));
       from = at + part.length;
     }
     if (from < text.length) spans.add(TextSpan(text: text.substring(from)));
