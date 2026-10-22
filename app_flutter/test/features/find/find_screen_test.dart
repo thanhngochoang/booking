@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
@@ -12,6 +13,7 @@ import 'package:photobooking/features/find/find_screen.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
+import '../../support/fake_instant_repository.dart';
 import '../../support/screen_host.dart';
 
 class _Spy extends DelegatingRecommender {
@@ -112,6 +114,51 @@ Future<void> _choose(
 }
 
 void main() {
+  testWidgets('no Chụp ngay button while the flag is off', (tester) async {
+    await _open(tester, DiscoveryWorld());
+    expect(find.byKey(const Key('instant-find-button')), findsNothing);
+    expect(find.text('Chụp ngay · tới trong 30–90 phút'), findsNothing);
+  });
+
+  testWidgets('with Chụp ngay on, its outline button sits above the count', (
+    tester,
+  ) async {
+    _phone(tester);
+    final w = DiscoveryWorld();
+    await w.init();
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: _router(),
+        overrides: [
+          ...w.overrides,
+          instantEnabledProvider.overrideWithValue(true),
+          instantRepositoryProvider.overrideWithValue(FakeInstantRepository()),
+        ],
+      ),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final button = find.byKey(const Key('instant-find-button'));
+    expect(button, findsOneWidget);
+    expect(
+      find.descendant(
+        of: button,
+        matching: find.text('Chụp ngay · tới trong 30–90 phút'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getBottomLeft(button).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.text('4 nhiếp ảnh gia')).dy),
+    );
+    final sortRow = find.byKey(const Key('find-sort-best'));
+    expect(
+      tester.getTopLeft(button).dy,
+      greaterThan(tester.getBottomLeft(sortRow).dy),
+    );
+  });
+
   testWidgets('title, chips, count and the cards in recommended order', (
     tester,
   ) async {

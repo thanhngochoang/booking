@@ -15081,6 +15081,138 @@ abstract class AppLocalizations {
   /// **'Mất kết nối. Thử lại nhé.'**
   String get instantErrorNetwork;
 
+  /// No description provided for @instantSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia tới trong 30–90 phút'**
+  String get instantSubtitle;
+
+  /// No description provided for @instantCardBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút'**
+  String get instantCardBody;
+
+  /// No description provided for @instantCardResumeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu chụp ngay đang mở'**
+  String get instantCardResumeTitle;
+
+  /// No description provided for @instantCardResumeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm để xem tiếp'**
+  String get instantCardResumeBody;
+
+  /// No description provided for @instantFindButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay · tới trong 30–90 phút'**
+  String get instantFindButton;
+
+  /// No description provided for @instantMeetPointPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm hẹn · {name}'**
+  String instantMeetPointPin(String name);
+
+  /// No description provided for @instantMeetPointSelf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí của bạn'**
+  String get instantMeetPointSelf;
+
+  /// No description provided for @instantMeetPointLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên điểm hẹn'**
+  String get instantMeetPointLabel;
+
+  /// No description provided for @instantMeetPointHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: Cổng Trương Định, Công viên Tao Đàn'**
+  String get instantMeetPointHint;
+
+  /// No description provided for @instantMeetPointRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên điểm hẹn để nhiếp ảnh gia dễ tìm.'**
+  String get instantMeetPointRequired;
+
+  /// No description provided for @instantPhotosCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh'**
+  String instantPhotosCount(int n);
+
+  /// No description provided for @instantNoteLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú cho nhiếp ảnh gia'**
+  String get instantNoteLabel;
+
+  /// No description provided for @instantNoteHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mình mặc áo dài trắng, chụp ở hồ…'**
+  String get instantNoteHint;
+
+  /// No description provided for @instantEscrowNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem 5 người phù hợp miễn phí. Chỉ trả khi gửi lời mời; tiền được giữ an toàn và hoàn 100% nếu bạn huỷ khi chưa có người nhận.'**
+  String get instantEscrowNote;
+
+  /// No description provided for @instantSeeMatches.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem nhiếp ảnh gia phù hợp'**
+  String get instantSeeMatches;
+
+  /// No description provided for @instantLocationTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật vị trí để Chụp ngay'**
+  String get instantLocationTitle;
+
+  /// No description provided for @instantLocationBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia cần biết bạn đang ở đâu để tới đúng chỗ.'**
+  String get instantLocationBody;
+
+  /// No description provided for @instantLocationAllow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép vị trí'**
+  String get instantLocationAllow;
+
+  /// No description provided for @instantBookNormally.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch thường'**
+  String get instantBookNormally;
+
+  /// No description provided for @instantOutsideArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay chưa có ở khu vực này. Bạn có thể đặt lịch thường.'**
+  String get instantOutsideArea;
+
+  /// No description provided for @instantDisabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay đang tạm dừng.'**
+  String get instantDisabled;
+
+  /// No description provided for @instantHasActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có một yêu cầu chụp ngay.'**
+  String get instantHasActive;
+
   /// No description provided for @liveShutterTitle.
   ///
   /// In vi, this message translates to:

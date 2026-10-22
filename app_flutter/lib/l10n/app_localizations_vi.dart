@@ -8773,6 +8773,82 @@ class AppLocalizationsVi extends AppLocalizations {
   String get instantErrorNetwork => 'Mất kết nối. Thử lại nhé.';
 
   @override
+  String get instantSubtitle => 'Nhiếp ảnh gia tới trong 30–90 phút';
+
+  @override
+  String get instantCardBody =>
+      'Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút';
+
+  @override
+  String get instantCardResumeTitle => 'Yêu cầu chụp ngay đang mở';
+
+  @override
+  String get instantCardResumeBody => 'Chạm để xem tiếp';
+
+  @override
+  String get instantFindButton => 'Chụp ngay · tới trong 30–90 phút';
+
+  @override
+  String instantMeetPointPin(String name) {
+    return 'Điểm hẹn · $name';
+  }
+
+  @override
+  String get instantMeetPointSelf => 'Vị trí của bạn';
+
+  @override
+  String get instantMeetPointLabel => 'Tên điểm hẹn';
+
+  @override
+  String get instantMeetPointHint =>
+      'Ví dụ: Cổng Trương Định, Công viên Tao Đàn';
+
+  @override
+  String get instantMeetPointRequired =>
+      'Nhập tên điểm hẹn để nhiếp ảnh gia dễ tìm.';
+
+  @override
+  String instantPhotosCount(int n) {
+    return '$n ảnh';
+  }
+
+  @override
+  String get instantNoteLabel => 'Ghi chú cho nhiếp ảnh gia';
+
+  @override
+  String get instantNoteHint => 'Mình mặc áo dài trắng, chụp ở hồ…';
+
+  @override
+  String get instantEscrowNote =>
+      'Xem 5 người phù hợp miễn phí. Chỉ trả khi gửi lời mời; tiền được giữ an toàn và hoàn 100% nếu bạn huỷ khi chưa có người nhận.';
+
+  @override
+  String get instantSeeMatches => 'Xem nhiếp ảnh gia phù hợp';
+
+  @override
+  String get instantLocationTitle => 'Bật vị trí để Chụp ngay';
+
+  @override
+  String get instantLocationBody =>
+      'Nhiếp ảnh gia cần biết bạn đang ở đâu để tới đúng chỗ.';
+
+  @override
+  String get instantLocationAllow => 'Cho phép vị trí';
+
+  @override
+  String get instantBookNormally => 'Đặt lịch thường';
+
+  @override
+  String get instantOutsideArea =>
+      'Chụp ngay chưa có ở khu vực này. Bạn có thể đặt lịch thường.';
+
+  @override
+  String get instantDisabled => 'Chụp ngay đang tạm dừng.';
+
+  @override
+  String get instantHasActive => 'Bạn đang có một yêu cầu chụp ngay.';
+
+  @override
   String get liveShutterTitle => 'Live Shutter';
 
   @override

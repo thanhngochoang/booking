@@ -12,6 +12,7 @@ import 'package:photobooking/features/explore/area_picker_sheet.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/find/find_controller.dart';
 import 'package:photobooking/features/find/find_sheets.dart';
+import 'package:photobooking/features/instant/instant_find_button.dart';
 
 /// Items load when fewer than this many dp remain below the viewport.
 const _loadMoreExtent = 600.0;
@@ -286,6 +287,8 @@ class _FindPhotographerScreenState
           controller: _scroll,
           slivers: [
             ...chipRows,
+            // Mock `#S02.06-instant`: above the result count, customers only.
+            const SliverToBoxAdapter(child: InstantFindButton()),
             SliverToBoxAdapter(
               child: AsyncView<FindResults>(
                 value: results,

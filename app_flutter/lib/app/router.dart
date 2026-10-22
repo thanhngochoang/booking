@@ -42,6 +42,7 @@ import 'package:photobooking/features/explore/search/explore_search_screen.dart'
 import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
+import 'package:photobooking/features/instant/instant_request_screen.dart';
 import 'package:photobooking/features/instant_work/instant_job_screen.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
 import 'package:photobooking/features/instant_work/offer_screen.dart';
@@ -294,6 +295,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/work/calendar',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const MyCalendarScreen(),
+      ),
+      // S13 Chụp ngay (customer). `/instant/:id` is the request (Task 3).
+      GoRoute(
+        path: '/instant',
+        builder: (_, _) => const InstantRequestScreen(),
       ),
       GoRoute(
         path: '/work/instant',

@@ -7,9 +7,12 @@ import 'package:photobooking/core/widgets/app_skeleton.dart';
 /// Escrow notice container (spec .esc): shows a lock icon and safety copy
 /// explaining that the payment is held in escrow.
 class EscrowNotice extends StatelessWidget {
-  const EscrowNotice({super.key, required this.text});
+  const EscrowNotice({super.key, required this.text, this.maxLines = 2});
 
   final String text;
+
+  /// Null lets a long notice wrap in full (S13.01's three-clause note).
+  final int? maxLines;
 
   static Widget skeleton() => const _EscrowNoticeSkeleton();
 
@@ -44,8 +47,8 @@ class EscrowNotice extends StatelessWidget {
                 Expanded(
                   child: Text(
                     text,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: maxLines,
+                    overflow: maxLines == null ? null : TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppText.chip,
                       height: 1.35,
