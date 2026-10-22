@@ -8944,6 +8944,103 @@ class AppLocalizationsVi extends AppLocalizations {
   String get trackingCancel => 'Huỷ';
 
   @override
+  String get trackingSelf => 'Bạn';
+
+  @override
+  String trackingPin(String name, int minutes) {
+    return '$name · $minutes phút';
+  }
+
+  @override
+  String trackingEta(int minutes) {
+    return 'đến trong khoảng $minutes phút';
+  }
+
+  @override
+  String trackingEtaBold(int minutes) {
+    return '$minutes phút';
+  }
+
+  @override
+  String trackingNote(String name) {
+    return 'Đối chiếu ảnh đại diện khi gặp. Vị trí của $name chỉ hiện trong lúc đang đến.';
+  }
+
+  @override
+  String get trackingMessage => 'Nhắn tin';
+
+  @override
+  String trackingCancelFree(String time) {
+    return 'Huỷ (miễn phí thêm $time)';
+  }
+
+  @override
+  String get trackingCancelLate => 'Huỷ (hoàn 100%)';
+
+  @override
+  String get trackingStale => 'Đang chờ cập nhật vị trí';
+
+  @override
+  String trackingLate(String name) {
+    return '$name đến trễ. Bạn có thể huỷ và được hoàn 100%.';
+  }
+
+  @override
+  String trackingLateUnpaid(String name) {
+    return '$name đến trễ. Bạn có thể huỷ yêu cầu.';
+  }
+
+  @override
+  String get trackingArrived => 'Đã đến điểm hẹn';
+
+  @override
+  String trackingArrivedBody(String name, String place) {
+    return '$name đang chờ bạn ở $place.';
+  }
+
+  @override
+  String get shootingTitle => 'Đang chụp';
+
+  @override
+  String shootingCard(String name, String genre, String duration) {
+    return '$name · $genre $duration';
+  }
+
+  @override
+  String shootingMeta(String time, String place) {
+    return 'Bắt đầu $time · $place';
+  }
+
+  @override
+  String shootingStepDeliver(int photos) {
+    return 'Hoàn thành và giao $photos ảnh trong 48 giờ';
+  }
+
+  @override
+  String shootingNote(String name) {
+    return 'Khi $name bấm Hoàn thành, bạn xác nhận ở đây. Không xác nhận thì tự hoàn thành sau 2 giờ; có vấn đề thì báo trong 24 giờ.';
+  }
+
+  @override
+  String get shootingConfirm => 'Xác nhận hoàn thành';
+
+  @override
+  String get shootingFinishedTitle => 'Chờ bạn xác nhận';
+
+  @override
+  String shootingFinishedBody(String name, String time) {
+    return '$name đã hoàn thành buổi chụp. Tự hoàn thành sau $time nếu bạn không xác nhận.';
+  }
+
+  @override
+  String get doneTitle => 'Buổi chụp đã hoàn thành';
+
+  @override
+  String doneBody(String name, int photos) {
+    return '$name sẽ giao $photos ảnh trong 48 giờ.';
+  }
+
+  @override
   String get cancelInstantTitle => 'Huỷ chụp ngay?';
 
   @override

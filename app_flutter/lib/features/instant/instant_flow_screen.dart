@@ -12,8 +12,11 @@ import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant/choose_view.dart';
 import 'package:photobooking/features/instant/closed_view.dart';
+import 'package:photobooking/features/instant/done_view.dart';
 import 'package:photobooking/features/instant/instant_tick_scheduler.dart';
 import 'package:photobooking/features/instant/no_match_view.dart';
+import 'package:photobooking/features/instant/shooting_view.dart';
+import 'package:photobooking/features/instant/tracking_view.dart';
 import 'package:photobooking/features/instant/waiting_view.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -158,17 +161,12 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
             request: r,
             onContinue: () => _setMatching(false),
           ),
-          // Placeholders until Task 6 builds these views.
           InstantStatus.assigned ||
           InstantStatus.enRoute ||
-          InstantStatus.arrived => const _Pending(ScreenCodes.instantTracking),
-          InstantStatus.inProgress || InstantStatus.finished => const _Pending(
-            ScreenCodes.instantInProgress,
-          ),
-          InstantStatus.completed => const _Pending(
-            ScreenCodes.instantInProgress,
-            label: 'done',
-          ),
+          InstantStatus.arrived => TrackingView(request: r),
+          InstantStatus.inProgress ||
+          InstantStatus.finished => ShootingView(request: r),
+          InstantStatus.completed => DoneView(request: r),
           InstantStatus.noMatch => NoMatchView(request: r),
           InstantStatus.cancelledByCustomer ||
           InstantStatus.abandoned ||
@@ -258,22 +256,4 @@ class _Matched extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A status whose view comes in a later task: its screen code over the
-/// waiting loader.
-class _Pending extends StatelessWidget {
-  const _Pending(this.code, {this.label});
-
-  final String code;
-  final String? label;
-
-  @override
-  Widget build(BuildContext context) => ScreenCode(
-    code,
-    label: label,
-    child: const _Frame(
-      child: Center(child: SignatureLoader(wave: LoaderWave.vibration)),
-    ),
-  );
 }

@@ -96,9 +96,9 @@ class InstantCustomerWorld {
 Widget _stub(BuildContext _, GoRouterState s) =>
     Scaffold(body: Text('stub ${s.uri}'));
 
-/// `/home`, `/action`, `/instant` (S13.01), `/instant/:id` (the request's
-/// status switch), `/profile/phone` (a stub whose "save-phone" saves a number and goes to
-/// `returnTo`, like S04.05).
+/// `/home`, `/action`, `/chat/:chatId` (stub), `/instant` (S13.01),
+/// `/instant/:id` (the request's status switch), `/profile/phone` (a stub whose
+/// "save-phone" saves a number and goes to `returnTo`, like S04.05).
 GoRouter instantCustomerRouter(
   InstantCustomerWorld world, {
   String initial = '/home',
@@ -115,6 +115,7 @@ GoRouter instantCustomerRouter(
       path: '/action',
       builder: action == null ? _stub : (_, _) => Scaffold(body: action),
     ),
+    GoRoute(path: '/chat/:chatId', builder: _stub),
     GoRoute(path: '/instant', builder: (_, _) => const InstantRequestScreen()),
     GoRoute(
       path: '/instant/:id',

@@ -15369,6 +15369,144 @@ abstract class AppLocalizations {
   /// **'Huỷ'**
   String get trackingCancel;
 
+  /// S13.05 map pin of the meet point (the customer's own live position is never shown)
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn'**
+  String get trackingSelf;
+
+  /// No description provided for @trackingPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {minutes} phút'**
+  String trackingPin(String name, int minutes);
+
+  /// No description provided for @trackingEta.
+  ///
+  /// In vi, this message translates to:
+  /// **'đến trong khoảng {minutes} phút'**
+  String trackingEta(int minutes);
+
+  /// the bold part of trackingEta
+  ///
+  /// In vi, this message translates to:
+  /// **'{minutes} phút'**
+  String trackingEtaBold(int minutes);
+
+  /// No description provided for @trackingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đối chiếu ảnh đại diện khi gặp. Vị trí của {name} chỉ hiện trong lúc đang đến.'**
+  String trackingNote(String name);
+
+  /// No description provided for @trackingMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin'**
+  String get trackingMessage;
+
+  /// No description provided for @trackingCancelFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ (miễn phí thêm {time})'**
+  String trackingCancelFree(String time);
+
+  /// No description provided for @trackingCancelLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ (hoàn 100%)'**
+  String get trackingCancelLate;
+
+  /// No description provided for @trackingStale.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ cập nhật vị trí'**
+  String get trackingStale;
+
+  /// No description provided for @trackingLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đến trễ. Bạn có thể huỷ và được hoàn 100%.'**
+  String trackingLate(String name);
+
+  /// trackingLate without the money: nothing is paid before #202
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đến trễ. Bạn có thể huỷ yêu cầu.'**
+  String trackingLateUnpaid(String name);
+
+  /// No description provided for @trackingArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến điểm hẹn'**
+  String get trackingArrived;
+
+  /// No description provided for @trackingArrivedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang chờ bạn ở {place}.'**
+  String trackingArrivedBody(String name, String place);
+
+  /// No description provided for @shootingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get shootingTitle;
+
+  /// No description provided for @shootingCard.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {genre} {duration}'**
+  String shootingCard(String name, String genre, String duration);
+
+  /// No description provided for @shootingMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu {time} · {place}'**
+  String shootingMeta(String time, String place);
+
+  /// No description provided for @shootingStepDeliver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành và giao {photos} ảnh trong 48 giờ'**
+  String shootingStepDeliver(int photos);
+
+  /// No description provided for @shootingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi {name} bấm Hoàn thành, bạn xác nhận ở đây. Không xác nhận thì tự hoàn thành sau 2 giờ; có vấn đề thì báo trong 24 giờ.'**
+  String shootingNote(String name);
+
+  /// No description provided for @shootingConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận hoàn thành'**
+  String get shootingConfirm;
+
+  /// No description provided for @shootingFinishedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bạn xác nhận'**
+  String get shootingFinishedTitle;
+
+  /// time is h:mm:ss, shown bold
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã hoàn thành buổi chụp. Tự hoàn thành sau {time} nếu bạn không xác nhận.'**
+  String shootingFinishedBody(String name, String time);
+
+  /// No description provided for @doneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp đã hoàn thành'**
+  String get doneTitle;
+
+  /// No description provided for @doneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} sẽ giao {photos} ảnh trong 48 giờ.'**
+  String doneBody(String name, int photos);
+
   /// No description provided for @cancelInstantTitle.
   ///
   /// In vi, this message translates to:

@@ -153,6 +153,10 @@ class FakeInstantRepository implements InstantRepository {
   void failOffers(Object error) => _offers.fail(error);
   void failActiveJob(Object error) => _activeJob.fail(error);
 
+  /// Someone listens to the track of [requestId] (S13.05 while en route).
+  bool isTrackWatched(String requestId) =>
+      _tracks[requestId]?._controller.hasListener ?? false;
+
   LiveShutterState? get presence => _presence.value;
   List<InstantOffer> get offers => _offers.value;
 
