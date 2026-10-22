@@ -9035,6 +9035,72 @@ class AppLocalizationsVi extends AppLocalizations {
   String get refundToZaloPay => 'ZaloPay';
 
   @override
+  String get waitingTitle => 'Đang chờ trả lời';
+
+  @override
+  String waitingSent(int n) {
+    return 'Đã gửi lời mời cho $n người';
+  }
+
+  @override
+  String waitingBody(String time) {
+    return 'Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn $time.';
+  }
+
+  @override
+  String waitingRowEta(int minutes) {
+    return 'khoảng $minutes phút';
+  }
+
+  @override
+  String get waitingViewing => 'Đang xem';
+
+  @override
+  String get waitingDeclined => 'Đã từ chối';
+
+  @override
+  String get waitingExpired => 'Hết hạn';
+
+  @override
+  String get waitingNotCounted => 'Không tính';
+
+  @override
+  String waitingRowSemantics(String name) {
+    return '$name đang xem lời mời';
+  }
+
+  @override
+  String get waitingNote =>
+      'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.';
+
+  @override
+  String get waitingCancel => 'Huỷ yêu cầu';
+
+  @override
+  String get noMatchTitle => 'Chưa tìm được nhiếp ảnh gia';
+
+  @override
+  String noMatchBody(int invited, int rounds) {
+    return 'Bạn đã mời $invited người trong $rounds lượt; gần bạn lúc này ít người đang sẵn sàng.';
+  }
+
+  @override
+  String noMatchHeld(String amount, String method) {
+    return '$amount vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về $method.';
+  }
+
+  @override
+  String get noMatchBookNormally => 'Đặt lịch thường với người bạn chọn';
+
+  @override
+  String noMatchCancel(String amount) {
+    return 'Huỷ yêu cầu và hoàn $amount';
+  }
+
+  @override
+  String get noMatchMore => 'Chọn thêm người';
+
+  @override
   String get liveShutterTitle => 'Live Shutter';
 
   @override
@@ -9174,6 +9240,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String matchBodyPhotographer(String name, String place) {
     return '$name đang chờ ở $place. Tiếp tục để xem đường đi.';
+  }
+
+  @override
+  String matchBodyCustomer(String name, String place, int minutes) {
+    return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place, khoảng $minutes phút.';
   }
 
   @override

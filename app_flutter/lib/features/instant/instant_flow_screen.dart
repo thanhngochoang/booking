@@ -1,8 +1,7 @@
 // `/instant/:id`: the customer's Chụp ngay request, one route whose view
 // follows the request's status (Decision 4). Also asks the server to settle
-// its timers once per deadline and on app resume (Decision 6).
-import 'dart:async';
-
+// its timers once per deadline and on app resume (Decision 6), and shows the
+// match moment (S13.04) over S13.05 when a photographer accepts (Decision 5).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +12,9 @@ import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant/choose_view.dart';
 import 'package:photobooking/features/instant/closed_view.dart';
-import 'package:photobooking/features/instant/instant_ticks.dart';
+import 'package:photobooking/features/instant/instant_tick_scheduler.dart';
+import 'package:photobooking/features/instant/no_match_view.dart';
+import 'package:photobooking/features/instant/waiting_view.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 
@@ -26,16 +27,22 @@ class InstantFlowScreen extends ConsumerStatefulWidget {
   ConsumerState<InstantFlowScreen> createState() => _InstantFlowScreenState();
 }
 
+/// An assignment younger than this, opened from a push, still gets the match
+/// moment (Decision 5).
+const kInstantFreshMatch = Duration(seconds: 60);
+
 class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
     with WidgetsBindingObserver {
-  Timer? _tickTimer;
-
-  /// Deadlines already ticked: one call each, however often the request
-  /// changes.
-  final _ticked = <DateTime>{};
+  late final InstantTickScheduler _ticks;
 
   /// The request has ended (or is gone) and Home was told.
   bool _ended = false;
+
+  /// The status of the previous snapshot; null before the first one.
+  InstantStatus? _previous;
+
+  /// S13.04 is up over S13.05.
+  bool _matching = false;
 
   String get _id => widget.requestId;
 
@@ -43,6 +50,10 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _ticks = InstantTickScheduler(
+      tick: () => ref.read(instantRepositoryProvider).tick(_id),
+      now: ref.read(clockProvider),
+    );
     ref.listenManual<AsyncValue<InstantRequest?>>(instantRequestProvider(_id), (
       _,
       next,
@@ -53,7 +64,7 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
 
   @override
   void dispose() {
-    _tickTimer?.cancel();
+    _ticks.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -65,40 +76,41 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
       ref.invalidate(instantActiveRequestIdProvider);
     }
     _ended = ended;
-    _schedule(r);
-  }
-
-  /// One timer for the soonest deadline not ticked yet.
-  void _schedule(InstantRequest? r) {
-    _tickTimer?.cancel();
-    _tickTimer = null;
-    if (r == null) return;
-    final at = instantTickDeadlines(r)
-        .where((d) => !_ticked.contains(d))
-        .firstOrNull;
-    if (at == null) return;
-    final wait = at.difference(ref.read(clockProvider)());
-    _tickTimer = Timer(wait.isNegative ? Duration.zero : wait, () {
-      _ticked.add(at);
-      unawaited(_tick());
-      if (mounted) _schedule(ref.read(instantRequestProvider(_id)).value);
-    });
-  }
-
-  /// A failing tick is silent: the listener shows the truth.
-  Future<void> _tick() async {
-    try {
-      await ref.read(instantRepositoryProvider).tick(_id);
-    } on Object catch (e) {
-      debugPrint('instant tick failed: ${instantErrorCodeOf(e)}');
+    _ticks.update(r);
+    final match = _isMatch(_previous, r);
+    _previous = r?.status;
+    if (match) {
+      _setMatching(true);
+    } else if (_matching && (r == null || !_tracking(r.status))) {
+      // The request moved on under the overlay (cancelled, closed).
+      _setMatching(false);
     }
+  }
+
+  /// Decision 5: `searching → assigned` seen here, or the first snapshot an
+  /// assignment younger than [kInstantFreshMatch] (opened from the push).
+  bool _isMatch(InstantStatus? previous, InstantRequest? r) {
+    if (r == null || r.status != InstantStatus.assigned) return false;
+    if (previous == InstantStatus.searching) return true;
+    if (previous != null) return false;
+    final at = r.assignedAt;
+    return at != null &&
+        ref.read(clockProvider)().difference(at) < kInstantFreshMatch;
+  }
+
+  static bool _tracking(InstantStatus s) =>
+      s == InstantStatus.assigned ||
+      s == InstantStatus.enRoute ||
+      s == InstantStatus.arrived;
+
+  void _setMatching(bool on) {
+    if (_matching == on || !mounted) return;
+    setState(() => _matching = on);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
-    final r = ref.read(instantRequestProvider(_id)).value;
-    if (r != null && r.status.isActive) unawaited(_tick());
+    if (state == AppLifecycleState.resumed) _ticks.onResume();
   }
 
   Future<void> _askPrimer() async {
@@ -139,10 +151,14 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
             request: r,
             askPrimer: _askPrimer,
           ),
-          // Placeholders until Tasks 5–6 build these views.
-          InstantStatus.searching => const _Pending(
-            ScreenCodes.instantSearching,
+          InstantStatus.searching => WaitingView(request: r),
+          InstantStatus.assigned ||
+          InstantStatus.enRoute ||
+          InstantStatus.arrived when _matching => _Matched(
+            request: r,
+            onContinue: () => _setMatching(false),
           ),
+          // Placeholders until Task 6 builds these views.
           InstantStatus.assigned ||
           InstantStatus.enRoute ||
           InstantStatus.arrived => const _Pending(ScreenCodes.instantTracking),
@@ -153,7 +169,7 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
             ScreenCodes.instantInProgress,
             label: 'done',
           ),
-          InstantStatus.noMatch => const _Pending(ScreenCodes.instantNoMatch),
+          InstantStatus.noMatch => NoMatchView(request: r),
           InstantStatus.cancelledByCustomer ||
           InstantStatus.abandoned ||
           InstantStatus.noShowCustomer => ClosedView(request: r),
@@ -187,6 +203,51 @@ class _Frame extends StatelessWidget {
           title: Text(l.instantTitle),
         ),
         body: child,
+      ),
+    );
+  }
+}
+
+/// S13.04 (`#S13.04`), customer side: "Đã match với Minh Trí", then S13.05
+/// (after "Tiếp tục" or by itself after ~3 s).
+class _Matched extends StatelessWidget {
+  const _Matched({required this.request, required this.onContinue});
+
+  final InstantRequest request;
+  final VoidCallback onContinue;
+
+  /// The ETA at assignment; the accepted invite's when the request has none.
+  int get _etaMinutes =>
+      request.etaMinutes ??
+      request.offers
+          .where((o) => o.photographerId == request.photographerId)
+          .firstOrNull
+          ?.etaMinutes ??
+      1;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final name = request.photographer?.name ?? '';
+    return ScreenCode(
+      ScreenCodes.instantMatched,
+      child: AuroraBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: MatchOverlay(
+              name: name,
+              body: l.matchBodyCustomer(
+                name,
+                request.meetPoint.name,
+                _etaMinutes,
+              ),
+              myAvatarUrl: request.customerAvatarUrl,
+              theirAvatarUrl: request.photographer?.avatarUrl,
+              onContinue: onContinue,
+            ),
+          ),
+        ),
       ),
     );
   }

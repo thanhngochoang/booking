@@ -15513,6 +15513,108 @@ abstract class AppLocalizations {
   /// **'ZaloPay'**
   String get refundToZaloPay;
 
+  /// No description provided for @waitingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ trả lời'**
+  String get waitingTitle;
+
+  /// No description provided for @waitingSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi lời mời cho {n} người'**
+  String waitingSent(int n);
+
+  /// time is m:ss to the latest pending invite's expiry, shown bold
+  ///
+  /// In vi, this message translates to:
+  /// **'Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn {time}.'**
+  String waitingBody(String time);
+
+  /// the ETA part of an S13.03 row's MetaLine, after the tomato percent when there are 5+ reviews
+  ///
+  /// In vi, this message translates to:
+  /// **'khoảng {minutes} phút'**
+  String waitingRowEta(int minutes);
+
+  /// No description provided for @waitingViewing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xem'**
+  String get waitingViewing;
+
+  /// No description provided for @waitingDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối'**
+  String get waitingDeclined;
+
+  /// No description provided for @waitingExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get waitingExpired;
+
+  /// No description provided for @waitingNotCounted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tính'**
+  String get waitingNotCounted;
+
+  /// No description provided for @waitingRowSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang xem lời mời'**
+  String waitingRowSemantics(String name);
+
+  /// No description provided for @waitingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.'**
+  String get waitingNote;
+
+  /// No description provided for @waitingCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu'**
+  String get waitingCancel;
+
+  /// No description provided for @noMatchTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tìm được nhiếp ảnh gia'**
+  String get noMatchTitle;
+
+  /// No description provided for @noMatchBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã mời {invited} người trong {rounds} lượt; gần bạn lúc này ít người đang sẵn sàng.'**
+  String noMatchBody(int invited, int rounds);
+
+  /// method is refundToBankQr / refundToMomo / refundToZaloPay
+  ///
+  /// In vi, this message translates to:
+  /// **'{amount} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về {method}.'**
+  String noMatchHeld(String amount, String method);
+
+  /// No description provided for @noMatchBookNormally.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch thường với người bạn chọn'**
+  String get noMatchBookNormally;
+
+  /// No description provided for @noMatchCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu và hoàn {amount}'**
+  String noMatchCancel(String amount);
+
+  /// No description provided for @noMatchMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thêm người'**
+  String get noMatchMore;
+
   /// No description provided for @liveShutterTitle.
   ///
   /// In vi, this message translates to:
@@ -15740,6 +15842,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{name} đang chờ ở {place}. Tiếp tục để xem đường đi.'**
   String matchBodyPhotographer(String name, String place);
+
+  /// No description provided for @matchBodyCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}, khoảng {minutes} phút.'**
+  String matchBodyCustomer(String name, String place, int minutes);
 
   /// No description provided for @matchContinue.
   ///
