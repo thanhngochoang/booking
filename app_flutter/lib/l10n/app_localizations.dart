@@ -14984,6 +14984,252 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Lịch tại điểm · {count} đang mở'**
   String workSpotSchedulesOpen(int count);
+
+  /// No description provided for @instantTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay'**
+  String get instantTitle;
+
+  /// No description provided for @instantGenrePortrait.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chân dung'**
+  String get instantGenrePortrait;
+
+  /// No description provided for @instantGenreCouple.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cặp đôi'**
+  String get instantGenreCouple;
+
+  /// No description provided for @instantGenreFamily.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia đình'**
+  String get instantGenreFamily;
+
+  /// No description provided for @instantGenreEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện nhỏ'**
+  String get instantGenreEvent;
+
+  /// No description provided for @instantGenreProduct.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sản phẩm'**
+  String get instantGenreProduct;
+
+  /// No description provided for @instantDurationMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String instantDurationMinutes(int n);
+
+  /// No description provided for @instantDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String instantDurationHours(int n);
+
+  /// No description provided for @instantPackageLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'{duration} · {photos} ảnh'**
+  String instantPackageLabel(String duration, int photos);
+
+  /// No description provided for @instantStatusAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get instantStatusAssigned;
+
+  /// No description provided for @instantStatusEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang đến'**
+  String get instantStatusEnRoute;
+
+  /// No description provided for @instantStatusArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get instantStatusArrived;
+
+  /// No description provided for @instantStatusInProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get instantStatusInProgress;
+
+  /// No description provided for @instantStatusFinished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách xác nhận'**
+  String get instantStatusFinished;
+
+  /// No description provided for @instantErrorGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại nhé.'**
+  String get instantErrorGeneric;
+
+  /// No description provided for @instantErrorNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối. Thử lại nhé.'**
+  String get instantErrorNetwork;
+
+  /// No description provided for @liveShutterTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Live Shutter'**
+  String get liveShutterTitle;
+
+  /// No description provided for @liveShutterBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.'**
+  String get liveShutterBody;
+
+  /// No description provided for @liveShutterCardOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang bật · nhận lời mời ở gần bạn'**
+  String get liveShutterCardOn;
+
+  /// No description provided for @liveShutterCardOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tắt · bật để nhận việc chụp ngay'**
+  String get liveShutterCardOff;
+
+  /// No description provided for @liveShutterJobTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc chụp ngay · {name}'**
+  String liveShutterJobTitle(String name);
+
+  /// No description provided for @liveShutterJobMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{service} · {place}'**
+  String liveShutterJobMeta(String service, String place);
+
+  /// No description provided for @helpReadyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sẵn sàng hỗ trợ'**
+  String get helpReadyTitle;
+
+  /// No description provided for @helpReadyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được ưu tiên mời cả việc gấp, xa hơn một chút.'**
+  String get helpReadyBody;
+
+  /// No description provided for @priceListTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bảng giá gói'**
+  String get priceListTitle;
+
+  /// No description provided for @priceListAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản {version} · đã đồng ý'**
+  String priceListAccepted(int version);
+
+  /// No description provided for @priceListNotAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản {version} · chưa đồng ý'**
+  String priceListNotAccepted(int version);
+
+  /// No description provided for @priceListCustomerPays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách trả'**
+  String get priceListCustomerPays;
+
+  /// No description provided for @priceListYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận'**
+  String get priceListYouGet;
+
+  /// No description provided for @priceListTermsNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá do nền tảng đặt, giống nhau cho mọi nhiếp ảnh gia trong một lượt gợi ý. Đồng ý để bật Live Shutter.'**
+  String get priceListTermsNote;
+
+  /// No description provided for @priceListAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý bảng giá'**
+  String get priceListAccept;
+
+  /// No description provided for @liveShutterNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở app trong 30 phút thì tạm ngừng nhận lời mời; mở lại app là nhận tiếp. Huỷ sau khi nhận làm giảm điểm tin cậy.'**
+  String get liveShutterNote;
+
+  /// No description provided for @liveShutterOffToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt khi xong việc hôm nay'**
+  String get liveShutterOffToday;
+
+  /// No description provided for @liveShutterLockedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bật được Live Shutter'**
+  String get liveShutterLockedTitle;
+
+  /// No description provided for @liveShutterReasonNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất xác minh và hồ sơ để nhận đơn'**
+  String get liveShutterReasonNotAccepting;
+
+  /// No description provided for @liveShutterReasonPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số điện thoại'**
+  String get liveShutterReasonPhone;
+
+  /// No description provided for @liveShutterReasonPriceList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý bảng giá gói'**
+  String get liveShutterReasonPriceList;
+
+  /// No description provided for @liveShutterReasonOutside.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang ở ngoài khu vực có Chụp ngay'**
+  String get liveShutterReasonOutside;
+
+  /// No description provided for @liveShutterReasonLocation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép dùng vị trí để nhận lời mời ở gần'**
+  String get liveShutterReasonLocation;
+
+  /// No description provided for @liveShutterAddPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số'**
+  String get liveShutterAddPhone;
+
+  /// No description provided for @liveShutterOpenSettings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở cài đặt'**
+  String get liveShutterOpenSettings;
 }
 
 class _AppLocalizationsDelegate

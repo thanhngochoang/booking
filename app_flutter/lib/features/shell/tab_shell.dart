@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/explore_badge.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
+import 'package:photobooking/features/instant_work/live_shutter_heartbeat.dart';
 import 'package:photobooking/features/shell/tab_badges.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -22,10 +24,14 @@ class TabShell extends ConsumerWidget {
     final specs = tabsFor(role);
     final badges = ref.watch(tabBadgesProvider);
     final l = context.l10n;
+    // Decision 10: a photographer's presence heartbeat while the app is open
+    // (only once Chụp ngay is on, so nothing is listened to before).
+    final heartbeat =
+        role == UserRole.photographer && ref.watch(instantEnabledProvider);
     return AuroraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: shell,
+        body: heartbeat ? LiveShutterHeartbeat(child: shell) : shell,
         bottomNavigationBar: DecoratedBox(
           // Mock `.tabs`: 1px hairline above the bar.
           decoration: BoxDecoration(

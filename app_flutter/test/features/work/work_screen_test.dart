@@ -13,11 +13,15 @@ import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/instant/instant_models.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/features/instant_work/live_shutter_card.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
 import '../../support/event_world.dart' as ev;
+import '../../support/fake_instant_repository.dart';
 import '../../support/fake_spot_repository.dart';
 
 /// Thursday 08/10 09:00 in Vietnam.
@@ -756,5 +760,59 @@ void main() {
     await tester.tap(entry);
     await _settle(tester);
     expect(h.location, '/me/spot-schedules');
+  });
+
+  group('S06.01-instant', () {
+    testWidgets('flag off: no Live Shutter card', (tester) async {
+      await _pump(tester, _repo(_busy()));
+      await _settle(tester);
+      expect(find.text('Hôm nay'), findsOneWidget);
+      expect(find.byType(LiveShutterCard), findsNothing);
+      expect(find.text('Live Shutter'), findsNothing);
+    });
+
+    testWidgets('flag on: the card sits above "Hôm nay", also on S06.02', (
+      tester,
+    ) async {
+      final instant = FakeInstantRepository(
+        presence: const LiveShutterState(priceListVersion: 1),
+      );
+      addTearDown(instant.dispose);
+      final overrides = [
+        instantEnabledProvider.overrideWithValue(true),
+        instantRepositoryProvider.overrideWithValue(instant),
+      ];
+      await pumpBookingsTab(
+        tester,
+        uid: detailPhotographerUid,
+        role: UserRole.photographer,
+        bookings: _repo(_busy()),
+        clock: TestClock(_now),
+        portfolioPhotos: 8,
+        packages: const [workPackage],
+        completeness: 90,
+        extraOverrides: overrides,
+      );
+      await _settle(tester);
+      expect(
+        find.text('Đang tắt · bật để nhận việc chụp ngay'),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('Live Shutter')).dy,
+        lessThan(tester.getTopLeft(find.text('Hôm nay')).dy),
+      );
+
+      await pumpBookingsTab(
+        tester,
+        uid: detailPhotographerUid,
+        role: UserRole.photographer,
+        bookings: _repo(const []),
+        clock: TestClock(_now),
+        extraOverrides: overrides,
+      );
+      await _settle(tester);
+      expect(find.byType(LiveShutterCard), findsOneWidget);
+    });
   });
 }

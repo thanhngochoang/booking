@@ -8717,4 +8717,147 @@ class AppLocalizationsVi extends AppLocalizations {
   String workSpotSchedulesOpen(int count) {
     return 'Lịch tại điểm · $count đang mở';
   }
+
+  @override
+  String get instantTitle => 'Chụp ngay';
+
+  @override
+  String get instantGenrePortrait => 'Chân dung';
+
+  @override
+  String get instantGenreCouple => 'Cặp đôi';
+
+  @override
+  String get instantGenreFamily => 'Gia đình';
+
+  @override
+  String get instantGenreEvent => 'Sự kiện nhỏ';
+
+  @override
+  String get instantGenreProduct => 'Sản phẩm';
+
+  @override
+  String instantDurationMinutes(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String instantDurationHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String instantPackageLabel(String duration, int photos) {
+    return '$duration · $photos ảnh';
+  }
+
+  @override
+  String get instantStatusAssigned => 'Đã nhận';
+
+  @override
+  String get instantStatusEnRoute => 'Đang đến';
+
+  @override
+  String get instantStatusArrived => 'Đã đến';
+
+  @override
+  String get instantStatusInProgress => 'Đang chụp';
+
+  @override
+  String get instantStatusFinished => 'Chờ khách xác nhận';
+
+  @override
+  String get instantErrorGeneric => 'Chưa thực hiện được. Thử lại nhé.';
+
+  @override
+  String get instantErrorNetwork => 'Mất kết nối. Thử lại nhé.';
+
+  @override
+  String get liveShutterTitle => 'Live Shutter';
+
+  @override
+  String get liveShutterBody =>
+      'Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.';
+
+  @override
+  String get liveShutterCardOn => 'Đang bật · nhận lời mời ở gần bạn';
+
+  @override
+  String get liveShutterCardOff => 'Đang tắt · bật để nhận việc chụp ngay';
+
+  @override
+  String liveShutterJobTitle(String name) {
+    return 'Việc chụp ngay · $name';
+  }
+
+  @override
+  String liveShutterJobMeta(String service, String place) {
+    return '$service · $place';
+  }
+
+  @override
+  String get helpReadyTitle => 'Sẵn sàng hỗ trợ';
+
+  @override
+  String get helpReadyBody => 'Được ưu tiên mời cả việc gấp, xa hơn một chút.';
+
+  @override
+  String get priceListTitle => 'Bảng giá gói';
+
+  @override
+  String priceListAccepted(int version) {
+    return 'Bản $version · đã đồng ý';
+  }
+
+  @override
+  String priceListNotAccepted(int version) {
+    return 'Bản $version · chưa đồng ý';
+  }
+
+  @override
+  String get priceListCustomerPays => 'Khách trả';
+
+  @override
+  String get priceListYouGet => 'Bạn nhận';
+
+  @override
+  String get priceListTermsNote =>
+      'Giá do nền tảng đặt, giống nhau cho mọi nhiếp ảnh gia trong một lượt gợi ý. Đồng ý để bật Live Shutter.';
+
+  @override
+  String get priceListAccept => 'Đồng ý bảng giá';
+
+  @override
+  String get liveShutterNote =>
+      'Không mở app trong 30 phút thì tạm ngừng nhận lời mời; mở lại app là nhận tiếp. Huỷ sau khi nhận làm giảm điểm tin cậy.';
+
+  @override
+  String get liveShutterOffToday => 'Tắt khi xong việc hôm nay';
+
+  @override
+  String get liveShutterLockedTitle => 'Chưa bật được Live Shutter';
+
+  @override
+  String get liveShutterReasonNotAccepting =>
+      'Hoàn tất xác minh và hồ sơ để nhận đơn';
+
+  @override
+  String get liveShutterReasonPhone => 'Thêm số điện thoại';
+
+  @override
+  String get liveShutterReasonPriceList => 'Đồng ý bảng giá gói';
+
+  @override
+  String get liveShutterReasonOutside =>
+      'Bạn đang ở ngoài khu vực có Chụp ngay';
+
+  @override
+  String get liveShutterReasonLocation =>
+      'Cho phép dùng vị trí để nhận lời mời ở gần';
+
+  @override
+  String get liveShutterAddPhone => 'Thêm số';
+
+  @override
+  String get liveShutterOpenSettings => 'Mở cài đặt';
 }
