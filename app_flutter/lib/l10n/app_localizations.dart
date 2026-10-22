@@ -15213,6 +15213,150 @@ abstract class AppLocalizations {
   /// **'Bạn đang có một yêu cầu chụp ngay.'**
   String get instantHasActive;
 
+  /// No description provided for @chooseTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn người bạn thích'**
+  String get chooseTitle;
+
+  /// No description provided for @chooseSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{genre} · {duration} · {amount}'**
+  String chooseSubtitle(String genre, String duration, String amount);
+
+  /// No description provided for @chooseCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'{index} / {total}'**
+  String chooseCounter(int index, int total);
+
+  /// No description provided for @chooseStamp.
+  ///
+  /// In vi, this message translates to:
+  /// **'CHỌN'**
+  String get chooseStamp;
+
+  /// No description provided for @chooseEta.
+  ///
+  /// In vi, this message translates to:
+  /// **'đến khoảng {minutes} phút'**
+  String chooseEta(int minutes);
+
+  /// No description provided for @chooseLike.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn'**
+  String get chooseLike;
+
+  /// No description provided for @chooseSkip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ qua'**
+  String get chooseSkip;
+
+  /// No description provided for @chooseUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get chooseUndo;
+
+  /// No description provided for @choosePicked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn {n} người'**
+  String choosePicked(int n);
+
+  /// No description provided for @chooseDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get chooseDone;
+
+  /// No description provided for @chooseSummaryTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Những người bạn đã chọn'**
+  String get chooseSummaryTitle;
+
+  /// No description provided for @chooseUnpick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chọn'**
+  String get chooseUnpick;
+
+  /// No description provided for @chooseUnpickA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chọn {name}'**
+  String chooseUnpickA11y(String name);
+
+  /// No description provided for @chooseInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lời mời'**
+  String get chooseInvite;
+
+  /// No description provided for @chooseMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem 5 người khác'**
+  String get chooseMore;
+
+  /// No description provided for @chooseEscrow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.'**
+  String get chooseEscrow;
+
+  /// No description provided for @chooseRoundEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai nhận. Chọn thêm người nhé.'**
+  String get chooseRoundEnded;
+
+  /// No description provided for @chooseEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn'**
+  String get chooseEmptyTitle;
+
+  /// No description provided for @chooseEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường.'**
+  String get chooseEmptyBody;
+
+  /// No description provided for @chooseEmptyRetry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử lại'**
+  String get chooseEmptyRetry;
+
+  /// No description provided for @choosePriceChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá vừa đổi thành {amount}. Kiểm tra lại trước khi thanh toán.'**
+  String choosePriceChanged(String amount);
+
+  /// No description provided for @doneHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get doneHome;
+
+  /// No description provided for @instantNotFoundTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy yêu cầu'**
+  String get instantNotFoundTitle;
+
+  /// No description provided for @instantNotFoundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.'**
+  String get instantNotFoundBody;
+
   /// No description provided for @liveShutterTitle.
   ///
   /// In vi, this message translates to:

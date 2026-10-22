@@ -106,6 +106,7 @@ export 'package:photobooking/core/widgets/meta_line.dart';
 export 'package:photobooking/core/widgets/match_overlay.dart';
 export 'package:photobooking/core/widgets/map_preview.dart';
 export 'package:photobooking/core/widgets/offer_stack.dart';
+export 'package:photobooking/core/widgets/swipe_deck.dart';
 export 'package:photobooking/core/widgets/assignee_card.dart';
 export 'package:photobooking/core/widgets/member_row.dart';
 export 'package:photobooking/core/widgets/member_strip.dart';

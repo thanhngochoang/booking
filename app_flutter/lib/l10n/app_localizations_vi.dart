@@ -8849,6 +8849,93 @@ class AppLocalizationsVi extends AppLocalizations {
   String get instantHasActive => 'Bạn đang có một yêu cầu chụp ngay.';
 
   @override
+  String get chooseTitle => 'Chọn người bạn thích';
+
+  @override
+  String chooseSubtitle(String genre, String duration, String amount) {
+    return '$genre · $duration · $amount';
+  }
+
+  @override
+  String chooseCounter(int index, int total) {
+    return '$index / $total';
+  }
+
+  @override
+  String get chooseStamp => 'CHỌN';
+
+  @override
+  String chooseEta(int minutes) {
+    return 'đến khoảng $minutes phút';
+  }
+
+  @override
+  String get chooseLike => 'Chọn';
+
+  @override
+  String get chooseSkip => 'Bỏ qua';
+
+  @override
+  String get chooseUndo => 'Hoàn tác';
+
+  @override
+  String choosePicked(int n) {
+    return 'Đã chọn $n người';
+  }
+
+  @override
+  String get chooseDone => 'Xong';
+
+  @override
+  String get chooseSummaryTitle => 'Những người bạn đã chọn';
+
+  @override
+  String get chooseUnpick => 'Bỏ chọn';
+
+  @override
+  String chooseUnpickA11y(String name) {
+    return 'Bỏ chọn $name';
+  }
+
+  @override
+  String get chooseInvite => 'Gửi lời mời';
+
+  @override
+  String get chooseMore => 'Xem 5 người khác';
+
+  @override
+  String get chooseEscrow =>
+      'Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.';
+
+  @override
+  String get chooseRoundEnded => 'Chưa ai nhận. Chọn thêm người nhé.';
+
+  @override
+  String get chooseEmptyTitle => 'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn';
+
+  @override
+  String get chooseEmptyBody =>
+      'Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường.';
+
+  @override
+  String get chooseEmptyRetry => 'Thử lại';
+
+  @override
+  String choosePriceChanged(String amount) {
+    return 'Giá vừa đổi thành $amount. Kiểm tra lại trước khi thanh toán.';
+  }
+
+  @override
+  String get doneHome => 'Về trang chủ';
+
+  @override
+  String get instantNotFoundTitle => 'Không tìm thấy yêu cầu';
+
+  @override
+  String get instantNotFoundBody =>
+      'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.';
+
+  @override
   String get liveShutterTitle => 'Live Shutter';
 
   @override

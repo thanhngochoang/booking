@@ -115,6 +115,8 @@ abstract final class AppIcons {
   static const IconData volumeOff = Symbols.volume_off_rounded;
   static const IconData delete = Symbols.delete_rounded;
   static const IconData personRemove = Symbols.person_remove_rounded;
+  static const IconData personSearch = Symbols.person_search_rounded;
+  static const IconData hourglass = Symbols.hourglass_empty_rounded;
   static const IconData flag = Symbols.flag_rounded;
   static const IconData help = Symbols.help_rounded;
   static const IconData car = Symbols.directions_car_rounded;

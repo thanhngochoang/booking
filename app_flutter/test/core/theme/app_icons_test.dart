@@ -88,6 +88,8 @@ const _entries = <String, IconData>{
   'volumeOff': AppIcons.volumeOff,
   'delete': AppIcons.delete,
   'personRemove': AppIcons.personRemove,
+  'personSearch': AppIcons.personSearch,
+  'hourglass': AppIcons.hourglass,
   'flag': AppIcons.flag,
 };
 

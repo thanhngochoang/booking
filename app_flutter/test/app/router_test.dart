@@ -208,6 +208,9 @@ void main() {
       instantCustomerRedirect(enabled: true, role: UserRole.photographer),
       '/home',
     );
-    expect(instantCustomerRedirect(enabled: true), '/home');
+    // Profile still loading: a cold-start deep link or push keeps its
+    // destination (the app-level redirect parks it on /splash meanwhile).
+    expect(instantCustomerRedirect(enabled: true), isNull);
+    expect(instantCustomerRedirect(enabled: false), '/home');
   });
 }

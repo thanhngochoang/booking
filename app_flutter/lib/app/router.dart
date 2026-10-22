@@ -43,6 +43,7 @@ import 'package:photobooking/features/explore/search/explore_search_screen.dart'
 import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
+import 'package:photobooking/features/instant/instant_flow_screen.dart';
 import 'package:photobooking/features/instant/instant_request_screen.dart';
 import 'package:photobooking/features/instant_work/instant_job_screen.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
@@ -146,8 +147,11 @@ String? photographerOnlyRedirect(UserRole? role) =>
     role == UserRole.photographer ? null : AppTab.home.path;
 
 /// S13 Chụp ngay is for customers, and only while it is on (Decision 9, 14).
+/// A role not known yet (profile loading) does not redirect: a cold-start
+/// deep link or push keeps its destination (the app-level redirect parks it
+/// on /splash until the profile is there).
 String? instantCustomerRedirect({required bool enabled, UserRole? role}) =>
-    enabled && role == UserRole.customer ? null : AppTab.home.path;
+    !enabled || role == UserRole.photographer ? AppTab.home.path : null;
 
 /// Rebuilds GoRouter's redirect when auth or profile changes.
 class RouterNotifier extends ChangeNotifier {
@@ -184,6 +188,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(notifier.dispose);
   String? photographersOnly() =>
       photographerOnlyRedirect(ref.read(currentProfileProvider).value?.role);
+  String? instantCustomersOnly() => instantCustomerRedirect(
+    enabled: ref.read(instantEnabledProvider),
+    role: ref.read(currentProfileProvider).value?.role,
+  );
   return GoRouter(
     initialLocation: AppTab.home.path,
     refreshListenable: notifier,
@@ -301,14 +309,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const MyCalendarScreen(),
       ),
-      // S13 Chụp ngay (customer). `/instant/:id` is the request (Task 3).
+      // S13 Chụp ngay (customer): S13.01, then the request's status switch.
+      // Flat routes: the request does not stack on the S13.01 form.
       GoRoute(
         path: '/instant',
-        redirect: (_, _) => instantCustomerRedirect(
-          enabled: ref.read(instantEnabledProvider),
-          role: ref.read(currentProfileProvider).value?.role,
-        ),
+        redirect: (_, _) => instantCustomersOnly(),
         builder: (_, _) => const InstantRequestScreen(),
+      ),
+      GoRoute(
+        path: '/instant/:id',
+        redirect: (_, _) => instantCustomersOnly(),
+        builder: (_, state) =>
+            InstantFlowScreen(requestId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/work/instant',

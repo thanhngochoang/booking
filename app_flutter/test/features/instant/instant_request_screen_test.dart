@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/location/location_repository.dart';
+import 'package:photobooking/features/instant/instant_flow_screen.dart';
 
 import '../../support/fake_instant_repository.dart';
 import '../../support/instant_customer_world.dart';
@@ -190,7 +191,7 @@ void main() {
         'note': 'Mình mặc áo dài trắng',
       });
       expect(_location(router), '/instant/req_new');
-      expect(find.text('stub /instant/req_new'), findsOneWidget);
+      expect(find.byType(InstantFlowScreen), findsOneWidget);
     },
   );
 

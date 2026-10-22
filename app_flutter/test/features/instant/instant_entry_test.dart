@@ -115,7 +115,9 @@ void main() {
       final w = InstantCustomerWorld();
       final router = await _pump(tester, w);
       expect(w.repo.callsOf('myActiveRequestId'), hasLength(1));
-      // Rebuilds and a page pushed on top do not read again.
+      // Rebuilds and a page pushed on top (an open request) do not read
+      // again.
+      w.repo.emitRequest('x', customerRequestOf(id: 'x'));
       router.push('/instant/x');
       await settleInstant(tester);
       router.pop();
