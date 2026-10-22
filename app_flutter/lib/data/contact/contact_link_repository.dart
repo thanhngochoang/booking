@@ -2,14 +2,17 @@
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 
-enum ContactSubjectType { booking, registration }
+enum ContactSubjectType { booking, registration, instantRequest }
 
-/// What a contact link is for: a booking, or an event registration (ticket).
-/// The server derives the photographer, number and unlock state from it.
+/// What a contact link is for: a booking, an event registration (ticket) or
+/// a Chụp ngay request. The server derives the photographer, number and
+/// unlock state from it.
 class ContactSubject {
   const ContactSubject.booking(this.id) : type = ContactSubjectType.booking;
   const ContactSubject.registration(this.id)
     : type = ContactSubjectType.registration;
+  const ContactSubject.instantRequest(this.id)
+    : type = ContactSubjectType.instantRequest;
 
   final String id;
   final ContactSubjectType type;
@@ -57,6 +60,7 @@ Map<String, Object> callableData(
   switch (subject.type) {
     ContactSubjectType.booking => 'bookingId',
     ContactSubjectType.registration => 'registrationId',
+    ContactSubjectType.instantRequest => 'instantRequestId',
   }: subject.id,
   'channel': channel.code,
 };
