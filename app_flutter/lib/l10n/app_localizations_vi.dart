@@ -8941,6 +8941,100 @@ class AppLocalizationsVi extends AppLocalizations {
       'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.';
 
   @override
+  String get trackingCancel => 'Huỷ';
+
+  @override
+  String get cancelInstantTitle => 'Huỷ chụp ngay?';
+
+  @override
+  String get cancelRowFree =>
+      'Đang chọn, đang chờ trả lời, chưa tìm được, hoặc 2 phút đầu sau khi có người nhận';
+
+  @override
+  String get cancelRowEnRoute => 'Nhiếp ảnh gia đang đến';
+
+  @override
+  String get cancelRowArrived => 'Đã đến, bạn không có mặt sau 15 phút';
+
+  @override
+  String cancelRowNow(String row) {
+    return '$row (bây giờ)';
+  }
+
+  @override
+  String cancelOutcome(int percent) {
+    return 'Hoàn $percent%';
+  }
+
+  @override
+  String cancelInstantRefundFee(String refund, String fee, String name) {
+    return 'Bạn sẽ được hoàn $refund; $fee là phí đi lại trả cho $name.';
+  }
+
+  @override
+  String cancelInstantRefundAll(String refund) {
+    return 'Bạn sẽ được hoàn $refund.';
+  }
+
+  @override
+  String cancelInstantLate(String name) {
+    return '$name đến trễ hơn 15 phút nên bạn được hoàn đủ.';
+  }
+
+  @override
+  String get cancelInstantUnpaid =>
+      'Bạn chưa thanh toán nên không có khoản tiền nào.';
+
+  @override
+  String cancelInstantConfirm(String refund) {
+    return 'Huỷ và hoàn $refund';
+  }
+
+  @override
+  String get cancelInstantConfirmUnpaid => 'Huỷ yêu cầu';
+
+  @override
+  String get cancelInstantKeep => 'Giữ yêu cầu';
+
+  @override
+  String get cancelledTitle => 'Đã huỷ yêu cầu';
+
+  @override
+  String cancelledRefund(String amount, String method) {
+    return 'Hoàn $amount về $method. Tiền thường về trong vài phút.';
+  }
+
+  @override
+  String get cancelledNoMoney => 'Không có khoản tiền nào.';
+
+  @override
+  String get abandonedTitle => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get abandonedBody =>
+      'Bạn chưa gửi lời mời trong 30 phút nên yêu cầu đã đóng.';
+
+  @override
+  String get noShowTitle => 'Nhiếp ảnh gia báo bạn không có mặt';
+
+  @override
+  String noShowBody(String amount, int percent) {
+    return 'Bạn được hoàn $amount ($percent%).';
+  }
+
+  @override
+  String get closedNewRequest => 'Tạo yêu cầu mới';
+
+  @override
+  String get refundToBankQr => 'tài khoản đã chuyển';
+
+  @override
+  String get refundToMomo => 'MoMo';
+
+  @override
+  String get refundToZaloPay => 'ZaloPay';
+
+  @override
   String get liveShutterTitle => 'Live Shutter';
 
   @override

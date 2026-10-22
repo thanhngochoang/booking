@@ -12,6 +12,7 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant/choose_view.dart';
+import 'package:photobooking/features/instant/closed_view.dart';
 import 'package:photobooking/features/instant/instant_ticks.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -138,7 +139,7 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
             request: r,
             askPrimer: _askPrimer,
           ),
-          // Placeholders until Tasks 4–6 build these views.
+          // Placeholders until Tasks 5–6 build these views.
           InstantStatus.searching => const _Pending(
             ScreenCodes.instantSearching,
           ),
@@ -155,10 +156,7 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
           InstantStatus.noMatch => const _Pending(ScreenCodes.instantNoMatch),
           InstantStatus.cancelledByCustomer ||
           InstantStatus.abandoned ||
-          InstantStatus.noShowCustomer => const _Pending(
-            ScreenCodes.instantCancel,
-            label: 'done',
-          ),
+          InstantStatus.noShowCustomer => ClosedView(request: r),
         };
       },
     );

@@ -466,4 +466,38 @@ void main() {
       );
     });
   }
+
+  testWidgets('"Huỷ" shows once the request is committed and opens S13.08', (
+    tester,
+  ) async {
+    final world = InstantCustomerWorld();
+    final cancel = find.byKey(const Key('choose-cancel'));
+    await pumpInstantFlow(tester, world);
+    // Nothing sent yet: leaving is enough, the request expires on its own.
+    expect(cancel, findsNothing);
+
+    for (final request in [
+      customerRequestOf(committed: true, round: 2),
+      customerRequestOf(
+        committed: true,
+        roundEnded: true,
+        candidates: const [],
+        round: 2,
+      ),
+      customerRequestOf(status: InstantStatus.pendingPayment),
+      customerRequestOf().copyWith(paid: true),
+    ]) {
+      world.repo.emitRequest('req1', request);
+      await settleInstant(tester);
+      expect(cancel, findsOneWidget, reason: '$request');
+    }
+
+    await tester.tap(cancel);
+    await settleInstant(tester);
+    expect(find.text('Huỷ chụp ngay?'), findsOneWidget);
+    expect(world.repo.callsOf('cancel').single.args, {
+      'requestId': 'req1',
+      'dryRun': true,
+    });
+  });
 }

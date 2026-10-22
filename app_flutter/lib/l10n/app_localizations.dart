@@ -15363,6 +15363,156 @@ abstract class AppLocalizations {
   /// **'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.'**
   String get instantNotFoundBody;
 
+  /// No description provided for @trackingCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get trackingCancel;
+
+  /// No description provided for @cancelInstantTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ chụp ngay?'**
+  String get cancelInstantTitle;
+
+  /// No description provided for @cancelRowFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chọn, đang chờ trả lời, chưa tìm được, hoặc 2 phút đầu sau khi có người nhận'**
+  String get cancelRowFree;
+
+  /// No description provided for @cancelRowEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đang đến'**
+  String get cancelRowEnRoute;
+
+  /// No description provided for @cancelRowArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến, bạn không có mặt sau 15 phút'**
+  String get cancelRowArrived;
+
+  /// No description provided for @cancelRowNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'{row} (bây giờ)'**
+  String cancelRowNow(String row);
+
+  /// No description provided for @cancelOutcome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn {percent}%'**
+  String cancelOutcome(int percent);
+
+  /// refund and fee are formatMoney amounts from the server's dry run, shown bold
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ được hoàn {refund}; {fee} là phí đi lại trả cho {name}.'**
+  String cancelInstantRefundFee(String refund, String fee, String name);
+
+  /// No description provided for @cancelInstantRefundAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ được hoàn {refund}.'**
+  String cancelInstantRefundAll(String refund);
+
+  /// No description provided for @cancelInstantLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đến trễ hơn 15 phút nên bạn được hoàn đủ.'**
+  String cancelInstantLate(String name);
+
+  /// No description provided for @cancelInstantUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa thanh toán nên không có khoản tiền nào.'**
+  String get cancelInstantUnpaid;
+
+  /// No description provided for @cancelInstantConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn {refund}'**
+  String cancelInstantConfirm(String refund);
+
+  /// No description provided for @cancelInstantConfirmUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu'**
+  String get cancelInstantConfirmUnpaid;
+
+  /// No description provided for @cancelInstantKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ yêu cầu'**
+  String get cancelInstantKeep;
+
+  /// No description provided for @cancelledTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ yêu cầu'**
+  String get cancelledTitle;
+
+  /// method is refundToBankQr / refundToMomo / refundToZaloPay
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn {amount} về {method}. Tiền thường về trong vài phút.'**
+  String cancelledRefund(String amount, String method);
+
+  /// No description provided for @cancelledNoMoney.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có khoản tiền nào.'**
+  String get cancelledNoMoney;
+
+  /// No description provided for @abandonedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn'**
+  String get abandonedTitle;
+
+  /// No description provided for @abandonedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa gửi lời mời trong 30 phút nên yêu cầu đã đóng.'**
+  String get abandonedBody;
+
+  /// No description provided for @noShowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia báo bạn không có mặt'**
+  String get noShowTitle;
+
+  /// percent is the request's refundPercent, from the server
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được hoàn {amount} ({percent}%).'**
+  String noShowBody(String amount, int percent);
+
+  /// No description provided for @closedNewRequest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo yêu cầu mới'**
+  String get closedNewRequest;
+
+  /// No description provided for @refundToBankQr.
+  ///
+  /// In vi, this message translates to:
+  /// **'tài khoản đã chuyển'**
+  String get refundToBankQr;
+
+  /// No description provided for @refundToMomo.
+  ///
+  /// In vi, this message translates to:
+  /// **'MoMo'**
+  String get refundToMomo;
+
+  /// No description provided for @refundToZaloPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'ZaloPay'**
+  String get refundToZaloPay;
+
   /// No description provided for @liveShutterTitle.
   ///
   /// In vi, this message translates to:

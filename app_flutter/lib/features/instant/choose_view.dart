@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/choose_controller.dart';
+import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -75,9 +76,16 @@ class ChooseView extends ConsumerWidget {
     }
 
     final theme = Theme.of(context);
-    final muted = theme.brightness == Brightness.dark
+    final dark = theme.brightness == Brightness.dark;
+    final muted = dark
         ? AppColorsDark.foregroundMuted
         : AppColors.foregroundMuted;
+    // Offers went out (or money is held, #202): leaving no longer ends the
+    // request, so it can be cancelled here (S13.08).
+    final cancellable =
+        request.committed ||
+        request.paid ||
+        request.status == InstantStatus.pendingPayment;
     return ScreenCode(
       ScreenCodes.instantChoose,
       label: switch (mode) {
@@ -134,6 +142,21 @@ class ChooseView extends ConsumerWidget {
                         ),
                       ),
                     ),
+                  ),
+                if (cancellable)
+                  AppButton.text(
+                    l.trackingCancel,
+                    key: const Key('choose-cancel'),
+                    size: AppButtonSize.xsmall,
+                    style: ButtonStyle(
+                      foregroundColor: WidgetStatePropertyAll(
+                        dark
+                            ? AppColorsDark.destructive
+                            : AppColors.destructive,
+                      ),
+                    ),
+                    onPressed: () =>
+                        showCustomerCancelSheet(context, ref, request: request),
                   ),
               ],
             ),
