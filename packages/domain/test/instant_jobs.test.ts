@@ -218,6 +218,22 @@ describe('answerInstantOffer', () => {
     assert.equal(req(w, id).status, 'searching');
   });
 
+  test('an offer withdrawn by a customer cancel answers offer_expired to accept and decline', async () => {
+    const w = createInstantWorld();
+    const id = await lanInvites(w, ['p1', 'p2']);
+    await cancelInstantRequest(w.deps, { uid: 'c-lan' }, { requestId: id, dryRun: false });
+    await assert.rejects(accept(w, 'p1', id), code('offer_expired'));
+    await assert.rejects(decline(w, 'p2', id), code('offer_expired'));
+    assert.equal(presence(w, 'p1').activeRequestId, null);
+  });
+
+  test('an offer withdrawn because someone else won stays already_assigned on decline', async () => {
+    const w = createInstantWorld();
+    const id = await lanInvites(w, ['p1', 'p2']);
+    await accept(w, 'p1', id);
+    await assert.rejects(decline(w, 'p2', id), code('already_assigned'));
+  });
+
   test('decline of the last pending row ends the round', async () => {
     const w = createInstantWorld();
     const id = await lanInvites(w, ['p1', 'p2']);
@@ -303,7 +319,7 @@ describe('updateInstantJob', () => {
     w.clock.advance(MIN);
     assert.deepEqual(await job(w, 'p1', id, 'no_show'), { status: 'no_show_customer' });
     const r = req(w, id);
-    assert.deepEqual([r.active, r.cancelRule, r.refundPercent, r.feeVnd], [false, 'no_show', 50, 0]);
+    assert.deepEqual([r.active, r.cancelRule, r.refundPercent, r.feeVnd], [false, 'no_show', 0, 0]);
     const p = presence(w, 'p1');
     assert.equal(p.activeRequestId, null);
     assert.deepEqual(p.reliability, { offers: 1, accepted: 1, declined: 0, expired: 0, cancelled: 0, late: 0, noShow: 0 });

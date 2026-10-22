@@ -126,6 +126,40 @@ describe('instantNotices through #138 hooks', () => {
     ]);
   });
 
+  test('offers that expired and were dropped by a round reset in the same write are still missed', () => {
+    const reset = aRequest({ ...searching, status: 'choosing', round: 2, offers: [], candidates: [], updatedAt: at(61_000) });
+    assert.deepEqual(instantNotices(searching, reset), [
+      { hook: 'missed', photographerId: 'p1', offerId: 'o1' },
+      { hook: 'missed', photographerId: 'p2', offerId: 'o2' },
+    ]);
+    // Dropped before their expiry (assignment withdraws them): not missed.
+    assert.deepEqual(instantNotices(searching, { ...reset, updatedAt: at(30_000) }), []);
+  });
+
+  test('no round_ended row when every chosen person was unavailable at the invite (the customer is on screen)', () => {
+    const choosing = aRequest({ status: 'choosing' });
+    const allBusy = aRequest({ status: 'choosing', committedAt: T0, roundEnded: true,
+      offers: [row({ offerId: null, outcome: 'unavailable', expiresAt: null })] });
+    assert.deepEqual(instantNotices(choosing, allBusy), []);
+  });
+
+  test('notice payloads never carry excludedIds', () => {
+    const excluded = ['p7', 'p8'];
+    const pairs: [InstantRequest, InstantRequest][] = [
+      [searching, job('assigned', { excludedIds: excluded })],
+      [searching, { ...searching, status: 'choosing', roundEnded: true, excludedIds: excluded,
+        offers: searching.offers.map((o) => ({ ...o, outcome: 'expired' as const })) }],
+      [job('en_route', { excludedIds: excluded }), job('cancelled_by_customer', { active: false, excludedIds: excluded })],
+      [job('assigned'), aRequest({ status: 'choosing', committedAt: T0, cancelledBy: 'photographer', roundEnded: true, excludedIds: [...excluded, 'p1'] })],
+    ];
+    for (const [before, after] of pairs) {
+      const text = JSON.stringify(instantNotices(before, after));
+      assert.ok(text.length > 2);
+      assert.ok(!text.includes('excludedIds'));
+      for (const uid of excluded) assert.ok(!text.includes(uid), uid);
+    }
+  });
+
   test('no notice for a write that changes nothing visible (heartbeat-like version bump)', () => {
     assert.deepEqual(instantNotices(searching, { ...searching, version: searching.version + 1, updatedAt: at(MIN) }), []);
     assert.deepEqual(instantNotices(job('assigned'), { ...job('assigned'), version: 9 }), []);
@@ -171,6 +205,24 @@ describe('offer push, chat and track', () => {
     assert.deepEqual([iw.chats.chats.get(chatId)?.kind, iw.chats.chats.get(chatId)?.readOnlyAt], ['booking', null]);
     const dropped = aRequest({ status: 'choosing', committedAt: T0, cancelledBy: 'photographer' });
     assert.equal(await syncInstantChat(iw.deps, job('assigned'), dropped), 'closed');
+  });
+
+  test('a closed booking chat of the pair is detached on assignment so the end of the job closes it again', async () => {
+    const cw = createChatWorld();
+    const id = chatIdFor('c-lan', 'p1');
+    const now = cw.clock.now();
+    await cw.chats.runTransaction(async (tx) => {
+      tx.setChat({
+        id, kind: 'booking', customerId: 'c-lan', photographerId: 'p1', assigneeId: 'm1', bookingId: 'b_old', bookingStatus: 'completed',
+        photographerRepliedAt: null, customerMessagesBeforeReply: 0, lastMessageAt: null, lastMessagePreview: null, lastSenderId: null,
+        readOnlyAt: new Date(now.getTime() - 86_400_000), blockedAt: null, rescheduleUsed: false, createdAt: now, updatedAt: now,
+      });
+    });
+    assert.equal(await syncInstantChat(cw.deps, searching, job('assigned')), 'upgraded');
+    const open = cw.chats.chats.get(id);
+    assert.deepEqual([open?.kind, open?.bookingId, open?.bookingStatus, open?.assigneeId, open?.readOnlyAt], ['booking', null, null, null, null]);
+    assert.equal(await syncInstantChat(cw.deps, job('finished'), job('completed', { active: false, completedAt: T0 })), 'closed');
+    assert.deepEqual(cw.chats.chats.get(id)?.readOnlyAt, new Date(now.getTime() + 7 * 86_400_000));
   });
 
   test('instantTrackShouldGo when leaving en_route', () => {

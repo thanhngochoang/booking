@@ -24,6 +24,12 @@ const ASSIGNED_STATUSES: readonly InstantRequest['status'][] = ['assigned', 'en_
 const entered = (before: InstantRequest | null, after: InstantRequest, status: InstantRequest['status']): boolean =>
   after.status === status && before?.status !== status;
 
+/**
+ * Every chosen person was unavailable when the offers went out: the round ended inside the
+ * customer's own invite call, which answers it on screen, so no inbox row.
+ */
+const allUnavailable = (r: InstantRequest): boolean => r.offers.length > 0 && r.offers.every((o) => o.outcome === 'unavailable');
+
 /** The notices of one write, in a stable order. A write that changes nothing visible gives none. */
 export function instantNotices(before: InstantRequest | null, after: InstantRequest | null): InstantNotice[] {
   if (after === null) return [];
@@ -32,7 +38,11 @@ export function instantNotices(before: InstantRequest | null, after: InstantRequ
     for (const row of before.offers) {
       if (row.outcome !== 'pending' || row.offerId === null) continue;
       const now = after.offers.find((o) => o.offerId === row.offerId);
-      if (now?.outcome === 'expired') out.push({ hook: 'missed', photographerId: row.photographerId, offerId: row.offerId });
+      // Expired in this write, or expired and dropped by a round reset in the same write.
+      const missed = now === undefined
+        ? row.expiresAt !== null && row.expiresAt.getTime() <= after.updatedAt.getTime()
+        : now.outcome === 'expired';
+      if (missed) out.push({ hook: 'missed', photographerId: row.photographerId, offerId: row.offerId });
     }
   }
   if (entered(before, after, 'assigned') && after.photographerId !== null) out.push({ hook: 'assigned' });
@@ -40,7 +50,7 @@ export function instantNotices(before: InstantRequest | null, after: InstantRequ
     && after.status === 'choosing' && after.cancelledBy === 'photographer';
   if (photographerCancelled) {
     out.push({ hook: 'cancelled', by: 'photographer', photographerId: before.photographerId as string, feeVnd: 0 });
-  } else if (after.roundEnded && before?.roundEnded !== true) {
+  } else if (after.roundEnded && before?.roundEnded !== true && !allUnavailable(after)) {
     out.push({ hook: 'round_ended', round: after.round });
   }
   if (entered(before, after, 'no_match')) out.push({ hook: 'no_match', round: after.round });
@@ -119,8 +129,10 @@ export async function syncInstantChat(
         tx.incrementUnread(chatId, photographerId, 0);
         return 'created';
       }
-      if (chat.kind === 'booking' && chat.readOnlyAt === null) return 'none';
-      tx.setChat({ ...chat, kind: 'booking', readOnlyAt: null, updatedAt: now });
+      if (chat.kind === 'booking' && chat.readOnlyAt === null) return 'none'; // an open booking chat serves the job too
+      // An inquiry, or a booking chat that is read-only or closing: it becomes this job's chat, detached
+      // from any earlier booking (as openInquiry does) so the end of the job can close it again.
+      tx.setChat({ ...chat, kind: 'booking', bookingId: null, bookingStatus: null, assigneeId: null, readOnlyAt: null, updatedAt: now });
       return 'upgraded';
     });
   }

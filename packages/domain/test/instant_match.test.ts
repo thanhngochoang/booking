@@ -78,13 +78,12 @@ describe('rankCandidates', () => {
     assert.deepEqual(ids(rank([near('p1', 1, { pendingOffers })])), ['p1']);
   });
 
-  it('a provider holding today for an open spot schedule, or a studio whose day is full, is not a candidate', () => {
-    const ps = [near('free', 1), near('spot', 1), near('full', 1), near('booked', 1), near('off', 1)];
-    const dayStates = new Map<string, InstantDayState>([['spot', 'spot'], ['full', 'full'], ['booked', 'booked'], ['off', 'off']]);
-    assert.deepEqual(ids(rank(ps, { dayStates })).sort(), ['booked', 'free', 'off']);
-    assert.equal(dayBlocksInstant('spot'), true);
-    assert.equal(dayBlocksInstant('full'), true);
-    for (const s of ['off', 'booked', 'pending', null] as const) assert.equal(dayBlocksInstant(s), false);
+  it('a provider holding today for an open spot schedule, a full studio day or a booking is not a candidate', () => {
+    const ps = [near('free', 1), near('spot', 1), near('full', 1), near('booked', 1), near('off', 1), near('pending', 1)];
+    const dayStates = new Map<string, InstantDayState>([['spot', 'spot'], ['full', 'full'], ['booked', 'booked'], ['off', 'off'], ['pending', 'pending']]);
+    assert.deepEqual(ids(rank(ps, { dayStates })).sort(), ['free', 'off', 'pending']);
+    for (const s of ['spot', 'full', 'booked'] as const) assert.equal(dayBlocksInstant(s), true);
+    for (const s of ['off', 'pending', null] as const) assert.equal(dayBlocksInstant(s), false);
   });
 
   it('priority tier fills first, expanded only fills the rest', () => {
@@ -120,9 +119,11 @@ describe('rankCandidates', () => {
     assert.ok(fresh && close(fresh.score, base + 0.15 * 0.5), String(fresh?.score));
   });
 
-  it('a photographer with ≥ 10 offers and > 10% cancels is expanded', () => {
-    assert.equal(isPriorityTier(aPresence('u', { reliability: { offers: 10, accepted: 8, cancelled: 2 } })), false);
-    assert.equal(isPriorityTier(aPresence('u', { reliability: { offers: 10, accepted: 8, cancelled: 1 } })), true);
+  it('a photographer with ≥ 10 offers and cancelled / accepted > 10% is expanded', () => {
+    assert.equal(isPriorityTier(aPresence('u', { reliability: { offers: 20, accepted: 10, cancelled: 2 } })), false);
+    assert.equal(isPriorityTier(aPresence('u', { reliability: { offers: 20, accepted: 10, cancelled: 1 } })), true);
+    // 1 of 5 accepted jobs cancelled is 20%, though only 5% of the offers.
+    assert.equal(isPriorityTier(aPresence('u', { reliability: { offers: 20, accepted: 5, cancelled: 1 } })), false);
     assert.equal(isPriorityTier(aPresence('u', { reliability: { offers: 9, accepted: 5, cancelled: 5 } })), true);
   });
 

@@ -29,10 +29,9 @@ import {
   instantInput,
   instantLocation,
   instantRequestId,
-  peekInstantRequest,
-  runInstant,
   type InstantLocation,
 } from './instant_requests.js';
+import { peekInstantRequest, runInstant } from './instant_work.js';
 import { orderBlocker } from './order_gate.js';
 import { isVnE164 } from './phone.js';
 
@@ -147,7 +146,8 @@ const partyOf = (uid: string, p: InstantProfile): InstantParty => ({
  * request, the offer, the photographer's presence and the requests of their other live offers are
  * read and settled first; the winner gets the job, every other pending offer of the request and every
  * other offer of the winner is withdrawn (rounds end where nothing is pending). Refusals:
- * `offer_expired` (server time is the referee), `already_assigned`, #198's `not_accepting_orders` /
+ * `offer_expired` (server time is the referee; also an offer withdrawn with nobody on the job, e.g.
+ * the customer cancelled), `already_assigned` (someone else won, or the photographer has a job), #198's `not_accepting_orders` /
  * `blocked`, `not_eligible` (today's day is held by a spot or a full studio). Decline excludes the
  * photographer from the request.
  */
@@ -192,6 +192,10 @@ export async function answerInstantOffer(
     }
     if (offer.outcome !== 'pending' && offer.outcome !== 'withdrawn') throw new DomainError('conflict');
     const presence = await w.presence(uid);
+    // Withdrawn with nobody on the job (the customer cancelled, or the search ran out): the offer is simply gone.
+    if (offer.outcome === 'withdrawn' && r.photographerId === null && (presence === null || presence.activeRequestId === null)) {
+      throw new DomainError('offer_expired');
+    }
     if (offer.outcome === 'withdrawn' || r.status !== 'searching' || presence === null || presence.activeRequestId !== null) {
       throw new DomainError('already_assigned');
     }
@@ -249,7 +253,7 @@ async function declineOffer(deps: InstantDeps, uid: string, offerId: string): Pr
     if (offer === null) throw new DomainError('not_found');
     if (offer.outcome === 'declined') return { outcome: 'declined', requestId: r.id };
     if (offer.outcome === 'expired' || offer.expiresAt.getTime() <= w.now.getTime()) throw new DomainError('offer_expired');
-    if (offer.outcome === 'withdrawn') throw new DomainError('already_assigned');
+    if (offer.outcome === 'withdrawn') throw new DomainError(r.photographerId === null ? 'offer_expired' : 'already_assigned');
     if (offer.outcome !== 'pending') throw new DomainError('conflict');
     await w.closeOffer({ offerId, photographerId: uid }, 'declined');
     w.setRequest(endRoundIfDone({

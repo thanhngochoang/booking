@@ -51,6 +51,13 @@ describe('quoteInstantCancel (Decision 9)', () => {
     assert.equal(quoteInstantCancel(paid(assignedFields('en_route')), 'customer', at(2 * MIN)).rule, 'en_route');
   });
 
+  it('a missing freeCancelUntil on an assigned paid request is inside the free window (fail safe)', () => {
+    for (const status of ['assigned', 'en_route'] as const) {
+      const r = paid({ ...assignedFields(status), freeCancelUntil: null });
+      assert.deepEqual(quoteInstantCancel(r, 'customer', at(5 * MIN)), quote('free_window', 100, 690_000, 0), status);
+    }
+  });
+
   it('photographer_late after lateDeadlineAt', () => {
     for (const status of ['assigned', 'en_route'] as const) {
       assert.deepEqual(quoteInstantCancel(paid(assignedFields(status)), 'customer', at(21 * MIN + SEC)), quote('photographer_late', 100, 690_000, 0));
@@ -118,8 +125,8 @@ describe('quoteInstantNoShow', () => {
   it('no_show 50 once the photographer waited 15 minutes', () => {
     const r = paid(assignedFields('arrived')); // arrived at T0 + 15:00
     assert.deepEqual(quoteInstantNoShow(r, at(30 * MIN)), quote('no_show', 50, 345_000, 345_000));
-    // Unpaid (#140): the rule is recorded, no money moves.
-    assert.deepEqual(quoteInstantNoShow(aRequest(assignedFields('arrived')), at(30 * MIN)), quote('no_show', 50, 0, 0, 0));
+    // Unpaid (#140): the rule is recorded with the unpaid semantics: refundPercent 0, no money.
+    assert.deepEqual(quoteInstantNoShow(aRequest(assignedFields('arrived')), at(30 * MIN)), quote('no_show', 0, 0, 0, 0));
   });
 
   it('quoteInstantNoShow refuses before arrivedAt + 15 min with deadline_passed', () => {

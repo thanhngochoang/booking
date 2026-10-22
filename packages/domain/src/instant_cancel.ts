@@ -52,7 +52,8 @@ export function quoteInstantCancel(r: InstantRequest, by: 'customer' | 'photogra
     case 'assigned':
     case 'en_route':
       if (r.paidAt === null) return UNPAID;
-      if (before(now, r.freeCancelUntil)) return quote(r, 'free_window', 100);
+      // A missing free-window end on an assigned request fails safe for the customer (Task 2 ruling).
+      if (r.freeCancelUntil === null || before(now, r.freeCancelUntil)) return quote(r, 'free_window', 100);
       if (after(now, r.lateDeadlineAt)) return quote(r, 'photographer_late', 100);
       return quote(r, 'en_route', 80);
     case 'arrived':
@@ -64,10 +65,11 @@ export function quoteInstantCancel(r: InstantRequest, by: 'customer' | 'photogra
 
 /**
  * The photographer reports the customer absent: only `arrived`, after waiting 15 minutes
- * (`deadline_passed` before), 50/50. Unpaid: the rule is recorded with no money.
+ * (`deadline_passed` before), 50/50. Unpaid: the rule `no_show` is recorded with refundPercent 0
+ * and no money, the same unpaid semantics as a customer cancel (`unpaid`).
  */
 export function quoteInstantNoShow(r: InstantRequest, now: Date): InstantCancelQuote {
   if (r.status !== 'arrived' || r.arrivedAt === null) throw new DomainError('conflict');
   if (now.getTime() < r.arrivedAt.getTime() + INSTANT.NO_SHOW_WAIT_MIN * 60_000) throw new DomainError('deadline_passed');
-  return quote(r, 'no_show', 50);
+  return r.paidAt === null ? { ...UNPAID, rule: 'no_show' } : quote(r, 'no_show', 50);
 }

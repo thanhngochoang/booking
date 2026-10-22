@@ -68,7 +68,8 @@ export interface InstantProfileReader {
 
 /**
  * The state of `availability/{uid}/days/{day}` (`day` = Vietnam date `yyyy-MM-dd`); null when no record.
- * A `spot` or `full` day keeps the provider out of instant rounds, offers and accepts (Task 2 ruling).
+ * A `spot`, `full` or `booked` day keeps the provider out of instant rounds, offers and accepts
+ * (`dayBlocksInstant`, Task 2 ruling); `off` and `pending` do not.
  */
 export interface InstantDayReader {
   stateOf(uid: string, day: string): Promise<InstantDayState | null>;

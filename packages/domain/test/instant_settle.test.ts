@@ -55,6 +55,18 @@ describe('settleInstant', () => {
     assert.deepEqual(out.request.nextDeadlineAt, at(10 * MIN));
   });
 
+  it('a searching request with offers but none pending is rebuilt as an ended round (self-healing), once', () => {
+    const stuck = searching({ offers: [row('o1', 'p1', at(60 * SEC), 'declined'), row('o2', 'p2', at(90 * SEC), 'withdrawn')] });
+    const out = settleInstant(stuck, at(10 * SEC));
+    assert.equal(out.changed, true);
+    assert.deepEqual([out.request.status, out.request.roundEnded, out.request.candidates], ['choosing', true, []]);
+    assert.deepEqual(out.expired, []);
+    assert.deepEqual(out.request.nextDeadlineAt, at(10 * MIN));
+    const again = settleInstant(out.request, at(10 * SEC));
+    assert.equal(again.changed, false);
+    assert.equal(again.request, out.request);
+  });
+
   it('an offer still pending keeps searching', () => {
     const r = searching();
     const out = settleInstant(r, at(30 * SEC));

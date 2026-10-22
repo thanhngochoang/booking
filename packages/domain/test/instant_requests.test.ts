@@ -108,13 +108,26 @@ describe('createInstantRequest', () => {
     assert.equal(r.arrivedCancelPhotographerPercent, 40);
   });
 
-  test('create: a photographer whose day is held by a spot or a full studio is not suggested', async () => {
+  test('create: a photographer whose day is held by a spot, a full studio or a booking is not suggested', async () => {
     const w = createInstantWorld();
     w.day('p2', 'spot');
     w.day('p3', 'full');
     w.day('p4', 'booked');
+    w.day('p5', 'pending');
+    w.day('p6', 'off');
     const r = req(w, await lanRequests(w));
-    assert.deepEqual(r.candidates.map((c) => c.photographerId), ['p1', 'p4', 'p5', 'p6']);
+    assert.deepEqual(r.candidates.map((c) => c.photographerId), ['p1', 'p5', 'p6']);
+  });
+
+  test('create and next round: a photographer blocked either way is never suggested', async () => {
+    const w = createInstantWorld();
+    w.blocks.block('c-lan', 'p1');
+    w.blocks.block('p3', 'c-lan');
+    const id = await lanRequests(w);
+    assert.deepEqual(req(w, id).candidates.map((c) => c.photographerId), ['p2', 'p4', 'p5', 'p6']);
+    const res = await nextInstantCandidates(w.deps, LAN, { requestId: id, skipped: ['p2'] });
+    assert.equal(res.candidateCount, 3);
+    assert.deepEqual(req(w, id).candidates.map((c) => c.photographerId), ['p4', 'p5', 'p6']);
   });
 });
 
@@ -230,6 +243,31 @@ describe('inviteInstant', () => {
     assert.deepEqual(res, { kind: 'price_changed', amountVnd: 690_000 });
     assert.equal(req(w, id), before);
     assert.equal(w.store.offers.size, 0);
+  });
+
+  test('invite when Chụp ngay was switched off is not_eligible', async () => {
+    const w = createInstantWorld();
+    const id = await lanRequests(w);
+    w.config = aConfig({ enabled: false });
+    await assert.rejects(
+      inviteInstant(w.deps, LAN, { requestId: id, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000 }),
+      code('not_eligible'),
+    );
+    assert.equal(w.store.offers.size, 0);
+  });
+
+  test('excludedIds never reach an offer doc or a push', async () => {
+    const w = createInstantWorld();
+    const id = await lanRequests(w);
+    await inviteInstant(w.deps, LAN, { requestId: id, photographerIds: ['p1', 'p3'], skipped: ['p2', 'p4'], expectedAmountVnd: 690_000 });
+    assert.deepEqual(req(w, id).excludedIds, ['p2', 'p4']);
+    for (const uid of ['p1', 'p3']) {
+      const offer = w.store.offer(uid, offerOf(w, uid, id));
+      assert.ok(offer);
+      assert.ok(!('excludedIds' in offer));
+      const text = JSON.stringify([offer, w.pushes.get(uid)]);
+      for (const skipped of ['p2', 'p4']) assert.ok(!text.includes(`"${skipped}"`), skipped);
+    }
   });
 
   test('an id outside the round is not_eligible', async () => {
@@ -460,8 +498,12 @@ describe('cancel, confirm, tick', () => {
 
   test('tick by a stranger is permission_denied', async () => {
     const w = createInstantWorld();
-    const id = await lanInvites(w, ['p1']);
+    const id = await lanRequests(w);
+    w.gate.delete('p2');
+    await inviteInstant(w.deps, LAN, { requestId: id, photographerIds: ['p1', 'p2'], skipped: [], expectedAmountVnd: 690_000 });
     await assert.rejects(tickInstantRequest(w.deps, { uid: 'p5' }, { requestId: id }), code('permission_denied'));
+    // An `unavailable` row is not an offer.
+    await assert.rejects(tickInstantRequest(w.deps, { uid: 'p2' }, { requestId: id }), code('permission_denied'));
     assert.deepEqual(await tickInstantRequest(w.deps, { uid: 'p1' }, { requestId: id }), { status: 'searching' });
     assert.deepEqual(await tickInstantRequest(w.deps, LAN, { requestId: id }), { status: 'searching' });
   });

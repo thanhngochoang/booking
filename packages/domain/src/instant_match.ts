@@ -37,23 +37,27 @@ const GENRE_WORDS: Readonly<Record<InstantGenre, string>> = {
 };
 
 /**
- * Today holds the provider elsewhere: an open spot schedule (`spot`, #194 Decision 17) or a studio
- * whose free members are all taken (`full`, #136 Decision 26). Such a provider is not suggested.
+ * Today holds the provider elsewhere: an open spot schedule (`spot`, #194 Decision 17), a studio
+ * whose free members are all taken (`full`, #136 Decision 26) or a booking (`booked`; holds are
+ * day-granular and instant has no time-of-day data, #140 Task 2 ruling). Such a provider is not
+ * suggested, offered or allowed to accept. `off` and `pending` stay eligible: switching Live
+ * Shutter on is the newer, explicit signal.
  */
 export function dayBlocksInstant(state: InstantDayState | null | undefined): boolean {
-  return state === 'spot' || state === 'full';
+  return state === 'spot' || state === 'full' || state === 'booked';
 }
 
 /**
  * Priority tier (spec §3.2): "Sẵn sàng hỗ trợ", or verified and up to standard where there is
- * enough data (tomato ≥ 90% with ≥ 5 reviews; ≤ 10% cancels with ≥ 10 offers).
+ * enough data (tomato ≥ 90% with ≥ 5 reviews; cancelled / accepted ≤ 10% with ≥ 10 offers, the
+ * same cancel rate as the reliability score; #140 Task 2 ruling).
  */
 export function isPriorityTier(p: InstantPresence): boolean {
   if (p.helpReady) return true;
   if (!p.profile.verified) return false;
   if (p.profile.reviewCount >= TOMATO_PCT_MIN_REVIEWS && p.profile.tomatoPct < PRIORITY_TOMATO_PCT) return false;
   const r = p.reliability;
-  return !(r.offers >= RELIABILITY_MIN_OFFERS && r.cancelled / r.offers > PRIORITY_MAX_CANCEL_RATE);
+  return !(r.offers >= RELIABILITY_MIN_OFFERS && r.cancelled / Math.max(r.accepted, 1) > PRIORITY_MAX_CANCEL_RATE);
 }
 
 /** "1,2 km", or "800 m" below 1 km (rounded to 100 m, at least 100 m). */

@@ -39,7 +39,11 @@ export function settleInstant(r: InstantRequest, now: Date): SettleOutcome {
     });
     if (expired.length > 0) {
       next = { ...next, offers, excludedIds: union(next.excludedIds, expired.map((o) => o.photographerId)) };
-      if (!offers.some((o) => o.outcome === 'pending')) next = { ...next, status: 'choosing', roundEnded: true, candidates: [] };
+    }
+    // Self-healing (Task 2 ruling): a searching round whose rows are all resolved ends here even when
+    // nothing expired in this call (a write that resolved the last row without ending the round).
+    if (next.offers.length > 0 && !next.offers.some((o) => o.outcome === 'pending')) {
+      next = { ...next, status: 'choosing', roundEnded: true, candidates: [] };
     }
   }
   const committed = next.committedAt !== null; // offers sent at least once; from #202 on this implies paid
