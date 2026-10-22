@@ -48,6 +48,7 @@ import {
   BOOKING_CLOCK_OPTIONS,
   BOOKING_REFUND_CALLABLE_OPTIONS,
   CALLABLE_OPTIONS,
+  CONTENDED_CALLABLE_OPTIONS,
   CREATE_PAYOUTS_OPTIONS,
   EVENT_CLOCK_OPTIONS,
   EVENT_REFUND_CALLABLE_OPTIONS,
@@ -1062,18 +1063,19 @@ export const rankSpots = onSchedule(
 );
 
 // ---------------------------------------------------------------- Chụp ngay (S13–S14, #140)
-// Payment-touching and contended callables use PAYMENT_CALLABLE_OPTIONS (30 s), the others CALLABLE_OPTIONS.
+// Contended callables use CONTENDED_CALLABLE_OPTIONS (30 s, no payment secrets: #140 moves no money), the
+// others CALLABLE_OPTIONS; #202 moves cancelInstantRequest and confirmInstantComplete to PAYMENT_CALLABLE_OPTIONS.
 // The 15-minute `bookingClock` settles due requests (step `instantSweep`); no scheduler of its own.
 
 export const createInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleCreateInstantRequest(request, liveInstantDeps()));
 
 export const nextInstantCandidates = onCall(CALLABLE_OPTIONS, (request) => handleNextInstantCandidates(request, liveInstantDeps()));
 
-export const inviteInstant = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
+export const inviteInstant = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
 
-export const cancelInstantRequest = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+export const cancelInstantRequest = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
 
-export const confirmInstantComplete = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+export const confirmInstantComplete = onCall(CONTENDED_CALLABLE_OPTIONS, (request) =>
   handleConfirmInstantComplete(request, liveInstantDeps()),
 );
 
@@ -1083,7 +1085,7 @@ export const setLiveShutter = onCall(CALLABLE_OPTIONS, (request) => handleSetLiv
 
 export const saveInstantSettings = onCall(CALLABLE_OPTIONS, (request) => handleSaveInstantSettings(request, liveInstantDeps()));
 
-export const answerInstantOffer = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
+export const answerInstantOffer = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
 
 export const updateInstantJob = onCall(CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
 

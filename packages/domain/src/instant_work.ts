@@ -107,8 +107,9 @@ export class InstantWork {
 
   /**
    * Applies every timer due now to the request and the side writes of what settled: expired and
-   * withdrawn offer docs, the photographers' pending entries (`reliability.expired` on expiry), and
-   * on an end the assigned photographer's presence and the track. Marks the point a refusal rolls back to.
+   * withdrawn offer docs, the photographers' pending entries (`reliability.expired` on expiry), the
+   * assigned photographer's presence once the shoot is finished or the request ended, and the track
+   * on an end. Marks the point a refusal rolls back to.
    */
   async settle(id: string): Promise<InstantRequest | null> {
     const r = await this.request(id);
@@ -120,6 +121,9 @@ export class InstantWork {
       if (out.ended && out.request.photographerId !== null) {
         await this.freePresence(out.request.photographerId, id);
         this.deleteTrack(id);
+      } else if (out.request.status === 'finished' && r.status !== 'finished' && out.request.photographerId !== null) {
+        // Spec §2.2 item 5: the shoot timer ended the shoot, so the photographer is available again.
+        await this.freePresence(out.request.photographerId, id);
       }
       this.setRequest(out.request);
     } else if ((r.nextDeadlineAt?.getTime() ?? null) !== (nextDeadlineOf(r)?.getTime() ?? null)) {
@@ -149,7 +153,7 @@ export class InstantWork {
     }
   }
 
-  /** The photographer is free again when this request was their job. */
+  /** The photographer is free again when this request was their job (a no-op once they took another). */
   async freePresence(uid: string, requestId: string): Promise<InstantPresence | null> {
     const p = await this.presence(uid);
     if (p === null || p.activeRequestId !== requestId) return p;

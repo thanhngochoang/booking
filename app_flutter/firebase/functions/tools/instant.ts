@@ -4,11 +4,13 @@
 // `offer` needs the photographer online in Live Shutter (S14.01) with a fresh heartbeat: it creates a
 // request for the customer 500 m north of them (meet point "Điểm hẹn thử (CLI)") and invites them, so
 // S14.02/S14.03 can be checked on a device before the customer app exists. #140 has no payment: the
-// offer goes out at once (#202, Task 11, confirms a fake payment first). Push is only logged.
+// offer goes out at once (#202, Task 11, confirms a fake payment first). Push is only logged. When the
+// photographer cannot get the offer, the request is cancelled again so the customer's lock is free.
 // Refuses unless FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST point at a local host.
 
 import { fileURLToPath } from 'node:url';
 import {
+  cancelInstantRequest,
   createInstantRequest,
   inviteInstant,
   isDomainError,
@@ -99,6 +101,7 @@ async function offer(deps: InstantDeps, cmd: Extract<InstantCommand, { kind: 'of
   if (request === null || !request.candidates.some((c) => c.photographerId === cmd.photographer)) {
     io.print(`request ${created.requestId}`);
     io.print(`${cmd.photographer} is not among the candidates (price list, day held, block or an active job); nothing sent`);
+    await dropOrphan(deps, customer, created.requestId, io);
     return 1;
   }
   const res = await inviteInstant(deps, customer, {
@@ -107,12 +110,22 @@ async function offer(deps: InstantDeps, cmd: Extract<InstantCommand, { kind: 'of
   io.print(`request ${created.requestId}`);
   if (res.kind !== 'invited' || !res.invited.includes(cmd.photographer)) {
     io.print(res.kind === 'invited' ? `${cmd.photographer} is unavailable; nothing sent` : `price changed to ${res.amountVnd}; run again`);
+    await dropOrphan(deps, customer, created.requestId, io);
     return 1;
   }
   const after = await peekInstantRequest(deps, created.requestId);
   const row = after?.offers.find((o) => o.photographerId === cmd.photographer);
   io.print(`offer ${row?.offerId ?? '?'}`);
   return 0;
+}
+
+/**
+ * A request the photographer cannot get would keep the customer's one-active-request lock (and every
+ * later `offer` run would answer `conflict`): cancel it (unpaid in #140, so no money) and say so.
+ */
+async function dropOrphan(deps: InstantDeps, customer: { uid: string }, requestId: string, io: InstantCliIo): Promise<void> {
+  const res = await cancelInstantRequest(deps, customer, { requestId, dryRun: false });
+  io.print(`request ${requestId} cancelled: status=${res.status}, ${customer.uid} can request again`);
 }
 
 async function status(deps: InstantDeps, requestId: string, io: InstantCliIo): Promise<number> {

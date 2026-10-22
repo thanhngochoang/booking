@@ -5,9 +5,11 @@ import { DomainError } from '../src/errors.js';
 import { encodeGeohash } from '../src/event.js';
 import { FakeBlockGate } from '../src/fake_block_gate.js';
 import { answerInstantOffer, saveInstantSettings, setLiveShutter, updateInstantJob } from '../src/instant_jobs.js';
-import { cancelInstantRequest, createInstantRequest, inviteInstant, runInstantSweep } from '../src/instant_requests.js';
+import {
+  cancelInstantRequest, confirmInstantComplete, createInstantRequest, inviteInstant, runInstantSweep, tickInstantRequest,
+} from '../src/instant_requests.js';
 import { BEN_THANH, MIN, SEC, T0, TAO_DAN, aPresence, at, north } from './support/instant_fixtures.js';
-import { createInstantWorld, lanInvites, offerOf, type InstantWorld } from './support/instant_world.js';
+import { LAN, createInstantWorld, lanInvites, offerOf, type InstantWorld } from './support/instant_world.js';
 
 const code = (c: string) => (e: unknown) => e instanceof DomainError && e.code === c;
 
@@ -307,6 +309,45 @@ describe('updateInstantJob', () => {
     assert.deepEqual(r.nextDeadlineAt, at(63 * MIN));
     assert.deepEqual(await job(w, 'p1', id, 'finish'), { status: 'finished' });
     assert.deepEqual(req(w, id).finishedAt, at(3 * MIN));
+  });
+
+  test('finish frees the photographer at once: a new offer reaches them, they accept, and the late confirm keeps the new job', async () => {
+    const w = createInstantWorld();
+    const id = await assigned(w);
+    await job(w, 'p1', id, 'start_route', { location: HERE });
+    await job(w, 'p1', id, 'arrive', { location: HERE });
+    await job(w, 'p1', id, 'start');
+    w.clock.advance(10 * MIN); // presence still fresh (heartbeat at T0, 30-minute window)
+    assert.deepEqual(await job(w, 'p1', id, 'finish'), { status: 'finished' });
+    assert.equal(presence(w, 'p1').activeRequestId, null);
+    assert.equal(req(w, id).active, true); // still waiting for Lan's confirm (or auto-complete)
+    w.customer('c-mai', { name: 'Mai' });
+    const mai = { uid: 'c-mai' };
+    const created = await createInstantRequest(w.deps, mai, { packageCode: 'p60', genre: 'portrait', meetPoint: { ...TAO_DAN, name: 'Hồ Con Rùa' } });
+    const next = created.requestId;
+    assert.ok(req(w, next).candidates.some((c) => c.photographerId === 'p1'));
+    const res = await inviteInstant(w.deps, mai, { requestId: next, photographerIds: ['p1'], skipped: [], expectedAmountVnd: req(w, next).amountVnd });
+    assert.equal(res.kind, 'invited');
+    assert.deepEqual(await accept(w, 'p1', next), { outcome: 'accepted', requestId: next });
+    assert.equal(presence(w, 'p1').activeRequestId, next);
+    assert.deepEqual(await confirmInstantComplete(w.deps, LAN, { requestId: id }), { status: 'completed' });
+    assert.equal(presence(w, 'p1').activeRequestId, next);
+  });
+
+  test('the shoot timer finishing the request frees the photographer (tick and sweep)', async () => {
+    for (const nudge of ['tick', 'sweep'] as const) {
+      const w = createInstantWorld();
+      const id = await assigned(w);
+      await job(w, 'p1', id, 'start_route', { location: HERE });
+      await job(w, 'p1', id, 'arrive', { location: HERE });
+      await job(w, 'p1', id, 'start');
+      assert.equal(presence(w, 'p1').activeRequestId, id);
+      w.clock.advance(60 * MIN);
+      if (nudge === 'tick') assert.deepEqual(await tickInstantRequest(w.deps, { uid: 'p1' }, { requestId: id }), { status: 'finished' });
+      else await runInstantSweep(w.deps);
+      assert.equal(req(w, id).status, 'finished', nudge);
+      assert.equal(presence(w, 'p1').activeRequestId, null, nudge);
+    }
   });
 
   test('no_show before 15 minutes is deadline_passed; after, no_show_customer with rule no_show recorded (zero money while unpaid)', async () => {

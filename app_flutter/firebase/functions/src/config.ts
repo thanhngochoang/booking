@@ -48,6 +48,18 @@ export const PAYMENT_CALLABLE_OPTIONS = {
   secrets: PAYMENT_SECRETS,
 } as const satisfies CallableOptions;
 
+/**
+ * Contended callables that move no money (Chụp ngay `inviteInstant`, `answerInstantOffer`,
+ * `cancelInstantRequest`, `confirmInstantComplete`, #140): the 30 s of the payment callables for the
+ * first-accept-wins transaction, without the payment secrets (least privilege). #202 moves
+ * `cancelInstantRequest` and `confirmInstantComplete` back to `PAYMENT_CALLABLE_OPTIONS` when their
+ * refunds and release land.
+ */
+export const CONTENDED_CALLABLE_OPTIONS = {
+  ...CALLABLE_OPTIONS,
+  timeoutSeconds: 30,
+} as const satisfies CallableOptions;
+
 export const BOOKING_REFUND_CALLABLE_OPTIONS = {
   ...CALLABLE_OPTIONS,
   secrets: PAYMENT_SECRETS,

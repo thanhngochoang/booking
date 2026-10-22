@@ -9,6 +9,7 @@ import {
   type BookingDeps,
   type InstantDeps,
 } from '@photobooking/domain';
+import { CALLABLE_OPTIONS, CONTENDED_CALLABLE_OPTIONS } from '../../src/config.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
 import { TEST_CIPHER, captureLogs } from './support/payment_world.js';
 import {
@@ -56,6 +57,14 @@ async function accepted(w: InstantWorld, uid: string, requestId: string): Promis
   const res = await handleAnswerInstantOffer(as(uid, { offerId: offerOf(w, uid, requestId), action: 'accept' }), w.deps);
   assert.equal(res.outcome, 'accepted');
 }
+
+describe('instant callable options', () => {
+  it('CONTENDED_CALLABLE_OPTIONS has the 30 s of the contended transactions and no secrets (#140 moves no money)', () => {
+    assert.equal(CONTENDED_CALLABLE_OPTIONS.timeoutSeconds, 30);
+    assert.equal(CONTENDED_CALLABLE_OPTIONS.region, CALLABLE_OPTIONS.region);
+    assert.equal('secrets' in CONTENDED_CALLABLE_OPTIONS, false);
+  });
+});
 
 describe('instant callables', () => {
   it('createInstantRequest maps phone_required to failed-precondition with details.code', async () => {

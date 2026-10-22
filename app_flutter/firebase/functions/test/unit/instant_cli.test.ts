@@ -72,6 +72,42 @@ describe('instant CLI', () => {
     assert.equal(w.store.requests.size, 0);
   });
 
+  it('a photographer who is not a candidate: the request is cancelled again, the customer can run offer again', async () => {
+    const w = createInstantWorld();
+    w.customer('seed-customer-lan');
+    const p1 = w.store.presences.get('p1');
+    assert.ok(p1 !== undefined);
+    w.store.presences.set('p1', { ...p1, activeRequestId: 'ir_other_job' });
+    const t = cli(w);
+    assert.equal(await runInstantCli(['offer', '--photographer', 'p1'], LOCAL, t.io), 1);
+    const [request] = [...w.store.requests.values()];
+    assert.ok(request !== undefined);
+    assert.deepEqual([request.status, request.active], ['cancelled_by_customer', false]);
+    assert.equal(t.out[1], 'p1 is not among the candidates (price list, day held, block or an active job); nothing sent');
+    assert.equal(t.out[2], `request ${request.id} cancelled: status=cancelled_by_customer, seed-customer-lan can request again`);
+    assert.equal(w.store.offers.size, 0);
+    const again = cli(w);
+    assert.equal(await runInstantCli(['offer', '--photographer', 'p2'], LOCAL, again.io), 0);
+  });
+
+  it('a photographer refused at invite (unavailable): the request is cancelled again', async () => {
+    const w = createInstantWorld();
+    w.customer('seed-customer-lan');
+    w.gate.set('p1', { verified: false, onboardingComplete: true }); // suggestions do not check the order gate; invite does
+    const t = cli(w);
+    assert.equal(await runInstantCli(['offer', '--photographer', 'p1'], LOCAL, t.io), 1);
+    const [request] = [...w.store.requests.values()];
+    assert.ok(request !== undefined);
+    assert.deepEqual(t.out, [
+      `request ${request.id}`,
+      'p1 is unavailable; nothing sent',
+      `request ${request.id} cancelled: status=cancelled_by_customer, seed-customer-lan can request again`,
+    ]);
+    assert.deepEqual([request.status, request.active], ['cancelled_by_customer', false]);
+    const again = cli(w);
+    assert.equal(await runInstantCli(['offer', '--photographer', 'p2'], LOCAL, again.io), 0);
+  });
+
   it('a domain refusal is printed with its code', async () => {
     const w = createInstantWorld();
     w.customer('c-minh', { phone: null });

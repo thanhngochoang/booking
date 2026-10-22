@@ -92,6 +92,8 @@ describe('Chụp ngay on the emulators', () => {
     for (const [action, status] of [['start_route', 'en_route'], ['arrive', 'arrived'], ['start', 'in_progress'], ['finish', 'finished']] as const) {
       assert.deepEqual(ok(await call('updateInstantJob', 'it-inst-p1', { requestId, action, location: at })), { status }, action);
     }
+    // Spec §2.2 item 5: free for new offers right after "Hoàn thành", before the customer confirms.
+    assert.equal((await db.doc('instant_presence/it-inst-p1').get()).get('activeRequestId'), null);
     assert.deepEqual(ok(await call('confirmInstantComplete', LAN, { requestId })), { status: 'completed' });
 
     const r = await db.doc(`instant_requests/${requestId}`).get();

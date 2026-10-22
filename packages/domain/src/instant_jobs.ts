@@ -274,8 +274,9 @@ const isJobAction = (v: unknown): v is InstantJobAction => (INSTANT_JOB_ACTIONS 
 /**
  * S14.03 steps of the assigned photographer: start the route (needs a position; the track starts),
  * arrive (within 200 m, or forced when the fix is worse than 100 m; the track goes), start the shoot
- * (`shootEndsAt` from the package), finish, and report the customer absent after 15 minutes
- * (`no_show_customer`; #140: rule recorded, no money; the photographer's reliability is untouched).
+ * (`shootEndsAt` from the package), finish (the photographer is free for new offers at once), and
+ * report the customer absent after 15 minutes (`no_show_customer`; #140: rule recorded, no money;
+ * the photographer's reliability is untouched).
  */
 export async function updateInstantJob(deps: InstantDeps, caller: InstantCaller, raw: unknown): Promise<{ status: InstantStatus }> {
   const d = instantInput(raw);
@@ -318,6 +319,8 @@ export async function updateInstantJob(deps: InstantDeps, caller: InstantCaller,
         break;
       case 'finish':
         next = { ...r, status: nextInstantStatus(r.status, 'finish'), finishedAt: now };
+        // Spec §2.2 item 5: available again right after "Hoàn thành", not only at the customer's confirm.
+        await w.freePresence(caller.uid, r.id);
         break;
       case 'no_show': {
         const q = quoteInstantNoShow(r, now);
