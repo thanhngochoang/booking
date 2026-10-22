@@ -48,14 +48,17 @@ abstract class InstantRepository {
   /// The signed-in customer's active request, if any (one read).
   Future<String?> myActiveRequestId();
 
-  /// The photographer's position while en route; null before and after
-  /// (the track exists only en route and the rules deny it otherwise).
+  /// The photographer's position while en route. Before and after, the
+  /// track does not exist and the rules deny the read: the stream then emits
+  /// null and ENDS, so subscribe only while the request is `en_route`
+  /// (`instantTrackProvider` does) and again after a status change.
   Stream<InstantTrack?> watchTrack(String requestId);
 
   // ---- both ------------------------------------------------------------------
 
   /// The request; null when missing, unknown, or no longer readable by the
   /// caller (e.g. the photographer cancelled and was removed from it).
+  /// A denied read emits null and ends the stream.
   Stream<InstantRequest?> watchRequest(String requestId);
 
   /// `cancelInstantRequest`; [dryRun] only quotes.
@@ -111,6 +114,7 @@ abstract class InstantRepository {
 
   /// The customer's contact copy for the assigned photographer; null while
   /// it is not readable (unpaid — always in #140 — or the request ended).
+  /// A denied read emits null and ends the stream.
   Stream<BookingContactSnapshot?> watchCustomerContact(String requestId);
 
   /// The signed-in photographer's active job, if any.

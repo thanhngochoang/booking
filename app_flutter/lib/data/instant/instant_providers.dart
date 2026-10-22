@@ -36,10 +36,18 @@ final instantRequestProvider = StreamProvider.autoDispose
       (ref, id) => ref.watch(instantRepositoryProvider).watchRequest(id),
     );
 
+/// The photographer's position, listened to only while the request is
+/// `en_route`: before that the track does not exist and a denied listen ends
+/// for good, so the provider re-subscribes when the status flips.
 final instantTrackProvider = StreamProvider.autoDispose
-    .family<InstantTrack?, String>(
-      (ref, id) => ref.watch(instantRepositoryProvider).watchTrack(id),
-    );
+    .family<InstantTrack?, String>((ref, id) {
+      final enRoute = ref.watch(
+        instantRequestProvider(id)
+            .select((r) => r.value?.status == InstantStatus.enRoute),
+      );
+      if (!enRoute) return Stream.value(null);
+      return ref.watch(instantRepositoryProvider).watchTrack(id);
+    });
 
 final instantCustomerContactProvider = StreamProvider.autoDispose
     .family<BookingContactSnapshot?, String>(

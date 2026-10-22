@@ -44,7 +44,11 @@ InstantCandidate _candidate(Object? v) {
     photos: _strings(d['photos']),
     reasons: [
       for (final r in _list(d['reasons']))
-        if (_map(r)['text'] case final String text) text,
+        if (_map(r) case {
+          'code': 'genre' || 'distance',
+          'text': final String text,
+        })
+          text,
     ],
   );
 }
@@ -110,7 +114,6 @@ InstantRequest? instantRequestFromFirestore(
     platformFeeBp: _int(d['platformFeeBp']),
     arrivedCancelPhotographerPercent: _int(
       d['arrivedCancelPhotographerPercent'],
-      50,
     ),
     payMethod: PayMethod.fromCode(_code(d['payMethod'])),
     paid: _date(d['paidAt']) != null,
@@ -185,46 +188,107 @@ LiveShutterState? liveShutterStateFromFirestore(Map<String, dynamic>? d) {
   );
 }
 
-/// `instant_config/current` → config; null when missing. Malformed packages
-/// are left out (the server refuses such a config with `not_eligible` anyway).
+/// An integer in [min]..[max] (a Firestore double like 1.0 counts, as
+/// `Number.isInteger` does on the server).
+int? _intIn(Object? v, int min, [int max = 9007199254740991]) {
+  if (v is! num || !v.isFinite || v != v.roundToDouble()) return null;
+  final i = v.toInt();
+  return i >= min && i <= max ? i : null;
+}
+
+bool _numIn(Object? v, double min, double max) =>
+    v is num && v.isFinite && v >= min && v <= max;
+
+bool _text(Object? v) => v is String && v.trim().isNotEmpty;
+
+/// `instant_config/current` → config, with the server's `parseInstantConfig`
+/// checks: null (Chụp ngay unavailable, `not_eligible`) when the document is
+/// missing or anything in it is missing, malformed or out of range. There is
+/// no default in code: the seed holds the defaults.
 InstantConfig? instantConfigFromFirestore(Map<String, dynamic>? d) {
   if (d == null) return null;
+  final enabled = d['enabled'];
+  final version = _intIn(d['priceListVersion'], 1);
+  final feeBp = _intIn(d['platformFeeBp'], 0, 10000);
+  final split = _intIn(d['instantArrivedCancelPhotographerPercent'], 0, 100);
+  final rawPackages = d['packages'];
+  final rawCities = d['cities'];
+  final rawAreas = d['areas'];
+  if (enabled is! bool || version == null || feeBp == null || split == null) {
+    return null;
+  }
+  if (rawPackages is! List || rawPackages.isEmpty) return null;
+  if (rawCities is! List || rawCities.isEmpty) return null;
+  if (rawAreas is! List || !rawAreas.every(_validArea)) return null;
+  final packages = rawPackages.map(_package).toList();
+  if (packages.contains(null)) return null;
+  final cities = rawCities.map(_city).toList();
+  if (cities.contains(null)) return null;
+  if (packages.map((p) => p!.code).toSet().length != packages.length) {
+    return null;
+  }
+  if (cities.map((c) => c!.id).toSet().length != cities.length) return null;
   return InstantConfig(
-    enabled: _bool(d['enabled']),
-    priceListVersion: _int(d['priceListVersion']),
-    platformFeeBp: _int(d['platformFeeBp']),
-    instantArrivedCancelPhotographerPercent: _int(
-      d['instantArrivedCancelPhotographerPercent'],
-      50,
-    ),
-    packages: [
-      for (final p in _list(d['packages']))
-        if (_package(_map(p)) case final InstantPackage pkg) pkg,
-    ],
-    cityNames: [
-      for (final c in _list(d['cities']))
-        if (_strOrNull(_map(c)['name']) case final String name) name,
-    ],
+    enabled: enabled,
+    priceListVersion: version,
+    platformFeeBp: feeBp,
+    instantArrivedCancelPhotographerPercent: split,
+    packages: [for (final p in packages) p!],
+    cityNames: [for (final c in cities) c!.name],
   );
 }
 
-InstantPackage? _package(Map<String, dynamic> d) {
-  final code = _strOrNull(d['code']);
-  final durationMin = _intOrNull(d['durationMin']);
-  final photos = _intOrNull(d['photos']);
-  final priceVnd = _intOrNull(d['priceVnd']);
-  if (code == null ||
+InstantPackage? _package(Object? v) {
+  if (v is! Map) return null;
+  final d = _map(v);
+  final code = d['code'];
+  final durationMin = _intIn(d['durationMin'], 1);
+  final photos = _intIn(d['photos'], 1);
+  final priceVnd = _intIn(d['priceVnd'], 1);
+  if (!_text(code) ||
       durationMin == null ||
       photos == null ||
       priceVnd == null) {
     return null;
   }
   return InstantPackage(
-    code: code,
+    code: code as String,
     durationMin: durationMin,
     photos: photos,
     priceVnd: priceVnd,
   );
+}
+
+({String id, String name})? _city(Object? v) {
+  if (v is! Map) return null;
+  final d = _map(v);
+  final id = d['id'];
+  final name = d['name'];
+  final south = d['south'];
+  final west = d['west'];
+  final north = d['north'];
+  final east = d['east'];
+  if (!_text(id) || !_text(name) || _intIn(d['surgeBp'], 1) == null) {
+    return null;
+  }
+  if (!_numIn(south, -90, 90) ||
+      !_numIn(north, -90, 90) ||
+      !_numIn(west, -180, 180) ||
+      !_numIn(east, -180, 180)) {
+    return null;
+  }
+  if ((south as num) >= (north as num) || (west as num) >= (east as num)) {
+    return null;
+  }
+  return (id: id as String, name: name as String);
+}
+
+bool _validArea(Object? v) {
+  if (v is! Map) return false;
+  final d = _map(v);
+  return _text(d['name']) &&
+      _numIn(d['lat'], -90, 90) &&
+      _numIn(d['lng'], -180, 180);
 }
 
 /// `instant_tracks/{requestId}` → last position; null when missing or

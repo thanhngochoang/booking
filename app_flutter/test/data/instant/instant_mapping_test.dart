@@ -56,6 +56,7 @@ Map<String, dynamic> fullRequestDoc() => {
       'reasons': [
         {'code': 'genre', 'text': 'Chụp chân dung'},
         {'code': 'distance', 'text': 'Cách 2,1 km'},
+        {'code': 'vip', 'text': 'Not a server code'},
       ],
       'tier': 'priority',
       'score': 0.8,
@@ -267,6 +268,7 @@ void main() {
           'createdAt': _ts(8),
         })!;
         expect(r.status, InstantStatus.choosing);
+        expect(r.arrivedCancelPhotographerPercent, 0);
         expect(r.candidates, isEmpty);
         expect(r.offers, isEmpty);
         expect(r.photographerId, isNull);
@@ -371,13 +373,30 @@ void main() {
       'packages': [
         {'code': 'p30', 'durationMin': 30, 'photos': 15, 'priceVnd': 390000},
         {'code': 'p60', 'durationMin': 60, 'photos': 30, 'priceVnd': 690000},
-        {'code': 'bad'},
       ],
       'cities': [
-        {'id': 'hcm', 'name': 'TP.HCM'},
-        {'id': 'hn', 'name': 'Hà Nội'},
+        {
+          'id': 'hcm',
+          'name': 'TP.HCM',
+          'south': 10.35,
+          'west': 106.36,
+          'north': 11.17,
+          'east': 107.03,
+          'surgeBp': 10000,
+        },
+        {
+          'id': 'hn',
+          'name': 'Hà Nội',
+          'south': 20.56,
+          'west': 105.28,
+          'north': 21.39,
+          'east': 106.02,
+          'surgeBp': 10000,
+        },
       ],
-      'areas': <Object>[],
+      'areas': [
+        {'name': 'Quận 1, TP.HCM', 'lat': 10.7769, 'lng': 106.7009},
+      ],
     };
 
     test(
@@ -407,6 +426,58 @@ void main() {
       final cfg = instantConfigFromFirestore(configDoc())!;
       expect(cfg.instantArrivedCancelPhotographerPercent, 40);
       expect(instantConfigFromFirestore(null), isNull);
+    });
+
+    test('a config the server would refuse reads as absent (parseInstantConfig parity)', () {
+      Map<String, dynamic> without(String key) => configDoc()..remove(key);
+      Map<String, dynamic> withValue(String key, Object? v) =>
+          configDoc()..[key] = v;
+      final city =
+          (configDoc()['cities'] as List).first as Map<String, dynamic>;
+      final refused = <String, Map<String, dynamic>>{
+        'no priceListVersion': without('priceListVersion'),
+        'priceListVersion 0': withValue('priceListVersion', 0),
+        'no enabled': without('enabled'),
+        'no platformFeeBp': without('platformFeeBp'),
+        'fee over 10000': withValue('platformFeeBp', 10001),
+        'split over 100': withValue(
+          'instantArrivedCancelPhotographerPercent',
+          101,
+        ),
+        'fractional split': withValue(
+          'instantArrivedCancelPhotographerPercent',
+          40.5,
+        ),
+        'one malformed package': withValue('packages', [
+          {'code': 'p30', 'durationMin': 30, 'photos': 15, 'priceVnd': 390000},
+          {'code': 'bad'},
+        ]),
+        'no packages': withValue('packages', <Object>[]),
+        'duplicate package codes': withValue('packages', [
+          {'code': 'p30', 'durationMin': 30, 'photos': 15, 'priceVnd': 390000},
+          {'code': 'p30', 'durationMin': 60, 'photos': 30, 'priceVnd': 690000},
+        ]),
+        'no cities': withValue('cities', <Object>[]),
+        'city box inverted': withValue('cities', [
+          {...city, 'south': 12.0},
+        ]),
+        'city without surge': withValue('cities', [
+          {...city}..remove('surgeBp'),
+        ]),
+        'no areas': without('areas'),
+        'malformed area': withValue('areas', [
+          {'name': 'X', 'lat': 100, 'lng': 0},
+        ]),
+      };
+      for (final e in refused.entries) {
+        expect(instantConfigFromFirestore(e.value), isNull, reason: e.key);
+      }
+      // A whole double is an integer, as Number.isInteger says.
+      expect(
+        instantConfigFromFirestore(withValue('priceListVersion', 3.0))!
+            .priceListVersion,
+        3,
+      );
     });
   });
 

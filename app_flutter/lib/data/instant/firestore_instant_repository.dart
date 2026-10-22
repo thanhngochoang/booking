@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
@@ -19,12 +20,40 @@ typedef InstantCallable = Future<Object?> Function(
   Map<String, Object?> data,
 );
 
-/// Callables that run with the server's 30 s `PAYMENT_CALLABLE_OPTIONS`.
+/// Callables that run with the server's 30 s `PAYMENT_CALLABLE_OPTIONS`
+/// (contended transactions); the others have the 10 s `CALLABLE_OPTIONS`.
 const _longCallables = {
   'inviteInstant',
   'answerInstantOffer',
   'cancelInstantRequest',
   'confirmInstantComplete',
+};
+
+/// The client waits longer than the server may run (30 s / 10 s) plus a cold
+/// start, so a slow win (an accepted offer) is not reported as `network`.
+@visibleForTesting
+Duration instantCallableTimeout(String name) =>
+    Duration(seconds: _longCallables.contains(name) ? 40 : 15);
+
+/// A callable refusal without `details.code`, by its transport code only
+/// (never the message).
+@visibleForTesting
+String instantTransportErrorCode(String code) => switch (code) {
+  'unavailable' || 'deadline-exceeded' => 'network',
+  'unauthenticated' || 'permission-denied' => 'permission_denied',
+  'not-found' => 'not_found',
+  'invalid-argument' => 'invalid_argument',
+  'aborted' => 'conflict',
+  _ => 'unknown',
+};
+
+/// A direct write's Firestore failure code as an [InstantError] code.
+@visibleForTesting
+String instantWriteErrorCode(String code) => switch (code) {
+  'permission-denied' => 'permission_denied',
+  'not-found' => 'not_found',
+  'unavailable' || 'deadline-exceeded' => 'network',
+  _ => 'unknown',
 };
 
 /// Reads `instant_*` documents directly (as the rules allow) and changes
@@ -53,9 +82,7 @@ class FirestoreInstantRepository implements InstantRepository {
     final r = await functions
         .httpsCallable(
           name,
-          options: HttpsCallableOptions(
-            timeout: Duration(seconds: _longCallables.contains(name) ? 30 : 15),
-          ),
+          options: HttpsCallableOptions(timeout: instantCallableTimeout(name)),
         )
         .call<Object?>(data);
     return r.data;
@@ -76,30 +103,16 @@ class FirestoreInstantRepository implements InstantRepository {
       if (details is Map && details['code'] is String) {
         throw InstantError(details['code'] as String);
       }
-      throw InstantError(_transportCode(e.code));
+      throw InstantError(instantTransportErrorCode(e.code));
     }
   }
-
-  static String _transportCode(String code) => switch (code) {
-    'unavailable' || 'deadline-exceeded' => 'network',
-    'unauthenticated' || 'permission-denied' => 'permission_denied',
-    'not-found' => 'not_found',
-    'invalid-argument' => 'invalid_argument',
-    'aborted' => 'conflict',
-    _ => 'unknown',
-  };
 
   /// A direct write's Firestore failure as an [InstantError].
   Future<void> _write(Future<void> Function() write) async {
     try {
       await write();
     } on FirebaseException catch (e) {
-      throw InstantError(switch (e.code) {
-        'permission-denied' => 'permission_denied',
-        'not-found' => 'not_found',
-        'unavailable' || 'deadline-exceeded' => 'network',
-        _ => 'unknown',
-      });
+      throw InstantError(instantWriteErrorCode(e.code));
     }
   }
 
@@ -198,6 +211,7 @@ class FirestoreInstantRepository implements InstantRepository {
           .doc('instant_tracks/$requestId')
           .snapshots()
           .map((s) => s.exists ? instantTrackFromFirestore(s.data()) : null),
+      label: 'instant_tracks',
     );
   }
 
@@ -211,6 +225,7 @@ class FirestoreInstantRepository implements InstantRepository {
           .doc('instant_requests/$requestId')
           .snapshots()
           .map((s) => instantRequestFromFirestore(s.id, s.data())),
+      label: 'instant_requests',
     );
   }
 
@@ -340,6 +355,9 @@ class FirestoreInstantRepository implements InstantRepository {
     });
     final status = r['status'];
     final parsed = InstantStatus.fromCode(status is String ? status : null);
+    // A status this build does not know (a newer server): the step was done,
+    // but there is nothing to return, so the caller gets `unknown`; the
+    // request stream (which reads such a request as absent) drives the screen.
     if (parsed == null) throw const InstantError('unknown');
     return parsed;
   }
@@ -374,6 +392,7 @@ class FirestoreInstantRepository implements InstantRepository {
           .doc('instant_requests/$requestId/private/contact')
           .snapshots()
           .map((s) => s.exists ? bookingContactFromFirestore(s.data()) : null),
+      label: 'instant_contact',
     );
   }
 
@@ -400,18 +419,22 @@ class FirestoreInstantRepository implements InstantRepository {
 
 /// A document listener whose rules can stop allowing the read (a track
 /// deleted at arrival, a request the photographer no longer holds, a contact
-/// copy that is not unlocked): `permission-denied` emits null and ends the
-/// stream; every other error is passed on.
-Stream<T?> nullWhenDenied<T>(Stream<T?> source) => source.transform(
-  StreamTransformer<T?, T?>.fromHandlers(
-    handleError: (error, stack, sink) {
-      if (error is FirebaseException && error.code == 'permission-denied') {
-        sink
-          ..add(null)
-          ..close();
-      } else {
-        sink.addError(error, stack);
-      }
-    },
-  ),
-);
+/// copy that is not unlocked): `permission-denied` emits null and ENDS the
+/// stream (a later change is not seen; re-subscribe, e.g. on a status
+/// change); every other error is passed on. Denials are logged in debug
+/// builds by [label], so rules that refuse by mistake leave a trace.
+Stream<T?> nullWhenDenied<T>(Stream<T?> source, {String label = 'instant'}) =>
+    source.transform(
+      StreamTransformer<T?, T?>.fromHandlers(
+        handleError: (error, stack, sink) {
+          if (error is FirebaseException && error.code == 'permission-denied') {
+            debugPrint('$label: read denied, reading as absent');
+            sink
+              ..add(null)
+              ..close();
+          } else {
+            sink.addError(error, stack);
+          }
+        },
+      ),
+    );

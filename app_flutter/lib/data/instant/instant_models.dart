@@ -270,7 +270,7 @@ abstract class InstantRequest with _$InstantRequest {
     @Default(0) int amountVnd,
     @Default(0) int earningVnd,
     @Default(0) int platformFeeBp,
-    @Default(50) int arrivedCancelPhotographerPercent,
+    @Default(0) int arrivedCancelPhotographerPercent,
     PayMethod? payMethod,
 
     /// `paidAt != null` (never in #140).

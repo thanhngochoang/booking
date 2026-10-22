@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/firestore_instant_repository.dart';
@@ -423,14 +424,77 @@ void main() {
     });
   });
 
+  group('error codes and timeouts', () {
+    test('contended callables wait 40 s, the others 15 s', () {
+      for (final name in [
+        'inviteInstant',
+        'answerInstantOffer',
+        'cancelInstantRequest',
+        'confirmInstantComplete',
+      ]) {
+        expect(instantCallableTimeout(name), const Duration(seconds: 40));
+      }
+      for (final name in [
+        'createInstantRequest',
+        'nextInstantCandidates',
+        'tickInstantRequest',
+        'setLiveShutter',
+        'saveInstantSettings',
+        'updateInstantJob',
+      ]) {
+        expect(instantCallableTimeout(name), const Duration(seconds: 15));
+      }
+    });
+
+    test('transport and write codes map to InstantError codes', () {
+      expect(instantTransportErrorCode('unavailable'), 'network');
+      expect(instantTransportErrorCode('deadline-exceeded'), 'network');
+      expect(instantTransportErrorCode('unauthenticated'), 'permission_denied');
+      expect(
+        instantTransportErrorCode('permission-denied'),
+        'permission_denied',
+      );
+      expect(instantTransportErrorCode('not-found'), 'not_found');
+      expect(instantTransportErrorCode('invalid-argument'), 'invalid_argument');
+      expect(instantTransportErrorCode('aborted'), 'conflict');
+      expect(instantTransportErrorCode('internal'), 'unknown');
+
+      expect(instantWriteErrorCode('permission-denied'), 'permission_denied');
+      expect(instantWriteErrorCode('not-found'), 'not_found');
+      expect(instantWriteErrorCode('unavailable'), 'network');
+      expect(instantWriteErrorCode('deadline-exceeded'), 'network');
+      expect(instantWriteErrorCode('resource-exhausted'), 'unknown');
+    });
+
+    test(
+      'a direct write that fails in Firestore becomes an InstantError',
+      () async {
+        // No presence document yet: the update is refused with not-found.
+        await expectLater(
+          repo(uid: 'ph1').heartbeat(lat: 10.7, lng: 106.7, accuracyM: 20),
+          throwsA(
+            isA<InstantError>().having((e) => e.code, 'code', 'not_found'),
+          ),
+        );
+      },
+    );
+  });
+
   group('nullWhenDenied', () {
     test(
       'permission-denied ends the stream with null; other errors surface',
       () async {
+        final logs = <String?>[];
+        final print = debugPrint;
+        debugPrint = (m, {wrapWidth}) => logs.add(m);
+        addTearDown(() => debugPrint = print);
         final denied = StreamController<int?>();
         final out = <int?>[];
         final done = Completer<void>();
-        nullWhenDenied(denied.stream).listen(out.add, onDone: done.complete);
+        nullWhenDenied(
+          denied.stream,
+          label: 'instant_tracks',
+        ).listen(out.add, onDone: done.complete);
         denied
           ..add(1)
           ..addError(
@@ -441,6 +505,7 @@ void main() {
           );
         await done.future;
         expect(out, [1, null]);
+        expect(logs, ['instant_tracks: read denied, reading as absent']);
 
         final failing = StreamController<int?>();
         final errors = <Object>[];
