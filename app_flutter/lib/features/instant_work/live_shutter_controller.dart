@@ -6,9 +6,12 @@ import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
-/// The accuracy sent with a low-accuracy fix: `LocationRepository` gives no
-/// accuracy, and its fixes are "city block" grade.
-const kApproxFixAccuracyM = 500.0;
+/// Switching on needs a position and none came: the OS refused this time
+/// (it can still ask again), or no fix arrived (location off, timeout). The
+/// screen says so with the location line; nothing is locked.
+class LiveShutterNoLocation implements Exception {
+  const LiveShutterNoLocation();
+}
 
 /// What S14.01 shows.
 class LiveShutterView {
@@ -127,16 +130,17 @@ class LiveShutterController extends AsyncNotifier<LiveShutterView> {
 
   LocationRepository get _location => ref.read(locationRepositoryProvider);
 
-  /// No permission (or location off): a lock with "Mở cài đặt". Never asked
-  /// yet is not a lock: switching on asks.
-  Future<LiveShutterReason?> _locationReason() async {
-    final status = await _location.permissionStatus();
-    return switch (status) {
-      LocationPermissionStatus.granted ||
-      LocationPermissionStatus.notAsked => null,
-      _ => LiveShutterReason.locationRequired,
-    };
-  }
+  /// A lock with "Mở cài đặt" only when the OS will not ask again (refused
+  /// for good, or location off). Never asked or refused once is not a lock:
+  /// switching on asks.
+  Future<LiveShutterReason?> _locationReason() async =>
+      _locks(await _location.permissionStatus())
+      ? LiveShutterReason.locationRequired
+      : null;
+
+  static bool _locks(LocationPermissionStatus s) =>
+      s == LocationPermissionStatus.deniedForever ||
+      s == LocationPermissionStatus.serviceOff;
 
   void _settle({List<LiveShutterReason>? reasons}) {
     final v = state.value;
@@ -171,7 +175,8 @@ class LiveShutterController extends AsyncNotifier<LiveShutterView> {
 
   /// On: permission → a fix → `setLiveShutter(online, location)`, then
   /// [askPrimer] after the first successful switch-on. A refusal shows its
-  /// reasons and leaves the switch off. Off: `setLiveShutter(online: false)`.
+  /// reasons and leaves the switch off; no position throws
+  /// [LiveShutterNoLocation]. Off: `setLiveShutter(online: false)`.
   Future<void> setOnline(bool on, {Future<void> Function()? askPrimer}) async {
     final v = _begin();
     if (v == null) return;
@@ -191,17 +196,21 @@ class LiveShutterController extends AsyncNotifier<LiveShutterView> {
           status = LocationPermissionStatus.denied;
         }
       }
-      if (status != LocationPermissionStatus.granted) {
+      if (_locks(status)) {
         _settle(
           reasons: _ordered([...v.reasons, LiveShutterReason.locationRequired]),
         );
         return;
       }
-      final fix = await _location.currentPosition();
-      if (fix == null) throw const InstantError('unknown');
+      if (status != LocationPermissionStatus.granted) {
+        throw const LiveShutterNoLocation();
+      }
+      // The presence carries the fix's real accuracy (the server trusts it).
+      final fix = await _location.currentFix();
+      if (fix == null) throw const LiveShutterNoLocation();
       final reasons = await repo.setLiveShutter(
         online: true,
-        location: (lat: fix.lat, lng: fix.lng, accuracyM: kApproxFixAccuracyM),
+        location: (lat: fix.lat, lng: fix.lng, accuracyM: fix.accuracyM),
       );
       _settle(reasons: _ordered(reasons));
       if (reasons.isEmpty && !_primerAsked && askPrimer != null) {

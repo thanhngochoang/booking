@@ -10,23 +10,26 @@ import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
-import 'package:photobooking/features/instant_work/live_shutter_controller.dart';
 
 /// Keeps the heartbeat while a photographer is online and the app is
-/// foregrounded: a low-accuracy fix (`currentApproxLocation`) every [sample];
-/// writes at once on resume, then when the position moved more than 300 m
-/// or [maxSilence] passed since the last write; never two writes closer than
-/// 60 s (the rules refuse them). No background work: a backgrounded app stops
-/// here and the server stops suggesting it 30 minutes after the last write.
+/// foregrounded: a low-power fix (`currentFix`, with its real accuracy) every
+/// [sample]; writes at once on resume, then when the position moved more than
+/// 300 m or [maxSilence] passed since the last write; never two writes closer
+/// than 60 s (the rules refuse them). No background work: a backgrounded app
+/// stops here and the server stops suggesting it 30 minutes after the last
+/// write. With [enabled] false (Chụp ngay off, not a photographer) nothing is
+/// listened to; the widget stays in the tree so the child keeps its place.
 class LiveShutterHeartbeat extends ConsumerStatefulWidget {
   const LiveShutterHeartbeat({
     super.key,
     required this.child,
+    this.enabled = true,
     this.sample = const Duration(seconds: 60),
     this.maxSilence = const Duration(minutes: 5),
   });
 
   final Widget child;
+  final bool enabled;
   final Duration sample;
   final Duration maxSilence;
 
@@ -43,14 +46,20 @@ const _moveKm = 0.3;
 
 class _LiveShutterHeartbeatState extends ConsumerState<LiveShutterHeartbeat>
     with WidgetsBindingObserver {
+  ProviderSubscription<AsyncValue<LiveShutterState?>>? _presence;
   Timer? _timer;
   bool _online = false;
   bool _foreground = true;
   bool _sampling = false;
+  bool _writing = false;
 
-  /// The last write, ours or the server's (`setLiveShutter` writes one too).
+  /// The last successful write of ours; the server's own write
+  /// (`setLiveShutter`) arrives as [_serverHeartbeatAt].
   DateTime? _lastWriteAt;
   DateTime? _serverHeartbeatAt;
+
+  /// Where the last move is measured from: the last written position, or the
+  /// first fix after switching on (the server wrote that one).
   ({double lat, double lng})? _lastPos;
 
   @override
@@ -59,17 +68,37 @@ class _LiveShutterHeartbeatState extends ConsumerState<LiveShutterHeartbeat>
     WidgetsBinding.instance.addObserver(this);
     final state = WidgetsBinding.instance.lifecycleState;
     _foreground = state == null || state == AppLifecycleState.resumed;
-    ref.listenManual<AsyncValue<LiveShutterState?>>(livePresenceProvider, (
-      _,
-      next,
-    ) {
-      if (next.hasValue) _onPresence(next.value);
-    }, fireImmediately: true);
+    if (widget.enabled) _listen();
+  }
+
+  @override
+  void didUpdateWidget(LiveShutterHeartbeat old) {
+    super.didUpdateWidget(old);
+    if (widget.enabled == old.enabled) return;
+    if (widget.enabled) {
+      _listen();
+    } else {
+      _presence?.close();
+      _presence = null;
+      _online = false;
+      _stop();
+    }
+  }
+
+  void _listen() {
+    _presence = ref.listenManual<AsyncValue<LiveShutterState?>>(
+      livePresenceProvider,
+      (_, next) {
+        if (next.hasValue) _onPresence(next.value);
+      },
+      fireImmediately: true,
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _presence?.close();
     _timer?.cancel();
     super.dispose();
   }
@@ -98,6 +127,7 @@ class _LiveShutterHeartbeatState extends ConsumerState<LiveShutterHeartbeat>
     if (_online && !was) {
       _start();
     } else if (!_online && was) {
+      _lastPos = null;
       _stop();
     }
   }
@@ -127,41 +157,52 @@ class _LiveShutterHeartbeatState extends ConsumerState<LiveShutterHeartbeat>
     return last != null && now.difference(last) < _minGap;
   }
 
+  bool get _active => mounted && _online && _foreground;
+
   Future<void> _tick({bool resume = false}) async {
-    if (_sampling || !_online || !_foreground) return;
+    if (_sampling || _writing || !_active) return;
     final clock = ref.read(clockProvider);
-    if (_tooSoon(clock())) return;
+    // Too soon to write; still take a fix when there is no baseline yet.
+    if (_tooSoon(clock()) && _lastPos != null) return;
     _sampling = true;
-    final ApproxLocation? fix;
+    LocationFix? fix;
     try {
-      fix = await ref.read(locationRepositoryProvider).currentApproxLocation();
+      fix = await ref.read(locationRepositoryProvider).currentFix();
+    } on Object catch (e) {
+      // Errors as well: a timer callback must not leak an uncaught error.
+      debugPrint('instant heartbeat: no fix (${e.runtimeType})');
     } finally {
       _sampling = false;
     }
-    if (!mounted || fix == null || !_online || !_foreground) return;
+    if (fix == null || !_active) return;
+    final prev = _lastPos;
+    _lastPos ??= (lat: fix.lat, lng: fix.lng);
     final now = clock();
     if (_tooSoon(now)) return;
     final last = _last;
-    final prev = _lastPos;
     final moved =
         prev != null &&
         haversineKm(prev.lat, prev.lng, fix.lat, fix.lng) > _moveKm;
     final silent = last == null || now.difference(last) >= widget.maxSilence;
     if (!resume && !moved && !silent) return;
-    _lastWriteAt = now;
-    _lastPos = (lat: fix.lat, lng: fix.lng);
-    // Not awaited: a write made offline completes only once back online.
-    unawaited(_write(fix.lat, fix.lng));
+    // Not awaited by the timer: a write made offline completes only once
+    // back online; until then no other write starts.
+    unawaited(_write(fix, now));
   }
 
-  Future<void> _write(double lat, double lng) async {
+  Future<void> _write(LocationFix fix, DateTime at) async {
+    _writing = true;
     try {
       await ref
           .read(instantRepositoryProvider)
-          .heartbeat(lat: lat, lng: lng, accuracyM: kApproxFixAccuracyM);
+          .heartbeat(lat: fix.lat, lng: fix.lng, accuracyM: fix.accuracyM);
+      _lastWriteAt = at;
+      _lastPos = (lat: fix.lat, lng: fix.lng);
     } on Object catch (e) {
-      // A refused or failed heartbeat is retried by the next sample.
+      // Not recorded as written: the next sample tries again.
       debugPrint('instant heartbeat failed: ${instantErrorCodeOf(e)}');
+    } finally {
+      _writing = false;
     }
   }
 

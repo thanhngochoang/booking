@@ -40,6 +40,24 @@ class ApproxLocation {
   String toString() => 'ApproxLocation(<redacted>)';
 }
 
+/// A one-shot fix with the platform's horizontal accuracy in metres (the
+/// radius of 68% confidence). Kept in memory only; Chụp ngay sends it to the
+/// server with the presence and the arrival check, which trust [accuracyM].
+class LocationFix {
+  const LocationFix({
+    required this.lat,
+    required this.lng,
+    required this.accuracyM,
+  });
+
+  final double lat;
+  final double lng;
+  final double accuracyM;
+
+  @override
+  String toString() => 'LocationFix(<redacted>)';
+}
+
 abstract class LocationRepository {
   Future<LocationPermissionStatus> permissionStatus();
 
@@ -58,6 +76,15 @@ abstract class LocationRepository {
   /// One-shot GPS / device position for chat sharing, or null when permission
   /// denied or unavailable.
   Future<({double lat, double lng})?> currentPosition({
+    Duration timeout = const Duration(seconds: 10),
+  });
+
+  /// One-shot fix with its real accuracy, or null when permission is not
+  /// granted, no fix arrives within [timeout] or the platform fails.
+  /// [highAccuracy] asks for GPS grade (S14.03 arrival); the default is the
+  /// low-power fix (presence).
+  Future<LocationFix?> currentFix({
+    bool highAccuracy = false,
     Duration timeout = const Duration(seconds: 10),
   });
 
@@ -80,11 +107,16 @@ class FakeLocationRepository implements LocationRepository {
   ApproxLocation? location;
   ({double lat, double lng})? position;
 
+  /// The accuracy [currentFix] reports for [position].
+  double accuracyM = 35;
+
   int statusCalls = 0;
   int requestCalls = 0;
   int locationCalls = 0;
   int positionCalls = 0;
   int openSettingsCalls = 0;
+  int fixCalls = 0;
+  int highAccuracyFixCalls = 0;
 
   @override
   Future<LocationPermissionStatus> permissionStatus() async {
@@ -119,6 +151,20 @@ class FakeLocationRepository implements LocationRepository {
       return null;
     }
     return position;
+  }
+
+  @override
+  Future<LocationFix?> currentFix({
+    bool highAccuracy = false,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    fixCalls++;
+    if (highAccuracy) highAccuracyFixCalls++;
+    final p = position;
+    if (status != LocationPermissionStatus.granted || p == null) {
+      return null;
+    }
+    return LocationFix(lat: p.lat, lng: p.lng, accuracyM: accuracyM);
   }
 
   @override

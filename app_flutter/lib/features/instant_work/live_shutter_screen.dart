@@ -58,7 +58,12 @@ class _LiveShutterScreenState extends ConsumerState<LiveShutterScreen>
     try {
       await call();
     } on Object catch (e) {
-      if (mounted) _say(instantErrorText(l, e));
+      if (!mounted) return;
+      _say(
+        e is LiveShutterNoLocation
+            ? l.liveShutterReasonLocation
+            : instantErrorText(l, e),
+      );
     }
   }
 
@@ -132,12 +137,16 @@ class _LiveShutterScreenState extends ConsumerState<LiveShutterScreen>
         ? AppColorsDark.foregroundMuted
         : AppColors.foregroundMuted;
     final rows = v.reasonRows;
-    final note = v.needsTerms
-        ? l.priceListTermsNote
-        : v.locked
+    // Mock `#S14.01-locked`: no note and no footer button; the price list
+    // is then a reason row with its own small "Đồng ý bảng giá".
+    final note = v.locked
         ? null
+        : v.needsTerms
+        ? l.priceListTermsNote
         : l.liveShutterNote;
-    final Widget? footer = v.needsTerms
+    final Widget? footer = v.locked
+        ? null
+        : v.needsTerms
         ? AppButton.primary(
             l.priceListAccept,
             key: const Key('accept-price-list'),
@@ -177,6 +186,9 @@ class _LiveShutterScreenState extends ConsumerState<LiveShutterScreen>
                   reasons: rows,
                   onAddPhone: _addPhone,
                   onOpenSettings: _openSettings,
+                  onAcceptPriceList: v.busy
+                      ? null
+                      : () => _run(_controller.acceptPriceList),
                 ),
                 const SizedBox(height: AppSpace.s3),
               ],
@@ -349,11 +361,13 @@ class _ReasonsCard extends StatelessWidget {
     required this.reasons,
     required this.onAddPhone,
     required this.onOpenSettings,
+    required this.onAcceptPriceList,
   });
 
   final List<LiveShutterReason> reasons;
   final VoidCallback onAddPhone;
   final VoidCallback onOpenSettings;
+  final VoidCallback? onAcceptPriceList;
 
   @override
   Widget build(BuildContext context) {
@@ -401,6 +415,10 @@ class _ReasonsCard extends StatelessWidget {
                   l.liveShutterOpenSettings,
                   onOpenSettings,
                 ),
+                LiveShutterReason.priceListNotAccepted => (
+                  l.priceListAccept,
+                  onAcceptPriceList,
+                ),
                 _ => null,
               },
             ),
@@ -421,7 +439,7 @@ class _ReasonRow extends StatelessWidget {
 
   final IconData icon;
   final String text;
-  final (String, VoidCallback)? action;
+  final (String, VoidCallback?)? action;
 
   @override
   Widget build(BuildContext context) {

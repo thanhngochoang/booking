@@ -43,9 +43,6 @@ LiveShutterState presenceOf({
   heartbeatAt: heartbeatAt,
 );
 
-ApproxLocation approxAt(({double lat, double lng}) p, DateTime at) =>
-    ApproxLocation(lat: p.lat, lng: p.lng, capturedAt: at);
-
 class InstantWorld {
   InstantWorld({
     FakeInstantRepository? repo,

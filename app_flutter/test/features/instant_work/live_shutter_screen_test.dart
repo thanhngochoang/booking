@@ -201,11 +201,13 @@ void main() {
       await settleInstant(tester);
 
       expect(world.location.requestCalls, 1);
-      expect(world.location.positionCalls, 1);
+      expect(world.location.fixCalls, 1);
+      expect(world.location.highAccuracyFixCalls, 0);
       expect(repo.callsOf('setLiveShutter').single.args, {
         'online': true,
         'dryRun': false,
-        'location': (lat: taoDan.lat, lng: taoDan.lng, accuracyM: 500.0),
+        // The fix's own accuracy, never a made-up one.
+        'location': (lat: taoDan.lat, lng: taoDan.lng, accuracyM: 35.0),
       });
       expect(_switch(tester, 'live-shutter-switch').value, isTrue);
       expect(find.text('Tắt khi xong việc hôm nay'), findsOneWidget);
@@ -312,6 +314,104 @@ void main() {
     await repo.dispose();
   });
 
+  testWidgets('a refusal the OS can ask again is no lock: the switch asks', (
+    tester,
+  ) async {
+    final repo = FakeInstantRepository(presence: presenceOf());
+    final world = InstantWorld(
+      repo: repo,
+      location: FakeLocationRepository(
+        status: LocationPermissionStatus.denied,
+        position: taoDan,
+      ),
+    );
+    await pumpLiveShutter(tester, world);
+    expect(find.byKey(const Key('live-shutter-reasons')), findsNothing);
+    expect(_switch(tester, 'live-shutter-switch').onChanged, isNotNull);
+
+    await tester.tap(find.byKey(const Key('live-shutter-switch')));
+    await settleInstant(tester);
+
+    expect(world.location.requestCalls, 1);
+    expect(_switch(tester, 'live-shutter-switch').value, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await repo.dispose();
+  });
+
+  testWidgets('refused again, or no fix: the location line as a toast, no '
+      'lock', (tester) async {
+    final repo = FakeInstantRepository(presence: presenceOf());
+    final world = InstantWorld(
+      repo: repo,
+      location: FakeLocationRepository(
+        status: LocationPermissionStatus.denied,
+        statusAfterRequest: LocationPermissionStatus.denied,
+        position: taoDan,
+      ),
+    );
+    await pumpLiveShutter(tester, world);
+    repo.calls.clear();
+
+    await tester.tap(find.byKey(const Key('live-shutter-switch')));
+    await settleInstant(tester);
+    const line = 'Cho phép dùng vị trí để nhận lời mời ở gần';
+    expect(find.text(line), findsOneWidget);
+    expect(find.byKey(const Key('live-shutter-reasons')), findsNothing);
+    expect(repo.callsOf('setLiveShutter'), isEmpty);
+
+    // Granted, but GPS off or a timeout: no fix.
+    world.location
+      ..status = LocationPermissionStatus.granted
+      ..position = null;
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).last))
+        .hideCurrentSnackBar();
+    await settleInstant(tester);
+    await tester.tap(find.byKey(const Key('live-shutter-switch')));
+    await settleInstant(tester);
+    expect(find.text(line), findsOneWidget);
+    expect(find.text('Chưa thực hiện được. Thử lại nhé.'), findsNothing);
+    expect(repo.callsOf('setLiveShutter'), isEmpty);
+    expect(_switch(tester, 'live-shutter-switch').value, isFalse);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await repo.dispose();
+  });
+
+  testWidgets('locked with the price list not accepted: no footer, the row '
+      'accepts it', (tester) async {
+    final repo =
+        FakeInstantRepository(presence: presenceOf(priceListVersion: null))
+          ..liveShutterReasons = [
+            LiveShutterReason.phoneRequired,
+            LiveShutterReason.priceListNotAccepted,
+          ];
+    await pumpLiveShutter(tester, InstantWorld(repo: repo));
+
+    expect(find.byType(AppFooterBar), findsNothing);
+    expect(find.text('Đồng ý bảng giá gói'), findsOneWidget);
+    final accept = find.descendant(
+      of: find.byKey(const Key('reason-price_list_not_accepted')),
+      matching: find.text('Đồng ý bảng giá'),
+    );
+    expect(accept, findsOneWidget);
+
+    await tester.tap(accept);
+    await settleInstant(tester);
+
+    expect(repo.callsOf('saveSettings').single.args, {
+      'acceptPriceListVersion': 1,
+      'helpReady': null,
+    });
+    expect(find.text('Bản 1 · đã đồng ý'), findsOneWidget);
+    expect(
+      find.byKey(const Key('reason-price_list_not_accepted')),
+      findsNothing,
+    );
+    // Still locked by the phone: still no footer.
+    expect(find.byType(AppFooterBar), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await repo.dispose();
+  });
+
   for (final brightness in Brightness.values) {
     for (final state in ['online', 'terms', 'locked']) {
       testWidgets('fits 320dp at 1.3× text, ${brightness.name}, $state', (
@@ -333,7 +433,7 @@ void main() {
           repo: repo,
           location: FakeLocationRepository(
             status: state == 'locked'
-                ? LocationPermissionStatus.denied
+                ? LocationPermissionStatus.deniedForever
                 : LocationPermissionStatus.granted,
           ),
         );

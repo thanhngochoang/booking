@@ -448,9 +448,6 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
   }
 }
 
-/// "Lịch tại điểm · {n} đang mở" (mock S06.01 caption): opens S29.03
-/// (`/me/spot-schedules`). Without an open schedule, or while the list
-/// loads, the plain line.
 /// The Live Shutter card with the gutter, or nothing while Chụp ngay is off.
 class _InstantEntry extends ConsumerWidget {
   const _InstantEntry();
@@ -470,6 +467,9 @@ class _InstantEntry extends ConsumerWidget {
   }
 }
 
+/// "Lịch tại điểm · {n} đang mở" (mock S06.01 caption): opens S29.03
+/// (`/me/spot-schedules`). Without an open schedule, or while the list
+/// loads, the plain line.
 class _SpotSchedulesEntry extends ConsumerWidget {
   const _SpotSchedulesEntry();
 

@@ -86,12 +86,12 @@ void main() {
     },
   );
 
-  test('switching on without a location permission adds the location lock '
-      'and calls nothing', () async {
+  test('refused for good: switching on adds the location lock and calls '
+      'nothing', () async {
     final repo = FakeInstantRepository(presence: presenceOf());
     final world = InstantWorld(repo: repo)
       ..location.status = LocationPermissionStatus.notAsked
-      ..location.statusAfterRequest = LocationPermissionStatus.denied;
+      ..location.statusAfterRequest = LocationPermissionStatus.deniedForever;
     final (container, sub) = await _open(world);
     repo.calls.clear();
 
@@ -104,6 +104,54 @@ void main() {
     final v = sub.read().value!;
     expect(v.reasons, [LiveShutterReason.locationRequired]);
     expect(v.locked, isTrue);
+    container.dispose();
+    await repo.dispose();
+  });
+
+  test('refused once or no fix: LiveShutterNoLocation, no lock', () async {
+    final repo = FakeInstantRepository(presence: presenceOf());
+    final world = InstantWorld(repo: repo)
+      ..location.status = LocationPermissionStatus.denied
+      ..location.statusAfterRequest = LocationPermissionStatus.denied;
+    final (container, sub) = await _open(world);
+    expect(sub.read().value!.locked, isFalse);
+    final controller = container.read(liveShutterControllerProvider.notifier);
+
+    await expectLater(
+      controller.setOnline(true),
+      throwsA(isA<LiveShutterNoLocation>()),
+    );
+    world.location
+      ..statusAfterRequest = LocationPermissionStatus.granted
+      ..position = null;
+    await expectLater(
+      controller.setOnline(true),
+      throwsA(isA<LiveShutterNoLocation>()),
+    );
+    final v = sub.read().value!;
+    expect(v.reasons, isEmpty);
+    expect(v.busy, isFalse);
+    expect(
+      repo.callsOf('setLiveShutter').where((c) => c.args['dryRun'] == false),
+      isEmpty,
+    );
+    container.dispose();
+    await repo.dispose();
+  });
+
+  test('switch-on sends the fix with its real accuracy', () async {
+    final repo = FakeInstantRepository(presence: presenceOf());
+    final world = InstantWorld(repo: repo)..location.accuracyM = 18;
+    final (container, _) = await _open(world);
+    repo.calls.clear();
+    await container
+        .read(liveShutterControllerProvider.notifier)
+        .setOnline(true);
+    expect(repo.callsOf('setLiveShutter').single.args['location'], (
+      lat: taoDan.lat,
+      lng: taoDan.lng,
+      accuracyM: 18.0,
+    ));
     container.dispose();
     await repo.dispose();
   });

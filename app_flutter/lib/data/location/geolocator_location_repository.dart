@@ -13,6 +13,13 @@ abstract class LocationGateway {
 
   /// Throws on failure or timeout.
   Future<({double lat, double lng})> lowAccuracyPosition(Duration timeout);
+
+  /// A fix with the platform's accuracy (`Position.accuracy`, metres).
+  /// Throws on failure or timeout.
+  Future<({double lat, double lng, double accuracyM})> position(
+    Duration timeout, {
+    required bool highAccuracy,
+  });
   Future<bool> openAppSettings();
 }
 
@@ -49,6 +56,20 @@ class GeolocatorGateway implements LocationGateway {
       ),
     );
     return (lat: p.latitude, lng: p.longitude);
+  }
+
+  @override
+  Future<({double lat, double lng, double accuracyM})> position(
+    Duration timeout, {
+    required bool highAccuracy,
+  }) async {
+    final p = await Geolocator.getCurrentPosition(
+      locationSettings: LocationSettings(
+        accuracy: highAccuracy ? LocationAccuracy.high : LocationAccuracy.low,
+        timeLimit: timeout,
+      ),
+    );
+    return (lat: p.latitude, lng: p.longitude, accuracyM: p.accuracy);
   }
 
   @override
@@ -122,6 +143,24 @@ class GeolocatorLocationRepository implements LocationRepository {
         return null;
       }
       return await _gateway.lowAccuracyPosition(timeout).timeout(timeout);
+    } on Exception catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<LocationFix?> currentFix({
+    bool highAccuracy = false,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    try {
+      if (await permissionStatus() != LocationPermissionStatus.granted) {
+        return null;
+      }
+      final p = await _gateway
+          .position(timeout, highAccuracy: highAccuracy)
+          .timeout(timeout);
+      return LocationFix(lat: p.lat, lng: p.lng, accuracyM: p.accuracyM);
     } on Exception catch (_) {
       return null;
     }

@@ -31,7 +31,8 @@ class TabShell extends ConsumerWidget {
     return AuroraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: heartbeat ? LiveShutterHeartbeat(child: shell) : shell,
+        // Always in the tree, so turning it on never moves the shell.
+        body: LiveShutterHeartbeat(enabled: heartbeat, child: shell),
         bottomNavigationBar: DecoratedBox(
           // Mock `.tabs`: 1px hairline above the bar.
           decoration: BoxDecoration(

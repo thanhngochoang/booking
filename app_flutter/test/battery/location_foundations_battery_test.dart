@@ -35,6 +35,15 @@ class _CountingGateway implements LocationGateway {
   }
 
   @override
+  Future<({double lat, double lng, double accuracyM})> position(
+    Duration timeout, {
+    required bool highAccuracy,
+  }) async {
+    final p = await lowAccuracyPosition(timeout);
+    return (lat: p.lat, lng: p.lng, accuracyM: 50.0);
+  }
+
+  @override
   Future<bool> openAppSettings() async => true;
 }
 
@@ -170,7 +179,8 @@ void main() {
     );
 
     test(
-      'the adapter source has no stream, no high accuracy, no background',
+      'the adapter source has no stream, no default high accuracy, no '
+      'background',
       () {
         final src = File(
           'lib/data/location/geolocator_location_repository.dart',
@@ -178,10 +188,20 @@ void main() {
         expect(src, contains('getCurrentPosition'));
         expect(src, contains('LocationAccuracy.low'));
         expect(src, contains('timeLimit'));
+        // One exception (#140): a one-shot high-accuracy fix the caller asks
+        // for explicitly (S14.03 arrival); never a stream, never the default.
+        expect(
+          'LocationAccuracy.high'.allMatches(src).length,
+          1,
+          reason: 'only the opt-in one-shot fix',
+        );
+        expect(
+          src,
+          contains('highAccuracy ? LocationAccuracy.high : LocationAccuracy.low'),
+        );
         for (final banned in [
           'getPositionStream',
           'getServiceStatusStream',
-          'LocationAccuracy.high',
           'LocationAccuracy.best',
           'LocationAccuracy.medium',
           'requestAlways',
