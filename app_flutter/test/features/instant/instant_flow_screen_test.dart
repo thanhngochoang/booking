@@ -131,17 +131,26 @@ void main() {
   });
 
   testWidgets('a tick that fails is silent', (tester) async {
-    final world = InstantCustomerWorld();
-    world.repo.failNext('tick', 'network');
-    await pumpInstantFlow(
-      tester,
-      world,
-      request: customerRequestOf(status: InstantStatus.inProgress)
-          .copyWith(shootEndsAt: instantNow.add(const Duration(seconds: 5))),
-    );
-    await world.base.wait(tester, const Duration(seconds: 10));
-    expect(world.repo.callsOf('tick'), hasLength(1));
-    expect(find.byType(SnackBar), findsNothing);
+    // The failure goes to the debug log only; keep it out of the test output.
+    final logged = <String?>[];
+    final print = debugPrint;
+    debugPrint = (message, {wrapWidth}) => logged.add(message);
+    try {
+      final world = InstantCustomerWorld();
+      world.repo.failNext('tick', 'network');
+      await pumpInstantFlow(
+        tester,
+        world,
+        request: customerRequestOf(status: InstantStatus.inProgress)
+            .copyWith(shootEndsAt: instantNow.add(const Duration(seconds: 5))),
+      );
+      await world.base.wait(tester, const Duration(seconds: 10));
+      expect(world.repo.callsOf('tick'), hasLength(1));
+      expect(find.byType(SnackBar), findsNothing);
+      expect(logged, ['instant tick failed: network']);
+    } finally {
+      debugPrint = print;
+    }
   });
 
   testWidgets('back in the app ticks once', (tester) async {

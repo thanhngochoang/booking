@@ -10,24 +10,12 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
-import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/features/instant/instant_ticks.dart';
 
 /// "0:42": minutes and seconds left on an invite.
 String waitingClock(Duration left) {
   final s = left.isNegative ? 0 : left.inSeconds;
   return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
-}
-
-/// The latest `expiresAt` of the pending invites; null when nobody is still
-/// looking.
-DateTime? latestPendingExpiry(InstantRequest r) {
-  DateTime? latest;
-  for (final o in r.offers) {
-    final at = o.expiresAt;
-    if (o.outcome != OfferOutcome.pending || at == null) continue;
-    if (latest == null || at.isAfter(latest)) latest = at;
-  }
-  return latest;
 }
 
 enum _RowState { viewing, declined, expired, notCounted }
@@ -129,7 +117,12 @@ class WaitingView extends ConsumerWidget {
                       children: [
                         for (final (i, o) in rows.indexed) ...[
                           if (i > 0) const Divider(height: 1),
-                          _InviteeRow(row: o),
+                          _InviteeRow(
+                            key: ValueKey(
+                              'waiting-invitee-${o.photographerId}',
+                            ),
+                            row: o,
+                          ),
                         ],
                       ],
                     ),
@@ -137,7 +130,8 @@ class WaitingView extends ConsumerWidget {
                 ),
               const SizedBox(height: AppSpace.s3),
               Text(
-                l.waitingNote,
+                // Nothing held before payment (#140): no money sentence.
+                request.paid ? l.waitingNote : l.waitingNoteUnpaid,
                 textAlign: TextAlign.center,
                 style: bodyStyle,
               ),
@@ -163,26 +157,40 @@ class WaitingView extends ConsumerWidget {
 }
 
 /// Mock `.irow2`: avatar, name, meta (tomato and ETA, or "vừa nhận việc
-/// khác") and the status chip.
-class _InviteeRow extends StatelessWidget {
-  const _InviteeRow({required this.row});
+/// khác") and the status chip. A row whose state changes while the screen is
+/// open is announced (live region); the rows as first shown are not.
+class _InviteeRow extends StatefulWidget {
+  const _InviteeRow({super.key, required this.row});
 
   final InstantOfferRow row;
 
-  List<MetaPart> _meta(AppLocalizations l, _RowState state) =>
-      state == _RowState.notCounted
-      ? [MetaPart.text(l.chooseUnavailable(row.name))]
-      : [
-          if (row.reviewCount >= kTomatoPctMinReviews)
-            MetaPart.tomato(row.tomatoPct),
-          MetaPart.text(l.waitingRowEta(row.etaMinutes)),
-        ];
+  @override
+  State<_InviteeRow> createState() => _InviteeRowState();
+}
+
+class _InviteeRowState extends State<_InviteeRow> {
+  bool _changed = false;
+
+  @override
+  void didUpdateWidget(_InviteeRow old) {
+    super.didUpdateWidget(old);
+    if (_stateOf(old.row.outcome) != _stateOf(widget.row.outcome)) {
+      _changed = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final row = widget.row;
     final state = _stateOf(row.outcome);
-    final meta = _meta(l, state);
+    final meta = state == _RowState.notCounted
+        ? [MetaPart.text(l.waitingRowUnavailable)]
+        : [
+            if (row.reviewCount >= kTomatoPctMinReviews)
+              MetaPart.tomato(row.tomatoPct),
+            MetaPart.text(l.waitingRowEta(row.etaMinutes)),
+          ];
     final chip = switch (state) {
       _RowState.viewing => l.waitingViewing,
       _RowState.declined => l.waitingDeclined,
@@ -192,10 +200,13 @@ class _InviteeRow extends StatelessWidget {
     return Semantics(
       key: ValueKey('waiting-row-${row.photographerId}'),
       container: true,
-      liveRegion: state != _RowState.viewing,
-      label: state == _RowState.viewing
-          ? l.waitingRowSemantics(row.name)
-          : '${row.name}, ${metaPartsSemantics(meta, l)}, $chip',
+      liveRegion: _changed,
+      label: switch (state) {
+        _RowState.viewing => l.waitingRowSemantics(row.name),
+        // "Quốc Bảo vừa nhận việc khác, Không tính": the name once.
+        _RowState.notCounted => '${l.chooseUnavailable(row.name)}, $chip',
+        _ => '${row.name}, ${metaPartsSemantics(meta, l)}, $chip',
+      },
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
@@ -259,7 +270,7 @@ class _StateChip extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s2,
-          vertical: 3,
+          vertical: AppSpace.s1,
         ),
         child: Text(
           label,

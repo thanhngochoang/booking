@@ -124,6 +124,37 @@ void main() {
     await _end(tester, w);
   });
 
+  testWidgets('system Back on S13.04 continues to S13.05', (tester) async {
+    final w = InstantCustomerWorld();
+    final router = await pumpInstantFlow(tester, w, request: _searching());
+    w.repo.emitRequest('req1', _assigned());
+    await settleInstant(tester);
+    expect(find.byType(MatchOverlay), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await settleInstant(tester);
+    expect(find.byType(MatchOverlay), findsNothing);
+    expect(_code(tester), ScreenCodes.instantTracking);
+    expect(router.state.uri.toString(), '/instant/req1');
+    await _end(tester, w);
+  });
+
+  testWidgets('no ETA known: the body leaves the minutes out', (tester) async {
+    final w = InstantCustomerWorld();
+    await pumpInstantFlow(tester, w, request: _searching());
+    // No ETA on the request and no invite row of Minh Trí.
+    w.repo.emitRequest(
+      'req1',
+      _assigned().copyWith(etaMinutes: null, offers: const []),
+    );
+    await settleInstant(tester);
+    expect(
+      tester.widget<MatchOverlay>(find.byType(MatchOverlay)).body,
+      'Minh Trí đã nhận lời mời của bạn và đang chuẩn bị tới Cổng Trương '
+      'Định.',
+    );
+    await _end(tester, w);
+  });
+
   testWidgets('auto-continue after 3 s', (tester) async {
     final w = InstantCustomerWorld();
     await pumpInstantFlow(tester, w, request: _searching());

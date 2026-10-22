@@ -216,35 +216,42 @@ class _Matched extends StatelessWidget {
   final InstantRequest request;
   final VoidCallback onContinue;
 
-  /// The ETA at assignment; the accepted invite's when the request has none.
-  int get _etaMinutes =>
+  /// The ETA at assignment; the accepted invite's when the request has none;
+  /// null when neither is known (the body then leaves the minutes out).
+  int? get _etaMinutes =>
       request.etaMinutes ??
       request.offers
           .where((o) => o.photographerId == request.photographerId)
           .firstOrNull
-          ?.etaMinutes ??
-      1;
+          ?.etaMinutes;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final name = request.photographer?.name ?? '';
+    final place = request.meetPoint.name;
+    final eta = _etaMinutes;
     return ScreenCode(
       ScreenCodes.instantMatched,
-      child: AuroraBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: MatchOverlay(
-              name: name,
-              body: l.matchBodyCustomer(
-                name,
-                request.meetPoint.name,
-                _etaMinutes,
+      // System Back continues to S13.05 instead of leaving the request.
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) onContinue();
+        },
+        child: AuroraBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: MatchOverlay(
+                name: name,
+                body: eta == null
+                    ? l.matchBodyCustomerNoEta(name, place)
+                    : l.matchBodyCustomer(name, place, eta),
+                myAvatarUrl: request.customerAvatarUrl,
+                theirAvatarUrl: request.photographer?.avatarUrl,
+                onContinue: onContinue,
               ),
-              myAvatarUrl: request.customerAvatarUrl,
-              theirAvatarUrl: request.photographer?.avatarUrl,
-              onContinue: onContinue,
             ),
           ),
         ),

@@ -9065,6 +9065,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get waitingNotCounted => 'Không tính';
 
   @override
+  String get waitingRowUnavailable => 'vừa nhận việc khác';
+
+  @override
   String waitingRowSemantics(String name) {
     return '$name đang xem lời mời';
   }
@@ -9072,6 +9075,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get waitingNote =>
       'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.';
+
+  @override
+  String get waitingNoteUnpaid =>
+      'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác.';
 
   @override
   String get waitingCancel => 'Huỷ yêu cầu';
@@ -9245,6 +9252,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String matchBodyCustomer(String name, String place, int minutes) {
     return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place, khoảng $minutes phút.';
+  }
+
+  @override
+  String matchBodyCustomerNoEta(String name, String place) {
+    return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place.';
   }
 
   @override

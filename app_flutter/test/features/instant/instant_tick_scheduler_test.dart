@@ -1,6 +1,7 @@
 // Decision 6: one timer at a time for the request's next deadline, one tick
 // per deadline, once more on app resume; a failing tick is silent. Timers run
 // in the widget tester's fake time (no widget is pumped).
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/instant_tick_scheduler.dart';
@@ -123,19 +124,28 @@ void main() {
   testWidgets('a failing tick is silent and does not stop the next one', (
     tester,
   ) async {
-    final h = _Harness(tester)..failWith = 'network';
-    addTearDown(h.scheduler.dispose);
-    h.scheduler.update(
-      _searching(
-        offers: [_pending('p1', const Duration(seconds: 10))],
-        deadline: const Duration(seconds: 30),
-      ),
-    );
-    await h.wait(const Duration(seconds: 11));
-    expect(h.ticks, 1);
-    expect(tester.takeException(), isNull);
-    await h.wait(const Duration(seconds: 19));
-    expect(h.ticks, 2);
+    // The failure goes to the debug log only; keep it out of the test output.
+    final logged = <String?>[];
+    final print = debugPrint;
+    debugPrint = (message, {wrapWidth}) => logged.add(message);
+    try {
+      final h = _Harness(tester)..failWith = 'network';
+      addTearDown(h.scheduler.dispose);
+      h.scheduler.update(
+        _searching(
+          offers: [_pending('p1', const Duration(seconds: 10))],
+          deadline: const Duration(seconds: 30),
+        ),
+      );
+      await h.wait(const Duration(seconds: 11));
+      expect(h.ticks, 1);
+      expect(tester.takeException(), isNull);
+      await h.wait(const Duration(seconds: 19));
+      expect(h.ticks, 2);
+      expect(logged, hasLength(2));
+    } finally {
+      debugPrint = print;
+    }
   });
 
   testWidgets('no timer after dispose', (tester) async {

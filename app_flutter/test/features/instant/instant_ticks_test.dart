@@ -28,6 +28,27 @@ void main() {
     expect(nextTickDelay(r, now), const Duration(seconds: 56));
   });
 
+  test('latestPendingExpiry: the latest pending invite, null without one', () {
+    final r = customerRequestOf(status: InstantStatus.searching).copyWith(
+      offers: [
+        _row('p1', OfferOutcome.pending, const Duration(seconds: 30)),
+        _row('p2', OfferOutcome.pending, const Duration(seconds: 42)),
+        _row('p3', OfferOutcome.expired, const Duration(seconds: 90)),
+      ],
+    );
+    expect(latestPendingExpiry(r), now.add(const Duration(seconds: 42)));
+    expect(
+      latestPendingExpiry(
+        r.copyWith(
+          offers: [
+            _row('p1', OfferOutcome.declined, const Duration(seconds: 9)),
+          ],
+        ),
+      ),
+      isNull,
+    );
+  });
+
   test('searching without pending offers: at searchDeadlineAt', () {
     final r = customerRequestOf(status: InstantStatus.searching).copyWith(
       committed: true,

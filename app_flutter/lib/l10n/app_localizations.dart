@@ -15561,6 +15561,12 @@ abstract class AppLocalizations {
   /// **'Không tính'**
   String get waitingNotCounted;
 
+  /// No description provided for @waitingRowUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'vừa nhận việc khác'**
+  String get waitingRowUnavailable;
+
   /// No description provided for @waitingRowSemantics.
   ///
   /// In vi, this message translates to:
@@ -15572,6 +15578,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.'**
   String get waitingNote;
+
+  /// waitingNote without the money: nothing is paid or held before #202
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác.'**
+  String get waitingNoteUnpaid;
 
   /// No description provided for @waitingCancel.
   ///
@@ -15848,6 +15860,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}, khoảng {minutes} phút.'**
   String matchBodyCustomer(String name, String place, int minutes);
+
+  /// matchBodyCustomer when the request has no ETA
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}.'**
+  String matchBodyCustomerNoEta(String name, String place);
 
   /// No description provided for @matchContinue.
   ///

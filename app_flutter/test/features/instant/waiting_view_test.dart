@@ -40,11 +40,14 @@ final _mockRows = [
   _row('p3', 'Quốc Bảo', OfferOutcome.unavailable, expiresIn: null),
 ];
 
-InstantRequest _waiting([List<InstantOfferRow>? offers]) =>
+/// The round of [offers] (the mock's by default); [paid] as from #202 on
+/// (#140 requests are never paid).
+InstantRequest _waiting([List<InstantOfferRow>? offers, bool paid = true]) =>
     customerRequestOf(
       status: InstantStatus.searching,
       committed: true,
     ).copyWith(
+      paid: paid,
       offers: offers ?? _mockRows,
       invitedTotal: 2,
       roundsWithInvites: 1,
@@ -139,15 +142,69 @@ void main() {
   testWidgets('unavailable row reads "Quốc Bảo vừa nhận việc khác"', (
     tester,
   ) async {
+    final handle = tester.ensureSemantics();
     final w = InstantCustomerWorld();
     await pumpInstantFlow(tester, w, request: _waiting());
+    // Mock: the bold name, then "vừa nhận việc khác" (the name once).
+    final row = find.byKey(const ValueKey('waiting-row-p3'));
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('waiting-row-p3')),
-        matching: find.text('Quốc Bảo vừa nhận việc khác'),
-      ),
+      find.descendant(of: row, matching: find.text('vừa nhận việc khác')),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: row, matching: find.textContaining('Quốc Bảo')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Quốc Bảo vừa nhận việc khác, Không tính'),
+      findsOneWidget,
+    );
+    await _end(tester, w);
+    handle.dispose();
+  });
+
+  testWidgets('unpaid (#140): the note leaves out the held money', (
+    tester,
+  ) async {
+    final w = InstantCustomerWorld();
+    await pumpInstantFlow(tester, w, request: _waiting(null, false));
+    expect(
+      find.text('Chưa ai nhận thì bạn chọn tiếp trong 5 người khác.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Tiền vẫn được giữ'), findsNothing);
+    await _end(tester, w);
+  });
+
+  testWidgets('a row is announced only when its state changes', (tester) async {
+    final w = InstantCustomerWorld();
+    await pumpInstantFlow(
+      tester,
+      w,
+      request: _waiting([
+        _row('p1', 'Minh Trí', OfferOutcome.pending),
+        _row('p2', 'Hồng Nhung', OfferOutcome.declined),
+        _row('p3', 'Quốc Bảo', OfferOutcome.unavailable, expiresIn: null),
+      ]),
+    );
+    bool live(String id) =>
+        tester
+            .widget<Semantics>(find.byKey(ValueKey('waiting-row-$id')))
+            .properties
+            .liveRegion ??
+        false;
+    // As first shown: nothing to announce.
+    expect([live('p1'), live('p2'), live('p3')], [false, false, false]);
+    w.repo.emitRequest(
+      'req1',
+      _waiting([
+        _row('p1', 'Minh Trí', OfferOutcome.declined),
+        _row('p2', 'Hồng Nhung', OfferOutcome.declined),
+        _row('p3', 'Quốc Bảo', OfferOutcome.unavailable, expiresIn: null),
+      ]),
+    );
+    await settleInstant(tester);
+    expect([live('p1'), live('p2'), live('p3')], [true, false, false]);
     await _end(tester, w);
   });
 

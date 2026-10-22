@@ -6,6 +6,18 @@ import 'package:photobooking/data/instant/instant_models.dart';
 /// expired.
 const kInstantOfferTickGrace = Duration(seconds: 1);
 
+/// The latest `expiresAt` of [r]'s pending invites (S13.03 counts down to
+/// it); null when nobody is still looking.
+DateTime? latestPendingExpiry(InstantRequest r) {
+  DateTime? latest;
+  for (final o in r.offers) {
+    final at = o.expiresAt;
+    if (o.outcome != OfferOutcome.pending || at == null) continue;
+    if (latest == null || at.isAfter(latest)) latest = at;
+  }
+  return latest;
+}
+
 /// The instants at which [r] needs a tick, soonest first:
 /// - `searching`: 1 s after the latest pending offer's `expiresAt`, and
 ///   `searchDeadlineAt`;
@@ -23,13 +35,7 @@ List<DateTime> instantTickDeadlines(InstantRequest r) {
 
   switch (r.status) {
     case InstantStatus.searching:
-      DateTime? latest;
-      for (final o in r.offers) {
-        final at = o.expiresAt;
-        if (o.outcome != OfferOutcome.pending || at == null) continue;
-        if (latest == null || at.isAfter(latest)) latest = at;
-      }
-      add(latest?.add(kInstantOfferTickGrace));
+      add(latestPendingExpiry(r)?.add(kInstantOfferTickGrace));
       add(r.searchDeadlineAt);
     case InstantStatus.choosing when r.committed:
       add(r.searchDeadlineAt);
