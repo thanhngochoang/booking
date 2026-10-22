@@ -194,4 +194,20 @@ void main() {
     expect(photographerOnlyRedirect(UserRole.customer), '/home');
     expect(photographerOnlyRedirect(null), '/home');
   });
+
+  test('/instant is for customers while Chụp ngay is on', () {
+    expect(
+      instantCustomerRedirect(enabled: true, role: UserRole.customer),
+      isNull,
+    );
+    expect(
+      instantCustomerRedirect(enabled: false, role: UserRole.customer),
+      '/home',
+    );
+    expect(
+      instantCustomerRedirect(enabled: true, role: UserRole.photographer),
+      '/home',
+    );
+    expect(instantCustomerRedirect(enabled: true), '/home');
+  });
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/account/account_providers.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/features/account/delete_account_screen.dart';
@@ -143,6 +144,10 @@ String? computeRedirect({
 /// S06.04 and S08.01 are for photographers only (spec screens/README.md "Vai trò").
 String? photographerOnlyRedirect(UserRole? role) =>
     role == UserRole.photographer ? null : AppTab.home.path;
+
+/// S13 Chụp ngay is for customers, and only while it is on (Decision 9, 14).
+String? instantCustomerRedirect({required bool enabled, UserRole? role}) =>
+    enabled && role == UserRole.customer ? null : AppTab.home.path;
 
 /// Rebuilds GoRouter's redirect when auth or profile changes.
 class RouterNotifier extends ChangeNotifier {
@@ -299,6 +304,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // S13 Chụp ngay (customer). `/instant/:id` is the request (Task 3).
       GoRoute(
         path: '/instant',
+        redirect: (_, _) => instantCustomerRedirect(
+          enabled: ref.read(instantEnabledProvider),
+          role: ref.read(currentProfileProvider).value?.role,
+        ),
         builder: (_, _) => const InstantRequestScreen(),
       ),
       GoRoute(

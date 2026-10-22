@@ -22,6 +22,15 @@ const _bookNormally = '/action';
 /// Mock `#S13.01` map height.
 const _mapHeight = 170.0;
 
+/// Mock `#S13.01` chip order (not the enum's).
+const _genres = [
+  InstantGenre.portrait,
+  InstantGenre.couple,
+  InstantGenre.family,
+  InstantGenre.product,
+  InstantGenre.event,
+];
+
 class InstantRequestScreen extends ConsumerStatefulWidget {
   const InstantRequestScreen({super.key});
 
@@ -35,6 +44,9 @@ class _InstantRequestScreenState extends ConsumerState<InstantRequestScreen>
   late final TextEditingController _name;
   late final TextEditingController _note;
   final _nameFocus = FocusNode();
+
+  /// The outside-area / paused note, scrolled into view when it appears.
+  final _problemKey = GlobalKey();
 
   InstantRequestController get _controller =>
       ref.read(instantRequestControllerProvider.notifier);
@@ -84,10 +96,29 @@ class _InstantRequestScreenState extends ConsumerState<InstantRequestScreen>
         _say(l.instantHasActive);
         if (requestId != null) context.go('/instant/$requestId');
       case InstantSubmitRefused():
-        if (_name.text.trim().isEmpty) _nameFocus.requestFocus();
+        if (_name.text.trim().isEmpty) {
+          _nameFocus.requestFocus();
+        } else {
+          _showProblem();
+        }
       case InstantSubmitFailed(:final error):
         _say(instantErrorText(l, error));
     }
+  }
+
+  /// The note sits in the list above the escrow notice: close the keyboard
+  /// and bring it on screen once it is built.
+  void _showProblem() {
+    FocusScope.of(context).unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final note = _problemKey.currentContext;
+      if (note != null && note.mounted) {
+        Scrollable.ensureVisible(
+          note,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        );
+      }
+    });
   }
 
   @override
@@ -200,7 +231,7 @@ class _InstantRequestScreenState extends ConsumerState<InstantRequestScreen>
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (final (i, g) in InstantGenre.values.indexed) ...[
+                    for (final (i, g) in _genres.indexed) ...[
                       if (i > 0) const SizedBox(width: AppSpace.s2),
                       AppChip(
                         key: Key('instant-genre-${g.code}'),
@@ -255,6 +286,7 @@ class _InstantRequestScreenState extends ConsumerState<InstantRequestScreen>
                   problem == InstantRequestProblem.disabled) ...[
                 const SizedBox(height: AppSpace.s2),
                 _ProblemNote(
+                  key: _problemKey,
                   text: problem == InstantRequestProblem.outsideArea
                       ? l.instantOutsideArea
                       : l.instantDisabled,
@@ -367,7 +399,7 @@ class _PackageTile extends StatelessWidget {
 
 /// `outside_service_area` / `not_eligible`, in place above the escrow note.
 class _ProblemNote extends StatelessWidget {
-  const _ProblemNote({required this.text, this.onBookNormally});
+  const _ProblemNote({super.key, required this.text, this.onBookNormally});
 
   final String text;
   final VoidCallback? onBookNormally;

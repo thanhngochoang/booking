@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
@@ -54,6 +55,22 @@ class InstantCustomerWorld {
     _contactChanges.add(c);
   }
 
+  /// The signed-in account; null = signed out.
+  String? uid = 'cus1';
+  final _authChanges = StreamController<AuthUser?>.broadcast();
+
+  /// Another account signs in (or [id] null: signs out).
+  void signInAs(String? id) {
+    uid = id;
+    _authChanges.add(id == null ? null : AuthUser(uid: id));
+  }
+
+  Stream<AuthUser?> _watchAuth() async* {
+    final id = uid;
+    yield id == null ? null : AuthUser(uid: id);
+    yield* _authChanges.stream;
+  }
+
   Stream<UserContact?> _watchContact() async* {
     yield contact;
     yield* _contactChanges.stream;
@@ -61,6 +78,7 @@ class InstantCustomerWorld {
 
   List<Override> get overrides => [
     ...base.overrides,
+    authStateProvider.overrideWith((ref) => _watchAuth()),
     currentContactProvider.overrideWith((ref) => _watchContact()),
     currentProfileProvider.overrideWith(
       (ref) => Stream.value(

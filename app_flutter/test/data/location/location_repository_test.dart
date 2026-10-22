@@ -12,6 +12,7 @@ class _Gateway implements LocationGateway {
   Object? positionError;
   bool hang = false;
   int settingsCalls = 0;
+  int locationSettingsCalls = 0;
 
   @override
   Future<bool> serviceEnabled() async => service;
@@ -49,6 +50,12 @@ class _Gateway implements LocationGateway {
   @override
   Future<bool> openAppSettings() async {
     settingsCalls++;
+    return true;
+  }
+
+  @override
+  Future<bool> openLocationSettings() async {
+    locationSettingsCalls++;
     return true;
   }
 }
@@ -208,6 +215,14 @@ void main() {
       final (repo, gateway, _) = await _make();
       await repo.openSettings();
       expect(gateway.settingsCalls, 1);
+      expect(gateway.locationSettingsCalls, 0);
+    });
+
+    test('openLocationSettings goes to the OS location switch', () async {
+      final (repo, gateway, _) = await _make();
+      await repo.openLocationSettings();
+      expect(gateway.locationSettingsCalls, 1);
+      expect(gateway.settingsCalls, 0);
     });
   });
 

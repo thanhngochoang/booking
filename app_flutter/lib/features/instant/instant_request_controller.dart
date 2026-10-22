@@ -104,6 +104,8 @@ class InstantRequestController extends AsyncNotifier<InstantRequestView> {
   Future<InstantRequestView> build() async {
     _locating = false;
     final config = await ref.watch(instantConfigProvider.future);
+    // Nothing to choose: the error state (with retry), not a dead button.
+    if (config.packages.isEmpty) throw const InstantError('not_eligible');
     var permission = await _location.permissionStatus();
     if (permission == LocationPermissionStatus.notAsked) {
       permission = await _ask();
@@ -153,15 +155,19 @@ class InstantRequestController extends AsyncNotifier<InstantRequestView> {
     }
   }
 
-  /// "Cho phép vị trí": asks the OS when it still can, otherwise opens the
-  /// Settings app (refused for good, or location off); granted → a fix.
+  /// "Cho phép vị trí": asks the OS when it still can; refused for good
+  /// opens the app's settings, location off the system location switch;
+  /// granted → a fix.
   Future<void> allowLocation() async {
     if (_locating || state.value == null) return;
     _locating = true;
     try {
       var permission = await _location.permissionStatus();
-      if (permission == LocationPermissionStatus.deniedForever ||
-          permission == LocationPermissionStatus.serviceOff) {
+      if (permission == LocationPermissionStatus.serviceOff) {
+        await _location.openLocationSettings();
+        return;
+      }
+      if (permission == LocationPermissionStatus.deniedForever) {
         await _location.openSettings();
         return;
       }
@@ -193,6 +199,8 @@ class InstantRequestController extends AsyncNotifier<InstantRequestView> {
 
   /// Name → phone → `createRequest`; null while a call is in flight or
   /// without a position. The draft is reset only once the request exists.
+  /// The controller is kept alive for the call: the customer may leave
+  /// S13.01 while it runs, and the request then still resets the draft.
   Future<InstantSubmit?> submit() async {
     final v = state.value;
     final position = v?.position;
@@ -208,6 +216,7 @@ class InstantRequestController extends AsyncNotifier<InstantRequestView> {
     }
     if (package == null) return null;
     state = AsyncData(v.copyWith(busy: true, clearError: true));
+    final alive = ref.keepAlive();
     try {
       if (!await _hasPhone()) {
         _set((v) => v.copyWith(busy: false));
@@ -248,12 +257,15 @@ class InstantRequestController extends AsyncNotifier<InstantRequestView> {
           return const InstantSubmitRefused();
         case InstantErrorKind.conflict:
           final active = await _activeRequestId();
+          ref.invalidate(instantActiveRequestIdProvider);
           _set((v) => v.copyWith(busy: false));
           return InstantSubmitHasActive(active);
         default:
           _set((v) => v.copyWith(busy: false));
           return InstantSubmitFailed(e);
       }
+    } finally {
+      alive.close();
     }
   }
 

@@ -1,6 +1,7 @@
 // S13.01: the Chụp ngay form, kept across the S04.05 phone detour.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 
 /// "Tên điểm hẹn" is required and at most this long (plan Decision 3).
@@ -56,8 +57,15 @@ InstantPackage? defaultInstantPackage(List<InstantPackage> packages) {
 }
 
 class InstantDraftNotifier extends Notifier<InstantDraft> {
+  /// Signing out or in as someone else empties the form (the first uid
+  /// arriving while auth loads does not).
   @override
-  InstantDraft build() => const InstantDraft();
+  InstantDraft build() {
+    ref.listen(authStateProvider.select((a) => a.value?.uid), (prev, next) {
+      if (prev != null && prev != next) state = const InstantDraft();
+    });
+    return const InstantDraft();
+  }
 
   void setPackage(String code) => state = state.copyWith(packageCode: code);
 
@@ -73,7 +81,8 @@ class InstantDraftNotifier extends Notifier<InstantDraft> {
 }
 
 /// Keep-alive: S13.01 is closed while the customer adds a phone number
-/// (S04.05) and comes back with everything still filled in.
+/// (S04.05) and comes back with everything still filled in. Signing in as
+/// someone else empties it.
 final instantDraftProvider =
     NotifierProvider<InstantDraftNotifier, InstantDraft>(
       InstantDraftNotifier.new,

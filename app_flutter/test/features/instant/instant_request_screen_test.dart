@@ -94,6 +94,18 @@ void main() {
     ]) {
       expect(find.text(t), findsOneWidget, reason: t);
     }
+    // Mock order: "… Sản phẩm, Sự kiện nhỏ".
+    final xs = [
+      for (final t in [
+        'Chân dung',
+        'Cặp đôi',
+        'Gia đình',
+        'Sản phẩm',
+        'Sự kiện nhỏ',
+      ])
+        tester.getTopLeft(find.text(t)).dx,
+    ];
+    expect(xs, [...xs]..sort());
     expect(_genreSelected(tester, InstantGenre.portrait), isTrue);
     for (final g in InstantGenre.values.skip(1)) {
       expect(_genreSelected(tester, g), isFalse, reason: g.code);
@@ -255,6 +267,34 @@ void main() {
     },
   );
 
+  testWidgets('a refusal closes the keyboard and brings its note on screen', (
+    tester,
+  ) async {
+    final w = InstantCustomerWorld();
+    w.repo.failNext('createRequest', 'outside_service_area');
+    await pumpInstantCustomer(
+      tester,
+      w,
+      textScale: 1.3,
+      viewSize: const Size(320, 640),
+    );
+    await tester.tap(_name);
+    await tester.pump();
+    await _type(tester, _name, _place);
+    await tester.tap(_submit);
+    await settleInstant(tester);
+    final focus = tester
+        .widget<EditableText>(
+          find.descendant(of: _name, matching: find.byType(EditableText)),
+        )
+        .focusNode;
+    expect(focus.hasFocus, isFalse);
+    final note = tester.getRect(find.byKey(const Key('instant-problem')));
+    final footer = tester.getTopLeft(_submit).dy;
+    expect(note.top, greaterThanOrEqualTo(0));
+    expect(note.bottom, lessThanOrEqualTo(footer));
+  });
+
   testWidgets('not_eligible says Chụp ngay is paused', (tester) async {
     final w = InstantCustomerWorld();
     w.repo.failNext('createRequest', 'not_eligible');
@@ -330,6 +370,25 @@ void main() {
 
       await _tap(tester, find.text('Đặt lịch thường'));
       expect(_location(r2), '/action');
+      expect(location.openLocationSettingsCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'location off: "Cho phép vị trí" opens the system location settings',
+    (tester) async {
+      final location = FakeLocationRepository(
+        status: LocationPermissionStatus.serviceOff,
+      );
+      await pumpInstantCustomer(
+        tester,
+        InstantCustomerWorld(location: location),
+      );
+      expect(find.text('Bật vị trí để Chụp ngay'), findsOneWidget);
+      await _tap(tester, find.text('Cho phép vị trí'));
+      expect(location.openLocationSettingsCalls, 1);
+      expect(location.openSettingsCalls, 0);
+      expect(location.requestCalls, 0);
     },
   );
 

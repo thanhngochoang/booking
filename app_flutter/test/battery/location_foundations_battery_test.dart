@@ -45,6 +45,9 @@ class _CountingGateway implements LocationGateway {
 
   @override
   Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 void main() {
