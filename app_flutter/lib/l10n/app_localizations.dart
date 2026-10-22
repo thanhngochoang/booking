@@ -15291,6 +15291,12 @@ abstract class AppLocalizations {
   /// **'Bỏ chọn {name}'**
   String chooseUnpickA11y(String name);
 
+  /// No description provided for @chooseUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} vừa nhận việc khác'**
+  String chooseUnavailable(String name);
+
   /// No description provided for @chooseInvite.
   ///
   /// In vi, this message translates to:

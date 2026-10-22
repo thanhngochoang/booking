@@ -28,6 +28,7 @@ class SwipeDeck<T> extends StatefulWidget {
     required this.skipLabel,
     required this.undoLabel,
     this.initialIndex = 0,
+    this.initialUndoDepth = 0,
     this.belowCards,
   });
 
@@ -46,9 +47,12 @@ class SwipeDeck<T> extends StatefulWidget {
   /// Screen-reader labels of ♥, ✕ and the undo button.
   final String likeLabel, skipLabel, undoLabel;
 
-  /// Where the deck starts (cards before it were already answered); there is
-  /// no history to undo before it.
+  /// Where the deck starts (cards before it were already answered).
   final int initialIndex;
+
+  /// How many of the cards before [initialIndex] "Hoàn tác" can bring back
+  /// (the deck was rebuilt, e.g. after S13.02's summary).
+  final int initialUndoDepth;
 
   /// Between the cards and the buttons (S13.02: who was chosen, "Xong").
   final Widget? belowCards;
@@ -87,7 +91,14 @@ const _stampColor = AppColorsDark.freeInk;
 class _SwipeDeckState<T> extends State<SwipeDeck<T>>
     with SingleTickerProviderStateMixin {
   late int _index = widget.initialIndex.clamp(0, widget.items.length);
-  final _history = <int>[];
+  late final _history = <int>[
+    for (
+      var i = _index - widget.initialUndoDepth.clamp(0, _index);
+      i < _index;
+      i++
+    )
+      i,
+  ];
   double _dx = 0;
   double _width = 1;
 
@@ -100,6 +111,15 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
 
   bool get _busy => _anim.isAnimating;
   bool get _hasCard => _index < widget.items.length;
+
+  /// Fewer items under the same key: stay inside them.
+  @override
+  void didUpdateWidget(SwipeDeck<T> old) {
+    super.didUpdateWidget(old);
+    final n = widget.items.length;
+    if (_index > n) _index = n;
+    _history.removeWhere((i) => i >= n);
+  }
 
   @override
   void dispose() {
@@ -163,6 +183,14 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
   }
 
   void _commit(int dir) {
+    // The items may have changed while the card flew away.
+    if (_index >= widget.items.length) {
+      setState(() {
+        _dx = 0;
+        _motion = null;
+      });
+      return;
+    }
     final item = widget.items[_index];
     setState(() {
       _history.add(_index);
@@ -314,7 +342,7 @@ class _SwipeDeckState<T> extends State<SwipeDeck<T>>
           visual: _bigButton,
           box: _bigButton,
           gradient: true,
-          color: Colors.white,
+          color: AppColors.foregroundInverse,
           onTap: card ? () => _fly(1) : null,
         ),
       ],
@@ -371,7 +399,7 @@ class _Stamp extends StatelessWidget {
           style: const TextStyle(
             color: _stampColor,
             fontWeight: FontWeight.w700,
-            fontSize: 12,
+            fontSize: AppText.sm,
             letterSpacing: 1,
           ),
         ),
@@ -409,7 +437,7 @@ class _RoundButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onTap != null;
     final radius = BorderRadius.circular(visual / 2);
-    final iconSize = visual >= _bigButton ? AppIconSize.md : 19.0;
+    final iconSize = visual >= _bigButton ? AppIconSize.md : AppIconSize.sm;
     final face = SizedBox.square(
       dimension: visual,
       child: Center(

@@ -67,6 +67,7 @@ class InstantWorld {
     FakeLocationRepository? location,
     InstantClock? clock,
     this.enabled = true,
+    this.extra = const [],
   }) : repo = repo ?? FakeInstantRepository(),
        location =
            location ??
@@ -80,6 +81,10 @@ class InstantWorld {
   final FakeLocationRepository location;
   final InstantClock clock;
   final bool enabled;
+
+  /// More overrides; one of `notificationPermissionProvider` replaces the
+  /// granted default (so the S17.03 primer can show).
+  final List<Override> extra;
   final launcher = RecordingLauncher();
 
   List<Override> get overrides => [
@@ -88,7 +93,8 @@ class InstantWorld {
     instantEnabledProvider.overrideWithValue(enabled),
     locationRepositoryProvider.overrideWithValue(location),
     clockProvider.overrideWithValue(() => clock.now),
-    ...grantedNotificationPermissionUnless(const []),
+    ...grantedNotificationPermissionUnless(extra),
+    ...extra,
   ];
 
   /// Moves the clock and the fake timers together.

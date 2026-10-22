@@ -15,6 +15,7 @@ class ChooseState {
     this.liked = const [],
     this.skipped = const [],
     this.index = 0,
+    this.undoDepth = 0,
     this.summary = false,
     this.sending = false,
     this.fetching = false,
@@ -28,6 +29,9 @@ class ChooseState {
 
   /// Cards answered in this round (the next card's position).
   final int index;
+
+  /// How many of those "Hoàn tác" can still bring back.
+  final int undoDepth;
 
   /// "Những người bạn đã chọn" is open.
   final bool summary;
@@ -49,6 +53,7 @@ class ChooseState {
     List<String>? liked,
     List<String>? skipped,
     int? index,
+    int? undoDepth,
     bool? summary,
     bool? sending,
     bool? fetching,
@@ -59,6 +64,7 @@ class ChooseState {
     liked: liked ?? this.liked,
     skipped: skipped ?? this.skipped,
     index: index ?? this.index,
+    undoDepth: undoDepth ?? this.undoDepth,
     summary: summary ?? this.summary,
     sending: sending ?? this.sending,
     fetching: fetching ?? this.fetching,
@@ -103,6 +109,7 @@ class ChooseController extends Notifier<ChooseState> {
     state = state.copyWith(
       liked: [...state.liked, c.photographerId],
       index: state.index + 1,
+      undoDepth: _history.length,
     );
   }
 
@@ -111,6 +118,7 @@ class ChooseController extends Notifier<ChooseState> {
     state = state.copyWith(
       skipped: [...state.skipped, c.photographerId],
       index: state.index + 1,
+      undoDepth: _history.length,
     );
   }
 
@@ -132,6 +140,7 @@ class ChooseController extends Notifier<ChooseState> {
                 if (id != last.id) id,
             ],
       index: state.index > 0 ? state.index - 1 : 0,
+      undoDepth: _history.length,
     );
   }
 
@@ -171,7 +180,9 @@ class ChooseController extends Notifier<ChooseState> {
   /// liked people. Null while a call is in flight (a double tap sends one
   /// invite), with nobody liked, or when the call failed ([ChooseState.error]).
   /// [askPrimer] runs once after the request's first successful invite
-  /// (Decision 10).
+  /// (Decision 10): one that reached somebody. When every chosen person was
+  /// unavailable the server ends the round without inviting anyone (it still
+  /// marks the request committed, so `invitedTotal` tells a first invite).
   Future<InstantInviteResult?> send({
     Future<void> Function()? askPrimer,
   }) async {
@@ -179,7 +190,7 @@ class ChooseController extends Notifier<ChooseState> {
     if (r == null || state.sending || state.fetching || state.liked.isEmpty) {
       return null;
     }
-    final firstInvite = !r.committed;
+    final firstInvite = r.invitedTotal == 0;
     state = state.copyWith(sending: true, clearError: true);
     final alive = ref.keepAlive();
     try {
@@ -195,9 +206,12 @@ class ChooseController extends Notifier<ChooseState> {
       switch (result) {
         case InstantPriceChanged(:final amountVnd):
           state = state.copyWith(sending: false, amountVnd: amountVnd);
-        case InstantInvited():
+        case InstantInvited(:final invited):
           state = state.copyWith(sending: false);
-          if (firstInvite && !_primerAsked && askPrimer != null) {
+          if (invited.isNotEmpty &&
+              firstInvite &&
+              !_primerAsked &&
+              askPrimer != null) {
             _primerAsked = true;
             await askPrimer();
           }

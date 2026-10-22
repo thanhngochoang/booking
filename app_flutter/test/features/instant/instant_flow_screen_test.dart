@@ -5,8 +5,13 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant/choose_view.dart';
+import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/features/instant/instant_flow_screen.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/fake_push.dart';
 import '../../support/instant_customer_world.dart';
 
 /// Decision 4: the view (screen code and label) of each status.
@@ -39,6 +44,9 @@ ProviderContainer _container(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(InstantFlowScreen)));
 
 void main() {
+  setUp(resetNotificationPrimerState);
+  tearDown(resetNotificationPrimerState);
+
   test('every status has a view', () {
     expect(_views.keys.toSet(), InstantStatus.values.toSet());
   });
@@ -160,6 +168,41 @@ void main() {
     await settleInstant(tester);
     await world.base.wait(tester, const Duration(minutes: 1));
     expect(world.repo.callsOf('tick'), isEmpty);
+  });
+
+  testWidgets('the primer shows after the first successful invite only', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final world = InstantCustomerWorld(
+      extra: [
+        notificationPermissionProvider.overrideWithValue(
+          FakeNotificationPermission(),
+        ),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+    );
+    world.repo.inviteResult = const InstantInvited(
+      invited: [],
+      unavailable: ['p1'],
+    );
+    await pumpInstantFlow(tester, world);
+    await tester.tap(find.byKey(const Key('swipe-like')));
+    await settleInstant(tester);
+    await tester.tap(find.byKey(const Key('choose-done')));
+    await settleInstant(tester);
+    await tester.tap(find.byKey(const Key('choose-invite')));
+    await settleInstant(tester);
+    expect(find.byType(PermissionPrimer), findsNothing);
+
+    world.repo.inviteResult = const InstantInvited(
+      invited: ['p1'],
+      unavailable: [],
+    );
+    await tester.tap(find.byKey(const Key('choose-invite')));
+    await settleInstant(tester);
+    expect(find.byType(PermissionPrimer), findsOneWidget);
   });
 
   testWidgets('an ended request makes the Home card read again', (

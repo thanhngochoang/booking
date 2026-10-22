@@ -8898,6 +8898,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String chooseUnavailable(String name) {
+    return '$name vừa nhận việc khác';
+  }
+
+  @override
   String get chooseInvite => 'Gửi lời mời';
 
   @override

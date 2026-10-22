@@ -158,6 +158,7 @@ class ChooseView extends ConsumerWidget {
               _Mode.round => _RoundEnded(
                 fetching: s.fetching,
                 onMore: controller.more,
+                unavailable: _allUnavailable(request),
               ),
               _Mode.empty => _Empty(
                 fetching: s.fetching,
@@ -177,18 +178,44 @@ class ChooseView extends ConsumerWidget {
       ..showSnackBar(SnackBar(content: Text(text)));
   }
 
+  /// The names of the last round's people when every one of them was
+  /// unavailable (the server ended the round without inviting anyone);
+  /// null otherwise.
+  static List<String>? _allUnavailable(InstantRequest r) {
+    final rows = r.offers;
+    if (rows.isEmpty ||
+        rows.any((o) => o.outcome != OfferOutcome.unavailable)) {
+      return null;
+    }
+    return [for (final o in rows) o.name];
+  }
+
   Future<void> _send(BuildContext context, ChooseController controller) async {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final names = {
+      for (final c in request.candidates) c.photographerId: c.name,
+    };
+    void say(String text) => messenger
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
     final result = await controller.send(askPrimer: askPrimer);
-    if (result case InstantPriceChanged(:final amountVnd)) {
-      messenger
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(l.choosePriceChanged(formatMoney(amountVnd)))),
+    switch (result) {
+      case InstantPriceChanged(:final amountVnd):
+        say(l.choosePriceChanged(formatMoney(amountVnd)));
+      // Nobody invited: the round ends here (the view stays). Some invited:
+      // only while S13.02 still shows (S13.03 lists them itself).
+      case InstantInvited(:final invited, :final unavailable)
+          when unavailable.isNotEmpty && (invited.isEmpty || context.mounted):
+        say(
+          l.chooseUnavailable(
+            [for (final id in unavailable) names[id] ?? ''].join(', '),
+          ),
         );
+      case _:
+        // InstantInvited: the listener moves the request to S13.03.
+        break;
     }
-    // InstantInvited: the listener moves the request to S13.03.
   }
 }
 
@@ -242,6 +269,7 @@ class _Deck extends StatelessWidget {
         key: ValueKey('choose-deck-${request.round}'),
         items: cards,
         initialIndex: state.index,
+        initialUndoDepth: state.undoDepth,
         cardBuilder: (_, c) => _CandidateCard(candidate: c),
         onLike: controller.like,
         onSkip: controller.skip,
@@ -326,7 +354,7 @@ class _CandidateCardState extends State<_CandidateCard> {
                         height: 3,
                         decoration: BoxDecoration(
                           color: i == _photo
-                              ? Colors.white
+                              ? AppColors.foregroundInverse
                               : AppColors.overlayLight,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
@@ -370,8 +398,8 @@ class _CandidateCardState extends State<_CandidateCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                              color: AppColors.foregroundInverse,
+                              fontSize: AppText.md,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -427,8 +455,8 @@ class _Reason extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10.5,
+          color: AppColors.foregroundInverse,
+          fontSize: AppText.xs,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -622,12 +650,20 @@ class _PickedPerson extends StatelessWidget {
               ],
             ),
           ),
-          AppButton.text(
-            l.chooseUnpick,
+          // "Bỏ chọn Minh Trí" for a screen reader.
+          Semantics(
             key: Key('choose-unpick-${c.photographerId}'),
-            size: AppButtonSize.xsmall,
-            style: TextButton.styleFrom(foregroundColor: secondary),
-            onPressed: onUnpick,
+            container: true,
+            button: true,
+            label: l.chooseUnpickA11y(c.name),
+            onTap: onUnpick,
+            excludeSemantics: true,
+            child: AppButton.text(
+              l.chooseUnpick,
+              size: AppButtonSize.xsmall,
+              style: TextButton.styleFrom(foregroundColor: secondary),
+              onPressed: onUnpick,
+            ),
           ),
         ],
       ),
@@ -638,10 +674,18 @@ class _PickedPerson extends StatelessWidget {
 /// `#S13.02-round`: the round ended without anyone; choose again (#202:
 /// with the money already held).
 class _RoundEnded extends StatelessWidget {
-  const _RoundEnded({required this.fetching, required this.onMore});
+  const _RoundEnded({
+    required this.fetching,
+    required this.onMore,
+    this.unavailable,
+  });
 
   final bool fetching;
   final VoidCallback onMore;
+
+  /// Everyone chosen was busy, so nobody was invited: the banner says so
+  /// instead of "Chưa ai nhận".
+  final List<String>? unavailable;
 
   @override
   Widget build(BuildContext context) {
@@ -664,6 +708,7 @@ class _RoundEnded extends StatelessWidget {
             child: Column(
               children: [
                 Semantics(
+                  key: const Key('choose-round-banner'),
                   liveRegion: true,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -677,15 +722,17 @@ class _RoundEnded extends StatelessWidget {
                         children: [
                           AppIcon(
                             AppIcons.hourglass,
-                            size: 18,
+                            size: AppIconSize.sm,
                             color: secondary,
                           ),
                           const SizedBox(width: AppSpace.s2),
                           Expanded(
-                            child: Text(
-                              l.chooseRoundEnded,
-                              style: theme.textTheme.bodySmall,
-                            ),
+                            child: Text(switch (unavailable) {
+                              final names? => l.chooseUnavailable(
+                                names.join(', '),
+                              ),
+                              null => l.chooseRoundEnded,
+                            }, style: theme.textTheme.bodySmall),
                           ),
                         ],
                       ),

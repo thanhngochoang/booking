@@ -35,11 +35,13 @@ class InstantCustomerWorld {
     DateTime? now,
     bool flag = true,
     this.role = UserRole.customer,
+    List<Override> extra = const [],
   }) : base = InstantWorld(
          repo: repo,
          location: location,
          clock: InstantClock(now),
          enabled: flag,
+         extra: extra,
        );
 
   final InstantWorld base;

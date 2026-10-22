@@ -10,6 +10,7 @@ import '../../support/meta_finders.dart';
 
 const _like = Key('swipe-like');
 const _skip = Key('swipe-skip');
+const _undo = Key('swipe-undo');
 final _done = find.byKey(const Key('choose-done'));
 final _invite = find.byKey(const Key('choose-invite'));
 final _more = find.byKey(const Key('choose-more'));
@@ -84,10 +85,7 @@ void main() {
     final card = tester.getRect(first);
     await tester.tapAt(Offset(card.right - 40, card.top + 80));
     await tester.pump();
-    expect(
-      find.byKey(const ValueKey('photo:https://img/p1b')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('photo:https://img/p1b')), findsOneWidget);
     await tester.tapAt(Offset(card.left + 40, card.top + 80));
     await tester.pump();
     expect(first, findsOneWidget);
@@ -142,6 +140,118 @@ void main() {
       });
     },
   );
+
+  testWidgets(
+    'deck end with nobody liked: Hoàn tác brings the last card back',
+    (tester) async {
+      await pumpInstantFlow(tester, InstantCustomerWorld());
+      await _swipe(tester, [false, false, false, false, false]);
+      expect(_more, findsOneWidget);
+      await _tap(tester, find.byKey(_undo));
+      expect(find.text('Gia Huy'), findsOneWidget);
+      expect(find.text('5 / 5'), findsOneWidget);
+      expect(_more, findsNothing);
+    },
+  );
+
+  testWidgets('Hoàn tác still works after Back from the summary', (
+    tester,
+  ) async {
+    await pumpInstantFlow(tester, InstantCustomerWorld());
+    await _swipe(tester, [true, true]);
+    await _tap(tester, _done);
+    await _tap(tester, find.byTooltip('Quay lại'));
+    expect(find.text('3 / 5'), findsOneWidget);
+    await _tap(tester, find.byKey(_undo));
+    expect(find.text('2 / 5'), findsOneWidget);
+    expect(find.text('Đã chọn 1 người'), findsOneWidget);
+    await _tap(tester, find.byKey(_undo));
+    expect(find.text('1 / 5'), findsOneWidget);
+    expect(_done, findsNothing);
+  });
+
+  testWidgets('every chosen person unavailable: the toast names them', (
+    tester,
+  ) async {
+    final world = InstantCustomerWorld();
+    world.repo.inviteResult = const InstantInvited(
+      invited: [],
+      unavailable: ['p1', 'p2'],
+    );
+    await pumpInstantFlow(tester, world);
+    await _swipe(tester, [true, true]);
+    await _tap(tester, _done);
+    await _tap(tester, _invite);
+    const busy = 'Minh Trí, Hồng Nhung vừa nhận việc khác';
+    expect(find.text(busy), findsOneWidget);
+
+    // The server ends the round without inviting anyone: the banner says
+    // why, not "Chưa ai nhận".
+    ScaffoldMessenger.of(tester.element(find.byType(ChooseView)))
+        .removeCurrentSnackBar();
+    world.repo.emitRequest(
+      'req1',
+      customerRequestOf(
+        committed: true,
+        roundEnded: true,
+        candidates: const [],
+      ).copyWith(
+        offers: const [
+          InstantOfferRow(
+            photographerId: 'p1',
+            name: 'Minh Trí',
+            outcome: OfferOutcome.unavailable,
+          ),
+          InstantOfferRow(
+            photographerId: 'p2',
+            name: 'Hồng Nhung',
+            outcome: OfferOutcome.unavailable,
+          ),
+        ],
+      ),
+    );
+    await settleInstant(tester);
+    expect(_code(tester).label, 'round');
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('choose-round-banner')),
+        matching: find.text(busy),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(_roundEnded), findsNothing);
+  });
+
+  testWidgets('some chosen people unavailable: the toast names them', (
+    tester,
+  ) async {
+    final world = InstantCustomerWorld();
+    world.repo.inviteResult = const InstantInvited(
+      invited: ['p1'],
+      unavailable: ['p2'],
+    );
+    await pumpInstantFlow(tester, world);
+    await _swipe(tester, [true, true]);
+    await _tap(tester, _done);
+    await _tap(tester, _invite);
+    expect(find.text('Hồng Nhung vừa nhận việc khác'), findsOneWidget);
+  });
+
+  testWidgets('"Bỏ chọn" says whom for a screen reader', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpInstantFlow(tester, InstantCustomerWorld());
+    await _swipe(tester, [true]);
+    await _tap(tester, _done);
+    expect(
+      tester.getSemantics(find.byKey(const Key('choose-unpick-p1'))),
+      isSemantics(
+        label: 'Bỏ chọn Minh Trí',
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
 
   testWidgets(
     'summary "Bỏ chọn" removes a person; none left disables the primary',

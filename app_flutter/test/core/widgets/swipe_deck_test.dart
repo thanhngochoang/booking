@@ -23,8 +23,11 @@ Future<_Log> _pumpDeck(
   WidgetTester tester, {
   List<String> items = const ['a', 'b', 'c', 'd'],
   bool reduceMotion = false,
+  int initialIndex = 0,
+  int initialUndoDepth = 0,
+  _Log? into,
 }) async {
-  final log = _Log();
+  final log = into ?? _Log();
   await tester.pumpWidget(
     screenApp(
       home: Builder(
@@ -51,6 +54,8 @@ Future<_Log> _pumpDeck(
                   likeLabel: 'Chọn',
                   skipLabel: 'Bỏ qua',
                   undoLabel: 'Hoàn tác',
+                  initialIndex: initialIndex,
+                  initialUndoDepth: initialUndoDepth,
                 ),
               ),
             ),
@@ -278,6 +283,43 @@ void main() {
     expect(_card('b'), findsOneWidget);
     expect(_card('c'), findsOneWidget);
     expect(_card('d'), findsNothing);
+  });
+
+  testWidgets('a rebuilt deck can still undo what it was told', (tester) async {
+    final log = await _pumpDeck(
+      tester,
+      reduceMotion: true,
+      initialIndex: 2,
+      initialUndoDepth: 1,
+    );
+    expect(_onTop(tester, 'c'), isTrue);
+    await tester.tap(find.byKey(_undo));
+    await tester.pump();
+    expect(_onTop(tester, 'b'), isTrue);
+    expect(log.undone, 1);
+    // 'a' was answered before the history the deck was given.
+    await tester.tap(find.byKey(_undo));
+    await tester.pump();
+    expect(_onTop(tester, 'b'), isTrue);
+    expect(log.undone, 1);
+  });
+
+  testWidgets('fewer items while a card flies away: no crash, no callback', (
+    tester,
+  ) async {
+    final log = await _pumpDeck(tester, items: const ['a', 'b', 'c']);
+    await tester.tap(find.byKey(_skip));
+    await _settle(tester);
+    await tester.tap(find.byKey(_like));
+    await tester.pump(const Duration(milliseconds: 50));
+    // Same deck, now only one item: the flying card ('b') is gone.
+    await _pumpDeck(tester, items: const ['a'], into: log);
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(log.liked, isEmpty);
+    expect(log.skipped, ['a']);
+    // The deck kept its place: past the only item.
+    expect(_card('a'), findsNothing);
   });
 
   testWidgets('no ticker left after dispose', (tester) async {

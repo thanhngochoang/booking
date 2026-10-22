@@ -95,6 +95,10 @@ void main() {
     controller
       ..like(instantCandidates[0])
       ..done();
+    w.repo.inviteResult = const InstantInvited(
+      invited: ['p1'],
+      unavailable: [],
+    );
 
     // A refusal is not a success: no primer.
     w.repo.failNext('invite', 'network');
@@ -107,11 +111,43 @@ void main() {
     expect(asked, 1);
   });
 
-  test('a committed request (offers sent before) asks no primer', () async {
+  test('every chosen person unavailable is not a success: no primer', () async {
+    final w = InstantCustomerWorld();
+    final (c, controller) = await _setUp(w);
+    var asked = 0;
+    Future<void> primer() async => asked++;
+    controller
+      ..like(instantCandidates[0])
+      ..like(instantCandidates[1])
+      ..done();
+    w.repo.inviteResult = const InstantInvited(
+      invited: [],
+      unavailable: ['p1', 'p2'],
+    );
+    expect(await controller.send(askPrimer: primer), isA<InstantInvited>());
+    expect(asked, 0);
+    expect(_state(c).sending, isFalse);
+
+    // The server marked the request committed, but nobody was invited yet:
+    // the next real invite is the first one.
+    w.repo.emitRequest('req1', customerRequestOf(committed: true));
+    await pumpEventQueue();
+    w.repo.inviteResult = const InstantInvited(
+      invited: ['p1'],
+      unavailable: [],
+    );
+    await controller.send(askPrimer: primer);
+    expect(asked, 1);
+  });
+
+  test('a request with invites sent before asks no primer', () async {
     final w = InstantCustomerWorld();
     final (_, controller) = await _setUp(
       w,
-      request: customerRequestOf(committed: true, round: 2),
+      request: customerRequestOf(
+        committed: true,
+        round: 2,
+      ).copyWith(invitedTotal: 3, roundsWithInvites: 1),
     );
     var asked = 0;
     controller
