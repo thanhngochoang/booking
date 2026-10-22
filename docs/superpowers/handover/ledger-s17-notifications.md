@@ -81,6 +81,8 @@ Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc calla
 | `notifyInstantCancelled({requestId, by: 'customer'\|'photographer', customerId, photographerId, feeVnd})` | the other party | `instant_cancelled` | photographer: `/work/instant/{requestId}`; customer: `/instant/{requestId}` | `instant_cancelled_{requestId}_{by}` |
 | app: `maybeAskForNotifications(context, ref, const CustomerInstantPrimer())` after the request is paid and sent (S13.03); `const PhotographerPrimer()` when Live Shutter turns on (S14.01) | — | — | — | — |
 
+> **Khoá chống trùng `instant_*` đã đổi (#140, 2026-10-22):** các khoá ở bảng trên là bản cũ; khoá đúng (lần nhận việc = `assignedAt` ms, `no_match` theo lượt) ở dòng "Correction (#140, 2026-10-22)" của plan [`2026-10-07-s17-notifications.md`](../plans/2026-10-07-s17-notifications.md) và phán quyết Task 5 của [`ledger-instant-dispatch-provider.md`](ledger-instant-dispatch-provider.md).
+
 Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc callable, với `liveNotifyDeps()`; bạn là chủ phát duy nhất của các hook này** (không plan nào khác gọi chúng).
 
 - Chỗ gọi primer là của #140: `maybeAskForNotifications(context, ref, const CustomerInstantPrimer())` sau khi yêu cầu đã trả và gửi (S13.03); `const PhotographerPrimer()` khi bật Live Shutter (S14.01).
