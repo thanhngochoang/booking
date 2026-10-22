@@ -520,6 +520,78 @@ void main() {
       },
     );
   });
+
+  group('settledPendingOffers', () {
+    final o = InstantOffer(
+      id: 'o1',
+      requestId: 'req1',
+      offeredAt: DateTime.utc(2026, 10, 22, 8),
+      expiresAt: DateTime.utc(2026, 10, 22, 8, 1),
+      outcome: OfferOutcome.pending,
+      genre: InstantGenre.portrait,
+    );
+
+    Future<List<List<String>>> run(
+      List<({List<InstantOffer> offers, bool fromCache})> snaps,
+    ) =>
+        settledPendingOffers(Stream.fromIterable(snaps))
+            .map((l) => [for (final x in l) x.id])
+            .toList();
+
+    test(
+      'an empty cached list before the server answers is held back',
+      () async {
+        expect(
+          await run([
+            (offers: const [], fromCache: true),
+            (offers: [o], fromCache: false),
+          ]),
+          [
+            ['o1'],
+          ],
+        );
+      },
+    );
+
+    test('after the server answered, an empty list passes', () async {
+      expect(
+        await run([
+          (offers: [o], fromCache: false),
+          (offers: const [], fromCache: true),
+        ]),
+        [
+          ['o1'],
+          <String>[],
+        ],
+      );
+    });
+
+    test('a non-empty cached list passes (offline)', () async {
+      expect(
+        await run([
+          (offers: [o], fromCache: true),
+        ]),
+        [
+          ['o1'],
+        ],
+      );
+    });
+
+    test('a metadata-only change is not repeated', () async {
+      expect(
+        await run([
+          (offers: [o], fromCache: true),
+          (offers: [o], fromCache: false),
+          (offers: const [], fromCache: false),
+          (offers: const [], fromCache: false),
+        ]),
+        [
+          ['o1'],
+          <String>[],
+        ],
+      );
+    });
+  });
 }
 
 bool _same(Object? a, Object? b) {

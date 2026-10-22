@@ -6,13 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
-
-/// S14.02's path prefix.
-const _offerPath = '/work/instant/offer/';
+import 'package:photobooking/features/instant_work/offer_routes.dart';
 
 /// While a photographer is online and the app is foregrounded, a new pending
-/// offer opens S14.02 unless it is already open (an open S14.02 stacks the
-/// new card itself). An offer is opened once: back from S14.02 does not
+/// offer opens S14.02 unless one is already in the stack, on top or not (an
+/// open S14.02 stacks the new card itself). An offer is opened once: back from S14.02 does not
 /// bring it again. In the background the offer's push does the job (tapping
 /// it opens the same screen through the push-open handler); no full-screen
 /// intent, no background work (Decision 10). With [enabled] false (Chụp ngay
@@ -144,9 +142,10 @@ class _InstantOfferListenerState extends ConsumerState<InstantOfferListener>
     final router = GoRouter.maybeOf(context);
     if (router == null) return;
     _opened.addAll(fresh.map((o) => o.id));
-    if (router.state.uri.path.startsWith(_offerPath)) return;
+    // An S14.02 anywhere in the stack stacks the new card itself.
+    if (offerScreenInStack(router)) return;
     // The repository lists the soonest expiry first.
-    router.push('$_offerPath${fresh.first.id}');
+    router.push('$offerPathPrefix${fresh.first.id}');
   }
 
   @override

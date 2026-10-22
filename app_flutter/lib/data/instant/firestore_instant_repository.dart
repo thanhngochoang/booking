@@ -317,7 +317,7 @@ class FirestoreInstantRepository implements InstantRepository {
     return _db
         .collection('instant_offers/$me/offers')
         .where('outcome', isEqualTo: 'pending')
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((q) {
           final offers = [
             for (final d in q.docs)
@@ -325,8 +325,9 @@ class FirestoreInstantRepository implements InstantRepository {
                   case final InstantOffer o)
                 o,
           ]..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
-          return offers;
-        });
+          return (offers: offers, fromCache: q.metadata.isFromCache);
+        })
+        .transform(StreamTransformer.fromBind(settledPendingOffers));
   }
 
   @override
@@ -438,3 +439,27 @@ Stream<T?> nullWhenDenied<T>(Stream<T?> source, {String label = 'instant'}) =>
         },
       ),
     );
+
+/// The pending offers as S14.02 may trust them. A cold start (the app opened
+/// from an offer's push) first gets the local cache, often empty, before the
+/// server's answer with the new offer: an empty list from the cache is held
+/// back until the server has answered once. A non-empty cached list passes
+/// (offline, it is all there is), and a metadata-only change that leaves the
+/// list as it was is not repeated.
+@visibleForTesting
+Stream<List<InstantOffer>> settledPendingOffers(
+  Stream<({List<InstantOffer> offers, bool fromCache})> snapshots,
+) async* {
+  var server = false;
+  List<InstantOffer>? last;
+  await for (final s in snapshots) {
+    if (!s.fromCache) {
+      server = true;
+    } else if (!server && s.offers.isEmpty) {
+      continue;
+    }
+    if (last != null && listEquals(last, s.offers)) continue;
+    last = s.offers;
+    yield s.offers;
+  }
+}

@@ -24,6 +24,9 @@ const _acceptHeight = 56.0;
 /// Where S14.02 goes when nothing is left to answer.
 const _liveShutterPath = '/work/instant';
 
+/// How long a cold open waits for the first card before saying it expired.
+const _coldOpenGrace = Duration(seconds: 2);
+
 class OfferScreen extends ConsumerStatefulWidget {
   const OfferScreen({super.key, required this.offerId});
 
@@ -35,21 +38,61 @@ class OfferScreen extends ConsumerStatefulWidget {
 }
 
 class _OfferScreenState extends ConsumerState<OfferScreen> {
+  /// This screen's own answers: a second S14.02 never shares them.
+  final _key = OfferScreenKey();
+
+  /// What the stack shows; refreshed by the offers, the answers and the
+  /// expiry timer (never computed as a side effect of build).
+  List<InstantOffer> _shown = const [];
+
   /// Rebuilds the stack when the next card's countdown reaches zero.
   Timer? _expiry;
   DateTime? _expiryAt;
+
+  /// A cold open (from a push) may first get an empty list from the cache:
+  /// "expired" is said only after a card was seen or this grace ran out.
+  Timer? _grace;
+  bool _graceOver = false;
   bool _sawCard = false;
   bool _leaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _grace = Timer(_coldOpenGrace, () {
+      _graceOver = true;
+      _refresh();
+    });
+    ref.listenManual(pendingOffersProvider, (_, _) => _refresh());
+    ref.listenManual<OfferUiState>(offerControllerProvider(_key), (_, next) {
+      final match = next.match;
+      if (match != null && match.name == null) {
+        _afterFrame(() => _openJob(match.requestId));
+      }
+      _refresh();
+    });
+    _refresh(rebuild: false);
+  }
+
+  @override
   void dispose() {
     _expiry?.cancel();
+    _grace?.cancel();
     super.dispose();
   }
 
-  OfferController get _controller => ref.read(offerControllerProvider.notifier);
+  OfferController get _controller =>
+      ref.read(offerControllerProvider(_key).notifier);
 
   DateTime _now() => ref.read(clockProvider)();
+
+  void _afterFrame(VoidCallback f) {
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        if (mounted) f();
+      })
+      ..scheduleFrame();
+  }
 
   void _say(String text) {
     ScaffoldMessenger.of(context)
@@ -74,6 +117,23 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
     return open;
   }
 
+  void _refresh({bool rebuild = true}) {
+    if (!mounted) return;
+    final offers = ref.read(pendingOffersProvider);
+    final ui = ref.read(offerControllerProvider(_key));
+    if (!offers.hasValue || ui.match != null) return;
+    final next = _visible(offers.requireValue, ui);
+    // While an answer is out, the server may already have withdrawn the
+    // offer (an accept withdraws all of the photographer's pending offers
+    // before the callable returns): the card stays until the answer comes.
+    final busy = ui.busyOfferId;
+    if (busy == null || next.any((o) => o.id == busy)) _shown = next;
+    if (_shown.isNotEmpty) _sawCard = true;
+    _scheduleExpiry(_shown);
+    if (_shown.isEmpty && !ui.busy && (_sawCard || _graceOver)) _leave();
+    if (rebuild) setState(() {});
+  }
+
   void _scheduleExpiry(List<InstantOffer> visible) {
     final next = visible.isEmpty
         ? null
@@ -85,9 +145,8 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
     _expiryAt = next;
     if (next == null) return;
     _expiry = Timer(next.difference(_now()), () {
-      if (!mounted) return;
       _expiryAt = null;
-      setState(() {});
+      _refresh();
     });
   }
 
@@ -96,8 +155,7 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
   void _leave() {
     if (_leaving) return;
     _leaving = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+    _afterFrame(() {
       if (!_sawCard) _say(context.l10n.offerExpired);
       if (context.canPop()) {
         context.pop();
@@ -140,22 +198,12 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ui = ref.watch(offerControllerProvider);
+    final ui = ref.watch(offerControllerProvider(_key));
     final match = ui.match;
     if (match != null) return _matched(context, match);
     final l = context.l10n;
     final offers = ref.watch(pendingOffersProvider);
-    final visible = offers.hasValue
-        ? _visible(offers.requireValue, ui)
-        : const <InstantOffer>[];
-    if (offers.hasValue) {
-      _scheduleExpiry(visible);
-      if (visible.isNotEmpty) {
-        _sawCard = true;
-      } else if (!ui.busy) {
-        _leave();
-      }
-    }
+    final visible = _shown;
     return ScreenCode(
       ScreenCodes.instantOffer,
       child: AuroraBackground(
@@ -176,9 +224,13 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
             value: offers,
             skeleton: (_) => const _Skeleton(),
             onRetry: () => ref.invalidate(pendingOffersProvider),
-            data: (context, _) => visible.isEmpty
+            // Before the first card (a cold open's cached empty list), the
+            // skeleton stays.
+            data: (context, _) => visible.isNotEmpty
+                ? _content(context, visible, ui)
+                : _sawCard
                 ? const SizedBox.shrink()
-                : _content(context, visible, ui),
+                : const _Skeleton(),
           ),
         ),
       ),
@@ -215,9 +267,6 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
                   deadline: top.expiresAt,
                   total: _offerWindow,
                   now: ref.read(clockProvider),
-                  onExpired: () {
-                    if (mounted) setState(() {});
-                  },
                 ),
               ),
               const SizedBox(height: AppSpace.s3),
@@ -242,8 +291,8 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(color: muted),
               ),
-              // Room for the two edges peeking above the top card.
-              const SizedBox(height: AppSpace.s5),
+              // Mock `.body` gap; OfferStack adds the lift of its edges.
+              const SizedBox(height: AppSpace.s3),
               OfferStack(
                 offers: [
                   for (final o in visible)
@@ -290,12 +339,8 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
   /// S13.04 (photographer): "Lan Anh đang chờ ở Công viên Tao Đàn."
   Widget _matched(BuildContext context, OfferMatch match) {
     final name = match.name;
-    if (name == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openJob(match.requestId);
-      });
-      return const SizedBox.shrink();
-    }
+    // No name: the controller listener goes straight to S14.03.
+    if (name == null) return const SizedBox.shrink();
     final l = context.l10n;
     final myAvatar = ref.watch(currentProfileProvider).value?.avatarUrl;
     return ScreenCode(

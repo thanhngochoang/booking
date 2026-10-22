@@ -122,4 +122,17 @@ void main() {
     expect(find.text('stub /work/instant/offer/off_01'), findsOneWidget);
     expect(world.fake.calls.where((c) => c.startsWith('markRead')), isEmpty);
   });
+
+  testWidgets('a second offer push replaces the S14.02 on top', (tester) async {
+    final (world, router) = await _mount(tester);
+    world.push.emitOpened(const PushOpen(target: '/work/instant/offer/o1'));
+    await tester.pumpAndSettle();
+    world.push.emitOpened(const PushOpen(target: '/work/instant/offer/o2'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /work/instant/offer/o2'), findsOneWidget);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('stub /home'), findsOneWidget);
+  });
 }

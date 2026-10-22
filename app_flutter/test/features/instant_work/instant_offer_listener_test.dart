@@ -28,6 +28,7 @@ Future<GoRouter> _mount(
         ),
       ),
       GoRoute(path: '/work/instant/offer/:offerId', builder: _stub),
+      GoRoute(path: '/other', builder: _stub),
     ],
   );
   await tester.pumpWidget(
@@ -135,4 +136,26 @@ void main() {
       await _end(tester, repo);
     },
   );
+
+  testWidgets('does nothing when an S14.02 is under another page', (
+    tester,
+  ) async {
+    final repo = FakeInstantRepository(
+      presence: presenceOf(online: true),
+      offers: [offerOf('o1')],
+    );
+    final router = await _mount(tester, repo);
+    expect(router.state.uri.path, '/work/instant/offer/o1');
+    router.push('/other');
+    await settleInstant(tester);
+
+    repo.emitOffers([offerOf('o1'), offerOf('o2', requestId: 'req2')]);
+    await settleInstant(tester);
+
+    expect(router.state.uri.path, '/other');
+    router.pop();
+    await settleInstant(tester);
+    expect(router.state.uri.path, '/work/instant/offer/o1');
+    await _end(tester, repo);
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -334,6 +336,98 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(_accept, findsOneWidget);
     expect(_decline, findsOneWidget);
+    await _end(tester, repo);
+  });
+
+  testWidgets(
+    'offers withdrawn before answerOffer completes: the card and the "Nhận việc" loader stay, then the overlay',
+    (tester) async {
+      final gate = Completer<void>();
+      final repo = _repo(_three())
+        ..withdrawOnAccept = true
+        ..gate = gate;
+      repo.emitRequest('req_o1', assignedRequestOf('req_o1'));
+      final (_, router) = await _open(tester, repo);
+
+      await tester.tap(_accept);
+      await settleInstant(tester);
+
+      // The listener already says "no pending offers"; the answer is out.
+      expect(repo.offers, isEmpty);
+      expect(find.text('Phường Bến Thành, Quận 1'), findsOneWidget);
+      expect(find.text('3 lời mời đang chờ'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('offer-accept')),
+          matching: find.byType(DotRingLoader),
+        ),
+        findsOneWidget,
+      );
+      expect(router.state.uri.path, '/work/instant/offer/o1');
+
+      repo.gate = null;
+      gate.complete();
+      await settleInstant(tester);
+
+      expect(
+        find.text('Đã match với Lan Anh', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text('Lời mời đã hết hạn'), findsNothing);
+      await _end(tester, repo);
+    },
+  );
+
+  testWidgets(
+    'cold open: an empty cached list then the offer shows the card, no toast, no pop',
+    (tester) async {
+      final repo = FakeInstantRepository(presence: presenceOf(online: true));
+      final (world, router) = await _open(tester, repo);
+
+      repo.emitOffers([offerOf('o1')]);
+      await settleInstant(tester);
+      await world.wait(tester, const Duration(seconds: 3));
+
+      expect(find.text('Phường Bến Thành, Quận 1'), findsOneWidget);
+      expect(find.text('Lời mời đã hết hạn'), findsNothing);
+      expect(router.state.uri.path, '/work/instant/offer/o1');
+      await _end(tester, repo);
+    },
+  );
+
+  testWidgets(
+    'cold open with nothing after the grace says "Lời mời đã hết hạn" and leaves',
+    (tester) async {
+      final repo = FakeInstantRepository(presence: presenceOf(online: true));
+      await _open(tester, repo);
+      expect(find.text('stub /work/instant'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 2));
+      await settleInstant(tester);
+
+      expect(find.text('Lời mời đã hết hạn'), findsOneWidget);
+      expect(find.text('stub /work/instant'), findsOneWidget);
+      await _end(tester, repo);
+    },
+  );
+
+  testWidgets('two S14.02 screens keep their own answers', (tester) async {
+    final repo = _repo(_three());
+    final (_, router) = await _open(tester, repo);
+    router.push('/work/instant/offer/o2');
+    await settleInstant(tester);
+    expect(find.text('Phường 6, Quận 3'), findsOneWidget);
+
+    await tester.tap(_decline);
+    await settleInstant(tester);
+    expect(find.text('2 lời mời đang chờ'), findsOneWidget);
+
+    // The screen below did not answer anything: the server still lists all
+    // three, and so does it.
+    router.pop();
+    await settleInstant(tester);
+    expect(find.text('Phường Bến Thành, Quận 1'), findsOneWidget);
+    expect(find.text('3 lời mời đang chờ'), findsOneWidget);
     await _end(tester, repo);
   });
 }

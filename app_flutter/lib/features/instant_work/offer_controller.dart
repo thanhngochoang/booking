@@ -53,6 +53,11 @@ const _requestWait = Duration(seconds: 5);
 /// `already_assigned`, `offer_expired` and `blocked` also drop the card (it
 /// can never be accepted again).
 class OfferController extends Notifier<OfferUiState> {
+  OfferController(this.screen);
+
+  /// The S14.02 instance these answers belong to.
+  final OfferScreenKey screen;
+
   @override
   OfferUiState build() => const OfferUiState();
 
@@ -141,7 +146,9 @@ class OfferController extends Notifier<OfferUiState> {
   };
 }
 
-final offerControllerProvider =
-    NotifierProvider.autoDispose<OfferController, OfferUiState>(
-      OfferController.new,
-    );
+/// One per S14.02 on the stack (identity key): two screens never share
+/// their dropped cards or their call in flight.
+final class OfferScreenKey {}
+
+final offerControllerProvider = NotifierProvider.autoDispose
+    .family<OfferController, OfferUiState, OfferScreenKey>(OfferController.new);

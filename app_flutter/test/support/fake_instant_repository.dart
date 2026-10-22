@@ -99,6 +99,11 @@ class FakeInstantRepository implements InstantRepository {
   /// Completes a call only when it completes (for "busy" states); null = at once.
   Completer<void>? gate;
 
+  /// Models the accept transaction: the photographer's pending offers are
+  /// withdrawn (the listener sees them go) before `answerOffer` returns,
+  /// i.e. before [gate] opens.
+  bool withdrawOnAccept = false;
+
   // ---- recording -----------------------------------------------------------
 
   final calls = <InstantCall>[];
@@ -299,9 +304,15 @@ class FakeInstantRepository implements InstantRepository {
 
   @override
   Future<String> answerOffer(String offerId, {required bool accept}) async {
+    final requestId = _offers.value
+        .where((o) => o.id == offerId)
+        .firstOrNull
+        ?.requestId;
+    if (accept && withdrawOnAccept && !_failures.containsKey('answerOffer')) {
+      _offers.emit(const []);
+    }
     await _record('answerOffer', {'offerId': offerId, 'accept': accept});
-    final offer = _offers.value.where((o) => o.id == offerId).firstOrNull;
-    return answeredRequestId ?? offer?.requestId ?? 'req1';
+    return answeredRequestId ?? requestId ?? 'req1';
   }
 
   @override
