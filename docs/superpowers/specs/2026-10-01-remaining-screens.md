@@ -150,9 +150,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | ⬜ plan I5 | S51 |
 | S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 | ⬜ plan I4 · I5 | S55 |
 | **S14** | **Chụp ngay (nhiếp ảnh gia)** | | | | | |
-| S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | ⬜ plan I4 | S52 |
+| S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S52 |
 | S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | ⬜ plan I4 | S53 |
-| S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | ⬜ plan I4 | S54 |
+| S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S54 |
 | **S15** | **Đăng việc (khách)** | | | | | |
 | S15.01 | Đăng việc (2 bước: việc gì; khi nào, ở đâu, ngân sách, ai được báo giá) | `/jobs/new` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S56 |
 | S15.02 | Việc của tôi (tab "Việc đăng" của S05.01) / chi tiết việc | `/bookings?tab=jobs`, `/jobs/:id` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S57 |
