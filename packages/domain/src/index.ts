@@ -167,3 +167,8 @@ export * from './instant.js';
 export * from './instant_settle.js';
 export * from './instant_match.js';
 export * from './instant_cancel.js';
+export * from './instant_ports.js';
+export * from './memory_instant_store.js';
+export * from './instant_requests.js';
+export * from './instant_jobs.js';
+export * from './instant_notices.js';
