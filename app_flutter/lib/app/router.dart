@@ -43,6 +43,7 @@ import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
+import 'package:photobooking/features/instant_work/offer_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
@@ -297,6 +298,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/work/instant',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const LiveShutterScreen(),
+      ),
+      GoRoute(
+        path: '/work/instant/offer/:offerId',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) =>
+            OfferScreen(offerId: state.pathParameters['offerId']!),
       ),
       GoRoute(
         path: '/work/earnings',

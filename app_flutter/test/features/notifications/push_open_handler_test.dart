@@ -24,7 +24,13 @@ Future<(NotificationsWorld, GoRouter)> _mount(
   final router = GoRouter(
     initialLocation: '/home',
     routes: [
-      for (final p in ['/home', '/b/:id', '/chat/:id', '/bookings'])
+      for (final p in [
+        '/home',
+        '/b/:id',
+        '/chat/:id',
+        '/bookings',
+        '/work/instant/offer/:id',
+      ])
         GoRoute(path: p, builder: stub),
     ],
   );
@@ -104,5 +110,16 @@ void main() {
     world.push.emitOpened(const PushOpen(target: '/bookings'));
     await tester.pumpAndSettle();
     expect(find.text('stub /bookings'), findsOneWidget);
+  });
+
+  testWidgets('an instant offer push (no inbox row) opens S14.02', (
+    tester,
+  ) async {
+    final (world, _) = await _mount(tester);
+    // `offerPushMessage`: data {type: 'instant_offer', target}, push only.
+    world.push.emitOpened(const PushOpen(target: '/work/instant/offer/off_01'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /work/instant/offer/off_01'), findsOneWidget);
+    expect(world.fake.calls.where((c) => c.startsWith('markRead')), isEmpty);
   });
 }

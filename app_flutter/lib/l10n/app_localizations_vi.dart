@@ -8860,4 +8860,60 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get liveShutterOpenSettings => 'Mở cài đặt';
+
+  @override
+  String get offerTitle => 'Lời mời chụp ngay';
+
+  @override
+  String offerPendingCount(int n) {
+    return '$n lời mời đang chờ';
+  }
+
+  @override
+  String offerYouGet(String genre, String duration, int photos) {
+    return 'Bạn nhận · $genre $duration · $photos ảnh';
+  }
+
+  @override
+  String offerDistance(String distance, int minutes) {
+    return '$distance · khoảng $minutes phút · địa chỉ hiện khi bạn nhận';
+  }
+
+  @override
+  String offerChosenAmong(String n) {
+    return 'Khách đã chọn bạn trong $n người. Ai nhận trước sẽ được việc.';
+  }
+
+  @override
+  String offerNote(String note) {
+    return '\"$note\"';
+  }
+
+  @override
+  String get offerDecline => 'Từ chối';
+
+  @override
+  String get offerAccept => 'Nhận việc';
+
+  @override
+  String get offerAlreadyAssigned => 'Khách đã chọn được người khác';
+
+  @override
+  String get offerExpired => 'Lời mời đã hết hạn';
+
+  @override
+  String get offerNotAccepting => 'Bạn chưa nhận đơn được lúc này';
+
+  @override
+  String matchTitle(String name) {
+    return 'Đã match với $name';
+  }
+
+  @override
+  String matchBodyPhotographer(String name, String place) {
+    return '$name đang chờ ở $place. Tiếp tục để xem đường đi.';
+  }
+
+  @override
+  String get matchContinue => 'Tiếp tục';
 }

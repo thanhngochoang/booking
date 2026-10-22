@@ -10,6 +10,7 @@ import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
+import 'package:photobooking/features/instant_work/offer_screen.dart';
 
 import 'fake_instant_repository.dart';
 import 'fake_push.dart';
@@ -130,4 +131,94 @@ Future<void> settleInstant(WidgetTester tester) async {
   for (var i = 0; i < 8; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
+}
+
+/// A pending offer (mock S14.02 values) expiring [expiresIn] after [instantNow].
+InstantOffer offerOf(
+  String id, {
+  String requestId = 'req1',
+  Duration expiresIn = const Duration(seconds: 47),
+  String areaLabel = 'Phường Bến Thành, Quận 1',
+  double distanceKm = 2.1,
+  int etaMinutes = 8,
+  int earningVnd = 552000,
+  int durationMin = 60,
+  int photos = 30,
+  InstantGenre genre = InstantGenre.portrait,
+  String note = 'Chụp chân dung ở hồ, mình mặc áo dài trắng.',
+  int invitedCount = 3,
+}) {
+  final expiresAt = instantNow.add(expiresIn);
+  return InstantOffer(
+    id: id,
+    requestId: requestId,
+    offeredAt: expiresAt.subtract(const Duration(seconds: 60)),
+    expiresAt: expiresAt,
+    outcome: OfferOutcome.pending,
+    packageCode: 'p$durationMin',
+    durationMin: durationMin,
+    photos: photos,
+    genre: genre,
+    areaLabel: areaLabel,
+    distanceKm: distanceKm,
+    etaMinutes: etaMinutes,
+    earningVnd: earningVnd,
+    note: note,
+    invitedCount: invitedCount,
+  );
+}
+
+/// The request as its assigned photographer reads it right after winning.
+InstantRequest assignedRequestOf(
+  String id, {
+  String customerName = 'Lan Anh',
+  String place = 'Công viên Tao Đàn',
+}) => InstantRequest(
+  id: id,
+  customerId: 'cus1',
+  customerName: customerName,
+  status: InstantStatus.assigned,
+  packageCode: 'p60',
+  durationMin: 60,
+  photos: 30,
+  genre: InstantGenre.portrait,
+  meetPoint: InstantMeetPoint(lat: taoDan.lat, lng: taoDan.lng, name: place),
+  areaLabel: 'Phường Bến Thành, Quận 1',
+  photographerId: 'me',
+  etaMinutes: 8,
+);
+
+/// S14.02 at `/work/instant/offer/[offerId]`, pushed over `/work/instant`.
+Future<GoRouter> pumpOfferScreen(
+  WidgetTester tester,
+  InstantWorld world, {
+  String offerId = 'o1',
+  double textScale = 1.0,
+  Size viewSize = const Size(390, 844),
+}) async {
+  tester.view.physicalSize = viewSize;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final router = GoRouter(
+    initialLocation: '/work/instant',
+    routes: [
+      GoRoute(path: '/work/instant', builder: _stub),
+      GoRoute(
+        path: '/work/instant/offer/:offerId',
+        builder: (_, s) => OfferScreen(offerId: s.pathParameters['offerId']!),
+      ),
+      GoRoute(path: '/work/instant/:id', builder: _stub),
+    ],
+  );
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pumpWidget(
+    screenRouterApp(
+      router: router,
+      overrides: world.overrides,
+      textScale: textScale,
+    ),
+  );
+  router.push('/work/instant/offer/$offerId');
+  await settleInstant(tester);
+  return router;
 }

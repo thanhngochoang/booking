@@ -15230,6 +15230,90 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Mở cài đặt'**
   String get liveShutterOpenSettings;
+
+  /// No description provided for @offerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời chụp ngay'**
+  String get offerTitle;
+
+  /// No description provided for @offerPendingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} lời mời đang chờ'**
+  String offerPendingCount(int n);
+
+  /// No description provided for @offerYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận · {genre} {duration} · {photos} ảnh'**
+  String offerYouGet(String genre, String duration, int photos);
+
+  /// distance is formatDistance, e.g. 2,1 km
+  ///
+  /// In vi, this message translates to:
+  /// **'{distance} · khoảng {minutes} phút · địa chỉ hiện khi bạn nhận'**
+  String offerDistance(String distance, int minutes);
+
+  /// n is shown bold, so it is passed as text
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn bạn trong {n} người. Ai nhận trước sẽ được việc.'**
+  String offerChosenAmong(String n);
+
+  /// No description provided for @offerNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'\"{note}\"'**
+  String offerNote(String note);
+
+  /// No description provided for @offerDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get offerDecline;
+
+  /// No description provided for @offerAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận việc'**
+  String get offerAccept;
+
+  /// No description provided for @offerAlreadyAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn được người khác'**
+  String get offerAlreadyAssigned;
+
+  /// No description provided for @offerExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã hết hạn'**
+  String get offerExpired;
+
+  /// No description provided for @offerNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa nhận đơn được lúc này'**
+  String get offerNotAccepting;
+
+  /// No description provided for @matchTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã match với {name}'**
+  String matchTitle(String name);
+
+  /// No description provided for @matchBodyPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang chờ ở {place}. Tiếp tục để xem đường đi.'**
+  String matchBodyPhotographer(String name, String place);
+
+  /// No description provided for @matchContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get matchContinue;
 }
 
 class _AppLocalizationsDelegate
