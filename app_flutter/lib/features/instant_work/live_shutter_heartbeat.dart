@@ -81,6 +81,8 @@ class _LiveShutterHeartbeatState extends ConsumerState<LiveShutterHeartbeat>
       _presence?.close();
       _presence = null;
       _online = false;
+      _lastPos = null;
+      _lastWriteAt = null;
       _stop();
     }
   }

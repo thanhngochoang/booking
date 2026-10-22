@@ -15423,6 +15423,12 @@ abstract class AppLocalizations {
   /// **'Còn cách {distance}. Tới gần hơn để bấm Đã đến.'**
   String jobArriveFar(String distance);
 
+  /// a distance under a kilometre, rounded to 10 m
+  ///
+  /// In vi, this message translates to:
+  /// **'{metres} m'**
+  String instantDistanceMetres(int metres);
+
   /// No description provided for @jobArriveForceTitle.
   ///
   /// In vi, this message translates to:

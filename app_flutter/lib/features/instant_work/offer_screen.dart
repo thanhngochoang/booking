@@ -27,6 +27,10 @@ const _liveShutterPath = '/work/instant';
 /// How long a cold open waits for the first card before saying it expired.
 const _coldOpenGrace = Duration(seconds: 2);
 
+/// How long a cold open waits for the offers to load at all (offline: the
+/// listener never answers) before leaving with a network message.
+const _loadTimeout = Duration(seconds: 10);
+
 class OfferScreen extends ConsumerStatefulWidget {
   const OfferScreen({super.key, required this.offerId});
 
@@ -53,6 +57,9 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
   /// "expired" is said only after a card was seen or this grace ran out.
   Timer? _grace;
   bool _graceOver = false;
+
+  /// Leaves with "Mất kết nối" when the offers never load (no in-app back).
+  Timer? _loadTimer;
   bool _sawCard = false;
   bool _leaving = false;
 
@@ -62,6 +69,12 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
     _grace = Timer(_coldOpenGrace, () {
       _graceOver = true;
       _refresh();
+    });
+    _loadTimer = Timer(_loadTimeout, () {
+      if (!mounted || _sawCard) return;
+      final loaded = ref.read(pendingOffersProvider).hasValue;
+      final matched = ref.read(offerControllerProvider(_key)).match != null;
+      if (!loaded && !matched) _leave(networkLost: true);
     });
     ref.listenManual(pendingOffersProvider, (_, _) => _refresh());
     ref.listenManual<OfferUiState>(offerControllerProvider(_key), (_, next) {
@@ -78,6 +91,7 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
   void dispose() {
     _expiry?.cancel();
     _grace?.cancel();
+    _loadTimer?.cancel();
     super.dispose();
   }
 
@@ -150,13 +164,19 @@ class _OfferScreenState extends ConsumerState<OfferScreen> {
     });
   }
 
-  /// Nothing left to answer: back to where S14.02 was opened from (Live
-  /// Shutter when there is nothing below it).
-  void _leave() {
+  /// Nothing left to answer (or the offers never loaded: [networkLost]):
+  /// back to where S14.02 was opened from (Live Shutter when there is nothing
+  /// below it).
+  void _leave({bool networkLost = false}) {
     if (_leaving) return;
     _leaving = true;
     _afterFrame(() {
-      if (!_sawCard) _say(context.l10n.offerExpired);
+      final l = context.l10n;
+      if (networkLost) {
+        _say(l.instantErrorNetwork);
+      } else if (!_sawCard) {
+        _say(l.offerExpired);
+      }
       if (context.canPop()) {
         context.pop();
       } else {

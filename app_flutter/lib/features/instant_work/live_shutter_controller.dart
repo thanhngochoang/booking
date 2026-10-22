@@ -50,7 +50,8 @@ class LiveShutterView {
   ];
 
   /// The rows of "Chưa bật được Live Shutter"; the price list is a row only
-  /// next to another lock (alone it is the terms state).
+  /// while another reason locks the switch (otherwise it is the terms state,
+  /// whose footer already has "Đồng ý bảng giá": never two of them).
   List<LiveShutterReason> get reasonRows {
     if (online) return const [];
     final other = reasons.where(
@@ -60,7 +61,7 @@ class LiveShutterView {
     return [
       for (final r in LiveShutterReason.values)
         if (r == LiveShutterReason.priceListNotAccepted
-            ? !priceListAccepted
+            ? !priceListAccepted && locked
             : reasons.contains(r))
           r,
     ];

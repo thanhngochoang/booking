@@ -251,7 +251,10 @@ abstract class InstantMeetPoint with _$InstantMeetPoint {
 }
 
 /// `instant_requests/{id}`, read by its customer and its assigned photographer.
-/// Every instant is UTC. Money fields stay empty throughout #140.
+/// Every instant is UTC. `amountVnd`, `earningVnd` and `platformFeeBp` come
+/// from the price list at creation; in #140 nothing is paid (`paid` false,
+/// `paymentDeadlineAt` null) and a cancel or no-show records its rule with
+/// `refundPercent` and `feeVnd` 0.
 @freezed
 abstract class InstantRequest with _$InstantRequest {
   const factory InstantRequest({

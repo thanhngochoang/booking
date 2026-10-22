@@ -10,12 +10,12 @@ import 'package:photobooking/features/instant_work/offer_routes.dart';
 
 /// While a photographer is online and the app is foregrounded, a new pending
 /// offer opens S14.02 unless one is already in the stack, on top or not (an
-/// open S14.02 stacks the new card itself). An offer is opened once: back from S14.02 does not
-/// bring it again. In the background the offer's push does the job (tapping
-/// it opens the same screen through the push-open handler); no full-screen
-/// intent, no background work (Decision 10). With [enabled] false (Chụp ngay
-/// off, not a photographer) nothing is listened to; the widget stays in the
-/// tree so the child keeps its place.
+/// open S14.02 stacks the new card itself). An offer is opened once: back
+/// from S14.02 does not bring it again. In the background the offer's push
+/// does the job (tapping it opens the same screen through the push-open
+/// handler); no full-screen intent, no background work (Decision 10). With
+/// [enabled] false (Chụp ngay off, not a photographer) nothing is listened
+/// to; the widget stays in the tree so the child keeps its place.
 class InstantOfferListener extends ConsumerStatefulWidget {
   const InstantOfferListener({
     super.key,

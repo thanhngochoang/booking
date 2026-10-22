@@ -376,6 +376,33 @@ void main() {
     await repo.dispose();
   });
 
+  testWidgets('outside the area with the price list not accepted: one '
+      '"Đồng ý bảng giá" (the footer), no price-list row', (tester) async {
+    final repo =
+        FakeInstantRepository(presence: presenceOf(priceListVersion: null))
+          ..liveShutterReasons = [
+            LiveShutterReason.priceListNotAccepted,
+            LiveShutterReason.outsideServiceArea,
+          ];
+    await pumpLiveShutter(tester, InstantWorld(repo: repo));
+
+    expect(find.text('Bạn đang ở ngoài khu vực có Chụp ngay'), findsOneWidget);
+    expect(
+      find.byKey(const Key('reason-price_list_not_accepted')),
+      findsNothing,
+    );
+    expect(find.text('Đồng ý bảng giá'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppFooterBar),
+        matching: find.text('Đồng ý bảng giá'),
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await repo.dispose();
+  });
+
   testWidgets('locked with the price list not accepted: no footer, the row '
       'accepts it', (tester) async {
     final repo =

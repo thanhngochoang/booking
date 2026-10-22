@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/instant/instant_models.dart';
 
 import '../../support/fake_instant_repository.dart';
 import '../../support/instant_work_world.dart';
@@ -411,6 +412,28 @@ void main() {
     },
   );
 
+  testWidgets(
+    'cold open offline: offers never load, after 10 s "Mất kết nối" and back to /work/instant',
+    (tester) async {
+      final repo = _SilentOffers();
+      await _open(tester, repo);
+
+      // The 2 s grace alone does not leave while nothing has loaded.
+      await tester.pump(const Duration(seconds: 3));
+      await settleInstant(tester);
+      expect(find.text('stub /work/instant'), findsNothing);
+      expect(find.text('Lời mời đã hết hạn'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 7));
+      await settleInstant(tester);
+
+      expect(find.text('Mất kết nối. Thử lại nhé.'), findsOneWidget);
+      expect(find.text('Lời mời đã hết hạn'), findsNothing);
+      expect(find.text('stub /work/instant'), findsOneWidget);
+      await _end(tester, repo);
+    },
+  );
+
   testWidgets('two S14.02 screens keep their own answers', (tester) async {
     final repo = _repo(_three());
     final (_, router) = await _open(tester, repo);
@@ -430,4 +453,13 @@ void main() {
     expect(find.text('3 lời mời đang chờ'), findsOneWidget);
     await _end(tester, repo);
   });
+}
+
+/// A listener that never answers (offline cold open).
+class _SilentOffers extends FakeInstantRepository {
+  _SilentOffers() : super(presence: presenceOf(online: true));
+
+  @override
+  Stream<List<InstantOffer>> watchPendingOffers() =>
+      Stream.fromFuture(Completer<List<InstantOffer>>().future);
 }

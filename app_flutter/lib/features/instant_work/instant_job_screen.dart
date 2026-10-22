@@ -127,7 +127,7 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
       case ArrivalNoFix():
         _say(l.jobLocationNeeded);
       case ArrivalTooFar(:final metres):
-        _say(l.jobArriveFar(instantDistanceText(metres)));
+        _say(l.jobArriveFar(instantDistanceText(l, metres)));
       case ArrivalNeedsForce(:final fix):
         final ok = await showConfirmSheet(
           context,
@@ -387,7 +387,9 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
       children: [
         if (farFix != null) ...[
           Text(
-            l.jobArriveFar(instantDistanceText(metresToMeetPoint(r, farFix))),
+            l.jobArriveFar(
+              instantDistanceText(l, metresToMeetPoint(r, farFix)),
+            ),
             key: const Key('job-arrive-far'),
             textAlign: TextAlign.center,
             style: _metaStyle(context),

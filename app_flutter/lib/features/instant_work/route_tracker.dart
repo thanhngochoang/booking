@@ -1,4 +1,5 @@
-// Decision 11: the photographer's position while en route (S14.03), foreground only.
+// Decision 11: the photographer's position while en route (S14.03),
+// foreground only.
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -31,8 +32,8 @@ const kTrackMinGap = Duration(seconds: 16);
 /// so a move writes on each tick. A low-power fix (`currentFix()`, with its
 /// real accuracy): the GPS-grade one is only for the arrival check. A write
 /// the server still refuses (the request just left `en_route`) is not
-/// counted and the next fix tries again. Nothing is kept beyond the last written point
-/// (spec §9: no point history).
+/// counted and the next fix tries again. Nothing is kept beyond the last
+/// written point (spec §9: no point history).
 class RouteTracker {
   RouteTracker({
     required this._location,

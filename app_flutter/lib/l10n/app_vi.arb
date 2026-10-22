@@ -3869,6 +3869,8 @@
   "jobArrive": "Đã đến",
   "jobArriveFar": "Còn cách {distance}. Tới gần hơn để bấm Đã đến.",
   "@jobArriveFar": {"description": "distance is e.g. 350 m or 1,4 km", "placeholders": {"distance": {"type": "String"}}},
+  "instantDistanceMetres": "{metres} m",
+  "@instantDistanceMetres": {"description": "a distance under a kilometre, rounded to 10 m", "placeholders": {"metres": {"type": "int"}}},
   "jobArriveForceTitle": "GPS chưa chính xác",
   "jobArriveForceBody": "Vị trí đang lệch khoảng {meters} m. Xác nhận bạn đã tới điểm hẹn?",
   "@jobArriveForceBody": {"placeholders": {"meters": {"type": "int"}}},

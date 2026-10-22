@@ -54,8 +54,8 @@ String instantClock(DateTime instant) {
 }
 
 /// "350 m" under a kilometre (to 10 m), else "1,4 km".
-String instantDistanceText(double metres) => metres < 995
-    ? '${math.max(10, (metres / 10).round() * 10)} m'
+String instantDistanceText(AppLocalizations l, double metres) => metres < 995
+    ? l.instantDistanceMetres(math.max(10, (metres / 10).round() * 10))
     : formatDistance(metres / 1000);
 
 /// "1,4": kilometres to 0,1 for a line that writes the unit itself.

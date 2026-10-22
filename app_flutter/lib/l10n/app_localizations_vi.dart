@@ -8986,6 +8986,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String instantDistanceMetres(int metres) {
+    return '$metres m';
+  }
+
+  @override
   String get jobArriveForceTitle => 'GPS chưa chính xác';
 
   @override
