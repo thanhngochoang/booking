@@ -25,13 +25,13 @@ const _maxSilence = Duration(seconds: 60);
 /// server's clock; one more second covers the client/server jitter.
 const kTrackMinGap = Duration(seconds: 16);
 
-/// Fix every 15 s while en route and the screen is visible; writes when moved
-/// ≥ 25 m or 60 s passed. A low-power fix (`currentFix()`, with its real
-/// accuracy): the GPS-grade one is only for the arrival check. Never two
-/// writes within 16 s of each other by this clock (the rules' 15 s plus
-/// jitter); a write the server still
-/// refuses (clock jitter, the request just left `en_route`) is not counted and
-/// the next fix tries again. Nothing is kept beyond the last written point
+/// Fix every 16 s while en route and the screen is visible; writes when moved
+/// ≥ 25 m or 60 s passed. The rules refuse a point < 15 s after the last one;
+/// sampling and the write floor are both 16 s (1 s margin for clock jitter),
+/// so a move writes on each tick. A low-power fix (`currentFix()`, with its
+/// real accuracy): the GPS-grade one is only for the arrival check. A write
+/// the server still refuses (the request just left `en_route`) is not
+/// counted and the next fix tries again. Nothing is kept beyond the last written point
 /// (spec §9: no point history).
 class RouteTracker {
   RouteTracker({
@@ -39,7 +39,7 @@ class RouteTracker {
     required this._repo,
     required this._requestId,
     required this._now,
-    this._every = const Duration(seconds: 15),
+    this._every = kTrackMinGap,
     TrackTimerFactory timer = _periodic,
     this.onFix,
     this.onNoFix,

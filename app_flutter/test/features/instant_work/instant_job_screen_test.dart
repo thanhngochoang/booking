@@ -106,7 +106,8 @@ void main() {
       w.repo.emitRequest('req1', jobRequestOf('req1'));
       await settleInstant(tester);
       expect(find.text('Đang đến'), findsOneWidget);
-      await w.wait(tester, const Duration(minutes: 1));
+      // Past the 60 s silence, on the 64 s tick.
+      await w.wait(tester, const Duration(seconds: 70));
       // En route now: no more start_route, the track goes on instead.
       expect(w.repo.callsOf('updateJob'), hasLength(2));
       expect(w.repo.callsOf('shareTrack'), isNotEmpty);

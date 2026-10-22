@@ -60,7 +60,7 @@ class _Rig {
   );
 
   /// [d] passes, then the periodic callback fires.
-  Future<void> tick([Duration d = const Duration(seconds: 15)]) async {
+  Future<void> tick([Duration d = const Duration(seconds: 16)]) async {
     now = now.add(d);
     onTick!();
     await pumpEventQueue();
@@ -73,7 +73,7 @@ void main() {
     rig.tracker.start();
     await pumpEventQueue();
 
-    expect(rig.period, const Duration(seconds: 15));
+    expect(rig.period, const Duration(seconds: 16));
     final call = rig.repo.callsOf('shareTrack').single;
     expect(call.args['requestId'], 'req1');
     expect(call.args['lat'], taoDan.lat);
@@ -84,24 +84,27 @@ void main() {
     expect(rig.location.highAccuracyFixCalls, 0);
   });
 
-  test('a 10 m move after 15 s does not write; a 30 m move does', () async {
-    final rig = _Rig();
-    rig.tracker.start();
-    await pumpEventQueue();
-    expect(rig.writes, 1);
+  test(
+    'a 10 m move after 16 s does not write; a 30 m move does on the next tick',
+    () async {
+      final rig = _Rig();
+      rig.tracker.start();
+      await pumpEventQueue();
+      expect(rig.writes, 1);
 
-    rig.moveTo(10);
-    await rig.tick();
-    expect(rig.writes, 1);
+      rig.moveTo(10);
+      await rig.tick();
+      expect(rig.writes, 1);
 
-    rig.moveTo(40); // 30 m from the last written point
-    await rig.tick();
-    expect(rig.writes, 2);
-    expect(
-      rig.repo.callsOf('shareTrack').last.args['lat'],
-      closeTo(taoDan.lat + 40 * _degPerM, 1e-9),
-    );
-  });
+      rig.moveTo(40); // 30 m from the last written point
+      await rig.tick();
+      expect(rig.writes, 2);
+      expect(
+        rig.repo.callsOf('shareTrack').last.args['lat'],
+        closeTo(taoDan.lat + 40 * _degPerM, 1e-9),
+      );
+    },
+  );
 
   test('60 s without moving writes once', () async {
     final rig = _Rig();
@@ -111,11 +114,23 @@ void main() {
     for (var i = 0; i < 3; i++) {
       await rig.tick();
     }
-    expect(rig.writes, 1); // 45 s: nothing new
-    await rig.tick(); // 60 s
+    expect(rig.writes, 1); // 48 s: nothing new
+    await rig.tick(); // 64 s
     expect(rig.writes, 2);
-    await rig.tick(); // 75 s
+    await rig.tick(); // 80 s
     expect(rig.writes, 2);
+  });
+
+  test('a steady move writes on every 16 s tick', () async {
+    final rig = _Rig();
+    rig.tracker.start();
+    await pumpEventQueue();
+
+    for (var i = 1; i <= 4; i++) {
+      rig.moveTo(30.0 * i);
+      await rig.tick();
+      expect(rig.writes, 1 + i);
+    }
   });
 
   test(
