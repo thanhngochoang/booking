@@ -32,6 +32,20 @@ class _Gateway implements LocationGateway {
     return (lat: 10.7769, lng: 106.7009);
   }
 
+  /// What [position] reports; `positionError` and `hang` apply too.
+  double accuracyM = 42;
+  bool? lastHighAccuracy;
+
+  @override
+  Future<({double lat, double lng, double accuracyM})> position(
+    Duration timeout, {
+    required bool highAccuracy,
+  }) async {
+    lastHighAccuracy = highAccuracy;
+    final p = await lowAccuracyPosition(timeout);
+    return (lat: p.lat, lng: p.lng, accuracyM: accuracyM);
+  }
+
   @override
   Future<bool> openAppSettings() async {
     settingsCalls++;
@@ -220,6 +234,41 @@ void main() {
       gateway.positionError = Exception('device GPS failed');
       final pos = await repo.currentPosition();
       expect(pos, isNull);
+    });
+  });
+
+  group('currentFix', () {
+    test('returns the platform accuracy, low power by default', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.raw = RawPermission.granted;
+      final fix = await repo.currentFix();
+      expect(fix!.lat, 10.7769);
+      expect(fix.lng, 106.7009);
+      expect(fix.accuracyM, 42);
+      expect(gateway.lastHighAccuracy, isFalse);
+      expect(fix.toString(), isNot(contains('10.77')));
+    });
+
+    test('highAccuracy asks the gateway for a GPS-grade fix', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.raw = RawPermission.granted;
+      gateway.accuracyM = 8;
+      final fix = await repo.currentFix(highAccuracy: true);
+      expect(fix!.accuracyM, 8);
+      expect(gateway.lastHighAccuracy, isTrue);
+    });
+
+    test('returns null without permission, and asks nothing', () async {
+      final (repo, gateway, _) = await _make();
+      expect(await repo.currentFix(), isNull);
+      expect(gateway.lastHighAccuracy, isNull);
+    });
+
+    test('returns null when the gateway throws', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.raw = RawPermission.granted;
+      gateway.positionError = Exception('device GPS failed');
+      expect(await repo.currentFix(), isNull);
     });
   });
 

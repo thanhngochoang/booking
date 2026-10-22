@@ -1,4 +1,4 @@
-import { test, before, after } from 'node:test';
+import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
@@ -2633,4 +2633,197 @@ test('spots storage: a signed-in user reads spots/x/card.jpg; nobody uploads the
   await assertFails(getBytes(ref(unauthSt, 'spots/sp1/card.jpg')));
   await assertFails(uploadBytes(ref(authSt, 'spots/sp1/card.jpg'), photo(), jpeg));
   await assertFails(deleteObject(ref(authSt, 'spots/sp1/card.jpg')));
+});
+
+// ---- Chụp ngay (S13–S14, #140): presence, requests, contact copy, offers, tracks ----
+describe('instant', () => {
+  const seed = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+  const ago = (s) => Timestamp.fromMillis(Date.now() - s * 1000);
+  const as = (uid) => env.authenticatedContext(uid).firestore();
+  const presence = (over = {}) => ({
+    online: true, helpReady: false, priceListVersion: 1, cityId: 'hcm',
+    lat: 10.7746, lng: 106.6924, accuracyM: 20, geohash5: 'w3gv2', geohash4: 'w3gv', heartbeatAt: ago(120),
+    activeRequestId: null, pendingOffers: [], reliability: { offers: 0, accepted: 0, declined: 0, expired: 0, cancelled: 0, late: 0, noShow: 0 },
+    profile: { name: 'Hà' }, updatedAt: ago(120), ...over,
+  });
+  const beat = (over = {}) => ({ lat: 10.775, lng: 106.693, accuracyM: 15, geohash5: 'w3gv2', geohash4: 'w3gv', heartbeatAt: serverTimestamp(), ...over });
+  const request = (over = {}) => ({
+    customerId: 'ic_cust', photographerId: 'ic_ph', status: 'assigned', active: true, paidAt: null,
+    meetPoint: { lat: 10.7746, lng: 106.6924, name: 'Cổng Trương Định' }, offers: [], ...over,
+  });
+  const track = (over = {}) => ({
+    customerId: 'ic_cust', photographerId: 'ic_ph', active: true, lat: 10.77, lng: 106.69, accuracyM: 20, heading: null, at: ago(30), ...over,
+  });
+  const point = (over = {}) => ({ lat: 10.771, lng: 106.691, accuracyM: 12, heading: 90, at: serverTimestamp(), ...over });
+
+  test('signed-in user reads instant_config', async () => {
+    await seed('instant_config/current', { enabled: true, priceListVersion: 1, platformFeeBp: 0 });
+    await assertSucceeds(getDoc(doc(as('ic_any'), 'instant_config/current')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'instant_config/current')));
+  });
+
+  test('nobody writes instant_config', async () => {
+    await assertFails(setDoc(doc(as('ic_any'), 'instant_config/current'), { enabled: false }));
+    await assertFails(updateDoc(doc(as('ic_any'), 'instant_config/current'), { platformFeeBp: 9999 }));
+  });
+
+  test('owner reads own presence, others cannot', async () => {
+    await seed('instant_presence/ip_own', presence());
+    await assertSucceeds(getDoc(doc(as('ip_own'), 'instant_presence/ip_own')));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_presence/ip_own')));
+    await assertFails(getDocs(query(collection(as('ic_cust'), 'instant_presence'), where('online', '==', true))));
+  });
+
+  test('owner heartbeat with request.time passes', async () => {
+    await seed('instant_presence/ip_hb', presence());
+    await assertSucceeds(updateDoc(doc(as('ip_hb'), 'instant_presence/ip_hb'), beat()));
+  });
+
+  test('heartbeat within 60 s is denied', async () => {
+    await seed('instant_presence/ip_fast', presence({ heartbeatAt: ago(20) }));
+    await assertFails(updateDoc(doc(as('ip_fast'), 'instant_presence/ip_fast'), beat()));
+  });
+
+  test('a heartbeat with a client-chosen time or a bad position is denied', async () => {
+    await seed('instant_presence/ip_bad', presence());
+    const ref = doc(as('ip_bad'), 'instant_presence/ip_bad');
+    await assertFails(updateDoc(ref, beat({ heartbeatAt: Timestamp.now() })));
+    await assertFails(updateDoc(ref, beat({ lat: 91 })));
+    await assertFails(updateDoc(ref, beat({ geohash5: 'w3gv' })));
+    await assertFails(updateDoc(ref, beat({ geohash4: 'w3gx' })));
+    await assertFails(updateDoc(ref, beat({ geohash5: 'w3gva', geohash4: 'w3gv' }))); // 'a' is not base32
+    await assertSucceeds(updateDoc(ref, beat()));
+  });
+
+  test('owner cannot switch online by writing', async () => {
+    await seed('instant_presence/ip_on', presence({ online: false }));
+    await assertFails(updateDoc(doc(as('ip_on'), 'instant_presence/ip_on'), { online: true }));
+    await seed('instant_presence/ip_off', presence());
+    await assertFails(updateDoc(doc(as('ip_off'), 'instant_presence/ip_off'), { ...beat(), online: false }));
+  });
+
+  test('owner cannot write activeRequestId, pendingOffers, cityId or priceListVersion', async () => {
+    await seed('instant_presence/ip_keys', presence({ pendingOffers: [{ offerId: 'of1', requestId: 'ir_x', expiresAt: ago(-30) }] }));
+    const ref = doc(as('ip_keys'), 'instant_presence/ip_keys');
+    await assertFails(updateDoc(ref, { ...beat(), activeRequestId: 'ir_x' }));
+    await assertFails(updateDoc(ref, { ...beat(), pendingOffers: [] }));
+    await assertFails(updateDoc(ref, { ...beat(), reliability: { offers: 0 } }));
+    await assertFails(updateDoc(ref, { ...beat(), cityId: 'hn' }));
+    await assertFails(updateDoc(ref, { ...beat(), priceListVersion: 2 }));
+    await assertFails(setDoc(doc(as('ip_new'), 'instant_presence/ip_new'), presence()));
+    await assertFails(deleteDoc(ref));
+  });
+
+  test('heartbeat on an offline presence is denied', async () => {
+    await seed('instant_presence/ip_offline', presence({ online: false }));
+    await assertFails(updateDoc(doc(as('ip_offline'), 'instant_presence/ip_offline'), beat()));
+  });
+
+  test('customer reads own request; assigned photographer reads it', async () => {
+    await seed('instant_requests/ir_read', request());
+    await assertSucceeds(getDoc(doc(as('ic_cust'), 'instant_requests/ir_read')));
+    await assertSucceeds(getDoc(doc(as('ic_ph'), 'instant_requests/ir_read')));
+    await assertSucceeds(getDocs(query(collection(as('ic_cust'), 'instant_requests'), where('customerId', '==', 'ic_cust'), where('active', '==', true))));
+    await assertSucceeds(getDocs(query(collection(as('ic_ph'), 'instant_requests'), where('photographerId', '==', 'ic_ph'), where('active', '==', true))));
+    await assertFails(getDocs(query(collection(as('ic_cust'), 'instant_requests'), where('active', '==', true))));
+  });
+
+  test('an invited photographer cannot read the request', async () => {
+    await seed('instant_requests/ir_inv', request({ status: 'searching', photographerId: null,
+      offers: [{ offerId: 'of1', photographerId: 'ic_invited', outcome: 'pending' }] }));
+    await assertFails(getDoc(doc(as('ic_invited'), 'instant_requests/ir_inv')));
+    await assertFails(getDoc(doc(as('ic_stranger'), 'instant_requests/ir_inv')));
+  });
+
+  test('nobody writes a request', async () => {
+    await seed('instant_requests/ir_w', request());
+    await assertFails(updateDoc(doc(as('ic_cust'), 'instant_requests/ir_w'), { status: 'completed' }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_requests/ir_w'), { status: 'arrived' }));
+    await assertFails(setDoc(doc(as('ic_cust'), 'instant_requests/ir_new'), request()));
+    await assertFails(deleteDoc(doc(as('ic_cust'), 'instant_requests/ir_w')));
+  });
+
+  test('assigned photographer reads the contact copy while active', async () => {
+    await seed('instant_requests/ir_c', request({ paidAt: ago(300) }));
+    await seed('instant_requests/ir_c/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: true, allowWhatsApp: false });
+    await assertSucceeds(getDoc(doc(as('ic_ph'), 'instant_requests/ir_c/private/contact')));
+    await assertFails(setDoc(doc(as('ic_ph'), 'instant_requests/ir_c/private/contact'), { phone: '+84900000000' }));
+    await seed('instant_requests/ir_c', request({ paidAt: ago(300), status: 'completed', active: false }));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_c/private/contact')));
+  });
+
+  test('a cancelled photographer cannot read the contact copy', async () => {
+    await seed('instant_requests/ir_cx', request({ paidAt: ago(300) }));
+    await seed('instant_requests/ir_cx/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    // The photographer cancelled: the request went back to choosing with another (or no) photographer.
+    await seed('instant_requests/ir_cx', request({ paidAt: ago(300), status: 'choosing', photographerId: null }));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_cx/private/contact')));
+  });
+
+  test('an unpaid request never exposes the contact copy, even to the assigned photographer', async () => {
+    await seed('instant_requests/ir_unpaid', request({ paidAt: null }));
+    await seed('instant_requests/ir_unpaid/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_unpaid/private/contact')));
+  });
+
+  test('customer cannot read the contact copy', async () => {
+    await seed('instant_requests/ir_cc', request({ paidAt: ago(300) }));
+    await seed('instant_requests/ir_cc/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_requests/ir_cc/private/contact')));
+  });
+
+  test('nobody reads private/dispatch or the customer lock', async () => {
+    await seed('instant_requests/ir_d', request());
+    await seed('instant_requests/ir_d/private/dispatch', { excludedIds: ['ic_skipped'] });
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_d/private/dispatch')));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_requests/ir_d/private/dispatch')));
+    await seed('instant_customers/ic_cust', { activeRequestId: 'ir_d' });
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_customers/ic_cust')));
+    await assertFails(setDoc(doc(as('ic_cust'), 'instant_customers/ic_cust'), { activeRequestId: null }));
+  });
+
+  test('owner reads own offers, another photographer cannot', async () => {
+    await seed('instant_offers/io_ph/offers/of1', { requestId: 'ir_x', photographerId: 'io_ph', outcome: 'pending', areaLabel: 'Quận 1, TP.HCM' });
+    await assertSucceeds(getDoc(doc(as('io_ph'), 'instant_offers/io_ph/offers/of1')));
+    await assertSucceeds(getDocs(query(collection(as('io_ph'), 'instant_offers/io_ph/offers'), where('outcome', '==', 'pending'))));
+    await assertFails(getDoc(doc(as('io_other'), 'instant_offers/io_ph/offers/of1')));
+    await assertFails(updateDoc(doc(as('io_ph'), 'instant_offers/io_ph/offers/of1'), { outcome: 'accepted' }));
+  });
+
+  test('both parties read the track, another user cannot', async () => {
+    await seed('instant_tracks/it_r', track());
+    await assertSucceeds(getDoc(doc(as('ic_cust'), 'instant_tracks/it_r')));
+    await assertSucceeds(getDoc(doc(as('ic_ph'), 'instant_tracks/it_r')));
+    await assertFails(getDoc(doc(as('ic_stranger'), 'instant_tracks/it_r')));
+  });
+
+  test('assigned photographer updates the track with request.time', async () => {
+    await seed('instant_tracks/it_u', track());
+    await assertSucceeds(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_u'), point()));
+  });
+
+  test('track write within 15 s is denied', async () => {
+    await seed('instant_tracks/it_fast', track({ at: ago(5) }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_fast'), point()));
+  });
+
+  test('an inactive track is not readable by either party', async () => {
+    await seed('instant_tracks/it_gone', track({ active: false }));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_tracks/it_gone')));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_tracks/it_gone')));
+  });
+
+  test('track write when inactive is denied', async () => {
+    await seed('instant_tracks/it_off', track({ active: false }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_off'), point()));
+  });
+
+  test('customer cannot write the track', async () => {
+    await seed('instant_tracks/it_c', track());
+    await assertFails(updateDoc(doc(as('ic_cust'), 'instant_tracks/it_c'), point()));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_c'), { ...point(), photographerId: 'ic_ph2' }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_c'), point({ at: Timestamp.now() })));
+    await assertFails(setDoc(doc(as('ic_ph'), 'instant_tracks/it_new'), track()));
+    await assertFails(deleteDoc(doc(as('ic_ph'), 'instant_tracks/it_c')));
+  });
 });

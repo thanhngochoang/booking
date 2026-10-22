@@ -11,6 +11,7 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
@@ -21,6 +22,7 @@ import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/event_manage/my_events_section.dart';
+import 'package:photobooking/features/instant_work/live_shutter_card.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/decline_change_sheet.dart';
@@ -222,6 +224,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           // Scrolls, so the entry under S06.02 fits 320 dp at 1.3× text.
           empty: (_) => ListView(
             children: [
+              const _InstantEntry(),
               const SizedBox(height: 480, child: WorkEmptyState()),
               const _SpotSchedulesEntry(),
               if (widget.showEvents) const MyEventsSection(),
@@ -256,6 +259,8 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
       children: [
+        // S06.01-instant: Live Shutter above "Hôm nay".
+        const _InstantEntry(),
         if (today != null) ...[
           SectionHeader(title: l10n.workToday),
           Padding(padding: gutter, child: _todayCard(context, today, features)),
@@ -439,6 +444,25 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The Live Shutter card with the gutter, or nothing while Chụp ngay is off.
+class _InstantEntry extends ConsumerWidget {
+  const _InstantEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(instantEnabledProvider)) return const SizedBox.shrink();
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpace.s4,
+        AppSpace.s2,
+        AppSpace.s4,
+        AppSpace.s2,
+      ),
+      child: LiveShutterCard(),
     );
   }
 }

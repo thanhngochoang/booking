@@ -859,6 +859,99 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- Chụp ngay (S13–S14, #140; plan Decisions 10, 11, 15, 22; spec §9) ----
+    // Every state change goes through the callables; the only client writes are the owner's presence
+    // heartbeat and the assigned photographer's track point (position fields only, stamped with
+    // request.time, rate-limited). Server-only, denied by the catch-all: instant_customers/{uid} (the
+    // one-active-request lock) and instant_requests/{id}/private/dispatch (excludedIds).
+    //
+    // Assumed data (server writes unless stated; plan Contract "Firestore data"):
+    //   instant_config/current      enabled, priceListVersion, platformFeeBp, packages[], cities[], areas[]
+    //   instant_presence/{uid}      online, lat, lng, accuracyM, geohash5, geohash4, heartbeatAt (owner
+    //                               heartbeat), activeRequestId, pendingOffers[], reliability{}, profile{}, …
+    //   instant_requests/{id}       customerId, photographerId|null, status, active, meetPoint{}, offers[], …
+    //     /private/contact          the customer's name/phone for the assigned photographer (written only
+    //                               once the request is paid, Decision 22: never in #140)
+    //   instant_offers/{uid}/offers/{offerId}  area and distance only, never the meet point
+    //   instant_tracks/{requestId}  customerId, photographerId, active, lat, lng, accuracyM, heading|null, at
+
+    function validLatLng(d) {
+      return d.lat is number && d.lat >= -90 && d.lat <= 90
+        && d.lng is number && d.lng >= -180 && d.lng <= 180
+        && d.accuracyM is number && d.accuracyM >= 0 && d.accuracyM <= 100000;
+    }
+
+    // The heartbeat of an online presence: position fields only, at most once a minute.
+    function validPresenceHeartbeat() {
+      let d = request.resource.data;
+      return resource.data.online == true
+        && d.diff(resource.data).affectedKeys().hasOnly(['lat', 'lng', 'accuracyM', 'geohash5', 'geohash4', 'heartbeatAt'])
+        && d.heartbeatAt == request.time
+        && request.time > resource.data.heartbeatAt + duration.value(60, 's')
+        && validLatLng(d)
+        && d.geohash4 is string && d.geohash4.matches('^[0-9b-hjkmnp-z]{4}$')
+        && d.geohash5 is string && d.geohash5.matches(d.geohash4 + '[0-9b-hjkmnp-z]');
+    }
+
+    // A track point of an active trip: position fields only, at most every 15 s (≤ 4 writes a minute).
+    function validTrackPoint() {
+      let d = request.resource.data;
+      return resource.data.active == true
+        && d.diff(resource.data).affectedKeys().hasOnly(['lat', 'lng', 'accuracyM', 'heading', 'at'])
+        && d.at == request.time
+        && request.time > resource.data.at + duration.value(15, 's')
+        && validLatLng(d)
+        && (d.heading == null || (d.heading is number && d.heading >= 0 && d.heading <= 360));
+    }
+
+    function instantRequestDoc(requestId) {
+      return get(/databases/$(database)/documents/instant_requests/$(requestId)).data;
+    }
+
+    match /instant_config/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Owner only: holds the live position, reliability and the active job (customers never read it).
+    match /instant_presence/{uid} {
+      allow get: if isOwner(uid);
+      allow update: if isOwner(uid) && validPresenceHeartbeat();
+      allow create, delete, list: if false;
+    }
+
+    // The customer and the assigned photographer only: an invited photographer never sees the meet
+    // point (spec §9). List queries must filter on customerId == uid or photographerId == uid.
+    match /instant_requests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.customerId == request.auth.uid || resource.data.photographerId == request.auth.uid);
+      allow write: if false;
+      match /private/{docId} {
+        // Decision 22: the customer's contact copy, for the assigned photographer while the request is active;
+        // `dispatch` (excludedIds) and anything else stay server-only.
+        // paidAt != null as well (defence in depth: the server writes the copy only once paid).
+        allow read: if signedIn() && docId == 'contact'
+          && instantRequestDoc(requestId).photographerId == request.auth.uid
+          && instantRequestDoc(requestId).active == true
+          && instantRequestDoc(requestId).paidAt != null;
+        allow write: if false;
+      }
+    }
+
+    match /instant_offers/{uid}/offers/{offerId} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Exists only while en route (deleted at arrival and at any end; no point history, spec §9).
+    match /instant_tracks/{requestId} {
+      allow read: if signedIn() && resource.data.active == true
+        && (resource.data.customerId == request.auth.uid || resource.data.photographerId == request.auth.uid);
+      allow update: if signedIn() && resource.data.photographerId == request.auth.uid
+        && resource.data.active == true && validTrackPoint();
+      allow create, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -8717,4 +8717,383 @@ class AppLocalizationsVi extends AppLocalizations {
   String workSpotSchedulesOpen(int count) {
     return 'Lịch tại điểm · $count đang mở';
   }
+
+  @override
+  String get instantTitle => 'Chụp ngay';
+
+  @override
+  String get instantGenrePortrait => 'Chân dung';
+
+  @override
+  String get instantGenreCouple => 'Cặp đôi';
+
+  @override
+  String get instantGenreFamily => 'Gia đình';
+
+  @override
+  String get instantGenreEvent => 'Sự kiện nhỏ';
+
+  @override
+  String get instantGenreProduct => 'Sản phẩm';
+
+  @override
+  String instantDurationMinutes(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String instantDurationHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String instantPackageLabel(String duration, int photos) {
+    return '$duration · $photos ảnh';
+  }
+
+  @override
+  String get instantStatusAssigned => 'Đã nhận';
+
+  @override
+  String get instantStatusEnRoute => 'Đang đến';
+
+  @override
+  String get instantStatusArrived => 'Đã đến';
+
+  @override
+  String get instantStatusInProgress => 'Đang chụp';
+
+  @override
+  String get instantStatusFinished => 'Chờ khách xác nhận';
+
+  @override
+  String get instantErrorGeneric => 'Chưa thực hiện được. Thử lại nhé.';
+
+  @override
+  String get instantErrorNetwork => 'Mất kết nối. Thử lại nhé.';
+
+  @override
+  String get liveShutterTitle => 'Live Shutter';
+
+  @override
+  String get liveShutterBody =>
+      'Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.';
+
+  @override
+  String get liveShutterCardOn => 'Đang bật · nhận lời mời ở gần bạn';
+
+  @override
+  String get liveShutterCardOff => 'Đang tắt · bật để nhận việc chụp ngay';
+
+  @override
+  String liveShutterJobTitle(String name) {
+    return 'Việc chụp ngay · $name';
+  }
+
+  @override
+  String liveShutterJobMeta(String service, String place) {
+    return '$service · $place';
+  }
+
+  @override
+  String get helpReadyTitle => 'Sẵn sàng hỗ trợ';
+
+  @override
+  String get helpReadyBody => 'Được ưu tiên mời cả việc gấp, xa hơn một chút.';
+
+  @override
+  String get priceListTitle => 'Bảng giá gói';
+
+  @override
+  String priceListAccepted(int version) {
+    return 'Bản $version · đã đồng ý';
+  }
+
+  @override
+  String priceListNotAccepted(int version) {
+    return 'Bản $version · chưa đồng ý';
+  }
+
+  @override
+  String get priceListCustomerPays => 'Khách trả';
+
+  @override
+  String get priceListYouGet => 'Bạn nhận';
+
+  @override
+  String get priceListTermsNote =>
+      'Giá do nền tảng đặt, giống nhau cho mọi nhiếp ảnh gia trong một lượt gợi ý. Đồng ý để bật Live Shutter.';
+
+  @override
+  String get priceListAccept => 'Đồng ý bảng giá';
+
+  @override
+  String get liveShutterNote =>
+      'Không mở app trong 30 phút thì tạm ngừng nhận lời mời; mở lại app là nhận tiếp. Huỷ sau khi nhận làm giảm điểm tin cậy.';
+
+  @override
+  String get liveShutterOffToday => 'Tắt khi xong việc hôm nay';
+
+  @override
+  String get liveShutterLockedTitle => 'Chưa bật được Live Shutter';
+
+  @override
+  String get liveShutterReasonNotAccepting =>
+      'Hoàn tất xác minh và hồ sơ để nhận đơn';
+
+  @override
+  String get liveShutterReasonPhone => 'Thêm số điện thoại';
+
+  @override
+  String get liveShutterReasonPriceList => 'Đồng ý bảng giá gói';
+
+  @override
+  String get liveShutterReasonOutside =>
+      'Bạn đang ở ngoài khu vực có Chụp ngay';
+
+  @override
+  String get liveShutterReasonLocation =>
+      'Cho phép dùng vị trí để nhận lời mời ở gần';
+
+  @override
+  String get liveShutterAddPhone => 'Thêm số';
+
+  @override
+  String get liveShutterOpenSettings => 'Mở cài đặt';
+
+  @override
+  String get offerTitle => 'Lời mời chụp ngay';
+
+  @override
+  String offerPendingCount(int n) {
+    return '$n lời mời đang chờ';
+  }
+
+  @override
+  String offerYouGet(String genre, String duration, int photos) {
+    return 'Bạn nhận · $genre $duration · $photos ảnh';
+  }
+
+  @override
+  String offerDistance(String distance, int minutes) {
+    return '$distance · khoảng $minutes phút · địa chỉ hiện khi bạn nhận';
+  }
+
+  @override
+  String offerChosenAmong(String n) {
+    return 'Khách đã chọn bạn trong $n người. Ai nhận trước sẽ được việc.';
+  }
+
+  @override
+  String offerNote(String note) {
+    return '\"$note\"';
+  }
+
+  @override
+  String get offerDecline => 'Từ chối';
+
+  @override
+  String get offerAccept => 'Nhận việc';
+
+  @override
+  String get offerAlreadyAssigned => 'Khách đã chọn được người khác';
+
+  @override
+  String get offerExpired => 'Lời mời đã hết hạn';
+
+  @override
+  String get offerNotAccepting => 'Bạn chưa nhận đơn được lúc này';
+
+  @override
+  String matchTitle(String name) {
+    return 'Đã match với $name';
+  }
+
+  @override
+  String matchBodyPhotographer(String name, String place) {
+    return '$name đang chờ ở $place. Tiếp tục để xem đường đi.';
+  }
+
+  @override
+  String get matchContinue => 'Tiếp tục';
+
+  @override
+  String get jobTitleEnRoute => 'Đang đến';
+
+  @override
+  String get jobTitleArrived => 'Đã đến';
+
+  @override
+  String get jobTitleShooting => 'Đang chụp';
+
+  @override
+  String get jobTitleFinished => 'Chờ khách xác nhận';
+
+  @override
+  String get jobTitleCompleted => 'Đã hoàn thành';
+
+  @override
+  String jobSubtitle(String name, String genre, String duration) {
+    return '$name · $genre $duration';
+  }
+
+  @override
+  String get jobDirections => 'Chỉ đường';
+
+  @override
+  String jobDistanceLine(String area, String km) {
+    return '$area · $km km';
+  }
+
+  @override
+  String jobMeetPointLine(String area) {
+    return '$area · điểm hẹn';
+  }
+
+  @override
+  String jobStepAccepted(String time) {
+    return 'Đã nhận · $time';
+  }
+
+  @override
+  String get jobStepArriveHint => 'Đã đến (bật khi còn cách 200 m)';
+
+  @override
+  String jobStepArrived(String time) {
+    return 'Đã đến · $time';
+  }
+
+  @override
+  String get jobStepShoot => 'Bắt đầu chụp · Hoàn thành';
+
+  @override
+  String get jobLocationNote =>
+      'Vị trí của bạn chỉ chia sẻ với khách trong lúc đang đến. Tới nơi là dừng.';
+
+  @override
+  String get jobLocationNeeded =>
+      'Cho phép dùng vị trí để chia sẻ đường đi với khách.';
+
+  @override
+  String get jobLocationAllow => 'Cho phép';
+
+  @override
+  String get jobArrive => 'Đã đến';
+
+  @override
+  String jobArriveFar(String distance) {
+    return 'Còn cách $distance. Tới gần hơn để bấm Đã đến.';
+  }
+
+  @override
+  String instantDistanceMetres(int metres) {
+    return '$metres m';
+  }
+
+  @override
+  String get jobArriveForceTitle => 'GPS chưa chính xác';
+
+  @override
+  String jobArriveForceBody(int meters) {
+    return 'Vị trí đang lệch khoảng $meters m. Xác nhận bạn đã tới điểm hẹn?';
+  }
+
+  @override
+  String get jobArriveForceConfirm => 'Xác nhận đã đến';
+
+  @override
+  String get jobArriveForceKeep => 'Chờ GPS';
+
+  @override
+  String get jobStart => 'Bắt đầu chụp';
+
+  @override
+  String get jobFinish => 'Hoàn thành';
+
+  @override
+  String get jobShootLeft => 'còn lại';
+
+  @override
+  String get jobShootNote =>
+      'Hết giờ gói hoặc bấm Hoàn thành, khách sẽ xác nhận.';
+
+  @override
+  String jobStartedLine(String time, String place) {
+    return 'Bắt đầu $time · $place';
+  }
+
+  @override
+  String jobFinishedLine(String time, String place) {
+    return 'Hoàn thành $time · $place';
+  }
+
+  @override
+  String get jobWaitingBadge => 'Chờ khách';
+
+  @override
+  String get jobFinishedNote =>
+      'Khách xác nhận hoặc tự hoàn thành sau 2 giờ. Tiền chuyển cho bạn 24 giờ sau khi hoàn thành.';
+
+  @override
+  String get jobBackToWork => 'Về Công việc';
+
+  @override
+  String get jobNoShow => 'Khách không có mặt';
+
+  @override
+  String jobNoShowIn(String time) {
+    return 'Khách không có mặt (sau $time)';
+  }
+
+  @override
+  String get jobNoShowTitle => 'Báo khách không có mặt?';
+
+  @override
+  String jobNoShowBody(String amount) {
+    return 'Khách được hoàn 50%, bạn nhận $amount.';
+  }
+
+  @override
+  String get jobNoShowConfirm => 'Báo khách không có mặt';
+
+  @override
+  String get jobNoShowKeep => 'Chờ thêm';
+
+  @override
+  String get jobCancel => 'Huỷ việc';
+
+  @override
+  String get jobCancelledTitle => 'Khách đã huỷ yêu cầu';
+
+  @override
+  String jobCancelledFee(String amount) {
+    return 'Bạn nhận $amount phí đi lại.';
+  }
+
+  @override
+  String get jobCancelledNoFee => 'Không cần tới điểm hẹn nữa.';
+
+  @override
+  String get providerCancelTitle => 'Huỷ việc chụp ngay?';
+
+  @override
+  String get providerCancelBody =>
+      'Khách được hoàn 100%. Huỷ sau khi nhận làm giảm điểm tin cậy của bạn.';
+
+  @override
+  String get providerCancelConfirm => 'Huỷ việc';
+
+  @override
+  String get providerCancelKeep => 'Giữ việc';
+
+  @override
+  String get mapRecenter => 'Về vị trí của tôi';
+
+  @override
+  String get mapPinYou => 'Bạn';
+
+  @override
+  String mapSemantics(String pins) {
+    return 'Bản đồ: $pins';
+  }
 }

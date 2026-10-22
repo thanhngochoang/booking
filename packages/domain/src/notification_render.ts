@@ -33,6 +33,7 @@ export type NotificationContent =
   | { type: 'instant_assigned'; photographer: string; etaMinutes: number }
   | { type: 'instant_missed' }
   | { type: 'instant_round_ended'; round: number }
+  /** `amount` = money held for the request; 0 when nothing was paid (every #140 request). */
   | { type: 'instant_no_match'; amount: number }
   | { type: 'instant_arrived'; photographer: string; place: string }
   | { type: 'instant_finished'; photographer: string }
@@ -268,7 +269,10 @@ export function renderNotification(c: NotificationContent): { title: string; bod
     case 'instant_no_match':
       return {
         title: 'Chưa tìm được nhiếp ảnh gia',
-        body: `${formatVnd(c.amount)} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ.`,
+        // amount 0 = nothing paid (#140 moves no money): no money sentence, the spec §7 "nobody near" line.
+        body: c.amount > 0
+          ? `${formatVnd(c.amount)} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ.`
+          : 'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn',
       };
     case 'instant_arrived':
       return { title: `${c.photographer} đã đến điểm hẹn`, body: `Gặp nhau ở ${c.place}.` };

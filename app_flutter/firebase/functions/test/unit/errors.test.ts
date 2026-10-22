@@ -53,8 +53,21 @@ describe('toHttpsError', () => {
       schedule_limit: 'resource-exhausted',
       spot_archived: 'failed-precondition',
       schedule_has_bookings: 'failed-precondition',
+      no_match: 'failed-precondition',
+      offer_expired: 'failed-precondition',
+      already_assigned: 'failed-precondition',
+      outside_service_area: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
+  });
+
+  test('no_match, offer_expired, already_assigned, outside_service_area map to failed-precondition', () => {
+    for (const code of ['no_match', 'offer_expired', 'already_assigned', 'outside_service_area'] as const) {
+      const e = toHttpsError(new DomainError(code));
+      assert.equal(e.code, 'failed-precondition', code);
+      assert.equal(e.message, code);
+      assert.deepEqual(e.details, { code });
+    }
   });
 
   test('reauth_required maps to failed-precondition with details.code', () => {

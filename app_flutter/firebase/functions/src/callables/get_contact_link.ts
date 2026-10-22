@@ -10,7 +10,7 @@ export interface CallableInput {
 }
 
 /**
- * Callable `getContactLink` (contract: plan 2b "Out of scope"): `{bookingId | registrationId, channel}`
+ * Callable `getContactLink` (contract: plan 2b "Out of scope"): `{bookingId | registrationId | instantRequestId, channel}`
  * → `{url}`. Errors carry `details.code`: `contact_locked`, `permission_denied`, `not_found`,
  * `invalid_argument`.
  */

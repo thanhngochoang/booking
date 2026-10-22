@@ -6,6 +6,8 @@ import {
   type ContactAccessLogWriter,
   type ContactChannels,
   type ContactNumbers,
+  type InstantContactReader,
+  type InstantContactRecord,
   type PhotographerContactReader,
   type UserContactReader,
 } from '@photobooking/domain';
@@ -65,6 +67,28 @@ export function firestoreBookingReader(db: Firestore): BookingReader {
     async get(id) {
       const [snap] = await db.getAll(db.collection('bookings').doc(id));
       return bookingFromDoc(id, snap?.data());
+    },
+  };
+}
+
+/**
+ * The contact fields of `instant_requests/{id}` (#140 Decision 22): who asks, who is on the job, the
+ * status, when it was paid (never in #140) and completed. A malformed document reads as not found.
+ */
+export function instantContactFromDoc(d: DocumentData | undefined): InstantContactRecord | null {
+  if (d === undefined) return null;
+  const customerId: unknown = d.customerId;
+  const photographerId: unknown = d.photographerId ?? null;
+  const status: unknown = d.status;
+  if (!isId(customerId) || (photographerId !== null && !isId(photographerId)) || typeof status !== 'string') return null;
+  return { customerId, photographerId, status, paidAt: toDate(d.paidAt), completedAt: toDate(d.completedAt) };
+}
+
+export function firestoreInstantContactReader(db: Firestore): InstantContactReader {
+  return {
+    async get(id) {
+      const [snap] = await db.getAll(db.collection('instant_requests').doc(id));
+      return instantContactFromDoc(snap?.data());
     },
   };
 }

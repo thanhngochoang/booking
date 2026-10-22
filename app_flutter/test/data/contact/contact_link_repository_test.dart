@@ -129,6 +129,20 @@ void main() {
       },
     );
 
+    test('instantRequest subject sends instantRequestId', () {
+      expect(
+        callableData(
+          const ContactSubject.instantRequest('ir1'),
+          ContactChannel.call,
+        ),
+        {'instantRequestId': 'ir1', 'channel': 'call'},
+      );
+      expect(
+        const ContactSubject.instantRequest('ir1'),
+        isNot(const ContactSubject.booking('ir1')),
+      );
+    });
+
     test('parseLinkResponse reads {url} and refuses anything else', () {
       expect(
         parseLinkResponse({'url': 'tel:+84903123456'}),

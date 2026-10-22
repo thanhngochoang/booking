@@ -9,6 +9,7 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/notifications/app_notification.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/instant_work/offer_routes.dart';
 import 'package:photobooking/features/notifications/notification_targets.dart';
 import 'package:photobooking/features/notifications/notification_visuals.dart';
 import 'package:photobooking/features/notifications/notifications_analytics.dart';
@@ -378,6 +379,10 @@ class _BellDisc extends StatelessWidget {
 void openNotificationTarget(GoRouter router, String path) {
   if (path == AppTab.bookings.path) {
     router.go(path);
+  } else if (isOfferPath(path) && offerScreenOnTop(router)) {
+    // One S14.02 at a time: a second offer's push replaces the open one
+    // (the new screen stacks every pending offer anyway).
+    router.pushReplacement(path);
   } else {
     router.push(path);
   }

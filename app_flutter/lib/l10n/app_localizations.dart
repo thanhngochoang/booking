@@ -14984,6 +14984,630 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Lịch tại điểm · {count} đang mở'**
   String workSpotSchedulesOpen(int count);
+
+  /// No description provided for @instantTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay'**
+  String get instantTitle;
+
+  /// No description provided for @instantGenrePortrait.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chân dung'**
+  String get instantGenrePortrait;
+
+  /// No description provided for @instantGenreCouple.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cặp đôi'**
+  String get instantGenreCouple;
+
+  /// No description provided for @instantGenreFamily.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia đình'**
+  String get instantGenreFamily;
+
+  /// No description provided for @instantGenreEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện nhỏ'**
+  String get instantGenreEvent;
+
+  /// No description provided for @instantGenreProduct.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sản phẩm'**
+  String get instantGenreProduct;
+
+  /// No description provided for @instantDurationMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String instantDurationMinutes(int n);
+
+  /// No description provided for @instantDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String instantDurationHours(int n);
+
+  /// No description provided for @instantPackageLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'{duration} · {photos} ảnh'**
+  String instantPackageLabel(String duration, int photos);
+
+  /// No description provided for @instantStatusAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get instantStatusAssigned;
+
+  /// No description provided for @instantStatusEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang đến'**
+  String get instantStatusEnRoute;
+
+  /// No description provided for @instantStatusArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get instantStatusArrived;
+
+  /// No description provided for @instantStatusInProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get instantStatusInProgress;
+
+  /// No description provided for @instantStatusFinished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách xác nhận'**
+  String get instantStatusFinished;
+
+  /// No description provided for @instantErrorGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại nhé.'**
+  String get instantErrorGeneric;
+
+  /// No description provided for @instantErrorNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối. Thử lại nhé.'**
+  String get instantErrorNetwork;
+
+  /// No description provided for @liveShutterTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Live Shutter'**
+  String get liveShutterTitle;
+
+  /// No description provided for @liveShutterBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.'**
+  String get liveShutterBody;
+
+  /// No description provided for @liveShutterCardOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang bật · nhận lời mời ở gần bạn'**
+  String get liveShutterCardOn;
+
+  /// No description provided for @liveShutterCardOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tắt · bật để nhận việc chụp ngay'**
+  String get liveShutterCardOff;
+
+  /// No description provided for @liveShutterJobTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc chụp ngay · {name}'**
+  String liveShutterJobTitle(String name);
+
+  /// No description provided for @liveShutterJobMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{service} · {place}'**
+  String liveShutterJobMeta(String service, String place);
+
+  /// No description provided for @helpReadyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sẵn sàng hỗ trợ'**
+  String get helpReadyTitle;
+
+  /// No description provided for @helpReadyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được ưu tiên mời cả việc gấp, xa hơn một chút.'**
+  String get helpReadyBody;
+
+  /// No description provided for @priceListTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bảng giá gói'**
+  String get priceListTitle;
+
+  /// No description provided for @priceListAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản {version} · đã đồng ý'**
+  String priceListAccepted(int version);
+
+  /// No description provided for @priceListNotAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản {version} · chưa đồng ý'**
+  String priceListNotAccepted(int version);
+
+  /// No description provided for @priceListCustomerPays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách trả'**
+  String get priceListCustomerPays;
+
+  /// No description provided for @priceListYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận'**
+  String get priceListYouGet;
+
+  /// No description provided for @priceListTermsNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá do nền tảng đặt, giống nhau cho mọi nhiếp ảnh gia trong một lượt gợi ý. Đồng ý để bật Live Shutter.'**
+  String get priceListTermsNote;
+
+  /// No description provided for @priceListAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý bảng giá'**
+  String get priceListAccept;
+
+  /// No description provided for @liveShutterNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở app trong 30 phút thì tạm ngừng nhận lời mời; mở lại app là nhận tiếp. Huỷ sau khi nhận làm giảm điểm tin cậy.'**
+  String get liveShutterNote;
+
+  /// No description provided for @liveShutterOffToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt khi xong việc hôm nay'**
+  String get liveShutterOffToday;
+
+  /// No description provided for @liveShutterLockedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bật được Live Shutter'**
+  String get liveShutterLockedTitle;
+
+  /// No description provided for @liveShutterReasonNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất xác minh và hồ sơ để nhận đơn'**
+  String get liveShutterReasonNotAccepting;
+
+  /// No description provided for @liveShutterReasonPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số điện thoại'**
+  String get liveShutterReasonPhone;
+
+  /// No description provided for @liveShutterReasonPriceList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý bảng giá gói'**
+  String get liveShutterReasonPriceList;
+
+  /// No description provided for @liveShutterReasonOutside.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang ở ngoài khu vực có Chụp ngay'**
+  String get liveShutterReasonOutside;
+
+  /// No description provided for @liveShutterReasonLocation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép dùng vị trí để nhận lời mời ở gần'**
+  String get liveShutterReasonLocation;
+
+  /// No description provided for @liveShutterAddPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số'**
+  String get liveShutterAddPhone;
+
+  /// No description provided for @liveShutterOpenSettings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở cài đặt'**
+  String get liveShutterOpenSettings;
+
+  /// No description provided for @offerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời chụp ngay'**
+  String get offerTitle;
+
+  /// No description provided for @offerPendingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} lời mời đang chờ'**
+  String offerPendingCount(int n);
+
+  /// No description provided for @offerYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận · {genre} {duration} · {photos} ảnh'**
+  String offerYouGet(String genre, String duration, int photos);
+
+  /// distance is formatDistance, e.g. 2,1 km
+  ///
+  /// In vi, this message translates to:
+  /// **'{distance} · khoảng {minutes} phút · địa chỉ hiện khi bạn nhận'**
+  String offerDistance(String distance, int minutes);
+
+  /// n is shown bold, so it is passed as text
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn bạn trong {n} người. Ai nhận trước sẽ được việc.'**
+  String offerChosenAmong(String n);
+
+  /// No description provided for @offerNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'\"{note}\"'**
+  String offerNote(String note);
+
+  /// No description provided for @offerDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get offerDecline;
+
+  /// No description provided for @offerAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận việc'**
+  String get offerAccept;
+
+  /// No description provided for @offerAlreadyAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn được người khác'**
+  String get offerAlreadyAssigned;
+
+  /// No description provided for @offerExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã hết hạn'**
+  String get offerExpired;
+
+  /// No description provided for @offerNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa nhận đơn được lúc này'**
+  String get offerNotAccepting;
+
+  /// No description provided for @matchTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã match với {name}'**
+  String matchTitle(String name);
+
+  /// No description provided for @matchBodyPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang chờ ở {place}. Tiếp tục để xem đường đi.'**
+  String matchBodyPhotographer(String name, String place);
+
+  /// No description provided for @matchContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get matchContinue;
+
+  /// No description provided for @jobTitleEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang đến'**
+  String get jobTitleEnRoute;
+
+  /// No description provided for @jobTitleArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get jobTitleArrived;
+
+  /// No description provided for @jobTitleShooting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get jobTitleShooting;
+
+  /// No description provided for @jobTitleFinished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách xác nhận'**
+  String get jobTitleFinished;
+
+  /// No description provided for @jobTitleCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn thành'**
+  String get jobTitleCompleted;
+
+  /// No description provided for @jobSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {genre} {duration}'**
+  String jobSubtitle(String name, String genre, String duration);
+
+  /// No description provided for @jobDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get jobDirections;
+
+  /// km is the number only, e.g. 1,4
+  ///
+  /// In vi, this message translates to:
+  /// **'{area} · {km} km'**
+  String jobDistanceLine(String area, String km);
+
+  /// No description provided for @jobMeetPointLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{area} · điểm hẹn'**
+  String jobMeetPointLine(String area);
+
+  /// No description provided for @jobStepAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận · {time}'**
+  String jobStepAccepted(String time);
+
+  /// No description provided for @jobStepArriveHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến (bật khi còn cách 200 m)'**
+  String get jobStepArriveHint;
+
+  /// No description provided for @jobStepArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến · {time}'**
+  String jobStepArrived(String time);
+
+  /// No description provided for @jobStepShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu chụp · Hoàn thành'**
+  String get jobStepShoot;
+
+  /// No description provided for @jobLocationNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí của bạn chỉ chia sẻ với khách trong lúc đang đến. Tới nơi là dừng.'**
+  String get jobLocationNote;
+
+  /// No description provided for @jobLocationNeeded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép dùng vị trí để chia sẻ đường đi với khách.'**
+  String get jobLocationNeeded;
+
+  /// No description provided for @jobLocationAllow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép'**
+  String get jobLocationAllow;
+
+  /// No description provided for @jobArrive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get jobArrive;
+
+  /// distance is e.g. 350 m or 1,4 km
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn cách {distance}. Tới gần hơn để bấm Đã đến.'**
+  String jobArriveFar(String distance);
+
+  /// a distance under a kilometre, rounded to 10 m
+  ///
+  /// In vi, this message translates to:
+  /// **'{metres} m'**
+  String instantDistanceMetres(int metres);
+
+  /// No description provided for @jobArriveForceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'GPS chưa chính xác'**
+  String get jobArriveForceTitle;
+
+  /// No description provided for @jobArriveForceBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí đang lệch khoảng {meters} m. Xác nhận bạn đã tới điểm hẹn?'**
+  String jobArriveForceBody(int meters);
+
+  /// No description provided for @jobArriveForceConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đã đến'**
+  String get jobArriveForceConfirm;
+
+  /// No description provided for @jobArriveForceKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ GPS'**
+  String get jobArriveForceKeep;
+
+  /// No description provided for @jobStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu chụp'**
+  String get jobStart;
+
+  /// No description provided for @jobFinish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành'**
+  String get jobFinish;
+
+  /// No description provided for @jobShootLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn lại'**
+  String get jobShootLeft;
+
+  /// No description provided for @jobShootNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết giờ gói hoặc bấm Hoàn thành, khách sẽ xác nhận.'**
+  String get jobShootNote;
+
+  /// No description provided for @jobStartedLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu {time} · {place}'**
+  String jobStartedLine(String time, String place);
+
+  /// No description provided for @jobFinishedLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành {time} · {place}'**
+  String jobFinishedLine(String time, String place);
+
+  /// No description provided for @jobWaitingBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách'**
+  String get jobWaitingBadge;
+
+  /// No description provided for @jobFinishedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách xác nhận hoặc tự hoàn thành sau 2 giờ. Tiền chuyển cho bạn 24 giờ sau khi hoàn thành.'**
+  String get jobFinishedNote;
+
+  /// No description provided for @jobBackToWork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về Công việc'**
+  String get jobBackToWork;
+
+  /// No description provided for @jobNoShow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách không có mặt'**
+  String get jobNoShow;
+
+  /// No description provided for @jobNoShowIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách không có mặt (sau {time})'**
+  String jobNoShowIn(String time);
+
+  /// No description provided for @jobNoShowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo khách không có mặt?'**
+  String get jobNoShowTitle;
+
+  /// No description provided for @jobNoShowBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách được hoàn 50%, bạn nhận {amount}.'**
+  String jobNoShowBody(String amount);
+
+  /// No description provided for @jobNoShowConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo khách không có mặt'**
+  String get jobNoShowConfirm;
+
+  /// No description provided for @jobNoShowKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ thêm'**
+  String get jobNoShowKeep;
+
+  /// No description provided for @jobCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ việc'**
+  String get jobCancel;
+
+  /// No description provided for @jobCancelledTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã huỷ yêu cầu'**
+  String get jobCancelledTitle;
+
+  /// No description provided for @jobCancelledFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận {amount} phí đi lại.'**
+  String jobCancelledFee(String amount);
+
+  /// No description provided for @jobCancelledNoFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không cần tới điểm hẹn nữa.'**
+  String get jobCancelledNoFee;
+
+  /// No description provided for @providerCancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ việc chụp ngay?'**
+  String get providerCancelTitle;
+
+  /// No description provided for @providerCancelBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách được hoàn 100%. Huỷ sau khi nhận làm giảm điểm tin cậy của bạn.'**
+  String get providerCancelBody;
+
+  /// No description provided for @providerCancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ việc'**
+  String get providerCancelConfirm;
+
+  /// No description provided for @providerCancelKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ việc'**
+  String get providerCancelKeep;
+
+  /// No description provided for @mapRecenter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về vị trí của tôi'**
+  String get mapRecenter;
+
+  /// No description provided for @mapPinYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn'**
+  String get mapPinYou;
+
+  /// No description provided for @mapSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản đồ: {pins}'**
+  String mapSemantics(String pins);
 }
 
 class _AppLocalizationsDelegate

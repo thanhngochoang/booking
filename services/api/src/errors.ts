@@ -59,6 +59,11 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   schedule_limit: 429,
   spot_archived: 422,
   schedule_has_bookings: 409,
+  // Chụp ngay codes (#140): states the request can no longer enter (409), a point outside the open cities (422).
+  no_match: 409,
+  offer_expired: 409,
+  already_assigned: 409,
+  outside_service_area: 422,
   internal: 500,
 };
 

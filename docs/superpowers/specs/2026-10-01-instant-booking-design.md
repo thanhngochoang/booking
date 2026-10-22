@@ -106,7 +106,7 @@ Thông báo trong hộp thư (S17): `notifyInstantAssigned`, `notifyInstantMisse
 ## 4. Giá, thanh toán, huỷ
 
 - **Gói** (`instant_packages`): mã, thời lượng phút, số ảnh chỉnh sửa giao, giá VND (số nguyên), phiên bản bảng giá. Giá cuối = giá gói × hệ số cao điểm của thành phố tại thời điểm gửi, làm tròn tới 1.000 ₫, **khoá lại trong yêu cầu** (không đổi khi đang tìm).
-- **Phân chia**: nhiếp ảnh gia nhận `payoutRate` (cấu hình, đề xuất 80%) của giá; phần còn lại là phí nền tảng. Bảng giá hiện cả giá khách trả và thu nhập nhiếp ảnh gia.
+- **Phân chia**: nhiếp ảnh gia nhận `payoutRate` (cấu hình, đề xuất 80%) của giá; phần còn lại là phí nền tảng. Bảng giá hiện cả giá khách trả và thu nhập nhiếp ảnh gia. **Giai đoạn 1** (chủ dự án 2026-10-07): thợ nhận 100%, phí là cấu hình `platformFeeBp` mặc định 0 (hộp ở mục 5).
 - **Thu tiền**: khách xem và vuốt chọn miễn phí; trả đủ khi bấm "Thanh toán {giá} và gửi lời mời" ở lượt đầu. Lời mời chỉ được gửi khi cổng xác nhận đã trả (webhook, không tin redirect). Các lượt chọn lại sau đó dùng khoản đang giữ, không thu thêm.
 - **Huỷ và không đến** (khách luôn thấy số tiền ở S13.08 trước khi xác nhận):
 
@@ -122,6 +122,18 @@ Thông báo trong hộp thư (S17): `notifyInstantAssigned`, `notifyInstantMisse
 - Ghi vào sổ cái `ledger_entries` như spec chính 3g; tiền nhiếp ảnh gia vào trạng thái "Đang giữ" ở S06.05 cho tới khi thả.
 
 ## 5. Kiến trúc
+
+> **Giai đoạn 1 (2026-10-07, #140; tiền ở #202).** Phần dưới hộp này (dịch vụ `services/dispatch`, Redis GEO, PostgreSQL, BullMQ, Cloud Run) là **đích giai đoạn 2** (backend Go #90). Giai đoạn 1 chạy trên **Cloud Functions + Firestore** để mọi thứ chạy được trên emulator (plan [`2026-10-07-s13-s14-dispatch-provider.md`](../plans/2026-10-07-s13-s14-dispatch-provider.md), Decisions 1–31; sổ bàn giao [`ledger-instant-dispatch-provider.md`](../handover/ledger-instant-dispatch-provider.md)):
+>
+> - **Luật nghiệp vụ** ở `packages/domain/src/instant*.ts` (không có `packages/dispatch-core`); Functions mỏng, vùng `asia-southeast1`: 10 callable (`createInstantRequest`, `nextInstantCandidates`, `inviteInstant`, `cancelInstantRequest`, `confirmInstantComplete`, `tickInstantRequest`, `setLiveShutter`, `saveInstantSettings`, `answerInstantOffer`, `updateInstantJob`; #202 thêm `checkInstantPayment`), một trigger `onInstantRequestWrite` (thông báo, chat, xoá vị trí) và một bước `instantSweep` trong `bookingClock` có sẵn. Ứng dụng gọi callable, không gọi HTTPS riêng.
+> - **"Ai nhận trước thì được"** là một giao dịch Firestore trên tài liệu yêu cầu và tài liệu presence của thợ (thay `SELECT … FOR UPDATE`); người thua đọc lại và nhận `already_assigned`.
+> - **Hẹn giờ lười, không thêm job**: mỗi callable chạm vào yêu cầu chạy `settleInstant(request, now)` trong giao dịch trước mọi việc (đồng hồ máy chủ là trọng tài: nhận ở giây 60,5 là `offer_expired`); app gọi `tickInstantRequest` khi đồng hồ nó đang hiện về 0; bước `instantSweep` của `bookingClock` (15 phút một lần, tối đa 100 yêu cầu `active` có `nextDeadlineAt ≤ now`) bắt phần còn lại. Không Cloud Tasks, không job 1 phút.
+> - **Presence** ở `instant_presence/{uid}` (chỉ chủ đọc), tươi trong **30 phút** sau `heartbeatAt`; quá hạn thì không được gợi ý. Chỉ chạy khi app ở tiền cảnh (không foreground service, không vị trí nền).
+> - **Đường dẫn lời mời** `instant_offers/{uid}/offers/{offerId}` (không phải `…/items/…`: id bộ sưu tập `items` đã dùng cho `earnings/{uid}/items`).
+> - **Vị trí khi đang đến bị chặn trần**: app ghi `instant_tracks/{requestId}` khi đi ≥ 25 m hoặc sau 60 giây, lấy mẫu mỗi 16 giây; rules từ chối hai lần ghi cách nhau < 15 giây (≤ 4 lần/phút). Máy chủ xoá tài liệu khi tới nơi và khi kết thúc.
+> - **Chia tiền**: thợ nhận **100%**, phí nền tảng là cấu hình `instant_config/current.platformFeeBp` (mặc định 0; chủ dự án 2026-10-07) thay cho `payoutRate` 80% ở mục 4; tỉ lệ thợ giữ khi khách huỷ lúc thợ đã tới là `instantArrivedCancelPhotographerPercent` (mặc định 50).
+> - **Không dùng API bản đồ**: tìm ứng viên bằng geohash 5/4 ký tự + haversine (`distanceKm`), ETA = `ceil(km × 1,4 / 20 × 60)` phút; bản đồ là `MapPreview` vẽ sơ đồ (không tile, không SDK); "Chỉ đường" mở ứng dụng bản đồ của máy. Không Goong, không Distance Matrix, không Geocoding.
+> - **Không có tiền ở #140**: lần gửi lời mời đầu gửi ngay (không `pending_payment`), `paidAt` luôn rỗng nên mọi huỷ theo luật `unpaid` với số tiền 0; `inviteInstant` chỉ chạy trên dự án dev hoặc emulator `demo-*` (`fakePaymentsAllowed()`), cờ `kInstantEnabled` vẫn `false`. #202 chèn bước thanh toán trước lời mời và bật cờ.
 
 ```
 App Flutter ──HTTPS + Firebase ID token──▶ dispatch-service (TypeScript)
@@ -208,9 +220,20 @@ Một route `/instant/:id` hiển thị S13.02, S13.03, S13.05, S13.06, S13.07 t
 | Trạng thái | Nguồn vị trí | Tần suất | Độ chính xác |
 |---|---|---|---|
 | Nhiếp ảnh gia sẵn sàng, không có việc | dịch vụ vị trí khi di chuyển | khi đi > 300 m hoặc 5 phút một lần | thấp (~100 m) |
-| Đang đến | luồng vị trí | 10–15 giây | cao |
+| Đang đến | luồng vị trí | 10–15 giây (giai đoạn 1: lấy mẫu mỗi 16 giây, xem dưới) | cao |
 | Đã đến / đang chụp / tắt sẵn sàng | — | dừng | — |
 | Khách | một lần ở S13.01 (spec chính 3c) | một lần | trung bình |
+
+> **Giai đoạn 1 (2026-10-07, #140), số đã làm.** Chỉ khi app ở tiền cảnh; không foreground service, không vị trí nền, không iOS (các gạch đầu dòng Android/iOS/"Tự tắt"/ngưỡng pin bên dưới là đích sau, đã hoãn).
+>
+> | Trạng thái | Lấy vị trí | Ghi | Rules |
+> |---|---|---|---|
+> | Sẵn sàng (Live Shutter bật) | `LocationRepository.currentFix()` (tiết kiệm pin, độ chính xác thật `accuracyM`) mỗi 60 giây | heartbeat vào `instant_presence/{uid}` khi mở lại app, khi đi > 300 m hoặc sau 5 phút | chỉ trường vị trí, `heartbeatAt == request.time`, cách lần trước > 60 giây |
+> | Đang đến (S14.03 mở) | `currentFix()` mỗi **16 giây** | `instant_tracks/{requestId}` khi đi ≥ 25 m hoặc sau 60 giây; mốc ghi tối thiểu cũng 16 giây | từ chối điểm cách điểm trước < 15 giây (16 giây = 15 giây của rules + 1 giây dự phòng lệch đồng hồ; Decision 11 ghi 15 giây) |
+> | Bấm "Đã đến" | một lần `currentFix(highAccuracy: true)` (chỗ duy nhất dùng GPS độ chính xác cao) | gửi kèm `arrive`; ≤ 200 m thì nhận; xa hơn mà sai số > 100 m thì hỏi để `force` | máy chủ tin `accuracyM` của máy |
+> | Đã đến, đang chụp, tắt, app ở nền | — | dừng; máy chủ xoá `instant_tracks` khi tới nơi và khi kết thúc | — |
+>
+> Presence quá 30 phút không heartbeat thì không được gợi ý; mở lại app là nhận tiếp. Không lưu lịch sử điểm (chỉ điểm cuối). Bản đồ là `MapPreview` sơ đồ, không `maplibre_gl`.
 
 - **Android**: khi sẵn sàng hoặc đang đến, chạy foreground service loại `location` với thông báo bền "Đang nhận việc chụp ngay" (bắt buộc từ Android 14, `FOREGROUND_SERVICE_LOCATION`); xin `ACCESS_FINE_LOCATION` khi dùng app; **không** xin `ACCESS_BACKGROUND_LOCATION` (foreground service đủ cho việc đang mở). Thông báo có nút "Tắt".
 - **iOS**: quyền "Khi dùng app"; khi sẵn sàng/đang đến bật `allowsBackgroundLocationUpdates` với `showsBackgroundLocationIndicator = true` (chấm xanh trên thanh trạng thái), `UIBackgroundModes` gồm `location`. Đây là ngoại lệ có chủ đích so với kế hoạch bật iOS (vốn cấm `UIBackgroundModes`); kế hoạch của Chụp ngay cập nhật test đó. Không bao giờ xin "Luôn luôn".
@@ -262,7 +285,7 @@ Một route `/instant/:id` hiển thị S13.02, S13.03, S13.05, S13.06, S13.07 t
 | I5 | App khách: S13.01, S13.02 vuốt chọn, S13.03 chờ trả lời, S13.05–S13.07, S13.08, S13.04, bản đồ Goong, `InstantBookingRepository` | I3, kế hoạch 2a (số điện thoại), 3a (vị trí), 4b (cổng giả trong app) |
 | I6 | Thanh toán thật và escrow cho chụp ngay (thu ở lần gửi lời mời đầu) | bước 4 (thanh toán), spec chính 3g |
 
-Các kế hoạch I2–I6 viết ngày 2026-10-01 theo cách mời lần lượt; **viết lại theo spec này trước khi chạy**.
+Các kế hoạch I2–I6 viết ngày 2026-10-01 theo cách mời lần lượt; **viết lại theo spec này trước khi chạy**. Đã viết lại (2026-10-07): I2, I3, I4, I6 → [`2026-10-07-s13-s14-dispatch-provider.md`](../plans/2026-10-07-s13-s14-dispatch-provider.md) (#140 Tasks 1–10, #202 Task 11); I5 → [`2026-10-07-s13-instant-customer.md`](../plans/2026-10-07-s13-instant-customer.md) (#140 PR 2, #202 Task 8).
 
 ## 13. Câu hỏi mở
 

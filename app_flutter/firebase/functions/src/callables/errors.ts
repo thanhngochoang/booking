@@ -52,6 +52,11 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   cooldown: 'failed-precondition',
   member_busy: 'failed-precondition',
   studio_full: 'resource-exhausted',
+  // S13–S14 Chụp ngay (#140): search window over, offer past its 60 s, someone else took it, outside the open cities.
+  no_match: 'failed-precondition',
+  offer_expired: 'failed-precondition',
+  already_assigned: 'failed-precondition',
+  outside_service_area: 'failed-precondition',
 };
 
 /**
