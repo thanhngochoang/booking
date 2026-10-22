@@ -10,11 +10,11 @@ const DAY = 86_400_000;
 describe('phase 1 domain module, as reused by the API', () => {
   it('lists the ErrorCode catalogue of domain-model.md §4', () => {
     expect([...ERROR_CODES].sort()).toEqual([
-      'addon_changed', 'addon_limit', 'addon_not_applicable', 'blocked', 'conflict', 'contact_leak',
+      'addon_changed', 'addon_limit', 'addon_not_applicable', 'already_assigned', 'blocked', 'conflict', 'contact_leak',
       'contact_locked', 'cooldown', 'day_conflict', 'day_taken', 'deadline_passed', 'identity_in_use', 'invalid_argument',
-      'limit_exceeded', 'member_busy', 'membership_conflict', 'name_mismatch', 'not_accepting_orders',
-      'not_eligible', 'not_found', 'not_ready', 'otp_expired', 'otp_invalid', 'otp_required',
-      'outside_schedule',
+      'limit_exceeded', 'member_busy', 'membership_conflict', 'name_mismatch', 'no_match', 'not_accepting_orders',
+      'not_eligible', 'not_found', 'not_ready', 'offer_expired', 'otp_expired', 'otp_invalid', 'otp_required',
+      'outside_schedule', 'outside_service_area',
       'payment_attempts_exceeded', 'permission_denied', 'phone_required', 'pickup_required',
       'price_changed', 'rate_limited', 'reauth_required', 'schedule_has_bookings', 'schedule_limit', 'slot_taken', 'sold_out',
       'spot_archived', 'studio_full', 'underage',

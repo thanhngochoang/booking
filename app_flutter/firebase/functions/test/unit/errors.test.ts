@@ -53,6 +53,10 @@ describe('toHttpsError', () => {
       schedule_limit: 'resource-exhausted',
       spot_archived: 'failed-precondition',
       schedule_has_bookings: 'failed-precondition',
+      no_match: 'failed-precondition',
+      offer_expired: 'failed-precondition',
+      already_assigned: 'failed-precondition',
+      outside_service_area: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

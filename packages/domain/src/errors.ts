@@ -58,6 +58,14 @@ export const ERROR_CODES = [
   'schedule_limit',
   'spot_archived',
   'schedule_has_bookings',
+  /** Chụp ngay (#140): the search window ended without a match (spec §6). */
+  'no_match',
+  /** Chụp ngay (#140): the offer's 60 seconds passed by server time, or it was withdrawn. */
+  'offer_expired',
+  /** Chụp ngay (#140): another photographer took the request first, or the photographer already has a job. */
+  'already_assigned',
+  /** Chụp ngay (#140): the point is outside every open city. */
+  'outside_service_area',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
