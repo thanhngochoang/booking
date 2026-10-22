@@ -191,6 +191,25 @@ Nguồn: [`../2026-10-06-studio-members-design.md`](../2026-10-06-studio-members
 
 Chat của booking studio: `Chat.assigneeId`; thợ được giao là thành viên thứ ba, đứng về phía nhà cung cấp.
 
+### 2.13 Chụp ngay (S13–S14, #140; tiền ở #202)
+
+Nguồn: [`../2026-10-01-instant-booking-design.md`](../2026-10-01-instant-booking-design.md) (hộp "Giai đoạn 1" ở mục 5) và plan [`../../plans/2026-10-07-s13-s14-dispatch-provider.md`](../../plans/2026-10-07-s13-s14-dispatch-provider.md). Mã nguồn: `packages/domain/src/instant*.ts`. Giai đoạn 1 lưu ở Firestore (không phải schema `dispatch` của mục 2.8 lược đồ quan hệ, vẫn là đích giai đoạn 2). Mọi thời điểm UTC, tiền VND số nguyên, id ULID; chỉ server ghi, trừ hai chỗ ghi của client (heartbeat presence, điểm vị trí khi đang đến).
+
+| Thực thể | Trường chính | Ghi chú |
+|----------|--------------|---------|
+| `InstantConfig` | `enabled`, `priceListVersion: int`, `platformFeeBp: int` (0–10 000, mặc định 0), `instantArrivedCancelPhotographerPercent: int` (0–100, mặc định 50), `packages: List<{code, durationMin, photos, priceVnd}>`, `cities: List<{id, name, south, west, north, east, surgeBp}>` (`surgeBp` 10 000 = ×1,0), `areas: List<{name, lat, lng}>` | `instant_config/current`, người đã đăng nhập đọc. `parseInstantConfig` từ chối giá trị thiếu hoặc ngoài khoảng (`not_eligible`); `enabled = false` là công tắc tắt: mọi lời mời bị từ chối |
+| `InstantRequest` | `id` PK, `customerId`, `customerName`, `customerAvatarUrl?`, `status: InstantStatus`, `active` (= chưa kết thúc), gói (`packageCode`, `durationMin`, `photos`), `genre: InstantGenre`, `note` (≤ 140), `cityId`, `meetPoint: {lat, lng, name}` (tên ≤ 80), `areaLabel`, `amountVnd`, `earningVnd`, bản chụp cấu hình lúc tạo (`priceListVersion`, `platformFeeBp`, `arrivedCancelPhotographerPercent`), `committedAt?` (đã gửi lời mời ít nhất một lần), tiền (chỉ #202 ghi, rỗng suốt #140: `payMethod?`, `provider?`, `paymentId?`, `paidAt?`, `paymentDeadlineAt?`, `refundId?`, `refundStatus?`), lượt hiện tại (`round`, `invitedTotal`, `roundsWithInvites`, `candidates: List<InstantCandidate>` ≤ 5, `offers: List<InstantOfferRow>`, `pendingInviteIds`, `roundEnded`), việc (`photographerId?`, `photographer: InstantParty?`, `chatId?`, `etaMinutes?`, `assignedAt?`, `freeCancelUntil?`, `lateDeadlineAt?`, `startedRouteAt?`, `arrivedAt?`, `forcedArrivalAccuracyM?`, `startedAt?`, `shootEndsAt?`, `finishedAt?`, `completedAt?`), kết thúc (`cancelledAt?`, `cancelledBy?: customer \| photographer`, `cancelRule?: InstantCancelRule`, `refundPercent?`, `feeVnd?`), hẹn giờ (`searchDeadlineAt?`, `lastActivityAt`, `nextDeadlineAt?`), `createdAt`, `updatedAt`, `version` | `instant_requests/{id}`; khách và thợ **đã nhận** đọc (thợ chỉ được mời không đọc: điểm hẹn). Lượt hiện tại bị xoá khi có người nhận, để thợ không thấy khách đã mời ai khác. `nextDeadlineAt` = mốc hẹn giờ gần nhất (`nextDeadlineOf`), cho bước `instantSweep` |
+| `InstantCandidate` (giá trị) | `photographerId`, `name`, `avatarUrl?`, `verified`, `providerType`, `tomatoPct`, `reviewCount`, `completedCount`, `distanceKm` (làm tròn 0,1), `etaMinutes`, `photos` (≤ 3), `reasons: List<{code: genre \| distance, text}>` (≤ 2), `tier: priority \| expanded`, `score` | Một thẻ S13.02 |
+| `InstantOfferRow` (giá trị) | `offerId?`, `photographerId`, `name`, `avatarUrl?`, `tomatoPct`, `reviewCount`, `etaMinutes`, `outcome: OfferRowOutcome`, `expiresAt?` | Một dòng S13.03; `unavailable` = được chọn nhưng bận, tắt, bị chặn hoặc đủ 3 lời mời lúc gửi (không có tài liệu lời mời) |
+| `InstantParty` (giá trị) | `id`, `name`, `avatarUrl?`, `verified`, `tomatoPct`, `reviewCount`, `completedCount` | Thợ đã nhận, chụp lại trên yêu cầu |
+| `InstantDispatch` 🔒 | `requestId` PK, `excludedIds: List<Id<User>>` | `instant_requests/{id}/private/dispatch`, chỉ server (đọc trong giao dịch): những người không gợi ý lại (đã bỏ qua, từ chối, hết hạn, đã huỷ). Không nằm trên tài liệu công khai để thợ đã nhận không biết khách đã xem ai |
+| `InstantContact` 🔒 | `requestId` PK, `name`, `phone`, `allowZalo`, `allowWhatsApp` (dạng `BookingContactSnapshot`) | `instant_requests/{id}/private/contact`: ghi khi nhận việc **chỉ khi đã trả** (hoặc lúc trả nếu trả sau), xoá khi thợ huỷ; thợ đã nhận đọc khi yêu cầu còn `active` và `paidAt` có. #140 không bao giờ ghi |
+| `InstantCustomerLock` 🔒 | `customerId` PK, `activeRequestId?`, `updatedAt` | `instant_customers/{uid}`, chỉ server: khoá "một yêu cầu đang chạy mỗi khách", đọc và ghi trong giao dịch tạo và kết thúc yêu cầu |
+| `InstantOffer` | `id` PK, `requestId`, `photographerId`, `round`, `offeredAt`, `expiresAt` (= `offeredAt` + 60 giây), `outcome: OfferOutcome`, `decidedAt?`, `packageCode`, `durationMin`, `photos`, `genre`, `areaLabel`, `distanceKm`, `etaMinutes`, `earningVnd`, `note`, `invitedCount` | `instant_offers/{uid}/offers/{offerId}`, chỉ chủ đọc; không bao giờ có điểm hẹn, chỉ khu và khoảng cách |
+| `InstantPresence` 🔒 | `uid` PK, `online`, `helpReady`, `priceListVersion?` (bản đã đồng ý), `cityId?`, `lat?`, `lng?`, `accuracyM?`, `geohash5?`, `geohash4?`, `heartbeatAt?`, `activeRequestId?`, `pendingOffers: List<{offerId, requestId, expiresAt}>`, `profile: {name, avatarUrl?, verified, providerType, tomatoPct, score, reviewCount, completedCount, specialties, photos ≤ 3}`, `reliability: {offers, accepted, declined, expired, cancelled, late, noShow}`, `updatedAt` | `instant_presence/{uid}`, chỉ chủ đọc (khách không bao giờ đọc). Chủ chỉ ghi heartbeat (trường vị trí, `heartbeatAt == request.time`, cách lần trước > 60 giây); còn lại qua `setLiveShutter`/`saveInstantSettings` và giao dịch lời mời. Tươi khi `online` và `heartbeatAt` < 30 phút |
+| `InstantTrack` | `requestId` PK, `customerId`, `photographerId`, `active`, `lat`, `lng`, `accuracyM`, `heading?`, `at` | `instant_tracks/{requestId}`: chỉ tồn tại khi `en_route` (máy chủ tạo ở `start_route`, xoá khi tới nơi và khi kết thúc); hai bên đọc; thợ cập nhật trường vị trí, cách điểm trước > 15 giây. Không lưu lịch sử điểm |
+| `Payment` (chủ thể `instant_request`, #202) | `subjectType = instant_request`, `subjectId` = id yêu cầu, `payeeId` = thợ khi đã nhận, `''` trước đó và sau khi thợ huỷ | Không có ở #140 (không có khoản nào) |
+
 ## 3. Quan hệ (ERD)
 
 ```mermaid
@@ -265,7 +284,13 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `SlotOfferStatus` | `open`, `closed` | Trạng thái gói chia suất |
 | `PostKind` | `work`, `real_shoot`, `event_share` | `event_share`: người tham gia đăng về sự kiện; `photographerId` để rỗng nên bài không vào portfolio của ai |
 | `BookingStatus` | `draft`, `requested`, `accepted`, `declined`, `expired`, `cancelled`, `upcoming`, `shot`, `delivered`, `revision_requested`, `approved`, `completed`, `reviewed` | Máy trạng thái ở mục 5 (#152 bàn giao hai lớp) |
-| `PaymentSubject` | `booking`, `event_registration`, `instant_request`, `verification_fee` | Điểm mở rộng chủ thể (#200) |
+| `PaymentSubject` | `booking`, `event_registration`, `instant_request`, `verification_fee` | Điểm mở rộng chủ thể (#200); `instant_request` có khoản thanh toán từ #202 (#140 không thu tiền) |
+| `InstantStatus` | `choosing`, `pending_payment`, `searching`, `assigned`, `en_route`, `arrived`, `in_progress`, `finished`, `completed`, `no_match`, `abandoned`, `cancelled_by_customer`, `no_show_customer` | Spec Chụp ngay §3.1 + `finished` (chờ khách xác nhận); kết thúc: `completed`, `abandoned`, `cancelled_by_customer`, `no_show_customer` (`no_match` vẫn `active`). `pending_payment` chỉ từ #202; `payment_failed`, `disputed` không làm |
+| `InstantGenre` | `portrait`, `couple`, `family`, `event`, `product` | Mã chuyên môn có sẵn; `event` hiện "Sự kiện nhỏ" |
+| `OfferOutcome` | `pending`, `accepted`, `declined`, `expired`, `withdrawn` | Trên `InstantOffer`; dòng S13.03 thêm `unavailable` (`OfferRowOutcome`) |
+| `InstantJobAction` | `start_route`, `arrive`, `start`, `finish`, `no_show` | `updateInstantJob` |
+| `InstantCancelRule` | `unpaid`, `full_refund`, `free_window`, `photographer_late`, `en_route`, `arrived`, `photographer_cancel`, `no_show` | Luật huỷ ghi trên yêu cầu (`cancelRule`); khi `paidAt` rỗng (mọi yêu cầu của #140) mọi huỷ là `unpaid`, không có mặt là `no_show`, số tiền 0 |
+| `LiveShutterReason` | `not_accepting_orders`, `phone_required`, `price_list_not_accepted`, `outside_service_area` | Lý do `setLiveShutter` từ chối bật; app thêm lý do riêng "cần quyền vị trí" (không phải mã server) |
 | `VerificationStatus` | `not_started`, `in_progress`, `submitted`, `approved`, `rejected`, `revoked` | Máy trạng thái ở mục 5 |
 | `VerificationKind` | `individual`, `studio` | Quyết định mức phí (99.000đ / 299.000đ); nghệ sĩ NAG tính là `individual` |
 | `VerificationStep` | `phone`, `fee`, `identity`, `rules` | Thứ tự bắt buộc từ `requiredSteps(feeRequired)`: không có `fee` khi phí tắt |
@@ -417,6 +442,20 @@ not_started ─▶ in_progress ─(đủ bước, "Gửi duyệt")─▶ submitt
 
 Bước cần làm: `phone → identity → rules` khi phí tắt (#135), `phone → fee → identity → rules` khi bật (#203, đã bật ở server và app); làm theo thứ tự nào cũng được, trừ danh tính cần bước phí xong (phí đã trả, hoặc được miễn theo `feeWaived`) khi phí bật. Từ chối `identity_mismatch` xoá bước danh tính. `approved` ghi `photographers.verified`, `verifiedAt`, `acceptingOrders` cùng giao dịch; `revoked` ghi `verified = false`, `acceptingOrders = false` và không đụng booking đang chạy. Doanh nghiệp (`Verification.business`): `submitted → approved | rejected`; hộ kinh doanh tự `approved` khi băm mã số thuế khớp `IdentityRecord.idHash`.
 
+### Chụp ngay (`InstantRequest`, #140)
+
+```
+choosing ─invite─▶ searching ─accept─▶ assigned ─start_route─▶ en_route ─arrive─▶ arrived ─start─▶ in_progress ─finish─▶ finished ─complete─▶ completed
+choosing ─invite_unpaid─▶ pending_payment ─paid─▶ searching          (#202; payment_expired → choosing)
+searching ─round_ended─▶ choosing          choosing | searching ─no_match─▶ no_match ─reopen─▶ choosing
+assigned | en_route | arrived ─photographer_cancel─▶ choosing
+in_progress ─finish (thợ bấm, hoặc hết giờ gói)─▶ finished      in_progress | finished ─complete (khách xác nhận, hoặc 2 giờ sau finished)─▶ completed
+choosing | pending_payment ─abandon─▶ abandoned (30 phút không hoạt động, chưa gửi lời mời lần nào)
+choosing | pending_payment | searching | no_match | assigned | en_route | arrived ─customer_cancel─▶ cancelled_by_customer     arrived ─no_show (sau 15 phút)─▶ no_show_customer
+```
+
+Mọi chuyển đổi do server làm (`nextInstantStatus`, sai thì `conflict`); hẹn giờ (lời mời 60 giây, tìm 10 phút (`searchDeadlineAt`, đặt lại mỗi lần gửi lời mời, khi mở lại từ `no_match` và khi thợ huỷ), bỏ dở 30 phút, hết giờ gói, tự hoàn thành 2 giờ sau `finished`) được `settleInstant(request, now)` tính lại trong mỗi giao dịch, `tickInstantRequest` và bước `instantSweep` của `bookingClock`. App thợ bỏ nút "Huỷ việc" khi đã `arrived` (domain vẫn cho phép; câu hỏi cho chủ dự án).
+
 ### Việc đăng và báo giá (spec 10-05 mục 5.2)
 
 ```
@@ -466,3 +505,6 @@ Quote:   submitted ─▶ withdrawn | accepted | not_selected | declined
 36. "Một nhà cung cấp một điểm một ngày": một thợ (hoặc studio qua thành viên gán `assigneeId`) chỉ có tối đa một lịch tại điểm cho một ngày nhất định; `AvailabilityDay.state = 'spot'` khóa ngày đối với booking thông thường và sự kiện. Với studio, ngày `spot` của thành viên được tính là bận khi tính sức chứa (không ghi đè bằng `full`); booking tại điểm của studio được tạo sẵn đã giao cho thành viên của lịch (`assignStatus = assigned`), không vào `StudioDayLoad`, và không giao lại, xin đổi hay trả việc được (`not_eligible`); thành viên còn được gán vào lịch tại điểm `open` có ngày ≥ hôm nay thì không rời hoặc bị bỏ khỏi studio được (`member_busy`).
 37. "Khoảng cách ≥ 15 phút giữa hai booking cùng ngày tại điểm": hai khoảng thời gian đã đặt tại điểm phải cách nhau ít nhất 15 phút, ngoại trừ hai suất liên tiếp của cùng một gói chia suất (`SlotOffer`) thì khoảng cách tối thiểu là 0 phút.
 38. "Tối đa 8 lịch tại điểm đang mở": mỗi nhà cung cấp chỉ được mở tối đa 8 `SpotSchedule` có `status = 'open'` và còn ngày trong tương lai (≥ hôm nay).
+39. Chụp ngay: mỗi khách tối đa một `InstantRequest` `active` (khoá `instant_customers/{uid}.activeRequestId`, ghi trong giao dịch); mỗi thợ tối đa một việc đang làm (`InstantPresence.activeRequestId`) và tối đa 3 lời mời đang chờ (chỉ tính mục có `expiresAt > now`); lời mời được nhận nhiều nhất một lần mỗi yêu cầu (giao dịch trên yêu cầu và presence của thợ).
+40. Chụp ngay: điểm hẹn chính xác chỉ nằm trên `InstantRequest` (khách và thợ đã nhận đọc), không bao giờ trên `InstantOffer`; `candidates`, `offers`, `pendingInviteIds` rỗng khi có thợ nhận, `excludedIds` chỉ ở `private/dispatch`; `InstantTrack` chỉ tồn tại khi `en_route`, chỉ giữ điểm cuối.
+41. Chụp ngay: `committedAt` chỉ có khi đã gửi lời mời; từ #202 thì `committedAt ≠ null ⇒ paidAt ≠ null`. Khi `paidAt` rỗng (mọi yêu cầu của #140), mọi huỷ ghi luật `unpaid` (báo khách không có mặt ghi `no_show`) với hoàn 0, phí 0, và không có `private/contact`; khi đã trả, hoàn + phần thợ + phí nền tảng = số đã thu (không lệch 1 ₫).

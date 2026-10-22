@@ -1,5 +1,7 @@
 # Instant I4: "Chụp ngay" Photographer App (S13.08, S14) Implementation Plan
 
+> **Superseded by** [`2026-10-07-s13-s14-dispatch-provider.md`](2026-10-07-s13-s14-dispatch-provider.md) Tasks 6–9 (#140, 2026-10-07): callables instead of the HTTP `ApiClient`, foreground only (no `flutter_foreground_task`, `flutter_local_notifications`, `battery_plus`, `maplibre_gl`). Do not execute this plan.
+
 > **Rules emulator tests (2026-10-02, user):** do not run the Firestore/Storage rules tests on the emulator (`app_flutter/firebase/rules-test`, `npm test`, `npm run test:*`) while executing this plan; the sandbox cannot run them. Still write or update the rules and their test files as the task says, but skip every step that runs them and every `Expected:` that depends on them; CI (`flutter.yml`, `firebase-deploy.yml`) runs them on push and blocks deploy on failure. Record the skip in the ledger.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

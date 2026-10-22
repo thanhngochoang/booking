@@ -12,6 +12,7 @@ Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S29`, `S30` của spec `..
 | [photographer.md](photographer.md) | S06.01 Công việc · S06.04 Lịch · S10.01 Đăng bài · S06.02 Empty Công việc · S06.03 Từ chối · S08.01 Thiết lập hồ sơ · S08.05 Khu vực & liên hệ · S08.02–S08.04 Kỹ năng · S08.06, S08.07 Dịch vụ đi kèm |
 | [portfolio-awards.md](portfolio-awards.md) | Thay đổi ở S02.06, S03.01, S08.01, S09.01, S10.01 · S24.01–S24.05 Portfolio album · S25.01–S25.02 Giải thưởng & hạng NAG (spec 10-05) |
 | [jobs.md](jobs.md) | S15.01–S15.04 Đăng việc · S16.01–S16.03 Nhận việc đăng (spec 10-05) |
+| [instant.md](instant.md) | Chụp ngay phía thợ: S14.01 Live Shutter · S14.02 Lời mời · S13.04 Đã match · S14.03 Việc chụp ngay · S13.08 Huỷ việc · thẻ ở S06.01 (#140); phía khách S13 (chỗ dành cho plan khách) |
 | [spots.md](spots.md) | S29.01–S29.06 Điểm chụp đang hot · thay đổi ở S02.01, S02.03, S04 (đặt từ điểm), S06.01, S10.01, S12.01 (spec 10-08) |
 | [saved-following.md](saved-following.md) | S19.01 Đã lưu (bài đăng & nhiếp ảnh gia) · S19.02 Đang theo dõi · S19.03 Người theo dõi |
 | [disputes-help.md](disputes-help.md) | S18.01 Mở khiếu nại · S18.02 Chi tiết khiếu nại · S18.03 Trợ giúp & chat hỗ trợ |

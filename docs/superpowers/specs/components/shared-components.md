@@ -264,7 +264,7 @@ Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa c�
 `CountdownPill({required Duration remaining})` (S04.04, #129): viên thuốc nhỏ (mock `.st.live`) "Còn mm:ss", về 0 thì đổi thành "Hết hạn" chữ màu lỗi. Không tự đếm: chủ màn giữ đồng hồ và truyền `remaining`. `Semantics.label` đổi mỗi giây ("QR còn hiệu lực {m} phút {s} giây") nhưng `liveRegion` chỉ bật ở các mốc 5:00, 1:00, 0:10 và 0 (`isCountdownAnnounceSecond`, dùng chung với `CountdownRing`), để trình đọc màn hình không bị ngắt mỗi giây (WCAG 4.1.3).
 
 #### CountdownRing và CountdownText · Đã có
-`CountdownRing({required DateTime deadline, required Duration total, double size = 96})`: vòng tiến độ + số lớn ở giữa và đơn vị nhỏ (mock `.cd`), cập nhật mỗi giây khi còn < 1 giờ, mỗi phút khi dài hơn; `Semantics(role: timer)` đọc "Còn {n} giây"; giảm chuyển động: vòng nhảy theo giây, không nội suy. `CountdownText` cùng logic cho chữ trong nút ("Nhận · còn 22 giờ"). Dùng ở S14.02 (60 giây), S13.03, S13.06 (thời gian buổi chụp), S06.01 (hạn nhận yêu cầu).
+`CountdownRing({required DateTime deadline, required Duration total, double size = 96, VoidCallback? onExpired, DateTime Function()? now})`: vòng tiến độ + số lớn ở giữa và đơn vị nhỏ (mock `.cd`), cập nhật mỗi giây khi còn < 1 giờ, mỗi phút khi dài hơn; `Semantics(role: timer)` đọc "Còn {n} giây"; giảm chuyển động: vòng nhảy theo giây, không nội suy. `CountdownText` cùng logic cho chữ trong nút ("Nhận · còn 22 giờ"). `onExpired` gọi đúng một lần khi về 0 (S14.03 dùng để gọi `tickInstantRequest`); `now` cho test và đồng hồ chung (`clockProvider`). Số là giờ khi còn ≥ 1 giờ, phút khi còn ≥ 1 phút ("38" + "phút"), giây khi dưới 1 phút; chưa có dạng `mm:ss` như mock S14.03-shooting ("38:12"; hoãn, #140). Dùng ở S14.02 (60 giây), S14.03 (thời gian buổi chụp, 132dp), S13.03, S13.06, S06.01 (hạn nhận yêu cầu).
 
 #### ChatBubble, ChatComposer, ConversationRow · Đã có
 `ChatBubble({required ChatBubbleContent content, required bool mine, BubbleSendState state = sent, String? senderName, VoidCallback? onRetry})`: của mình gradient bên phải, người kia kính bên trái, ảnh, vị trí, tin hệ thống ở giữa; `sending` mờ + đồng hồ, `failed` có "Gửi lại". `ChatComposer({required ValueChanged<String> onSend, VoidCallback? onPickImage, bool enabled = true, String? disabledReason})`: nút ảnh, ô tin bo tròn, nút gửi gradient; không gửi tin rỗng. `ConversationRow({required String name, String? avatarUrl, required String preview, required String timeLabel, int unread = 0, Widget? badge, VoidCallback? onTap})` (mock S07.02). Dùng ở S07.01, S07.02, S11.06.
@@ -428,8 +428,8 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `PayMethodPicker` | S11.03 |
 | `CountdownPill` | S04.04 |
 | `PaymentScreen`, `QrCheckoutView`, `WalletWaitingView`, `FakeTransferSheet` (`features/payment/`) | S04.04 (mọi chủ thể thanh toán: booking, vé sự kiện, Chụp ngay, phí xác minh) |
-| `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08 |
-| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02 |
+| `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08, S14.03 (GPS chưa chính xác, khách không có mặt) |
+| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03 |
 | `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06 |
 | `SwipeDeck` | S13.02 |
 | `MatchOverlay` | S13.04 (khách; nhiếp ảnh gia trên S14.02) |
@@ -458,7 +458,7 @@ Người dùng quyết định: phân tích UI, thiết kế và viết các sha
 
 1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, **đã xong**): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
 2. **Nhóm B1** (kế hoạch `2026-10-02-shared-components-b1.md`, **đã xong**): `DateBlock`, `EventCard` (row, featured, compact) + `eventCardDataOf`, `TicketCard` (với mã QR `qr_flutter`), `BadgeChip` + `BadgeRow` + `BadgeTile`, `NotificationRow` + `NotificationBell`, `PermissionPrimer` + `PermissionPrimerPolicy`. Chuyển màn Khám phá sang dùng `EventCard` và xoá `NearbyEventTile`.
-3. **Nhóm B2** (Chụp ngay & bản đồ, kế hoạch tiếp theo khi tới lượt): `SwipeDeck`, `MatchOverlay`, `OfferStack`, `MapPreview`.
+3. **Nhóm B2** (Chụp ngay & bản đồ): `MatchOverlay`, `OfferStack`, `MapPreview` **đã có** (#140, plan `2026-10-07-s13-s14-dispatch-provider.md` Tasks 8–9); `SwipeDeck` thuộc app khách (plan `2026-10-07-s13-instant-customer.md`, #140 PR 2).
 
 
 ## Icons (Material Symbols Rounded)

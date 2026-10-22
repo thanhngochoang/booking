@@ -362,6 +362,10 @@ Chạy `scripts/spots-local.sh rank` sau khi đổi dữ liệu để cập nh�
 #140 moves no money: invites send the offers at once, only on a `demo-*` emulator or the dev project
 (`inviteInstant` answers `not_eligible` anywhere else). Nobody is online at seeding: a photographer
 turns Live Shutter on in S14.01 (Cúc in TP.HCM has a phone; accept the price list first).
+The app keeps Chụp ngay hidden (`kInstantEnabled = false` in `lib/core/feature_flags.dart`; #202 flips it
+once payment is in): to try S14.01–S14.03 on a device, set it to `true` locally and do not commit it
+(the S06.01 card, the heartbeat and the offer listener only run with it on). Before `enabled` is used in a
+real project, `instant_config/current` must exist there (the seed writes it only on the emulators).
 
 Dev CLI (emulators only; refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`
 point at a local host; push is only logged): `offer` creates a request for the customer 500 m north of

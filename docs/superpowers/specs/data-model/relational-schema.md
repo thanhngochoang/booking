@@ -772,6 +772,8 @@ create table app_config (key text primary key, value jsonb not null, version int
 
 Đặc tả ở [`../2026-10-01-instant-booking-design.md`](../2026-10-01-instant-booking-design.md) mục 7. Vị trí "đang sẵn sàng" chỉ nằm trong Redis (TTL 10 phút), không có bảng.
 
+**Đích giai đoạn 2.** Giai đoạn 1 (#140, 2026-10-07) chạy trên Firestore, không có schema `dispatch`: các bộ sưu tập `instant_*` ở mục 3 ánh xạ vào các bảng dưới đây khi chuyển sang backend tự chạy (#90). Khác biệt cần nhớ khi chuyển: gói, thành phố và khu nằm trong một tài liệu cấu hình (`instant_config/current`), presence (vị trí sẵn sàng) nằm ở Firestore với cửa sổ tươi 30 phút thay cho Redis TTL, độ tin cậy là một map trên presence, ứng viên và lời mời của lượt hiện tại là mảng trên yêu cầu (không lưu lịch sử các lượt), và chưa có `photographer_instant_settings` riêng (bản bảng giá đã đồng ý và `helpReady` ở presence). DDL dưới đây viết trước mô hình "match" (2026-10-02): danh sách `status` và `round in (1,2)` phải theo `InstantStatus` của domain (mô hình miền mục 2.13), và bảng `instant_candidates` (spec mục 7) chưa có DDL; chỉnh khi viết backend giai đoạn 2.
+
 ```sql
 create schema if not exists dispatch;
 create extension if not exists postgis;
@@ -1422,6 +1424,14 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `spot_schedules/{id}` | `spot_schedules` + `spot_schedule_days` | `days[]` → `spot_schedule_days` |
 | `spot_slot_offers/{id}` | `spot_slot_offers` | Gói chia suất tại điểm |
 | `spot_days/{id}` | `spot_day_intervals` | Hình chiếu công khai của các khoảng giờ đã kín trong ngày; doc id `{scheduleId}_{day}`, không lưu `booking_id` |
+| `instant_config/current` | `dispatch.cities`, `dispatch.instant_packages` (+ khu: chưa có bảng, đề xuất `dispatch.areas`) | `cities[]` → `cities` (`south/west/north/east` → `boundary` hình chữ nhật, `surgeBp` → `surge = surgeBp / 10000`); `packages[]` → `instant_packages` (cùng `priceListVersion`); `platformFeeBp`, `instantArrivedCancelPhotographerPercent`, `enabled` → `app_config` (khoá `instant`) |
+| `instant_requests/{id}` | `dispatch.instant_requests` | `meetPoint.{lat,lng}` → `meet_point`, `meetPoint.name` → `meet_address`; `packageCode` → `package_id` (theo `priceListVersion`); `amountVnd`/`earningVnd` → `amount_vnd`/`payout_vnd`; `cancelRule`, `cancelledBy`, `refundPercent`, `feeVnd` → `cancel_reason` + cột mới; `candidates[]` → `instant_candidates` (`round` hiện tại); `offers[]` không thành cột (lấy từ `instant_offers`); `photographer` (ảnh chụp tên, ảnh) không thành cột; `active`, `nextDeadlineAt`, `lastActivityAt`, `committedAt` → cột (phục vụ quét hẹn giờ); tiền (`paymentId`, `paidAt`, `refundId`, …) → `payments`/`refunds` (`subject_type = 'instant_request'`) |
+| `instant_requests/{id}/private/dispatch` | `dispatch.instant_candidates` (spec mục 7, chưa có DDL) | 🔒 `excludedIds[]` → các dòng `customer_choice = 'skipped'` hoặc lời mời đã từ chối/hết hạn; không bảng riêng |
+| `instant_requests/{id}/private/contact` | (không có bảng) | 🔒 Bản sao liên hệ khách cho thợ đã nhận (dạng `booking_contacts`); dẫn xuất từ `user_contacts` khi đã trả |
+| `instant_customers/{uid}` | (không có bảng) | 🔒 Khoá "một yêu cầu đang chạy mỗi khách" của Firestore; bảng dùng chỉ mục duy nhất một phần `instant_requests (customer_id) where status in (…đang chạy)` |
+| `instant_offers/{uid}/offers/{offerId}` | `dispatch.instant_offers` | `photographerId` lấy từ đường dẫn; ảnh chụp gói, khu, khoảng cách, ETA, thu nhập, `note`, `invitedCount` không thành cột (dẫn xuất từ yêu cầu) |
+| `instant_presence/{uid}` | `dispatch.photographer_instant_settings`, `dispatch.photographer_reliability` (+ vị trí: Redis ở giai đoạn 2) | 🔒 `priceListVersion` → `price_list_version_accepted`, `helpReady` → `help_ready`, `cityId` → `home_city_id`; `reliability.*` → `photographer_reliability` (thêm `declined`, `expired`, `late`); `lat/lng/geohash*/heartbeatAt/online/pendingOffers/activeRequestId` không thành bảng (trạng thái sống); `profile` là ảnh chụp từ `photographers` |
+| `instant_tracks/{requestId}` | (không có bảng) | Chỉ tồn tại khi đang đến, chỉ điểm cuối; không lưu lịch sử |
 | `config/{key}` | `app_config` | |
 | `blocks/{blockerId}_{blockedId}` | `blocks` | Id ghép `blockerId_blockedId`; `source`, `createdAt` |
 | `users/{uid}/private/blocks` | (dẫn xuất từ `blocks`) | Chỉ mục hai chiều do server duy trì; không có bảng riêng (được tạo bởi query/trigger trên `blocks`) |
