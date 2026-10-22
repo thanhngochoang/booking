@@ -21,6 +21,10 @@ const kArriveRadiusM = 200.0;
 /// Domain `INSTANT.POOR_ACCURACY_M`: a fix worse than this may force arrival.
 const kPoorAccuracyM = 100.0;
 
+/// While `assigned`, a `start_route` that failed (or got no fix) is tried
+/// again after this long, on the track's cadence.
+const kRouteRetry = Duration(seconds: 16);
+
 /// Domain `INSTANT.NO_SHOW_WAIT_MIN`.
 const kNoShowWait = Duration(minutes: 15);
 
@@ -96,8 +100,9 @@ class InstantJobUi {
     LocationPermissionStatus? permission,
     InstantJobAction? busy,
     bool clearBusy = false,
+    bool clearFix = false,
   }) => InstantJobUi(
-    fix: fix ?? this.fix,
+    fix: clearFix ? null : (fix ?? this.fix),
     permission: permission ?? this.permission,
     busy: clearBusy ? null : (busy ?? this.busy),
   );
@@ -115,6 +120,13 @@ class InstantJobController extends Notifier<InstantJobUi> {
   bool _foreground = true;
   bool _startingRoute = false;
 
+  /// Retries `start_route` while the request stays `assigned`.
+  Timer? _routeRetry;
+
+  /// An arrival is in flight or done: no track may start again.
+  bool _arriving = false;
+  bool _arrived = false;
+
   /// The point `start_route` sent: the server wrote it as the first track point.
   LocationFix? _routeFix;
   InstantStatus? _status;
@@ -123,7 +135,10 @@ class InstantJobController extends Notifier<InstantJobUi> {
   InstantJobUi build() {
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     _foreground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
-    ref.onDispose(() => _tracker?.stop());
+    ref.onDispose(() {
+      _tracker?.stop();
+      _routeRetry?.cancel();
+    });
     ref.listen<AsyncValue<InstantRequest?>>(
       instantRequestProvider(requestId),
       (_, next) => _onRequest(next.value),
@@ -147,20 +162,28 @@ class InstantJobController extends Notifier<InstantJobUi> {
         (status == InstantStatus.assigned || status == InstantStatus.enRoute);
     if (!routing) {
       _tracker?.stop();
+      _cancelRouteRetry();
       return;
     }
     final permission = await _location.permissionStatus();
     if (!ref.mounted) return;
+    if (permission != LocationPermissionStatus.granted) {
+      // Revoked mid-route too: no stale position on the map or the button.
+      _tracker?.stop();
+      _cancelRouteRetry();
+      state = state.copyWith(permission: permission, clearFix: true);
+      return;
+    }
     if (permission != state.permission) {
       state = state.copyWith(permission: permission);
     }
-    if (permission != LocationPermissionStatus.granted) {
-      _tracker?.stop();
-      return;
-    }
     if (_status == InstantStatus.assigned) {
       await _startRoute();
-    } else if (_status == InstantStatus.enRoute && _foreground) {
+    } else if (_status == InstantStatus.enRoute &&
+        _foreground &&
+        !_arriving &&
+        !_arrived) {
+      _cancelRouteRetry();
       final tracker = _tracker ??= RouteTracker(
         location: _location,
         repo: ref.read(instantRepositoryProvider),
@@ -169,6 +192,10 @@ class InstantJobController extends Notifier<InstantJobUi> {
         onFix: (fix) {
           if (ref.mounted) state = state.copyWith(fix: fix);
         },
+        // Maybe the permission went: check, so the screen says so.
+        onNoFix: () {
+          if (ref.mounted) unawaited(_follow());
+        },
       );
       final sent = _routeFix;
       _routeFix = null;
@@ -176,13 +203,33 @@ class InstantJobController extends Notifier<InstantJobUi> {
     }
   }
 
+  void _cancelRouteRetry() {
+    _routeRetry?.cancel();
+    _routeRetry = null;
+  }
+
+  /// Tries `start_route` again after [kRouteRetry] with a fresh fix, unless
+  /// the request moved on by then ([_follow] checks).
+  void _retryRouteLater() {
+    _routeRetry?.cancel();
+    _routeRetry = Timer(kRouteRetry, () {
+      _routeRetry = null;
+      if (ref.mounted) unawaited(_follow());
+    });
+  }
+
   /// `start_route` with the first fix (the server writes it as the track).
+  /// No fix or a refusal: tried again on the cadence while still `assigned`.
   Future<void> _startRoute() async {
-    if (_startingRoute) return;
+    if (_startingRoute || _arriving || _arrived) return;
     _startingRoute = true;
     try {
       final fix = await _location.currentFix();
-      if (!ref.mounted || fix == null) return;
+      if (!ref.mounted) return;
+      if (fix == null) {
+        _retryRouteLater();
+        return;
+      }
       state = state.copyWith(fix: fix);
       // Set first: the en_route snapshot may arrive before the call returns.
       _routeFix = fix;
@@ -195,8 +242,8 @@ class InstantJobController extends Notifier<InstantJobUi> {
           );
     } on Object catch (e) {
       _routeFix = null;
-      // The next status event or resume tries again.
       debugPrint('instant start_route failed: ${instantErrorCodeOf(e)}');
+      if (ref.mounted) _retryRouteLater();
     } finally {
       _startingRoute = false;
     }
@@ -240,7 +287,7 @@ class InstantJobController extends Notifier<InstantJobUi> {
       state = state.copyWith(fix: fix);
       final metres = metresToMeetPoint(r, fix);
       if (metres <= kArriveRadiusM) {
-        await _update(InstantJobAction.arrive, fix: fix);
+        await _arrive(fix);
         return const Arrived();
       }
       if (fix.accuracyM > kPoorAccuracyM) return ArrivalNeedsForce(fix);
@@ -252,10 +299,35 @@ class InstantJobController extends Notifier<InstantJobUi> {
 
   /// "Xác nhận đã đến" in the GPS sheet: `arrive(force: true)` with that fix
   /// and its real accuracy (the server checks it is worse than 100 m).
-  Future<void> forceArrive(LocationFix fix) => _run(
-    InstantJobAction.arrive,
-    () => _update(InstantJobAction.arrive, fix: fix, force: true),
-  );
+  Future<void> forceArrive(LocationFix fix) =>
+      _run(InstantJobAction.arrive, () => _arrive(fix, force: true));
+
+  /// `arrive`; a request still `assigned` (its `start_route` never went
+  /// through) gets `start_route` with the same fix first, since the server
+  /// only accepts an arrival from `en_route`. A `conflict` there means the
+  /// route already started: go on.
+  Future<void> _arrive(LocationFix fix, {bool force = false}) async {
+    _arriving = true;
+    try {
+      if (_status == InstantStatus.assigned) {
+        _cancelRouteRetry();
+        try {
+          await _update(InstantJobAction.startRoute, fix: fix);
+        } on Object catch (e) {
+          if (InstantError(instantErrorCodeOf(e)).kind !=
+              InstantErrorKind.conflict) {
+            rethrow;
+          }
+        }
+      }
+      await _update(InstantJobAction.arrive, fix: fix, force: force);
+      _arrived = true;
+    } finally {
+      _arriving = false;
+      // Refused: the route (or its retry) carries on where it was.
+      if (!_arrived && ref.mounted) unawaited(_follow());
+    }
+  }
 
   Future<void> startShoot() =>
       _run(InstantJobAction.start, () => _update(InstantJobAction.start));

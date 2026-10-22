@@ -158,7 +158,6 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
   Future<void> _cancel() async {
     final done = await showProviderCancelSheet(
       context,
-      ref,
       requestId: widget.requestId,
     );
     if (done && mounted) _leave();
@@ -379,14 +378,16 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
         onPressed: busy ? null : _cancel,
       ),
     ];
-    final far = button == ArriveButton.far && fix != null;
+    // Only a fix can make the button "far".
+    final farFix = button == ArriveButton.far ? fix : null;
+    final far = farFix != null;
     final footer = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (far) ...[
+        if (farFix != null) ...[
           Text(
-            l.jobArriveFar(instantDistanceText(metresToMeetPoint(r, fix))),
+            l.jobArriveFar(instantDistanceText(metresToMeetPoint(r, farFix))),
             key: const Key('job-arrive-far'),
             textAlign: TextAlign.center,
             style: _metaStyle(context),
@@ -553,6 +554,17 @@ class _BarTitle extends StatelessWidget {
   );
 }
 
+/// Mock `.card`: surface, card radius, hairline border.
+BoxDecoration _cardDecoration(BuildContext context) {
+  final theme = Theme.of(context);
+  final dark = theme.brightness == Brightness.dark;
+  return BoxDecoration(
+    color: dark ? AppColorsDark.surface : AppColors.surface,
+    borderRadius: BorderRadius.circular(AppRadius.card),
+    border: Border.all(color: theme.colorScheme.outlineVariant),
+  );
+}
+
 /// Mock `.card` with the meet point: name bold, a meta line, actions right.
 class _Card extends StatelessWidget {
   const _Card({required this.title, required this.meta, this.trailing});
@@ -564,14 +576,9 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
     final tail = trailing;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: dark ? AppColorsDark.surface : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
+      decoration: _cardDecoration(context),
       child: Padding(
         padding: const EdgeInsets.all(AppSpace.s3),
         child: Row(
@@ -617,15 +624,10 @@ class _PartyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
     final r = request;
     final b = badge;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: dark ? AppColorsDark.surface : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
+      decoration: _cardDecoration(context),
       child: Padding(
         padding: const EdgeInsets.all(AppSpace.s3),
         child: Row(

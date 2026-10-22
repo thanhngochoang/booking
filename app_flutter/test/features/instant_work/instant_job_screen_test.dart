@@ -72,6 +72,84 @@ void main() {
     await _end(tester, w.repo);
   });
 
+  testWidgets(
+    'a failed start_route is tried again within the cadence with a fresh fix '
+    'and the job reaches en route',
+    (tester) async {
+      final logged = <String?>[];
+      final print = debugPrint;
+      debugPrint = (m, {wrapWidth}) => logged.add(m);
+      // Restored at the end: the binding checks it before tear-downs.
+
+      final w = _world(
+        request: jobRequestOf('req1', status: InstantStatus.assigned),
+      );
+      w.repo.failNext('updateJob', 'network');
+      await pumpJobScreen(tester, w);
+      expect(w.repo.callsOf('updateJob'), hasLength(1)); // refused
+      expect(logged, ['instant start_route failed: network']);
+
+      w.location.position = _north(40);
+      await w.wait(tester, const Duration(seconds: 10));
+      expect(w.repo.callsOf('updateJob'), hasLength(1));
+      await w.wait(tester, const Duration(seconds: 10)); // past 16 s
+      final retry = w.repo.callsOf('updateJob').last;
+      expect(w.repo.callsOf('updateJob'), hasLength(2));
+      expect(retry.args['action'], InstantJobAction.startRoute);
+      expect(
+        (retry.args['location']! as InstantLocationArgs).lat,
+        _north(40).lat,
+      );
+      // The fresh fix is what the screen measures from (40 m: "0,1 km").
+      expect(find.text('Phường Bến Thành, Quận 1 · 0,1 km'), findsOneWidget);
+
+      w.repo.emitRequest('req1', jobRequestOf('req1'));
+      await settleInstant(tester);
+      expect(find.text('Đang đến'), findsOneWidget);
+      await w.wait(tester, const Duration(minutes: 1));
+      // En route now: no more start_route, the track goes on instead.
+      expect(w.repo.callsOf('updateJob'), hasLength(2));
+      expect(w.repo.callsOf('shareTrack'), isNotEmpty);
+      await _end(tester, w.repo);
+      debugPrint = print;
+    },
+  );
+
+  testWidgets('"Đã đến" while still assigned sends start_route first', (
+    tester,
+  ) async {
+    final logged = <String?>[];
+    final print = debugPrint;
+    debugPrint = (m, {wrapWidth}) => logged.add(m);
+    // Restored at the end: the binding checks it before tear-downs.
+
+    final w = _world(
+      request: jobRequestOf('req1', status: InstantStatus.assigned),
+      position: _north(150),
+    );
+    w.repo.failNext('updateJob', 'network');
+    await pumpJobScreen(tester, w);
+    expect(w.repo.callsOf('updateJob'), hasLength(1)); // refused
+
+    await tester.tap(find.byKey(const Key('job-arrive')));
+    await settleInstant(tester);
+    final calls = w.repo.callsOf('updateJob').toList();
+    expect(calls.map((c) => c.args['action']), [
+      InstantJobAction.startRoute,
+      InstantJobAction.startRoute,
+      InstantJobAction.arrive,
+    ]);
+    // Both with the arrival's GPS fix.
+    expect(w.location.highAccuracyFixCalls, 1);
+    expect(calls[1].args['location'], calls[2].args['location']);
+
+    // The pending retry is gone: nothing more.
+    await w.wait(tester, const Duration(minutes: 1));
+    expect(w.repo.callsOf('updateJob'), hasLength(3));
+    await _end(tester, w.repo);
+    debugPrint = print;
+  });
+
   testWidgets('en route: map pins, area line, "Chỉ đường" opens the maps URL', (
     tester,
   ) async {
@@ -464,6 +542,57 @@ void main() {
     await w.wait(tester, const Duration(minutes: 2));
     expect(w.repo.callsOf('shareTrack'), hasLength(1));
     expect(w.location.fixCalls, fixes);
+    await _end(tester, w.repo);
+  });
+
+  testWidgets(
+    'permission revoked en route shows jobLocationNeeded, not a stale fix',
+    (tester) async {
+      final w = _world(position: taoDanNorth);
+      await pumpJobScreen(tester, w);
+      final map = find.byKey(const Key('job-map'));
+      expect(
+        find.descendant(of: map, matching: find.text('Bạn')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('job-arrive-far')), findsOneWidget);
+
+      // The next sample gets no fix: the permission is checked again.
+      w.location.status = LocationPermissionStatus.denied;
+      await w.wait(tester, const Duration(seconds: 20));
+      expect(
+        find.text('Cho phép dùng vị trí để chia sẻ đường đi với khách.'),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: map, matching: find.text('Bạn')),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('job-arrive-far')), findsNothing);
+      await _end(tester, w.repo);
+    },
+  );
+
+  testWidgets('permission revoked while in the background shows on resume', (
+    tester,
+  ) async {
+    final w = _world(position: taoDanNorth);
+    await pumpJobScreen(tester, w);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    w.location.status = LocationPermissionStatus.deniedForever;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await settleInstant(tester);
+    expect(
+      find.text('Cho phép dùng vị trí để chia sẻ đường đi với khách.'),
+      findsOneWidget,
+    );
+    expect(find.text('Mở cài đặt'), findsOneWidget);
+    expect(find.byKey(const Key('job-arrive-far')), findsNothing);
     await _end(tester, w.repo);
   });
 

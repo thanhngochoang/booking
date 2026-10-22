@@ -118,25 +118,30 @@ void main() {
     expect(rig.writes, 2);
   });
 
-  test('never writes twice within 15 s', () async {
-    final rig = _Rig();
-    rig.tracker.start();
-    await pumpEventQueue();
+  test(
+    'never writes twice within 16 s (the rules\' 15 s plus jitter)',
+    () async {
+      final rig = _Rig();
+      rig.tracker.start();
+      await pumpEventQueue();
 
-    // A far move 5 s later (e.g. a stop/start on resume) still waits.
-    rig.moveTo(500);
-    rig.now = rig.now.add(const Duration(seconds: 5));
-    rig.tracker
-      ..stop()
-      ..start();
-    await pumpEventQueue();
-    expect(rig.writes, 1);
+      // A far move 5 s later (e.g. a stop/start on resume) still waits.
+      rig.moveTo(500);
+      rig.now = rig.now.add(const Duration(seconds: 5));
+      rig.tracker
+        ..stop()
+        ..start();
+      await pumpEventQueue();
+      expect(rig.writes, 1);
 
-    await rig.tick(const Duration(seconds: 9)); // 14 s after the write
-    expect(rig.writes, 1);
-    await rig.tick(const Duration(seconds: 1)); // 15 s
-    expect(rig.writes, 2);
-  });
+      await rig.tick(const Duration(seconds: 9)); // 14 s after the write
+      expect(rig.writes, 1);
+      await rig.tick(const Duration(seconds: 1)); // 15 s: still too close
+      expect(rig.writes, 1);
+      await rig.tick(const Duration(seconds: 1)); // 16 s
+      expect(rig.writes, 2);
+    },
+  );
 
   test(
     'a point already sent with start_route counts as the last write',
@@ -149,7 +154,7 @@ void main() {
       expect(rig.writes, 0);
 
       rig.moveTo(30);
-      await rig.tick();
+      await rig.tick(const Duration(seconds: 16));
       expect(rig.writes, 1);
     },
   );
@@ -209,11 +214,25 @@ void main() {
     expect(rig.writes, 1);
   });
 
-  test('no fix (permission gone) writes nothing', () async {
+  test('no fix (permission gone) writes nothing and says so', () async {
+    var noFix = 0;
     final rig = _Rig();
     rig.location.status = LocationPermissionStatus.denied;
-    rig.tracker.start();
+    final tracker = RouteTracker(
+      location: rig.location,
+      repo: rig.repo,
+      requestId: 'req1',
+      now: () => rig.now,
+      timer: (every, onTick) {
+        rig.onTick = onTick;
+        return _FakeTimer();
+      },
+      onNoFix: () => noFix++,
+    );
+    tracker.start();
     await pumpEventQueue();
     expect(rig.writes, 0);
+    expect(noFix, 1);
+    tracker.stop();
   });
 }

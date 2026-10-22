@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/instant_work/provider_cancel_sheet.dart';
@@ -19,10 +18,10 @@ Future<List<bool>> _open(WidgetTester tester, InstantWorld w) async {
     screenApp(
       overrides: w.overrides,
       home: Scaffold(
-        body: Consumer(
-          builder: (context, ref, _) => TextButton(
+        body: Builder(
+          builder: (context) => TextButton(
             onPressed: () async => results.add(
-              await showProviderCancelSheet(context, ref, requestId: 'req1'),
+              await showProviderCancelSheet(context, requestId: 'req1'),
             ),
             child: const Text('open'),
           ),

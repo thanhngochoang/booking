@@ -21,13 +21,15 @@ Timer _periodic(Duration every, void Function() onTick) =>
 const _moveM = 25.0;
 const _maxSilence = Duration(seconds: 60);
 
-/// The rules refuse a track point closer than 15 s to the last one.
-const _minGap = Duration(seconds: 15);
+/// The rules refuse a track point within 15 s of the last one by the
+/// server's clock; one more second covers the client/server jitter.
+const kTrackMinGap = Duration(seconds: 16);
 
 /// Fix every 15 s while en route and the screen is visible; writes when moved
 /// ≥ 25 m or 60 s passed. A low-power fix (`currentFix()`, with its real
 /// accuracy): the GPS-grade one is only for the arrival check. Never two
-/// writes within 15 s of each other by this clock; a write the server still
+/// writes within 16 s of each other by this clock (the rules' 15 s plus
+/// jitter); a write the server still
 /// refuses (clock jitter, the request just left `en_route`) is not counted and
 /// the next fix tries again. Nothing is kept beyond the last written point
 /// (spec §9: no point history).
@@ -40,6 +42,7 @@ class RouteTracker {
     this._every = const Duration(seconds: 15),
     TrackTimerFactory timer = _periodic,
     this.onFix,
+    this.onNoFix,
   }) : _timerFactory = timer;
 
   final LocationRepository _location;
@@ -51,6 +54,9 @@ class RouteTracker {
 
   /// Every fix taken, written or not (the screen's distance to the meet point).
   final void Function(LocationFix fix)? onFix;
+
+  /// A sample brought no fix (permission revoked, location off, no signal).
+  final void Function()? onNoFix;
 
   Timer? _timer;
   bool _sampling = false;
@@ -83,7 +89,11 @@ class RouteTracker {
     _sampling = true;
     try {
       final fix = await _location.currentFix();
-      if (!running || fix == null) return;
+      if (!running) return;
+      if (fix == null) {
+        onNoFix?.call();
+        return;
+      }
       onFix?.call(fix);
       if (!_due(fix)) return;
       final at = _now();
@@ -108,7 +118,7 @@ class RouteTracker {
     final at = _lastWriteAt;
     if (last == null || at == null) return true;
     final since = _now().difference(at);
-    if (since < _minGap) return false;
+    if (since < kTrackMinGap) return false;
     if (since >= _maxSilence) return true;
     return haversineKm(last.lat, last.lng, fix.lat, fix.lng) * 1000 >= _moveM;
   }

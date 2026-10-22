@@ -20,11 +20,9 @@ final providerCancelQuoteProvider = FutureProvider.autoDispose
 
 /// Opens S13.08 over S14.03; true once the job was cancelled ("Huỷ việc"),
 /// false when kept ("Giữ việc", back, tap outside). While the cancel runs the
-/// sheet cannot be dismissed. [ref] is the caller's (the plan's signature);
-/// the sheet reads the repository through its own.
+/// sheet cannot be dismissed.
 Future<bool> showProviderCancelSheet(
-  BuildContext context,
-  WidgetRef ref, {
+  BuildContext context, {
   required String requestId,
 }) async {
   final done = await showAppSheet<bool>(

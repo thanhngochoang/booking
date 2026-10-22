@@ -249,8 +249,17 @@ class _PinView extends StatelessWidget {
   final int index;
   final MapPin pin;
 
+  // Mock `.mpin` sizes (no token matches them).
   static const double dot = 14;
   static const double _ring = 3;
+  static const double _labelGap = 2;
+  static const double _chipRadius = 6;
+  static const _chipPadding = EdgeInsets.symmetric(horizontal: 5, vertical: 1);
+  static const _shadow = BoxShadow(
+    color: AppColors.overlay,
+    blurRadius: 6,
+    offset: Offset(0, 2),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -271,34 +280,37 @@ class _PinView extends StatelessWidget {
             decoration: BoxDecoration(
               color: fill,
               shape: BoxShape.circle,
-              // Mock: a white ring in both themes (AppColors.surface is white).
-              border: Border.all(color: AppColors.surface, width: _ring),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.overlay,
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
+              // Mock `border:3px solid #fff` in both themes:
+              // `foregroundInverse` is white in light and dark.
+              border: Border.all(
+                color: dark
+                    ? AppColorsDark.foregroundInverse
+                    : AppColors.foregroundInverse,
+                width: _ring,
+              ),
+              boxShadow: const [_shadow],
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: _labelGap),
         DecoratedBox(
           decoration: BoxDecoration(
+            // Mock `.mpin span`: surface, `--line` border, ink text.
             color: dark ? AppColorsDark.surface : AppColors.surface,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(_chipRadius),
+            border: Border.all(
+              color: dark ? AppColorsDark.border : AppColors.border,
+            ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            padding: _chipPadding,
             child: Text(
               pin.label,
               maxLines: 1,
               style: TextStyle(
                 fontSize: AppText.tab,
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
+                color: dark ? AppColorsDark.foreground : AppColors.foreground,
               ),
             ),
           ),
