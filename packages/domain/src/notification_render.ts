@@ -269,10 +269,10 @@ export function renderNotification(c: NotificationContent): { title: string; bod
     case 'instant_no_match':
       return {
         title: 'Chưa tìm được nhiếp ảnh gia',
-        // amount 0 = nothing paid (#140 moves no money): no money sentence, the S13.07 hint instead.
+        // amount 0 = nothing paid (#140 moves no money): no money sentence, the spec §7 "nobody near" line.
         body: c.amount > 0
           ? `${formatVnd(c.amount)} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ.`
-          : 'Gần bạn lúc này ít người đang sẵn sàng. Chọn thêm người nhé.',
+          : 'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn',
       };
     case 'instant_arrived':
       return { title: `${c.photographer} đã đến điểm hẹn`, body: `Gặp nhau ở ${c.place}.` };

@@ -163,7 +163,7 @@ const CASES: readonly HookCase[] = [
   {
     name: 'notifyInstantNoMatch',
     run: (d) => notifyInstantNoMatch(d, { customerId: 'c1', requestId: 'r1', round: 3, amount: 300_000 }),
-    rows: [row('c1', 'instant_no_match', '/instant/r1', 'n_instant_no_match_r1', 'Chưa tìm được nhiếp ảnh gia')],
+    rows: [row('c1', 'instant_no_match', '/instant/r1', 'n_instant_no_match_r1_3', 'Chưa tìm được nhiếp ảnh gia')],
   },
   {
     name: 'notifyInstantArrived',
@@ -184,6 +184,26 @@ const CASES: readonly HookCase[] = [
     name: 'notifyInstantCancelled by photographer',
     run: (d) => notifyInstantCancelled(d, { requestId: 'r1', by: 'photographer', customerId: 'c1', photographerId: 'p1', feeVnd: 0 }),
     rows: [row('c1', 'instant_cancelled', '/instant/r1', 'n_instant_cancelled_r1_photographer', 'Minh Trí đã huỷ')],
+  },
+  {
+    name: 'notifyInstantAssigned per assignment',
+    run: (d) => notifyInstantAssigned(d, { customerId: 'c1', requestId: 'r1', photographerId: 'p1', etaMinutes: 15, assignment: '1761120000000' }),
+    rows: [row('c1', 'instant_assigned', '/instant/r1', 'n_instant_assigned_r1_1761120000000', 'Đã match với Minh Trí')],
+  },
+  {
+    name: 'notifyInstantArrived per assignment',
+    run: (d) => notifyInstantArrived(d, { customerId: 'c1', requestId: 'r1', photographerId: 'p1', place: 'Hồ Gươm', assignment: '1761120000000' }),
+    rows: [row('c1', 'instant_arrived', '/instant/r1', 'n_instant_arrived_r1_1761120000000', 'Minh Trí đã đến điểm hẹn')],
+  },
+  {
+    name: 'notifyInstantFinished per assignment',
+    run: (d) => notifyInstantFinished(d, { customerId: 'c1', requestId: 'r1', photographerId: 'p1', assignment: '1761120000000' }),
+    rows: [row('c1', 'instant_finished', '/instant/r1', 'n_instant_finished_r1_1761120000000', 'Minh Trí đã hoàn thành buổi chụp')],
+  },
+  {
+    name: 'notifyInstantCancelled by photographer per assignment',
+    run: (d) => notifyInstantCancelled(d, { requestId: 'r1', by: 'photographer', customerId: 'c1', photographerId: 'p1', feeVnd: 0, assignment: '1761120000000' }),
+    rows: [row('c1', 'instant_cancelled', '/instant/r1', 'n_instant_cancelled_r1_photographer_1761120000000', 'Minh Trí đã huỷ')],
   },
   {
     name: 'notifyReviewVerdict tomato',

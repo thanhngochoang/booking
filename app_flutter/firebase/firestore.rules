@@ -889,8 +889,8 @@ service cloud.firestore {
         && d.heartbeatAt == request.time
         && request.time > resource.data.heartbeatAt + duration.value(60, 's')
         && validLatLng(d)
-        && d.geohash5 is string && d.geohash5.matches('^[0-9b-hjkmnp-z]{5}$')
-        && d.geohash4 == d.geohash5[0:4];
+        && d.geohash4 is string && d.geohash4.matches('^[0-9b-hjkmnp-z]{4}$')
+        && d.geohash5 is string && d.geohash5.matches(d.geohash4 + '[0-9b-hjkmnp-z]');
     }
 
     // A track point of an active trip: position fields only, at most every 15 s (≤ 4 writes a minute).
@@ -927,11 +927,13 @@ service cloud.firestore {
         && (resource.data.customerId == request.auth.uid || resource.data.photographerId == request.auth.uid);
       allow write: if false;
       match /private/{docId} {
-        // Decision 22: the customer's contact copy, for the assigned photographer while the request is active.
+        // Decision 22: the customer's contact copy, for the assigned photographer while the request is active;
         // `dispatch` (excludedIds) and anything else stay server-only.
+        // paidAt != null as well (defence in depth: the server writes the copy only once paid).
         allow read: if signedIn() && docId == 'contact'
           && instantRequestDoc(requestId).photographerId == request.auth.uid
-          && instantRequestDoc(requestId).active == true;
+          && instantRequestDoc(requestId).active == true
+          && instantRequestDoc(requestId).paidAt != null;
         allow write: if false;
       }
     }
@@ -943,9 +945,10 @@ service cloud.firestore {
 
     // Exists only while en route (deleted at arrival and at any end; no point history, spec §9).
     match /instant_tracks/{requestId} {
-      allow read: if signedIn()
+      allow read: if signedIn() && resource.data.active == true
         && (resource.data.customerId == request.auth.uid || resource.data.photographerId == request.auth.uid);
-      allow update: if signedIn() && resource.data.photographerId == request.auth.uid && validTrackPoint();
+      allow update: if signedIn() && resource.data.photographerId == request.auth.uid
+        && resource.data.active == true && validTrackPoint();
       allow create, delete: if false;
     }
 

@@ -4,10 +4,10 @@
  * `syncInstantChat`, `instantTrackShouldGo`); this adapter calls #138's hooks, the chat sync and the
  * track delete, each in its own try/catch so one failure never stops the others.
  *
- * Replays are safe: #138's dedupe keys make a notice sent twice one inbox row, the chat sync finds the
- * chat already open (or already closing), and deleting a missing track is a no-op. A failed chat sync
- * or track delete is rethrown after every side effect ran so Functions retries the event (`retry:
- * true`); a failed notice is only logged (the hook already wrote what it could).
+ * Replays are safe: #138's dedupe keys (per request and assignment) make a notice sent twice one inbox
+ * row, the chat sync finds the chat already open (or already closing), and deleting a missing track is
+ * a no-op. So any non-permanent failure (a notice, the chat sync, the track delete) is rethrown after
+ * every side effect ran and Functions retries the event (`retry: true`).
  */
 import * as logger from 'firebase-functions/logger';
 import {
@@ -64,23 +64,52 @@ export function heldAmountOf(r: InstantRequest): number {
   return r.paidAt === null ? 0 : r.amountVnd;
 }
 
-function sendNotice(deps: NotifyDeps, n: InstantNotice, r: InstantRequest): Promise<unknown> {
+/** The assignment a notice belongs to (its `assignedAt` in ms), keying #138's rows per job. */
+const assignmentOf = (r: InstantRequest | null): string | undefined =>
+  r?.assignedAt == null ? undefined : String(r.assignedAt.getTime());
+
+/**
+ * The #138 hook of one notice; `skipped` when the write lacks the photographer a job notice names
+ * (never sent to an empty id).
+ */
+async function sendNotice(
+  deps: NotifyDeps,
+  n: InstantNotice,
+  before: InstantRequest | null,
+  r: InstantRequest,
+): Promise<'sent' | 'skipped'> {
   const base = { customerId: r.customerId, requestId: r.id };
+  const photographerId = r.photographerId;
+  const assignment = assignmentOf(r);
   switch (n.hook) {
     case 'assigned':
-      return notifyInstantAssigned(deps, { ...base, photographerId: r.photographerId ?? '', etaMinutes: r.etaMinutes ?? 0 });
+      if (photographerId === null) return 'skipped';
+      await notifyInstantAssigned(deps, { ...base, photographerId, etaMinutes: r.etaMinutes ?? 0, assignment });
+      return 'sent';
     case 'round_ended':
-      return notifyInstantRoundEnded(deps, { ...base, round: n.round });
+      await notifyInstantRoundEnded(deps, { ...base, round: n.round });
+      return 'sent';
     case 'no_match':
-      return notifyInstantNoMatch(deps, { ...base, round: n.round, amount: heldAmountOf(r) });
+      await notifyInstantNoMatch(deps, { ...base, round: n.round, amount: heldAmountOf(r) });
+      return 'sent';
     case 'arrived':
-      return notifyInstantArrived(deps, { ...base, photographerId: r.photographerId ?? '', place: r.meetPoint.name });
+      if (photographerId === null) return 'skipped';
+      await notifyInstantArrived(deps, { ...base, photographerId, place: r.meetPoint.name, assignment });
+      return 'sent';
     case 'finished':
-      return notifyInstantFinished(deps, { ...base, photographerId: r.photographerId ?? '' });
+      if (photographerId === null) return 'skipped';
+      await notifyInstantFinished(deps, { ...base, photographerId, assignment });
+      return 'sent';
     case 'cancelled':
-      return notifyInstantCancelled(deps, { ...base, by: n.by, photographerId: n.photographerId, feeVnd: n.feeVnd });
+      // A photographer cancel clears the assignment on `after`: the job it ended is `before`'s.
+      await notifyInstantCancelled(deps, {
+        ...base, by: n.by, photographerId: n.photographerId, feeVnd: n.feeVnd,
+        assignment: n.by === 'photographer' ? assignmentOf(before) : assignment ?? assignmentOf(before),
+      });
+      return 'sent';
     case 'missed':
-      return notifyInstantMissed(deps, { photographerId: n.photographerId, offerId: n.offerId });
+      await notifyInstantMissed(deps, { photographerId: n.photographerId, offerId: n.offerId });
+      return 'sent';
   }
 }
 
@@ -95,19 +124,23 @@ export async function handleInstantRequestWrite(
     return { notices: 0, chat: 'expired', trackDeleted: false };
   }
 
+  const retryable: unknown[] = [];
   let notices = 0;
   if (after !== null) {
     for (const n of instantNotices(before, after)) {
       try {
-        await sendNotice(deps.notify, n, after);
-        notices += 1;
+        if (await sendNotice(deps.notify, n, before, after) === 'sent') {
+          notices += 1;
+        } else {
+          logger.error('onInstantRequestWrite: notice skipped', { requestId, hook: n.hook, reason: 'missing_photographer' });
+        }
       } catch (e) {
         logger.error('onInstantRequestWrite: notice failed', { requestId, hook: n.hook, ...errorKind(e) });
+        if (!isPermanentFirestoreError(e)) retryable.push(e);
       }
     }
   }
 
-  const retryable: unknown[] = [];
   let chat = 'none';
   try {
     chat = await syncInstantChat(deps.chat, before, after);

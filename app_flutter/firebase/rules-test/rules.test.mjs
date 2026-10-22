@@ -2691,6 +2691,8 @@ describe('instant', () => {
     await assertFails(updateDoc(ref, beat({ lat: 91 })));
     await assertFails(updateDoc(ref, beat({ geohash5: 'w3gv' })));
     await assertFails(updateDoc(ref, beat({ geohash4: 'w3gx' })));
+    await assertFails(updateDoc(ref, beat({ geohash5: 'w3gva', geohash4: 'w3gv' }))); // 'a' is not base32
+    await assertSucceeds(updateDoc(ref, beat()));
   });
 
   test('owner cannot switch online by writing', async () => {
@@ -2701,10 +2703,11 @@ describe('instant', () => {
   });
 
   test('owner cannot write activeRequestId, pendingOffers, cityId or priceListVersion', async () => {
-    await seed('instant_presence/ip_keys', presence());
+    await seed('instant_presence/ip_keys', presence({ pendingOffers: [{ offerId: 'of1', requestId: 'ir_x', expiresAt: ago(-30) }] }));
     const ref = doc(as('ip_keys'), 'instant_presence/ip_keys');
     await assertFails(updateDoc(ref, { ...beat(), activeRequestId: 'ir_x' }));
-    await assertFails(updateDoc(ref, { ...beat(), pendingOffers: [], reliability: { offers: 0 } }));
+    await assertFails(updateDoc(ref, { ...beat(), pendingOffers: [] }));
+    await assertFails(updateDoc(ref, { ...beat(), reliability: { offers: 0 } }));
     await assertFails(updateDoc(ref, { ...beat(), cityId: 'hn' }));
     await assertFails(updateDoc(ref, { ...beat(), priceListVersion: 2 }));
     await assertFails(setDoc(doc(as('ip_new'), 'instant_presence/ip_new'), presence()));
@@ -2757,6 +2760,12 @@ describe('instant', () => {
     await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_cx/private/contact')));
   });
 
+  test('an unpaid request never exposes the contact copy, even to the assigned photographer', async () => {
+    await seed('instant_requests/ir_unpaid', request({ paidAt: null }));
+    await seed('instant_requests/ir_unpaid/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_unpaid/private/contact')));
+  });
+
   test('customer cannot read the contact copy', async () => {
     await seed('instant_requests/ir_cc', request({ paidAt: ago(300) }));
     await seed('instant_requests/ir_cc/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
@@ -2796,6 +2805,12 @@ describe('instant', () => {
   test('track write within 15 s is denied', async () => {
     await seed('instant_tracks/it_fast', track({ at: ago(5) }));
     await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_fast'), point()));
+  });
+
+  test('an inactive track is not readable by either party', async () => {
+    await seed('instant_tracks/it_gone', track({ active: false }));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_tracks/it_gone')));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_tracks/it_gone')));
   });
 
   test('track write when inactive is denied', async () => {

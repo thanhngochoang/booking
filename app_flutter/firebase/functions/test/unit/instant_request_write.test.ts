@@ -126,10 +126,10 @@ describe('handleInstantRequestWrite', () => {
     const failing: InstantRequestWriteDeps = { ...w.deps, notify: { ...w.deps.notify, store } };
     const expired = { ...searching, status: 'choosing' as const, roundEnded: true,
       offers: searching.offers.map((o) => ({ ...o, outcome: 'expired' as const })) };
-    const out = await handleInstantRequestWrite(
-      { requestId: 'ir_01', before: searching, after: expired, time: EVENT_TIME }, failing, at(61_000));
+    // The others still go out, then the event is retried (the dedupe keys make the replay safe).
+    await assert.rejects(handleInstantRequestWrite(
+      { requestId: 'ir_01', before: searching, after: expired, time: EVENT_TIME }, failing, at(61_000)));
     t.mock.restoreAll();
-    assert.equal(out.notices, 2);
     assert.deepEqual([...w.store.rows.values()].map((r) => [r.userId, r.type]).sort(),
       [['c-lan', 'instant_round_ended'], ['p2', 'instant_missed']]);
     assert.equal(lines.length, 1);
@@ -144,7 +144,7 @@ describe('handleInstantRequestWrite', () => {
       { requestId: 'ir_01', before, after: { ...before, status: 'no_match', roundEnded: false }, time: EVENT_TIME }, w.deps, at(1_000));
     const rows = [...w.store.rows.values()];
     assert.deepEqual(rows.map((r) => [r.type, r.body]),
-      [['instant_no_match', 'Gần bạn lúc này ít người đang sẵn sàng. Chọn thêm người nhé.']]);
+      [['instant_no_match', 'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn']]);
   });
 
   test('the end of the job closes the pair chat 7 days later', async () => {
@@ -164,5 +164,54 @@ describe('handleInstantRequestWrite', () => {
       { requestId: 'ir_01', before: job('en_route'), after: job('arrived', { arrivedAt: T0 }), time: EVENT_TIME }, deps, at(1_000)));
     t.mock.restoreAll();
     assert.deepEqual([...w.store.rows.values()].map((r) => r.type), ['instant_arrived']);
+  });
+
+  test('photographer cancels, a second accepts: a second instant_assigned row; a replay still dedupes', async () => {
+    const w = world();
+    (w.deps.notify.users as MemoryUserDirectory).users.set('p2', { name: 'Minh Trí', avatarUrl: null });
+    const first = job('assigned', { assignedAt: at(1_000) });
+    await handleInstantRequestWrite({ requestId: 'ir_01', before: searching, after: first, time: EVENT_TIME }, w.deps, at(2_000));
+    const reopened = aRequest({ status: 'choosing', committedAt: T0, cancelledBy: 'photographer', roundEnded: true, round: 2 });
+    const cancel = { requestId: 'ir_01', before: first, after: reopened, time: EVENT_TIME };
+    await handleInstantRequestWrite(cancel, w.deps, at(3_000));
+    const second = job('assigned', { photographerId: 'p2', chatId: chatIdFor('c-lan', 'p2'), assignedAt: at(90_000), round: 2 });
+    const assign2 = { requestId: 'ir_01', before: reopened, after: second, time: EVENT_TIME };
+    await handleInstantRequestWrite(assign2, w.deps, at(91_000));
+    const writes = w.store.writes;
+    await handleInstantRequestWrite(assign2, w.deps, at(92_000)); // redelivered
+    await handleInstantRequestWrite(cancel, w.deps, at(92_000));
+    assert.equal(w.store.writes, writes);
+    const ids = [...w.store.rows.values()].map((r) => r.id).sort();
+    assert.deepEqual(ids, [
+      `n_instant_assigned_ir_01_${at(1_000).getTime()}`,
+      `n_instant_assigned_ir_01_${at(90_000).getTime()}`,
+      `n_instant_cancelled_ir_01_photographer_${at(1_000).getTime()}`,
+    ]);
+    const titles = [...w.store.rows.values()].filter((r) => r.type === 'instant_assigned').map((r) => r.title).sort();
+    assert.deepEqual(titles, ['Đã match với Hà Trần', 'Đã match với Minh Trí']);
+  });
+
+  test('a chat-sync failure is rethrown after the notices and the track delete ran', async (t) => {
+    quietLogs(t);
+    const w = world();
+    const chat: ChatDeps = { ...w.deps.chat, chats: { ...w.chats, runTransaction: () => Promise.reject(new Error('unavailable')),
+      pendingProposal: async () => null } };
+    await assert.rejects(handleInstantRequestWrite(
+      { requestId: 'ir_01', before: job('en_route'), after: job('cancelled_by_customer', { active: false, cancelledBy: 'customer', feeVnd: 0 }),
+        time: EVENT_TIME }, { ...w.deps, chat }, at(1_000)));
+    t.mock.restoreAll();
+    assert.deepEqual([...w.store.rows.values()].map((r) => r.type), ['instant_cancelled']);
+    assert.deepEqual(w.deleted, ['ir_01']);
+  });
+
+  test('a job notice without a photographer is skipped and logged, never sent to an empty id', async (t) => {
+    const lines = quietLogs(t);
+    const w = world();
+    const out = await handleInstantRequestWrite(
+      { requestId: 'ir_01', before: job('in_progress'), after: job('finished', { photographerId: null }), time: EVENT_TIME }, w.deps, at(1_000));
+    t.mock.restoreAll();
+    assert.equal(out.notices, 0);
+    assert.equal(w.store.rows.size, 0);
+    assert.ok(lines.some((l) => /missing_photographer/.test(l)));
   });
 });
