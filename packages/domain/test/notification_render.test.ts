@@ -149,6 +149,8 @@ const CASES: readonly (readonly [NotificationContent, string, string])[] = [
   [{ type: 'instant_missed' }, 'Bạn đã bỏ lỡ một lời mời', 'Lời mời chụp ngay đã hết hạn.'],
   [{ type: 'instant_round_ended', round: 1 }, 'Chụp ngay', 'Chưa ai nhận. Chọn thêm người nhé.'],
   [{ type: 'instant_no_match', amount: 300_000 }, 'Chưa tìm được nhiếp ảnh gia', '300.000₫ vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ.'],
+  // Unpaid (#140 holds no money): no money sentence.
+  [{ type: 'instant_no_match', amount: 0 }, 'Chưa tìm được nhiếp ảnh gia', 'Gần bạn lúc này ít người đang sẵn sàng. Chọn thêm người nhé.'],
   [{ type: 'instant_arrived', photographer: 'Minh Trí', place: 'Hồ Gươm' }, 'Minh Trí đã đến điểm hẹn', 'Gặp nhau ở Hồ Gươm.'],
   [{ type: 'instant_finished', photographer: 'Minh Trí' }, 'Minh Trí đã hoàn thành buổi chụp', 'Xác nhận hoàn thành trong 2 giờ, nếu không sẽ tự hoàn thành.'],
   [{ type: 'instant_cancelled', to: 'photographer', name: 'An', feeVnd: 50_000 }, 'Khách đã huỷ chụp ngay', 'Bạn nhận 50.000₫ phí đi lại.'],

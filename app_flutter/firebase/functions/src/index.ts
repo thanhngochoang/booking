@@ -85,6 +85,8 @@ import {
   handleUpdateInstantJob,
 } from './callables/instant.js';
 import { liveInstantDeps } from './infra/live_instant.js';
+import { instantRequestFromFirestore, instantTrackPath } from './infra/instant_firestore.js';
+import { handleInstantRequestWrite } from './triggers/instant_request_write.js';
 import { handlePhotographerEvent, healNameKey, studiosToRecompute } from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
@@ -1084,3 +1086,24 @@ export const saveInstantSettings = onCall(CALLABLE_OPTIONS, (request) => handleS
 export const answerInstantOffer = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
 
 export const updateInstantJob = onCall(CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
+
+/** Notices (#138's hooks), the pair chat and the track clean-up of every request write (Decisions 11, 20, 21). */
+export const onInstantRequestWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'instant_requests/{requestId}' },
+  async (event) => {
+    const requestId = event.params.requestId;
+    await handleInstantRequestWrite(
+      {
+        requestId,
+        time: event.time,
+        before: instantRequestFromFirestore(requestId, event.data?.before.data()),
+        after: instantRequestFromFirestore(requestId, event.data?.after.data()),
+      },
+      {
+        notify: liveNotifyDeps(),
+        chat: liveChatDeps(),
+        deleteTrack: async (id) => { await db().doc(instantTrackPath(id)).delete(); },
+      },
+    );
+  },
+);
