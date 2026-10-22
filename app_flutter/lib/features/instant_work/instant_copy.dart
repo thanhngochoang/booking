@@ -1,4 +1,6 @@
 // Shared Chụp ngay copy for the photographer screens (S14.01–S14.03, S06.01 card).
+import 'dart:math' as math;
+
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -43,3 +45,19 @@ String instantErrorText(AppLocalizations l, Object e) =>
 String instantShortMoney(int vnd) => vnd >= 1000000
     ? formatMoney(vnd, short: true, decimals: 2)
     : formatMoney(vnd, short: true);
+
+/// "15:21": an instant as Vietnam wall-clock time.
+String instantClock(DateTime instant) {
+  final vn = toVn(instant);
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(vn.hour)}:${two(vn.minute)}';
+}
+
+/// "350 m" under a kilometre (to 10 m), else "1,4 km".
+String instantDistanceText(double metres) => metres < 995
+    ? '${math.max(10, (metres / 10).round() * 10)} m'
+    : formatDistance(metres / 1000);
+
+/// "1,4": kilometres to 0,1 for a line that writes the unit itself.
+String instantKmNumber(double km) =>
+    math.max(0.1, roundKm(km)).toStringAsFixed(1).replaceAll('.', ',');

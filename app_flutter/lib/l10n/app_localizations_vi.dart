@@ -8916,4 +8916,179 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get matchContinue => 'Tiếp tục';
+
+  @override
+  String get jobTitleEnRoute => 'Đang đến';
+
+  @override
+  String get jobTitleArrived => 'Đã đến';
+
+  @override
+  String get jobTitleShooting => 'Đang chụp';
+
+  @override
+  String get jobTitleFinished => 'Chờ khách xác nhận';
+
+  @override
+  String get jobTitleCompleted => 'Đã hoàn thành';
+
+  @override
+  String jobSubtitle(String name, String genre, String duration) {
+    return '$name · $genre $duration';
+  }
+
+  @override
+  String get jobDirections => 'Chỉ đường';
+
+  @override
+  String jobDistanceLine(String area, String km) {
+    return '$area · $km km';
+  }
+
+  @override
+  String jobMeetPointLine(String area) {
+    return '$area · điểm hẹn';
+  }
+
+  @override
+  String jobStepAccepted(String time) {
+    return 'Đã nhận · $time';
+  }
+
+  @override
+  String get jobStepArriveHint => 'Đã đến (bật khi còn cách 200 m)';
+
+  @override
+  String jobStepArrived(String time) {
+    return 'Đã đến · $time';
+  }
+
+  @override
+  String get jobStepShoot => 'Bắt đầu chụp · Hoàn thành';
+
+  @override
+  String get jobLocationNote =>
+      'Vị trí của bạn chỉ chia sẻ với khách trong lúc đang đến. Tới nơi là dừng.';
+
+  @override
+  String get jobLocationNeeded =>
+      'Cho phép dùng vị trí để chia sẻ đường đi với khách.';
+
+  @override
+  String get jobLocationAllow => 'Cho phép';
+
+  @override
+  String get jobArrive => 'Đã đến';
+
+  @override
+  String jobArriveFar(String distance) {
+    return 'Còn cách $distance. Tới gần hơn để bấm Đã đến.';
+  }
+
+  @override
+  String get jobArriveForceTitle => 'GPS chưa chính xác';
+
+  @override
+  String jobArriveForceBody(int meters) {
+    return 'Vị trí đang lệch khoảng $meters m. Xác nhận bạn đã tới điểm hẹn?';
+  }
+
+  @override
+  String get jobArriveForceConfirm => 'Xác nhận đã đến';
+
+  @override
+  String get jobArriveForceKeep => 'Chờ GPS';
+
+  @override
+  String get jobStart => 'Bắt đầu chụp';
+
+  @override
+  String get jobFinish => 'Hoàn thành';
+
+  @override
+  String get jobShootLeft => 'còn lại';
+
+  @override
+  String get jobShootNote =>
+      'Hết giờ gói hoặc bấm Hoàn thành, khách sẽ xác nhận.';
+
+  @override
+  String jobStartedLine(String time, String place) {
+    return 'Bắt đầu $time · $place';
+  }
+
+  @override
+  String jobFinishedLine(String time, String place) {
+    return 'Hoàn thành $time · $place';
+  }
+
+  @override
+  String get jobWaitingBadge => 'Chờ khách';
+
+  @override
+  String get jobFinishedNote =>
+      'Khách xác nhận hoặc tự hoàn thành sau 2 giờ. Tiền chuyển cho bạn 24 giờ sau khi hoàn thành.';
+
+  @override
+  String get jobBackToWork => 'Về Công việc';
+
+  @override
+  String get jobNoShow => 'Khách không có mặt';
+
+  @override
+  String jobNoShowIn(String time) {
+    return 'Khách không có mặt (sau $time)';
+  }
+
+  @override
+  String get jobNoShowTitle => 'Báo khách không có mặt?';
+
+  @override
+  String jobNoShowBody(String amount) {
+    return 'Khách được hoàn 50%, bạn nhận $amount.';
+  }
+
+  @override
+  String get jobNoShowConfirm => 'Báo khách không có mặt';
+
+  @override
+  String get jobNoShowKeep => 'Chờ thêm';
+
+  @override
+  String get jobCancel => 'Huỷ việc';
+
+  @override
+  String get jobCancelledTitle => 'Khách đã huỷ yêu cầu';
+
+  @override
+  String jobCancelledFee(String amount) {
+    return 'Bạn nhận $amount phí đi lại.';
+  }
+
+  @override
+  String get jobCancelledNoFee => 'Không cần tới điểm hẹn nữa.';
+
+  @override
+  String get providerCancelTitle => 'Huỷ việc chụp ngay?';
+
+  @override
+  String get providerCancelBody =>
+      'Khách được hoàn 100%. Huỷ sau khi nhận làm giảm điểm tin cậy của bạn.';
+
+  @override
+  String get providerCancelConfirm => 'Huỷ việc';
+
+  @override
+  String get providerCancelKeep => 'Giữ việc';
+
+  @override
+  String get mapRecenter => 'Về vị trí của tôi';
+
+  @override
+  String get mapPinYou => 'Bạn';
+
+  @override
+  String mapSemantics(String pins) {
+    return 'Bản đồ: $pins';
+  }
 }

@@ -213,6 +213,19 @@ void main() {
       },
     );
 
+    test('only the S14.03 arrival asks for a high-accuracy fix', () {
+      final users = [
+        for (final f in Directory('lib').listSync(recursive: true))
+          if (f is File &&
+              f.path.endsWith('.dart') &&
+              f.readAsStringSync().contains('highAccuracy: true'))
+            f.path.replaceAll(r'\', '/'),
+      ];
+      expect(users, ['lib/features/instant_work/instant_job_controller.dart']);
+      final src = File(users.single).readAsStringSync();
+      expect('highAccuracy: true'.allMatches(src).length, 1);
+    });
+
     test('the port has no stream either', () {
       final src = File('lib/data/location/location_repository.dart')
           .readAsStringSync();

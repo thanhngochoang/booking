@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
+import 'package:photobooking/features/instant_work/instant_job_screen.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
 import 'package:photobooking/features/instant_work/offer_screen.dart';
 
@@ -24,6 +27,20 @@ const taoDan = (lat: 10.7745, lng: 106.6918);
 
 /// About 350 m north of [taoDan].
 const taoDanNorth = (lat: 10.77765, lng: 106.6918);
+
+/// Records the URLs a screen opens outside the app ("Chỉ đường", contact).
+class RecordingLauncher implements ExternalLauncher {
+  final opened = <Uri>[];
+
+  @override
+  Future<bool> canOpen(Uri uri) async => true;
+
+  @override
+  Future<bool> open(Uri uri) async {
+    opened.add(uri);
+    return true;
+  }
+}
 
 /// "Now" for tests; moved together with the fake timers by [InstantWorld.wait].
 class InstantClock {
@@ -63,9 +80,11 @@ class InstantWorld {
   final FakeLocationRepository location;
   final InstantClock clock;
   final bool enabled;
+  final launcher = RecordingLauncher();
 
   List<Override> get overrides => [
     instantRepositoryProvider.overrideWithValue(repo),
+    externalLauncherProvider.overrideWithValue(launcher),
     instantEnabledProvider.overrideWithValue(enabled),
     locationRepositoryProvider.overrideWithValue(location),
     clockProvider.overrideWithValue(() => clock.now),
@@ -219,6 +238,64 @@ Future<GoRouter> pumpOfferScreen(
     ),
   );
   router.push('/work/instant/offer/$offerId');
+  await settleInstant(tester);
+  return router;
+}
+
+/// The request in [status] as its assigned photographer reads it on S14.03
+/// (mock values: Lan Anh, Chân dung 1 giờ, Tao Đàn, 690.000₫, accepted at 09:00).
+InstantRequest jobRequestOf(
+  String id, {
+  InstantStatus status = InstantStatus.enRoute,
+  DateTime? arrivedAt,
+  DateTime? startedAt,
+  DateTime? finishedAt,
+  int? feeVnd,
+}) => assignedRequestOf(id).copyWith(
+  status: status,
+  amountVnd: 690000,
+  earningVnd: 690000,
+  chatId: 'chat_cus1_me',
+  assignedAt: instantNow,
+  arrivedAt: arrivedAt,
+  startedAt: startedAt,
+  shootEndsAt: startedAt?.add(const Duration(minutes: 60)),
+  finishedAt: finishedAt,
+  feeVnd: feeVnd,
+);
+
+/// S14.03 at `/work/instant/[requestId]`, pushed over `/bookings`.
+Future<GoRouter> pumpJobScreen(
+  WidgetTester tester,
+  InstantWorld world, {
+  String requestId = 'req1',
+  double textScale = 1.0,
+  Size viewSize = const Size(390, 844),
+}) async {
+  tester.view.physicalSize = viewSize;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final router = GoRouter(
+    initialLocation: '/bookings',
+    routes: [
+      GoRoute(path: '/bookings', builder: _stub),
+      GoRoute(path: '/work/instant', builder: _stub),
+      GoRoute(
+        path: '/work/instant/:id',
+        builder: (_, s) => InstantJobScreen(requestId: s.pathParameters['id']!),
+      ),
+      GoRoute(path: '/chat/:chatId', builder: _stub),
+    ],
+  );
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pumpWidget(
+    screenRouterApp(
+      router: router,
+      overrides: world.overrides,
+      textScale: textScale,
+    ),
+  );
+  router.push('/work/instant/$requestId');
   await settleInstant(tester);
   return router;
 }
