@@ -37,6 +37,7 @@ import 'package:photobooking/features/event_manage/my_events_screen.dart';
 import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
+import 'package:photobooking/features/jobs/job_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/search/explore_search_screen.dart';
 import 'package:photobooking/features/help/help_screen.dart';
@@ -462,6 +463,53 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/e/:eventId/chat',
         builder: (_, state) =>
             EventChatScreen(eventId: state.pathParameters['eventId']!),
+      ),
+      // S15 and S16 Job Posts and Quotes (#139).
+      // `new` before `:id`.
+      GoRoute(
+        path: '/jobs/new',
+        builder: (_, state) => JobScreen(
+          jobId: state.uri.queryParameters['from'] ??
+              state.uri.queryParameters['edit'] ??
+              'new',
+        ),
+      ),
+      GoRoute(
+        path: '/jobs/:id',
+        builder: (_, state) => JobScreen(
+          jobId: state.pathParameters['id']!,
+        ),
+        routes: [
+          GoRoute(
+            path: 'quote',
+            builder: (_, state) => JobScreen(
+              jobId: state.pathParameters['id']!,
+              openQuote: true,
+            ),
+          ),
+          GoRoute(
+            path: 'applications',
+            builder: (_, state) => JobScreen(
+              jobId: state.pathParameters['id']!,
+            ),
+            routes: [
+              GoRoute(
+                path: ':quoteId',
+                builder: (_, state) => JobScreen(
+                  jobId: state.pathParameters['id']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'pay',
+                    builder: (_, state) => JobScreen(
+                      jobId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),

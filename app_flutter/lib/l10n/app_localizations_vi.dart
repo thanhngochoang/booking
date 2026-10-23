@@ -9096,4 +9096,70 @@ class AppLocalizationsVi extends AppLocalizations {
   String mapSemantics(String pins) {
     return 'Bản đồ: $pins';
   }
+
+  @override
+  String get jobStatusOpen => 'Đang nhận báo giá';
+
+  @override
+  String get jobStatusAwarded => 'Đã chọn thợ';
+
+  @override
+  String get jobStatusClosed => 'Đã đóng';
+
+  @override
+  String get jobStatusExpired => 'Hết hạn';
+
+  @override
+  String get quoteStatusPending => 'đang chờ khách';
+
+  @override
+  String get quoteStatusAccepted => 'được chọn';
+
+  @override
+  String get quoteStatusNotSelected => 'không được chọn';
+
+  @override
+  String get quoteStatusDeclined => 'khách đã từ chối';
+
+  @override
+  String get quoteStatusWithdrawn => 'đã rút';
+
+  @override
+  String jobLeftDays(int n) {
+    return 'còn $n ngày';
+  }
+
+  @override
+  String jobLeftHours(int n) {
+    return 'còn $n giờ';
+  }
+
+  @override
+  String jobBudgetRange(String min, String max) {
+    return '$min–$max';
+  }
+
+  @override
+  String get jobOpenBudget => 'Để thợ báo giá';
+
+  @override
+  String jobDurationHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String get jobSpecialtyOther => 'Khác';
+
+  @override
+  String get jobErrGeneric => 'Có lỗi xảy ra. Thử lại sau.';
+
+  @override
+  String get jobErrNetwork => 'Mất kết nối. Thử lại khi có mạng.';
+
+  @override
+  String get jobErrNotAccepting =>
+      'Hồ sơ của bạn chưa nhận đơn nên chưa gửi được báo giá.';
+
+  @override
+  String get jobErrPhone => 'Thêm số điện thoại để tiếp tục.';
 }

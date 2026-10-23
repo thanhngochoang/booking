@@ -15608,6 +15608,120 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bản đồ: {pins}'**
   String mapSemantics(String pins);
+
+  /// No description provided for @jobStatusOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang nhận báo giá'**
+  String get jobStatusOpen;
+
+  /// No description provided for @jobStatusAwarded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn thợ'**
+  String get jobStatusAwarded;
+
+  /// No description provided for @jobStatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng'**
+  String get jobStatusClosed;
+
+  /// No description provided for @jobStatusExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get jobStatusExpired;
+
+  /// No description provided for @quoteStatusPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang chờ khách'**
+  String get quoteStatusPending;
+
+  /// No description provided for @quoteStatusAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'được chọn'**
+  String get quoteStatusAccepted;
+
+  /// No description provided for @quoteStatusNotSelected.
+  ///
+  /// In vi, this message translates to:
+  /// **'không được chọn'**
+  String get quoteStatusNotSelected;
+
+  /// No description provided for @quoteStatusDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'khách đã từ chối'**
+  String get quoteStatusDeclined;
+
+  /// No description provided for @quoteStatusWithdrawn.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã rút'**
+  String get quoteStatusWithdrawn;
+
+  /// No description provided for @jobLeftDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn {n} ngày'**
+  String jobLeftDays(int n);
+
+  /// No description provided for @jobLeftHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn {n} giờ'**
+  String jobLeftHours(int n);
+
+  /// No description provided for @jobBudgetRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'{min}–{max}'**
+  String jobBudgetRange(String min, String max);
+
+  /// No description provided for @jobOpenBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để thợ báo giá'**
+  String get jobOpenBudget;
+
+  /// No description provided for @jobDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String jobDurationHours(int n);
+
+  /// No description provided for @jobSpecialtyOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get jobSpecialtyOther;
+
+  /// No description provided for @jobErrGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có lỗi xảy ra. Thử lại sau.'**
+  String get jobErrGeneric;
+
+  /// No description provided for @jobErrNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối. Thử lại khi có mạng.'**
+  String get jobErrNetwork;
+
+  /// No description provided for @jobErrNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ của bạn chưa nhận đơn nên chưa gửi được báo giá.'**
+  String get jobErrNotAccepting;
+
+  /// No description provided for @jobErrPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số điện thoại để tiếp tục.'**
+  String get jobErrPhone;
 }
 
 class _AppLocalizationsDelegate

@@ -256,6 +256,8 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
   spotScheduleId: json['spotScheduleId'] as String?,
   slotOfferId: json['slotOfferId'] as String?,
   source: json['source'] as String?,
+  jobId: json['jobId'] as String?,
+  quoteId: json['quoteId'] as String?,
   studio: json['studio'] == null
       ? null
       : StudioBookingInfo.fromJson(json['studio'] as Map<String, dynamic>),
@@ -307,6 +309,8 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'spotScheduleId': instance.spotScheduleId,
   'slotOfferId': instance.slotOfferId,
   'source': instance.source,
+  'jobId': instance.jobId,
+  'quoteId': instance.quoteId,
   'studio': instance.studio,
   'version': instance.version,
   'createdAt': instance.createdAt.toIso8601String(),
