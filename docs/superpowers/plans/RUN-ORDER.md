@@ -1,6 +1,6 @@
 # Run order of the implementation plans
 
-> **Since 2026-10-06 the order and the claims live in GitHub Project 4**: https://github.com/users/thanhngochoang/projects/4 — one issue per unit, milestones Phase 1 / 1.5 / 2 / 3, priority = position on the board, dependencies = "Blocked by", runnable = Status Todo + label `plan-ready`. Machines use the skill `run-next-plan` (`.claude/skills/run-next-plan/scripts/project.py`). The tables below and the `board` branch are history only: do not update them. Every plan listed under "Done" has a closed issue in the project (parent "[Phase 1] Plan đã xong"); the open rows became issues too.
+> **Since 2026-10-06 the order and the claims live in GitHub Project 4**: https://github.com/users/thanhngochoang/projects/4 — one issue per unit, milestones Phase 1 / 1.5 / 2 / 3, priority = position on the board, dependencies = "Blocked by", runnable = Status Todo + label `plan-ready`. Machines use the skill `run-next-plan` (`.agents/skills/run-next-plan/scripts/project.py`). The tables below and the `board` branch are history only: do not update them. Every plan listed under "Done" has a closed issue in the project (parent "[Phase 1] Plan đã xong"); the open rows became issues too.
 
 Screen status still lives in the code table of `docs/superpowers/specs/2026-10-01-remaining-screens.md` (column "Trạng thái"); update it when a unit finishes.
 
@@ -22,7 +22,7 @@ Agreed with the user on 2026-10-02. Run the plans top to bottom with subagent-dr
 
 Plans 8a2 and 8b–8e run on two machines at once. The split was made from a file-by-file map of every remaining plan. Each lane owns its files; the few files both lanes touch are append-only and listed at the end.
 
-**Branches (updated 2026-10-03):** `develop` is the protected integration branch; changes land only through PRs into it. Each unit (a row below, or one lane step `<#>/<step>-L<lane>`) gets its own branch `plan/<id>-<slug>` from `origin/develop` and a PR back into `develop`. Which machine holds which unit is tracked on the `board` branch (`CLAIMS.md`), written only by `.claude/skills/run-next-plan/scripts/board.py`; the `run-next-plan` skill picks, claims and runs the next unit. The fixed `lane/ui` / `lane/core` branches from `flutter-rewrite` are retired; the ownership split below still applies. Never push to `main`.
+**Branches (updated 2026-10-03):** `develop` is the protected integration branch; changes land only through PRs into it. Each unit (a row below, or one lane step `<#>/<step>-L<lane>`) gets its own branch `plan/<id>-<slug>` from `origin/develop` and a PR back into `develop`. Which machine holds which unit is tracked on the `board` branch (`CLAIMS.md`), written only by `.agents/skills/run-next-plan/scripts/board.py`; the `run-next-plan` skill picks, claims and runs the next unit. The fixed `lane/ui` / `lane/core` branches from `flutter-rewrite` are retired; the ownership split below still applies. Never push to `main`.
 
 **Ledgers:** SDD ledgers are named after the unit's branch, `.superpowers/sdd/<plan>/progress-<branch-with-dashes>.md`, because the same plan can be executed by several units (A, 4b–4e); see the `run-next-plan` skill. Ledgers from before 2026-10-03 use `progress-lane1.md` / `progress-lane2.md`.
 

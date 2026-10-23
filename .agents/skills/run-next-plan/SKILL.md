@@ -12,12 +12,12 @@ Several computers implement this project at the same time. Since 2026-10-06 they
 - **What to do, in which order**: one issue per unit in the project, grouped by milestone (`Phase 1 · App trên Firebase`, `Phase 1.5 · Dashboard web`, `Phase 2 · Backend Go + PostgreSQL`, `Phase 3 · Tự host hoàn toàn & scale`) and ordered by the item's position on the board (the owner reorders priorities by dragging). Parent issues titled `[Phase …] …` only group units; they are never claimed. Dependencies are GitHub's "Blocked by" links. A unit is **runnable** when its issue is open, Status = Todo, it has the label **`plan-ready`** (its body names the plan: `Plan: docs/superpowers/plans/…`), and no issue blocking it is open. `needs-plan` (no plan yet: the plan-writing session handles it) and `non-code` (legal, partners, accounting) are never taken.
 - **Who is doing what**: claiming pushes a **new** branch `plan/<issue>-<slug>` with `--force-with-lease=<branch>:`, which git refuses when the branch already exists; that refusal is the lock. The script then sets Status = In Progress and writes a machine-readable claim comment on the issue (machine name + branch). Later events (In Review with the PR, Done, release) are comments too, so the issue history is the board.
 
-`project.py` lives next to this file: `python3 .claude/skills/run-next-plan/scripts/project.py <cmd>` from the repo root. It uses `gh` (the token needs the `project` scope: `gh auth refresh -s project`) and git plumbing; it never touches your checkout. It names the machine from `git config board.machine`, else macOS `LocalHostName`, else the hostname; `show` prints the name, and it must stay the same inside and outside the sandbox. If it prints something generic, set it once: `git config board.machine <name>`. Inside the Claude sandbox SSH to github.com is blocked: prefix it with `BOARD_GH=1` (HTTPS through `gh auth git-credential`) and pass `allowed_domains: ["github.com", "api.github.com"]`. Other `git fetch`/`push` calls in this skill use the same trick: `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push https://github.com/thanhngochoang/booking.git <branch>`.
+`project.py` lives next to this file: `python3 .agents/skills/run-next-plan/scripts/project.py <cmd>` from the repo root. It uses `gh` (the token needs the `project` scope: `gh auth refresh -s project`) and git plumbing; it never touches your checkout. It names the machine from `git config board.machine`, else macOS `LocalHostName`, else the hostname; `show` prints the name, and it must stay the same inside and outside the sandbox. If it prints something generic, set it once: `git config board.machine <name>`. Inside the Claude sandbox SSH to github.com is blocked: prefix it with `BOARD_GH=1` (HTTPS through `gh auth git-credential`) and pass `allowed_domains: ["github.com", "api.github.com"]`. Other `git fetch`/`push` calls in this skill use the same trick: `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push https://github.com/thanhngochoang/booking.git <branch>`.
 
 ## 1. Read the project
 
 ```bash
-BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/project.py show
+BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/project.py show
 ```
 
 It prints this machine's name, the active units (In Progress / In Review, with holder and branch) and the next runnable units. Also read the standing rules at the top of `docs/superpowers/plans/RUN-ORDER.md` on `origin/develop`.
@@ -35,7 +35,7 @@ Then, in this order:
 ## 2. Claim it
 
 ```bash
-BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/project.py claim 35
+BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/project.py claim 35
 ```
 
 The branch defaults to `plan/<issue>-<slug of the title>` (pass `--branch` to choose another).
@@ -117,7 +117,7 @@ When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for l
    The body uses these headings: **Unit** (`Closes #<issue>` plus the plan file; GitHub only auto-closes on the default branch, so `project.py` closes it on merge), **Tasks done**, **Tests** (commands and results), **Rulings** (mock vs spec decisions), **Deferred**, **Cross-unit requests**. It ends with the Claude Code attribution line.
 4. Move the issue to review:
    ```bash
-   BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/project.py set 35 review --pr 123
+   BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/project.py set 35 review --pr 123
    ```
    In single mode, merging is the user's call: stop here. After the merge, the next `show` on any machine marks it Done (step 1.1). In continuous mode, go on to step 6.
 
@@ -128,7 +128,7 @@ Tell the user, in Vietnamese: the issue, the branch, the PR link, the test resul
 Merge your own PR only when nothing about it can hurt another machine's work. `scripts/land.py` checks this and does the merge. It refuses on its own if anything is off, so don't merge any other way and never use `gh pr merge --admin`.
 
 ```bash
-BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/land.py 35 --pr 123
+BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/land.py 35 --pr 123
 ```
 
 The gates, in order:
@@ -166,7 +166,7 @@ The loop:
 2. Once it has merged, go back to step 1 on the fresh `develop`. Prefer the next sub-issue of the same parent, so the files you touch stay together, then the next runnable issue in the scope.
 3. **If nothing in scope is runnable yet but other machines still hold units**: don't stop and don't take work out of order. Wait for the project or develop to change:
    ```bash
-   BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/project.py watch --timeout 1800
+   BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/project.py watch --timeout 1800
    ```
    Run it in the background and act when it exits. On a timeout, check again. After about 3 hours with no change, stop and report who holds what.
 4. Stop and report when any of these happens:
