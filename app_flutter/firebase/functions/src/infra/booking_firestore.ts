@@ -29,6 +29,7 @@ import {
   type BookingContactSnapshot,
   type BookingSource,
   type BookingStatus,
+  type BookingTerms,
   type EscrowStatus,
   type PaymentProvider,
   type AvailabilityDayRecord,
@@ -244,6 +245,48 @@ function studioDayLoadFromFirestore(studioId: string, day: string, d: DocumentDa
   };
 }
 
+export function termsToFirestore(t: BookingTerms): DocumentData {
+  return {
+    price: t.price,
+    durationMinutes: t.durationMinutes,
+    photoCount: t.photoCount ?? null,
+    editedCount: t.editedCount,
+    deliveryDays: t.deliveryDays,
+    revisions: t.revisions,
+    milestones: t.milestones.map((m) => ({ kind: m.kind, percent: m.percent })),
+  };
+}
+
+export function termsFromFirestore(v: unknown): BookingTerms | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const d = v as Record<string, unknown>;
+  if (
+    typeof d.price !== 'number' ||
+    typeof d.durationMinutes !== 'number' ||
+    typeof d.editedCount !== 'number' ||
+    typeof d.deliveryDays !== 'number' ||
+    typeof d.revisions !== 'number' ||
+    !Array.isArray(d.milestones)
+  ) {
+    return undefined;
+  }
+  const milestones: { kind: 'shoot' | 'delivery'; percent: number }[] = [];
+  for (const m of d.milestones) {
+    if (m && typeof m === 'object' && (m.kind === 'shoot' || m.kind === 'delivery') && typeof m.percent === 'number') {
+      milestones.push({ kind: m.kind, percent: m.percent });
+    }
+  }
+  return {
+    price: d.price,
+    durationMinutes: d.durationMinutes,
+    photoCount: typeof d.photoCount === 'number' ? d.photoCount : null,
+    editedCount: d.editedCount,
+    deliveryDays: d.deliveryDays,
+    revisions: d.revisions,
+    milestones,
+  };
+}
+
 export function bookingToFirestore(b: Booking): DocumentData {
   return {
     customerId: b.customerId,
@@ -327,6 +370,9 @@ export function bookingToFirestore(b: Booking): DocumentData {
     samplesPurgeAfter: toTimestamp(b.samplesPurgeAfter),
     samplesPurged: b.samplesPurged ?? false,
     source: b.source ?? null,
+    jobId: b.jobId ?? null,
+    quoteId: b.quoteId ?? null,
+    terms: b.terms ? termsToFirestore(b.terms) : null,
     spotId: b.spotId ?? null,
     spotScheduleId: b.spotScheduleId ?? null,
     slotOfferId: b.slotOfferId ?? null,
@@ -444,7 +490,10 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     completedAt: toIsoString(d.completedAt),
     reviewedAt: toIsoString(d.reviewedAt),
     chatId: d.chatId ?? undefined,
-    ...(typeof d.source === 'string' ? { source: d.source as BookingSource } : {}),
+    source: typeof d.source === 'string' ? (d.source as BookingSource) : 'package',
+    ...(typeof d.jobId === 'string' ? { jobId: d.jobId } : {}),
+    ...(typeof d.quoteId === 'string' ? { quoteId: d.quoteId } : {}),
+    ...(d.terms ? { terms: termsFromFirestore(d.terms) } : {}),
     ...(typeof d.spotId === 'string' ? { spotId: d.spotId } : {}),
     ...(typeof d.spotScheduleId === 'string' ? { spotScheduleId: d.spotScheduleId } : {}),
     ...(typeof d.slotOfferId === 'string' ? { slotOfferId: d.slotOfferId } : {}),

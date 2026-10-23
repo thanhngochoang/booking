@@ -210,6 +210,25 @@ import { liveEventChatDeps, liveTimelineDeps } from './infra/live_event_social.j
 import { handleSendSupportMessage } from './callables/support.js';
 import { liveSupportDeps } from './infra/live_support.js';
 import { handleSupportMessageCreated } from './triggers/support_message_created.js';
+import {
+  handleCreateJob,
+  handleUpdateJob,
+  handleExtendJob,
+  handleCloseJob,
+  handleInviteToJob,
+  handleSubmitQuote,
+  handleWithdrawQuote,
+  handleDeclineQuote,
+  handleAcceptQuote,
+  handleOpenJobInquiry,
+} from './callables/job.js';
+import {
+  handleJobQuoteWrite,
+  handleJobMatchCreated,
+  handleJobInviteCreated,
+  handleJobViewCreated,
+} from './triggers/job_writes.js';
+import { liveJobDeps } from './infra/live_job.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -286,6 +305,7 @@ export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
       purge: { db: db(), bucket: (await import('firebase-admin/storage')).getStorage().bucket(), now: new Date() },
     },
     studio: liveStudioClockExtras(),
+    jobs: liveJobDeps(),
   });
 });
 
@@ -355,6 +375,7 @@ export const onBookingWrite = onDocumentWritten(
         notify: liveNotifyDeps(),
         badges: liveBadgeDeps(),
         studioDays: (studioId, day) => recomputeStudioDay(db(), studioId, day),
+        jobs: liveJobDeps(),
       },
       liveDiscoveryDeps(),
     );
@@ -1107,5 +1128,88 @@ export const onInstantRequestWrite = onDocumentWritten(
         deleteTrack: async (id) => { await db().doc(instantTrackPath(id)).delete(); },
       },
     );
+  },
+);
+
+// ---------------------------------------------------------------- Job posts & quotes (S15–S16, #139)
+
+export const createJob = onCall(CONTENDED_CALLABLE_OPTIONS, (request) =>
+  handleCreateJob(request, liveJobDeps()),
+);
+
+export const updateJob = onCall(CALLABLE_OPTIONS, (request) =>
+  handleUpdateJob(request, liveJobDeps()),
+);
+
+export const extendJob = onCall(CALLABLE_OPTIONS, (request) =>
+  handleExtendJob(request, liveJobDeps()),
+);
+
+export const closeJob = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCloseJob(request, liveJobDeps()),
+);
+
+export const inviteToJob = onCall(CALLABLE_OPTIONS, (request) =>
+  handleInviteToJob(request, liveJobDeps()),
+);
+
+export const submitQuote = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitQuote(request, liveJobDeps()),
+);
+
+export const withdrawQuote = onCall(CALLABLE_OPTIONS, (request) =>
+  handleWithdrawQuote(request, liveJobDeps()),
+);
+
+export const declineQuote = onCall(CALLABLE_OPTIONS, (request) =>
+  handleDeclineQuote(request, liveJobDeps()),
+);
+
+export const acceptQuote = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleAcceptQuote(request, liveJobDeps(), liveBookingDeps()),
+);
+
+export const openJobInquiry = onCall(CALLABLE_OPTIONS, (request) =>
+  handleOpenJobInquiry(request, liveChatDeps(), liveJobDeps()),
+);
+
+export const onJobQuoteWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'jobs/{jobId}/quotes/{photographerId}' },
+  async (event) => {
+    const jobId = event.params.jobId;
+    const photographerId = event.params.photographerId;
+    const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
+    const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
+    await handleJobQuoteWrite({ jobId, photographerId, before, after }, liveNotifyDeps());
+  },
+);
+
+export const onJobMatchCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'jobs/{jobId}/matches/{photographerId}' },
+  async (event) => {
+    const jobId = event.params.jobId;
+    const photographerId = event.params.photographerId;
+    const data = (event.data?.data() ?? {}) as Record<string, unknown>;
+    await handleJobMatchCreated({ jobId, photographerId, data }, liveNotifyDeps());
+  },
+);
+
+export const onJobInviteCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'jobs/{jobId}/invites/{photographerId}' },
+  async (event) => {
+    const jobId = event.params.jobId;
+    const photographerId = event.params.photographerId;
+    const data = (event.data?.data() ?? {}) as Record<string, unknown>;
+    await handleJobInviteCreated({ jobId, photographerId, data }, liveNotifyDeps());
+  },
+);
+
+export const onJobViewCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'jobs/{jobId}/views/{uid}' },
+  async (event) => {
+    const jobId = event.params.jobId;
+    const uid = event.params.uid;
+    const data = (event.data?.data() ?? {}) as Record<string, unknown>;
+    await handleJobViewCreated({ jobId, uid, data });
   },
 );

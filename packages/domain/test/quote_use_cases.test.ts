@@ -568,13 +568,13 @@ describe('quote_use_cases', () => {
     });
 
     let job = await w.jobs.runTransaction((tx) => tx.getJob(jobId));
-    assert.ok(job?.recentQuoters.includes('https://cdn/tu.jpg'));
+    assert.ok(job?.recentQuoters.some((q) => q.avatarUrl === 'https://cdn/tu.jpg'));
 
     await withdrawQuote(w.deps, 'p_tu', { jobId });
 
     job = await w.jobs.runTransaction((tx) => tx.getJob(jobId));
     assert.equal(job?.quoteCount, 0);
-    assert.ok(!job?.recentQuoters.includes('https://cdn/tu.jpg'));
+    assert.ok(!job?.recentQuoters.some((q) => q.avatarUrl === 'https://cdn/tu.jpg'));
   });
 
   it('decline sets declined with the reason and only the owner may decline', async () => {

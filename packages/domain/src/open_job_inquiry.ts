@@ -106,6 +106,7 @@ export async function openJobInquiry(
       bookingId: null,
       bookingStatus: null,
       jobId,
+      assigneeId: null,
       startedBy,
       photographerRepliedAt: startedBy === 'customer' ? null : null,
       customerMessagesBeforeReply: 0,

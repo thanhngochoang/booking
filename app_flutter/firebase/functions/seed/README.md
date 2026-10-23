@@ -353,6 +353,18 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
 Đăng nhập Lan, Trang chủ → Điểm chụp đang hot → Hồ Tây để thử S29.02 và đặt suất (S29.06).
 Chạy `scripts/spots-local.sh rank` sau khi đổi dữ liệu để cập nhật bảng xếp hạng trên emulator.
 
+## Đăng tin tìm thợ & Báo giá (S15–S16, #139)
+
+| Tin đăng | Người đăng | Lịch & Khu vực | Ngân sách | Loại thợ | Trạng thái | Ghi chú |
+|---|---|---|---|---|---|---|
+| `seed-job-hn` | Lan | `now + 10d` 08:00–10:00 · Hoàn Kiếm, Hà Nội | 1.000.000₫ – 2.000.000₫ | Tất cả (`all`) | open | An thấy ở S16.02 kèm gợi ý phù hợp và 1 báo giá đã gửi (1.800.000₫) |
+| `seed-job-hue` | Lan | `now + 8d`–`now + 15d` (240 phút) · Huế | 2.000.000₫ – 4.000.000₫ | Nghệ sĩ (`artist`) | open | Dũng thấy tin này vì là nghệ sĩ; Cúc (studio, TP.HCM) không thấy |
+
+- An sees S16.02 with an invitation-free match and an existing quote.
+- Dung sees the artist-only job.
+- Cúc (studio, TP.HCM) sees nothing.
+- Lan sees two jobs in S15.02.
+
 ## Chụp ngay (S13–S14, #140)
 
 | Document | Value (test values) |

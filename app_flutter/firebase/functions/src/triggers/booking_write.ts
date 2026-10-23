@@ -9,11 +9,14 @@ import {
   notifyDeliveryRevisionRequested,
   notifyDeliveryApproved,
   notifyDeliveryExtraRound,
+  awardJobFromBooking,
+  withdrawQuotesForDay,
   type BadgeDeps,
   type ChatDeps,
   type NotifyDeps,
   type DiscoveryDeps,
   type Booking,
+  type JobDeps,
 } from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { bookingFromFirestore } from '../infra/booking_firestore.js';
@@ -31,6 +34,7 @@ export async function handleBookingWrite(
     badges: BadgeDeps;
     /** #136 Decision 26: recompute a studio's derived `full` day after a studio booking change. */
     studioDays?: (studioId: string, day: string) => Promise<unknown>;
+    jobs?: JobDeps;
   },
   discovery?: DiscoveryDeps,
 ): Promise<{ chatId: string | null; setBookingChatId: boolean }> {
@@ -104,6 +108,13 @@ export async function handleBookingWrite(
       );
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failed) throw new Error(`badge evaluation failed after completion: ${String(failed.reason)}`);
+    }
+
+    if (extras.jobs && after && before?.status !== 'accepted' && after.status === 'accepted') {
+      if (after.source === 'quote') {
+        await awardJobFromBooking(extras.jobs, after);
+      }
+      await withdrawQuotesForDay(extras.jobs, after.photographerId, after.day, after.jobId ?? undefined);
     }
   }
 

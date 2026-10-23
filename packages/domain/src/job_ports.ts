@@ -1,5 +1,4 @@
-import type { Clock, IdGenerator } from './ports.js';
-import type { UserContactReader } from './require_phone.js';
+import type { Clock, IdGenerator, UserContactReader } from './ports.js';
 import type { OrderGateDeps } from './order_gate.js';
 import type {
   JobRecord,

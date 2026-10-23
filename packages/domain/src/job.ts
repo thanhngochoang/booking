@@ -198,7 +198,8 @@ export interface JobMatchRecord {
 
 export function cityOf(areaName: string): string {
   const parts = areaName.split(', ');
-  return parts.length > 1 ? parts[parts.length - 1].trim() : areaName.trim();
+  const last = parts[parts.length - 1];
+  return parts.length > 1 && last !== undefined ? last.trim() : areaName.trim();
 }
 
 export function cityKeyOf(s: string): string {
@@ -309,6 +310,9 @@ export function validateJobInput(raw: unknown, now: Date): JobFields {
     }
     const [startH, startM] = s.start.split(':').map(Number);
     const [endH, endM] = s.end.split(':').map(Number);
+    if (startH === undefined || startM === undefined || endH === undefined || endM === undefined) {
+      throw new DomainError('invalid_argument', 'schedule');
+    }
     const startMins = startH * 60 + startM;
     const endMins = endH * 60 + endM;
     if (endMins <= startMins) {

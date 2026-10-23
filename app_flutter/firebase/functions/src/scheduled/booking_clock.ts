@@ -9,10 +9,12 @@ import {
   runMembershipSweeps,
   runUnassignedStartSweep,
   runInstantSweep,
+  runJobSweeps,
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
   type InstantDeps,
+  type JobDeps,
   type NotifyDeps,
   type StudioBookingDeps,
   type StudioDeps,
@@ -22,6 +24,7 @@ import { db } from '../infra/admin.js';
 import { FirestoreBookingStore } from '../infra/booking_firestore.js';
 import { liveBookingDeps } from '../infra/live_booking.js';
 import { liveInstantDeps } from '../infra/live_instant.js';
+import { liveJobDeps } from '../infra/live_job.js';
 import { liveNotifyDeps } from '../infra/live_notification.js';
 import { purgeDeliverySamples, type PurgeDeliverySamplesDeps } from './purge_delivery_samples.js';
 
@@ -54,6 +57,11 @@ export interface BookingClockExtras {
    * passes its own BookingDeps and no `instant` skips the step, so it never reaches Firestore.
    */
   readonly instant?: InstantDeps;
+  /**
+   * S15-S16 Job sweeps (#139): job expiry, expiring notice, reference purge.
+   * Default `liveJobDeps()` when the clock runs live (`bookingDeps` omitted).
+   */
+  readonly jobs?: JobDeps;
 }
 
 export async function remindAutoApprovals(deps: BookingDeps, notify: NotifyDeps, limit = 50): Promise<number> {
@@ -149,6 +157,18 @@ export async function handleBookingClock(
   // Chụp ngay, last, its own try: a failure is logged, never thrown (the booking sweeps above must not run twice).
   const instant = extras.instant;
   if (instant !== undefined || live) await runInstantStep(() => instant ?? liveInstantDeps());
+
+  // Job sweeps, last, its own try: a failure is logged, never thrown.
+  const jobs = extras.jobs;
+  if (jobs !== undefined || live) {
+    try {
+      const jDeps = jobs ?? liveJobDeps();
+      const sweepResults = await runJobSweeps(jDeps, liveNotifyDeps());
+      logger.info('bookingClock jobSweeps completed', sweepResults);
+    } catch (e) {
+      logger.error('bookingClock jobSweeps failed', { error: String(e) });
+    }
+  }
 
   if (reminderError !== null) throw reminderError;
   return results;

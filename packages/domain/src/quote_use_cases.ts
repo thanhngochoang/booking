@@ -329,8 +329,8 @@ export async function submitQuote(
     let nextRecentQuoters = job.recentQuoters;
     if (provider.avatarUrl) {
       nextRecentQuoters = [
-        provider.avatarUrl,
-        ...job.recentQuoters.filter((u) => u !== provider.avatarUrl),
+        { photographerId: provider.uid, avatarUrl: provider.avatarUrl },
+        ...job.recentQuoters.filter((u) => u.photographerId !== provider.uid),
       ].slice(0, 3);
     }
 
@@ -387,7 +387,7 @@ export async function withdrawQuote(
     };
 
     const nextRecentQuoters = quote.photographer.avatarUrl
-      ? job.recentQuoters.filter((u) => u !== quote.photographer.avatarUrl)
+      ? job.recentQuoters.filter((u) => u.photographerId !== quote.photographerId)
       : job.recentQuoters;
 
     const nextJob = {
@@ -835,7 +835,7 @@ export async function withdrawQuotesForDay(
       };
 
       const nextRecent = currentQuote.photographer.avatarUrl
-        ? job.recentQuoters.filter((u) => u !== currentQuote.photographer.avatarUrl)
+        ? job.recentQuoters.filter((u) => u.photographerId !== currentQuote.photographerId)
         : job.recentQuoters;
 
       const updatedJob = {

@@ -25,6 +25,8 @@ import {
   reviewDocId,
   TOMATO_PCT_MIN_REVIEWS,
   transferCodeFor,
+  validateJobInput,
+  findContactLeak,
 } from '@photobooking/domain';
 import { fromFirestoreChat } from '../../src/infra/chat_firestore.js';
 import { handleChatMessageCreated } from '../../src/triggers/chat_message_created.js';
@@ -54,6 +56,10 @@ import {
   SEED_SPOT_MU_CANG_CHAI,
   SEED_SCHEDULE_AN_HO_TAY,
   SEED_OFFER_AN_BINH_MINH,
+  SEED_JOB_HN,
+  SEED_JOB_HUE,
+  seedJobs,
+  seedQuotes,
   seedDocuments,
 } from '../../seed/fixtures.js';
 import { bookingFromFirestore } from '../../src/infra/booking_firestore.js';
@@ -983,6 +989,50 @@ describe('seed photo spots (S29)', () => {
         assert.equal(t.customerId, undefined);
         assert.equal(t.bookingId, undefined);
       }
+    }
+  });
+});
+
+describe('seed jobs and quotes (S15–S16, #139)', () => {
+  test('seed jobs are valid for validateJobInput', () => {
+    const jobs = seedJobs(NOW);
+    assert.equal(jobs.length, 2);
+    assert.ok(jobs.some((j) => j.id === SEED_JOB_HN));
+    assert.ok(jobs.some((j) => j.id === SEED_JOB_HUE));
+    for (const j of jobs) {
+      const raw = {
+        title: j.title,
+        description: j.description,
+        specialtyId: j.specialtyId,
+        references: j.references,
+        schedule: j.schedule,
+        area: j.area,
+        budget: j.budget,
+        wants: j.wants,
+        allowedProviders: j.allowedProviders,
+        deadlineDays: 3,
+      };
+      const validated = validateJobInput(raw, NOW);
+      assert.equal(validated.title, j.title);
+    }
+  });
+
+  test('the seed quote has fit and milestone amounts', () => {
+    const quotes = seedQuotes(NOW);
+    assert.equal(quotes.length, 1);
+    const q = quotes[0];
+    assert.ok(q);
+    assert.ok(q.fit > 0);
+    assert.ok(q.milestoneAmounts.shoot > 0);
+    assert.ok(q.milestoneAmounts.delivery > 0);
+    assert.equal(q.milestoneAmounts.shoot + q.milestoneAmounts.delivery, q.terms.price);
+  });
+
+  test('no seed job contains a phone or an address', () => {
+    const jobs = seedJobs(NOW);
+    for (const j of jobs) {
+      assert.equal(findContactLeak(j.title), null);
+      assert.equal(findContactLeak(j.description), null);
     }
   });
 });
