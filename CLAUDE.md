@@ -2,101 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project
+The guidance is shared with every other coding agent and lives in [AGENTS.md](AGENTS.md); it is imported
+here unchanged:
 
-"Cộng đồng nhiếp ảnh gia" (applicationId `com.thanhbk.booking`) is a native Android app (Java, 2017) for booking photographers. Two roles share one app: customers find/book photographers and post open projects; photographers manage albums, accept/deny bookings and attend open projects. Both roles can chat 1‑1. There is no custom backend: everything goes through Firebase (Auth via Facebook/Google, Firestore, Realtime Database, Storage).
+@AGENTS.md
 
-UI strings are Vietnamese. Java package is `com.paditech.mvpbase` (the app was scaffolded from a Paditech MVP template; `APIService`/`APIClient` and `FlickrManager` are leftover template code, not used by the core flows).
-
-## Build / test
-
-Legacy toolchain: Gradle 4.1 wrapper, Android Gradle Plugin 3.0.1, compileSdk 26, pre‑AndroidX Support Library, deprecated `compile` dependency syntax. It requires an old JDK (8) and Android Studio 3.x; expect it not to build with a current Android Studio/JDK without a full upgrade.
-
-```bash
-./gradlew assembleEnvTestDebug          # build debug APK (flavors: envReal, envTest)
-./gradlew assembleEnvRealRelease
-./gradlew installEnvTestDebug           # install on connected device
-./gradlew testEnvTestDebugUnitTest      # JVM unit tests
-./gradlew testEnvTestDebugUnitTest --tests com.paditech.mvpbase.ExampleUnitTest
-./gradlew connectedEnvTestDebugAndroidTest   # instrumented tests (device required)
-```
-
-The two flavors are identical: both `Config.java` files (`app/src/envReal`, `app/src/envTest`) are empty and both use the same applicationId. Only the default example tests exist.
-
-## Architecture
-
-### Custom MVP framework (`common/mvp`)
-Every screen is a triple in `screen/<name>/`:
-- `XxxContact` — two nested interfaces: `ViewOps` (what the presenter can call on the view) and `PresenterViewOps` (what the view can call on the presenter).
-- `XxxPresenter` — extends `FragmentPresenter<ViewOps>` or `ActivityPresenter<ViewOps>`; does all Firebase calls and reports back via `getView()`.
-- `XxxFragment` / `XxxActivity` — extends `MVPFragment<PresenterViewOps>` / `MVPActivity<...>`, returns the presenter class from `onRegisterPresenter()`, uses ButterKnife for views, and accesses the presenter via `mPresenter`.
-
-Presenters are instantiated by reflection through the `PresenterFactory` singleton, keyed by the view class's simple name, so a presenter needs a public no‑arg constructor. Progress/error dialogs are delegated from fragments to the host `MVPActivity`.
-
-### Navigation
-`LoginActivity` is the launcher. After login, `MainActivity` hosts all feature screens as fragments via `replaceFragment(...)`, driven by a navigation drawer whose items come from `MenuType.UserMenu` or `MenuType.PhotographerMenu` depending on `User.is_photographer`. Only a few flows (register, terms, update profile, full‑screen image view, multi‑image picker) are separate activities.
-
-### Data flow
-- **Firestore collections**: `users` (doc id = Firebase Auth uid), `booking`, `albums`, `chat_room`, `photographers_attended`. Models in `common/model` expose `getMaps()` for writes; fields not stored are marked `@Exclude`.
-- **Realtime Database**: `chat_room/<id>/messages`, `user_devices`.
-- **Storage**: `albums/`, `avatars/`, `image/` (chat images). Album uploads run in `UploadFileService` (an `IntentService`) and finish with an `UploadAlbumSuccess` EventBus event.
-- **Realm** (`timnhay.realm`) is a local cache for `Booking` and `ChatRoom` only. `BaseApplication` attaches Firestore snapshot listeners once a user is authenticated, writes results into Realm, then posts `OnUpdateCalendarEvent` / `OnUpdateMessagesEvent` on EventBus. Screens such as Calendar and List Messenger read from Realm and refresh on those events rather than querying Firestore themselves. Realm models (`Booking`, `ChatRoom`) mark non‑persisted fields with `@Ignore` in addition to `@Exclude`.
-- Booking lifecycle is the int `status` field mapped by `BookStatus` (WAITING=0, ACCEPTED=1, DENIED=2, OPENED=3, CLOSED=4); `Booking.is_photographer_project` distinguishes direct bookings from open projects that photographers attend. Price buckets for search live in `PriceEnum`.
-- Current uid and login state come from `PrefUtil` (wraps Firebase Auth + SharedPreferences).
-
-### Other notable pieces
-- Date/time display formats are centralised in `common/utils/Constant.java`.
-- Calendar screen uses `android-week-view` and can sync to Google Calendar via the Google Calendar API (`google_calendar_account` on `User`).
-- Registration terms are the static HTML asset `app/src/main/assets/list_terms.html`.
-
-## Flutter rewrite (`app_flutter/`, branch `flutter-rewrite`)
-
-Everything above describes the legacy Java app, kept as reference. The rewrite is a Flutter app (package `photobooking`, Riverpod + go_router + freezed) on Firebase today, designed so the backend can later move to a self-hosted system. Design and specs are written in Vietnamese.
-
-### Design and specs (read before building or changing a screen)
-
-- **UI mock**: `docs/design/ui-mock.html`, a standalone page; open it in a browser. The "Debug" button shows each screen's code; add `#S05.05` to the URL to jump to a screen. Published copy: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (private; the repo file is the source to edit).
-- **Main spec**: `docs/superpowers/specs/2026-10-01-remaining-screens.md` (theme, screen-code table, events, contact, location, badges, recommender, escrow, open questions). It extends the original `2026-09-30-photography-marketplace-design.md`.
-- **Per-screen specs**: `docs/superpowers/specs/screens/` (`README.md` has the template and cross-cutting conventions).
-- **Shared widgets**: `docs/superpowers/specs/components/shared-components.md`; visual gallery `docs/design/ui-components.html` (generated by `scripts/tools/build_ui_components.py` from the mock's CSS; published copy https://claude.ai/artifact/GYAQ1D23L6csWana88TvbA). Loading: lists/cards use each component's own skeleton, screen-level waits use `SignatureLoader` with one wave type (ripple for splash/screen loads, vibration for waiting on another party); every fetch goes through `AsyncView`, whose loader (and `AppButton.loading`) is `DotRingLoader`, a spinning ring of dots.
-- **Data model** (backend-agnostic, migration target): `docs/superpowers/specs/data-model/` (`README.md` conventions and ports, `domain-model.md`, `relational-schema.md`).
-- **Recommender service contract**: `services/recommender/api/openapi.yaml`.
-- **Screen codes**: each `Sxx` is a use case (a complete user flow) and each screen in it is `Sxx.yy` (e.g. `S04.02` = date & time step of Đặt lịch); 26 use cases `S01`–`S26` (core marketplace and booking flows `S02.01`–`S07.02`; S13–S14 instant booking, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`; S15–S16 job posts, S24 portfolio albums, S25 awards and the Nhiếp ảnh gia (NAG) tier, all in `docs/superpowers/specs/2026-10-05-provider-types-portfolio-jobs-design.md` with the three provider types and the proposed freelancer-style contract; S21 paid verification to start receiving orders (VNeID / chip ID, `2026-10-06-identity-verification-design.md`); S26 studio members, assignment and two-sided reviews (`docs/superpowers/specs/2026-10-06-studio-members-design.md`; delivery with watermarked samples and a link unlocked on approval in `2026-10-06-delivery-preview-unlock-design.md`; tomato/brick reviews replacing stars in `2026-10-06-tomato-brick-reviews-design.md`); S17 notifications (unread count is a badge on the Hồ sơ tab, no header bell); S18–S23 added 2026-10-02 in main spec §3i: disputes & help, saved & following, report & block, verification, payments & account, staff operations — no mock yet). Since 2026-10-05 "NAG" means only the artist tier (`providerType = artist`); older specs use it for any photographer. A new screen takes the next `.yy` in its use case, a new use case the next `Sxx`; never renumber inside a use case. The table with the old flat codes (`S01`–`S67`, used before 2026-10-02 in commits, ledgers and executed plans) is in the main spec §2; `scripts/tools/screen_code_map.py` converts. When the user names a code ("fix S04.03"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec, `lib/core/screen_codes.dart` and the code table in sync when one changes.
-
-### Parallel work across machines
-
-Work is tracked in **GitHub Project 4** (https://github.com/users/thanhngochoang/projects/4): one issue per unit, milestones Phase 1 (app on Firebase), Phase 1.5 (web dashboard), Phase 2 (Go backend), Phase 3 (full self-hosting); priority is the position on the board, dependencies are "Blocked by" links. Only issues labelled `plan-ready` (body: `Plan: docs/superpowers/plans/…`) are taken by machines; `needs-plan` waits for a plan, `non-code` is for people. `develop` is protected: each unit gets a branch `plan/<issue>-<slug>` from `origin/develop` (pushing that new branch is the claim lock) and a PR back into it titled `… [#<issue>]`. Use the project skill `run-next-plan` (`.claude/skills/run-next-plan/SKILL.md`, script `scripts/project.py`; `gh` needs the `project` scope) to pick, claim, implement and hand in the next unit; it runs each plan with subagent-driven development and says which Dart/Firebase skills each implementer loads. Those skills are installed in `.agents/skills/` (`skills-lock.json`); the ones that fit this project are symlinked into `.claude/skills/` so Claude Code sees them. `docs/superpowers/plans/RUN-ORDER.md` now holds only the standing rules and the pre-2026-10-06 history; the `board` branch is retired.
-
-**Handoff log (every agent, every multi-step task):** follow the skill `agent-handoff` (`.agents/skills/agent-handoff/SKILL.md`, symlinked into `.claude/skills/`; script `scripts/handoff.py`). Before starting, run `python3 .agents/skills/agent-handoff/scripts/handoff.py status` to see whether another agent left this branch half-done; while working, log each step before and after it, so any agent (Claude, Codex, Gemini, …) can take over if this one stops. Logs live in `.agents/handoff/` of the main checkout (gitignored, shared by all worktrees); `AGENTS.md` points other agents here.
-
-### Rules to follow
-
-- **Theme**: dark aurora is the default; tokens come from `design-system/tokens.json` → `dart run tool/gen_tokens.dart` → `lib/core/theme/tokens.g.dart` (never edit the generated file). Use `AppColors`/`AppSpace`/`AppRadius`, not raw hex or numbers.
-- **UI matches the mock**: `docs/design/ui-mock.html` (the committed artifact) is the authority for layout, section order, copy, component types and states; the specs stay the authority for behaviour. When they disagree, follow the mock (or update the mock if the spec is newer) and say so.
-- **One primary action per screen**: `AppButton.primary` (filled by `CtaSurface`: theme gradient, or the user's blurred avatar). This means the screen's main CTA; a small primary button on each list card is allowed where the mock shows one (e.g. "Đặt" on `PhotographerCard`). Cancel/decline is a red button inside a confirmation sheet, never the gradient button.
-- **Imports**: `package:photobooking/...` only (enforced by lint), and features import `core/core.dart`, not files inside `core/`.
-- **Firebase isolation**: `cloud_firestore`/`firebase_*` may only appear in the data adapters, `firebase_options.dart` and `main.dart`; domain and features depend on repository interfaces. Follow the id, time, money and enum conventions in `data-model/README.md` (ULID/opaque ids, UTC instants, integer VND, string enum codes, no Firebase types in the domain).
-- **Server code**: Cloud Functions live in `app_flutter/firebase/functions` (thin adapters: callables, Firestore access, wiring; region `asia-southeast1`); business rules live in `packages/domain` (TypeScript, no Firebase or Node imports, enforced by lint and a test) so a self-hosted server can reuse them. Seed accounts for the emulators are listed in `app_flutter/firebase/functions/seed/README.md` (test values only).
-- **Self-hosted backend (phase 2)**: its own repository, https://github.com/thanhngochoang/booking-be (Fastify + PostgreSQL, formerly `services/api/` here; `services/` keeps only the dispatch and recommender contracts). It imports `packages/domain` from this repo at the commit pinned in its `domain.lock` (bump it there when it needs newer domain code), and the app keeps a snapshot of its contract in `app_flutter/test/data/contracts/` (`openapi.yaml`, `contract-world.json`) for the drift and contract tests.
-- **Icons and colour**: icons go through `AppIcons` (Material Symbols Rounded); colour follows 60-30-10, accent only for CTA/active/selected (`docs/superpowers/specs/2026-10-01-remaining-screens.md` §1).
-- **Commits**: Conventional Commits; every commit message ends with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>` (owner's rule, replaces the Claude co-author line).
-- **Strings** live in `lib/l10n/app_vi.arb` (run `flutter gen-l10n`); no hard-coded UI text. Free events show the tag "Không thu phí", never "0₫".
-- **Money and contact rules** (product decisions, do not weaken): customers pay 100% up front and the money (bookings, tickets) is held by a licensed payment intermediary, released to the provider in two milestones (after the shoot; after the customer approves the delivery + 48h) — `docs/superpowers/specs/2026-10-06-payments-payouts-design.md`; only identity-verified, staff-approved providers receive orders (`2026-10-06-identity-verification-design.md`); phone, Zalo and WhatsApp channels unlock only after booking/ticket payment (before that, only in-app "inquiry" chat); a customer needs a phone number to book; phone numbers never go in the public `users/{uid}` document.
-
-### Commands (run from `app_flutter/`)
-
-```bash
-source ../scripts/env.sh && export HOME="$PWD/../.home"   # project-local Flutter/JDK; HOME avoids tool-telemetry writes outside the sandbox
-export PATH="$PWD/../.flutter/bin:$PATH"
-flutter analyze && flutter test
-dart run tool/affected_test.dart origin/develop --run   # only the tests this branch can affect (CI does the same on PRs; docs/testing/affected-tests.md)
-dart run tool/gen_tokens.dart      # after editing design-system/tokens.json
-flutter gen-l10n                   # after editing lib/l10n/app_vi.arb
-../scripts/backend-local.sh        # local backend: Auth/Firestore/Functions/Storage emulators + UI :4000, seed; --fresh, --seed, --lan
-../scripts/adb-reverse.sh && flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=127.0.0.1   # debug app → local backend on any connected Android device (AVD, Genymotion, phone); VS Code: "Flutter: (debug) + backend local"
-../scripts/check-device.sh         # adb, connected devices, shared debug key: compare machines
-(cd ../packages/domain && npm test)                                                   # pure domain rules (TypeScript, no Firebase)
-(cd firebase/functions && npm test && npm run test:integration)                       # Cloud Functions unit + emulator tests (outside the Claude sandbox)
-```
-
-Firebase rules/indexes live in `app_flutter/firebase/`. `.firebaserc` has aliases only, no default: `dev` = `booking-c1922`; `prod` is added once the production project exists (it is a separate project). From `app_flutter/firebase/rules-test/`: `npm test` (emulator; not run while executing plans, the sandbox cannot run it, CI runs it on push), `npm run deploy:rules:dev|prod`, `npm run deploy:storage:dev|prod`. CI (`.github/workflows/firebase-deploy.yml`) deploys Firestore and the Cloud Functions (job `deploy-functions`, after the domain and functions tests) to GitHub environment `dev` on push to `flutter-rewrite`/`develop` and to `production` on push to `main`; project id and key come from each environment (`FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT`), deploy is skipped while the id is unset; Storage only on manual run. **Blaze switch:** Cloud Functions and Storage (everything that needs the Blaze pay-as-you-go plan) deploy only when the environment variable `BLAZE_ENABLED` is `true` (also required by `npm run deploy:storage:*`); the owner keeps it off (2026-10-09), so only Firestore rules and indexes deploy and the app and dashboard run on the emulators. Do not add a deploy, service or spec step that needs Blaze without putting it behind this switch. Setup steps: `docs/FIREBASE-SETUP.md` (sections 6, 9, 10, 11).
+Claude Code specifics: the shared skills in `.agents/skills/` are symlinked into `.claude/skills/` so they
+load as project skills; add a new shared skill under `.agents/skills/` and link it the same way. The
+legacy Android guidance loads from `app/CLAUDE.md` only when you work under `app/`.
