@@ -4,5 +4,5 @@ tags:
   golden:
 
   selfhosted:
-    # Talks to services/api over the network: allow slower runs.
+    # Talks to the self-hosted API (booking-be) over the network: allow slower runs.
     timeout: 2x

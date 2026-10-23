@@ -10,11 +10,12 @@ import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:yaml/yaml.dart';
 
-/// The hand-written client against services/api/api/openapi.yaml: if the
-/// contract changes, this fails until the app follows.
+/// The hand-written client against the booking-be contract (snapshot in
+/// test/data/contracts/openapi.yaml): if the contract changes, this fails
+/// until the app follows.
 void main() {
   final doc = loadYaml(
-    File('../services/api/api/openapi.yaml').readAsStringSync(),
+    File('test/data/contracts/openapi.yaml').readAsStringSync(),
   ) as YamlMap;
   final paths = doc['paths'] as YamlMap;
   final schemas = (doc['components'] as YamlMap)['schemas'] as YamlMap;

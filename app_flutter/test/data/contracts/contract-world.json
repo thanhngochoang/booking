@@ -1,5 +1,5 @@
 {
-  "comment": "Shared fixture world: services/api tests, Flutter contract tests (Task 9) and k6 (Task 11). Bookings belong to `customer`; `unlocked` states the expected rule of domain-model.md §5 at seed time; completedDaysAgo is relative to the seed time.",
+  "comment": "Shared fixture world: booking-be tests, the app's Flutter contract tests (snapshot in app_flutter/test/data/contracts/) and k6. Bookings belong to `customer`; `unlocked` states the expected rule of domain-model.md §5 at seed time; completedDaysAgo is relative to the seed time.",
   "customer": "ctr_customer",
   "otherCustomer": "ctr_other",
   "photographers": {

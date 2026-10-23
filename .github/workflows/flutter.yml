@@ -4,9 +4,9 @@ on:
     branches: [flutter-rewrite, develop, main]
   pull_request:
     # Also every file a test reads from outside app_flutter/ (the main spec
-    # for screen_codes_test, domain fixtures, the API contract under
-    # services/): test/tool/affected checks it.
-    paths: ['app_flutter/**', 'design-system/**', 'packages/**', 'services/**', 'docs/superpowers/specs/**', '.github/workflows/flutter.yml']
+    # for screen_codes_test, domain fixtures): test/tool/affected checks it.
+    # The self-hosted API contract is a snapshot inside app_flutter/ (repo booking-be).
+    paths: ['app_flutter/**', 'design-system/**', 'packages/**', 'docs/superpowers/specs/**', '.github/workflows/flutter.yml']
 
 permissions:
   contents: read
