@@ -39,8 +39,9 @@ class FakeJobRepository implements JobRepository {
   final List<String> withdrawCalls = [];
   final List<({String jobId, String? photographerId})> inquiryCalls = [];
 
-  // Controllable errors
+  // Controllable errors and return values
   Object? nextCreateError;
+  int? nextCreateMatched;
   Object? nextUpdateError;
   Object? nextExtendError;
   Object? nextCloseError;
@@ -167,7 +168,9 @@ class FakeJobRepository implements JobRepository {
     );
     jobs[jobId] = newJob;
     notifyJob(jobId);
-    return (jobId: jobId, matched: 5);
+    final matchedCount = nextCreateMatched ?? 5;
+    nextCreateMatched = null;
+    return (jobId: jobId, matched: matchedCount);
   }
 
   @override

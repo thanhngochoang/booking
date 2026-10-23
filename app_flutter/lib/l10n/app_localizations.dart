@@ -15872,6 +15872,534 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{km} km'**
   String jobDistance(String km);
+
+  /// No description provided for @jobPostTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc'**
+  String get jobPostTitle;
+
+  /// No description provided for @jobPostStep.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / 2'**
+  String jobPostStep(int n);
+
+  /// No description provided for @jobPostWhat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần chụp gì?'**
+  String get jobPostWhat;
+
+  /// No description provided for @jobPostName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề · bắt buộc'**
+  String get jobPostName;
+
+  /// No description provided for @jobPostNameCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / 60'**
+  String jobPostNameCount(int n);
+
+  /// No description provided for @jobPostDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả'**
+  String get jobPostDesc;
+
+  /// No description provided for @jobPostRefs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh tham khảo · tuỳ chọn · tối đa 5'**
+  String get jobPostRefs;
+
+  /// No description provided for @jobPostAddRef.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh tham khảo'**
+  String get jobPostAddRef;
+
+  /// No description provided for @jobPostPrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đừng ghi số điện thoại hay địa chỉ cụ thể. Thợ ảnh chỉ thấy quận cho tới khi bạn chọn người.'**
+  String get jobPostPrivacy;
+
+  /// No description provided for @jobPostNext.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get jobPostNext;
+
+  /// No description provided for @jobPostFixed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày cố định'**
+  String get jobPostFixed;
+
+  /// No description provided for @jobPostFlexible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Linh hoạt'**
+  String get jobPostFlexible;
+
+  /// No description provided for @jobPostWhen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi nào'**
+  String get jobPostWhen;
+
+  /// No description provided for @jobPostWhenEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày giờ'**
+  String get jobPostWhenEmpty;
+
+  /// No description provided for @jobPostWhenFixedValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · {range} · {duration}'**
+  String jobPostWhenFixedValue(String day, String range, String duration);
+
+  /// No description provided for @jobPostWhenFlexValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from}–{to} · {duration}'**
+  String jobPostWhenFlexValue(String from, String to, String duration);
+
+  /// No description provided for @jobPostFlexFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ ngày'**
+  String get jobPostFlexFrom;
+
+  /// No description provided for @jobPostFlexTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến ngày'**
+  String get jobPostFlexTo;
+
+  /// No description provided for @jobPostDuration.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thời lượng'**
+  String get jobPostDuration;
+
+  /// No description provided for @jobPostStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu'**
+  String get jobPostStart;
+
+  /// No description provided for @jobPostEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get jobPostEnd;
+
+  /// No description provided for @jobPostArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực'**
+  String get jobPostArea;
+
+  /// No description provided for @jobPostAreaEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn quận, thành phố'**
+  String get jobPostAreaEmpty;
+
+  /// No description provided for @jobPostAreaSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cụ thể chỉ gửi cho người được chọn'**
+  String get jobPostAreaSub;
+
+  /// No description provided for @jobPostBudgetFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách từ'**
+  String get jobPostBudgetFrom;
+
+  /// No description provided for @jobPostBudgetTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến'**
+  String get jobPostBudgetTo;
+
+  /// No description provided for @jobPostBudgetOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để thợ ảnh báo giá'**
+  String get jobPostBudgetOpen;
+
+  /// No description provided for @jobPostWants.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao mong muốn'**
+  String get jobPostWants;
+
+  /// No description provided for @jobPostWantsValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'≥ {n} ảnh chỉnh · trong {days} ngày'**
+  String jobPostWantsValue(int n, int days);
+
+  /// No description provided for @jobPostWantsEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh chỉnh tối thiểu'**
+  String get jobPostWantsEdited;
+
+  /// No description provided for @jobPostWantsDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao trong (ngày)'**
+  String get jobPostWantsDays;
+
+  /// No description provided for @jobPostWantsAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không yêu cầu'**
+  String get jobPostWantsAny;
+
+  /// No description provided for @jobPostWho.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ai được báo giá'**
+  String get jobPostWho;
+
+  /// No description provided for @jobPostWhoAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get jobPostWhoAll;
+
+  /// No description provided for @jobPostWhoArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Nhiếp ảnh gia'**
+  String get jobPostWhoArtist;
+
+  /// No description provided for @jobPostWhoStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Studio'**
+  String get jobPostWhoStudio;
+
+  /// No description provided for @jobPostDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận báo giá trong'**
+  String get jobPostDeadline;
+
+  /// No description provided for @jobPostDeadlineValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày · tới {date}'**
+  String jobPostDeadlineValue(int n, String date);
+
+  /// No description provided for @jobPostSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc'**
+  String get jobPostSubmit;
+
+  /// No description provided for @jobPostSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get jobPostSave;
+
+  /// No description provided for @jobPostPosted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng · đang gợi ý cho {n} thợ ảnh phù hợp'**
+  String jobPostPosted(int n);
+
+  /// No description provided for @jobPostPostedNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng · thợ ảnh trong khu vực sẽ thấy việc của bạn'**
+  String get jobPostPostedNone;
+
+  /// No description provided for @jobPostSavedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thay đổi'**
+  String get jobPostSavedToast;
+
+  /// No description provided for @jobPostSaveDraftTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp?'**
+  String get jobPostSaveDraftTitle;
+
+  /// No description provided for @jobPostSaveDraftBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lần sau mở Đăng việc, bạn tiếp tục từ chỗ này.'**
+  String get jobPostSaveDraftBody;
+
+  /// No description provided for @jobPostSaveDraft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp'**
+  String get jobPostSaveDraft;
+
+  /// No description provided for @jobPostDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ nháp'**
+  String get jobPostDiscard;
+
+  /// No description provided for @jobPostLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có 3 việc mở. Đóng bớt một việc để đăng tiếp.'**
+  String get jobPostLimit;
+
+  /// No description provided for @jobErrTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề cần 10–60 ký tự'**
+  String get jobErrTitle;
+
+  /// No description provided for @jobErrContactTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại hoặc link khỏi tiêu đề'**
+  String get jobErrContactTitle;
+
+  /// No description provided for @jobErrContactDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại hoặc link khỏi mô tả'**
+  String get jobErrContactDesc;
+
+  /// No description provided for @jobErrDescLength.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả tối đa 1000 ký tự'**
+  String get jobErrDescLength;
+
+  /// No description provided for @jobErrSchedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp phải sau hạn nhận báo giá'**
+  String get jobErrSchedule;
+
+  /// No description provided for @jobErrEndAfterStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ kết thúc phải sau giờ bắt đầu'**
+  String get jobErrEndAfterStart;
+
+  /// No description provided for @jobErrFlexRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoảng ngày tối đa 30 ngày'**
+  String get jobErrFlexRange;
+
+  /// No description provided for @jobErrBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách “đến” phải từ “từ” trở lên'**
+  String get jobErrBudget;
+
+  /// No description provided for @jobErrArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực'**
+  String get jobErrArea;
+
+  /// No description provided for @jobErrRefUpload.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải được ảnh. Thử lại.'**
+  String get jobErrRefUpload;
+
+  /// No description provided for @jobsTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đăng'**
+  String get jobsTab;
+
+  /// No description provided for @jobNewPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc mới'**
+  String get jobNewPost;
+
+  /// No description provided for @jobEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tìm được thợ ưng ý? Đăng việc để thợ ảnh báo giá cho bạn'**
+  String get jobEmptyTitle;
+
+  /// No description provided for @jobEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc'**
+  String get jobEmptyAction;
+
+  /// No description provided for @jobPostedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng {date} · còn {n} ngày nhận báo giá'**
+  String jobPostedOn(String date, int n);
+
+  /// No description provided for @jobStatQuotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá'**
+  String get jobStatQuotes;
+
+  /// No description provided for @jobViews.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lượt xem'**
+  String get jobViews;
+
+  /// No description provided for @jobInvitedCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get jobInvitedCount;
+
+  /// No description provided for @jobLatest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá mới'**
+  String get jobLatest;
+
+  /// No description provided for @jobSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get jobSeeAll;
+
+  /// No description provided for @jobInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ ảnh báo giá'**
+  String get jobInvite;
+
+  /// No description provided for @jobCompare.
+  ///
+  /// In vi, this message translates to:
+  /// **'So sánh {n} báo giá'**
+  String jobCompare(int n);
+
+  /// No description provided for @jobCompareNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có báo giá'**
+  String get jobCompareNone;
+
+  /// No description provided for @jobMenuEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get jobMenuEdit;
+
+  /// No description provided for @jobExtend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia hạn 7 ngày'**
+  String get jobExtend;
+
+  /// No description provided for @jobClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng việc'**
+  String get jobClose;
+
+  /// No description provided for @jobCloseTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng việc này?'**
+  String get jobCloseTitle;
+
+  /// No description provided for @jobCloseBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} thợ ảnh đã báo giá sẽ được báo là việc đã đóng.'**
+  String jobCloseBody(int n);
+
+  /// No description provided for @jobClosedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng việc'**
+  String get jobClosedToast;
+
+  /// No description provided for @jobExtendedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gia hạn tới {date}'**
+  String jobExtendedToast(String date);
+
+  /// No description provided for @jobExtendNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc này không gia hạn thêm được'**
+  String get jobExtendNotEligible;
+
+  /// No description provided for @jobInCheckout.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang thanh toán một báo giá của việc này.'**
+  String get jobInCheckout;
+
+  /// No description provided for @jobInviteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ ảnh báo giá'**
+  String get jobInviteTitle;
+
+  /// No description provided for @jobInviteLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn mời được {n} người'**
+  String jobInviteLeft(int n);
+
+  /// No description provided for @jobInviteSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lời mời ({n})'**
+  String jobInviteSend(int n);
+
+  /// No description provided for @jobInvitedTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get jobInvitedTag;
+
+  /// No description provided for @jobInvitedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời {n} thợ ảnh'**
+  String jobInvitedToast(int n);
+
+  /// No description provided for @jobInviteEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thợ ảnh phù hợp trong khu vực'**
+  String get jobInviteEmpty;
+
+  /// No description provided for @jobInviteFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc này đã mời đủ 5 người'**
+  String get jobInviteFull;
+
+  /// No description provided for @findPostJob.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy? Đăng việc để thợ ảnh báo giá'**
+  String get findPostJob;
 }
 
 class _AppLocalizationsDelegate

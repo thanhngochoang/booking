@@ -14,6 +14,10 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/events/tickets_tab.dart';
+import 'package:photobooking/features/jobs/job_entry.dart';
+import 'package:photobooking/features/jobs/my_jobs_tab.dart';
+
+enum BookingsSection { shoots, tickets, jobs }
 
 /// Tab root of `/bookings` for customers.
 class MyBookingsScreen extends ConsumerStatefulWidget {
@@ -41,7 +45,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   static const _tick = Duration(minutes: 1);
 
   BookingTab _tab = BookingTab.upcoming;
-  late bool _tickets = widget.showTickets && widget.initialTab == 'events';
+  late BookingsSection _section = _resolveInitialSection();
+
+  BookingsSection _resolveInitialSection() {
+    if (widget.initialTab == 'jobs') {
+      return BookingsSection.jobs;
+    }
+    if (widget.showTickets && widget.initialTab == 'events') {
+      return BookingsSection.tickets;
+    }
+    return BookingsSection.shoots;
+  }
 
   @override
   void didUpdateWidget(MyBookingsScreen old) {
@@ -49,11 +63,10 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
     // The shell keeps this screen alive: a new `?tab=` link must still work.
     // A new ticket to highlight is a new request too: registering again while
     // the shoots list was showing must bring the tickets back.
-    if (widget.showTickets &&
-        (widget.initialTab != old.initialTab ||
-            (widget.initialTab == 'events' &&
-                widget.highlightTicketId != old.highlightTicketId))) {
-      _tickets = widget.initialTab == 'events';
+    if (widget.initialTab != old.initialTab ||
+        (widget.initialTab == 'events' &&
+            widget.highlightTicketId != old.highlightTicketId)) {
+      _section = _resolveInitialSection();
     }
   }
 
@@ -120,7 +133,14 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           titleTextStyle: tabRootTitleStyle(context),
           title: Text(l10n.bookingsTitle),
           actions: [
-            if (features.chat)
+            if (_section == BookingsSection.jobs)
+              IconButton(
+                key: const Key('bookings-new-job'),
+                tooltip: l10n.jobNewPost,
+                icon: const AppIcon(AppIcons.add),
+                onPressed: () => startJobPost(context, ref),
+              )
+            else if (features.chat)
               IconButton(
                 key: const Key('bookings-chats'),
                 tooltip: l10n.bookingsChats,
@@ -135,26 +155,40 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (widget.showTickets)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpace.s4,
-                  AppSpace.s2,
-                  AppSpace.s4,
-                  0,
-                ),
-                child: SegmentedTabs<bool>(
-                  options: [
-                    SegmentOption(value: false, label: l10n.bookingsTabShoots),
-                    SegmentOption(value: true, label: l10n.ticketsTab),
-                  ],
-                  value: _tickets,
-                  onChanged: (v) => setState(() => _tickets = v),
-                ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s4,
+                AppSpace.s2,
+                AppSpace.s4,
+                0,
               ),
-            if (_tickets)
+              child: SegmentedTabs<BookingsSection>(
+                options: [
+                  SegmentOption(
+                    value: BookingsSection.shoots,
+                    label: l10n.bookingsTabShoots,
+                  ),
+                  if (widget.showTickets)
+                    SegmentOption(
+                      value: BookingsSection.tickets,
+                      label: l10n.ticketsTab,
+                    ),
+                  SegmentOption(
+                    value: BookingsSection.jobs,
+                    label: l10n.jobsTab,
+                  ),
+                ],
+                value: _section,
+                onChanged: (v) => setState(() => _section = v),
+              ),
+            ),
+            if (_section == BookingsSection.tickets)
               Expanded(
                 child: EventTicketsTab(highlightId: widget.highlightTicketId),
+              )
+            else if (_section == BookingsSection.jobs)
+              const Expanded(
+                child: MyJobsTab(),
               )
             else ...[
               Padding(

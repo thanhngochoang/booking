@@ -5,7 +5,9 @@
   "tabBadgeCount": "{count} mục mới",
   "@tabBadgeCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "tabHome": "Trang chủ",
@@ -77,7 +79,9 @@
   "settingsPhoneMasked": "•••• {last4}",
   "@settingsPhoneMasked": {
     "placeholders": {
-      "last4": {"type": "String"}
+      "last4": {
+        "type": "String"
+      }
     }
   },
   "settingsSkills": "Kỹ năng",
@@ -126,32 +130,79 @@
   "profileSetupContinue": "Tiếp tục thiết lập",
   "profileSwitchError": "Không đổi được chế độ. Kiểm tra mạng rồi thử lại.",
   "profilePostsCount": "bài đăng",
-  "@profilePostsCount": {"description": "S09.01 counts row: label under the number of the user's own posts."},
+  "@profilePostsCount": {
+    "description": "S09.01 counts row: label under the number of the user's own posts."
+  },
   "profileFollowingCount": "đang theo dõi",
-  "@profileFollowingCount": {"description": "S09.01 counts row: shown only once S19 exists (savedListsReadyProvider)."},
+  "@profileFollowingCount": {
+    "description": "S09.01 counts row: shown only once S19 exists (savedListsReadyProvider)."
+  },
   "profileSavedCount": "đã lưu",
-  "@profileSavedCount": {"description": "S09.01 counts row: shown only once S19 exists (savedListsReadyProvider)."},
+  "@profileSavedCount": {
+    "description": "S09.01 counts row: shown only once S19 exists (savedListsReadyProvider)."
+  },
   "profileFilterAll": "Tất cả · {n}",
-  "@profileFilterAll": {"description": "S09.01 kind chip: all of the user's posts.", "placeholders": {"n": {"type": "int"}}},
+  "@profileFilterAll": {
+    "description": "S09.01 kind chip: all of the user's posts.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "profileFilterWork": "Tác phẩm · {n}",
-  "@profileFilterWork": {"description": "S09.01 kind chip: work posts.", "placeholders": {"n": {"type": "int"}}},
+  "@profileFilterWork": {
+    "description": "S09.01 kind chip: work posts.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "profileFilterRealShoot": "Buổi chụp · {n}",
-  "@profileFilterRealShoot": {"description": "S09.01 kind chip: photos shared after a real shoot.", "placeholders": {"n": {"type": "int"}}},
+  "@profileFilterRealShoot": {
+    "description": "S09.01 kind chip: photos shared after a real shoot.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "profileFilterEventShare": "Sự kiện · {n}",
-  "@profileFilterEventShare": {"description": "S09.01 kind chip: event shares.", "placeholders": {"n": {"type": "int"}}},
+  "@profileFilterEventShare": {
+    "description": "S09.01 kind chip: event shares.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "profileTagRealShoot": "Buổi chụp",
-  "@profileTagRealShoot": {"description": "S09.01 corner tag on a real-shoot tile under \"Tất cả\"."},
+  "@profileTagRealShoot": {
+    "description": "S09.01 corner tag on a real-shoot tile under \"Tất cả\"."
+  },
   "profileTagEventShare": "Sự kiện",
-  "@profileTagEventShare": {"description": "S09.01 corner tag on an event-share tile under \"Tất cả\"."},
+  "@profileTagEventShare": {
+    "description": "S09.01 corner tag on an event-share tile under \"Tất cả\"."
+  },
   "profileEmptyPhotographerTitle": "Chưa có bài đăng",
   "profileEmptyPhotographerAction": "Đăng bài đầu tiên",
   "profileEmptyCustomerTitle": "Chưa có ảnh nào",
   "profileEmptyCustomerBody": "Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây",
   "profilePostsError": "Không tải được bài đăng.",
   "profilePostsMoreError": "Không tải thêm được. Thử lại",
-  "@profilePostsMoreError": {"description": "S09.01 row under the grid when the next page failed; tapping it asks again."},
+  "@profilePostsMoreError": {
+    "description": "S09.01 row under the grid when the next page failed; tapping it asks again."
+  },
   "profilePostTile": "Bài đăng {n}",
-  "@profilePostTile": {"description": "S09.01 spoken label of a grid tile whose post has no caption.", "placeholders": {"n": {"type": "int"}}},
+  "@profilePostTile": {
+    "description": "S09.01 spoken label of a grid tile whose post has no caption.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "statusRequested": "Đã gửi",
   "statusAccepted": "Đã nhận",
   "statusDeclined": "Từ chối",
@@ -174,22 +225,34 @@
   "capacityUsed": "{used} / {total} đã đăng ký",
   "@capacityUsed": {
     "placeholders": {
-      "used": {"type": "int"},
-      "total": {"type": "int"}
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "stepProgressCount": "{current} / {total}",
   "@stepProgressCount": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "stepProgressSemantics": "Bước {current} trên {total}",
   "@stepProgressSemantics": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "phoneLabel": "Số điện thoại",
@@ -224,7 +287,9 @@
   "setupRadiusValue": "{km} km",
   "@setupRadiusValue": {
     "placeholders": {
-      "km": {"type": "int"}
+      "km": {
+        "type": "int"
+      }
     }
   },
   "setupContactPhone": "Số điện thoại · bắt buộc",
@@ -254,7 +319,9 @@
   "setupEquipmentRemove": "Xoá {item}",
   "@setupEquipmentRemove": {
     "placeholders": {
-      "item": {"type": "String"}
+      "item": {
+        "type": "String"
+      }
     }
   },
   "setupEquipmentFull": "Tối đa 8 thiết bị.",
@@ -273,19 +340,43 @@
   "packageDurationLabel": "Thời lượng",
   "packageDurationHint": "Chọn",
   "durationHours": "{hours} giờ",
-  "@durationHours": {"placeholders": {"hours": {"type": "String"}}},
+  "@durationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
   "packageEditedLabel": "Số ảnh hậu kỳ",
   "packageDeliveryLabel": "Giao sau",
   "packageDeliverySuffix": "ngày",
   "packagePhotos": "{count} ảnh",
-  "@packagePhotos": {"placeholders": {"count": {"type": "int"}}},
+  "@packagePhotos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "packageDelivery": "{days, plural, =0{giao trong ngày} other{giao {days} ngày}}",
-  "@packageDelivery": {"placeholders": {"days": {"type": "int"}}},
+  "@packageDelivery": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "packageAdd": "Thêm gói này",
   "packageSave": "Lưu gói",
   "packageCancelEdit": "Huỷ sửa",
   "packageHideTooltip": "Ẩn gói {name}",
-  "@packageHideTooltip": {"placeholders": {"name": {"type": "String"}}},
+  "@packageHideTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "packageHideTitle": "Ẩn gói này?",
   "packageHideBody": "Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.",
   "packageHideConfirm": "Ẩn gói",
@@ -312,14 +403,18 @@
   "eventSeatsLeft": "Còn {n} chỗ",
   "@eventSeatsLeft": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "eventSoldOut": "Hết chỗ",
   "eventMonthShort": "T{month}",
   "@eventMonthShort": {
     "placeholders": {
-      "month": {"type": "int"}
+      "month": {
+        "type": "int"
+      }
     }
   },
   "areaPickerTitle": "Chọn khu vực của bạn",
@@ -334,7 +429,9 @@
   "exploreAround": "Quanh {area} · vị trí gần đúng",
   "@exploreAround": {
     "placeholders": {
-      "area": {"type": "String"}
+      "area": {
+        "type": "String"
+      }
     }
   },
   "exploreAroundMe": "Quanh bạn · vị trí gần đúng",
@@ -342,7 +439,9 @@
   "exploreRadius": "{km} km",
   "@exploreRadius": {
     "placeholders": {
-      "km": {"type": "int"}
+      "km": {
+        "type": "int"
+      }
     }
   },
   "exploreThisWeek": "Tuần này",
@@ -362,7 +461,9 @@
   "exploreSearchEmptyTitle": "Không tìm thấy “{query}”",
   "@exploreSearchEmptyTitle": {
     "placeholders": {
-      "query": {"type": "String"}
+      "query": {
+        "type": "String"
+      }
     }
   },
   "exploreSearchEmptyBody": "Thử từ ngắn hơn, hoặc gõ không dấu.",
@@ -371,35 +472,49 @@
   "exploreCategoryPackages": "{count} gói",
   "@exploreCategoryPackages": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại.",
   "eventDateSpoken": "{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}, ngày {day} tháng {month}",
   "@eventDateSpoken": {
     "placeholders": {
-      "weekday": {"type": "String"},
-      "day": {"type": "int"},
-      "month": {"type": "int"}
+      "weekday": {
+        "type": "String"
+      },
+      "day": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
     }
   },
   "reasonsSemantics": "Gợi ý vì: {reasons}",
   "@reasonsSemantics": {
     "placeholders": {
-      "reasons": {"type": "String"}
+      "reasons": {
+        "type": "String"
+      }
     }
   },
   "photographerSessions": "{n} buổi",
   "@photographerSessions": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "priceFrom": "từ",
   "priceFromValue": "từ {price}",
   "@priceFromValue": {
     "placeholders": {
-      "price": {"type": "String"}
+      "price": {
+        "type": "String"
+      }
     }
   },
   "photographerCardProfile": "Hồ sơ",
@@ -410,7 +525,9 @@
   "completenessPercent": "{percent}%",
   "@completenessPercent": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "skillsLevelBasic": "Cơ bản",
@@ -419,28 +536,40 @@
   "skillsLevelSemantics": "{name}, mức {level}",
   "@skillsLevelSemantics": {
     "placeholders": {
-      "name": {"type": "String"},
-      "level": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      }
     }
   },
   "skillsExpertFull": "Đã đủ 3 mức Chuyên sâu",
   "skillEvidencePhoto": "Ảnh {index}",
   "@skillEvidencePhoto": {
     "placeholders": {
-      "index": {"type": "int"}
+      "index": {
+        "type": "int"
+      }
     }
   },
   "skillsCount": "{n} / {max}",
   "@skillsCount": {
     "placeholders": {
-      "n": {"type": "int"},
-      "max": {"type": "int"}
+      "n": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "skillEvidenceTitle": "Minh chứng · {name}",
   "@skillEvidenceTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "skillEvidenceBody": "Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.",
@@ -461,8 +590,12 @@
   "skillsEvidenceRow": "{name}: {n} / 3 ảnh minh chứng",
   "@skillsEvidenceRow": {
     "placeholders": {
-      "name": {"type": "String"},
-      "n": {"type": "int"}
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
     }
   },
   "skillsEvidenceEdit": "Chỉnh",
@@ -489,7 +622,13 @@
   "skillsDraftRestored": "Đã mở lại bản nháp chưa lưu",
   "skillsHintSpecialty": "Chọn ít nhất 1 thể loại",
   "skillsHintEvidence": "Thêm ảnh minh chứng cho {name}",
-  "@skillsHintEvidence": {"placeholders": {"name": {"type": "String"}}},
+  "@skillsHintEvidence": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "skillsHintEvidenceAny": "Thêm ảnh minh chứng cho thể loại Chuyên sâu",
   "skillsHintStyles": "Chọn phong cách",
   "skillsHintLanguages": "Chọn ngôn ngữ",
@@ -499,36 +638,102 @@
   "skillsFitSaveToScore": "Lưu để tính độ khớp",
   "skillsFitSaveToUpdate": "Lưu để cập nhật độ khớp",
   "skillsHintTarget": "{hint} để lên {percent}%",
-  "@skillsHintTarget": {"placeholders": {"hint": {"type": "String"}, "percent": {"type": "int"}}},
+  "@skillsHintTarget": {
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "skillsEvidenceRemoved": "Một số minh chứng không hợp lệ đã được gỡ",
   "skillsLeaveTitle": "Lưu bản nháp?",
   "skillsLeaveBody": "Thay đổi chưa được lưu vào hồ sơ. Giữ bản nháp trên máy để làm tiếp lần sau nhé.",
   "skillsLeaveKeep": "Giữ bản nháp",
   "skillsLeaveDiscard": "Bỏ thay đổi",
   "skillsRemoveTitle": "Bỏ thể loại {name}?",
-  "@skillsRemoveTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@skillsRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "skillsRemoveBody": "Ảnh minh chứng đã gắn cho thể loại này cũng sẽ bị gỡ.",
   "skillsRemoveKeep": "Giữ lại",
   "skillsRemoveConfirm": "Bỏ thể loại",
   "calendarMonthTitle": "Tháng {month}, {year}",
-  "@calendarMonthTitle": {"placeholders": {"month": {"type": "String"}, "year": {"type": "String"}}},
+  "@calendarMonthTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
   "calendarMonthShort": "Tháng {month}",
-  "@calendarMonthShort": {"placeholders": {"month": {"type": "String"}}},
+  "@calendarMonthShort": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "calendarPrevMonth": "Tháng trước",
   "calendarNextMonth": "Tháng sau",
   "calendarWeekdayShort": "{weekday, select, mon{T2} tue{T3} wed{T4} thu{T5} fri{T6} sat{T7} other{CN}}",
-  "@calendarWeekdayShort": {"placeholders": {"weekday": {"type": "String"}}},
+  "@calendarWeekdayShort": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
   "calendarWeekdayLong": "{weekday, select, mon{Thứ 2} tue{Thứ 3} wed{Thứ 4} thu{Thứ 5} fri{Thứ 6} sat{Thứ 7} other{Chủ nhật}}",
-  "@calendarWeekdayLong": {"placeholders": {"weekday": {"type": "String"}}},
+  "@calendarWeekdayLong": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
   "calendarDayTitle": "{weekday}, {day}/{month}",
-  "@calendarDayTitle": {"placeholders": {"weekday": {"type": "String"}, "day": {"type": "String"}, "month": {"type": "String"}}},
+  "@calendarDayTitle": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "dayStateFree": "Rảnh",
   "dayStatePending": "Chờ nhận",
   "dayStateBooked": "Đã đặt",
   "dayStateOff": "Nghỉ",
   "calendarDayFull": "Hết chỗ",
   "calendarDaySemantics": "{day} tháng {month}, {state}",
-  "@calendarDaySemantics": {"placeholders": {"day": {"type": "String"}, "month": {"type": "String"}, "state": {"type": "String"}}},
+  "@calendarDaySemantics": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "calendarHasEvent": "có sự kiện",
   "calendarToday": "hôm nay",
   "myCalendarTitle": "Lịch của tôi",
@@ -540,7 +745,13 @@
   "calendarHasPlan": "Ngày này đã có lịch",
   "calendarMarkedOff": "Đã đánh dấu nghỉ",
   "calendarMarkedOffMany": "Đã đánh dấu nghỉ {count} ngày",
-  "@calendarMarkedOffMany": {"placeholders": {"count": {"type": "int"}}},
+  "@calendarMarkedOffMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "calendarClearedOff": "Đã bỏ nghỉ",
   "calendarOpenBooking": "Xem lịch hẹn",
   "calendarOpenEvent": "Quản lý sự kiện",
@@ -551,8 +762,12 @@
   "createPhotosCount": "{n} / {max} ảnh",
   "@createPhotosCount": {
     "placeholders": {
-      "n": {"type": "int"},
-      "max": {"type": "int"}
+      "n": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "createCaptionLabel": "Mô tả",
@@ -577,7 +792,9 @@
   "createUploading": "Đang tải {percent}%",
   "@createUploading": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "createUploadFailed": "Không tải được ảnh. Thử lại nhé.",
@@ -586,26 +803,36 @@
   "reasonFreeOnDate": "Rảnh {day}",
   "@reasonFreeOnDate": {
     "placeholders": {
-      "day": {"type": "String"}
+      "day": {
+        "type": "String"
+      }
     }
   },
   "reasonSkillMatch": "Chuyên {specialty}",
   "@reasonSkillMatch": {
     "placeholders": {
-      "specialty": {"type": "String"}
+      "specialty": {
+        "type": "String"
+      }
     }
   },
   "reasonNear": "Cách {distance}",
   "@reasonNear": {
     "placeholders": {
-      "distance": {"type": "String"}
+      "distance": {
+        "type": "String"
+      }
     }
   },
   "reasonTopRated": "{pct}% cà chua từ {count} đánh giá",
   "@reasonTopRated": {
     "placeholders": {
-      "pct": {"type": "int"},
-      "count": {"type": "int"}
+      "pct": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reasonFastReply": "Phản hồi nhanh",
@@ -613,7 +840,9 @@
   "homePillFree": "Rảnh {day} này",
   "@homePillFree": {
     "placeholders": {
-      "day": {"type": "String"}
+      "day": {
+        "type": "String"
+      }
     }
   },
   "engagementError": "Chưa thực hiện được. Thử lại nhé.",
@@ -621,7 +850,9 @@
   "homeGreeting": "Chào {name}",
   "@homeGreeting": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "homeTitle": "Hôm nay chụp gì?",
@@ -632,7 +863,9 @@
   "homeRealShootBy": "Chụp bởi {name}",
   "@homeRealShootBy": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "homeEmptyTitle": "Chưa có ảnh nào quanh bạn",
@@ -648,14 +881,20 @@
   "photoRealShootBy": "Chụp bởi {name} · gói {service}",
   "@photoRealShootBy": {
     "placeholders": {
-      "name": {"type": "String"},
-      "service": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "service": {
+        "type": "String"
+      }
     }
   },
   "photoRealShootByName": "Chụp bởi {name}",
   "@photoRealShootByName": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "photoRemovedTitle": "Bài đăng không còn",
@@ -664,14 +903,18 @@
   "photoMoreOf": "Thêm của {name}",
   "@photoMoreOf": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "photoMoreProfile": "Hồ sơ",
   "photoItemLabel": "Ảnh {i}",
   "@photoItemLabel": {
     "placeholders": {
-      "i": {"type": "int"}
+      "i": {
+        "type": "int"
+      }
     }
   },
   "photoOtherPackages": "Xem các gói khác",
@@ -681,8 +924,12 @@
   "photoPageOf": "Ảnh {n} trên {total}",
   "@photoPageOf": {
     "placeholders": {
-      "n": {"type": "int"},
-      "total": {"type": "int"}
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "photoLoadError": "Không tải được bài đăng. Kiểm tra mạng rồi thử lại.",
@@ -692,32 +939,44 @@
   "servicePhotos": "{n} ảnh",
   "@servicePhotos": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "serviceDelivery": "giao sau {days} ngày",
   "@serviceDelivery": {
     "placeholders": {
-      "days": {"type": "int"}
+      "days": {
+        "type": "int"
+      }
     }
   },
   "serviceDurationMinutes": "{m} phút",
   "@serviceDurationMinutes": {
     "placeholders": {
-      "m": {"type": "int"}
+      "m": {
+        "type": "int"
+      }
     }
   },
   "serviceDurationHours": "{h} giờ",
   "@serviceDurationHours": {
     "placeholders": {
-      "h": {"type": "int"}
+      "h": {
+        "type": "int"
+      }
     }
   },
   "serviceDurationHoursMinutes": "{h} giờ {m} phút",
   "@serviceDurationHoursMinutes": {
     "placeholders": {
-      "h": {"type": "int"},
-      "m": {"type": "int"}
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
     }
   },
   "findDate": "Ngày",
@@ -728,14 +987,20 @@
   "findCount": "{count} nhiếp ảnh gia",
   "@findCount": {
     "placeholders": {
-      "count": {"type": "String"}
+      "count": {
+        "type": "String"
+      }
     }
   },
   "findCountOnDay": "{count} nhiếp ảnh gia rảnh {day}",
   "@findCountOnDay": {
     "placeholders": {
-      "count": {"type": "String"},
-      "day": {"type": "String"}
+      "count": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
     }
   },
   "findSortBest": "Phù hợp nhất",
@@ -750,7 +1015,9 @@
   "findBookDay": "Đặt {day}",
   "@findBookDay": {
     "placeholders": {
-      "day": {"type": "String"}
+      "day": {
+        "type": "String"
+      }
     }
   },
   "findDateTitle": "Chọn ngày",
@@ -763,7 +1030,9 @@
   "findPriceUnder": "Dưới {price}",
   "@findPriceUnder": {
     "placeholders": {
-      "price": {"type": "String"}
+      "price": {
+        "type": "String"
+      }
     }
   },
   "findTomatoTitle": "Tỷ lệ hài lòng",
@@ -771,45 +1040,97 @@
   "findTomatoMin": "{pct}%+",
   "@findTomatoMin": {
     "placeholders": {
-      "pct": {"type": "int"}
+      "pct": {
+        "type": "int"
+      }
     }
   },
   "findTomatoChipA11y": "Từ {pct}% cà chua",
   "@findTomatoChipA11y": {
     "placeholders": {
-      "pct": {"type": "int"}
+      "pct": {
+        "type": "int"
+      }
     }
   },
   "profileResponseMinutes": "~{minutes} phút",
-  "@profileResponseMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@profileResponseMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "profileResponseHours": "~{hours} giờ",
-  "@profileResponseHours": {"placeholders": {"hours": {"type": "int"}}},
+  "@profileResponseHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "profileTabPortfolio": "Portfolio",
   "profileTabServices": "Gói",
   "profileTabCalendar": "Lịch",
   "profileTabReviews": "Đánh giá",
   "profileBook": "Đặt lịch",
   "profileBookFrom": "Đặt lịch · từ {price}",
-  "@profileBookFrom": {"placeholders": {"price": {"type": "String"}}},
+  "@profileBookFrom": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "profileNoServices": "Nhiếp ảnh gia chưa đăng gói",
   "profileOrdersClosedTag": "Chưa nhận đơn",
   "profileOrdersClosedNote": "{name} chưa mở nhận đơn nên chưa đặt lịch hay xin báo giá được. Bạn vẫn nhắn hỏi được.",
-  "@profileOrdersClosedNote": {"placeholders": {"name": {"type": "String"}}},
+  "@profileOrdersClosedNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "profileOrdersClosedButton": "Chưa nhận đặt lịch",
   "profileFollow": "Theo dõi",
   "profileFollowing": "Đang theo dõi",
   "profileStatReviews": "{count} đánh giá",
-  "@profileStatReviews": {"placeholders": {"count": {"type": "int"}}},
+  "@profileStatReviews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileStatNew": "Mới",
   "photographerReviewsNew": "Mới · {count} đánh giá",
-  "@photographerReviewsNew": {"placeholders": {"count": {"type": "int"}}},
+  "@photographerReviewsNew": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileStatShoots": "buổi chụp",
   "profileStatResponse": "phản hồi",
   "profileStatYears": "kinh nghiệm",
   "profileYearsValue": "{years} năm",
-  "@profileYearsValue": {"placeholders": {"years": {"type": "int"}}},
+  "@profileYearsValue": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
   "profileEquipment": "Thiết bị: {list}",
-  "@profileEquipment": {"placeholders": {"list": {"type": "String"}}},
+  "@profileEquipment": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
   "profileNoPortfolio": "Chưa có ảnh nào",
   "profileMorePhotos": "Xem thêm ảnh",
   "profileSimilar": "Thợ ảnh tương tự",
@@ -841,13 +1162,17 @@
   "ticketCount": "{count} vé",
   "@ticketCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ticketCodeSemantics": "Mã vé {code}",
   "@ticketCodeSemantics": {
     "placeholders": {
-      "code": {"type": "String"}
+      "code": {
+        "type": "String"
+      }
     }
   },
   "ticketDirections": "Chỉ đường",
@@ -857,7 +1182,9 @@
   "badgeChipSemantics": "Huy hiệu {name}",
   "@badgeChipSemantics": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "badgeSeeAll": "Tất cả",
@@ -868,7 +1195,9 @@
   "notificationUnreadCount": "{count} thông báo chưa đọc",
   "@notificationUnreadCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "notificationMarkRead": "Đánh dấu đã đọc",
@@ -880,13 +1209,17 @@
   "bookWith": "Đặt với {name}",
   "@bookWith": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "bookContinuePrice": "Tiếp tục · {price}",
   "@bookContinuePrice": {
     "placeholders": {
-      "price": {"type": "String"}
+      "price": {
+        "type": "String"
+      }
     }
   },
   "bookNoPackages": "Nhiếp ảnh gia chưa đăng gói",
@@ -901,14 +1234,20 @@
   "bookWaiting": "{n} người đang chờ",
   "@bookWaiting": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "bookEndsAt": "{start}–{end}",
   "@bookEndsAt": {
     "placeholders": {
-      "start": {"type": "String"},
-      "end": {"type": "String"}
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
     }
   },
   "bookDayTaken": "Hôm đó vừa có người đặt",
@@ -924,20 +1263,35 @@
   "bookPay": "Thanh toán {amount}",
   "@bookPay": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "payTitle": "Thanh toán",
   "payQrTitle": "Chuyển khoản QR",
-  "@payQrTitle": {"description": "S04.04 (mock): app bar title of the VietQR checkout."},
+  "@payQrTitle": {
+    "description": "S04.04 (mock): app bar title of the VietQR checkout."
+  },
   "payQrCountdown": "Còn {time}",
   "@payQrCountdown": {
     "description": "S04.04 (mock): countdown pill, time is mm:ss.",
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "payQrCountdownSemantics": "QR còn hiệu lực {minutes} phút {seconds} giây",
   "@payQrCountdownSemantics": {
-    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "payQrExpiredPill": "Hết hạn",
   "payQrExpired": "QR đã hết hạn",
@@ -952,17 +1306,35 @@
   "payQrOpenBank": "Mở app ngân hàng",
   "payQrSemantics": "Mã VietQR {amount}, nội dung {code}",
   "@payQrSemantics": {
-    "placeholders": {"amount": {"type": "String"}, "code": {"type": "String"}}
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
   },
   "payQrWho": "{name} · {service}",
   "@payQrWho": {
     "description": "S04.04 (mock): photographer and package under the amount.",
-    "placeholders": {"name": {"type": "String"}, "service": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "service": {
+        "type": "String"
+      }
+    }
   },
   "payWalletWaiting": "Đang chờ xác nhận",
   "payWalletReopen": "Mở lại {name}",
   "@payWalletReopen": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "fakeTransferTitle": "Giả lập chuyển khoản (thử nghiệm)",
   "fakeTransferExact": "Chuyển đúng",
@@ -980,20 +1352,26 @@
   "payReplyIn24h": "{name} sẽ trả lời trong 24 giờ",
   "@payReplyIn24h": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "escrowNoticeHeld": "Đã thanh toán {amount}, tiền được giữ an toàn",
   "@escrowNoticeHeld": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "paySuccessTitle": "Đã gửi yêu cầu",
   "paySuccessBody": "{name} sẽ trả lời trong 24 giờ",
   "@paySuccessBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "payViewBookings": "Xem lịch đặt",
@@ -1008,14 +1386,20 @@
   "bookMonth": "Tháng {m}",
   "@bookMonth": {
     "placeholders": {
-      "m": {"type": "int"}
+      "m": {
+        "type": "int"
+      }
     }
   },
   "bookDayLine": "{day} · khung {duration}",
   "@bookDayLine": {
     "placeholders": {
-      "day": {"type": "String"},
-      "duration": {"type": "String"}
+      "day": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "bookNoSlots": "Hôm đó đã hết giờ",
@@ -1039,20 +1423,28 @@
   "timelineSentDetail": "{when} · {amount}",
   "@timelineSentDetail": {
     "placeholders": {
-      "when": {"type": "String"},
-      "amount": {"type": "String"}
+      "when": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "timelineToday": "Hôm nay {time}",
   "@timelineToday": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "timelineWaiting": "Chờ {name} nhận",
   "@timelineWaiting": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "timelineWaitingHint": "Thường trong 1 giờ",
@@ -1061,7 +1453,9 @@
   "timelineUpcoming": "Sắp tới · {day}",
   "@timelineUpcoming": {
     "placeholders": {
-      "day": {"type": "String"}
+      "day": {
+        "type": "String"
+      }
     }
   },
   "timelineUpcomingHint": "Nhắc trước 24 giờ",
@@ -1070,39 +1464,53 @@
   "timelineDeliveryWaitCustomer": "Chờ {name} gửi ảnh mẫu",
   "@timelineDeliveryWaitCustomer": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "timelineDeliveryWaitProvider": "Chờ bạn nộp ảnh mẫu và link ảnh gốc",
   "timelineDeliveryReviewCustomer": "Vòng {round} · chờ bạn duyệt",
   "@timelineDeliveryReviewCustomer": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "timelineDeliveryReviewProvider": "Vòng {round} · chờ khách duyệt",
   "@timelineDeliveryReviewProvider": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "timelineDeliveryRevisingCustomer": "{name} đang chỉnh sửa vòng {round}",
   "@timelineDeliveryRevisingCustomer": {
     "placeholders": {
-      "name": {"type": "String"},
-      "round": {"type": "int"}
+      "name": {
+        "type": "String"
+      },
+      "round": {
+        "type": "int"
+      }
     }
   },
   "timelineDeliveryRevisingProvider": "Khách muốn chỉnh sửa vòng {round}",
   "@timelineDeliveryRevisingProvider": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "timelineDeliveryApproved": "Đã đồng ý ảnh · {when}",
   "@timelineDeliveryApproved": {
     "placeholders": {
-      "when": {"type": "String"}
+      "when": {
+        "type": "String"
+      }
     }
   },
   "timelineCheck": "Kiểm tra bộ ảnh gốc trong 48 giờ",
@@ -1110,7 +1518,9 @@
   "timelinePayAtShoot": "Trả {amount} tại chỗ",
   "@timelinePayAtShoot": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "timelineReview": "Đánh giá & chia sẻ ảnh",
@@ -1119,43 +1529,57 @@
   "timelineCancelled": "Đã huỷ · hoàn {amount}",
   "@timelineCancelled": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "countdownHours": "{n} giờ",
   "@countdownHours": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "countdownMinutes": "{n} phút",
   "@countdownMinutes": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "countdownSeconds": "{n} giây",
   "@countdownSeconds": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "detailTitle": "Buổi chụp #{code}",
   "@detailTitle": {
     "placeholders": {
-      "code": {"type": "String"}
+      "code": {
+        "type": "String"
+      }
     }
   },
   "detailPaidToast": "Đã thanh toán {amount}, tiền được giữ an toàn.",
   "@detailPaidToast": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "escrowNoticeHeldPhotographer": "{amount} đang được giữ, chuyển cho bạn theo 2 mốc",
   "@escrowNoticeHeldPhotographer": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "detailMessage": "Nhắn tin",
@@ -1165,14 +1589,18 @@
   "detailCancelCustomer": "Huỷ yêu cầu · hoàn {pct}%",
   "@detailCancelCustomer": {
     "placeholders": {
-      "pct": {"type": "int"}
+      "pct": {
+        "type": "int"
+      }
     }
   },
   "detailCancelPhotographer": "Huỷ buổi chụp",
   "detailAccept": "Nhận · còn {time}",
   "@detailAccept": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "detailAcceptNow": "Nhận",
@@ -1183,33 +1611,43 @@
   "detailDeliverRound": "Nộp vòng {round}",
   "@detailDeliverRound": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "detailViewDelivery": "Xem bàn giao",
   "detailRevisionCard": "Khách muốn chỉnh sửa vòng {round}",
   "@detailRevisionCard": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "detailWaitingApproval": "Đã gửi vòng {round} · chờ khách duyệt",
   "@detailWaitingApproval": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "detailApprovedProvider": "Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra",
   "detailExtraRoundTitle": "{name} xin thêm 1 vòng sửa",
   "@detailExtraRoundTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "detailExtraRoundUsed": "Đã dùng hết {total} lượt sửa miễn phí của gói.",
   "@detailExtraRoundUsed": {
     "placeholders": {
-      "total": {"type": "int"}
+      "total": {
+        "type": "int"
+      }
     }
   },
   "detailExtraGrant": "Cho thêm 1 vòng",
@@ -1218,7 +1656,9 @@
   "detailExtraDeclineBody": "{name} vẫn đồng ý ảnh được, hoặc mở khiếu nại.",
   "@detailExtraDeclineBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "detailExtraGranted": "Đã cho thêm 1 vòng sửa",
@@ -1238,7 +1678,9 @@
   "cancelTitlePhotographer": "Huỷ buổi chụp với {name}?",
   "@cancelTitlePhotographer": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "cancelKeep": "Giữ lịch",
@@ -1246,7 +1688,9 @@
   "declineTitle": "Từ chối yêu cầu của {name}?",
   "@declineTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "declineBack": "Quay lại",
@@ -1254,7 +1698,9 @@
   "cancelRow100": "Trước {when} hơn 48 giờ",
   "@cancelRow100": {
     "placeholders": {
-      "when": {"type": "String"}
+      "when": {
+        "type": "String"
+      }
     }
   },
   "cancelRow50": "Trong 24–48 giờ",
@@ -1269,7 +1715,9 @@
   "cancelRefundPhotographer": "{name} được hoàn 100%",
   "@cancelRefundPhotographer": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "cancelReasonSick": "Ốm/việc gấp",
@@ -1277,14 +1725,18 @@
   "cancelDoneToast": "Đã huỷ. Hoàn {amount} trong 3–5 ngày",
   "@cancelDoneToast": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "cancelDoneNoRefund": "Đã huỷ buổi chụp",
   "cancelDonePhotographer": "Đã huỷ. {name} được hoàn 100%",
   "@cancelDonePhotographer": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "bookingsTitle": "Đặt lịch",
@@ -1306,14 +1758,20 @@
   "workDateTitle": "Thứ {weekday}, {date}",
   "@workDateTitle": {
     "placeholders": {
-      "weekday": {"type": "int"},
-      "date": {"type": "String"}
+      "weekday": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "workDateTitleSunday": "Chủ nhật, {date}",
   "@workDateTitleSunday": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "workToday": "Hôm nay",
@@ -1322,7 +1780,9 @@
   "workAcceptIn": "Nhận · còn {time}",
   "@workAcceptIn": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "workDecline": "Từ chối",
@@ -1335,13 +1795,17 @@
   "workToDeliverShot": "{day} · đã chụp",
   "@workToDeliverShot": {
     "placeholders": {
-      "day": {"type": "String"}
+      "day": {
+        "type": "String"
+      }
     }
   },
   "workToDeliverRevision": "Vòng {round} · khách muốn chỉnh sửa",
   "@workToDeliverRevision": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "workToDeliverExtra": "Khách xin thêm 1 vòng",
@@ -1349,35 +1813,51 @@
   "workRequestMeta": "{service} · {when} · {place}",
   "@workRequestMeta": {
     "placeholders": {
-      "service": {"type": "String"},
-      "when": {"type": "String"},
-      "place": {"type": "String"}
+      "service": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
     }
   },
   "workDepositPaid": "đã trả {amount}",
   "@workDepositPaid": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "workRequestNote": "“{note}” · {deposit}",
   "@workRequestNote": {
     "placeholders": {
-      "note": {"type": "String"},
-      "deposit": {"type": "String"}
+      "note": {
+        "type": "String"
+      },
+      "deposit": {
+        "type": "String"
+      }
     }
   },
   "workRequestExpired": "Yêu cầu {name} đã hết hạn, đã hoàn tiền",
   "@workRequestExpired": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "workEmptyTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
   "workEmptyBodyPortfolio": "Hồ sơ có 6 ảnh và 1 gói được đặt nhiều gấp 3 lần. Bạn đang có {n} ảnh.",
   "@workEmptyBodyPortfolio": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "workEmptyAddPhotos": "Thêm ảnh vào portfolio",
@@ -1390,7 +1870,9 @@
   "workAssignedBy": "Giao bởi {studio}",
   "@workAssignedBy": {
     "placeholders": {
-      "studio": {"type": "String"}
+      "studio": {
+        "type": "String"
+      }
     }
   },
   "workClosedTitle": "Mở nhận đơn để khách đặt được bạn",
@@ -1404,14 +1886,20 @@
   "declineRefundNote": "{name} được hoàn 100% ({amount}) và nhận lý do này.",
   "@declineRefundNote": {
     "placeholders": {
-      "name": {"type": "String"},
-      "amount": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "declineDoneToast": "Đã từ chối. {name} được hoàn 100%.",
   "@declineDoneToast": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "chatInput": "Nhập tin nhắn…",
@@ -1422,14 +1910,18 @@
   "chatConfirmPlaceText": "Chốt địa điểm: {place}",
   "@chatConfirmPlaceText": {
     "placeholders": {
-      "place": {"type": "String"}
+      "place": {
+        "type": "String"
+      }
     }
   },
   "chatSendFailed": "Gửi lại",
   "chatInquiryCap": "Bạn đã gửi 3 tin. Chờ {name} trả lời để nhắn tiếp.",
   "@chatInquiryCap": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "chatReadOnly": "Cuộc trò chuyện chỉ còn để đọc.",
@@ -1442,7 +1934,9 @@
   "chatLocationOf": "Vị trí của {name}",
   "@chatLocationOf": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "chatLocationDenied": "Không thể lấy vị trí. Vui lòng cấp quyền vị trí.",
@@ -1455,9 +1949,15 @@
   "chatRescheduleProposal": "Đề nghị đổi sang {day} {start}–{end}",
   "@chatRescheduleProposal": {
     "placeholders": {
-      "day": {"type": "String"},
-      "start": {"type": "String"},
-      "end": {"type": "String"}
+      "day": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
     }
   },
   "chatRescheduleAccept": "Chấp nhận",
@@ -1476,13 +1976,17 @@
   "chatsYouPrefix": "Bạn: {text}",
   "@chatsYouPrefix": {
     "placeholders": {
-      "text": {"type": "String"}
+      "text": {
+        "type": "String"
+      }
     }
   },
   "inquiryNotEligible": "{name} chưa nhận tin hỏi trước",
   "@inquiryNotEligible": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "providerArtist": "Nhiếp ảnh gia",
@@ -1492,19 +1996,25 @@
   "providerArtistAwards": "Nhiếp ảnh gia · {n} giải",
   "@providerArtistAwards": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "providerAwardsCount": "{n} giải",
   "@providerAwardsCount": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "providerStudioDistrict": "Studio · {district}",
   "@providerStudioDistrict": {
     "placeholders": {
-      "district": {"type": "String"}
+      "district": {
+        "type": "String"
+      }
     }
   },
   "albumEmptyNote": "Trống · chưa hiện công khai",
@@ -1513,8 +2023,12 @@
   "reorderPosition": "{index} trên {count}",
   "@reorderPosition": {
     "placeholders": {
-      "index": {"type": "int"},
-      "count": {"type": "int"}
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reorderMoveUp": "Chuyển lên",
@@ -1526,26 +2040,36 @@
   "postPickSelectedOrder": "Đã chọn, thứ {n}",
   "@postPickSelectedOrder": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "postPickPosition": "Bài {index} trên {count}",
   "@postPickPosition": {
     "placeholders": {
-      "index": {"type": "int"},
-      "count": {"type": "int"}
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "albumPhotoCount": "{n} ảnh",
   "@albumPhotoCount": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "postPickInAlbum": "Đang ở album {album}",
   "@postPickInAlbum": {
     "placeholders": {
-      "album": {"type": "String"}
+      "album": {
+        "type": "String"
+      }
     }
   },
   "awardResultGold": "Huy chương Vàng",
@@ -1568,16 +2092,26 @@
   "awardChipSemantics": "Giải thưởng: {title}, {subtitle}",
   "@awardChipSemantics": {
     "placeholders": {
-      "title": {"type": "String"},
-      "subtitle": {"type": "String"}
+      "title": {
+        "type": "String"
+      },
+      "subtitle": {
+        "type": "String"
+      }
     }
   },
   "awardRowSemantics": "Giải thưởng: {title}, {subtitle}, trạng thái {status}",
   "@awardRowSemantics": {
     "placeholders": {
-      "title": {"type": "String"},
-      "subtitle": {"type": "String"},
-      "status": {"type": "String"}
+      "title": {
+        "type": "String"
+      },
+      "subtitle": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
     }
   },
   "reviewTitle": "Buổi chụp thế nào?",
@@ -1586,7 +2120,13 @@
   "reviewBrick": "Chưa hài lòng",
   "reviewBrickShort": "Chưa ưng",
   "reviewHits": "×{n}",
-  "@reviewHits": {"placeholders": {"n": {"type": "int"}}},
+  "@reviewHits": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reviewTomatoLevel1": "Ổn",
   "reviewTomatoLevel2": "Hài lòng",
   "reviewTomatoLevel3": "Rất hài lòng",
@@ -1599,21 +2139,81 @@
   "reviewTapMore": "Chạm tiếp để tăng mức độ, tối đa 10",
   "reviewPadLabel": "Đánh giá buổi chụp",
   "reviewA11yTomato": "Ném cà chua, {n} trên 10",
-  "@reviewA11yTomato": {"placeholders": {"n": {"type": "int"}}},
+  "@reviewA11yTomato": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reviewA11yBrick": "Ném gạch, {n} trên 10",
-  "@reviewA11yBrick": {"placeholders": {"n": {"type": "int"}}},
+  "@reviewA11yBrick": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsRatioCounts": "{tomato} cà chua · {brick} gạch · {count} đánh giá",
-  "@reviewsRatioCounts": {"placeholders": {"tomato": {"type": "int"}, "brick": {"type": "int"}, "count": {"type": "int"}}},
+  "@reviewsRatioCounts": {
+    "placeholders": {
+      "tomato": {
+        "type": "int"
+      },
+      "brick": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsRatioSemantics": "{tomato} cà chua, {brick} gạch",
-  "@reviewsRatioSemantics": {"placeholders": {"tomato": {"type": "int"}, "brick": {"type": "int"}}},
+  "@reviewsRatioSemantics": {
+    "placeholders": {
+      "tomato": {
+        "type": "int"
+      },
+      "brick": {
+        "type": "int"
+      }
+    }
+  },
   "tomatoPctA11y": "{pct}% cà chua",
-  "@tomatoPctA11y": {"placeholders": {"pct": {"type": "int"}}},
+  "@tomatoPctA11y": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
   "tomatoPctCountA11y": "{pct}% cà chua, {count} đánh giá",
-  "@tomatoPctCountA11y": {"placeholders": {"pct": {"type": "int"}, "count": {"type": "int"}}},
+  "@tomatoPctCountA11y": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "verdictBadgeTomato": "Cà chua, {n} trên 10",
-  "@verdictBadgeTomato": {"placeholders": {"n": {"type": "int"}}},
+  "@verdictBadgeTomato": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "verdictBadgeBrick": "Gạch, {n} trên 10",
-  "@verdictBadgeBrick": {"placeholders": {"n": {"type": "int"}}},
+  "@verdictBadgeBrick": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reviewTextHintTomato": "Điều bạn thích nhất ở buổi chụp",
   "reviewTextHintBrick": "Kể rõ điều chưa ổn để thợ cải thiện",
   "reviewReasonsTitle": "Điều gì chưa ổn?",
@@ -1632,14 +2232,18 @@
   "reviewShareHint": "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {name}, có tag nhiếp ảnh gia",
   "@reviewShareHint": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "reviewOnly": "Chỉ đánh giá",
   "reviewSubmitShare": "Gửi & chia sẻ {count} ảnh",
   "@reviewSubmitShare": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reviewSubmit": "Gửi đánh giá",
@@ -1655,8 +2259,12 @@
   "reviewPhotoUploading": "Ảnh {index} đang tải lên, {percent}%",
   "@reviewPhotoUploading": {
     "placeholders": {
-      "index": {"type": "int"},
-      "percent": {"type": "int"}
+      "index": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "setupTypeHeading": "Bạn nhận việc với tư cách",
@@ -1690,7 +2298,9 @@
   "albumPickCount": "{n} bài",
   "@albumPickCount": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "albumPickRecent": "dùng gần nhất",
@@ -1703,15 +2313,21 @@
   "portfolioAlbumCount": "{n} album",
   "@portfolioAlbumCount": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "portfolioArrange": "Sắp xếp",
   "albumDetailCounts": "{posts} bài · {photos} ảnh",
   "@albumDetailCounts": {
     "placeholders": {
-      "posts": {"type": "int"},
-      "photos": {"type": "int"}
+      "posts": {
+        "type": "int"
+      },
+      "photos": {
+        "type": "int"
+      }
     }
   },
   "albumDetailEmptyOwner": "Album chưa có bài",
@@ -1743,7 +2359,9 @@
   "myAlbumsUnsortedSub": "{n} bài · chỉ ở Dòng thời gian",
   "@myAlbumsUnsortedSub": {
     "placeholders": {
-      "n": {"type": "String"}
+      "n": {
+        "type": "String"
+      }
     }
   },
   "myAlbumsEmptyTitle": "Gom bài thành album để khách xem theo bộ",
@@ -1757,8 +2375,12 @@
   "albumEditNameCount": "{n} / {max}",
   "@albumEditNameCount": {
     "placeholders": {
-      "n": {"type": "int"},
-      "max": {"type": "int"}
+      "n": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "albumEditNameRequired": "Nhập tên album",
@@ -1773,8 +2395,12 @@
   "albumEditCoverTile": "Ảnh {index} trên {count}",
   "@albumEditCoverTile": {
     "placeholders": {
-      "index": {"type": "int"},
-      "count": {"type": "int"}
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "albumEditNote": "Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.",
@@ -1789,38 +2415,52 @@
   "addPostsSelected": "{n} đã chọn",
   "@addPostsSelected": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "addPostsTabUnsorted": "Chưa xếp · {n}",
   "@addPostsTabUnsorted": {
     "placeholders": {
-      "n": {"type": "String"}
+      "n": {
+        "type": "String"
+      }
     }
   },
   "addPostsTabAll": "Tất cả bài · {n}",
   "@addPostsTabAll": {
     "placeholders": {
-      "n": {"type": "String"}
+      "n": {
+        "type": "String"
+      }
     }
   },
   "addPostsMoveWarn": "{n} bài đang ở \"{album}\" sẽ chuyển sang album này.",
   "@addPostsMoveWarn": {
     "placeholders": {
-      "n": {"type": "int"},
-      "album": {"type": "String"}
+      "n": {
+        "type": "int"
+      },
+      "album": {
+        "type": "String"
+      }
     }
   },
   "addPostsMoveWarnMany": "{n} bài đang ở album khác sẽ chuyển sang album này.",
   "@addPostsMoveWarnMany": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "addPostsAdd": "Thêm {n} bài",
   "@addPostsAdd": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "addPostsPick": "Chọn bài để thêm",
@@ -1834,8 +2474,12 @@
   "addPostsPartial": "Đã thêm {done} bài, còn {left} bài chưa thêm được.",
   "@addPostsPartial": {
     "placeholders": {
-      "done": {"type": "int"},
-      "left": {"type": "int"}
+      "done": {
+        "type": "int"
+      },
+      "left": {
+        "type": "int"
+      }
     }
   },
   "addPostsMore": "Xem thêm bài",
@@ -1846,23 +2490,68 @@
   "s2501InfoClose": "Đã hiểu",
   "s2501Tier": "Hạng Nhiếp ảnh gia (NAG)",
   "s2501Remaining": "Còn {n} giải đã duyệt nữa để nhận tích vàng",
-  "@s2501Remaining": {"placeholders": {"n": {"type": "int"}}},
+  "@s2501Remaining": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2501IsArtist": "Bạn là Nhiếp ảnh gia · từ {date}",
-  "@s2501IsArtist": {"placeholders": {"date": {"type": "String"}}},
+  "@s2501IsArtist": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "s2501IsArtistNoDate": "Bạn là Nhiếp ảnh gia",
   "s2501Progress": "{a} / {n} giải đã duyệt",
-  "@s2501Progress": {"placeholders": {"a": {"type": "int"}, "n": {"type": "int"}}},
+  "@s2501Progress": {
+    "placeholders": {
+      "a": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2501ListedTitle": "Đã khai",
   "s2501ListedCount": "{n} giải",
-  "@s2501ListedCount": {"placeholders": {"n": {"type": "int"}}},
+  "@s2501ListedCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2501Add": "Thêm giải thưởng",
   "s2501EmptyTitle": "Giải thưởng giúp khách tin tác phẩm của bạn",
   "s2501EmptyBody": "Khai giải kèm minh chứng. Giải được duyệt sẽ hiện trên hồ sơ của bạn.",
   "s2501LoadError": "Không tải được giải thưởng. Thử lại sau.",
   "s2501RowTitle": "{result} · {competition} {year}",
-  "@s2501RowTitle": {"placeholders": {"result": {"type": "String"}, "competition": {"type": "String"}, "year": {"type": "int"}}},
+  "@s2501RowTitle": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      },
+      "competition": {
+        "type": "String"
+      },
+      "year": {
+        "type": "int"
+      }
+    }
+  },
   "s2501Sent": "gửi {date}",
-  "@s2501Sent": {"placeholders": {"date": {"type": "String"}}},
+  "@s2501Sent": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "s2501DeleteTitle": "Xoá giải thưởng?",
   "s2501DeleteBody": "Giải và minh chứng đã tải lên sẽ bị xoá.",
   "s2501Delete": "Xoá",
@@ -1876,7 +2565,13 @@
   "s2502CompetitionRequired": "Nhập tên cuộc thi hoặc triển lãm",
   "s2502Year": "Năm",
   "s2502YearInvalid": "Năm từ 1950 đến {max}",
-  "@s2502YearInvalid": {"placeholders": {"max": {"type": "int"}}},
+  "@s2502YearInvalid": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "s2502Category": "Hạng mục",
   "s2502Result": "Kết quả · bắt buộc",
   "s2502Work": "Tác phẩm · tuỳ chọn",
@@ -1889,28 +2584,82 @@
   "s2502Proof": "Minh chứng · bắt buộc",
   "s2502ProofNone": "Thêm ảnh giấy chứng nhận hoặc link trang công bố",
   "s2502ProofSummary": "{images} ảnh · {links} link",
-  "@s2502ProofSummary": {"placeholders": {"images": {"type": "int"}, "links": {"type": "int"}}},
+  "@s2502ProofSummary": {
+    "placeholders": {
+      "images": {
+        "type": "int"
+      },
+      "links": {
+        "type": "int"
+      }
+    }
+  },
   "s2502ProofTitle": "Minh chứng",
   "s2502ProofImages": "Ảnh giấy chứng nhận · {n} / {max}",
-  "@s2502ProofImages": {"placeholders": {"n": {"type": "int"}, "max": {"type": "int"}}},
+  "@s2502ProofImages": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "s2502ProofAddImage": "Thêm ảnh",
   "s2502ProofLinks": "Link trang công bố · tối đa {max}",
-  "@s2502ProofLinks": {"placeholders": {"max": {"type": "int"}}},
+  "@s2502ProofLinks": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "s2502ProofAddLink": "Thêm link",
   "s2502LinkLabel": "Link",
   "s2502LinkHttps": "Link phải bắt đầu bằng https://",
   "s2502LinkRemove": "Xoá link",
   "s2502ProofDone": "Xong",
   "s2502TileUploading": "Đang tải ảnh {n}",
-  "@s2502TileUploading": {"placeholders": {"n": {"type": "int"}}},
+  "@s2502TileUploading": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2502TileFailed": "Chưa tải được ảnh {n}. Chạm để thử lại",
-  "@s2502TileFailed": {"placeholders": {"n": {"type": "int"}}},
+  "@s2502TileFailed": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2502TileDone": "Ảnh {n} đã tải",
-  "@s2502TileDone": {"placeholders": {"n": {"type": "int"}}},
+  "@s2502TileDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2502TileSaved": "Ảnh {n} đã gửi trước đó",
-  "@s2502TileSaved": {"placeholders": {"n": {"type": "int"}}},
+  "@s2502TileSaved": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2502TileRemove": "Xoá ảnh {n}",
-  "@s2502TileRemove": {"placeholders": {"n": {"type": "int"}}},
+  "@s2502TileRemove": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "s2502Privacy": "Minh chứng chỉ đội duyệt xem và được xoá 30 ngày sau khi duyệt xong. Duyệt trong 3 ngày làm việc.",
   "s2502Submit": "Gửi duyệt",
   "s2502SubmitWait": "Đợi ảnh tải xong hoặc xoá ảnh lỗi trước khi gửi.",
@@ -1924,11 +2673,38 @@
   "profileAwardNudgeLater": "Để sau",
   "profileStatAwards": "giải thưởng",
   "profileAwardSub": "{competition} {year}",
-  "@profileAwardSub": {"placeholders": {"competition": {"type": "String"}, "year": {"type": "int"}}},
+  "@profileAwardSub": {
+    "placeholders": {
+      "competition": {
+        "type": "String"
+      },
+      "year": {
+        "type": "int"
+      }
+    }
+  },
   "profileAwardSubCategory": "{competition} {year} · {category}",
-  "@profileAwardSubCategory": {"placeholders": {"competition": {"type": "String"}, "year": {"type": "int"}, "category": {"type": "String"}}},
+  "@profileAwardSubCategory": {
+    "placeholders": {
+      "competition": {
+        "type": "String"
+      },
+      "year": {
+        "type": "int"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "profileAwardsMore": "Xem cả {n} giải",
-  "@profileAwardsMore": {"placeholders": {"n": {"type": "int"}}},
+  "@profileAwardsMore": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "notifSettingsTooltip": "Cài đặt thông báo",
   "notifTabAll": "Tất cả",
   "notifTabBooking": "Đặt lịch",
@@ -1936,7 +2712,13 @@
   "notifTabEvents": "Sự kiện",
   "notifTabSystem": "Hệ thống",
   "notifUnreadHeader": "{n} chưa đọc",
-  "@notifUnreadHeader": {"placeholders": {"n": {"type": "int"}}},
+  "@notifUnreadHeader": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "notifMarkAllRead": "Đánh dấu tất cả đã đọc",
   "notifSectionToday": "Hôm nay",
   "notifSectionWeek": "7 ngày qua",
@@ -1946,23 +2728,62 @@
   "notifEmptyCtaCustomer": "Khám phá nhiếp ảnh gia",
   "notifEmptyCtaPhotographer": "Mở Công việc",
   "notifEmptyFiltered": "Chưa có thông báo nào trong mục {tab}",
-  "@notifEmptyFiltered": {"placeholders": {"tab": {"type": "String"}}},
+  "@notifEmptyFiltered": {
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      }
+    }
+  },
   "notifEmptyFilteredBody": "Chọn mục khác để xem thêm.",
   "notifTargetGone": "Nội dung này không còn",
   "notifMuted": "Đã tắt loại thông báo này",
   "notifUndo": "Hoàn tác",
   "notifTimeNow": "Vừa xong",
   "notifTimeMinutes": "{n} phút",
-  "@notifTimeMinutes": {"placeholders": {"n": {"type": "int"}}},
+  "@notifTimeMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "notifTimeHours": "{n} giờ",
-  "@notifTimeHours": {"placeholders": {"n": {"type": "int"}}},
+  "@notifTimeHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "notifTimeYesterday": "Hôm qua",
   "notifTimeDays": "{n} ngày",
-  "@notifTimeDays": {"placeholders": {"n": {"type": "int"}}},
+  "@notifTimeDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "notifRowSemantics": "Thông báo, {n} thông báo chưa đọc, {title}",
-  "@notifRowSemantics": {"placeholders": {"n": {"type": "int"}, "title": {"type": "String"}}},
+  "@notifRowSemantics": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "notifRowSemanticsRead": "Thông báo, {title}",
-  "@notifRowSemanticsRead": {"placeholders": {"title": {"type": "String"}}},
+  "@notifRowSemanticsRead": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "notifLoadMoreError": "Chưa tải thêm được. Kéo xuống để thử lại.",
   "settingsNotificationsBody": "Push, giờ yên lặng, nhắc buổi chụp",
   "notifSettingsOsOffTitle": "Thông báo đang tắt trên máy",
@@ -1980,14 +2801,50 @@
   "notifSettingsCatBadges": "Huy hiệu và đánh giá",
   "notifSettingsCatPromo": "Khuyến mãi",
   "notifSwitchOn": "{group}, {channel}, bật",
-  "@notifSwitchOn": {"placeholders": {"group": {"type": "String"}, "channel": {"type": "String"}}},
+  "@notifSwitchOn": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
   "notifSwitchOff": "{group}, {channel}, tắt",
-  "@notifSwitchOff": {"placeholders": {"group": {"type": "String"}, "channel": {"type": "String"}}},
+  "@notifSwitchOff": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
   "notifSwitchLocked": "{group}, {channel}, luôn bật",
-  "@notifSwitchLocked": {"placeholders": {"group": {"type": "String"}, "channel": {"type": "String"}}},
+  "@notifSwitchLocked": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
   "notifSettingsQuietTitle": "Giờ yên lặng",
   "notifSettingsQuietLine": "{from}–{to} · chỉ thông báo quan trọng vẫn có âm",
-  "@notifSettingsQuietLine": {"placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}},
+  "@notifSettingsQuietLine": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "notifSettingsQuietSwitchOn": "Giờ yên lặng, bật",
   "notifSettingsQuietSwitchOff": "Giờ yên lặng, tắt",
   "notifSettingsPickFrom": "Yên lặng từ",
@@ -1997,9 +2854,21 @@
   "notifSettingsReminder2": "2 giờ",
   "notifSettingsSaveError": "Không lưu được, thử lại",
   "primerTitleCustomerBooking": "Bật thông báo để biết khi {name} nhận lịch",
-  "@primerTitleCustomerBooking": {"placeholders": {"name": {"type": "String"}}},
+  "@primerTitleCustomerBooking": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "primerTitleCustomerTicket": "Bật thông báo để được nhắc trước khi {event} bắt đầu",
-  "@primerTitleCustomerTicket": {"placeholders": {"event": {"type": "String"}}},
+  "@primerTitleCustomerTicket": {
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
   "primerTicketBenefit1": "Nhắc trước khi sự kiện bắt đầu, kèm giờ và điểm tập trung",
   "primerTitleCustomerInstant": "Bật thông báo để biết khi có người nhận chụp ngay",
   "primerTitlePhotographer": "Bật thông báo để không bỏ lỡ lời mời việc",
@@ -2012,18 +2881,66 @@
   "badgesFromReviews": "Từ đánh giá",
   "badgesFromSystem": "Từ hệ thống",
   "badgesFraction": "{a} / {b}",
-  "@badgesFraction": {"placeholders": {"a": {"type": "int"}, "b": {"type": "int"}}},
+  "@badgesFraction": {
+    "placeholders": {
+      "a": {
+        "type": "int"
+      },
+      "b": {
+        "type": "int"
+      }
+    }
+  },
   "badgesSectionSemantics": "{title}, đạt {a} trên {b}",
-  "@badgesSectionSemantics": {"placeholders": {"title": {"type": "String"}, "a": {"type": "int"}, "b": {"type": "int"}}},
+  "@badgesSectionSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "a": {
+        "type": "int"
+      },
+      "b": {
+        "type": "int"
+      }
+    }
+  },
   "badgesEmptyTitle": "Chưa có huy hiệu nào",
   "badgesEmptyBody": "Huy hiệu sẽ hiện ở đây khi người này đạt được.",
   "badgesLoadError": "Không tải được huy hiệu",
   "badgesNearest": "Gần đạt nhất: {name} · {cur} / {target}",
-  "@badgesNearest": {"placeholders": {"name": {"type": "String"}, "cur": {"type": "int"}, "target": {"type": "int"}}},
+  "@badgesNearest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "cur": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
   "badgesAwardedOn": "Đạt ngày {date}",
-  "@badgesAwardedOn": {"placeholders": {"date": {"type": "String"}}},
+  "@badgesAwardedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "badgesSheetProgress": "{cur} / {target}",
-  "@badgesSheetProgress": {"placeholders": {"cur": {"type": "int"}, "target": {"type": "int"}}},
+  "@badgesSheetProgress": {
+    "placeholders": {
+      "cur": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
   "earningsTitle": "Thu nhập",
   "earningsNotice": "Chi tự động mỗi ngày · lần chi đầu do staff duyệt · phí chuyển do nền tảng trả",
   "earningsHeld": "Đang giữ",
@@ -2037,12 +2954,33 @@
   "earningsAddAccountSub": "Cần có trước khi chuyển khoản",
   "earningsItems": "Các khoản",
   "earningsMonth": "Tháng {month}",
-  "@earningsMonth": {"placeholders": {"month": {"type": "int"}}},
+  "@earningsMonth": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      }
+    }
+  },
   "earningsMonthYear": "Tháng {month}/{year}",
-  "@earningsMonthYear": {"placeholders": {"month": {"type": "int"}, "year": {"type": "int"}}},
+  "@earningsMonthYear": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "year": {
+        "type": "int"
+      }
+    }
+  },
   "earningsPayoutFailed": "Chuyển khoản lỗi, kiểm tra tài khoản",
   "earningsHoldReason": "Lý do: {reason}",
-  "@earningsHoldReason": {"placeholders": {"reason": {"type": "String"}}},
+  "@earningsHoldReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "earningsHoldDispute": "Khách đã báo vấn đề, đang chờ xử lý",
   "earningsHoldPayoutOnHold": "Lô chi trả đang tạm giữ",
   "earningsCustomerFallback": "Khách",
@@ -2054,15 +2992,42 @@
   "earningsBreakdownPaidOn": "Ngày chuyển",
   "earningsBreakdownAmount": "Số tiền",
   "earningsBreakdownFee": "Hoa hồng ({percent})",
-  "@earningsBreakdownFee": {"placeholders": {"percent": {"type": "String"}}},
+  "@earningsBreakdownFee": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "earningsBreakdownTax": "Thuế khấu trừ ({percent})",
-  "@earningsBreakdownTax": {"placeholders": {"percent": {"type": "String"}}},
+  "@earningsBreakdownTax": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "earningsBreakdownNet": "Thực nhận",
   "earningsBreakdownNetEstimated": "Thực nhận dự kiến",
   "earningsMilestones": "mốc {done}/{total}",
-  "@earningsMilestones": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@earningsMilestones": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "earningsMilestonesAll": "đủ {total} mốc",
-  "@earningsMilestonesAll": {"placeholders": {"total": {"type": "int"}}},
+  "@earningsMilestonesAll": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "payoutAccountTitle": "Tài khoản nhận tiền",
   "profileEarnings": "Thu nhập",
   "profileEarningsSub": "Tiền đang giữ, sắp nhận và đã nhận",
@@ -2075,21 +3040,42 @@
   "payoutAccountSave": "Lưu tài khoản",
   "payoutAccountHint": "Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ. Số tài khoản được mã hoá, chỉ hiện 4 số cuối.",
   "payoutAccountMasked": "•••• {last4}",
-  "@payoutAccountMasked": {"placeholders": {"last4": {"type": "String"}}},
+  "@payoutAccountMasked": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "payoutAccountChange": "Đổi tài khoản",
   "payoutAccountNumberError": "Số tài khoản gồm 6–20 chữ số",
   "payoutAccountSaved": "Đã lưu tài khoản nhận tiền",
   "payoutAccountSaveError": "Không lưu được. Thử lại",
   "payoutAccountBusy": "Đang chuyển một lô tiền, thử lại sau ít phút",
   "payoutAccountIntroChange": "Đang dùng {bank} •••• {last4}. Nhập tài khoản mới đứng tên bạn, tiền sẽ chi tự động vào đây.",
-  "@payoutAccountIntroChange": {"placeholders": {"bank": {"type": "String"}, "last4": {"type": "String"}}},
+  "@payoutAccountIntroChange": {
+    "placeholders": {
+      "bank": {
+        "type": "String"
+      },
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "payoutAccountChangeNote": "Đổi tài khoản cần OTP và có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi. Tài khoản cũ sẽ nhận thông báo.",
   "payoutAccountSameAccount": "Đây đã là tài khoản đang dùng",
   "payoutLookupLoading": "Đang tra tên chủ tài khoản…",
   "payoutLookupMatched": "Khớp tên đã xác minh",
   "payoutLookupMismatch": "Không khớp",
   "payoutLookupMismatchTitle": "Tên chủ tài khoản không khớp tên đã xác minh ({name})",
-  "@payoutLookupMismatchTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@payoutLookupMismatchTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "payoutLookupMismatchBody": "Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và số tài khoản.",
   "payoutLookupReview": "Ngân hàng chưa hỗ trợ tra tên",
   "payoutLookupReviewSub": "Staff đối chiếu tên trước lần chi đầu",
@@ -2099,12 +3085,24 @@
   "payoutLookupError": "Không tra được tên. Thử lại",
   "payoutOtpTitle": "Nhập mã xác nhận",
   "payoutOtpBody": "Mã 6 số đã gửi tới số điện thoại •••• {last4}. Mã có hiệu lực 5 phút.",
-  "@payoutOtpBody": {"placeholders": {"last4": {"type": "String"}}},
+  "@payoutOtpBody": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "payoutOtpField": "Mã OTP",
   "payoutOtpConfirm": "Xác nhận đổi tài khoản",
   "payoutOtpResend": "Gửi lại mã",
   "payoutOtpResendIn": "Gửi lại sau {seconds} giây",
-  "@payoutOtpResendIn": {"placeholders": {"seconds": {"type": "int"}}},
+  "@payoutOtpResendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "payoutOtpNote": "Tài khoản mới có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi.",
   "payoutOtpWrong": "Mã chưa đúng. Kiểm tra lại tin nhắn",
   "payoutOtpExpired": "Mã đã hết hạn. Gửi lại mã mới",
@@ -2113,7 +3111,13 @@
   "payoutPhoneRequired": "Cần số điện thoại trong hồ sơ để nhận mã",
   "payoutOtpUnavailable": "Chưa đổi được tài khoản lúc này. Liên hệ hỗ trợ",
   "payoutAccountPendingTitle": "Tài khoản mới có hiệu lực lúc {time}",
-  "@payoutAccountPendingTitle": {"placeholders": {"time": {"type": "String"}}},
+  "@payoutAccountPendingTitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "payoutAccountPendingBody": "Trong lúc chờ, tạm dừng chi. Lần chi đầu vào tài khoản mới do staff duyệt.",
   "payoutAccountPendingBadge": "Chờ hiệu lực",
   "payoutAccountReviewNote": "Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu.",
@@ -2147,18 +3151,42 @@
   "eventHostRole": "Chủ sự kiện",
   "eventProfile": "Hồ sơ",
   "eventMeetingPoint": "Điểm hẹn: {place}",
-  "@eventMeetingPoint": {"placeholders": {"place": {"type": "String"}}},
+  "@eventMeetingPoint": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "eventCapacityLeft": "Còn {n} chỗ",
-  "@eventCapacityLeft": {"placeholders": {"n": {"type": "int"}}},
+  "@eventCapacityLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "eventGone": "Sự kiện không còn",
   "eventGoneBody": "Sự kiện này đã bị xoá hoặc chưa được đăng.",
   "eventLinkCopied": "Đã sao chép liên kết",
   "eventShareTooltip": "Chia sẻ sự kiện",
   "eventWeekdayLong": "{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}",
-  "@eventWeekdayLong": {"placeholders": {"weekday": {"type": "String"}}},
+  "@eventWeekdayLong": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
   "eventFaqTitle": "Câu hỏi thường gặp",
   "eventSupportLine": "Cần hỏi thêm? Gửi email tới {email}",
-  "@eventSupportLine": {"placeholders": {"email": {"type": "String"}}},
+  "@eventSupportLine": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "eventChatLocked": "Đăng ký để vào nhóm",
   "eventChatLockedBody": "Chỉ người đã đăng ký mới vào được nhóm chat của sự kiện.",
   "eventChatSoon": "Nhóm chat sắp mở",
@@ -2167,7 +3195,13 @@
   "eventRegisterTitle": "Đăng ký tham gia",
   "registerTickets": "Số vé",
   "registerTicketsHint": "Tối đa 4 vé, còn {n} chỗ",
-  "@registerTicketsHint": {"placeholders": {"n": {"type": "int"}}},
+  "@registerTicketsHint": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "registerName": "Họ tên người tham gia",
   "registerNameError": "Nhập họ tên, tối đa 60 ký tự",
   "registerPhone": "Số điện thoại",
@@ -2183,7 +3217,13 @@
   "bookingsTabShoots": "Buổi chụp",
   "ticketCode": "Mã vé",
   "ticketCancelRefund": "Huỷ vé · hoàn {pct}%",
-  "@ticketCancelRefund": {"placeholders": {"pct": {"type": "int"}}},
+  "@ticketCancelRefund": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
   "ticketCancelNoRefund": "Huỷ vé · không hoàn tiền",
   "ticketAttended": "Đã tham gia",
   "ticketRefunded": "Đã hoàn tiền",
@@ -2192,10 +3232,22 @@
   "ticketsEmpty": "Chưa có vé sự kiện",
   "ticketsBrowse": "Xem sự kiện",
   "ticketCancelConfirmTitle": "Huỷ vé {event}?",
-  "@ticketCancelConfirmTitle": {"placeholders": {"event": {"type": "String"}}},
+  "@ticketCancelConfirmTitle": {
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
   "ticketCancelFreeBody": "Chỗ của bạn sẽ được nhả cho người khác.",
   "ticketCancelRefundBody": "Bạn được hoàn {pct}% tiền vé.",
-  "@ticketCancelRefundBody": {"placeholders": {"pct": {"type": "int"}}},
+  "@ticketCancelRefundBody": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
   "ticketCancelNoRefundBody": "Còn dưới 48 giờ nên không được hoàn tiền vé. Tiền vé được giữ tới khi sự kiện kết thúc.",
   "ticketKeep": "Giữ vé",
   "ticketCancelDone": "Đã huỷ vé",
@@ -2242,7 +3294,13 @@
   "createEventDraftSaved": "Đã lưu nháp",
   "createEventDayTaken": "Bạn đã có lịch hôm đó",
   "createEventErrorSummary": "Cần sửa {n} mục trước khi đăng",
-  "@createEventErrorSummary": {"placeholders": {"n": {"type": "int"}}},
+  "@createEventErrorSummary": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "createEventPickDay": "Chọn ngày",
   "createEventPickTime": "Chọn giờ",
   "createEventErrCover": "Thêm ảnh bìa cho sự kiện",
@@ -2290,7 +3348,16 @@
   "manageCancel": "Huỷ sự kiện · hoàn tiền mọi vé",
   "manageCancelTitle": "Huỷ sự kiện này?",
   "manageCancelBody": "{n} vé · hoàn {amount}",
-  "@manageCancelBody": {"placeholders": {"n": {"type": "int"}, "amount": {"type": "String"}}},
+  "@manageCancelBody": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "manageNoRefund": "Không có khoản hoàn",
   "manageCancelConfirm": "Huỷ sự kiện",
   "manageCancelKeep": "Giữ sự kiện",
@@ -2301,21 +3368,51 @@
   "manageUnpaid": "Chờ trả",
   "manageCheckedIn": "Đã vào",
   "manageTicketQty": "{n} vé",
-  "@manageTicketQty": {"placeholders": {"n": {"type": "int"}}},
+  "@manageTicketQty": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "manageTicketCode": "{n} vé · {code}",
-  "@manageTicketCode": {"placeholders": {"n": {"type": "int"}, "code": {"type": "String"}}},
+  "@manageTicketCode": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "manageNoMoney": "—",
   "manageScanClosed": "Đã hết giờ check‑in",
   "manageInviteTitle": "Lời mời tổ chức sự kiện",
   "manageInviteBody": "Nhân viên đã tạo sự kiện này cho bạn. Hãy trả lời trước {time}, quá hạn sự kiện sẽ bị huỷ.",
-  "@manageInviteBody": {"placeholders": {"time": {"type": "String"}}},
+  "@manageInviteBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "manageInviteAccept": "Chấp nhận",
   "manageInviteDecline": "Từ chối",
   "manageInviteAccepted": "Đã chấp nhận, nhân viên sẽ đăng sự kiện",
   "manageInviteDeclined": "Đã từ chối lời mời",
   "manageInviteFailed": "Không gửi được câu trả lời. Thử lại nhé.",
   "checkinOk": "Đã vào · {name} · {count} vé",
-  "@checkinOk": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "@checkinOk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkinInvalid": "Vé không hợp lệ",
   "checkinUsed": "Vé đã dùng",
   "checkinManual": "Nhập mã vé",
@@ -2346,12 +3443,20 @@
   "timelineCount": "{n} bài",
   "@timelineCount": {
     "description": "S11.05: how many visible posts the event timeline holds, next to the hashtag chip.",
-    "placeholders": {"n": {"type": "int"}}
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   },
   "timelinePost": "Đăng ảnh với {tag}",
   "@timelinePost": {
     "description": "S11.05 bottom button; {tag} is the event hashtag with its #.",
-    "placeholders": {"tag": {"type": "String"}}
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
   },
   "timelineEmpty": "Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!",
   "timelinePending": "Chờ duyệt",
@@ -2365,7 +3470,11 @@
   "timelineModerateFailed": "Không thực hiện được. Thử lại nhé.",
   "timelineItemLabel": "Ảnh của {name}",
   "@timelineItemLabel": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "timelineMenuHint": "Nhấn giữ để mở menu",
   "shareTitle": "Chia sẻ ảnh sự kiện",
@@ -2379,7 +3488,11 @@
   "chatMembers": "{n} thành viên",
   "@chatMembers": {
     "description": "S11.06 app bar subtitle.",
-    "placeholders": {"n": {"type": "int"}}
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   },
   "chatPinned": "Ghim",
   "eventChatInput": "Nhắn cho nhóm…",
@@ -2388,7 +3501,11 @@
   "chatModOnly": "Chỉ điều hành được nhắn",
   "chatJoined": "{name} đã vào nhóm",
   "@chatJoined": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "chatPin": "Ghim",
   "chatUnpin": "Bỏ ghim",
@@ -2399,7 +3516,11 @@
   "chatRemove": "Gỡ khỏi nhóm",
   "chatRemoveTitle": "Gỡ {name} khỏi nhóm?",
   "@chatRemoveTitle": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "chatMemberList": "Thành viên",
   "chatMemberModerator": "Điều hành",
@@ -2411,7 +3532,14 @@
   "chatLockedAction": "Xem sự kiện",
   "chatMessageOf": "{name}: {text}",
   "@chatMessageOf": {
-    "placeholders": {"name": {"type": "String"}, "text": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
   },
   "manageAnnounceTitle": "Ghim thông báo vào nhóm",
   "manageAnnounceHint": "Viết thông báo cho cả nhóm",
@@ -2422,27 +3550,52 @@
   "postEventChip": "Sự kiện: {title}",
   "@postEventChip": {
     "description": "S02.02: the chip under the caption of a photo shared to an event.",
-    "placeholders": {"title": {"type": "String"}}
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "chatRemovedSection": "Đã mời ra",
-  "@chatRemovedSection": {"description": "S11.06 member list: section header of the members a moderator removed (moderators only)."},
+  "@chatRemovedSection": {
+    "description": "S11.06 member list: section header of the members a moderator removed (moderators only)."
+  },
   "chatRestore": "Cho vào lại",
-  "@chatRestore": {"description": "S11.06 member list: moderator action that lifts a removal."},
+  "@chatRestore": {
+    "description": "S11.06 member list: moderator action that lifts a removal."
+  },
   "chatRestoreHint": "Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.",
-  "@chatRestoreHint": {"description": "S11.06 member list: note under the Đã mời ra section."},
+  "@chatRestoreHint": {
+    "description": "S11.06 member list: note under the Đã mời ra section."
+  },
   "manageCheckinLink": "Check‑in",
-  "@manageCheckinLink": {"description": "S12.03: link at the right of the Người tham gia header; opens the check-in scanner."},
+  "@manageCheckinLink": {
+    "description": "S12.03: link at the right of the Người tham gia header; opens the check-in scanner."
+  },
   "registerTotal": "Tổng thanh toán",
-  "@registerTotal": {"description": "S11.03 paid: the total line of the money table."},
+  "@registerTotal": {
+    "description": "S11.03 paid: the total line of the money table."
+  },
   "registerLine": "{n} vé × {price}",
   "@registerLine": {
     "description": "S11.03 paid: tickets times the ticket price.",
-    "placeholders": {"n": {"type": "int"}, "price": {"type": "String"}}
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
   },
   "registerPay": "Thanh toán {amount}",
   "@registerPay": {
     "description": "S11.03 paid: the primary button.",
-    "placeholders": {"amount": {"type": "String"}}
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
   "registerHoldExpired": "Chỗ giữ đã hết hạn",
   "registerPolicy": "Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.",
@@ -2450,32 +3603,78 @@
   "ticketPayContinue": "Thanh toán tiếp",
   "ticketHoldExpired": "Hết hạn",
   "ticketRefundAmount": "Bạn nhận lại {amount}",
-  "@ticketRefundAmount": {"placeholders": {"amount": {"type": "String"}}},
+  "@ticketRefundAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "ticketNoRefund": "Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.",
   "payMethodBankQr": "Chuyển khoản QR",
-  "@payMethodBankQr": {"description": "S11.03 (mock): pay by bank transfer QR."},
+  "@payMethodBankQr": {
+    "description": "S11.03 (mock): pay by bank transfer QR."
+  },
   "payMethodMomo": "MoMo",
   "payMethodZaloPay": "ZaloPay",
   "payMethodBankQrNote": "Miễn phí · xác nhận ngay",
-  "@payMethodBankQrNote": {"description": "S04.03 (mock): sub-label of the bank QR option."},
+  "@payMethodBankQrNote": {
+    "description": "S04.03 (mock): sub-label of the bank QR option."
+  },
   "payAttemptsExceeded": "Đã tạo QR 3 lần. Hãy đặt lại từ đầu.",
-  "@payAttemptsExceeded": {"description": "S04.03: createPayment refused a 4th attempt for the booking (payment_attempts_exceeded)."},
+  "@payAttemptsExceeded": {
+    "description": "S04.03: createPayment refused a 4th attempt for the booking (payment_attempts_exceeded)."
+  },
   "payMethodLabel": "Phương thức thanh toán",
-  "@payMethodLabel": {"description": "Semantics label of the payment method group on S11.03."},
+  "@payMethodLabel": {
+    "description": "Semantics label of the payment method group on S11.03."
+  },
   "ticketCancelledRefunded": "Đã huỷ · đã hoàn tiền",
-  "@ticketCancelledRefunded": {"description": "S11.04: a cancelled ticket whose payment came after the hold and was refunded."},
+  "@ticketCancelledRefunded": {
+    "description": "S11.04: a cancelled ticket whose payment came after the hold and was refunded."
+  },
   "ticketCancelledRefunding": "Đã huỷ · đang hoàn tiền",
-  "@ticketCancelledRefunding": {"description": "S11.04: as above while the refund is still on its way."},
+  "@ticketCancelledRefunding": {
+    "description": "S11.04: as above while the refund is still on its way."
+  },
   "eventRegisteredOf": "{registered}/{capacity} đã đăng ký",
-  "@eventRegisteredOf": {"description": "Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).", "placeholders": {"registered": {"type": "int"}, "capacity": {"type": "int"}}},
+  "@eventRegisteredOf": {
+    "description": "Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).",
+    "placeholders": {
+      "registered": {
+        "type": "int"
+      },
+      "capacity": {
+        "type": "int"
+      }
+    }
+  },
   "createEventFaqHint": "Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa {max} câu.",
-  "@createEventFaqHint": {"placeholders": {"max": {"type": "int"}}},
+  "@createEventFaqHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "createEventFaqQuestion": "Câu hỏi {n}",
-  "@createEventFaqQuestion": {"placeholders": {"n": {"type": "int"}}},
+  "@createEventFaqQuestion": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "createEventFaqAnswer": "Trả lời",
   "createEventFaqAdd": "Thêm câu hỏi",
   "createEventFaqRemove": "Xoá câu hỏi {n}",
-  "@createEventFaqRemove": {"placeholders": {"n": {"type": "int"}}},
+  "@createEventFaqRemove": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời.",
   "eventSpotLabel": "Điểm chụp · bắt buộc",
   "eventSpotPlaceholder": "Chọn điểm chụp",
@@ -2486,7 +3685,13 @@
   "eventSpotNone": "Không thuộc điểm chụp nào",
   "eventSpotNoneHint": "Sự kiện không hiện ở trang điểm nào",
   "eventSpotPick": "Chọn {name}",
-  "@eventSpotPick": {"placeholders": {"name": {"type": "String"}}},
+  "@eventSpotPick": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "eventSpotPickNone": "Không gắn điểm",
   "eventSpotNoMatch": "Không có điểm chụp nào khớp.",
   "eventSpotRequired": "Chọn một điểm chụp, hoặc “Không thuộc điểm chụp nào”",
@@ -2494,48 +3699,115 @@
   "eventSpotArchived": "Điểm chụp này không còn nhận lịch mới. Chọn điểm khác.",
   "eventSpotGone": "Không tìm thấy điểm chụp này. Chọn điểm khác.",
   "postSpotChip": "Gắn với {name}",
-  "@postSpotChip": {"placeholders": {"name": {"type": "String"}}},
+  "@postSpotChip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "postSpotChipRemove": "Bỏ gắn {name}",
-  "@postSpotChipRemove": {"placeholders": {"name": {"type": "String"}}},
+  "@postSpotChipRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "bookNotAcceptingOrders": "Nhiếp ảnh gia này chưa nhận đặt lịch.",
   "bookingErrBlocked": "Không đặt lịch được với người này.",
-  "@bookingErrBlocked": {"description": "S04: createBooking/createPayment refused because the customer and the photographer blocked each other (blocked)."},
+  "@bookingErrBlocked": {
+    "description": "S04: createBooking/createPayment refused because the customer and the photographer blocked each other (blocked)."
+  },
   "savedTitle": "Đã lưu",
   "savedTabPosts": "Bài · {count}",
-  "@savedTabPosts": {"placeholders": {"count": {"type": "int"}}},
+  "@savedTabPosts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "savedTabPhotographers": "Nhiếp ảnh gia · {count}",
-  "@savedTabPhotographers": {"placeholders": {"count": {"type": "int"}}},
+  "@savedTabPhotographers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "savedPostsEmptyTitle": "Chưa lưu bài nào",
   "savedPostsEmptyBody": "Bấm biểu tượng lưu trên ảnh để xem lại ở đây.",
   "savedPhotographersEmptyTitle": "Chưa lưu nhiếp ảnh gia nào",
   "savedPhotographersEmptyBody": "Bấm biểu tượng lưu trên hồ sơ nhiếp ảnh gia để so sánh và đặt lịch sau.",
   "savedUnsaved": "Đã bỏ lưu {name}",
-  "@savedUnsaved": {"placeholders": {"name": {"type": "String"}}},
+  "@savedUnsaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "savedUndo": "Hoàn tác",
   "savedBook": "Đặt lịch",
   "savedToggleOn": "Lưu {name}",
-  "@savedToggleOn": {"placeholders": {"name": {"type": "String"}}},
+  "@savedToggleOn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "savedToggleOff": "Bỏ lưu {name}",
-  "@savedToggleOff": {"placeholders": {"name": {"type": "String"}}},
+  "@savedToggleOff": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "followingTitle": "Đang theo dõi",
   "followingCount": "{count} nhiếp ảnh gia",
-  "@followingCount": {"placeholders": {"count": {"type": "int"}}},
+  "@followingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "followingButton": "Đang theo dõi",
   "followButton": "Theo dõi",
   "followingUnfollowed": "Đã bỏ theo dõi {name}",
-  "@followingUnfollowed": {"placeholders": {"name": {"type": "String"}}},
+  "@followingUnfollowed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "followingEmptyTitle": "Bạn chưa theo dõi ai",
   "followingEmptyBody": "Theo dõi nhiếp ảnh gia để thấy bài mới của họ trước.",
   "followingEmptyAction": "Khám phá",
   "followersTitle": "Người theo dõi",
   "followersCount": "{count} người theo dõi · chỉ bạn xem được danh sách này",
-  "@followersCount": {"placeholders": {"count": {"type": "int"}}},
+  "@followersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "followersSince": "Theo dõi từ {date}",
-  "@followersSince": {"placeholders": {"date": {"type": "String"}}},
+  "@followersSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "followersEmptyTitle": "Chưa có người theo dõi",
   "followersEmptyBody": "Đăng bài thường xuyên để có thêm người theo dõi.",
   "profileCountFollowers": "người theo dõi",
-  "profileSavePhotographer": "Lưu nhiếp ảnh gia",
   "profileUnsavePhotographer": "Bỏ lưu nhiếp ảnh gia",
   "reasonFollowing": "Bạn đang theo dõi",
   "socialToggleFailed": "Chưa lưu được. Thử lại.",
@@ -2546,9 +3818,21 @@
   "verifyPhoneSend": "Gửi mã",
   "verifyCodeHeading": "Nhập mã 6 số",
   "verifyCodeSentTo": "Đã gửi tới •••• {last4}",
-  "@verifyCodeSentTo": {"placeholders": {"last4": {"type": "String"}}},
+  "@verifyCodeSentTo": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "verifyCodeResendIn": "Gửi lại mã sau {time}",
-  "@verifyCodeResendIn": {"placeholders": {"time": {"type": "String"}}},
+  "@verifyCodeResendIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "verifyCodeResend": "Gửi lại mã",
   "verifyCodeChangePhone": "Đổi số điện thoại",
   "verifyCodeConfirm": "Xác nhận",
@@ -2560,20 +3844,52 @@
   "verifyPhoneDone": "Đã xác minh số điện thoại",
   "verifyStartTitle": "Bắt đầu nhận đơn",
   "verifyStepCounter": "{n} / {total}",
-  "@verifyStepCounter": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "@verifyStepCounter": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "verifyStartIntro": "Làm từng bước, lưu lại tiến độ. Thoát giữa chừng thì lần sau làm tiếp từ bước đang dở.",
   "verifyStepPhone": "Số điện thoại",
   "verifyStepPhoneTodo": "Nhận mã 6 số qua SMS",
   "verifyStepPhoneDone": "Đã xác minh · •••• {last4}",
-  "@verifyStepPhoneDone": {"placeholders": {"last4": {"type": "String"}}},
+  "@verifyStepPhoneDone": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "verifyStepFee": "Phí xác minh {amount}",
-  "@verifyStepFee": {"description": "S21.02 fee row title, amount already formatted (99.000₫).", "placeholders": {"amount": {"type": "String"}}},
+  "@verifyStepFee": {
+    "description": "S21.02 fee row title, amount already formatted (99.000₫).",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "verifyStepFeeTodoIndividual": "Studio 299.000₫ · trả bằng QR hoặc ví",
-  "@verifyStepFeeTodoIndividual": {"description": "Subtitle of an individual's fee row: names the other kind's price, as the mock."},
+  "@verifyStepFeeTodoIndividual": {
+    "description": "Subtitle of an individual's fee row: names the other kind's price, as the mock."
+  },
   "verifyStepFeeTodoStudio": "Thợ ảnh cá nhân 99.000₫ · trả bằng QR hoặc ví",
-  "@verifyStepFeeTodoStudio": {"description": "Subtitle of a studio's fee row: names the other kind's price, as the mock."},
+  "@verifyStepFeeTodoStudio": {
+    "description": "Subtitle of a studio's fee row: names the other kind's price, as the mock."
+  },
   "verifyStepFeeDone": "Đã trả {amount}",
-  "@verifyStepFeeDone": {"placeholders": {"amount": {"type": "String"}}},
+  "@verifyStepFeeDone": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "verifyFeeTitle": "Phí xác minh",
   "verifyFeeYouGet": "Bạn nhận được",
   "verifyFeeBenefitTick": "Tích xanh cạnh tên trên hồ sơ",
@@ -2583,7 +3899,13 @@
   "verifyFeeKindStudio": "Studio · thợ ảnh cá nhân 99.000₫",
   "verifyFeeNoRefund": "Phí không hoàn vì chi phí kiểm tra đã phát sinh; bị từ chối được gửi lại miễn phí 1 lần.",
   "verifyFeePay": "Thanh toán {amount}",
-  "@verifyFeePay": {"placeholders": {"amount": {"type": "String"}}},
+  "@verifyFeePay": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "verifyFeePaid": "Đã nhận phí xác minh",
   "verifyFeeFailed": "Chưa thanh toán được. Thử lại.",
   "verifyStepIdentity": "Xác minh danh tính",
@@ -2598,15 +3920,43 @@
   "verifyStateTodo": "Chưa làm",
   "verifyStateFix": "Cần sửa",
   "verifyStartNote": "Xong {total} bước thì bấm \"Gửi duyệt\". Staff duyệt trong 24 giờ; được duyệt là có tích xanh và nhận đơn ngay.",
-  "@verifyStartNote": {"placeholders": {"total": {"type": "int"}}},
+  "@verifyStartNote": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "verifyContinue": "Tiếp tục",
   "verifySubmit": "Gửi duyệt",
   "verifyAtToday": "{time} hôm nay",
-  "@verifyAtToday": {"description": "An instant on today's Vietnamese date, e.g. 9:12 hôm nay (mock S21.02-pending).", "placeholders": {"time": {"type": "String"}}},
+  "@verifyAtToday": {
+    "description": "An instant on today's Vietnamese date, e.g. 9:12 hôm nay (mock S21.02-pending).",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "verifyAtTomorrow": "{time} ngày mai",
-  "@verifyAtTomorrow": {"placeholders": {"time": {"type": "String"}}},
+  "@verifyAtTomorrow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "verifyAtDate": "{time} ngày {date}",
-  "@verifyAtDate": {"placeholders": {"time": {"type": "String"}, "date": {"type": "String"}}},
+  "@verifyAtDate": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "verifyRulesTitle": "Quy định nhận việc",
   "verifyRulesIntro": "Đọc 5 điều chính trước khi gửi duyệt.",
   "verifyRule1": "Khách trả 100% khi đặt; tiền được giữ và chuyển cho bạn theo 2 mốc: sau buổi chụp, và sau khi khách đồng ý ảnh + 48 giờ.",
@@ -2617,32 +3967,77 @@
   "verifyRulesAgree": "Tôi đã đọc và đồng ý quy định nhận việc",
   "verifyPendingHeading": "Đang chờ duyệt · trong 24 giờ",
   "verifyPendingSent": "Gửi lúc {time} · có kết quả trước {deadline}",
-  "@verifyPendingSent": {"placeholders": {"time": {"type": "String"}, "deadline": {"type": "String"}}},
+  "@verifyPendingSent": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "verifyTlFee": "Đã trả phí xác minh",
   "verifyTlFeeBody": "{when} · {amount}",
-  "@verifyTlFeeBody": {"placeholders": {"when": {"type": "String"}, "amount": {"type": "String"}}},
+  "@verifyTlFeeBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "verifyTlIdentity": "Đã xác minh danh tính",
   "verifyTlIdentityBody": "{method} · {name}",
-  "@verifyTlIdentityBody": {"placeholders": {"method": {"type": "String"}, "name": {"type": "String"}}},
+  "@verifyTlIdentityBody": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "verifyMethodVneid": "VNeID",
   "verifyMethodNfc": "Chip CCCD",
   "verifyTlSubmitted": "Đã gửi duyệt",
   "verifyTlSubmittedBody": "{when} · đã đồng ý quy định nhận việc",
-  "@verifyTlSubmittedBody": {"placeholders": {"when": {"type": "String"}}},
+  "@verifyTlSubmittedBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "verifyTlReview": "Staff duyệt",
   "verifyTlReviewBody": "Duyệt xong là có tích xanh và nhận đơn",
   "verifyPendingNote": "Trong lúc chờ, bạn vẫn sửa portfolio, tạo gói và trò chuyện với khách.",
   "verifyViewProfile": "Xem hồ sơ",
   "verifyRejectedTitle": "Hồ sơ chưa được duyệt",
   "verifyRejectedReason": "Lý do: {reason}",
-  "@verifyRejectedReason": {"placeholders": {"reason": {"type": "String"}}},
+  "@verifyRejectedReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "verifyReject_fake_avatar": "Ảnh đại diện không phải ảnh người thật. Đổi sang ảnh chân dung rõ mặt của bạn rồi gửi lại.",
   "verifyReject_stolen_portfolio": "Portfolio có ảnh không phải của bạn. Gỡ những ảnh đó rồi gửi lại.",
   "verifyReject_identity_mismatch": "Danh tính không khớp với tên trên hồ sơ. Xác minh lại danh tính rồi gửi lại.",
   "verifyReject_duplicate_account": "Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.",
   "verifyReject_underage": "Bạn cần đủ 18 tuổi để nhận đơn.",
   "verifyFreeResubmitsLeft": "Còn {n} lần gửi lại miễn phí",
-  "@verifyFreeResubmitsLeft": {"placeholders": {"n": {"type": "int"}}},
+  "@verifyFreeResubmitsLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "verifyNoFreeResubmit": "Hết lượt gửi lại miễn phí · gửi lại cần trả phí xác minh mới",
   "verifyFixAvatar": "Ảnh đại diện",
   "verifyFixAvatarBody": "Cần ảnh chân dung thật, rõ mặt",
@@ -2653,11 +4048,23 @@
   "verifyResubmit": "Sửa và gửi lại",
   "verifyApprovedHeading": "Bạn đã có thể nhận đơn",
   "verifyApprovedBody": "Duyệt lúc {when}. Tích xanh đã hiện cạnh tên bạn.",
-  "@verifyApprovedBody": {"placeholders": {"when": {"type": "String"}}},
+  "@verifyApprovedBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "verifyRevokedHeading": "Xác minh đã bị thu hồi",
   "verifyRevokedBody": "Bạn tạm thời không nhận đơn. Liên hệ hỗ trợ để biết thêm.",
   "verifySupportLine": "Hỗ trợ: {email}",
-  "@verifySupportLine": {"placeholders": {"email": {"type": "String"}}},
+  "@verifySupportLine": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "verifyIdTitle": "Xác minh danh tính",
   "verifyIdHeading": "Xác minh bằng căn cước điện tử",
   "verifyIdBody": "Không cần gõ hay chụp giấy tờ: mở app VNeID, đồng ý chia sẻ rồi nhập mã PIN VNeID.",
@@ -2683,7 +4090,13 @@
   "verifySelfieNote": "Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.",
   "verifySelfieStart": "Bắt đầu chụp",
   "verifyIdPassed": "Đã xác minh: {name}",
-  "@verifyIdPassed": {"placeholders": {"name": {"type": "String"}}},
+  "@verifyIdPassed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "verifyIdUnderage": "Bạn cần đủ 18 tuổi để nhận đơn.",
   "verifyIdInUse": "Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.",
   "verifyIdRateLimited": "Bạn đã thử 3 lần hôm nay. Thử lại vào ngày mai.",
@@ -2707,7 +4120,13 @@
   "verifyBizPending": "Đang chờ duyệt · trong 24 giờ",
   "verifyBizApproved": "Đã xác minh doanh nghiệp",
   "verifyBizRejected": "Chưa được duyệt: {reason}",
-  "@verifyBizRejected": {"placeholders": {"reason": {"type": "String"}}},
+  "@verifyBizRejected": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "verifyBizReject_inactive": "Doanh nghiệp không ở tình trạng đang hoạt động.",
   "verifyBizReject_representative_mismatch": "Mã số thuế không khớp với danh tính chủ studio.",
   "verifyBizReject_doc_unreadable": "Ảnh giấy đăng ký không đọc được. Chụp lại rõ nét.",
@@ -2715,7 +4134,13 @@
   "verifyBizNeedsIdentity": "Xác minh danh tính chủ studio trước.",
   "verifyBizInvalid": "Mã số thuế gồm 10 hoặc 12 chữ số.",
   "settingsVerifyStepsLeft": "Còn {n} bước",
-  "@settingsVerifyStepsLeft": {"placeholders": {"n": {"type": "int"}}},
+  "@settingsVerifyStepsLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "settingsVerifyPending": "Đang chờ duyệt",
   "settingsVerifyApproved": "Đã xác minh",
   "settingsVerifyRejected": "Chưa được duyệt",
@@ -2723,7 +4148,13 @@
   "settingsBusiness": "Xác minh doanh nghiệp",
   "settingsBusinessTodo": "Con dấu Studio, tới 30 thợ",
   "profileOwnerStepsLeft": "Còn {n} bước để nhận đơn",
-  "@profileOwnerStepsLeft": {"placeholders": {"n": {"type": "int"}}},
+  "@profileOwnerStepsLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "profileOwnerStepsBody": "Khách chưa đặt được bạn cho tới khi xác minh xong.",
   "profileOwnerPending": "Đang chờ duyệt · trong 24 giờ",
   "profileOwnerPendingBody": "Hồ sơ vẫn hiện \"Chưa nhận đơn\" với khách tới khi được duyệt.",
@@ -2739,15 +4170,23 @@
   "helpDisputeRow": "Khiếu nại #{code} · {name}",
   "@helpDisputeRow": {
     "placeholders": {
-      "code": {"type": "String"},
-      "name": {"type": "String"}
+      "code": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
     }
   },
   "helpDisputeRowMeta": "{status} · {date}",
   "@helpDisputeRowMeta": {
     "placeholders": {
-      "status": {"type": "String"},
-      "date": {"type": "String"}
+      "status": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "helpFaqTitle": "Câu hỏi thường gặp",
@@ -2755,7 +4194,9 @@
   "helpEmailLine": "Email hỗ trợ: {email}",
   "@helpEmailLine": {
     "placeholders": {
-      "email": {"type": "String"}
+      "email": {
+        "type": "String"
+      }
     }
   },
   "supportChatTitle": "Hỗ trợ",
@@ -2814,25 +4255,97 @@
   "addonNounSet": "bộ",
   "addonNounTime": "lần",
   "addonPriceOnce": "{price} · một lần",
-  "@addonPriceOnce": {"placeholders": {"price": {"type": "String"}}},
+  "@addonPriceOnce": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "addonPricePer": "{price} / {noun}",
-  "@addonPricePer": {"placeholders": {"price": {"type": "String"}, "noun": {"type": "String"}}},
+  "@addonPricePer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "noun": {
+        "type": "String"
+      }
+    }
+  },
   "addonLineQty": "{name} · {qty} {noun}",
-  "@addonLineQty": {"placeholders": {"name": {"type": "String"}, "qty": {"type": "int"}, "noun": {"type": "String"}}},
+  "@addonLineQty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "int"
+      },
+      "noun": {
+        "type": "String"
+      }
+    }
+  },
   "addonSummaryItem": "{name} ×{qty}",
-  "@addonSummaryItem": {"placeholders": {"name": {"type": "String"}, "qty": {"type": "int"}}},
+  "@addonSummaryItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "int"
+      }
+    }
+  },
   "addonBlockMeta": "{qty} {noun} × {price}",
-  "@addonBlockMeta": {"placeholders": {"qty": {"type": "int"}, "noun": {"type": "String"}, "price": {"type": "String"}}},
+  "@addonBlockMeta": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "noun": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "addonsSummary": "+ {list}",
-  "@addonsSummary": {"placeholders": {"list": {"type": "String"}}},
+  "@addonsSummary": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
   "addonsTitle": "Dịch vụ đi kèm",
   "addonsActiveCount": "{n}/10 dịch vụ đang bật",
-  "@addonsActiveCount": {"placeholders": {"n": {"type": "int"}}},
+  "@addonsActiveCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "addonsAppliesAll": "Áp dụng: mọi gói",
   "addonsAppliesTo": "Áp dụng: {names}",
-  "@addonsAppliesTo": {"placeholders": {"names": {"type": "String"}}},
+  "@addonsAppliesTo": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "addonsToggle": "Bật {name}",
-  "@addonsToggle": {"placeholders": {"name": {"type": "String"}}},
+  "@addonsToggle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "addonsAdd": "Thêm dịch vụ",
   "addonsEmptyTitle": "Chưa có dịch vụ đi kèm",
   "addonsEmptyBody": "Thêm trang điểm, chỉnh ảnh hay xe đưa đón để khách chọn khi đặt lịch.",
@@ -2848,7 +4361,13 @@
   "addonFieldUnit": "Cách tính",
   "addonFieldPriceOnce": "Giá (₫)",
   "addonFieldPricePer": "Giá / {noun} (₫)",
-  "@addonFieldPricePer": {"placeholders": {"noun": {"type": "String"}}},
+  "@addonFieldPricePer": {
+    "placeholders": {
+      "noun": {
+        "type": "String"
+      }
+    }
+  },
   "addonFieldMax": "Tối đa",
   "addonFieldApplies": "Áp dụng cho",
   "addonAppliesAllChip": "Mọi gói",
@@ -2876,20 +4395,56 @@
   "bookAddonsTitle": "Thêm dịch vụ",
   "bookAddonsOptional": "Không bắt buộc",
   "bookAddonLess": "Bớt một {unit}",
-  "@bookAddonLess": {"placeholders": {"unit": {"type": "String"}}},
+  "@bookAddonLess": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "bookAddonMore": "Thêm một {unit}",
-  "@bookAddonMore": {"placeholders": {"unit": {"type": "String"}}},
+  "@bookAddonMore": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "bookAddonQty": "{name}: {qty} {unit}",
-  "@bookAddonQty": {"placeholders": {"name": {"type": "String"}, "qty": {"type": "int"}, "unit": {"type": "String"}}},
+  "@bookAddonQty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "bookAddonDropped": "Đã bỏ {names} vì không áp dụng cho gói này",
-  "@bookAddonDropped": {"placeholders": {"names": {"type": "String"}}},
+  "@bookAddonDropped": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "bookAddonsChanged": "Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán",
   "bookPickupTitle": "Điểm đón",
   "bookPickupHint": "Tên điểm đón (tối thiểu 3 ký tự)",
   "bookPickupPrivate": "Chỉ thợ chụp cho bạn thấy điểm đón.",
   "bookPickupRequired": "Nhập điểm đón cho xe đưa đón",
   "bookPickupLine": "Điểm đón: {name}",
-  "@bookPickupLine": {"placeholders": {"name": {"type": "String"}}},
+  "@bookPickupLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "safetyMore": "Thêm tuỳ chọn",
   "safetyShareProfile": "Chia sẻ hồ sơ",
   "safetyLinkCopied": "Đã sao chép liên kết hồ sơ",
@@ -2898,13 +4453,37 @@
   "safetyReportMessage": "Báo cáo tin nhắn",
   "safetyReportEvent": "Báo cáo sự kiện",
   "safetyReportUser": "Báo cáo {name}",
-  "@safetyReportUser": {"placeholders": {"name": {"type": "String"}}},
+  "@safetyReportUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "safetyBlock": "Chặn {name}",
-  "@safetyBlock": {"placeholders": {"name": {"type": "String"}}},
+  "@safetyBlock": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "safetyUnblock": "Bỏ chặn {name}",
-  "@safetyUnblock": {"placeholders": {"name": {"type": "String"}}},
+  "@safetyUnblock": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportTitleUser": "Báo cáo {name}",
-  "@reportTitleUser": {"placeholders": {"name": {"type": "String"}}},
+  "@reportTitleUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportTitlePost": "Báo cáo bài viết",
   "reportTitleMessage": "Báo cáo tin nhắn",
   "reportTitleEvent": "Báo cáo sự kiện",
@@ -2920,50 +4499,110 @@
   "reportTextLabel": "Mô tả thêm (tuỳ chọn)",
   "reportTextRequired": "Lý do khác cần mô tả ít nhất 10 ký tự",
   "reportBlockAlso": "Chặn {name}",
-  "@reportBlockAlso": {"placeholders": {"name": {"type": "String"}}},
+  "@reportBlockAlso": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportBlockAlsoBody": "Hai bên không thấy bài của nhau, không nhắn tin hay đặt lịch với nhau.",
   "reportSubmit": "Gửi báo cáo",
   "reportSent": "Đã gửi báo cáo. Cảm ơn bạn.",
   "reportSentBlocked": "Đã gửi báo cáo và chặn {name}.",
-  "@reportSentBlocked": {"placeholders": {"name": {"type": "String"}}},
+  "@reportSentBlocked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportDuplicate": "Bạn đã báo cáo nội dung này rồi.",
   "reportLimit": "Bạn đã gửi nhiều báo cáo hôm nay. Thử lại ngày mai.",
   "reportFailed": "Chưa gửi được. Thử lại.",
   "blockConfirmTitle": "Chặn {name}?",
-  "@blockConfirmTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@blockConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockConfirmBody": "Hai bên sẽ không thấy bài của nhau, không nhắn tin hay đặt lịch với nhau. Buổi chụp đã đặt vẫn giữ; cần trao đổi thì liên hệ hỗ trợ. {name} không nhận thông báo.",
-  "@blockConfirmBody": {"placeholders": {"name": {"type": "String"}}},
+  "@blockConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockConfirm": "Chặn",
   "blockKeep": "Không chặn",
   "blockDone": "Đã chặn {name}",
-  "@blockDone": {"placeholders": {"name": {"type": "String"}}},
+  "@blockDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockFailed": "Chưa chặn được. Thử lại.",
   "blockLimit": "Bạn đã chặn quá nhiều người. Bỏ chặn bớt rồi thử lại.",
   "unblockConfirmTitle": "Bỏ chặn {name}?",
-  "@unblockConfirmTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@unblockConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "unblockConfirmBody": "Hai bên lại thấy bài của nhau, nhắn tin và đặt lịch được.",
   "unblockConfirm": "Bỏ chặn",
   "unblockKeep": "Giữ chặn",
   "unblockDone": "Đã bỏ chặn {name}",
-  "@unblockDone": {"placeholders": {"name": {"type": "String"}}},
+  "@unblockDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockedTitle": "Người đã chặn",
   "blockedNote": "Người bạn chặn không thấy bài của bạn, không nhắn tin hay đặt lịch với bạn. Họ không nhận thông báo.",
   "blockedSince": "Chặn {date}",
-  "@blockedSince": {"placeholders": {"date": {"type": "String"}}},
+  "@blockedSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "blockedUnblock": "Bỏ chặn",
   "blockedEmptyTitle": "Bạn chưa chặn ai",
   "blockedEmptyBody": "Chặn từ menu … trên hồ sơ, bài viết hoặc tin nhắn.",
   "settingsBlocked": "Người đã chặn",
   "settingsBlockedBody": "Xem và bỏ chặn",
   "profileBlockedByMeTitle": "Bạn đã chặn {name}",
-  "@profileBlockedByMeTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@profileBlockedByMeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "profileBlockedByMeBody": "Bỏ chặn để xem hồ sơ, nhắn tin và đặt lịch.",
   "profileBlockedByThemTitle": "Không xem được hồ sơ này",
   "profileBlockedByThemBody": "Hồ sơ này không hiển thị với bạn.",
   "postHiddenTitle": "Không xem được bài này",
   "postHiddenBody": "Bài này không hiển thị với bạn.",
   "chatBlockedByMe": "Bạn đã chặn {name}. Bỏ chặn để nhắn tin.",
-  "@chatBlockedByMe": {"placeholders": {"name": {"type": "String"}}},
+  "@chatBlockedByMe": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "chatBlocked": "Không gửi được tin nhắn trong cuộc trò chuyện này.",
   "chatMessageRemoved": "Tin nhắn đã bị gỡ",
   "bookingBlockedNote": "Hai bên đã chặn nhau. Cần trao đổi về buổi chụp, hãy liên hệ hỗ trợ.",
@@ -2972,7 +4611,9 @@
   "deliverySubmitTitle": "Nộp bàn giao · vòng {round}",
   "@deliverySubmitTitle": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "deliverySamplesHint": "3–20 ảnh mẫu · tự đóng watermark khi tải lên",
@@ -2995,27 +4636,37 @@
   "deliveryCustomerNotesRound": "Khách muốn chỉnh sửa vòng {round}",
   "@deliveryCustomerNotesRound": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "deliveryPhotoNoteCaption": "Ảnh {index}: {note}",
   "@deliveryPhotoNoteCaption": {
     "placeholders": {
-      "index": {"type": "int"},
-      "note": {"type": "String"}
+      "index": {
+        "type": "int"
+      },
+      "note": {
+        "type": "String"
+      }
     }
   },
   "deliverySubmitted": "Đã nộp vòng {round}",
   "@deliverySubmitted": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "deliveryNotReady": "Ảnh mẫu đang xử lý, đợi một chút rồi nộp lại.",
   "deliveryReviewTitle": "Bàn giao · vòng {round}",
   "@deliveryReviewTitle": {
     "placeholders": {
-      "round": {"type": "int"}
+      "round": {
+        "type": "int"
+      }
     }
   },
   "deliveryReviewApprovedTitle": "Bàn giao · đã đồng ý",
@@ -3023,15 +4674,23 @@
   "deliverySenderInfo": "{name} gửi {count} ảnh mẫu · {date}",
   "@deliverySenderInfo": {
     "placeholders": {
-      "name": {"type": "String"},
-      "count": {"type": "int"},
-      "date": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "deliveryOriginalsCardTitle": "Bộ ảnh gốc · {count} ảnh",
   "@deliveryOriginalsCardTitle": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deliveryOriginalsLocked": "Mở khi bạn đồng ý ảnh",
@@ -3039,27 +4698,39 @@
   "deliveryOriginalsSubApproved": "{name} gửi {date}",
   "@deliveryOriginalsSubApproved": {
     "placeholders": {
-      "name": {"type": "String"},
-      "date": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "deliveryRevisionsLeft": "Còn {used}/{total} lượt sửa miễn phí",
   "@deliveryRevisionsLeft": {
     "placeholders": {
-      "used": {"type": "int"},
-      "total": {"type": "int"}
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "deliveryRevisionsExhausted": "Hết lượt sửa miễn phí ({total}/{total})",
   "@deliveryRevisionsExhausted": {
     "placeholders": {
-      "total": {"type": "int"}
+      "total": {
+        "type": "int"
+      }
     }
   },
   "deliveryAutoApproveHint": "Tự đồng ý sau {time} nếu bạn không phản hồi",
   "@deliveryAutoApproveHint": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "deliveryRequestRevision": "Yêu cầu chỉnh sửa",
@@ -3068,7 +4739,9 @@
   "deliveryExtraRoundPending": "Đã xin thêm 1 vòng · chờ {name} trả lời",
   "@deliveryExtraRoundPending": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deliveryApproveConfirmTitle": "Đồng ý ảnh?",
@@ -3077,14 +4750,18 @@
   "deliveryApprovedToast": "Bạn đã đồng ý ảnh lúc {time}. Link bộ ảnh gốc đã mở.",
   "@deliveryApprovedToast": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "deliveryCheckCardTitle": "Kiểm tra bộ ảnh gốc trong 48 giờ",
   "deliveryCheckCardHoursLeft": "còn {hours} giờ",
   "@deliveryCheckCardHoursLeft": {
     "placeholders": {
-      "hours": {"type": "int"}
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "deliveryCheckCardHint": "Tải và kiểm tra chất lượng file gốc. Sau 48 giờ hệ thống tự động hoàn tất đơn.",
@@ -3098,7 +4775,9 @@
   "deliveryRevisionSheetSelectedCount": "{count} ảnh",
   "@deliveryRevisionSheetSelectedCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deliveryRevisionSheetHint": "Chạm ảnh để sửa ghi chú riêng của ảnh đó.",
@@ -3106,8 +4785,12 @@
   "deliveryRevisionRoundFree": "Vòng sửa {round}/{total} (miễn phí)",
   "@deliveryRevisionRoundFree": {
     "placeholders": {
-      "round": {"type": "int"},
-      "total": {"type": "int"}
+      "round": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "deliveryRevisionSend": "Gửi yêu cầu",
@@ -3115,7 +4798,9 @@
   "deliveryRevisionNoteForPhoto": "Ghi chú cho ảnh {index}",
   "@deliveryRevisionNoteForPhoto": {
     "placeholders": {
-      "index": {"type": "int"}
+      "index": {
+        "type": "int"
+      }
     }
   },
   "deliveryRevisionChipBrighter": "Da sáng hơn",
@@ -3126,7 +4811,9 @@
   "deliveryExtraRoundHint": "Hết lượt sửa miễn phí. {name} có thể cho thêm hoặc không.",
   "@deliveryExtraRoundHint": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deliveryExtraRoundSend": "Gửi đề nghị",
@@ -3149,85 +4836,111 @@
   "deleteBlockBooking": "{count} buổi chụp chưa xong",
   "@deleteBlockBooking": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockJob": "{count} buổi chụp khách đã đặt",
   "@deleteBlockJob": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockJobPost": "{count} tin tìm thợ đang mở",
   "@deleteBlockJobPost": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockJobPostBody": "Đóng tin hoặc chọn thợ trước.",
   "deleteBlockQuote": "{count} báo giá đang chờ khách",
   "@deleteBlockQuote": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockQuoteBody": "Rút báo giá hoặc đợi khách chọn.",
   "deleteBlockInstant": "{count} yêu cầu Chụp ngay chưa xong",
   "@deleteBlockInstant": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockStudio": "{count} quan hệ studio đang hoạt động",
   "@deleteBlockStudio": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockStudioBody": "Rời studio hoặc gỡ thành viên trước.",
   "deleteBlockCollab": "{count} cộng tác đang mở",
   "@deleteBlockCollab": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockCollabBody": "Kết thúc cộng tác và xong các việc được giao.",
   "deleteBlockTicket": "{count} vé sự kiện chưa diễn ra",
   "@deleteBlockTicket": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockEvent": "{count} sự kiện bạn tổ chức còn mở",
   "@deleteBlockEvent": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockDispute": "{count} khiếu nại đang mở",
   "@deleteBlockDispute": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "deleteBlockHeld": "{amount} đang được giữ",
   "@deleteBlockHeld": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "deleteBlockHeldBody": "Đợi tiền được chuyển xong rồi xoá.",
   "deleteBlockRefund": "{amount} đang hoàn",
   "@deleteBlockRefund": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "deleteBlockRefundBody": "Đợi tiền hoàn về tài khoản của bạn.",
   "deleteBlockEarnings": "{amount} chờ chi trả",
   "@deleteBlockEarnings": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "deleteBlockEarningsBody": "Thêm tài khoản nhận tiền hoặc đợi lần chi tới.",
@@ -3246,7 +4959,9 @@
   "deleteAccountDone": "Tài khoản đã khoá, sẽ xoá hẳn vào {date}.",
   "@deleteAccountDone": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "deleteAccountFailed": "Chưa xoá được, thử lại sau.",
@@ -3262,8 +4977,12 @@
   "privacyExportReady": "Bản sao tạo lúc {time} · tải được tới {date}",
   "@privacyExportReady": {
     "placeholders": {
-      "time": {"type": "String"},
-      "date": {"type": "String"}
+      "time": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "privacyExportDownload": "Tải xuống",
@@ -3275,7 +4994,9 @@
   "restoreAccountBody": "Tài khoản của bạn sẽ bị xoá hẳn vào {date}. Khôi phục để dùng tiếp như cũ: hồ sơ, lịch sử và tin nhắn vẫn còn nguyên.",
   "@restoreAccountBody": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "restoreAccountAction": "Khôi phục tài khoản",
@@ -3283,7 +5004,9 @@
   "restoreAccountContinueNote": "Bạn sẽ được đăng xuất; tài khoản vẫn bị xoá vào {date}.",
   "@restoreAccountContinueNote": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "restoreAccountExport": "Tải bản sao dữ liệu",
@@ -3294,27 +5017,87 @@
   "studioMembersTitle": "Thành viên",
   "studioMembersRulesA11y": "Quy định thành viên",
   "studioMembersQuota": "{n}/{max} thợ · còn {k} thao tác hôm nay",
-  "@studioMembersQuota": {"placeholders": {"n": {"type": "int"}, "max": {"type": "int"}, "k": {"type": "int"}}},
+  "@studioMembersQuota": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      },
+      "k": {
+        "type": "int"
+      }
+    }
+  },
   "studioMemberAssigned": "{m} việc đang giao",
-  "@studioMemberAssigned": {"placeholders": {"m": {"type": "int"}}},
+  "@studioMemberAssigned": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
   "studioMemberNoWork": "chưa có việc",
   "studioMemberOptions": "Tuỳ chọn cho {name}",
-  "@studioMemberOptions": {"placeholders": {"name": {"type": "String"}}},
+  "@studioMemberOptions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "studioPendingTitle": "Đang chờ",
   "studioPendingCount": "{n} · tối đa 5 lời mời",
-  "@studioPendingCount": {"placeholders": {"n": {"type": "int"}}},
+  "@studioPendingCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "studioInviteSentDays": "Lời mời đã gửi · Hết hạn sau {n} ngày",
-  "@studioInviteSentDays": {"placeholders": {"n": {"type": "int"}}},
+  "@studioInviteSentDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "studioInviteSentToday": "Lời mời đã gửi · Hết hạn trong hôm nay",
   "studioJoinRequestedAgo": "Xin gia nhập · {ago}",
-  "@studioJoinRequestedAgo": {"placeholders": {"ago": {"type": "String"}}},
+  "@studioJoinRequestedAgo": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "studioAgoNow": "vừa xong",
   "studioAgoMinutes": "{n} phút trước",
-  "@studioAgoMinutes": {"placeholders": {"n": {"type": "int"}}},
+  "@studioAgoMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "studioAgoHours": "{n} giờ trước",
-  "@studioAgoHours": {"placeholders": {"n": {"type": "int"}}},
+  "@studioAgoHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "studioAgoDays": "{n} ngày trước",
-  "@studioAgoDays": {"placeholders": {"n": {"type": "int"}}},
+  "@studioAgoDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "studioCancelInvite": "Huỷ",
   "studioDecline": "Từ chối",
   "studioApprove": "Duyệt",
@@ -3323,12 +5106,30 @@
   "studioMembersEmptyBody": "Mời thợ ảnh bạn tin tưởng; họ nhận lời là vào studio.",
   "studioRemoveMember": "Bỏ khỏi studio",
   "studioRemoveTitle": "Bỏ {name} khỏi studio?",
-  "@studioRemoveTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@studioRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "studioRemoveBody": "{name} sẽ không nhận việc của studio nữa và 7 ngày sau mới vào được studio khác.",
-  "@studioRemoveBody": {"placeholders": {"name": {"type": "String"}}},
+  "@studioRemoveBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "studioRemoveKeep": "Giữ lại",
   "studioBusyTitle": "Còn {n} buổi chụp được giao",
-  "@studioBusyTitle": {"placeholders": {"n": {"type": "int"}}},
+  "@studioBusyTitle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "studioRemoveBusyBody": "Giao các buổi này cho người khác hoặc chờ chụp xong rồi bỏ.",
   "studioSheetClose": "Đóng",
   "studioFullUnverified": "Đã đủ 3 thợ. Xác minh doanh nghiệp để nhận tới 30 thợ.",
@@ -3344,23 +5145,62 @@
   "studioInviteSearch": "Tìm thợ theo tên",
   "studioInviteRowAction": "Mời",
   "studioInviteInStudio": "Đang ở {studio}",
-  "@studioInviteInStudio": {"placeholders": {"studio": {"type": "String"}}},
+  "@studioInviteInStudio": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "studioInviteCooldown": "Mời được từ {date}",
-  "@studioInviteCooldown": {"placeholders": {"date": {"type": "String"}}},
+  "@studioInviteCooldown": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "studioInviteInvited": "Đã mời",
   "studioInviteMember": "Đã là thành viên",
   "studioInviteFootnote": "Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ",
   "studioInviteFullPending": "Đã có 5 lời mời chờ",
   "studioInviteFullMembers": "Studio đã đủ {max} thợ",
-  "@studioInviteFullMembers": {"placeholders": {"max": {"type": "int"}}},
+  "@studioInviteFullMembers": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "studioInviteNoResults": "Không tìm thấy thợ tên này",
   "studioInviteDone": "Đã gửi lời mời tới {name}",
-  "@studioInviteDone": {"placeholders": {"name": {"type": "String"}}},
+  "@studioInviteDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioTitle": "Studio của tôi",
   "myStudioSince": "Thành viên từ {month} · {m} việc được giao",
-  "@myStudioSince": {"placeholders": {"month": {"type": "String"}, "m": {"type": "int"}}},
+  "@myStudioSince": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
   "myStudioSinceOnly": "Thành viên từ {month}",
-  "@myStudioSinceOnly": {"placeholders": {"month": {"type": "String"}}},
+  "@myStudioSinceOnly": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioView": "Xem studio",
   "myStudioJobs": "Việc studio giao",
   "myStudioAssignedBadge": "Đã giao",
@@ -3369,28 +5209,82 @@
   "myStudioAccept": "Nhận",
   "myStudioDecline": "Từ chối",
   "myStudioInviteBlocked": "Bạn đang ở {studio}",
-  "@myStudioInviteBlocked": {"placeholders": {"studio": {"type": "String"}}},
+  "@myStudioInviteBlocked": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioInviteExpires": "Hết hạn sau {n} ngày",
-  "@myStudioInviteExpires": {"placeholders": {"n": {"type": "int"}}},
+  "@myStudioInviteExpires": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "myStudioInviteExpiresToday": "Hết hạn trong hôm nay",
   "myStudioCooldownNote": "Rời hoặc bị bỏ khỏi studio thì 7 ngày sau mới vào được studio khác.",
   "myStudioNone": "Bạn chưa ở studio nào",
   "myStudioNoneBody": "Studio mời bạn, hoặc bạn xin gia nhập từ hồ sơ studio.",
   "myStudioRequestPending": "Đã xin gia nhập {studio} · chờ duyệt",
-  "@myStudioRequestPending": {"placeholders": {"studio": {"type": "String"}}},
+  "@myStudioRequestPending": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioRequestSent": "Gửi {ago} · hết hạn sau {n} ngày",
-  "@myStudioRequestSent": {"placeholders": {"ago": {"type": "String"}, "n": {"type": "int"}}},
+  "@myStudioRequestSent": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "myStudioRequestSentToday": "Gửi {ago} · hết hạn trong hôm nay",
-  "@myStudioRequestSentToday": {"placeholders": {"ago": {"type": "String"}}},
+  "@myStudioRequestSentToday": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioRequestCancel": "Huỷ",
   "myStudioLeaveTitle": "Rời {studio}?",
-  "@myStudioLeaveTitle": {"placeholders": {"studio": {"type": "String"}}},
+  "@myStudioLeaveTitle": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioLeaveBody": "7 ngày sau bạn mới vào được studio khác, kể cả {studio}.",
-  "@myStudioLeaveBody": {"placeholders": {"studio": {"type": "String"}}},
+  "@myStudioLeaveBody": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "myStudioLeaveKeep": "Ở lại",
   "myStudioLeaveBusyBody": "Chụp xong hoặc nhờ studio giao người khác rồi rời.",
   "settingsStudioMembersQuota": "{n}/{max} thợ",
-  "@settingsStudioMembersQuota": {"placeholders": {"n": {"type": "int"}, "max": {"type": "int"}}},
+  "@settingsStudioMembersQuota": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "settingsMyStudioNone": "Chưa ở studio nào",
   "studioErr_membership_conflict": "Thợ này đang ở một studio khác.",
   "studioErr_cooldown": "Chưa đủ 7 ngày kể từ lần rời studio.",
@@ -3405,25 +5299,73 @@
   "profileYearsTile": "hoạt động",
   "profileMembersTitle": "Thành viên",
   "profileMembersA11y": "Thành viên {studio}",
-  "@profileMembersA11y": {"placeholders": {"studio": {"type": "String"}}},
+  "@profileMembersA11y": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "profileMoreMembersA11y": "và {n} thành viên khác",
-  "@profileMoreMembersA11y": {"placeholders": {"n": {"type": "int"}}},
+  "@profileMoreMembersA11y": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "profileJoinStudio": "Xin gia nhập",
   "profileJoinRequested": "Đã xin gia nhập",
   "profileJoinSent": "Đã gửi yêu cầu tới {studio}",
-  "@profileJoinSent": {"placeholders": {"studio": {"type": "String"}}},
+  "@profileJoinSent": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "profileJoinCooldown": "Bạn vào được studio từ {date}",
-  "@profileJoinCooldown": {"placeholders": {"date": {"type": "String"}}},
+  "@profileJoinCooldown": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "profileMemberOf": "Thành viên của {studio}",
-  "@profileMemberOf": {"placeholders": {"studio": {"type": "String"}}},
+  "@profileMemberOf": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "workAssignAction": "Giao thợ",
   "workAssignedTo": "Thợ: {name}",
-  "@workAssignedTo": {"placeholders": {"name": {"type": "String"}}},
+  "@workAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "workAssignOverdue": "Quá hạn giao thợ",
   "workAssignDeadline": "Hạn giao thợ: {deadline}",
-  "@workAssignDeadline": {"placeholders": {"deadline": {"type": "String"}}},
+  "@workAssignDeadline": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "workChangeRequested": "Khách xin đổi thợ · trả lời trước {time}",
-  "@workChangeRequested": {"placeholders": {"time": {"type": "String"}}},
+  "@workChangeRequested": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "workChangeDecline": "Từ chối đổi",
   "changeDeclineTitle": "Từ chối đổi thợ?",
   "changeDeclineReason": "Lý do (bắt buộc)",
@@ -3433,36 +5375,111 @@
   "workReturnJob": "Trả việc",
   "returnJobTitle": "Trả lại buổi chụp này?",
   "returnJobBody": "{studio} được báo để giao người khác. Bạn vẫn là thợ của buổi này tới khi studio giao lại.",
-  "@returnJobBody": {"placeholders": {"studio": {"type": "String"}}},
+  "@returnJobBody": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "returnJobReason": "Lý do (tuỳ chọn)",
   "returnJobConfirm": "Trả việc",
   "returnJobKeep": "Giữ việc",
   "workReturned": "Đã trả việc · chờ studio giao lại",
   "workAssigneeReturned": "{name} đã trả việc",
-  "@workAssigneeReturned": {"placeholders": {"name": {"type": "String"}}},
+  "@workAssigneeReturned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "workAssigneeReturnedNoName": "Thợ đã trả việc",
   "assignTitle": "Giao thợ",
   "assignSummary": "{service} · {day} · {start}–{end}",
-  "@assignSummary": {"placeholders": {"service": {"type": "String"}, "day": {"type": "String"}, "start": {"type": "String"}, "end": {"type": "String"}}},
+  "@assignSummary": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "assignDeadline": "Hạn giao thợ: {deadline} (còn {left})",
-  "@assignDeadline": {"placeholders": {"deadline": {"type": "String"}, "left": {"type": "String"}}},
+  "@assignDeadline": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
   "assignDeadlinePassed": "Đã quá hạn giao thợ ({deadline})",
-  "@assignDeadlinePassed": {"placeholders": {"deadline": {"type": "String"}}},
+  "@assignDeadlinePassed": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "assignLeftDays": "{n} ngày",
-  "@assignLeftDays": {"placeholders": {"n": {"type": "int"}}},
+  "@assignLeftDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "assignLeftHours": "{n} giờ",
-  "@assignLeftHours": {"placeholders": {"n": {"type": "int"}}},
+  "@assignLeftHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "assignFree": "Rảnh",
   "assignBusy": "Bận {start}–{end}",
-  "@assignBusy": {"placeholders": {"start": {"type": "String"}, "end": {"type": "String"}}},
+  "@assignBusy": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "assignBusyAllDay": "Bận cả ngày",
   "assignUnverified": "Chưa xác minh",
   "assignCurrent": "Đang giao",
   "assignNote": "Khách được báo ngay; {name} vào nhóm chat của buổi chụp.",
-  "@assignNote": {"placeholders": {"name": {"type": "String"}}},
+  "@assignNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "assignLateWarning": "Còn dưới 24 giờ: đổi thợ lúc này thì khách được huỷ và hoàn 100%.",
   "assignAction": "Giao cho {name}",
-  "@assignAction": {"placeholders": {"name": {"type": "String"}}},
+  "@assignAction": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "assignNoMembers": "Studio chưa có thành viên nào để giao.",
   "assignPickerA11y": "Chọn thợ chụp",
   "changeTitle": "Xin đổi thợ chụp",
@@ -3475,34 +5492,91 @@
   "changeSent": "Đã gửi yêu cầu đổi thợ",
   "assigneeSection": "Thợ chụp cho bạn",
   "assigneeAssignedOn": "Giao {date}",
-  "@assigneeAssignedOn": {"placeholders": {"date": {"type": "String"}}},
+  "@assigneeAssignedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "assigneeWaiting": "Studio sẽ báo thợ chụp trước {deadline}",
-  "@assigneeWaiting": {"placeholders": {"deadline": {"type": "String"}}},
+  "@assigneeWaiting": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "assigneeMeta": "{shoots} buổi · thợ của {studio}",
-  "@assigneeMeta": {"placeholders": {"shoots": {"type": "int"}, "studio": {"type": "String"}}},
+  "@assigneeMeta": {
+    "placeholders": {
+      "shoots": {
+        "type": "int"
+      },
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "assigneeViewProfile": "Xem hồ sơ",
   "assigneeChange": "Xin đổi thợ (1 lần)",
   "assigneeChangePending": "Đã xin đổi · chờ studio",
   "assigneeOverdueLabel": "Quá hạn",
   "assigneeOverdueTitle": "Studio chưa báo thợ chụp đúng hạn (trước {deadline})",
-  "@assigneeOverdueTitle": {"placeholders": {"deadline": {"type": "String"}}},
+  "@assigneeOverdueTitle": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "assigneeOverdueBody": "Bạn có thể chờ thêm hoặc huỷ và được hoàn 100%.",
   "assigneeCancelFull": "Huỷ và hoàn 100%",
   "assigneeReminded": "Đã nhắc {studio} lúc {first} và {second}.",
-  "@assigneeReminded": {"placeholders": {"studio": {"type": "String"}, "first": {"type": "String"}, "second": {"type": "String"}}},
+  "@assigneeReminded": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      },
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
   "assigneeChangeDeclinedTitle": "Studio không đổi thợ chụp",
   "assigneeChangeDeclinedBody": "Lý do: {reason}. Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.",
-  "@assigneeChangeDeclinedBody": {"placeholders": {"reason": {"type": "String"}}},
+  "@assigneeChangeDeclinedBody": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "assigneeChangeExpiredTitle": "Studio chưa trả lời yêu cầu đổi thợ",
   "assigneeChangeExpiredBody": "Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.",
   "assigneeLateReassignTitle": "Studio đã đổi thợ khi còn dưới 24 giờ",
   "assigneeLateReassignBody": "Bạn có thể huỷ và được hoàn 100%.",
   "timelineAssigned": "Đã giao thợ chụp",
   "timelineAssignedBody": "{name} đã vào nhóm chat của buổi chụp",
-  "@timelineAssignedBody": {"placeholders": {"name": {"type": "String"}}},
+  "@timelineAssignedBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "timelineAwaitAssign": "Chờ studio giao thợ chụp",
   "timelineAwaitAssignBody": "Quá hạn từ {deadline}",
-  "@timelineAwaitAssignBody": {"placeholders": {"deadline": {"type": "String"}}},
+  "@timelineAwaitAssignBody": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "detailMessageStudio": "Nhắn studio",
   "cancelStudioFaultTitle": "Huỷ và hoàn 100%?",
   "cancelStudioFaultLine": "Hoàn 100% số đã trả",
@@ -3510,9 +5584,24 @@
   "cancelStudioFaultConfirm": "Huỷ và hoàn 100%",
   "cancelStudioFaultKeep": "Giữ lịch",
   "reviewCardAssignee": "{day} · thợ {name}",
-  "@reviewCardAssignee": {"placeholders": {"day": {"type": "String"}, "name": {"type": "String"}}},
+  "@reviewCardAssignee": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reviewBlockAssignee": "Thợ {name}",
-  "@reviewBlockAssignee": {"placeholders": {"name": {"type": "String"}}},
+  "@reviewBlockAssignee": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reviewBlockAssigneeNote": "Tính cho hồ sơ thợ",
   "reviewBlockStudioNote": "Tính cho studio",
   "reviewNoteForAssignee": "Nhận xét cho thợ",
@@ -3526,28 +5615,82 @@
   "reviewStudioReason_poor_assignment": "Giao thợ không hợp",
   "reviewStudioReason_other": "Khác",
   "reviewA11yTomatoFor": "Ném cà chua cho {who}, {n} trên 10",
-  "@reviewA11yTomatoFor": {"placeholders": {"who": {"type": "String"}, "n": {"type": "int"}}},
+  "@reviewA11yTomatoFor": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reviewA11yBrickFor": "Ném gạch cho {who}, {n} trên 10",
-  "@reviewA11yBrickFor": {"placeholders": {"who": {"type": "String"}, "n": {"type": "int"}}},
+  "@reviewA11yBrickFor": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "reviewShotBy": "Chụp bởi {name}",
-  "@reviewShotBy": {"placeholders": {"name": {"type": "String"}}},
+  "@reviewShotBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reviewViaStudio": "Qua {studio}",
-  "@reviewViaStudio": {"placeholders": {"studio": {"type": "String"}}},
+  "@reviewViaStudio": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "reviewWhoAssignee": "thợ",
   "reviewWhoStudio": "studio",
   "reviewGroupAssigneeA11y": "Đánh giá thợ {name}",
-  "@reviewGroupAssigneeA11y": {"placeholders": {"name": {"type": "String"}}},
+  "@reviewGroupAssigneeA11y": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reviewGroupStudioA11y": "Đánh giá {studio}",
-  "@reviewGroupStudioA11y": {"placeholders": {"studio": {"type": "String"}}},
+  "@reviewGroupStudioA11y": {
+    "placeholders": {
+      "studio": {
+        "type": "String"
+      }
+    }
+  },
   "reviewNoAssigneeTitle": "Chưa đánh giá được",
   "reviewNoAssigneeBody": "Studio chưa giao thợ chụp cho buổi này.",
   "homeHotSpotsTitle": "Điểm chụp đang hot",
   "homeHotSpots": "Điểm chụp đang hot",
   "homeHotSpotsSeeAll": "Xem tất cả",
   "homeSpotProvidersWeek": "{count} thợ nhận chụp tuần này",
-  "@homeSpotProvidersWeek": {"placeholders": {"count": {"type": "int"}}},
+  "@homeSpotProvidersWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotProvidersThisWeek": "{count} thợ nhận chụp tuần này",
-  "@spotProvidersThisWeek": {"placeholders": {"count": {"type": "int"}}},
+  "@spotProvidersThisWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "exploreNearbySpotsTitle": "Điểm chụp gần bạn",
   "exploreSpotsNearby": "Điểm chụp gần bạn",
   "exploreSpotSectionTitle": "Điểm chụp",
@@ -3557,33 +5700,120 @@
   "spotsFilterInSeason": "Đang vào mùa",
   "spotsFilterWeekend": "Cuối tuần này có thợ",
   "spotsInSeasonCount": "{count} điểm đang vào mùa",
-  "@spotsInSeasonCount": {"placeholders": {"count": {"type": "int"}}},
+  "@spotsInSeasonCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotsEmpty": "Chưa có điểm chụp nào ở khu vực này",
   "spotsLoadError": "Không tải được điểm chụp.",
   "spotInSeason": "Đang vào mùa",
   "spotInSeasonUntil": "Đang vào mùa · tới cuối tháng {month}",
-  "@spotInSeasonUntil": {"placeholders": {"month": {"type": "int"}}},
+  "@spotInSeasonUntil": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      }
+    }
+  },
   "spotSeasonEnding": "Đang vào mùa · tới cuối tháng {month}",
-  "@spotSeasonEnding": {"placeholders": {"month": {"type": "int"}}},
+  "@spotSeasonEnding": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      }
+    }
+  },
   "spotSeasonRange": "Mùa đẹp: tháng {from}–{to}",
-  "@spotSeasonRange": {"placeholders": {"from": {"type": "int"}, "to": {"type": "int"}}},
+  "@spotSeasonRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
   "spotSeasonList": "Mùa đẹp: tháng {months}",
-  "@spotSeasonList": {"placeholders": {"months": {"type": "String"}}},
+  "@spotSeasonList": {
+    "placeholders": {
+      "months": {
+        "type": "String"
+      }
+    }
+  },
   "spotSeasonBest": "Mùa đẹp: {range}",
-  "@spotSeasonBest": {"placeholders": {"range": {"type": "String"}}},
+  "@spotSeasonBest": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
   "spotSeasonAllYear": "Đẹp quanh năm",
   "spotPhotoAlt": "Ảnh chụp tại {name}",
-  "@spotPhotoAlt": {"placeholders": {"name": {"type": "String"}}},
+  "@spotPhotoAlt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "spotArchivedBand": "Điểm này không còn nhận lịch mới",
   "spotArchivedNotice": "Điểm này không còn nhận lịch mới",
   "spotsCardStats": "{providers} thợ · {events} sự kiện sắp tới",
-  "@spotsCardStats": {"placeholders": {"providers": {"type": "int"}, "events": {"type": "int"}}},
+  "@spotsCardStats": {
+    "placeholders": {
+      "providers": {
+        "type": "int"
+      },
+      "events": {
+        "type": "int"
+      }
+    }
+  },
   "spotCardStats": "{providers} thợ · {events} sự kiện sắp tới",
-  "@spotCardStats": {"placeholders": {"providers": {"type": "int"}, "events": {"type": "int"}}},
+  "@spotCardStats": {
+    "placeholders": {
+      "providers": {
+        "type": "int"
+      },
+      "events": {
+        "type": "int"
+      }
+    }
+  },
   "spotAvailableLabel": "Có mặt {day} · {start}–{end}",
-  "@spotAvailableLabel": {"placeholders": {"day": {"type": "String"}, "start": {"type": "String"}, "end": {"type": "String"}}},
+  "@spotAvailableLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "spotProviderAvailable": "Có mặt {day} · {start}–{end}",
-  "@spotProviderAvailable": {"placeholders": {"day": {"type": "String"}, "start": {"type": "String"}, "end": {"type": "String"}}},
+  "@spotProviderAvailable": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "spotShare": "Chia sẻ",
   "spotLinkCopied": "Đã sao chép liên kết điểm chụp",
   "spotCopiedLink": "Đã sao chép liên kết điểm chụp",
@@ -3598,90 +5828,294 @@
   "spotProfile": "Hồ sơ",
   "spotOffersTitle": "Gói chụp tại điểm",
   "spotOfferLine": "{name} · {price} · còn {count} suất {day}",
-  "@spotOfferLine": {"placeholders": {"name": {"type": "String"}, "price": {"type": "String"}, "count": {"type": "int"}, "day": {"type": "String"}}},
+  "@spotOfferLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotOfferFull": "{name} · {price} · hết suất {day}",
-  "@spotOfferFull": {"placeholders": {"name": {"type": "String"}, "price": {"type": "String"}, "day": {"type": "String"}}},
+  "@spotOfferFull": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotPickSlot": "Chọn suất",
   "spotEventsTitle": "Sự kiện ở đây",
   "spotPhotosTitle": "Ảnh chụp ở đây",
   "spotPhotosCount": "{count} bài",
-  "@spotPhotosCount": {"placeholders": {"count": {"type": "int"}}},
+  "@spotPhotosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotNoProviderDay": "Chưa có thợ nhận chụp ngày này · Xem ngày khác",
   "spotEmptyDayTitle": "Chưa có thợ nhận chụp ngày này",
   "spotEmptyDayAction": "Xem ngày khác",
   "spotProviderHint": "Bạn là thợ ảnh? Thêm lịch chụp ở điểm này trong Công việc.",
   "spotNotFound": "Không tìm thấy điểm chụp.",
   "spotPriceFrom": "từ {price}",
-  "@spotPriceFrom": {"placeholders": {"price": {"type": "String"}}},
+  "@spotPriceFrom": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "spotFreeSlotsCount": "Còn {count} suất {day}",
-  "@spotFreeSlotsCount": {"placeholders": {"count": {"type": "int"}, "day": {"type": "String"}}},
+  "@spotFreeSlotsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotSlotsFull": "Hết suất",
   "spotSeeMore": "Xem thêm",
   "slotPickTitle": "Chọn suất",
   "slotTaken": "Đã kín",
   "slotContinue": "Tiếp tục · {price}",
-  "@slotContinue": {"placeholders": {"price": {"type": "String"}}},
+  "@slotContinue": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "slotTakenError": "Suất này vừa có người đặt. Chọn suất khác.",
   "slotPickDayLine": "{day} · còn {free} / {total} suất",
-  "@slotPickDayLine": {"placeholders": {"day": {"type": "String"}, "free": {"type": "int"}, "total": {"type": "int"}}},
+  "@slotPickDayLine": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "free": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "slotPickOfferMeta": "Tại {spot} · {edited} ảnh chỉnh · giao trong {days} ngày. Gói chia suất không kèm dịch vụ đi kèm.",
-  "@slotPickOfferMeta": {"placeholders": {"spot": {"type": "String"}, "edited": {"type": "int"}, "days": {"type": "int"}}},
+  "@slotPickOfferMeta": {
+    "placeholders": {
+      "spot": {
+        "type": "String"
+      },
+      "edited": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "slotPickDays": "Ngày chụp",
   "slotPickTimes": "Giờ bắt đầu",
   "bookAtSpot": "Tại {spot}",
-  "@bookAtSpot": {"placeholders": {"spot": {"type": "String"}}},
+  "@bookAtSpot": {
+    "placeholders": {
+      "spot": {
+        "type": "String"
+      }
+    }
+  },
   "bookSpotPlaceLocked": "Địa điểm là điểm chụp, không đổi được.",
   "bookSpotScheduleLine": "Lịch tại điểm · {days} · {start}–{end}",
-  "@bookSpotScheduleLine": {"placeholders": {"days": {"type": "String"}, "start": {"type": "String"}, "end": {"type": "String"}}},
+  "@bookSpotScheduleLine": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "bookSpotEndsAt": "{start}–{end} · chỉ giờ còn trống trong khung {from}–{to} của {name}",
-  "@bookSpotEndsAt": {"placeholders": {"start": {"type": "String"}, "end": {"type": "String"}, "from": {"type": "String"}, "to": {"type": "String"}, "name": {"type": "String"}}},
+  "@bookSpotEndsAt": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "bookSpotDaysOnly": "Chỉ ngày có lịch tại điểm",
   "bookOutsideSchedule": "Lịch tại điểm vừa thay đổi. Chọn lại ngày giờ.",
   "bookSlotTaken": "Giờ này vừa có người đặt. Chọn giờ khác.",
   "bookSpotArchived": "Điểm này không còn nhận lịch mới.",
   "spotSchedulesTitle": "Lịch tại điểm",
   "spotSchedulesOpenCount": "{count} / 8 lịch đang mở",
-  "@spotSchedulesOpenCount": {"placeholders": {"count": {"type": "int"}}},
+  "@spotSchedulesOpenCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotSchedulesAdd": "Thêm lịch tại điểm",
   "spotSchedulesVerify": "Xác minh để mở lịch",
   "spotSchedulesEmptyTitle": "Chưa có lịch tại điểm",
   "spotSchedulesEmptyBody": "Chọn một điểm chụp đang hot và mở lịch cuối tuần để khách đặt.",
   "spotSchedulesRule": "Ngày tại điểm chỉ nhận booking ở điểm đó, nhiều booking không chồng giờ. Ngày đó bạn không nhận booking ở nơi khác.",
   "spotScheduleDaysRange": "{weekdays} · {from}–{to}",
-  "@spotScheduleDaysRange": {"placeholders": {"weekdays": {"type": "String"}, "from": {"type": "String"}, "to": {"type": "String"}}},
+  "@spotScheduleDaysRange": {
+    "placeholders": {
+      "weekdays": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleDays": "{count} ngày · {start}–{end}",
-  "@spotScheduleDays": {"placeholders": {"count": {"type": "int"}, "start": {"type": "String"}, "end": {"type": "String"}}},
+  "@spotScheduleDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleSummary": "{days} · {packages}",
-  "@spotScheduleSummary": {"placeholders": {"days": {"type": "String"}, "packages": {"type": "String"}}},
+  "@spotScheduleSummary": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "packages": {
+        "type": "String"
+      }
+    }
+  },
   "spotSchedulePackagesCount": "{count} gói",
-  "@spotSchedulePackagesCount": {"placeholders": {"count": {"type": "int"}}},
+  "@spotSchedulePackagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotSchedulePackagesAll": "mọi gói",
   "spotScheduleDayCount": "{day} · {count} booking",
-  "@spotScheduleDayCount": {"placeholders": {"day": {"type": "String"}, "count": {"type": "int"}}},
+  "@spotScheduleDayCount": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotScheduleMoreDays": "+{count} ngày",
-  "@spotScheduleMoreDays": {"placeholders": {"count": {"type": "int"}}},
+  "@spotScheduleMoreDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotScheduleDayCountsLabel": "Booking theo ngày",
   "spotScheduleNoBookings": "Chưa có booking",
   "spotScheduleNoOffers": "Chưa có gói chia suất",
   "spotScheduleNoBookingsNoOffers": "Chưa có booking · chưa có gói chia suất",
   "spotScheduleOfferMeta": "{price} · {count} suất/ngày",
-  "@spotScheduleOfferMeta": {"placeholders": {"price": {"type": "String"}, "count": {"type": "int"}}},
+  "@spotScheduleOfferMeta": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotScheduleEdit": "Sửa",
   "spotScheduleOffersAction": "Gói chia suất",
   "spotScheduleCancel": "Huỷ lịch",
   "spotScheduleCancelTitle": "Huỷ lịch tại {spot}?",
-  "@spotScheduleCancelTitle": {"placeholders": {"spot": {"type": "String"}}},
+  "@spotScheduleCancelTitle": {
+    "placeholders": {
+      "spot": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleCancelBody": "Khách sẽ không đặt được các ngày còn lại của lịch này.",
   "spotScheduleCancelConfirm": "Huỷ lịch",
   "spotScheduleCancelKeep": "Giữ lại",
   "spotScheduleHasBookings": "Còn {count} booking ngày {day}. Liên hệ khách hoặc huỷ từng booking (khách được hoàn 100%).",
-  "@spotScheduleHasBookings": {"placeholders": {"count": {"type": "int"}, "day": {"type": "String"}}},
+  "@spotScheduleHasBookings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleCancelled": "Đã huỷ lịch tại điểm",
   "spotScheduleCancelFailed": "Không huỷ được lịch. Thử lại.",
   "spotScheduleNewTitle": "Thêm lịch tại điểm",
   "spotScheduleEditTitle": "Sửa lịch tại điểm",
   "spotScheduleLimitCount": "{count} / 8",
-  "@spotScheduleLimitCount": {"placeholders": {"count": {"type": "int"}}},
+  "@spotScheduleLimitCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotScheduleSpot": "Điểm chụp",
   "spotScheduleSpotPick": "Chọn điểm chụp",
   "spotScheduleSearch": "Tìm theo tên điểm",
@@ -3702,20 +6136,62 @@
   "spotSchedulePackages": "Gói đặt được",
   "spotScheduleAllPackages": "Mọi gói đang bật",
   "spotScheduleConflictBooked": "{day} đã có booking ở nơi khác.",
-  "@spotScheduleConflictBooked": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleConflictBooked": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleConflictPending": "{day} đang có booking chờ nhận.",
-  "@spotScheduleConflictPending": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleConflictPending": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleConflictOff": "{day} bạn đã đánh dấu nghỉ.",
-  "@spotScheduleConflictOff": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleConflictOff": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleConflictSpot": "{day} đã có lịch tại điểm khác.",
-  "@spotScheduleConflictSpot": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleConflictSpot": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleConflictFull": "{day} studio hết chỗ.",
-  "@spotScheduleConflictFull": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleConflictFull": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleConflictHint": "Bỏ ngày này để mở lịch.",
   "spotScheduleRemoveDay": "{day} trùng lịch, chạm để bỏ",
-  "@spotScheduleRemoveDay": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleRemoveDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleOffSeason": "Điểm này đẹp nhất tháng {months}",
-  "@spotScheduleOffSeason": {"placeholders": {"months": {"type": "String"}}},
+  "@spotScheduleOffSeason": {
+    "placeholders": {
+      "months": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleOpen": "Mở lịch",
   "spotScheduleSave": "Lưu thay đổi",
   "spotScheduleSaved": "Đã mở lịch tại điểm",
@@ -3730,7 +6206,22 @@
   "slotOfferTitle": "Gói chia suất",
   "slotOfferDismiss": "Đóng",
   "slotOfferScheduleLine": "{spot} · {weekdays} · {start}–{end}",
-  "@slotOfferScheduleLine": {"placeholders": {"spot": {"type": "String"}, "weekdays": {"type": "String"}, "start": {"type": "String"}, "end": {"type": "String"}}},
+  "@slotOfferScheduleLine": {
+    "placeholders": {
+      "spot": {
+        "type": "String"
+      },
+      "weekdays": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "slotOfferName": "Tên gói",
   "slotOfferPrice": "Giá mỗi suất",
   "slotOfferDelivery": "Giao ảnh trong",
@@ -3742,16 +6233,37 @@
   "slotOfferGap": "Nghỉ giữa suất",
   "slotOfferGapRange": "0–30 phút",
   "slotOfferMinutesValue": "{count} phút",
-  "@slotOfferMinutesValue": {"placeholders": {"count": {"type": "int"}}},
+  "@slotOfferMinutesValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "slotOfferLess": "Bớt",
   "slotOfferMore": "Thêm",
   "slotOfferPreview": "{count} suất/ngày: {times}",
-  "@slotOfferPreview": {"placeholders": {"count": {"type": "int"}, "times": {"type": "String"}}},
+  "@slotOfferPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "times": {
+        "type": "String"
+      }
+    }
+  },
   "slotOfferNote": "Gói chia suất không kèm dịch vụ đi kèm. Tối đa 2 gói mỗi lịch.",
   "slotOfferSave": "Lưu",
   "slotOfferClose": "Đóng gói",
   "slotOfferCloseTitle": "Đóng gói {name}?",
-  "@slotOfferCloseTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@slotOfferCloseTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "slotOfferCloseBody": "Khách đã đặt vẫn giữ suất của mình.",
   "slotOfferKeep": "Giữ lại",
   "slotOfferLimit": "Mỗi lịch tối đa 2 gói chia suất",
@@ -3769,13 +6281,43 @@
   "spotSchedulePackagesInvalid": "Có gói không dùng được trong khung giờ này. Chọn lại gói.",
   "spotScheduleAddOffer": "Thêm gói chia suất",
   "spotNameCity": "{name} · {city}",
-  "@spotNameCity": {"placeholders": {"name": {"type": "String"}, "city": {"type": "String"}}},
+  "@spotNameCity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "city": {
+        "type": "String"
+      }
+    }
+  },
   "spotCitySeason": "{city} · {season}",
-  "@spotCitySeason": {"placeholders": {"city": {"type": "String"}, "season": {"type": "String"}}},
+  "@spotCitySeason": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      },
+      "season": {
+        "type": "String"
+      }
+    }
+  },
   "spotScheduleConflictDay": "{day} ×",
-  "@spotScheduleConflictDay": {"placeholders": {"day": {"type": "String"}}},
+  "@spotScheduleConflictDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "workSpotSchedulesOpen": "Lịch tại điểm · {count} đang mở",
-  "@workSpotSchedulesOpen": {"placeholders": {"count": {"type": "int"}}},
+  "@workSpotSchedulesOpen": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "instantTitle": "Chụp ngay",
   "instantGenrePortrait": "Chân dung",
   "instantGenreCouple": "Cặp đôi",
@@ -3783,11 +6325,32 @@
   "instantGenreEvent": "Sự kiện nhỏ",
   "instantGenreProduct": "Sản phẩm",
   "instantDurationMinutes": "{n} phút",
-  "@instantDurationMinutes": {"placeholders": {"n": {"type": "int"}}},
+  "@instantDurationMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "instantDurationHours": "{n} giờ",
-  "@instantDurationHours": {"placeholders": {"n": {"type": "int"}}},
+  "@instantDurationHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "instantPackageLabel": "{duration} · {photos} ảnh",
-  "@instantPackageLabel": {"placeholders": {"duration": {"type": "String"}, "photos": {"type": "int"}}},
+  "@instantPackageLabel": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "photos": {
+        "type": "int"
+      }
+    }
+  },
   "instantStatusAssigned": "Đã nhận",
   "instantStatusEnRoute": "Đang đến",
   "instantStatusArrived": "Đã đến",
@@ -3800,16 +6363,43 @@
   "liveShutterCardOn": "Đang bật · nhận lời mời ở gần bạn",
   "liveShutterCardOff": "Đang tắt · bật để nhận việc chụp ngay",
   "liveShutterJobTitle": "Việc chụp ngay · {name}",
-  "@liveShutterJobTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@liveShutterJobTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "liveShutterJobMeta": "{service} · {place}",
-  "@liveShutterJobMeta": {"placeholders": {"service": {"type": "String"}, "place": {"type": "String"}}},
+  "@liveShutterJobMeta": {
+    "placeholders": {
+      "service": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "helpReadyTitle": "Sẵn sàng hỗ trợ",
   "helpReadyBody": "Được ưu tiên mời cả việc gấp, xa hơn một chút.",
   "priceListTitle": "Bảng giá gói",
   "priceListAccepted": "Bản {version} · đã đồng ý",
-  "@priceListAccepted": {"placeholders": {"version": {"type": "int"}}},
+  "@priceListAccepted": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
   "priceListNotAccepted": "Bản {version} · chưa đồng ý",
-  "@priceListNotAccepted": {"placeholders": {"version": {"type": "int"}}},
+  "@priceListNotAccepted": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
   "priceListCustomerPays": "Khách trả",
   "priceListYouGet": "Bạn nhận",
   "priceListTermsNote": "Giá do nền tảng đặt, giống nhau cho mọi nhiếp ảnh gia trong một lượt gợi ý. Đồng ý để bật Live Shutter.",
@@ -3826,24 +6416,80 @@
   "liveShutterOpenSettings": "Mở cài đặt",
   "offerTitle": "Lời mời chụp ngay",
   "offerPendingCount": "{n} lời mời đang chờ",
-  "@offerPendingCount": {"placeholders": {"n": {"type": "int"}}},
+  "@offerPendingCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "offerYouGet": "Bạn nhận · {genre} {duration} · {photos} ảnh",
-  "@offerYouGet": {"placeholders": {"genre": {"type": "String"}, "duration": {"type": "String"}, "photos": {"type": "int"}}},
+  "@offerYouGet": {
+    "placeholders": {
+      "genre": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "photos": {
+        "type": "int"
+      }
+    }
+  },
   "offerDistance": "{distance} · khoảng {minutes} phút · địa chỉ hiện khi bạn nhận",
-  "@offerDistance": {"description": "distance is formatDistance, e.g. 2,1 km", "placeholders": {"distance": {"type": "String"}, "minutes": {"type": "int"}}},
+  "@offerDistance": {
+    "description": "distance is formatDistance, e.g. 2,1 km",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "offerChosenAmong": "Khách đã chọn bạn trong {n} người. Ai nhận trước sẽ được việc.",
-  "@offerChosenAmong": {"description": "n is shown bold, so it is passed as text", "placeholders": {"n": {"type": "String"}}},
+  "@offerChosenAmong": {
+    "description": "n is shown bold, so it is passed as text",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
   "offerNote": "\"{note}\"",
-  "@offerNote": {"placeholders": {"note": {"type": "String"}}},
+  "@offerNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "offerDecline": "Từ chối",
   "offerAccept": "Nhận việc",
   "offerAlreadyAssigned": "Khách đã chọn được người khác",
   "offerExpired": "Lời mời đã hết hạn",
   "offerNotAccepting": "Bạn chưa nhận đơn được lúc này",
   "matchTitle": "Đã match với {name}",
-  "@matchTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@matchTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchBodyPhotographer": "{name} đang chờ ở {place}. Tiếp tục để xem đường đi.",
-  "@matchBodyPhotographer": {"placeholders": {"name": {"type": "String"}, "place": {"type": "String"}}},
+  "@matchBodyPhotographer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "matchContinue": "Tiếp tục",
   "jobTitleEnRoute": "Đang đến",
   "jobTitleArrived": "Đã đến",
@@ -3851,29 +6497,89 @@
   "jobTitleFinished": "Chờ khách xác nhận",
   "jobTitleCompleted": "Đã hoàn thành",
   "jobSubtitle": "{name} · {genre} {duration}",
-  "@jobSubtitle": {"placeholders": {"name": {"type": "String"}, "genre": {"type": "String"}, "duration": {"type": "String"}}},
+  "@jobSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "genre": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "jobDirections": "Chỉ đường",
   "jobDistanceLine": "{area} · {km} km",
-  "@jobDistanceLine": {"description": "km is the number only, e.g. 1,4", "placeholders": {"area": {"type": "String"}, "km": {"type": "String"}}},
+  "@jobDistanceLine": {
+    "description": "km is the number only, e.g. 1,4",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
   "jobMeetPointLine": "{area} · điểm hẹn",
-  "@jobMeetPointLine": {"placeholders": {"area": {"type": "String"}}},
+  "@jobMeetPointLine": {
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
   "jobStepAccepted": "Đã nhận · {time}",
-  "@jobStepAccepted": {"placeholders": {"time": {"type": "String"}}},
+  "@jobStepAccepted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "jobStepArriveHint": "Đã đến (bật khi còn cách 200 m)",
   "jobStepArrived": "Đã đến · {time}",
-  "@jobStepArrived": {"placeholders": {"time": {"type": "String"}}},
+  "@jobStepArrived": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "jobStepShoot": "Bắt đầu chụp · Hoàn thành",
   "jobLocationNote": "Vị trí của bạn chỉ chia sẻ với khách trong lúc đang đến. Tới nơi là dừng.",
   "jobLocationNeeded": "Cho phép dùng vị trí để chia sẻ đường đi với khách.",
   "jobLocationAllow": "Cho phép",
   "jobArrive": "Đã đến",
   "jobArriveFar": "Còn cách {distance}. Tới gần hơn để bấm Đã đến.",
-  "@jobArriveFar": {"description": "distance is e.g. 350 m or 1,4 km", "placeholders": {"distance": {"type": "String"}}},
+  "@jobArriveFar": {
+    "description": "distance is e.g. 350 m or 1,4 km",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "instantDistanceMetres": "{metres} m",
-  "@instantDistanceMetres": {"description": "a distance under a kilometre, rounded to 10 m", "placeholders": {"metres": {"type": "int"}}},
+  "@instantDistanceMetres": {
+    "description": "a distance under a kilometre, rounded to 10 m",
+    "placeholders": {
+      "metres": {
+        "type": "int"
+      }
+    }
+  },
   "jobArriveForceTitle": "GPS chưa chính xác",
   "jobArriveForceBody": "Vị trí đang lệch khoảng {meters} m. Xác nhận bạn đã tới điểm hẹn?",
-  "@jobArriveForceBody": {"placeholders": {"meters": {"type": "int"}}},
+  "@jobArriveForceBody": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
   "jobArriveForceConfirm": "Xác nhận đã đến",
   "jobArriveForceKeep": "Chờ GPS",
   "jobStart": "Bắt đầu chụp",
@@ -3881,24 +6587,60 @@
   "jobShootLeft": "còn lại",
   "jobShootNote": "Hết giờ gói hoặc bấm Hoàn thành, khách sẽ xác nhận.",
   "jobStartedLine": "Bắt đầu {time} · {place}",
-  "@jobStartedLine": {"placeholders": {"time": {"type": "String"}, "place": {"type": "String"}}},
+  "@jobStartedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "jobFinishedLine": "Hoàn thành {time} · {place}",
-  "@jobFinishedLine": {"placeholders": {"time": {"type": "String"}, "place": {"type": "String"}}},
+  "@jobFinishedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "jobWaitingBadge": "Chờ khách",
   "jobFinishedNote": "Khách xác nhận hoặc tự hoàn thành sau 2 giờ. Tiền chuyển cho bạn 24 giờ sau khi hoàn thành.",
   "jobBackToWork": "Về Công việc",
   "jobNoShow": "Khách không có mặt",
   "jobNoShowIn": "Khách không có mặt (sau {time})",
-  "@jobNoShowIn": {"placeholders": {"time": {"type": "String"}}},
+  "@jobNoShowIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "jobNoShowTitle": "Báo khách không có mặt?",
   "jobNoShowBody": "Khách được hoàn 50%, bạn nhận {amount}.",
-  "@jobNoShowBody": {"placeholders": {"amount": {"type": "String"}}},
+  "@jobNoShowBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "jobNoShowConfirm": "Báo khách không có mặt",
   "jobNoShowKeep": "Chờ thêm",
   "jobCancel": "Huỷ việc",
   "jobCancelledTitle": "Khách đã huỷ yêu cầu",
   "jobCancelledFee": "Bạn nhận {amount} phí đi lại.",
-  "@jobCancelledFee": {"placeholders": {"amount": {"type": "String"}}},
+  "@jobCancelledFee": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "jobCancelledNoFee": "Không cần tới điểm hẹn nữa.",
   "providerCancelTitle": "Huỷ việc chụp ngay?",
   "providerCancelBody": "Khách được hoàn 100%. Huỷ sau khi nhận làm giảm điểm tin cậy của bạn.",
@@ -3907,7 +6649,13 @@
   "mapRecenter": "Về vị trí của tôi",
   "mapPinYou": "Bạn",
   "mapSemantics": "Bản đồ: {pins}",
-  "@mapSemantics": {"placeholders": {"pins": {"type": "String"}}},
+  "@mapSemantics": {
+    "placeholders": {
+      "pins": {
+        "type": "String"
+      }
+    }
+  },
   "jobStatusOpen": "Đang nhận báo giá",
   "jobStatusAwarded": "Đã chọn thợ",
   "jobStatusClosed": "Đã đóng",
@@ -3918,57 +6666,384 @@
   "quoteStatusDeclined": "khách đã từ chối",
   "quoteStatusWithdrawn": "đã rút",
   "jobLeftDays": "còn {n} ngày",
-  "@jobLeftDays": {"placeholders": {"n": {"type": "int"}}},
+  "@jobLeftDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobLeftHours": "còn {n} giờ",
-  "@jobLeftHours": {"placeholders": {"n": {"type": "int"}}},
+  "@jobLeftHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobBudgetRange": "{min}–{max}",
-  "@jobBudgetRange": {"placeholders": {"min": {"type": "String"}, "max": {"type": "String"}}},
+  "@jobBudgetRange": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "jobOpenBudget": "Để thợ báo giá",
   "jobDurationHours": "{n} giờ",
-  "@jobDurationHours": {"placeholders": {"n": {"type": "int"}}},
+  "@jobDurationHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobSpecialtyOther": "Khác",
   "jobErrGeneric": "Có lỗi xảy ra. Thử lại sau.",
   "jobErrNetwork": "Mất kết nối. Thử lại khi có mạng.",
   "jobErrNotAccepting": "Hồ sơ của bạn chưa nhận đơn nên chưa gửi được báo giá.",
   "jobErrPhone": "Thêm số điện thoại để tiếp tục.",
   "fitPill": "Hợp {n}%",
-  "@fitPill": {"placeholders": {"n": {"type": "int"}}},
+  "@fitPill": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "quoteInBudget": "trong ngân sách",
   "quoteInBudgetRange": "trong ngân sách {range}",
-  "@quoteInBudgetRange": {"placeholders": {"range": {"type": "String"}}},
+  "@quoteInBudgetRange": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
   "quoteOverBudget": "vượt {amount}",
-  "@quoteOverBudget": {"placeholders": {"amount": {"type": "String"}}},
+  "@quoteOverBudget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "quoteInvited": "Được mời",
   "quoteFree": "Rảnh {date}",
-  "@quoteFree": {"placeholders": {"date": {"type": "String"}}},
+  "@quoteFree": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "quoteView": "Xem",
   "quoteBookmark": "Lưu báo giá",
   "quoteUnbookmark": "Bỏ lưu báo giá",
   "quoteWithdrawnTag": "Đã rút",
   "quoteEditedChip": "{n} ảnh chỉnh",
-  "@quoteEditedChip": {"placeholders": {"n": {"type": "int"}}},
+  "@quoteEditedChip": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "quoteDaysChip": "giao {n} ngày",
-  "@quoteDaysChip": {"placeholders": {"n": {"type": "int"}}},
+  "@quoteDaysChip": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "quoteRevisionsChip": "sửa {n} lần",
-  "@quoteRevisionsChip": {"placeholders": {"n": {"type": "int"}}},
+  "@quoteRevisionsChip": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "quoteTrustSessions": "{n} buổi",
-  "@quoteTrustSessions": {"placeholders": {"n": {"type": "int"}}},
+  "@quoteTrustSessions": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "quoteTrustAwards": "{n} giải",
-  "@quoteTrustAwards": {"placeholders": {"n": {"type": "int"}}},
+  "@quoteTrustAwards": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobYouInvited": "Bạn được mời",
   "jobArtistOnly": "Chỉ Nhiếp ảnh gia",
   "jobArtistLock": "Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa",
-  "@jobArtistLock": {"placeholders": {"k": {"type": "int"}}},
+  "@jobArtistLock": {
+    "placeholders": {
+      "k": {
+        "type": "int"
+      }
+    }
+  },
   "jobCardMeta": "{n} báo giá · còn {m} ngày",
-  "@jobCardMeta": {"placeholders": {"n": {"type": "int"}, "m": {"type": "int"}}},
+  "@jobCardMeta": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
   "jobQuotes": "{n} báo giá",
-  "@jobQuotes": {"placeholders": {"n": {"type": "int"}}},
+  "@jobQuotes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobQuotesNew": "{n} mới",
-  "@jobQuotesNew": {"placeholders": {"n": {"type": "int"}}},
+  "@jobQuotesNew": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobOpenBooking": "Mở buổi chụp →",
   "jobExpiredNoPick": "Hết hạn · {n} báo giá · chưa chọn ai",
-  "@jobExpiredNoPick": {"placeholders": {"n": {"type": "int"}}},
+  "@jobExpiredNoPick": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "jobRepost": "Đăng lại",
   "jobDistance": "{km} km",
-  "@jobDistance": {"placeholders": {"km": {"type": "String"}}}
+  "@jobDistance": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "jobPostTitle": "Đăng việc",
+  "jobPostStep": "{n} / 2",
+  "@jobPostStep": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobPostWhat": "Bạn cần chụp gì?",
+  "jobPostName": "Tiêu đề · bắt buộc",
+  "jobPostNameCount": "{n} / 60",
+  "@jobPostNameCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobPostDesc": "Mô tả",
+  "jobPostRefs": "Ảnh tham khảo · tuỳ chọn · tối đa 5",
+  "jobPostAddRef": "Thêm ảnh tham khảo",
+  "jobPostPrivacy": "Đừng ghi số điện thoại hay địa chỉ cụ thể. Thợ ảnh chỉ thấy quận cho tới khi bạn chọn người.",
+  "jobPostNext": "Tiếp tục",
+  "jobPostFixed": "Ngày cố định",
+  "jobPostFlexible": "Linh hoạt",
+  "jobPostWhen": "Khi nào",
+  "jobPostWhenEmpty": "Chọn ngày giờ",
+  "jobPostWhenFixedValue": "{day} · {range} · {duration}",
+  "@jobPostWhenFixedValue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "jobPostWhenFlexValue": "{from}–{to} · {duration}",
+  "@jobPostWhenFlexValue": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "jobPostFlexFrom": "Từ ngày",
+  "jobPostFlexTo": "Đến ngày",
+  "jobPostDuration": "Thời lượng",
+  "jobPostStart": "Bắt đầu",
+  "jobPostEnd": "Kết thúc",
+  "jobPostArea": "Khu vực",
+  "jobPostAreaEmpty": "Chọn quận, thành phố",
+  "jobPostAreaSub": "Địa chỉ cụ thể chỉ gửi cho người được chọn",
+  "jobPostBudgetFrom": "Ngân sách từ",
+  "jobPostBudgetTo": "Đến",
+  "jobPostBudgetOpen": "Để thợ ảnh báo giá",
+  "jobPostWants": "Bàn giao mong muốn",
+  "jobPostWantsValue": "≥ {n} ảnh chỉnh · trong {days} ngày",
+  "@jobPostWantsValue": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "jobPostWantsEdited": "Số ảnh chỉnh tối thiểu",
+  "jobPostWantsDays": "Giao trong (ngày)",
+  "jobPostWantsAny": "Không yêu cầu",
+  "jobPostWho": "Ai được báo giá",
+  "jobPostWhoAll": "Tất cả",
+  "jobPostWhoArtist": "Chỉ Nhiếp ảnh gia",
+  "jobPostWhoStudio": "Chỉ Studio",
+  "jobPostDeadline": "Nhận báo giá trong",
+  "jobPostDeadlineValue": "{n} ngày · tới {date}",
+  "@jobPostDeadlineValue": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "jobPostSubmit": "Đăng việc",
+  "jobPostSave": "Lưu thay đổi",
+  "jobPostPosted": "Đã đăng · đang gợi ý cho {n} thợ ảnh phù hợp",
+  "@jobPostPosted": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobPostPostedNone": "Đã đăng · thợ ảnh trong khu vực sẽ thấy việc của bạn",
+  "jobPostSavedToast": "Đã lưu thay đổi",
+  "jobPostSaveDraftTitle": "Lưu nháp?",
+  "jobPostSaveDraftBody": "Lần sau mở Đăng việc, bạn tiếp tục từ chỗ này.",
+  "jobPostSaveDraft": "Lưu nháp",
+  "jobPostDiscard": "Bỏ nháp",
+  "jobPostLimit": "Bạn đang có 3 việc mở. Đóng bớt một việc để đăng tiếp.",
+  "jobErrTitle": "Tiêu đề cần 10–60 ký tự",
+  "jobErrContactTitle": "Bỏ số điện thoại hoặc link khỏi tiêu đề",
+  "jobErrContactDesc": "Bỏ số điện thoại hoặc link khỏi mô tả",
+  "jobErrDescLength": "Mô tả tối đa 1000 ký tự",
+  "jobErrSchedule": "Ngày chụp phải sau hạn nhận báo giá",
+  "jobErrEndAfterStart": "Giờ kết thúc phải sau giờ bắt đầu",
+  "jobErrFlexRange": "Khoảng ngày tối đa 30 ngày",
+  "jobErrBudget": "Ngân sách “đến” phải từ “từ” trở lên",
+  "jobErrArea": "Chọn khu vực",
+  "jobErrRefUpload": "Chưa tải được ảnh. Thử lại.",
+  "jobsTab": "Việc đăng",
+  "jobNewPost": "Đăng việc mới",
+  "jobEmptyTitle": "Chưa tìm được thợ ưng ý? Đăng việc để thợ ảnh báo giá cho bạn",
+  "jobEmptyAction": "Đăng việc",
+  "jobPostedOn": "Đăng {date} · còn {n} ngày nhận báo giá",
+  "@jobPostedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobStatQuotes": "Báo giá",
+  "jobViews": "Lượt xem",
+  "jobInvitedCount": "Đã mời",
+  "jobLatest": "Báo giá mới",
+  "jobSeeAll": "Xem tất cả",
+  "jobInvite": "Mời thợ ảnh báo giá",
+  "jobCompare": "So sánh {n} báo giá",
+  "@jobCompare": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobCompareNone": "Chưa có báo giá",
+  "jobMenuEdit": "Sửa",
+  "jobExtend": "Gia hạn 7 ngày",
+  "jobClose": "Đóng việc",
+  "jobCloseTitle": "Đóng việc này?",
+  "jobCloseBody": "{n} thợ ảnh đã báo giá sẽ được báo là việc đã đóng.",
+  "@jobCloseBody": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobClosedToast": "Đã đóng việc",
+  "jobExtendedToast": "Đã gia hạn tới {date}",
+  "@jobExtendedToast": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "jobExtendNotEligible": "Việc này không gia hạn thêm được",
+  "jobInCheckout": "Bạn đang thanh toán một báo giá của việc này.",
+  "jobInviteTitle": "Mời thợ ảnh báo giá",
+  "jobInviteLeft": "Còn mời được {n} người",
+  "@jobInviteLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobInviteSend": "Gửi lời mời ({n})",
+  "@jobInviteSend": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobInvitedTag": "Đã mời",
+  "jobInvitedToast": "Đã mời {n} thợ ảnh",
+  "@jobInvitedToast": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobInviteEmpty": "Chưa có thợ ảnh phù hợp trong khu vực",
+  "jobInviteFull": "Việc này đã mời đủ 5 người",
+  "findPostJob": "Không tìm thấy? Đăng việc để thợ ảnh báo giá"
 }

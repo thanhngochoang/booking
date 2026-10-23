@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/widgets/empty_state.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
+import 'package:photobooking/features/jobs/job_owner_detail.dart';
 
 class JobScreen extends ConsumerWidget {
   const JobScreen({
@@ -23,36 +24,48 @@ class JobScreen extends ConsumerWidget {
     final currentUid = ref.watch(authStateProvider).value?.uid;
     final jobAsync = ref.watch(jobProvider(jobId));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chi tiết công việc'),
-      ),
-      body: jobAsync.when(
-        data: (job) {
-          if (job == null) {
-            return const EmptyState(
+    return jobAsync.when(
+      data: (job) {
+        if (job == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Chi tiết công việc'),
+            ),
+            body: const EmptyState(
               title: 'Không tìm thấy công việc',
               body: 'Công việc này không tồn tại hoặc đã bị xoá.',
-            );
-          }
-          final isOwner = currentUid != null && currentUid == job.customerId;
-          if (isOwner) {
-            // Owner view (S15.02) placeholder
-            return EmptyState(
-              title: job.title,
-              body: 'Trang quản lý báo giá của khách hàng (S15.02).',
-            );
-          }
-          // Photographer view (S16.01) placeholder
-          return EmptyState(
+            ),
+          );
+        }
+        final isOwner = currentUid != null && currentUid == job.customerId;
+        if (isOwner) {
+          // Owner view (S15.02)
+          return JobOwnerDetail(job: job);
+        }
+        // Photographer view (S16.01) placeholder
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(job.title),
+          ),
+          body: EmptyState(
             title: job.title,
             body: openQuote
                 ? 'Đang mở sheet gửi báo giá (S16.03).'
                 : 'Trang xem công việc cho thợ ảnh (S16.01).',
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Lỗi: $err')),
+          ),
+        );
+      },
+      loading: () => Scaffold(
+        appBar: AppBar(
+          title: const Text('Chi tiết công việc'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, _) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Chi tiết công việc'),
+        ),
+        body: Center(child: Text('Lỗi: $err')),
       ),
     );
   }

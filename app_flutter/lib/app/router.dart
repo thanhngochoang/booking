@@ -37,6 +37,7 @@ import 'package:photobooking/features/event_manage/my_events_screen.dart';
 import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
+import 'package:photobooking/features/jobs/job_post_screen.dart';
 import 'package:photobooking/features/jobs/job_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/search/explore_search_screen.dart';
@@ -468,10 +469,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // `new` before `:id`.
       GoRoute(
         path: '/jobs/new',
-        builder: (_, state) => JobScreen(
-          jobId: state.uri.queryParameters['from'] ??
-              state.uri.queryParameters['edit'] ??
-              'new',
+        builder: (_, state) => JobPostScreen(
+          fromJobId: state.uri.queryParameters['from'],
+          editJobId: state.uri.queryParameters['edit'],
         ),
       ),
       GoRoute(
