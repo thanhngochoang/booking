@@ -11,6 +11,7 @@ import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/choose_controller.dart';
 import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
 import 'package:photobooking/features/instant/instant_icon_disc.dart';
+import 'package:photobooking/features/instant/instant_meta.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -28,10 +29,7 @@ List<MetaPart> candidateMeta(
   InstantCandidate c, {
   bool sessions = true,
 }) => [
-  if (c.reviewCount >= kTomatoPctMinReviews)
-    MetaPart.tomato(c.tomatoPct)
-  else if (c.reviewCount > 0)
-    MetaPart.text(l.photographerReviewsNew(c.reviewCount)),
+  ...instantReviewMeta(l, tomatoPct: c.tomatoPct, reviewCount: c.reviewCount),
   if (sessions) MetaPart.text(l.photographerSessions(c.completedCount)),
   MetaPart.text(l.chooseEta(c.etaMinutes)),
 ];

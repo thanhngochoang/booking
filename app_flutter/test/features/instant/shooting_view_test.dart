@@ -176,9 +176,12 @@ void main() {
       request: _shoot(InstantStatus.finished, finishedAt: _shootNow),
     );
     w.repo.failNext('confirmComplete', 'conflict');
+    final watches = w.repo.requestWatches('req1');
     await tester.tap(find.text('Xác nhận hoàn thành'));
     await settleInstant(tester);
     expect(find.byType(SnackBar), findsNothing);
+    // The request is read again (a new listen), not left as it was.
+    expect(w.repo.requestWatches('req1'), watches + 1);
     // The clock completed it: the refreshed listener shows the done view.
     w.repo.emitRequest(
       'req1',

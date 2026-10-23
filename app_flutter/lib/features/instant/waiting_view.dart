@@ -10,6 +10,8 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
+import 'package:photobooking/features/instant/instant_bold_part.dart';
+import 'package:photobooking/features/instant/instant_meta.dart';
 import 'package:photobooking/features/instant/instant_ticks.dart';
 
 /// "0:42": minutes and seconds left on an invite.
@@ -50,7 +52,7 @@ class WaitingView extends ConsumerWidget {
     );
     Widget body(Duration left) {
       final time = waitingClock(left);
-      return _BoldPart(
+      return InstantBoldPart(
         l.waitingBody(time),
         part: time,
         style: bodyStyle,
@@ -187,8 +189,13 @@ class _InviteeRowState extends State<_InviteeRow> {
     final meta = state == _RowState.notCounted
         ? [MetaPart.text(l.waitingRowUnavailable)]
         : [
-            if (row.reviewCount >= kTomatoPctMinReviews)
-              MetaPart.tomato(row.tomatoPct),
+            // Below five reviews only the ETA (no "Mới" on a waiting row).
+            ...instantReviewMeta(
+              l,
+              tomatoPct: row.tomatoPct,
+              reviewCount: row.reviewCount,
+              newLabel: false,
+            ),
             MetaPart.text(l.waitingRowEta(row.etaMinutes)),
           ];
     final chip = switch (state) {
@@ -282,40 +289,6 @@ class _StateChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// [text] with [part] bold in tabular figures (mock `<b class="tn">`).
-class _BoldPart extends StatelessWidget {
-  const _BoldPart(this.text, {required this.part, this.style, this.textAlign});
-
-  final String text;
-  final String part;
-  final TextStyle? style;
-  final TextAlign? textAlign;
-
-  @override
-  Widget build(BuildContext context) {
-    final at = text.indexOf(part);
-    if (at < 0) return Text(text, style: style, textAlign: textAlign);
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: text.substring(0, at)),
-          TextSpan(
-            text: part,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          TextSpan(text: text.substring(at + part.length)),
-        ],
-      ),
-      style: style,
-      textAlign: textAlign,
     );
   }
 }

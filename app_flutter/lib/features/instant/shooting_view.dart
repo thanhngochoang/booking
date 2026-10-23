@@ -13,7 +13,7 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant/instant_bold_part.dart';
-import 'package:photobooking/features/instant/tracking_view.dart';
+import 'package:photobooking/features/instant/instant_status_badge.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 

@@ -284,6 +284,59 @@ void main() {
     await _end(tester, w);
   });
 
+  testWidgets('a failed track listen is logged and tried again', (
+    tester,
+  ) async {
+    final logged = <String?>[];
+    final print = debugPrint;
+    debugPrint = (message, {wrapWidth}) => logged.add(message);
+    try {
+      final w = InstantCustomerWorld();
+      w.repo.failTrack('req1', const InstantError('network'));
+      await pumpInstantFlow(
+        tester,
+        w,
+        request: _tracking(InstantStatus.enRoute),
+      );
+      expect(logged, ['instant track failed: network']);
+      // Without a point: the meet point only, the ETA from the request.
+      expect(_map(tester).pins, hasLength(1));
+      expect(findMeta('97% · 112 buổi · đến trong khoảng 9 phút'), findsOne);
+
+      // The track is readable again; the retry listens and shows it.
+      w.repo.emitTrack('req1', _point(_km12, w.base.clock.now));
+      await w.base.wait(tester, kInstantTrackRetry);
+      await settleInstant(tester);
+      expect(find.text('Minh Trí · 6 phút'), findsOneWidget);
+      expect(w.repo.isTrackWatched('req1'), isTrue);
+      await _end(tester, w);
+    } finally {
+      debugPrint = print;
+    }
+  });
+
+  testWidgets('retries stop after a few failures', (tester) async {
+    final logged = <String?>[];
+    final print = debugPrint;
+    debugPrint = (message, {wrapWidth}) => logged.add(message);
+    try {
+      final w = InstantCustomerWorld();
+      w.repo.failTrack('req1', const InstantError('network'));
+      await pumpInstantFlow(
+        tester,
+        w,
+        request: _tracking(InstantStatus.enRoute),
+      );
+      await w.base.wait(tester, kInstantTrackRetry * 6);
+      // The first failure and one per retry, then no more.
+      expect(logged, hasLength(kInstantTrackRetries + 1));
+      expect(tester.takeException(), isNull);
+      await _end(tester, w);
+    } finally {
+      debugPrint = print;
+    }
+  });
+
   testWidgets('"Nhắn tin" opens /chat/{chatId}', (tester) async {
     final w = InstantCustomerWorld();
     final router = await pumpInstantFlow(

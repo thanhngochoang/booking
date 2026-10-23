@@ -149,9 +149,15 @@ class FakeInstantRepository implements InstantRepository {
 
   /// Makes a stream fail (e.g. a listener refused), to test error states.
   void failRequest(String id, Object error) => _slot(_requests, id).fail(error);
+  void failTrack(String requestId, Object error) =>
+      _slot(_tracks, requestId).fail(error);
   void failPresence(Object error) => _presence.fail(error);
   void failOffers(Object error) => _offers.fail(error);
   void failActiveJob(Object error) => _activeJob.fail(error);
+
+  /// How often [watchRequest] was asked for [requestId] (a refresh asks again).
+  int requestWatches(String requestId) => _requestWatches[requestId] ?? 0;
+  final _requestWatches = <String, int>{};
 
   /// Someone listens to the track of [requestId] (S13.05 while en route).
   bool isTrackWatched(String requestId) =>
@@ -240,8 +246,10 @@ class FakeInstantRepository implements InstantRepository {
       _slot(_tracks, requestId).stream;
 
   @override
-  Stream<InstantRequest?> watchRequest(String requestId) =>
-      _slot(_requests, requestId).stream;
+  Stream<InstantRequest?> watchRequest(String requestId) {
+    _requestWatches.update(requestId, (n) => n + 1, ifAbsent: () => 1);
+    return _slot(_requests, requestId).stream;
+  }
 
   @override
   Future<InstantCancelQuote> cancel(

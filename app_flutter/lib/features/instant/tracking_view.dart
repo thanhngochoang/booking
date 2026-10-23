@@ -21,38 +21,38 @@ import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
+import 'package:photobooking/features/instant/instant_meta.dart';
+import 'package:photobooking/features/instant/instant_status_badge.dart';
 import 'package:photobooking/features/instant/waiting_view.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
-import 'package:photobooking/l10n/app_localizations.dart';
 
 /// No new track point for this long → "Đang chờ cập nhật vị trí" (spec §10).
 const kInstantTrackStale = Duration(minutes: 3);
 
-/// Tomato (or "Mới · n đánh giá") and "112 buổi" of the assigned photographer.
-List<MetaPart> instantPartyMeta(AppLocalizations l, InstantParty p) => [
-  if (p.reviewCount >= kTomatoPctMinReviews)
-    MetaPart.tomato(p.tomatoPct)
-  else if (p.reviewCount > 0)
-    MetaPart.text(l.photographerReviewsNew(p.reviewCount)),
-  MetaPart.text(l.photographerSessions(p.completedCount)),
-];
+/// A failed track listen is tried again this long after, at most
+/// [kInstantTrackRetries] times in a row.
+const kInstantTrackRetry = Duration(seconds: 10);
+const kInstantTrackRetries = 3;
 
-/// Mock `.badge.b-ok`: the request's status ("Đã nhận", "Đang đến", "Đã
-/// đến", "Đang chụp").
-class InstantStatusBadge extends StatelessWidget {
-  const InstantStatusBadge(this.label, {super.key});
+/// Whether the point is stale, whether the photographer is late, and when
+/// either changes next (null: nothing ahead).
+typedef _TrackingFlags = ({bool stale, bool late, DateTime? wakeAt});
 
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return StatusBadge.custom(
-      label: label,
-      color: dark ? AppColorsDark.successSubtle : AppColors.successSubtle,
-      onColor: dark ? AppColorsDark.success : AppColors.success,
-    );
+_TrackingFlags _flagsOf(InstantRequest r, InstantTrack? point, DateTime now) {
+  final enRoute = r.status == InstantStatus.enRoute;
+  final lastPointAt = enRoute ? (point?.at ?? r.startedRouteAt) : null;
+  final staleAt = lastPointAt?.add(kInstantTrackStale);
+  final stale = staleAt != null && !now.isBefore(staleAt);
+  final lateAt = r.status == InstantStatus.arrived ? null : r.lateDeadlineAt;
+  final late = lateAt != null && now.isAfter(lateAt);
+  DateTime? wakeAt;
+  for (final at in [
+    if (staleAt != null && !stale) staleAt,
+    if (lateAt != null && !late) lateAt,
+  ]) {
+    if (wakeAt == null || at.isBefore(wakeAt)) wakeAt = at;
   }
+  return (stale: stale, late: late, wakeAt: wakeAt);
 }
 
 class TrackingView extends ConsumerStatefulWidget {
@@ -69,21 +69,61 @@ class _TrackingViewState extends ConsumerState<TrackingView> {
   Timer? _timer;
   DateTime? _timerAt;
 
+  /// Listens to the track again after a failed listen.
+  Timer? _retry;
+  int _retries = 0;
+
   /// "Về vị trí của tôi" was tapped: the map keeps the meet point centred.
   bool _centred = false;
+
+  String get _id => widget.request.id;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<InstantTrack?>>(instantTrackProvider(_id), (
+      _,
+      next,
+    ) {
+      if (next.hasError && !next.isLoading) _onTrackError(next.error!);
+      if (next.hasValue && !next.isLoading) _retries = 0;
+      _reschedule();
+    }, fireImmediately: true);
+  }
+
+  @override
+  void didUpdateWidget(TrackingView old) {
+    super.didUpdateWidget(old);
+    if (old.request != widget.request) _reschedule();
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _retry?.cancel();
     super.dispose();
   }
 
   DateTime _now() => ref.read(clockProvider)();
 
-  /// One timer for the next moment the view changes by itself; [at] null
-  /// when nothing is ahead.
-  void _wakeAt(DateTime? at) {
-    if (at == _timerAt) return;
+  /// A failed listen is logged and tried again a few times, [kInstantTrackRetry]
+  /// apart; meanwhile the view reads "no point" (the stale line follows).
+  void _onTrackError(Object e) {
+    debugPrint('instant track failed: ${instantErrorCodeOf(e)}');
+    if (_retry != null || _retries >= kInstantTrackRetries) return;
+    _retries++;
+    _retry = Timer(kInstantTrackRetry, () {
+      _retry = null;
+      if (mounted) ref.invalidate(instantTrackProvider(_id));
+    });
+  }
+
+  /// One timer for the next moment the view changes by itself (the point
+  /// going stale, the late deadline), from the request and the last point.
+  void _reschedule() {
+    final point = ref.read(instantTrackProvider(_id)).value;
+    final at = _flagsOf(widget.request, point, _now()).wakeAt;
+    if (at == _timerAt && (_timer?.isActive ?? at == null)) return;
     _timer?.cancel();
     _timer = null;
     _timerAt = at;
@@ -91,9 +131,9 @@ class _TrackingViewState extends ConsumerState<TrackingView> {
     // Just past [at], so "after the deadline" holds when it fires.
     final wait = at.difference(_now()) + const Duration(milliseconds: 1);
     _timer = Timer(wait.isNegative ? Duration.zero : wait, () {
-      _timer = null;
-      _timerAt = null;
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
+      _reschedule();
     });
   }
 
@@ -101,9 +141,16 @@ class _TrackingViewState extends ConsumerState<TrackingView> {
   Widget build(BuildContext context) {
     // The provider listens to `instant_tracks/{id}` only while the request is
     // en route (privacy, spec §9); before and after it reads null.
-    final track = ref.watch(instantTrackProvider(widget.request.id));
+    final track = ref.watch(instantTrackProvider(_id));
     return AsyncView<InstantTrack?>(
-      value: track,
+      // While a failed listen is tried again, stay on the "no point" view
+      // instead of a blank loading frame.
+      value: track.isLoading && track.hasError && !track.hasValue
+          ? AsyncError<InstantTrack?>(
+              track.error!,
+              track.stackTrace ?? StackTrace.empty,
+            )
+          : track,
       // Until the first point arrives the view is the one without a point.
       skeleton: (context) => _content(context, null),
       // An unreadable track reads as "no point": the stale line follows.
@@ -129,20 +176,7 @@ class _TrackingViewState extends ConsumerState<TrackingView> {
         : estimateEtaMinutes(
             haversineKm(track.lat, track.lng, r.meetPoint.lat, r.meetPoint.lng),
           );
-    final lastPointAt = enRoute ? (track?.at ?? r.startedRouteAt) : null;
-    final staleAt = lastPointAt?.add(kInstantTrackStale);
-    final stale = staleAt != null && !now.isBefore(staleAt);
-    final lateAt = arrived ? null : r.lateDeadlineAt;
-    final late = lateAt != null && now.isAfter(lateAt);
-    _wakeAt(
-      [
-        if (staleAt != null && !stale) staleAt,
-        if (lateAt != null && !late) lateAt,
-      ].fold<DateTime?>(
-        null,
-        (soonest, at) => soonest == null || at.isBefore(soonest) ? at : soonest,
-      ),
-    );
+    final (:stale, :late, wakeAt: _) = _flagsOf(r, point, now);
     final eta = trackEta ?? (arrived ? null : r.etaMinutes);
     final meet = r.meetPoint;
     final muted = dark
