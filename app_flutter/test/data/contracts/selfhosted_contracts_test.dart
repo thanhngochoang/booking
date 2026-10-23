@@ -22,9 +22,9 @@ import 'user_repository_contract.dart';
 
 /// Needs the compose stack with AUTH_MODE=firebase-emulator and the contract
 /// world seeded:
-///   cd services/api && docker compose up --build -d
+///   (booking-be checkout) docker compose up --build -d
 ///   docker compose run --rm api node dist/tools/seed-contract.js
-///   cd ../../app_flutter && flutter test test/data/contracts/selfhosted_contracts_test.dart \
+///   (app_flutter) flutter test test/data/contracts/selfhosted_contracts_test.dart \
 ///     --tags selfhosted --dart-define=API_BASE_URL=http://localhost:8787
 const _base = String.fromEnvironment('API_BASE_URL');
 const _project = String.fromEnvironment(

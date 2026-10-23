@@ -4,9 +4,10 @@ import 'dart:io';
 
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 
-/// The fixture world shared with services/api (seeded there by
-/// `npm run seed:contract`). Path is relative to app_flutter/.
-const contractWorldPath = '../services/api/test/fixtures/contract-world.json';
+/// The fixture world shared with booking-be (seeded there by
+/// `npm run seed:contract`; snapshot, see README.md next to it). Path is
+/// relative to app_flutter/.
+const contractWorldPath = 'test/data/contracts/contract-world.json';
 
 typedef WorldBooking = ({
   String id,

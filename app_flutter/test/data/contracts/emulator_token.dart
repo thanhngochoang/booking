@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 /// An ID token shaped like the Firebase Auth emulator's (unsigned, alg
-/// "none"). services/api accepts it only with AUTH_MODE=firebase-emulator,
+/// "none"). booking-be accepts it only with AUTH_MODE=firebase-emulator,
 /// which it refuses in production.
 String emulatorIdToken(String uid, {String projectId = 'demo-nag'}) {
   String enc(Map<String, Object?> m) =>

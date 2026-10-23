@@ -11,7 +11,7 @@ info:
     The server builds its routes and validators from this file.
 servers:
   - url: http://localhost:8787
-    description: services/api/docker-compose.yml
+    description: docker-compose.yml (local)
 security:
   - firebaseIdToken: []
 paths:
