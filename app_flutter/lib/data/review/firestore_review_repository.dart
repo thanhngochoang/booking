@@ -100,6 +100,7 @@ class FirestoreReviewRepository implements ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
+    StudioReviewDraft? studio,
   }) async {
     try {
       final res = await _functions
@@ -112,6 +113,7 @@ class FirestoreReviewRepository implements ReviewRepository {
         'text': text,
         'postId': postId,
         'photos': photos.map((p) => p.toMap()).toList(),
+        if (studio != null) 'studio': studio.toMap(),
       });
       return res.data['postId'] as String?;
     } catch (e) {

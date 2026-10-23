@@ -166,6 +166,12 @@
   --color-glass: #B8FFFFFF;
   --color-free-ink: #127001;
   --color-free-bg: #E3F5DF;
+  --color-map-bg: #ECE8E1;
+  --color-map-block: #E2DDD4;
+  --color-map-road: #FFFFFF;
+  --color-map-water: #BFD9EA;
+  --color-map-park: #CFE3C8;
+  --color-map-self: #3D63FF;
   --spacing-page-x: 16dp;
   --spacing-page-y: 20dp;
   --spacing-section: 24dp;
@@ -284,4 +290,10 @@
   --color-glass: #14FFFFFF;
   --color-free-ink: #7BE070;
   --color-free-bg: #331A9F02;
+  --color-map-bg: #1A1C24;
+  --color-map-block: #22252F;
+  --color-map-road: #3A3E4C;
+  --color-map-water: #16324A;
+  --color-map-park: #1E3328;
+  --color-map-self: #3D63FF;
 }

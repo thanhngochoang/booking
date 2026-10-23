@@ -247,13 +247,30 @@ Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An
 `photographers/{uid}/private/addons` holds `activeCount` (An 3, Cúc 1), the lock of `saveAddon`/`deleteAddon`.
 Đặt An · Chân dung 2 giờ để thử khối Thêm dịch vụ (S04.01) và điểm đón (S04.06).
 
+## Studio (S26)
+
+Cúc is a verified studio (`providerType: studio`, `memberCount: 1`, `assignableMembers: 1`) with package `seed-service-studio-family`
+(Gia đình tại studio 2 giờ, 2 500 000 ₫). Relation ids are `{studioId}_{memberId}_{createdAtMs}`; every seeded
+photographer carries `nameKey` (the S26.02 search key).
+
+| Data | Who | Notes |
+|---|---|---|
+| `studio_members/seed-photographer-cuc_seed-photographer-an_…` | Cúc ↔ An | `active`, joined 30 days before seeding; `photographers/seed-photographer-an.studioId` is Cúc |
+| `studio_members/seed-photographer-cuc_seed-photographer-binh_…` | Cúc → Bình | `invited`, expires 5 days after seeding (sign in as Bình to answer in S26.03) |
+| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to approve in S26.01) |
+| `seed-booking-studio-assigned` | Lan ↔ Cúc | accepted, assigned to An, 3 days ahead (the next day An is free); An's day is `booked`; Cúc's day is `full` (its one member is taken) |
+| `seed-booking-studio-unassigned` | Lan ↔ Cúc | accepted, unassigned, starts about 20 h after seeding: its assign deadline has passed, so the first `npm run clock -- bookings` marks it overdue (`assign_overdue`, Lan may cancel with 100% back) |
+
+`studio_day_load/seed-photographer-cuc_{day}` holds both bookings' days (server only). Studio bookings never write
+the studio's own day as `booked`/`pending`; Cúc's `availability/{day}` only shows the derived `full`.
+
 ## Discovery stats (S02)
 
 | Photographer | `startingPrice` | `stats.nextFreeDate` | `stats.completedCount` | Notes |
 |---|---|---|---|---|
 | An | 1 500 000 ₫ | computed from today & booked days | 3 | completed bookings: `recent`, `old`, `disputed` |
 | Bình | 1 200 000 ₫ | computed from today | 0 | unverified, `acceptingOrders: false` |
-| Cúc | `null` | computed from today | 0 | no services seeded |
+| Cúc | 2 500 000 ₫ | computed from today and its `full` days | 0 | studio package `seed-service-studio-family` (S26) |
 | Dũng | `null` | computed from today | 0 | no services seeded |
 
 | Item | Key / Path | Value | Notes |
@@ -271,7 +288,8 @@ npm run stats -- recompute
 
 The emulators never fire scheduled functions. `npm run clock -- events` runs the event clock once
 (close, complete, refunds, then the 48-hour `event_soon` reminders) and prints the counts;
-`npm run clock -- bookings` runs the booking clock once (sweeps and shoot reminders). The tool
+`npm run clock -- bookings` runs the booking clock once (sweeps, shoot reminders, the studio sweeps and the
+Chụp ngay timers, step `instantSweep`). The tool
 refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` point at a local host;
 push is only logged.
 
@@ -322,4 +340,43 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
   The `onAccountDeletionUpdated` trigger will purge the account and tombstone `users/{uid}`.
 - To test data export: call `requestDataExport` to generate an export JSON under `exports/{uid}/{exportId}.json` in Storage.
 
+## Điểm chụp (S29)
 
+| Điểm chụp | Khu vực | Mùa đẹp | Thợ nhận chụp | Gói chia suất |
+|---|---|---|---|---|
+| `seed-spot-cau-dat` (Đồi chè Cầu Đất) | Đà Lạt (`da-lat`) | Tháng 10–12 | — | — |
+| `seed-spot-hoi-an` (Phố cổ Hội An) | Hội An (`hoi-an`) | Quanh năm | — | — |
+| `seed-spot-ho-tay` (Hồ Tây) | Hà Nội (`hn`) | Quanh năm (ghim) | An (2 cuối tuần tới, 06:00–11:00) | "Bình minh Hồ Tây 30 phút" (490.000₫ · 30/10) |
+| `seed-spot-cau-vang` (Cầu Vàng) | Đà Nẵng (`dn`) | Quanh năm | — (Bình chưa nhận đơn) | — |
+| `seed-spot-mu-cang-chai` (Mù Cang Chải) | Yên Bái (`yen-bai`) | Tháng 9–10 | — | — |
+
+Đăng nhập Lan, Trang chủ → Điểm chụp đang hot → Hồ Tây để thử S29.02 và đặt suất (S29.06).
+Chạy `scripts/spots-local.sh rank` sau khi đổi dữ liệu để cập nhật bảng xếp hạng trên emulator.
+
+## Chụp ngay (S13–S14, #140)
+
+| Document | Value (test values) |
+|---|---|
+| `instant_config/current` | `enabled: true`, price list `priceListVersion: 1`, `platformFeeBp: 0` (everything to the photographer), `instantArrivedCancelPhotographerPercent: 50`; packages `p30` 30 phút · 15 ảnh · 390.000₫, `p60` 60 phút · 30 ảnh · 690.000₫, `p120` 120 phút · 60 ảnh · 1.190.000₫; cities `hcm` TP.HCM, `hn` Hà Nội, `dn` Đà Nẵng (bounding boxes, surge ×1.0); the twelve built-in areas of `lib/data/location/area.dart` for the offer's area label |
+
+#140 moves no money: invites send the offers at once, only on a `demo-*` emulator or the dev project
+(`inviteInstant` answers `not_eligible` anywhere else). Nobody is online at seeding: a photographer
+turns Live Shutter on in S14.01 (Cúc in TP.HCM has a phone; accept the price list first).
+The app keeps Chụp ngay hidden (`kInstantEnabled = false` in `lib/core/feature_flags.dart`; #202 flips it
+once payment is in): to try S14.01–S14.03 on a device, set it to `true` locally and do not commit it
+(the S06.01 card, the heartbeat and the offer listener only run with it on). Before `enabled` is used in a
+real project, `instant_config/current` must exist there (the seed writes it only on the emulators).
+
+Dev CLI (emulators only; refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`
+point at a local host; push is only logged): `offer` creates a request for the customer 500 m north of
+an online photographer (meet point "Điểm hẹn thử (CLI)") and sends them the offer, so S14.02/S14.03
+can be tried before the customer app exists; `status` prints the request and its offer rows.
+
+```bash
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>
+npm run instant -- offer --photographer seed-photographer-cuc [--customer seed-customer-lan] [--package p60] [--genre portrait]
+# request 01J…
+# offer 01J…
+npm run instant -- status <requestId>
+npm run clock -- bookings   # settles requests whose timers ran out (offers, search window, auto-complete)
+```

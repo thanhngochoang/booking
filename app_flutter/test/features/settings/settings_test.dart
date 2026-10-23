@@ -33,11 +33,13 @@ import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/idle.dart';
 import '../../support/photo_scope.dart';
+import '../../support/studio_world.dart' show FakeStudioRepository;
 
 Future<Widget> _app({
   required FakeAuthRepository auth,
@@ -95,6 +97,7 @@ Future<Widget> _app({
     retry: (_, _) => null,
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
+      studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
       userRepositoryProvider.overrideWithValue(users),
       userContactRepositoryProvider.overrideWithValue(
         contacts ?? FakeUserContactRepository(),
@@ -1083,14 +1086,19 @@ void main() {
       );
     });
 
-    testWidgets('studio rows wait for their routes; the verify row is shown', (
-      tester,
-    ) async {
-      for (final type in [ProviderType.individual, ProviderType.studio]) {
+    testWidgets('studio rows show without overrides since #136; the verify '
+        'row is shown', (tester) async {
+      for (final (type, shown, hidden) in [
+        (
+          ProviderType.individual,
+          'settings-my-studio',
+          'settings-studio-members',
+        ),
+        (ProviderType.studio, 'settings-studio-members', 'settings-my-studio'),
+      ]) {
         await open(tester, type: type);
-        for (final key in ['settings-my-studio', 'settings-studio-members']) {
-          expect(find.byKey(Key(key)), findsNothing, reason: '$type $key');
-        }
+        expect(find.byKey(Key(shown)), findsOneWidget, reason: '$type');
+        expect(find.byKey(Key(hidden)), findsNothing, reason: '$type');
         // `/verify/start` exists since #135: its row shows without overrides.
         expect(find.byKey(const Key('settings-verify')), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
@@ -1112,10 +1120,8 @@ void main() {
         y(tester, 'profile-public'),
         greaterThan(y(tester, 'settings-my-studio')),
       );
-      expect(
-        find.text('Studio đang ở, việc được giao, lời mời'),
-        findsOneWidget,
-      );
+      // No relation in the fake studio repository: not in a studio.
+      expect(find.text('Chưa ở studio nào'), findsOneWidget);
       await tapRow(tester, 'settings-my-studio');
       expect(find.text('stub /me/studio'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());

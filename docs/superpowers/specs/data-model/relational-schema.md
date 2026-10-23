@@ -772,6 +772,8 @@ create table app_config (key text primary key, value jsonb not null, version int
 
 Đặc tả ở [`../2026-10-01-instant-booking-design.md`](../2026-10-01-instant-booking-design.md) mục 7. Vị trí "đang sẵn sàng" chỉ nằm trong Redis (TTL 10 phút), không có bảng.
 
+**Đích giai đoạn 2.** Giai đoạn 1 (#140, 2026-10-07) chạy trên Firestore, không có schema `dispatch`: các bộ sưu tập `instant_*` ở mục 3 ánh xạ vào các bảng dưới đây khi chuyển sang backend tự chạy (#90). Khác biệt cần nhớ khi chuyển: gói, thành phố và khu nằm trong một tài liệu cấu hình (`instant_config/current`), presence (vị trí sẵn sàng) nằm ở Firestore với cửa sổ tươi 30 phút thay cho Redis TTL, độ tin cậy là một map trên presence, ứng viên và lời mời của lượt hiện tại là mảng trên yêu cầu (không lưu lịch sử các lượt), và chưa có `photographer_instant_settings` riêng (bản bảng giá đã đồng ý và `helpReady` ở presence). DDL dưới đây viết trước mô hình "match" (2026-10-02): danh sách `status` và `round in (1,2)` phải theo `InstantStatus` của domain (mô hình miền mục 2.13), và bảng `instant_candidates` (spec mục 7) chưa có DDL; chỉnh khi viết backend giai đoạn 2.
+
 ```sql
 create schema if not exists dispatch;
 create extension if not exists postgis;
@@ -995,7 +997,7 @@ create table job_invites (
 
 -- Hợp đồng (đề xuất)
 alter table bookings
-  add column source          text not null default 'package' check (source in ('package','quote','instant')),
+  add column source          text not null default 'package' check (source in ('package','quote','instant','spot','spot_slot')),
   add column terms           jsonb,              -- BookingTerms; null với booking cũ (đọc service_snapshot)
   add column job_id          text references jobs(id),
   add column quote_id        text references quotes(id),
@@ -1182,6 +1184,189 @@ create table report_quotas (
   count           smallint not null default 0 check (count between 0 and 20),
   primary key (user_id, day)
 );
+
+-- Điểm chụp và lịch tại điểm (2026-10-08, #194; `domain-model.md` mục 2.11)
+create table spots (
+  id             text primary key,
+  name           text not null,
+  city           text not null,
+  area_code      text not null,
+  lat            double precision not null,
+  lng            double precision not null,
+  geohash        text not null,
+  radius_m       int not null check (radius_m between 100 and 3000),
+  cover_url      text,
+  cover_card_url text,
+  cover_path     text,
+  description    text not null default '',
+  tips           jsonb not null default '[]'::jsonb,
+  season_months  jsonb not null default '[]'::jsonb,
+  pinned         boolean not null default false,
+  hidden         boolean not null default false,
+  status         text not null default 'active' check (status in ('active','archived')),
+  hot_score      int not null default 0,
+  stats          jsonb not null default '{"posts14d":0,"events":0,"bookings14d":0,"openSchedules":0,"providersWeek":0,"providersWeekend":0}'::jsonb,
+  ranked_at      timestamptz,
+  updated_by     text not null,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create table spot_schedules (
+  id             text primary key,
+  provider_id    text not null references photographers(user_id) on delete cascade,
+  assignee_id    text references photographers(user_id) on delete cascade,
+  spot_id        text not null references spots(id) on delete restrict,
+  window_start   time not null,
+  window_end     time not null check (window_end > window_start),
+  service_ids    jsonb not null default '[]'::jsonb,
+  price_from     bigint,
+  status         text not null default 'open' check (status in ('open','cancelled')),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create table spot_schedule_days (
+  schedule_id    text not null references spot_schedules(id) on delete cascade,
+  day            date not null,
+  primary key (schedule_id, day)
+);
+
+create table spot_slot_offers (
+  id             text primary key,
+  provider_id    text not null references photographers(user_id) on delete cascade,
+  schedule_id    text not null references spot_schedules(id) on delete cascade,
+  spot_id        text not null references spots(id) on delete restrict,
+  name           text not null,
+  price          bigint not null check (price >= 10000 and price <= 100000000),
+  slot_minutes   smallint not null check (slot_minutes between 15 and 90),
+  gap_minutes    smallint not null check (gap_minutes between 0 and 30),
+  photo_count    smallint not null check (photo_count >= 1),
+  edited_count   smallint not null check (edited_count >= 0 and edited_count <= photo_count),
+  delivery_days  smallint not null check (delivery_days between 1 and 30),
+  status         text not null default 'open' check (status in ('open','closed')),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+-- spot_day_intervals: khoảng thời gian đã được giữ chỗ/đặt tại điểm.
+-- Ghi chú: hình chiếu công khai trên Firestore (/spot_days/{id}) lược bỏ booking_id để bảo vệ quyền riêng tư.
+create table spot_day_intervals (
+  id             text primary key,
+  schedule_id    text not null references spot_schedules(id) on delete cascade,
+  day            date not null,
+  start_time     time not null,
+  end_time       time not null check (end_time > start_time),
+  offer_id       text references spot_slot_offers(id) on delete set null,
+  booking_id     text references bookings(id) on delete cascade,
+  created_at     timestamptz not null default now()
+);
+
+-- Mở rộng bookings cho điểm chụp và chia suất (#194)
+alter table bookings
+  add column spot_id          text references spots(id),
+  add column spot_schedule_id text references spot_schedules(id),
+  add column slot_offer_id    text references spot_slot_offers(id),
+  add column assignee_id      text references photographers(user_id),
+  add column assignee_kind    text check (assignee_kind in ('solo','member')),
+  add column assigned_at      timestamptz;
+```
+
+### 2.12 Studio và thành viên (S26, #136)
+
+Theo `domain-model.md` mục 2.12. Chỉ là chuẩn đích: `services/api` chưa có migration cho phần này (không có route đặt lịch ở đó).
+
+```sql
+create table studio_members (
+  studio_id            text not null references photographers(user_id),
+  member_id            text not null references photographers(user_id),
+  created_at           timestamptz not null default now(),
+  status               text not null check (status in ('invited','requested','active','declined','cancelled','expired','left','removed')),
+  initiated_by         text not null check (initiated_by in ('studio','member')),
+  expires_at           timestamptz not null,
+  responded_at         timestamptz,
+  joined_at            timestamptz,
+  ended_at             timestamptz,
+  ended_by             text check (ended_by in ('member','studio','system')),
+  expiring_notified_at timestamptz,
+  studio_name          text not null default '',
+  studio_avatar_url    text,
+  member_name          text not null default '',
+  member_avatar_url    text,
+  version              int not null default 0,
+  primary key (studio_id, member_id, created_at),
+  check (studio_id <> member_id)
+);
+-- một thợ chỉ `active` ở một studio; một cặp chỉ có một quan hệ mở
+create unique index ux_studio_members_active_member on studio_members (member_id) where status = 'active';
+create unique index ux_studio_members_open_pair on studio_members (studio_id, member_id) where status in ('invited','requested','active');
+create index ix_studio_members_studio_status on studio_members (studio_id, status);
+create index ix_studio_members_due on studio_members (status, expires_at) where status in ('invited','requested');
+
+alter table photographers
+  add column studio_id               text references photographers(user_id),  -- công khai, chỉ server ghi
+  add column studio_joined_at        timestamptz,
+  add column studio_cooldown_until   timestamptz,
+  add column member_count            int not null default 0,
+  add column assignable_members      int,
+  add column name_key                text,                                    -- tên bỏ dấu, thường, cho tìm lời mời
+  add column late_assign_count       int not null default 0,                  -- bộ đếm vi phạm: server ghi, staff xem
+  add column change_declined_count   int not null default 0,
+  add column late_reassign_count     int not null default 0,
+  add column late_delivery_count     int not null default 0;
+create index ix_photographers_studio on photographers (studio_id) where studio_id is not null;
+
+alter table bookings
+  add column is_studio          boolean not null default false,
+  add column assignee_id        text references photographers(user_id),
+  add column assignee_kind      text check (assignee_kind in ('member')),     -- chỉ 'member' tới khi S27 thêm 'collaborator' (khi đó migration đổi check)
+  add column assign_status      text check (assign_status in ('unassigned','assigned')),
+  add column assign_deadline    timestamptz,
+  add column assign_overdue     boolean not null default false,
+  add column assigned_at        timestamptz,
+  add column assign_reminders_sent text[] not null default '{}',              -- 'h48' | 'h26'
+  add column change_request     jsonb,                                        -- {at, note, respondBy, status, declineReason, answeredAt}
+  add column studio_fault       jsonb,                                        -- {kind, at}
+  add column assignment_returned jsonb;                                       -- {at, reason}
+create index ix_bookings_assignee_status on bookings (assignee_id, status) where assignee_id is not null;
+create index ix_bookings_assign_sweep on bookings (assign_status, assign_overdue, status, assign_deadline) where is_studio;
+create index ix_bookings_unassigned_start on bookings (assign_status, status, day) where is_studio;   -- huỷ booking chưa giao thợ tới giờ chụp (studioStartCancels); Firestore: (assignStatus, status, day)
+
+create table booking_assignments (
+  booking_id    text not null references bookings(id) on delete cascade,
+  seq           smallint not null,
+  assignee_id   text not null references photographers(user_id),
+  assignee_kind text not null check (assignee_kind in ('member')),
+  at            timestamptz not null,
+  by            text not null references users(id),
+  reason        text,
+  late          boolean not null default false,
+  primary key (booking_id, seq)
+);
+
+create table studio_quotas (
+  user_id         text not null references users(id) on delete cascade,
+  day             date not null,
+  studio_actions  smallint not null default 0,
+  member_actions  smallint not null default 0,
+  primary key (user_id, day)
+);
+
+create table studio_day_load_bookings (   -- tải theo ngày của studio: mỗi dòng một booking mở
+  studio_id   text not null references photographers(user_id),
+  day         date not null,
+  booking_id  text not null references bookings(id) on delete cascade,
+  assigned    boolean not null default false,   -- false = chưa giao thợ (unassignedIds), true = đã giao (assignedIds)
+  primary key (studio_id, day, booking_id)
+);
+-- Số thợ rảnh của ngày không lưu: tính từ availability_days của các thành viên lúc tính lại.
+
+alter table reviews
+  add column via_studio_id   text references photographers(user_id),
+  add column via_studio_name text,
+  add column assignee_id     text references photographers(user_id),
+  add column assignee_name   text;
+-- khoá (booking_id, subject_type) đã có ở bảng reviews; booking studio có hai dòng: 'photographer' (thợ) và 'studio'
 ```
 
 ## 3. Ánh xạ Firestore → bảng
@@ -1214,6 +1399,10 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received`; (đề xuất) tài khoản nền tảng của Firestore (`platform_escrow`, `platform_revenue` ở `accountOwnerId`) thành `account_owner_id` null, phân biệt bằng `type` (`fee_charged` là doanh thu) |
 | `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
+| `studio_members/{studioId}_{memberId}_{createdAtMs}` | `studio_members` | Id ghép không thành cột: khoá `(studio_id, member_id, created_at)`; `createdAt` là phần mili giây của id |
+| `studio_quota/{uid}` | `studio_quotas` | `dayKey`→`day`; `studioActions`, `memberActions`→`studio_actions`, `member_actions` |
+| `studio_day_load/{id}` | `studio_day_load_bookings` | Chỉ server; id = studio + ngày; `unassignedIds[]`/`assignedIds[]`→ một dòng mỗi booking, `assigned` phân biệt hai mảng |
+| `bookings/{id}.assignments[]` | `booking_assignments` | `seq` = vị trí trong mảng; `changeRequest`, `studioFault`, `assignmentReturned`→`jsonb` |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột; `chats.bookingStatus`→không có cột, suy ra từ `bookings.status` qua `chats.booking_id` (join; trường Firestore chỉ là read model cho danh sách S07.02) |
 | `support_threads/{id}` + `support_threads/{id}/messages/{id}` | `support_threads`, `support_thread_participants`, `support_messages` | `participants[]`→`support_thread_participants`; `lastMessage`→jsonb cột `last_message` |
@@ -1229,6 +1418,20 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
+| `spots/{id}` | `spots` | Điểm chụp |
+| `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
+| `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |
+| `spot_schedules/{id}` | `spot_schedules` + `spot_schedule_days` | `days[]` → `spot_schedule_days` |
+| `spot_slot_offers/{id}` | `spot_slot_offers` | Gói chia suất tại điểm |
+| `spot_days/{id}` | `spot_day_intervals` | Hình chiếu công khai của các khoảng giờ đã kín trong ngày; doc id `{scheduleId}_{day}`, không lưu `booking_id` |
+| `instant_config/current` | `dispatch.cities`, `dispatch.instant_packages` (+ khu: chưa có bảng, đề xuất `dispatch.areas`) | `cities[]` → `cities` (`south/west/north/east` → `boundary` hình chữ nhật, `surgeBp` → `surge = surgeBp / 10000`); `packages[]` → `instant_packages` (cùng `priceListVersion`); `platformFeeBp`, `instantArrivedCancelPhotographerPercent`, `enabled` → `app_config` (khoá `instant`) |
+| `instant_requests/{id}` | `dispatch.instant_requests` | `meetPoint.{lat,lng}` → `meet_point`, `meetPoint.name` → `meet_address`; `packageCode` → `package_id` (theo `priceListVersion`); `amountVnd`/`earningVnd` → `amount_vnd`/`payout_vnd`; `cancelRule`, `cancelledBy`, `refundPercent`, `feeVnd` → `cancel_reason` + cột mới; `candidates[]` → `instant_candidates` (`round` hiện tại); `offers[]` không thành cột (lấy từ `instant_offers`); `photographer` (ảnh chụp tên, ảnh) không thành cột; `active`, `nextDeadlineAt`, `lastActivityAt`, `committedAt` → cột (phục vụ quét hẹn giờ); tiền (`paymentId`, `paidAt`, `refundId`, …) → `payments`/`refunds` (`subject_type = 'instant_request'`) |
+| `instant_requests/{id}/private/dispatch` | `dispatch.instant_candidates` (spec mục 7, chưa có DDL) | 🔒 `excludedIds[]` → các dòng `customer_choice = 'skipped'` hoặc lời mời đã từ chối/hết hạn; không bảng riêng |
+| `instant_requests/{id}/private/contact` | (không có bảng) | 🔒 Bản sao liên hệ khách cho thợ đã nhận (dạng `booking_contacts`); dẫn xuất từ `user_contacts` khi đã trả |
+| `instant_customers/{uid}` | (không có bảng) | 🔒 Khoá "một yêu cầu đang chạy mỗi khách" của Firestore; bảng dùng chỉ mục duy nhất một phần `instant_requests (customer_id) where status in (…đang chạy)` |
+| `instant_offers/{uid}/offers/{offerId}` | `dispatch.instant_offers` | `photographerId` lấy từ đường dẫn; ảnh chụp gói, khu, khoảng cách, ETA, thu nhập, `note`, `invitedCount` không thành cột (dẫn xuất từ yêu cầu) |
+| `instant_presence/{uid}` | `dispatch.photographer_instant_settings`, `dispatch.photographer_reliability` (+ vị trí: Redis ở giai đoạn 2) | 🔒 `priceListVersion` → `price_list_version_accepted`, `helpReady` → `help_ready`, `cityId` → `home_city_id`; `reliability.*` → `photographer_reliability` (thêm `declined`, `expired`, `late`); `lat/lng/geohash*/heartbeatAt/online/pendingOffers/activeRequestId` không thành bảng (trạng thái sống); `profile` là ảnh chụp từ `photographers` |
+| `instant_tracks/{requestId}` | (không có bảng) | Chỉ tồn tại khi đang đến, chỉ điểm cuối; không lưu lịch sử |
 | `config/{key}` | `app_config` | |
 | `blocks/{blockerId}_{blockedId}` | `blocks` | Id ghép `blockerId_blockedId`; `source`, `createdAt` |
 | `users/{uid}/private/blocks` | (dẫn xuất từ `blocks`) | Chỉ mục hai chiều do server duy trì; không có bảng riêng (được tạo bởi query/trigger trên `blocks`) |
@@ -1254,7 +1457,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `photographers` và bảng con → `services` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `bookings`(+con) → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `studio_members`, `bookings`(+con, `booking_assignments`) → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

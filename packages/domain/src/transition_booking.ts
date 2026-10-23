@@ -10,6 +10,9 @@ import { commitTransition } from './commit_transition.js';
 import { DomainError } from './errors.js';
 import { isId } from './ids.js';
 
+/** What a studio booking's assignee may do through transitionBooking. */
+const ASSIGNEE_ACTIONS: readonly TransitionAction[] = ['mark_shot', 'complete'];
+
 export interface TransitionBookingInput {
   readonly bookingId: string;
   readonly action: TransitionAction;
@@ -30,23 +33,32 @@ export async function transitionBooking(
     throw new DomainError('not_found');
   }
 
-  // Determine actor role
+  // Determine actor role. A studio's assignee acts for the studio only to mark the shoot done (#136 Decision 15).
   let role: 'customer' | 'photographer' | 'system';
+  let actingId = input.actorId;
   if (!input.actorId) {
     role = 'system';
   } else {
     const determinedRole = roleOf(input.actorId, booking);
-    if (!determinedRole) {
+    if (determinedRole) {
+      role = determinedRole;
+    } else if (
+      booking.isStudio === true &&
+      booking.assigneeId === input.actorId &&
+      ASSIGNEE_ACTIONS.includes(input.action)
+    ) {
+      role = 'photographer';
+      actingId = booking.photographerId;
+    } else {
       throw new DomainError('permission_denied');
     }
-    role = determinedRole;
   }
 
   const now = deps.clock.now();
   const decision = decideTransition(
     booking,
     input.action,
-    { id: input.actorId, role },
+    { id: actingId, role },
     now,
     input.reason,
   );

@@ -15,6 +15,13 @@ import {
   computeStartingPrice,
   encodeGeohash,
   formatVnDate,
+  formatVnTime,
+  assignDeadlineFor,
+  foldNameKey,
+  inviteExpiresAt,
+  parseVnDateTime,
+  relationId,
+  studioDayMark,
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
@@ -52,6 +59,10 @@ import {
   type ReviewReason,
   type Verdict,
   type VerificationRecord,
+  EMPTY_SPOT_STATS,
+  type Spot,
+  type SpotSchedule,
+  type SlotOffer,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
@@ -61,6 +72,13 @@ import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '.
 import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
 import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
+import { relationToFirestore } from '../src/infra/studio_firestore.js';
+import {
+  spotToFirestore,
+  scheduleToFirestore,
+  offerToFirestore,
+  spotDayToFirestore,
+} from '../src/infra/spot_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -188,6 +206,8 @@ export interface SeedService {
 export const SEED_SERVICES: readonly SeedService[] = [
   { id: 'seed-service-portrait', photographerId: AN, name: 'Chân dung 2 giờ', price: 1_500_000, durationMinutes: 120 },
   { id: 'seed-service-family', photographerId: BINH, name: 'Gia đình 90 phút', price: 1_200_000, durationMinutes: 90 },
+  // Cúc's package: the studio bookings (S26) and the "one booking per free member" day (Decision 26).
+  { id: 'seed-service-studio-family', photographerId: CUC, name: 'Gia đình tại studio 2 giờ', price: 2_500_000, durationMinutes: 120 },
 ];
 
 export interface SeedAddon {
@@ -239,6 +259,8 @@ export interface SeedBooking {
   readonly completedDaysAgo: number | null;
   /** The deposit is held back by a dispute; the text is what the customer wrote. */
   readonly dispute?: { readonly reason: string };
+  /** A studio booking (#136): its member, or null while unassigned. */
+  readonly studio?: { readonly assigneeId: string | null };
 }
 
 export const SEED_BOOKINGS: readonly SeedBooking[] = [
@@ -257,6 +279,99 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-approved', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'approved', date: '2026-10-11', start: '14:00', end: '16:00', place: 'Cầu Long Biên, Hà Nội', completedDaysAgo: null },
 ];
 
+// ---- Studio (S26, #136) ----
+
+export const SEED_STUDIO_ASSIGNED = 'seed-booking-studio-assigned';
+export const SEED_STUDIO_UNASSIGNED = 'seed-booking-studio-unassigned';
+/** An joined Cúc this long before seeding. */
+export const SEED_STUDIO_JOINED_DAYS_AGO = 30;
+
+/** The start of an hour-aligned 2-hour slot near `at` in Vietnam time, kept within one day (09:00–21:00). */
+function vnSlot(at: Date): { date: string; start: string; end: string } {
+  const hourStart = new Date(Math.floor(at.getTime() / HOUR_MS) * HOUR_MS);
+  const date = formatVnDate(hourStart);
+  const hour = Number(formatVnTime(hourStart).slice(0, 2));
+  const h = Math.min(21, hour);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return { date, start: `${pad(h)}:00`, end: `${pad(h + 2)}:00` };
+}
+
+/** Days An's own calendar holds (seed bookings and the three seed events), before any studio job. */
+function anOwnDays(now: Date): Set<string> {
+  const days = new Set<string>();
+  for (const b of SEED_BOOKINGS) if (b.photographerId === AN && b.status !== 'cancelled') days.add(b.date);
+  for (const h of [8 * 24 + 2, 15 * 24 + 2, 36]) days.add(formatVnDate(new Date(now.getTime() + h * HOUR_MS)));
+  return days;
+}
+
+/**
+ * Lan ↔ Cúc, both accepted: one assigned to An three days ahead (or the next day An is free), one unassigned
+ * starting about 20 hours after seeding (its assign deadline has passed, so the first bookingClock marks it overdue).
+ */
+export function studioSeedBookings(now: Date): SeedBooking[] {
+  const base = { customerId: LAN, photographerId: CUC, serviceId: 'seed-service-studio-family', status: 'accepted', completedDaysAgo: null };
+  const anDays = anOwnDays(now);
+  let ahead = 3;
+  while (anDays.has(formatVnDate(new Date(now.getTime() + ahead * DAY_MS)))) ahead += 1;
+  const assigned = { date: formatVnDate(new Date(now.getTime() + ahead * DAY_MS)), start: '09:00', end: '11:00' };
+  const unassigned = vnSlot(new Date(now.getTime() + 20 * HOUR_MS));
+  return [
+    { ...base, id: SEED_STUDIO_ASSIGNED, ...assigned, place: 'Studio Cúc, Quận 1', studio: { assigneeId: AN } },
+    { ...base, id: SEED_STUDIO_UNASSIGNED, ...unassigned, place: 'Công viên Tao Đàn, TP.HCM', studio: { assigneeId: null } },
+  ];
+}
+
+/** Days An is not free for Cúc: An's own calendar and the studio job. */
+function anBusyDays(now: Date): Set<string> {
+  const days = anOwnDays(now);
+  for (const b of studioSeedBookings(now)) if (b.studio?.assigneeId === AN) days.add(b.date);
+  return days;
+}
+
+/** `studio_day_load` of Cúc per day, and the days its one member leaves full (Decision 26). */
+function studioLoads(now: Date): { day: string; unassignedIds: string[]; assignedIds: string[]; full: boolean }[] {
+  const byDay = new Map<string, { unassignedIds: string[]; assignedIds: string[] }>();
+  for (const b of studioSeedBookings(now)) {
+    const l = byDay.get(b.date) ?? { unassignedIds: [], assignedIds: [] };
+    (b.studio?.assigneeId ? l.assignedIds : l.unassignedIds).push(b.id);
+    byDay.set(b.date, l);
+  }
+  const busy = anBusyDays(now);
+  return [...byDay.entries()].map(([day, l]) => ({
+    day,
+    ...l,
+    full:
+      studioDayMark(null, { studioOff: false, memberDays: [{ uid: AN, verified: true, free: !busy.has(day) }], ...l }) ===
+      'set_full',
+  }));
+}
+
+/** Cúc's relations: An active, Bình invited (expires in 5 days), Dũng's open join request. */
+function studioMemberDocuments(now: Date): SeedDocument[] {
+  const joinedAt = new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS);
+  const names: Record<string, string> = Object.fromEntries(SEED_USERS.map((u) => [u.uid, u.displayName]));
+  const rel = (memberId: string, createdAt: Date, over: Record<string, unknown>) => {
+    const id = relationId(CUC, memberId, createdAt);
+    return {
+      path: `studio_members/${id}`,
+      data: relationToFirestore({
+        id, studioId: CUC, memberId, status: 'invited', initiatedBy: 'studio',
+        createdAt: createdAt.toISOString(), expiresAt: inviteExpiresAt(createdAt),
+        respondedAt: null, joinedAt: null, endedAt: null, endedBy: null, expiringNotifiedAt: null,
+        studioName: names[CUC] ?? '', studioAvatarUrl: null, memberName: names[memberId] ?? '', memberAvatarUrl: null,
+        version: 1,
+        ...over,
+      }),
+    };
+  };
+  const anInvited = new Date(joinedAt.getTime() - DAY_MS);
+  return [
+    rel(AN, anInvited, { status: 'active', respondedAt: joinedAt.toISOString(), joinedAt: joinedAt.toISOString(), version: 2 }),
+    rel(BINH, new Date(now.getTime() - 2 * DAY_MS), {}),
+    rel(DUNG, new Date(now.getTime() - DAY_MS), { status: 'requested', initiatedBy: 'member' }),
+  ];
+}
+
 /** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
 export const SEED_AN_ACCOUNT = { id: 'seed-account-an-1', bankCode: 'VCB', number: '0123456789', holderName: 'NGUYEN VAN AN' } as const;
 export const SEED_PAYOUT_AN = 'seed-payout-an-1';
@@ -272,14 +387,24 @@ export interface SeedPost {
   readonly caption: string;
   /** Album the post sits in and its 1-based place there; null = timeline only. */
   readonly album: { readonly id: string; readonly position: number } | null;
+  readonly spotId?: string;
 }
 
 export const SEED_ALBUM_FAMILY = 'seed-album-an-family';
 export const SEED_ALBUM_STREET = 'seed-album-an-street';
 
+export const SEED_SPOT_CAU_DAT = 'seed-spot-cau-dat';
+export const SEED_SPOT_HOI_AN = 'seed-spot-hoi-an';
+export const SEED_SPOT_HO_TAY = 'seed-spot-ho-tay';
+export const SEED_SPOT_CAU_VANG = 'seed-spot-cau-vang';
+export const SEED_SPOT_MU_CANG_CHAI = 'seed-spot-mu-cang-chai';
+
+export const SEED_SCHEDULE_AN_HO_TAY = 'seed-schedule-an-ho-tay';
+export const SEED_OFFER_AN_BINH_MINH = 'seed-offer-an-binh-minh';
+
 /** An's `work` posts: two in "Gia đình", one in "Đường phố", two only on the timeline. */
 export const SEED_POSTS: readonly SeedPost[] = [
-  { id: 'seed-post-an-1', photographerId: AN, images: 3, caption: 'Buổi chiều ở Hồ Tây', album: { id: SEED_ALBUM_FAMILY, position: 1 } },
+  { id: 'seed-post-an-1', photographerId: AN, images: 3, caption: 'Buổi chiều ở Hồ Tây', album: { id: SEED_ALBUM_FAMILY, position: 1 }, spotId: SEED_SPOT_HO_TAY },
   { id: 'seed-post-an-2', photographerId: AN, images: 2, caption: 'Gia đình nhỏ', album: { id: SEED_ALBUM_FAMILY, position: 2 } },
   { id: 'seed-post-an-3', photographerId: AN, images: 1, caption: 'Phố cổ sớm mai', album: { id: SEED_ALBUM_STREET, position: 1 } },
   { id: 'seed-post-an-4', photographerId: AN, images: 4, caption: 'Chân dung ánh sáng tự nhiên', album: null },
@@ -427,6 +552,42 @@ function reviewDocuments(now: Date): SeedDocument[] {
   });
 }
 
+/**
+ * `instant_config/current` (#140 Decisions 6, 9, 19, 27; test values): three packages, three cities by
+ * bounding box with surge ×1.0, and the twelve built-in areas of `lib/data/location/area.dart`
+ * (names and centres copied) for the offer's area label.
+ */
+export const SEED_INSTANT_CONFIG = {
+  enabled: true,
+  priceListVersion: 1,
+  platformFeeBp: 0,
+  instantArrivedCancelPhotographerPercent: 50,
+  packages: [
+    { code: 'p30', durationMin: 30, photos: 15, priceVnd: 390_000 },
+    { code: 'p60', durationMin: 60, photos: 30, priceVnd: 690_000 },
+    { code: 'p120', durationMin: 120, photos: 60, priceVnd: 1_190_000 },
+  ],
+  cities: [
+    { id: 'hcm', name: 'TP.HCM', south: 10.35, west: 106.36, north: 11.17, east: 107.03, surgeBp: 10_000 },
+    { id: 'hn', name: 'Hà Nội', south: 20.56, west: 105.28, north: 21.39, east: 106.02, surgeBp: 10_000 },
+    { id: 'dn', name: 'Đà Nẵng', south: 15.92, west: 107.82, north: 16.2, east: 108.33, surgeBp: 10_000 },
+  ],
+  areas: [
+    { name: 'Quận 1, TP.HCM', lat: 10.7769, lng: 106.7009 },
+    { name: 'Quận 3, TP.HCM', lat: 10.784, lng: 106.6842 },
+    { name: 'Quận 7, TP.HCM', lat: 10.734, lng: 106.7219 },
+    { name: 'Bình Thạnh, TP.HCM', lat: 10.8106, lng: 106.7091 },
+    { name: 'Thủ Đức, TP.HCM', lat: 10.8494, lng: 106.7537 },
+    { name: 'Hoàn Kiếm, Hà Nội', lat: 21.0285, lng: 105.8542 },
+    { name: 'Ba Đình, Hà Nội', lat: 21.034, lng: 105.819 },
+    { name: 'Cầu Giấy, Hà Nội', lat: 21.0333, lng: 105.794 },
+    { name: 'Hải Châu, Đà Nẵng', lat: 16.0471, lng: 108.2208 },
+    { name: 'Huế', lat: 16.4637, lng: 107.5909 },
+    { name: 'Đà Lạt', lat: 11.9404, lng: 108.4583 },
+    { name: 'Nha Trang', lat: 12.2388, lng: 109.1967 },
+  ],
+} as const;
+
 export interface SeedDocument {
   readonly path: string;
   readonly data: Record<string, unknown>;
@@ -508,6 +669,27 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
     createdAt,
     updatedAt: last,
     version: steps.length,
+    ...(b.studio !== undefined ? studioFieldsOf(b, createdAt, last) : {}),
+  };
+}
+
+/** The studio fields of a seeded studio booking, as `studioDraftFields` and `assignBooking` write them. */
+function studioFieldsOf(b: SeedBooking, createdAt: Date, assignedAt: Date): Record<string, unknown> {
+  const assigneeId = b.studio?.assigneeId ?? null;
+  return {
+    isStudio: true,
+    assigneeId,
+    assigneeKind: assigneeId === null ? null : 'member',
+    assignStatus: assigneeId === null ? 'unassigned' : 'assigned',
+    assignDeadline: assignDeadlineFor(parseVnDateTime(b.date, b.start), createdAt),
+    assignOverdue: false,
+    assignedAt: assigneeId === null ? null : assignedAt,
+    assignments:
+      assigneeId === null ? [] : [{ assigneeId, assigneeKind: 'member', at: assignedAt, by: b.photographerId, reason: null, late: false }],
+    assignRemindersSent: [],
+    changeRequest: null,
+    studioFault: null,
+    assignmentReturned: null,
   };
 }
 
@@ -537,6 +719,11 @@ export function seedDocuments(now: Date): SeedDocument[] {
       if (b.photographerId === p.uid && (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed')) {
         blockedDaysList.push(b.date);
       }
+    }
+    // Cúc's full days (its one member is busy) and An's studio job.
+    if (p.uid === CUC) blockedDaysList.push(...studioLoads(now).filter((l) => l.full).map((l) => l.day));
+    if (p.uid === AN) {
+      for (const b of studioSeedBookings(now)) if (b.studio?.assigneeId === AN) blockedDaysList.push(b.date);
     }
     // Event days for An
     if (p.uid === AN) {
@@ -576,6 +763,12 @@ export function seedDocuments(now: Date): SeedDocument[] {
         followerCount: SEED_FOLLOWS.filter((f) => f.photographerId === p.uid).length,
         ...(SEED_FOLLOWS.some((f) => f.photographerId === p.uid) ? { followerCountAt: at } : {}),
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
+        // S26: the invite-search key, Cúc's member counts (An is verified) and An's membership (#136).
+        nameKey: foldNameKey(SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? ''),
+        ...(p.uid === CUC ? { memberCount: 1, assignableMembers: 1 } : {}),
+        ...(p.uid === AN
+          ? { studioId: CUC, studioJoinedAt: new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS) }
+          : {}),
         createdAt: at,
         updatedAt: at,
       },
@@ -630,6 +823,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
         likeCount,
         saveCount,
         ...(p.album !== null ? { albumId: p.album.id, albumPosition: p.album.position } : {}),
+        ...(p.spotId !== undefined ? { spotId: p.spotId } : {}),
         createdAt: at,
       },
     });
@@ -705,7 +899,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       data: { userId: sp.userId, photographerId: sp.photographerId, createdAt: at },
     });
   }
-  for (const b of SEED_BOOKINGS) {
+  for (const b of [...SEED_BOOKINGS, ...studioSeedBookings(now)]) {
     const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
     if (!service) continue;
     const bData = bookingData(b, now);
@@ -920,8 +1114,15 @@ export function seedDocuments(now: Date): SeedDocument[] {
       }
     }
 
-    // Availability day
-    if (b.status === 'requested') {
+    // Availability day. A studio booking holds the studio's day load instead; its member's day is booked.
+    if (b.studio !== undefined) {
+      if (b.studio.assigneeId !== null) {
+        docs.push({
+          path: `availability/${b.studio.assigneeId}/days/${b.date}`,
+          data: { state: 'booked', bookingId: b.id, updatedAt },
+        });
+      }
+    } else if (b.status === 'requested') {
       docs.push({
         path: `availability/${b.photographerId}/days/${b.date}`,
         data: { state: 'pending', bookingId: b.id, updatedAt },
@@ -939,6 +1140,17 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...eventDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
   docs.push(...verificationDocuments(now));
+  docs.push(...studioMemberDocuments(now));
+  for (const l of studioLoads(now)) {
+    docs.push({
+      path: `studio_day_load/${CUC}_${l.day}`,
+      data: { studioId: CUC, day: l.day, unassignedIds: l.unassignedIds, assignedIds: l.assignedIds, updatedAt: now },
+    });
+    if (l.full) docs.push({ path: `availability/${CUC}/days/${l.day}`, data: { state: 'full', updatedAt: now } });
+  }
+
+  // Chụp ngay server config (#140, plan Task 4): price list v1, fee 0, arrived-cancel split 50.
+  docs.push({ path: 'instant_config/current', data: { ...SEED_INSTANT_CONFIG, updatedAt: at } });
 
   // Explore catalog document (S02)
   docs.push({
@@ -1153,7 +1365,7 @@ function directChatDocuments(now: Date, existing: readonly SeedDocument[]): Seed
     const id = chatIdFor(c.customerId, c.photographerId);
     const at0 = new Date(now.getTime() - first.agoMs);
     let chat: Chat = {
-      id, kind: c.kind, customerId: c.customerId, photographerId: c.photographerId,
+      id, kind: c.kind, customerId: c.customerId, photographerId: c.photographerId, assigneeId: null,
       bookingId: c.bookingId, bookingStatus,
       photographerRepliedAt: null, customerMessagesBeforeReply: 0,
       lastMessageAt: null, lastMessagePreview: null, lastSenderId: null,
@@ -1717,5 +1929,262 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
     },
   });
 
+  const atIso = now.toISOString();
+  const today = formatVnDate(now);
+  const spots = seedSpots(now);
+  for (const s of spots) {
+    docs.push({ path: `spots/${s.id}`, data: spotToFirestore(s) as Record<string, unknown> });
+  }
+
+  const anBlockedDays = new Set<string>();
+  for (const d of existing) {
+    const m = new RegExp(`^availability/${AN}/days/(\\d{4}-\\d{2}-\\d{2})$`).exec(d.path);
+    const day = m?.[1];
+    if (day) anBlockedDays.add(day);
+  }
+  for (const e of [free, paid, soon]) {
+    if (e.dayKey) anBlockedDays.add(e.dayKey);
+  }
+  const anWeekendDays = seedWeekendDays(today, anBlockedDays);
+  const anSchedule: SpotSchedule = {
+    id: SEED_SCHEDULE_AN_HO_TAY,
+    providerId: AN,
+    assigneeId: null,
+    spotId: SEED_SPOT_HO_TAY,
+    days: anWeekendDays,
+    window: { start: '06:00', end: '11:00' },
+    serviceIds: ['seed-service-portrait'],
+    priceFrom: 1500000,
+    status: 'open',
+    createdAt: atIso,
+    updatedAt: atIso,
+  };
+  docs.push({ path: `spot_schedules/${SEED_SCHEDULE_AN_HO_TAY}`, data: scheduleToFirestore(anSchedule) as Record<string, unknown> });
+
+  const anOffer: SlotOffer = {
+    id: SEED_OFFER_AN_BINH_MINH,
+    providerId: AN,
+    scheduleId: SEED_SCHEDULE_AN_HO_TAY,
+    spotId: SEED_SPOT_HO_TAY,
+    name: 'Bình minh Hồ Tây 30 phút',
+    price: 490000,
+    slotMinutes: 30,
+    gapMinutes: 10,
+    photoCount: 30,
+    editedCount: 10,
+    deliveryDays: 3,
+    status: 'open',
+    createdAt: atIso,
+    updatedAt: atIso,
+  };
+  docs.push({ path: `spot_slot_offers/${SEED_OFFER_AN_BINH_MINH}`, data: offerToFirestore(anOffer) as Record<string, unknown> });
+
+  for (const day of anWeekendDays) {
+    docs.push({
+      path: `availability/${AN}/days/${day}`,
+      data: {
+        photographerId: AN,
+        day,
+        state: 'spot',
+        scheduleId: SEED_SCHEDULE_AN_HO_TAY,
+        spotId: SEED_SPOT_HO_TAY,
+        updatedAt: now,
+      },
+    });
+    docs.push({
+      path: `spot_days/${SEED_SCHEDULE_AN_HO_TAY}_${day}`,
+      data: spotDayToFirestore({
+        scheduleId: SEED_SCHEDULE_AN_HO_TAY,
+        spotId: SEED_SPOT_HO_TAY,
+        providerId: AN,
+        day,
+        taken: [],
+        updatedAt: atIso,
+      }) as Record<string, unknown>,
+    });
+  }
+
+  const binhP = SEED_PHOTOGRAPHERS.find((p) => p.uid === BINH);
+  const binhAccepts = binhP ? acceptsOrders({ verified: binhP.verified, onboardingComplete: true }) : false;
+  if (binhAccepts) {
+    const nextSat = anWeekendDays[0] ?? today;
+    docs.push({
+      path: `spot_schedules/seed-schedule-binh-cau-vang`,
+      data: scheduleToFirestore({
+        id: 'seed-schedule-binh-cau-vang',
+        providerId: BINH,
+        assigneeId: null,
+        spotId: SEED_SPOT_CAU_VANG,
+        days: [nextSat],
+        window: { start: '15:00', end: '18:00' },
+        serviceIds: [],
+        priceFrom: null,
+        status: 'open',
+        createdAt: atIso,
+        updatedAt: atIso,
+      }) as Record<string, unknown>,
+    });
+  }
+
   return docs;
+}
+
+export function seedWeekendDays(today: string, excludedDays: ReadonlySet<string> = new Set()): string[] {
+  const parts = today.split('-').map(Number);
+  const y = parts[0] ?? 2026;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  const out: string[] = [];
+  let offset = 0;
+  while (out.length < 4 && offset < 60) {
+    const dt = new Date(Date.UTC(y, m - 1, d + offset));
+    const dow = dt.getUTCDay();
+    if (dow === 6) {
+      const satStr = formatVnDate(dt);
+      const sun = new Date(Date.UTC(y, m - 1, d + offset + 1));
+      const sunStr = formatVnDate(sun);
+      if (!excludedDays.has(satStr) && !excludedDays.has(sunStr)) {
+        out.push(satStr, sunStr);
+      }
+      offset += 6;
+    }
+    offset += 1;
+  }
+  return out;
+}
+
+export function seedSpots(now: Date): Spot[] {
+  const at = now.toISOString();
+  return [
+    {
+      id: SEED_SPOT_CAU_DAT,
+      name: 'Đồi chè Cầu Đất',
+      city: 'Đà Lạt',
+      areaCode: 'da-lat',
+      point: { lat: 11.9012, lng: 108.5123 },
+      geohash: encodeGeohash(11.9012, 108.5123),
+      radiusM: 1500,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_CAU_DAT}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_CAU_DAT}/card.jpg`,
+        path: `spots/${SEED_SPOT_CAU_DAT}/cover.jpg`,
+      },
+      description: 'Đồi chè bạt ngàn trong sương sớm, điểm săn mây và chụp ảnh lãng mạn tại Đà Lạt.',
+      tips: ['Đi sáng sớm săn mây từ 5:30 đến 7:00', 'Mang áo khoác ấm vì sáng sớm khá lạnh'],
+      seasonMonths: [10, 11, 12],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_HOI_AN,
+      name: 'Phố cổ Hội An',
+      city: 'Hội An',
+      areaCode: 'hoi-an',
+      point: { lat: 15.877, lng: 108.326 },
+      geohash: encodeGeohash(15.877, 108.326),
+      radiusM: 1000,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_HOI_AN}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_HOI_AN}/card.jpg`,
+        path: `spots/${SEED_SPOT_HOI_AN}/cover.jpg`,
+      },
+      description: 'Khu phố cổ rực rỡ lồng đèn bên dòng sông Hoài, nét đẹp hoài niệm vượt thời gian.',
+      tips: ['Chụp áo dài rất đẹp vào sáng sớm hoặc hoàng hôn', 'Thả hoa đăng buổi tối trên sông Hoài'],
+      seasonMonths: [],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_HO_TAY,
+      name: 'Hồ Tây',
+      city: 'Hà Nội',
+      areaCode: 'hn',
+      point: { lat: 21.055, lng: 105.823 },
+      geohash: encodeGeohash(21.055, 105.823),
+      radiusM: 2000,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_HO_TAY}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_HO_TAY}/card.jpg`,
+        path: `spots/${SEED_SPOT_HO_TAY}/cover.jpg`,
+      },
+      description: 'Hồ nước ngọt tự nhiên lớn nhất thủ đô, góc ngắm hoàng hôn và chụp ảnh phong cảnh đa dạng.',
+      tips: ['Bến Hàn Quốc và đường Thanh Niên ngắm hoàng hôn đẹp nhất', 'Mùa hè có đầm sen nở rộ'],
+      seasonMonths: [],
+      pinned: true,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_CAU_VANG,
+      name: 'Cầu Vàng',
+      city: 'Đà Nẵng',
+      areaCode: 'dn',
+      point: { lat: 15.995, lng: 107.9967 },
+      geohash: encodeGeohash(15.995, 107.9967),
+      radiusM: 800,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_CAU_VANG}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_CAU_VANG}/card.jpg`,
+        path: `spots/${SEED_SPOT_CAU_VANG}/cover.jpg`,
+      },
+      description: 'Đôi bàn tay khổng lồ nâng đỡ cây cầu vàng uốn lượn giữa mây trời Bà Nà Hills.',
+      tips: ['Lên chuyến cáp treo đầu tiên để tránh đông đúc', 'Chụp góc nghiêng bắt trọn đôi bàn tay đá'],
+      seasonMonths: [],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+    {
+      id: SEED_SPOT_MU_CANG_CHAI,
+      name: 'Mù Cang Chải',
+      city: 'Yên Bái',
+      areaCode: 'yen-bai',
+      point: { lat: 21.854, lng: 104.088 },
+      geohash: encodeGeohash(21.854, 104.088),
+      radiusM: 2000,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_MU_CANG_CHAI}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_MU_CANG_CHAI}/card.jpg`,
+        path: `spots/${SEED_SPOT_MU_CANG_CHAI}/cover.jpg`,
+      },
+      description: 'Những nấc thang vàng óng ánh trên ruộng bậc thang La Pán Tẩn mùa lúa chín vàng.',
+      tips: ['Thời điểm lúa chín đẹp nhất từ giữa tháng 9 đến đầu tháng 10', 'Đồi mâm xôi và đồi móng ngựa chụp góc toàn cảnh'],
+      seasonMonths: [9, 10],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      updatedBy: 'seed',
+    },
+  ];
 }

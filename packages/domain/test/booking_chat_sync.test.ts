@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Booking } from '../src/booking.js';
-import { chatIdFor } from '../src/chat.js';
+import { assertCanSend, chatIdFor, roleInChat } from '../src/chat.js';
 import { syncBookingChat } from '../src/booking_chat_sync.js';
 import { openInquiry } from '../src/open_inquiry.js';
 import { createChatWorld } from './support/chat_world.js';
@@ -357,5 +357,64 @@ describe('syncBookingChat (Task 4)', () => {
     clock.advance(60_000);
     await syncBookingChat(deps, { before: accepted, after: { ...accepted, version: 2 } });
     assert.deepEqual(chats.chats.get(chatId), before);
+  });
+
+  describe('studio assignee (#136)', () => {
+    const accepted: Booking = {
+      ...baseBooking,
+      status: 'accepted',
+      isStudio: true,
+      assigneeId: null,
+      assignStatus: 'unassigned',
+    };
+    const withA1: Booking = { ...accepted, assigneeId: 'a1', assignStatus: 'assigned', version: 2 };
+    const withA2: Booking = { ...withA1, assigneeId: 'a2', version: 3 };
+
+    it('the assignee is a chat member and speaks as the studio side', async () => {
+      const { deps, chats, clock } = createChatWorld();
+      const chatId = chatIdFor('cust1', 'phot1');
+      await syncBookingChat(deps, { before: null, after: { ...accepted, status: 'requested' } });
+      assert.equal(chats.chats.get(chatId)?.assigneeId, null);
+      await syncBookingChat(deps, { before: { ...accepted, status: 'requested' }, after: accepted });
+      await syncBookingChat(deps, { before: accepted, after: withA1 });
+      const chat = chats.chats.get(chatId);
+      assert.ok(chat);
+      assert.equal(chat.assigneeId, 'a1');
+      assert.equal(roleInChat(chat, 'a1'), 'photographer');
+      assert.doesNotThrow(() => assertCanSend(chat, 'a1', clock.now()));
+      assert.equal(roleInChat(chat, 'a2'), null);
+    });
+
+    it('reassign replaces the chat member', async () => {
+      const { deps, chats } = createChatWorld();
+      const chatId = chatIdFor('cust1', 'phot1');
+      await syncBookingChat(deps, { before: null, after: withA1 });
+      assert.equal(chats.chats.get(chatId)?.assigneeId, 'a1');
+      await syncBookingChat(deps, { before: withA1, after: withA2 });
+      const chat = chats.chats.get(chatId);
+      assert.equal(chat?.assigneeId, 'a2');
+      assert.ok(chat);
+      assert.equal(roleInChat(chat, 'a1'), null);
+    });
+
+    it('a new booking with the same studio resets the assignee', async () => {
+      const { deps, chats } = createChatWorld();
+      const chatId = chatIdFor('cust1', 'phot1');
+      await syncBookingChat(deps, { before: null, after: withA1 });
+      await syncBookingChat(deps, { before: withA1, after: { ...withA1, status: 'completed', version: 4 } });
+      const next: Booking = { ...accepted, id: 'book_2', status: 'requested' };
+      await syncBookingChat(deps, { before: null, after: next });
+      const chat = chats.chats.get(chatId);
+      assert.equal(chat?.bookingId, 'book_2');
+      assert.equal(chat?.assigneeId, null);
+    });
+
+    it('an assignee change of another booking of the pair does not touch the chat', async () => {
+      const { deps, chats } = createChatWorld();
+      const chatId = chatIdFor('cust1', 'phot1');
+      await syncBookingChat(deps, { before: null, after: { ...accepted, id: 'book_2', status: 'requested' } });
+      await syncBookingChat(deps, { before: accepted, after: withA1 });
+      assert.equal(chats.chats.get(chatId)?.assigneeId, null);
+    });
   });
 });

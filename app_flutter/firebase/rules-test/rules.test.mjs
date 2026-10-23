@@ -1,4 +1,4 @@
-import { test, before, after } from 'node:test';
+import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
@@ -968,6 +968,34 @@ test('posts still cannot be updated', async () => {
   await assertSucceeds(setDoc(doc(db, 'posts/post-alb6'), validPost('e4', { albumId: 'alb-e4' })));
   await assertFails(updateDoc(doc(db, 'posts/post-alb6'), { albumId: deleteField() }));
   await assertFails(updateDoc(doc(db, 'posts/post-alb6'), { albumPosition: 1 }));
+});
+
+async function seedSpot(id, status) {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `spots/${id}`), { name: 'Hồ Tây', status }));
+}
+
+test('a photographer creates a post with spotId of an active spot', async () => {
+  await seedShooter('sp1');
+  await seedSpot('spot-active', 'active');
+  const db = env.authenticatedContext('sp1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-spot1'), validPost('sp1', { spotId: 'spot-active' })));
+});
+
+test('spotId of an archived or missing spot is refused', async () => {
+  await seedShooter('sp2');
+  await seedSpot('spot-old', 'archived');
+  const db = env.authenticatedContext('sp2').firestore();
+  await assertFails(setDoc(doc(db, 'posts/post-spot2'), validPost('sp2', { spotId: 'spot-old' })));
+  await assertFails(setDoc(doc(db, 'posts/post-spot3'), validPost('sp2', { spotId: 'spot-missing' })));
+  await assertFails(setDoc(doc(db, 'posts/post-spot4'), validPost('sp2', { spotId: 'a/b' })));
+  await assertFails(setDoc(doc(db, 'posts/post-spot5'), validPost('sp2', { spotId: 5 })));
+});
+
+test('a post without spotId still passes', async () => {
+  await seedShooter('sp3');
+  const db = env.authenticatedContext('sp3').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-spot6'), validPost('sp3', {})));
 });
 
 // ---- Plan 2d2: avatars ----
@@ -2370,4 +2398,432 @@ test('owner can set hiddenFromDiscovery to a bool, not a string', async () => {
   await assertSucceeds(updateDoc(doc(db, 'photographers/p1'), { hiddenFromDiscovery: false }));
   await assertFails(updateDoc(doc(db, 'photographers/p1'), { hiddenFromDiscovery: 'true' }));
   await assertFails(updateDoc(doc(db, 'photographers/p1'), { deletionPending: true }));
+});
+
+// ---- S26 #136: studio members, quota, day load, assignee reads, server fields on photographers ----
+const studioRel = (studioId, memberId, status = 'invited') => ({
+  studioId, memberId, status, initiatedBy: 'studio', createdAt: Timestamp.fromDate(new Date('2026-10-10T03:00:00Z')),
+  expiresAt: Timestamp.fromDate(new Date('2026-10-17T03:00:00Z')), expiringNotifiedAt: null, version: 1,
+});
+test('the studio and the member read their relation; a third user cannot', async () => {
+  await seedDoc('studio_members/sm_s1_m1_1', studioRel('sm_s1', 'sm_m1'));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sm_s1').firestore(), 'studio_members/sm_s1_m1_1')));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sm_m1').firestore(), 'studio_members/sm_s1_m1_1')));
+  await assertFails(getDoc(doc(env.authenticatedContext('sm_x').firestore(), 'studio_members/sm_s1_m1_1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'studio_members/sm_s1_m1_1')));
+  // The app's listeners: the studio's own relations and the member's own; never someone else's.
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('sm_s1').firestore(), 'studio_members'), where('studioId', '==', 'sm_s1'))));
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('sm_m1').firestore(), 'studio_members'), where('memberId', '==', 'sm_m1'))));
+  await assertFails(getDocs(query(collection(env.authenticatedContext('sm_x').firestore(), 'studio_members'), where('studioId', '==', 'sm_s1'))));
+});
+test('nobody writes studio_members or studio_quota; studio_day_load is closed', async () => {
+  const studio = env.authenticatedContext('sm_s2').firestore();
+  const member = env.authenticatedContext('sm_m2').firestore();
+  await assertFails(setDoc(doc(studio, 'studio_members/sm_s2_m2_1'), studioRel('sm_s2', 'sm_m2')));
+  await assertFails(setDoc(doc(member, 'studio_members/sm_s2_m2_2'), { ...studioRel('sm_s2', 'sm_m2', 'active') }));
+  await seedDoc('studio_members/sm_s2_m2_3', studioRel('sm_s2', 'sm_m2'));
+  await assertFails(updateDoc(doc(member, 'studio_members/sm_s2_m2_3'), { status: 'active' }));
+  await assertFails(deleteDoc(doc(studio, 'studio_members/sm_s2_m2_3')));
+  await assertFails(setDoc(doc(studio, 'studio_quota/sm_s2'), { dayKey: '2026-10-10', studioActions: 0, memberActions: 0 }));
+  await seedDoc('studio_day_load/sm_s2_2026-10-14', { studioId: 'sm_s2', day: '2026-10-14', unassignedIds: ['b1'], assignedIds: [] });
+  await assertFails(getDoc(doc(studio, 'studio_day_load/sm_s2_2026-10-14')));
+  await assertFails(setDoc(doc(studio, 'studio_day_load/sm_s2_2026-10-15'), { unassignedIds: [] }));
+});
+test('the owner reads their quota; nobody else does', async () => {
+  await seedDoc('studio_quota/sm_s3', { dayKey: '2026-10-10', studioActions: 2, memberActions: 0 });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sm_s3').firestore(), 'studio_quota/sm_s3')));
+  await assertFails(getDoc(doc(env.authenticatedContext('sm_m3').firestore(), 'studio_quota/sm_s3')));
+});
+test('the assignee reads the booking and its events', async () => {
+  await seedDoc('bookings/b_sa1', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam1', isStudio: true, status: 'upcoming' });
+  await seedDoc('bookings/b_sa1/events/e1', { status: 'upcoming', at: Timestamp.now() });
+  const db = env.authenticatedContext('sam1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_sa1')));
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_sa1/events/e1')));
+  await assertSucceeds(getDocs(collection(db, 'bookings/b_sa1/events')));
+  // Another member of the studio does not.
+  await assertFails(getDoc(doc(env.authenticatedContext('sam2').firestore(), 'bookings/b_sa1/events/e1')));
+  // Deliveries stay the studio's.
+  await seedDoc('bookings/b_sa1/deliverySamples/f1', { path: 'x' });
+  await assertFails(getDoc(doc(db, 'bookings/b_sa1/deliverySamples/f1')));
+});
+test('a former assignee cannot read the booking, its events or the booking chat', async () => {
+  await seedDoc('bookings/b_sa2', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam2', isStudio: true, status: 'upcoming' });
+  await seedDoc('bookings/b_sa2/events/e1', { status: 'upcoming', at: Timestamp.now() });
+  await seedDoc('chats/sac1_sas1', { kind: 'booking', customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam2', members: ['sac1', 'sas1', 'sam2'] });
+  await seedDoc('chats/sac1_sas1/messages/m1', { senderId: 'sac1', type: 'text', body: 'Xin chào' });
+  const old = env.authenticatedContext('sam1').firestore();
+  await assertFails(getDoc(doc(old, 'bookings/b_sa2')));
+  await assertFails(getDoc(doc(old, 'bookings/b_sa2/events/e1')));
+  await assertFails(getDoc(doc(old, 'chats/sac1_sas1')));
+  await assertFails(getDoc(doc(old, 'chats/sac1_sas1/messages/m1')));
+  // The chat accepts three members: the new assignee reads it and its messages.
+  const now = env.authenticatedContext('sam2').firestore();
+  await assertSucceeds(getDoc(doc(now, 'chats/sac1_sas1')));
+  await assertSucceeds(getDoc(doc(now, 'chats/sac1_sas1/messages/m1')));
+});
+test('the assignee reads the customer contact only while unlocked', async () => {
+  await seedDoc('bookings/b_sa3', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam3', isStudio: true, status: 'accepted' });
+  await seedDoc('bookings/b_sa3/private/contact', { name: 'Lan', phone: '+84903000001' });
+  await seedDoc('bookings/b_sa4', { customerId: 'sac1', photographerId: 'sas1', assigneeId: 'sam3', isStudio: true, status: 'cancelled' });
+  await seedDoc('bookings/b_sa4/private/contact', { name: 'Lan', phone: '+84903000001' });
+  const db = env.authenticatedContext('sam3').firestore();
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_sa3/private/contact')));
+  await assertFails(getDoc(doc(db, 'bookings/b_sa4/private/contact')));
+  await assertFails(getDoc(doc(env.authenticatedContext('sam4').firestore(), 'bookings/b_sa3/private/contact')));
+  // The delivery document stays the studio's and the customer's.
+  await seedDoc('bookings/b_sa3/private/delivery', { url: 'https://x' });
+  await assertFails(getDoc(doc(db, 'bookings/b_sa3/private/delivery')));
+});
+test('a client cannot set studioId, memberCount, assignableMembers, nameKey or the counters on photographers', async () => {
+  await asPhotographer('sp1');
+  await seedDoc('photographers/sp1', { onboardingComplete: true, verified: false, bio: 'x' });
+  const db = env.authenticatedContext('sp1').firestore();
+  for (const field of ['studioId', 'studioJoinedAt', 'studioCooldownUntil', 'memberCount', 'lateAssignCount',
+    'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey', 'assignableMembers']) {
+    await assertFails(updateDoc(doc(db, 'photographers/sp1'), { [field]: field === 'studioId' || field === 'nameKey' ? 'x' : 1 }));
+  }
+  await assertSucceeds(updateDoc(doc(db, 'photographers/sp1'), { bio: 'y' }));
+  // A server-written value stays when the client saves other fields.
+  await seedDoc('photographers/sp1', { onboardingComplete: true, verified: false, bio: 'y', studioId: 'sas1', nameKey: 'sp1', memberCount: 0 });
+  await assertSucceeds(updateDoc(doc(db, 'photographers/sp1'), { bio: 'z' }));
+  await assertFails(updateDoc(doc(db, 'photographers/sp1'), { studioId: null }));
+});
+test("a studio's full day is server-written; the owner may only turn it off", async () => {
+  await asPhotographer('sfs1');
+  await seedDoc('availability/sfs1/days/2026-10-14', { state: 'full' });
+  const db = env.authenticatedContext('sfs1').firestore();
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-15'), { state: 'full' }));
+  await assertFails(deleteDoc(doc(db, 'availability/sfs1/days/2026-10-14')));
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'booked', bookingId: 'x' }));
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'off', note: 'x' }));
+  await assertFails(setDoc(doc(env.authenticatedContext('sfs2').firestore(), 'availability/sfs1/days/2026-10-14'), { state: 'off' }));
+  await assertSucceeds(setDoc(doc(db, 'availability/sfs1/days/2026-10-14'), { state: 'off', updatedAt: serverTimestamp() }));
+  // A booked day stays server-only.
+  await seedDoc('availability/sfs1/days/2026-10-16', { state: 'booked', bookingId: 'b1' });
+  await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-16'), { state: 'off' }));
+});
+
+// S29 Trending Spots security rules tests (written, not run locally in CI session)
+test('a signed-in user reads spots, spot_rankings, spot_directory and spot_days; a signed-out user reads none', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spots/spot1'), { name: 'Spot 1' });
+    await setDoc(doc(f, 'spot_rankings/r1'), { rank: 1 });
+    await setDoc(doc(f, 'spot_directory/dir1'), { name: 'Dir 1' });
+    await setDoc(doc(f, 'spot_days/sd1'), { date: '2026-10-15' });
+  });
+  const authDb = env.authenticatedContext('u1').firestore();
+  const unauthDb = env.unauthenticatedContext().firestore();
+  await assertSucceeds(getDoc(doc(authDb, 'spots/spot1')));
+  await assertSucceeds(getDoc(doc(authDb, 'spot_rankings/r1')));
+  await assertSucceeds(getDoc(doc(authDb, 'spot_directory/dir1')));
+  await assertSucceeds(getDoc(doc(authDb, 'spot_days/sd1')));
+
+  await assertFails(getDoc(doc(unauthDb, 'spots/spot1')));
+  await assertFails(getDoc(doc(unauthDb, 'spot_rankings/r1')));
+  await assertFails(getDoc(doc(unauthDb, 'spot_directory/dir1')));
+  await assertFails(getDoc(doc(unauthDb, 'spot_days/sd1')));
+});
+
+test('nobody writes spots, spot_rankings, spot_directory, spot_schedules, spot_slot_offers or spot_days from a client', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spots/sp_w'), { name: 'Spot' });
+    await setDoc(doc(f, 'spot_rankings/rk_w'), { rank: 1 });
+    await setDoc(doc(f, 'spot_directory/dir_w'), { name: 'Dir' });
+    await setDoc(doc(f, 'spot_schedules/sch_w'), { status: 'open', providerId: 'u1' });
+    await setDoc(doc(f, 'spot_slot_offers/off_w'), { status: 'open', providerId: 'u1' });
+    await setDoc(doc(f, 'spot_days/day_w'), { date: '2026-10-15' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  // create
+  await assertFails(setDoc(doc(db, 'spots/sp_new'), { name: 'New' }));
+  await assertFails(setDoc(doc(db, 'spot_rankings/rk_new'), { rank: 2 }));
+  await assertFails(setDoc(doc(db, 'spot_directory/dir_new'), { name: 'New' }));
+  await assertFails(setDoc(doc(db, 'spot_schedules/sch_new'), { status: 'open' }));
+  await assertFails(setDoc(doc(db, 'spot_slot_offers/off_new'), { status: 'open' }));
+  await assertFails(setDoc(doc(db, 'spot_days/day_new'), { date: '2026-10-16' }));
+  // update
+  await assertFails(updateDoc(doc(db, 'spots/sp_w'), { name: 'Changed' }));
+  await assertFails(updateDoc(doc(db, 'spot_rankings/rk_w'), { rank: 2 }));
+  await assertFails(updateDoc(doc(db, 'spot_directory/dir_w'), { name: 'Changed' }));
+  await assertFails(updateDoc(doc(db, 'spot_schedules/sch_w'), { status: 'cancelled' }));
+  await assertFails(updateDoc(doc(db, 'spot_slot_offers/off_w'), { status: 'closed' }));
+  await assertFails(updateDoc(doc(db, 'spot_days/day_w'), { date: '2026-10-17' }));
+  // delete
+  await assertFails(deleteDoc(doc(db, 'spots/sp_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_rankings/rk_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_directory/dir_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_schedules/sch_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_slot_offers/off_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_days/day_w')));
+});
+
+test('a customer reads an open schedule and cannot read a cancelled one', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spot_schedules/sch_open'), { status: 'open', providerId: 'prov1', assigneeId: 'asg1' });
+    await setDoc(doc(f, 'spot_schedules/sch_cancelled'), { status: 'cancelled', providerId: 'prov1', assigneeId: 'asg1' });
+  });
+  const db = env.authenticatedContext('cust1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'spot_schedules/sch_open')));
+  await assertFails(getDoc(doc(db, 'spot_schedules/sch_cancelled')));
+});
+
+test('the provider and the assignee read their cancelled schedule', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'spot_schedules/sch_canc_2'), {
+      status: 'cancelled',
+      providerId: 'prov2',
+      assigneeId: 'asg2',
+    });
+  });
+  const provDb = env.authenticatedContext('prov2').firestore();
+  const asgDb = env.authenticatedContext('asg2').firestore();
+  const otherDb = env.authenticatedContext('other_u').firestore();
+  await assertSucceeds(getDoc(doc(provDb, 'spot_schedules/sch_canc_2')));
+  await assertSucceeds(getDoc(doc(asgDb, 'spot_schedules/sch_canc_2')));
+  await assertFails(getDoc(doc(otherDb, 'spot_schedules/sch_canc_2')));
+});
+
+test('a customer list query on spot_schedules filtered by status == open succeeds; unfiltered fails', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'spot_schedules/sch_q1'), {
+      status: 'open',
+      providerId: 'prov_q',
+    });
+  });
+  const db = env.authenticatedContext('cust_q').firestore();
+  await assertSucceeds(getDocs(query(collection(db, 'spot_schedules'), where('status', '==', 'open'))));
+  await assertFails(getDocs(collection(db, 'spot_schedules')));
+});
+
+test('a customer reads an open offer, not a closed one; the provider reads a closed one', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spot_slot_offers/off_open'), { status: 'open', providerId: 'prov_off' });
+    await setDoc(doc(f, 'spot_slot_offers/off_closed'), { status: 'closed', providerId: 'prov_off' });
+  });
+  const custDb = env.authenticatedContext('cust_off').firestore();
+  const provDb = env.authenticatedContext('prov_off').firestore();
+  await assertSucceeds(getDoc(doc(custDb, 'spot_slot_offers/off_open')));
+  await assertFails(getDoc(doc(custDb, 'spot_slot_offers/off_closed')));
+  await assertSucceeds(getDoc(doc(provDb, 'spot_slot_offers/off_closed')));
+});
+
+test('the owner cannot create or delete a spot availability day (only off)', async () => {
+  await asPhotographer('spot_p1');
+  const db = env.authenticatedContext('spot_p1').firestore();
+  const day = dayPath('spot_p1', '2026-10-20');
+  await assertFails(setDoc(doc(db, day), { state: 'spot', scheduleId: 'sch1', spotId: 'sp1', updatedAt: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), day), { state: 'spot', scheduleId: 'sch1', spotId: 'sp1' }));
+  await assertFails(deleteDoc(doc(db, day)));
+  await assertFails(setDoc(doc(db, day), { state: 'off' }));
+});
+
+test('spots storage: a signed-in user reads spots/x/card.jpg; nobody uploads there', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await uploadBytes(ref(c.storage(), 'spots/sp1/card.jpg'), photo(), jpeg);
+  });
+  const authSt = env.authenticatedContext('u1').storage();
+  const unauthSt = env.unauthenticatedContext().storage();
+  await assertSucceeds(getBytes(ref(authSt, 'spots/sp1/card.jpg')));
+  await assertFails(getBytes(ref(unauthSt, 'spots/sp1/card.jpg')));
+  await assertFails(uploadBytes(ref(authSt, 'spots/sp1/card.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(authSt, 'spots/sp1/card.jpg')));
+});
+
+// ---- Chụp ngay (S13–S14, #140): presence, requests, contact copy, offers, tracks ----
+describe('instant', () => {
+  const seed = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+  const ago = (s) => Timestamp.fromMillis(Date.now() - s * 1000);
+  const as = (uid) => env.authenticatedContext(uid).firestore();
+  const presence = (over = {}) => ({
+    online: true, helpReady: false, priceListVersion: 1, cityId: 'hcm',
+    lat: 10.7746, lng: 106.6924, accuracyM: 20, geohash5: 'w3gv2', geohash4: 'w3gv', heartbeatAt: ago(120),
+    activeRequestId: null, pendingOffers: [], reliability: { offers: 0, accepted: 0, declined: 0, expired: 0, cancelled: 0, late: 0, noShow: 0 },
+    profile: { name: 'Hà' }, updatedAt: ago(120), ...over,
+  });
+  const beat = (over = {}) => ({ lat: 10.775, lng: 106.693, accuracyM: 15, geohash5: 'w3gv2', geohash4: 'w3gv', heartbeatAt: serverTimestamp(), ...over });
+  const request = (over = {}) => ({
+    customerId: 'ic_cust', photographerId: 'ic_ph', status: 'assigned', active: true, paidAt: null,
+    meetPoint: { lat: 10.7746, lng: 106.6924, name: 'Cổng Trương Định' }, offers: [], ...over,
+  });
+  const track = (over = {}) => ({
+    customerId: 'ic_cust', photographerId: 'ic_ph', active: true, lat: 10.77, lng: 106.69, accuracyM: 20, heading: null, at: ago(30), ...over,
+  });
+  const point = (over = {}) => ({ lat: 10.771, lng: 106.691, accuracyM: 12, heading: 90, at: serverTimestamp(), ...over });
+
+  test('signed-in user reads instant_config', async () => {
+    await seed('instant_config/current', { enabled: true, priceListVersion: 1, platformFeeBp: 0 });
+    await assertSucceeds(getDoc(doc(as('ic_any'), 'instant_config/current')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'instant_config/current')));
+  });
+
+  test('nobody writes instant_config', async () => {
+    await assertFails(setDoc(doc(as('ic_any'), 'instant_config/current'), { enabled: false }));
+    await assertFails(updateDoc(doc(as('ic_any'), 'instant_config/current'), { platformFeeBp: 9999 }));
+  });
+
+  test('owner reads own presence, others cannot', async () => {
+    await seed('instant_presence/ip_own', presence());
+    await assertSucceeds(getDoc(doc(as('ip_own'), 'instant_presence/ip_own')));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_presence/ip_own')));
+    await assertFails(getDocs(query(collection(as('ic_cust'), 'instant_presence'), where('online', '==', true))));
+  });
+
+  test('owner heartbeat with request.time passes', async () => {
+    await seed('instant_presence/ip_hb', presence());
+    await assertSucceeds(updateDoc(doc(as('ip_hb'), 'instant_presence/ip_hb'), beat()));
+  });
+
+  test('heartbeat within 60 s is denied', async () => {
+    await seed('instant_presence/ip_fast', presence({ heartbeatAt: ago(20) }));
+    await assertFails(updateDoc(doc(as('ip_fast'), 'instant_presence/ip_fast'), beat()));
+  });
+
+  test('a heartbeat with a client-chosen time or a bad position is denied', async () => {
+    await seed('instant_presence/ip_bad', presence());
+    const ref = doc(as('ip_bad'), 'instant_presence/ip_bad');
+    await assertFails(updateDoc(ref, beat({ heartbeatAt: Timestamp.now() })));
+    await assertFails(updateDoc(ref, beat({ lat: 91 })));
+    await assertFails(updateDoc(ref, beat({ geohash5: 'w3gv' })));
+    await assertFails(updateDoc(ref, beat({ geohash4: 'w3gx' })));
+    await assertFails(updateDoc(ref, beat({ geohash5: 'w3gva', geohash4: 'w3gv' }))); // 'a' is not base32
+    await assertSucceeds(updateDoc(ref, beat()));
+  });
+
+  test('owner cannot switch online by writing', async () => {
+    await seed('instant_presence/ip_on', presence({ online: false }));
+    await assertFails(updateDoc(doc(as('ip_on'), 'instant_presence/ip_on'), { online: true }));
+    await seed('instant_presence/ip_off', presence());
+    await assertFails(updateDoc(doc(as('ip_off'), 'instant_presence/ip_off'), { ...beat(), online: false }));
+  });
+
+  test('owner cannot write activeRequestId, pendingOffers, cityId or priceListVersion', async () => {
+    await seed('instant_presence/ip_keys', presence({ pendingOffers: [{ offerId: 'of1', requestId: 'ir_x', expiresAt: ago(-30) }] }));
+    const ref = doc(as('ip_keys'), 'instant_presence/ip_keys');
+    await assertFails(updateDoc(ref, { ...beat(), activeRequestId: 'ir_x' }));
+    await assertFails(updateDoc(ref, { ...beat(), pendingOffers: [] }));
+    await assertFails(updateDoc(ref, { ...beat(), reliability: { offers: 0 } }));
+    await assertFails(updateDoc(ref, { ...beat(), cityId: 'hn' }));
+    await assertFails(updateDoc(ref, { ...beat(), priceListVersion: 2 }));
+    await assertFails(setDoc(doc(as('ip_new'), 'instant_presence/ip_new'), presence()));
+    await assertFails(deleteDoc(ref));
+  });
+
+  test('heartbeat on an offline presence is denied', async () => {
+    await seed('instant_presence/ip_offline', presence({ online: false }));
+    await assertFails(updateDoc(doc(as('ip_offline'), 'instant_presence/ip_offline'), beat()));
+  });
+
+  test('customer reads own request; assigned photographer reads it', async () => {
+    await seed('instant_requests/ir_read', request());
+    await assertSucceeds(getDoc(doc(as('ic_cust'), 'instant_requests/ir_read')));
+    await assertSucceeds(getDoc(doc(as('ic_ph'), 'instant_requests/ir_read')));
+    await assertSucceeds(getDocs(query(collection(as('ic_cust'), 'instant_requests'), where('customerId', '==', 'ic_cust'), where('active', '==', true))));
+    await assertSucceeds(getDocs(query(collection(as('ic_ph'), 'instant_requests'), where('photographerId', '==', 'ic_ph'), where('active', '==', true))));
+    await assertFails(getDocs(query(collection(as('ic_cust'), 'instant_requests'), where('active', '==', true))));
+  });
+
+  test('an invited photographer cannot read the request', async () => {
+    await seed('instant_requests/ir_inv', request({ status: 'searching', photographerId: null,
+      offers: [{ offerId: 'of1', photographerId: 'ic_invited', outcome: 'pending' }] }));
+    await assertFails(getDoc(doc(as('ic_invited'), 'instant_requests/ir_inv')));
+    await assertFails(getDoc(doc(as('ic_stranger'), 'instant_requests/ir_inv')));
+  });
+
+  test('nobody writes a request', async () => {
+    await seed('instant_requests/ir_w', request());
+    await assertFails(updateDoc(doc(as('ic_cust'), 'instant_requests/ir_w'), { status: 'completed' }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_requests/ir_w'), { status: 'arrived' }));
+    await assertFails(setDoc(doc(as('ic_cust'), 'instant_requests/ir_new'), request()));
+    await assertFails(deleteDoc(doc(as('ic_cust'), 'instant_requests/ir_w')));
+  });
+
+  test('assigned photographer reads the contact copy while active', async () => {
+    await seed('instant_requests/ir_c', request({ paidAt: ago(300) }));
+    await seed('instant_requests/ir_c/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: true, allowWhatsApp: false });
+    await assertSucceeds(getDoc(doc(as('ic_ph'), 'instant_requests/ir_c/private/contact')));
+    await assertFails(setDoc(doc(as('ic_ph'), 'instant_requests/ir_c/private/contact'), { phone: '+84900000000' }));
+    await seed('instant_requests/ir_c', request({ paidAt: ago(300), status: 'completed', active: false }));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_c/private/contact')));
+  });
+
+  test('a cancelled photographer cannot read the contact copy', async () => {
+    await seed('instant_requests/ir_cx', request({ paidAt: ago(300) }));
+    await seed('instant_requests/ir_cx/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    // The photographer cancelled: the request went back to choosing with another (or no) photographer.
+    await seed('instant_requests/ir_cx', request({ paidAt: ago(300), status: 'choosing', photographerId: null }));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_cx/private/contact')));
+  });
+
+  test('an unpaid request never exposes the contact copy, even to the assigned photographer', async () => {
+    await seed('instant_requests/ir_unpaid', request({ paidAt: null }));
+    await seed('instant_requests/ir_unpaid/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_unpaid/private/contact')));
+  });
+
+  test('customer cannot read the contact copy', async () => {
+    await seed('instant_requests/ir_cc', request({ paidAt: ago(300) }));
+    await seed('instant_requests/ir_cc/private/contact', { name: 'Lan', phone: '+84903123456', allowZalo: false, allowWhatsApp: false });
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_requests/ir_cc/private/contact')));
+  });
+
+  test('nobody reads private/dispatch or the customer lock', async () => {
+    await seed('instant_requests/ir_d', request());
+    await seed('instant_requests/ir_d/private/dispatch', { excludedIds: ['ic_skipped'] });
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_requests/ir_d/private/dispatch')));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_requests/ir_d/private/dispatch')));
+    await seed('instant_customers/ic_cust', { activeRequestId: 'ir_d' });
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_customers/ic_cust')));
+    await assertFails(setDoc(doc(as('ic_cust'), 'instant_customers/ic_cust'), { activeRequestId: null }));
+  });
+
+  test('owner reads own offers, another photographer cannot', async () => {
+    await seed('instant_offers/io_ph/offers/of1', { requestId: 'ir_x', photographerId: 'io_ph', outcome: 'pending', areaLabel: 'Quận 1, TP.HCM' });
+    await assertSucceeds(getDoc(doc(as('io_ph'), 'instant_offers/io_ph/offers/of1')));
+    await assertSucceeds(getDocs(query(collection(as('io_ph'), 'instant_offers/io_ph/offers'), where('outcome', '==', 'pending'))));
+    await assertFails(getDoc(doc(as('io_other'), 'instant_offers/io_ph/offers/of1')));
+    await assertFails(updateDoc(doc(as('io_ph'), 'instant_offers/io_ph/offers/of1'), { outcome: 'accepted' }));
+  });
+
+  test('both parties read the track, another user cannot', async () => {
+    await seed('instant_tracks/it_r', track());
+    await assertSucceeds(getDoc(doc(as('ic_cust'), 'instant_tracks/it_r')));
+    await assertSucceeds(getDoc(doc(as('ic_ph'), 'instant_tracks/it_r')));
+    await assertFails(getDoc(doc(as('ic_stranger'), 'instant_tracks/it_r')));
+  });
+
+  test('assigned photographer updates the track with request.time', async () => {
+    await seed('instant_tracks/it_u', track());
+    await assertSucceeds(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_u'), point()));
+  });
+
+  test('track write within 15 s is denied', async () => {
+    await seed('instant_tracks/it_fast', track({ at: ago(5) }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_fast'), point()));
+  });
+
+  test('an inactive track is not readable by either party', async () => {
+    await seed('instant_tracks/it_gone', track({ active: false }));
+    await assertFails(getDoc(doc(as('ic_cust'), 'instant_tracks/it_gone')));
+    await assertFails(getDoc(doc(as('ic_ph'), 'instant_tracks/it_gone')));
+  });
+
+  test('track write when inactive is denied', async () => {
+    await seed('instant_tracks/it_off', track({ active: false }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_off'), point()));
+  });
+
+  test('customer cannot write the track', async () => {
+    await seed('instant_tracks/it_c', track());
+    await assertFails(updateDoc(doc(as('ic_cust'), 'instant_tracks/it_c'), point()));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_c'), { ...point(), photographerId: 'ic_ph2' }));
+    await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_c'), point({ at: Timestamp.now() })));
+    await assertFails(setDoc(doc(as('ic_ph'), 'instant_tracks/it_new'), track()));
+    await assertFails(deleteDoc(doc(as('ic_ph'), 'instant_tracks/it_c')));
+  });
 });

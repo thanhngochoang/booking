@@ -4,15 +4,24 @@ import {
   sendDueReminders,
   sendVerificationNudges,
   notifyDeliveryAutoApproveSoon,
+  runAssignDeadlineSweep,
+  runChangeRequestSweep,
+  runMembershipSweeps,
+  runUnassignedStartSweep,
+  runInstantSweep,
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
+  type InstantDeps,
   type NotifyDeps,
+  type StudioBookingDeps,
+  type StudioDeps,
   type VerificationDeps,
 } from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { FirestoreBookingStore } from '../infra/booking_firestore.js';
 import { liveBookingDeps } from '../infra/live_booking.js';
+import { liveInstantDeps } from '../infra/live_instant.js';
 import { liveNotifyDeps } from '../infra/live_notification.js';
 import { purgeDeliverySamples, type PurgeDeliverySamplesDeps } from './purge_delivery_samples.js';
 
@@ -34,6 +43,17 @@ export interface ReminderDeps {
 export interface BookingClockExtras {
   readonly verification?: { readonly deps: VerificationDeps; readonly notify: NotifyDeps };
   readonly delivery?: { readonly notify: NotifyDeps; readonly purge?: PurgeDeliverySamplesDeps };
+  /**
+   * S26 studio sweeps (#136 Decision 20): assignment deadlines, change requests, unassigned bookings at their
+   * start, then membership expiry.
+   */
+  readonly studio?: { readonly bookings: StudioBookingDeps; readonly members: StudioDeps; readonly notify: NotifyDeps };
+  /**
+   * Chụp ngay (#140 Decision 3): settles up to 100 active requests whose `nextDeadlineAt` has passed and
+   * nobody is looking at. Default `liveInstantDeps()` when the clock runs live (`bookingDeps` omitted); a test that
+   * passes its own BookingDeps and no `instant` skips the step, so it never reaches Firestore.
+   */
+  readonly instant?: InstantDeps;
 }
 
 export async function remindAutoApprovals(deps: BookingDeps, notify: NotifyDeps, limit = 50): Promise<number> {
@@ -68,10 +88,12 @@ export function liveReminderDeps(): ReminderDeps {
 }
 
 export async function handleBookingClock(
-  deps: BookingDeps = liveBookingDeps(),
+  bookingDeps?: BookingDeps,
   reminders?: ReminderDeps,
   extras: BookingClockExtras = {},
 ): Promise<BookingSweepResults> {
+  const live = bookingDeps === undefined;
+  const deps = bookingDeps ?? liveBookingDeps();
   let results: BookingSweepResults;
   try {
     results = await runBookingSweeps(deps);
@@ -121,8 +143,76 @@ export async function handleBookingClock(
     }
   }
 
+  // Studio steps, last, each in its own try: a failure is logged and the next tick runs it again.
+  if (extras.studio) await runStudioSteps(extras.studio);
+
+  // Chụp ngay, last, its own try: a failure is logged, never thrown (the booking sweeps above must not run twice).
+  const instant = extras.instant;
+  if (instant !== undefined || live) await runInstantStep(() => instant ?? liveInstantDeps());
+
   if (reminderError !== null) throw reminderError;
   return results;
+}
+
+/**
+ * The studio steps (#136 Decision 20), each in its own try so one failing query never skips the others:
+ * `studioAssignSweeps` (48 h / 26 h reminders and overdue marks, 20a), `studioChangeSweeps` (expired change
+ * requests, 20b), `studioStartCancels` (a booking still unassigned at its start is cancelled with 100% back,
+ * #136 ruling), `studioMembershipSweeps` (expired invites and requests, and the one-time "invite expiring" notice,
+ * 20c). Notices are sent before their mark; failed ones are logged as errors and retried next tick.
+ */
+export async function runStudioSteps(studio: NonNullable<BookingClockExtras['studio']>): Promise<void> {
+  try {
+    const r = await runAssignDeadlineSweep(studio.bookings, studio.notify);
+    logger.info('bookingClock studioAssignSweeps completed', r);
+    if (r.notifyFailed > 0) {
+      logger.error('bookingClock studioAssignSweeps notices failed; the bookings stay unmarked and are retried', {
+        notifyFailed: r.notifyFailed,
+      });
+    }
+  } catch (e) {
+    logger.error('bookingClock studioAssignSweeps failed', { error: String(e) });
+  }
+  try {
+    const r = await runChangeRequestSweep(studio.bookings);
+    logger.info('bookingClock studioChangeSweeps completed', r);
+  } catch (e) {
+    logger.error('bookingClock studioChangeSweeps failed', { error: String(e) });
+  }
+  try {
+    const r = await runUnassignedStartSweep(studio.bookings);
+    logger.info('bookingClock studioStartCancels completed', r);
+    if (r.failed > 0) logger.error('bookingClock studioStartCancels items failed; retried next tick', { failed: r.failed });
+  } catch (e) {
+    logger.error('bookingClock studioStartCancels failed', { error: String(e) });
+  }
+  try {
+    const { expired, expiring, notifyFailed, failed } = await runMembershipSweeps(studio.members, studio.notify);
+    logger.info('bookingClock studioMembershipSweeps completed', { expired: expired.length, expiring: expiring.length });
+    if (failed > 0) {
+      logger.error('bookingClock studioMembershipSweeps relations failed; retried next tick', { failed });
+    }
+    if (notifyFailed > 0) {
+      logger.error('bookingClock studioMembershipSweeps expiring notices failed; the invites stay unmarked and are retried', {
+        notifyFailed,
+      });
+    }
+  } catch (e) {
+    logger.error('bookingClock studioMembershipSweeps failed', { error: String(e) });
+  }
+}
+
+/** The `instantSweep` step: each failing request is logged with its id and retried next tick. */
+export async function runInstantStep(deps: () => InstantDeps): Promise<void> {
+  try {
+    const { settled, errors } = await runInstantSweep(deps());
+    logger.info('bookingClock instantSweep completed', { settled, failed: errors.length });
+    for (const e of errors) {
+      logger.error('bookingClock instantSweep request failed; retried next tick', { requestId: e.requestId, error: String(e.error) });
+    }
+  } catch (e) {
+    logger.error('bookingClock instantSweep failed', { error: String(e) });
+  }
 }
 
 /** Walks every page of upcoming bookings; each page runs in batches so concurrency stays bounded. */

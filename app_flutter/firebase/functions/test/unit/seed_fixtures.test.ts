@@ -1,9 +1,12 @@
 import { describe, test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import type { Timestamp } from 'firebase-admin/firestore';
 import {
   acceptsOrders,
   addVerdict,
+  assignSweepActionOf,
+  foldNameKey,
   bookingContactUnlocked,
   computeDeposit,
   intensityOf,
@@ -13,6 +16,7 @@ import {
   isTicketCode,
   isVnE164,
   MemoryNotificationStore,
+  parseInstantConfig,
   MemoryPushSender,
   MemoryUserDirectory,
   mentionsPunctual,
@@ -36,12 +40,24 @@ import {
   SEED_CREATED_AT,
   SEED_EVENT_SOON,
   SEED_PASSWORD,
+  SEED_INSTANT_CONFIG,
   SEED_PHOTOGRAPHERS,
   SEED_REGISTRATION_LAN_SOON,
   SEED_REVIEWS,
   SEED_USERS,
+  SEED_STUDIO_ASSIGNED,
+  SEED_STUDIO_UNASSIGNED,
+  SEED_SPOT_CAU_DAT,
+  SEED_SPOT_HOI_AN,
+  SEED_SPOT_HO_TAY,
+  SEED_SPOT_CAU_VANG,
+  SEED_SPOT_MU_CANG_CHAI,
+  SEED_SCHEDULE_AN_HO_TAY,
+  SEED_OFFER_AN_BINH_MINH,
   seedDocuments,
 } from '../../seed/fixtures.js';
+import { bookingFromFirestore } from '../../src/infra/booking_firestore.js';
+import { relationFromFirestore } from '../../src/infra/studio_firestore.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 /** A seeded time: a Date, or a Timestamp when the doc comes from a src/infra mapper. */
@@ -54,6 +70,33 @@ function bookingDoc(id: string): { status: string; timeline: { status: string; a
 }
 
 describe('seed fixtures', () => {
+  test('seed has a valid instant config', () => {
+    const doc = seedDocuments(NOW).find((d) => d.path === 'instant_config/current');
+    assert.ok(doc !== undefined);
+    const cfg = parseInstantConfig(doc.data);
+    assert.equal(cfg.enabled, true);
+    assert.equal(cfg.priceListVersion, 1);
+    assert.equal(cfg.platformFeeBp, 0);
+    assert.equal(cfg.instantArrivedCancelPhotographerPercent, 50);
+    assert.deepEqual(cfg.packages.map((p) => [p.code, p.durationMin, p.photos, p.priceVnd]), [
+      ['p30', 30, 15, 390_000], ['p60', 60, 30, 690_000], ['p120', 120, 60, 1_190_000],
+    ]);
+    assert.deepEqual(cfg.cities.map((c) => c.id), ['hcm', 'hn', 'dn']);
+    assert.equal(cfg.areas.length, 12);
+    assert.equal(SEED_INSTANT_CONFIG.areas[0]?.name, 'Quận 1, TP.HCM');
+  });
+
+  test('instant config areas are the built-in areas of the app (names and centres)', () => {
+    const dart = readFileSync(new URL('../../../../lib/data/location/area.dart', import.meta.url), 'utf8');
+    const list = dart.slice(dart.indexOf('builtInAreas'));
+    const areas = [...list.matchAll(/name:\s*'([^']+)',\s*lat:\s*([\d.]+),\s*lng:\s*([\d.]+)/g)].map((m) => ({
+      name: m[1],
+      lat: Number(m[2]),
+      lng: Number(m[3]),
+    }));
+    assert.deepEqual(SEED_INSTANT_CONFIG.areas, areas);
+  });
+
   test('seed photographers carry acceptingOrders equal to the rule (An true, Bình false)', () => {
     const accepting = (uid: string) =>
       (seedDocuments(NOW).find((d) => d.path === `photographers/${uid}`)?.data as { acceptingOrders?: boolean }).acceptingOrders;
@@ -702,7 +745,8 @@ describe('seed discovery stats (S02)', () => {
 
     const cuc = get(`photographers/${CUC}`);
     assert.ok(cuc);
-    assert.equal(cuc.startingPrice, null);
+    // Cúc's studio package (S26 seed, #136).
+    assert.equal(cuc.startingPrice, 2_500_000);
     const cucStats = cuc.stats as Record<string, unknown>;
     assert.equal(cucStats.completedCount, 0);
     assert.ok(typeof cucStats.nextFreeDate === 'string');
@@ -763,6 +807,183 @@ describe('seed discovery stats (S02)', () => {
     assert.equal(rep.targetId, 'seed-post-an-5');
     assert.equal(rep.targetOwnerId, AN);
     assert.equal(rep.status, 'open');
+  });
+});
+
+
+describe('seed studio (S26, #136)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+
+  test('Cúc is a verified studio with one member, An, active since 30 days', () => {
+    const cuc = get(`photographers/${CUC}`);
+    assert.equal(cuc?.providerType, 'studio');
+    assert.equal(cuc?.verified, true);
+    assert.equal(cuc?.memberCount, 1);
+    assert.equal(cuc?.assignableMembers, 1);
+    const an = get(`photographers/${AN}`);
+    assert.equal(an?.studioId, CUC);
+    assert.equal(millis(an?.studioJoinedAt), NOW.getTime() - 30 * 86_400_000);
+  });
+
+  test('relations: An active, Bình invited (expires in 5 days), Dũng requested', () => {
+    const rels = docs
+      .filter((d) => d.path.startsWith('studio_members/'))
+      .map((d) => relationFromFirestore(d.path.slice('studio_members/'.length), d.data));
+    const of = (uid: string) => rels.find((r) => r?.memberId === uid);
+    assert.equal(rels.length, 3);
+    for (const r of rels) {
+      assert.ok(r);
+      assert.equal(r.studioId, CUC);
+      assert.match(r.id, new RegExp(`^${CUC}_${r.memberId}_\\d+$`));
+      assert.equal(r.expiringNotifiedAt, null);
+    }
+    assert.equal(of(AN)?.status, 'active');
+    assert.equal(of(BINH)?.status, 'invited');
+    assert.equal(Date.parse(of(BINH)?.expiresAt ?? ''), NOW.getTime() + 5 * 86_400_000);
+    assert.equal(of(DUNG)?.status, 'requested');
+    assert.equal(of(DUNG)?.initiatedBy, 'member');
+  });
+
+  test('every seeded photographer carries its nameKey', () => {
+    for (const p of SEED_PHOTOGRAPHERS) {
+      const name = SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? '';
+      assert.equal(get(`photographers/${p.uid}`)?.nameKey, foldNameKey(name), p.uid);
+    }
+  });
+
+  test('studio bookings: assigned to An (An\'s day booked) and unassigned past its deadline', () => {
+    const assigned = bookingFromFirestore(SEED_STUDIO_ASSIGNED, get(`bookings/${SEED_STUDIO_ASSIGNED}`));
+    assert.ok(assigned);
+    assert.equal(assigned.isStudio, true);
+    assert.equal(assigned.assigneeId, AN);
+    assert.equal(assigned.assignStatus, 'assigned');
+    assert.equal(assigned.status, 'accepted');
+    assert.equal(get(`availability/${AN}/days/${assigned.day}`)?.bookingId, SEED_STUDIO_ASSIGNED);
+    assert.equal(get(`availability/${CUC}/days/${assigned.day}`)?.state, 'full', 'its one member is taken');
+
+    const unassigned = bookingFromFirestore(SEED_STUDIO_UNASSIGNED, get(`bookings/${SEED_STUDIO_UNASSIGNED}`));
+    assert.ok(unassigned);
+    assert.equal(unassigned.assignStatus, 'unassigned');
+    assert.equal(unassigned.assigneeId, null);
+    // The first bookingClock after seeding marks it overdue (the customer gains the 100% cancel right).
+    assert.deepEqual(assignSweepActionOf(unassigned, NOW), { kind: 'overdue', notify: true });
+
+    const loads = docs.filter((d) => d.path.startsWith(`studio_day_load/${CUC}_`)).map((d) => d.data);
+    assert.deepEqual(
+      loads.map((l) => [l.day, l.unassignedIds, l.assignedIds]).sort(),
+      [[assigned.day, [], [SEED_STUDIO_ASSIGNED]], [unassigned.day, [SEED_STUDIO_UNASSIGNED], []]].sort(),
+    );
+    // A studio booking never writes the studio's own day as booked or pending.
+    for (const d of docs.filter((x) => x.path.startsWith(`availability/${CUC}/days/`))) assert.equal(d.data.state, 'full');
+  });
+});
+describe('seed photo spots (S29)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data as Record<string, unknown> | undefined;
+
+  test('five spots: Đồi chè Cầu Đất (da-lat, 10–12), Phố cổ Hội An (hoi-an), Hồ Tây (hn), Cầu Vàng (dn), Mù Cang Chải (yen-bai, 9–10), all active', () => {
+    const cauDat = get(`spots/${SEED_SPOT_CAU_DAT}`);
+    assert.ok(cauDat);
+    assert.equal(cauDat.name, 'Đồi chè Cầu Đất');
+    assert.equal(cauDat.areaCode, 'da-lat');
+    assert.deepEqual(cauDat.seasonMonths, [10, 11, 12]);
+    assert.equal(cauDat.status, 'active');
+
+    const hoiAn = get(`spots/${SEED_SPOT_HOI_AN}`);
+    assert.ok(hoiAn);
+    assert.equal(hoiAn.name, 'Phố cổ Hội An');
+    assert.equal(hoiAn.areaCode, 'hoi-an');
+    assert.deepEqual(hoiAn.seasonMonths, []);
+    assert.equal(hoiAn.status, 'active');
+
+    const hoTay = get(`spots/${SEED_SPOT_HO_TAY}`);
+    assert.ok(hoTay);
+    assert.equal(hoTay.name, 'Hồ Tây');
+    assert.equal(hoTay.areaCode, 'hn');
+    assert.deepEqual(hoTay.seasonMonths, []);
+    assert.equal(hoTay.status, 'active');
+    assert.equal(hoTay.pinned, true);
+
+    const cauVang = get(`spots/${SEED_SPOT_CAU_VANG}`);
+    assert.ok(cauVang);
+    assert.equal(cauVang.name, 'Cầu Vàng');
+    assert.equal(cauVang.areaCode, 'dn');
+    assert.deepEqual(cauVang.seasonMonths, []);
+    assert.equal(cauVang.status, 'active');
+
+    const muCangChai = get(`spots/${SEED_SPOT_MU_CANG_CHAI}`);
+    assert.ok(muCangChai);
+    assert.equal(muCangChai.name, 'Mù Cang Chải');
+    assert.equal(muCangChai.areaCode, 'yen-bai');
+    assert.deepEqual(muCangChai.seasonMonths, [9, 10]);
+    assert.equal(muCangChai.status, 'active');
+  });
+
+  test('An has an open schedule at Hồ Tây on the next two Saturdays and Sundays 06:00–11:00 with the offer "Bình minh Hồ Tây 30 phút" 490.000₫ 30/10, and spot availability records on those days', () => {
+    const schedule = get(`spot_schedules/${SEED_SCHEDULE_AN_HO_TAY}`);
+    assert.ok(schedule);
+    assert.equal(schedule.providerId, AN);
+    assert.equal(schedule.spotId, SEED_SPOT_HO_TAY);
+    assert.equal(schedule.status, 'open');
+    assert.deepEqual(schedule.window, { start: '06:00', end: '11:00' });
+    const days = schedule.days as string[];
+    assert.equal(days.length, 4);
+
+    const offer = get(`spot_slot_offers/${SEED_OFFER_AN_BINH_MINH}`);
+    assert.ok(offer);
+    assert.equal(offer.providerId, AN);
+    assert.equal(offer.scheduleId, SEED_SCHEDULE_AN_HO_TAY);
+    assert.equal(offer.spotId, SEED_SPOT_HO_TAY);
+    assert.equal(offer.name, 'Bình minh Hồ Tây 30 phút');
+    assert.equal(offer.price, 490_000);
+    assert.equal(offer.slotMinutes, 30);
+    assert.equal(offer.gapMinutes, 10);
+    assert.equal(offer.status, 'open');
+
+    for (const day of days) {
+      const avail = get(`availability/${AN}/days/${day}`);
+      assert.ok(avail, `availability record on ${day}`);
+      assert.equal(avail.state, 'spot');
+      assert.equal(avail.scheduleId, SEED_SCHEDULE_AN_HO_TAY);
+      assert.equal(avail.spotId, SEED_SPOT_HO_TAY);
+    }
+  });
+
+  test('Bình has an open schedule at Cầu Vàng next Saturday 15:00–18:00 (only when Bình accepts orders in the seed; else the test asserts none)', () => {
+    const binhP = SEED_PHOTOGRAPHERS.find((p) => p.uid === BINH);
+    const binhAccepts = binhP ? acceptsOrders({ verified: binhP.verified, onboardingComplete: true }) : false;
+    const schedule = docs.find((d) => d.path.startsWith('spot_schedules/seed-schedule-binh'));
+    if (binhAccepts) {
+      assert.ok(schedule);
+      assert.equal(schedule.data.providerId, BINH);
+      assert.equal(schedule.data.spotId, SEED_SPOT_CAU_VANG);
+    } else {
+      assert.equal(schedule, undefined);
+    }
+  });
+
+  test('seed-post-an-1 has spotId of Hồ Tây', () => {
+    const post = get('posts/seed-post-an-1');
+    assert.ok(post);
+    assert.equal(post.spotId, SEED_SPOT_HO_TAY);
+  });
+
+  test('no seed spot_days doc contains a booking or customer field', () => {
+    const spotDays = docs.filter((d) => d.path.startsWith('spot_days/'));
+    assert.ok(spotDays.length >= 4);
+    for (const sd of spotDays) {
+      const data = sd.data as Record<string, unknown>;
+      assert.equal(data.customerId, undefined);
+      assert.equal(data.bookingId, undefined);
+      assert.equal(data.customer, undefined);
+      assert.equal(data.booking, undefined);
+      assert.ok(Array.isArray(data.taken));
+      for (const t of data.taken as Record<string, unknown>[]) {
+        assert.equal(t.customerId, undefined);
+        assert.equal(t.bookingId, undefined);
+      }
+    }
   });
 });
 

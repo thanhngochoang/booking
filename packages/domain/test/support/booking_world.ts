@@ -6,11 +6,14 @@ import { FakeBlockGate } from '../../src/fake_block_gate.js';
 import type { BookingDeps, CustomerContactReader, ServiceCatalog, ServiceRecord } from '../../src/booking_ports.js';
 import { acceptsOrders, type OrderEligibilityFields } from '../../src/provider_orders.js';
 import type { Clock, IdGenerator } from '../../src/ports.js';
+import type { ProviderType } from '../../src/provider_type.js';
+import type { StudioBookingDeps } from '../../src/studio_assignment.js';
 import type { Booking } from '../../src/booking.js';
 import type { TransferNotification } from '../../src/booking_ports.js';
 import { createBookingDraft } from '../../src/create_booking.js';
 import { createPayment } from '../../src/create_payment.js';
 import { handleTransferNotification } from '../../src/handle_transfer.js';
+import { transitionBooking } from '../../src/transition_booking.js';
 import { TEST_CIPHER } from './test_cipher.js';
 export { TEST_CIPHER };
 
@@ -24,6 +27,9 @@ export const TEST_PAYER: NonNullable<TransferNotification['payer']> = {
 import type { SettlementDeps } from '../../src/payment_settlement.js';
 import { BookingPaymentSettler } from '../../src/handle_transfer.js';
 import { MemoryPaymentLookup } from '../../src/memory_payment_lookup.js';
+import type { Spot } from '../../src/spot.js';
+import type { SpotSchedule } from '../../src/spot_schedule.js';
+import type { SlotOffer } from '../../src/spot_slots.js';
 
 export class ControllableClock implements Clock {
   constructor(private currentTime: Date = new Date('2026-10-10T10:00:00.000Z')) {}
@@ -68,6 +74,14 @@ export interface BookingWorld {
   readonly services: Map<string, ServiceRecord>;
   readonly providers: Map<string, OrderEligibilityFields>;
   readonly contacts: Map<string, { phone: string; allowZalo?: boolean; allowWhatsApp?: boolean; name?: string }>;
+  /** Provider types (missing = individual); a studio's bookings get the studio fields. */
+  readonly providerTypes: Map<string, ProviderType>;
+  /** Active memberships: member uid → studio uid (the roster and orderProfile.studioId read it). */
+  readonly memberships: Map<string, string>;
+  /** Names for the roster's `person`. */
+  readonly people: Map<string, { name: string; avatarUrl: string | null }>;
+  /** `deps` plus the studio roster (#136). */
+  readonly studioDeps: StudioBookingDeps;
 }
 
 export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.000Z')): BookingWorld {
@@ -118,11 +132,26 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     get: async (id) => contacts.get(id) ?? null,
   };
 
+  const providerTypes = new Map<string, ProviderType>();
+  const memberships = new Map<string, string>();
+  const people = new Map<string, { name: string; avatarUrl: string | null }>();
+  store.memberVerified = (uid) => acceptsOrders(providers.get(uid));
+
   const deps: BookingDeps = {
     store,
     services: serviceCatalog,
     addons,
-    providers: { acceptsOrders: async (id) => acceptsOrders(providers.get(id)) },
+    providers: {
+      acceptsOrders: async (id) => acceptsOrders(providers.get(id)),
+      orderProfile: async (id) =>
+        providers.has(id)
+          ? {
+              acceptsOrders: acceptsOrders(providers.get(id)),
+              providerType: providerTypes.get(id) ?? 'individual',
+              studioId: memberships.get(id) ?? null,
+            }
+          : null,
+    },
     blocks,
     contacts: contactReader,
     gateway,
@@ -140,7 +169,71 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     },
   };
 
-  return { deps, settlement, store, gateway, blocks, addons, clock, ids, services, providers, contacts };
+  const studioDeps: StudioBookingDeps = {
+    ...deps,
+    store,
+    roster: {
+      relationOf: async (studioId, uid) => (memberships.get(uid) === studioId ? 'member' : null),
+      person: async (uid) => people.get(uid) ?? null,
+    },
+  };
+
+  return {
+    deps,
+    settlement,
+    store,
+    gateway,
+    blocks,
+    addons,
+    clock,
+    ids,
+    services,
+    providers,
+    contacts,
+    providerTypes,
+    memberships,
+    people,
+    studioDeps,
+  };
+}
+
+/**
+ * Studio `studioId` (verified, onboarded, package `srv_<studioId>` 1 000 000 VND / 120 min) with active
+ * `members` (verified unless listed in `unverified`), each with their own package `srv_<member>`.
+ */
+export function withStudio(
+  world: BookingWorld,
+  studioId = 's1',
+  members: readonly string[] = ['m1', 'm2', 'm3'],
+  o: { readonly unverified?: readonly string[] } = {},
+): BookingWorld {
+  world.providers.set(studioId, { verified: true, onboardingComplete: true });
+  world.providerTypes.set(studioId, 'studio');
+  world.people.set(studioId, { name: 'Studio Mây', avatarUrl: null });
+  world.services.set(`srv_${studioId}`, {
+    id: `srv_${studioId}`,
+    photographerId: studioId,
+    name: 'Gói Studio',
+    price: 1_000_000,
+    durationMinutes: 120,
+    active: true,
+  });
+  for (const m of members) {
+    const verified = !(o.unverified ?? []).includes(m);
+    world.providers.set(m, { verified, onboardingComplete: true });
+    world.memberships.set(m, studioId);
+    world.people.set(m, { name: `Thợ ${m}`, avatarUrl: null });
+    world.services.set(`srv_${m}`, {
+      id: `srv_${m}`,
+      photographerId: m,
+      name: 'Gói cá nhân',
+      price: 500_000,
+      durationMinutes: 60,
+      active: true,
+    });
+  }
+  world.store.studioMembers.set(studioId, [...members]);
+  return world;
 }
 
 /** Seeds the provider's add-ons (each `providerId` is set to `providerId`). */
@@ -201,3 +294,39 @@ export async function payDraft(world: BookingWorld, bookingId: string, customerI
   await handleTransferNotification(world.deps, transferOf(world, { content: checkout.transferCode, amount: checkout.amount }));
   return { paymentId };
 }
+
+/**
+ * A studio booking of `withStudio`'s studio paid and accepted by the studio (default: c1, 2026-10-15 14:00,
+ * so the assign deadline is 2026-10-14T07:00Z with the clock at 2026-10-10T10:00Z).
+ */
+export async function acceptedStudioBooking(
+  world: BookingWorld,
+  o: { readonly customerId?: string; readonly day?: string; readonly start?: string; readonly studioId?: string } = {},
+): Promise<Booking> {
+  const studioId = o.studioId ?? 's1';
+  const customerId = o.customerId ?? 'c1';
+  const draft = await newDraft(world, {
+    customerId,
+    photographerId: studioId,
+    serviceId: `srv_${studioId}`,
+    ...(o.day ? { day: o.day } : {}),
+    ...(o.start ? { start: o.start } : {}),
+  });
+  await payDraft(world, draft.id, customerId);
+  return transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: studioId });
+}
+export function withSpot(world: BookingWorld, spot: Spot): BookingWorld {
+  world.store.spots.set(spot.id, { ...spot });
+  return world;
+}
+
+export function withSchedule(world: BookingWorld, schedule: SpotSchedule): BookingWorld {
+  world.store.schedules.set(schedule.id, { ...schedule });
+  return world;
+}
+
+export function withOffer(world: BookingWorld, offer: SlotOffer): BookingWorld {
+  world.store.offers.set(offer.id, { ...offer });
+  return world;
+}
+

@@ -73,6 +73,8 @@ class EventDetail {
     this.coverPath,
     this.priceSet = true,
     this.capacitySet = true,
+    this.spotId,
+    this.spotDecided = false,
   });
 
   final EventSummary summary;
@@ -104,6 +106,14 @@ class EventDetail {
   final String? coverPath;
   final bool priceSet;
   final bool capacitySet;
+
+  /// The photo spot the event is tagged with (S29); null = none.
+  final String? spotId;
+
+  /// The organizer made the S12.01 choice: a spot, or "Không thuộc điểm chụp
+  /// nào". False for events made before S29 (the field is missing) and for a
+  /// draft saved before the choice.
+  final bool spotDecided;
 
   String get id => summary.id;
 

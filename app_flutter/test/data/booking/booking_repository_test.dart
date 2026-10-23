@@ -25,6 +25,21 @@ void main() {
     );
   });
 
+  test('bookingErrorOf maps outside_schedule, slot_taken, spot_archived', () {
+    expect(
+      bookingErrorOf(const BookingException('outside_schedule')),
+      BookingErrorCode.outsideSchedule,
+    );
+    expect(
+      bookingErrorOf(const BookingException('slot_taken')),
+      BookingErrorCode.slotTaken,
+    );
+    expect(
+      bookingErrorOf(const BookingException('spot_archived')),
+      BookingErrorCode.spotArchived,
+    );
+  });
+
   group('FakeBookingRepository', () {
     late FakeBookingRepository repo;
 
@@ -48,6 +63,30 @@ void main() {
       final loaded = await repo.getBooking(b.id);
       expect(loaded, isNotNull);
       expect(loaded?.id, b.id);
+    });
+
+    test('createBooking sends spotScheduleId and slotOfferId only when given', () async {
+      await repo.createBooking(
+        photographerId: 'p1',
+        serviceId: 's1',
+        day: '2026-10-20',
+        start: '09:00',
+        place: const BookingPlace(name: 'Hồ Tây'),
+        spotScheduleId: 'sch_1',
+        slotOfferId: 'off_1',
+      );
+      expect(repo.createCalls.last.spotScheduleId, 'sch_1');
+      expect(repo.createCalls.last.slotOfferId, 'off_1');
+
+      await repo.createBooking(
+        photographerId: 'p1',
+        serviceId: 's1',
+        day: '2026-10-20',
+        start: '09:00',
+        place: const BookingPlace(name: 'Hà Nội'),
+      );
+      expect(repo.createCalls.last.spotScheduleId, isNull);
+      expect(repo.createCalls.last.slotOfferId, isNull);
     });
 
     test('deposit payment flow moves draft to requested', () async {
@@ -213,6 +252,32 @@ void main() {
       expect(b?.place.lat, 21.0285);
       expect(b?.place.lng, 105.8542);
       expect(b?.escrowStatus, EscrowStatus.held);
+    });
+
+    test('bookingFromFirestore reads spotId, spotScheduleId, slotOfferId, source', () {
+      final docData = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'day': '2026-10-20',
+        'start': '08:00',
+        'end': '08:30',
+        'place': {'name': 'Hồ Tây'},
+        'status': 'draft',
+        'deposit': 490000,
+        'remaining': 0,
+        'spotId': 'seed-spot-ho-tay',
+        'spotScheduleId': 'seed-schedule-an',
+        'slotOfferId': 'seed-offer-binh-minh',
+        'source': 'spot_slot',
+      };
+      final b = bookingFromFirestore('b_spot', docData);
+      expect(b, isNotNull);
+      expect(b?.spotId, 'seed-spot-ho-tay');
+      expect(b?.spotScheduleId, 'seed-schedule-an');
+      expect(b?.slotOfferId, 'seed-offer-binh-minh');
+      expect(b?.source, 'spot_slot');
     });
 
     test('maps the checkout mirror, or null when absent or malformed', () {

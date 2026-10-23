@@ -47,6 +47,23 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   contact_leak: 422,
   // Delivery error codes (#152)
   not_ready: 422,
+  // Studio membership error codes (#136)
+  membership_conflict: 409,
+  cooldown: 422,
+  member_busy: 409,
+  studio_full: 429,
+  // Spot schedule codes (#194): a state the request cannot enter (409), a refused limit (429), a bad slot (422).
+  outside_schedule: 422,
+  slot_taken: 409,
+  day_conflict: 409,
+  schedule_limit: 429,
+  spot_archived: 422,
+  schedule_has_bookings: 409,
+  // Chụp ngay codes (#140): states the request can no longer enter (409), a point outside the open cities (422).
+  no_match: 409,
+  offer_expired: 409,
+  already_assigned: 409,
+  outside_service_area: 422,
   internal: 500,
 };
 

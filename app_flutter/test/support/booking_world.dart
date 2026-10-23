@@ -40,6 +40,7 @@ import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/skills/skills_server_info.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -68,6 +69,7 @@ import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
 import 'fake_chat_repository.dart';
 import 'fake_review_repository.dart';
+import 'fake_spot_repository.dart';
 import 'screen_host.dart';
 
 final worldBookingToday = DateTime.utc(2026, 10, 3, 10, 0);
@@ -238,6 +240,9 @@ Future<BookingWorldHandles> pumpBookingRoute(
 
   /// Active add-ons of `p1` (S04.01); none by default.
   List<ServiceAddon> addons = const [],
+
+  /// More pages, e.g. a stand-in for S29.02 that opens S29.06.
+  List<RouteBase> extraRoutes = const [],
 }) async {
   final effectiveNow = now ?? worldBookingToday;
   final effectiveBookings = bookings ?? FakeBookingRepository();
@@ -300,6 +305,9 @@ Future<BookingWorldHandles> pumpBookingRoute(
                 state.uri.queryParameters['day'] ??
                 state.uri.queryParameters['date'],
             area: state.uri.queryParameters['area'],
+            scheduleId: state.uri.queryParameters['scheduleId'],
+            slotOfferId: state.uri.queryParameters['offerId'],
+            start: state.uri.queryParameters['start'],
           ),
         ),
       ),
@@ -343,6 +351,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
       ...bookingDetailRoutes(),
       for (final p in ['/home', '/profile/phone', '/bookings'])
         GoRoute(path: p, builder: stub),
+      ...extraRoutes,
     ],
   );
 
@@ -481,6 +490,8 @@ typedef TransitionCall = ({String bookingId, String action, String? reason});
 /// [FakeBookingRepository] that records `transitionBooking` calls and can
 /// hold them in flight with [gate].
 class RecordingBookingRepository extends FakeBookingRepository {
+  RecordingBookingRepository({super.customerId, super.clock});
+
   final transitions = <TransitionCall>[];
 
   /// When set, every transition waits for it before answering.
@@ -548,6 +559,10 @@ Future<BookingDetailHandles> pumpBookingDetail(
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
   List<Override> extraOverrides = const [],
+
+  /// More public profiles by uid (a studio and its member); each also gets
+  /// [photographerChannels].
+  Map<String, PhotographerProfile> profiles = const {},
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
   tester.view.physicalSize = viewSize;
@@ -558,6 +573,9 @@ Future<BookingDetailHandles> pumpBookingDetail(
   final links = FakeContactLinkRepository();
   final photographerContacts = FakePhotographerContactRepository()
     ..seed('p1', channels: photographerChannels);
+  for (final uid in profiles.keys) {
+    photographerContacts.seed(uid, channels: photographerChannels);
+  }
   final userRepo = FakeUserRepository();
   await userRepo.ensureProfile(
     const AuthUser(uid: 'c1', displayName: 'Lan Anh'),
@@ -574,6 +592,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
         '/home',
         '/bookings',
         '/u/:uid/book',
+        '/u/:uid',
         '/chat/:id',
         '/b/:id/review',
       ])
@@ -598,8 +617,11 @@ Future<BookingDetailHandles> pumpBookingDetail(
     calendarTodayProvider.overrideWithValue(effectiveClock.now),
     bookingRepositoryProvider.overrideWithValue(bookings),
     bookingFeaturesProvider.overrideWithValue(features),
-    photographerProfileProvider('p1')
-        .overrideWithValue(const AsyncData(bookingProfile)),
+    if (!profiles.containsKey('p1'))
+      photographerProfileProvider('p1')
+          .overrideWithValue(const AsyncData(bookingProfile)),
+    for (final e in profiles.entries)
+      photographerProfileProvider(e.key).overrideWithValue(AsyncData(e.value)),
     externalLauncherProvider.overrideWithValue(launcher),
     contactLinkRepositoryProvider.overrideWithValue(links),
     photographerContactRepositoryProvider.overrideWithValue(
@@ -691,6 +713,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
 
   /// Other users' public profiles (e.g. the studio that assigned a booking).
   List<AuthUser> otherUsers = const [],
+
+  /// Spot schedules for the S06.01 "Lịch tại điểm · {n} đang mở" line.
+  FakeSpotRepository? spots,
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
   tester.view.physicalSize = viewSize;
@@ -738,6 +763,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
         '/events/mine',
         '/events/new',
         '/events/:id/manage',
+        '/me/spot-schedules',
       ])
         GoRoute(path: p, builder: stub),
     ],
@@ -768,6 +794,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
       ),
     ),
     photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
+    spotRepositoryProvider.overrideWithValue(spots ?? FakeSpotRepository()),
     ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];

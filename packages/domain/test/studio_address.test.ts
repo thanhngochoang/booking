@@ -15,6 +15,7 @@ function profile(over: Partial<ProviderProfile> = {}): ProviderProfile {
     artistSince: null,
     studioDistrict: null,
     studioCity: null,
+    memberCount: 0,
     ...over,
   };
 }

@@ -7,6 +7,8 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
+import 'package:photobooking/features/studio/studio_common.dart'
+    show studioDeadlineText;
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// "#A1F3": the last 4 characters of the booking id, upper-cased.
@@ -30,6 +32,17 @@ enum DetailAction {
   bookAgain,
   review,
   viewReview,
+
+  /// The studio names or changes who shoots (S26.04).
+  assign,
+
+  /// "Huỷ và hoàn 100%": the customer's cancel after a studio fault
+  /// (Decision 12); replaces [cancel] while the right lasts.
+  cancelStudioFault,
+
+  /// "Trả việc": the assignee hands the job back before the start
+  /// (Decision 14), once.
+  returnJob,
 }
 
 bool _isActive(BookingStatus s) =>
@@ -55,12 +68,20 @@ List<DetailAction> detailActions(
   Booking b,
   BookingRole role,
   DateTime now,
-  BookingFeatures features,
-) {
+  BookingFeatures features, {
+  bool assignee = false,
+}) {
   final s = b.status;
   if (s == BookingStatus.draft) return const [];
 
   final beforeStart = now.isBefore(startsAtOf(b));
+  // A studio booking cannot be moved (the reschedule callable refuses it).
+  // A spot booking keeps its interval of the schedule (#194 Decision 16).
+  final canReschedule =
+      features.reschedule &&
+      beforeStart &&
+      b.studio == null &&
+      b.spotScheduleId == null;
   final out = <DetailAction>[];
 
   if (features.chat && b.chatId != null) out.add(DetailAction.message);
@@ -74,14 +95,18 @@ List<DetailAction> detailActions(
         s == BookingStatus.approved) {
       out.add(DetailAction.contact);
     }
-    if (_isActive(s) && features.reschedule && beforeStart) {
+    if (_isActive(s) && canReschedule) {
       out.add(DetailAction.reschedule);
     }
     if (_isActive(s) && _inDirectionsWindow(b, now)) {
       out.add(DetailAction.directions);
     }
     if ((s == BookingStatus.requested || _isActive(s)) && beforeStart) {
-      out.add(DetailAction.cancel);
+      out.add(
+        studioFaultOf(b, now) == null
+            ? DetailAction.cancel
+            : DetailAction.cancelStudioFault,
+      );
     }
     if (s == BookingStatus.delivered ||
         s == BookingStatus.revisionRequested ||
@@ -89,11 +114,33 @@ List<DetailAction> detailActions(
       out.add(DetailAction.viewDelivery);
     }
     if (_isStopped(s)) out.add(DetailAction.bookAgain);
-    if (BookingRules.canReview(b) && features.review) {
+    // A studio booking is reviewed with who shot it: none, no review.
+    if (BookingRules.canReview(b) &&
+        features.review &&
+        (b.studio == null || b.studio!.assigneeId != null)) {
       out.add(DetailAction.review);
     }
     if (BookingRules.isReviewed(b) && features.review) {
       out.add(DetailAction.viewReview);
+    }
+    return out;
+  }
+
+  // The member a studio assigned (Decisions 14, 15, 17): messages, the
+  // customer's contact, "Đã chụp" and, before the start, "Trả việc" (as on
+  // S06.01); the studio answers, moves, cancels and delivers (no S06.07
+  // entry).
+  if (assignee) {
+    if (_isActive(s) || s == BookingStatus.shot) out.add(DetailAction.contact);
+    if (_isActive(s) && BookingRules.canPhotographerComplete(b, now)) {
+      out.add(DetailAction.markShot);
+    }
+    // A studio's spot booking keeps the schedule's member (#194 Decision 7).
+    if (_isActive(s) &&
+        beforeStart &&
+        !(b.studio?.isReturned ?? false) &&
+        b.spotScheduleId == null) {
+      out.add(DetailAction.returnJob);
     }
     return out;
   }
@@ -110,7 +157,10 @@ List<DetailAction> detailActions(
   }
   if (_isActive(s)) {
     out.add(DetailAction.contact);
-    if (features.reschedule && beforeStart) out.add(DetailAction.reschedule);
+    if (canReschedule) out.add(DetailAction.reschedule);
+    if (b.studio != null && b.spotScheduleId == null && beforeStart) {
+      out.add(DetailAction.assign);
+    }
     if (BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
     }
@@ -135,6 +185,27 @@ List<DetailAction> detailActions(
   }
   return out;
 }
+
+/// Which of [actions] S05.02 draws as its gradient (primary) button; the
+/// screen keeps one. "Xem ảnh bàn giao" is primary until the delivery is
+/// approved or a review is due; a customer's "Nhắn studio" is primary only
+/// when none of these is on screen.
+Set<DetailAction> primaryActions(Booking b, List<DetailAction> actions) => {
+  for (final a in actions)
+    if (switch (a) {
+      DetailAction.accept ||
+      DetailAction.complete ||
+      DetailAction.markShot ||
+      DetailAction.deliver ||
+      DetailAction.bookAgain ||
+      DetailAction.review => true,
+      DetailAction.viewDelivery =>
+        b.status != BookingStatus.approved &&
+            !actions.contains(DetailAction.review),
+      _ => false,
+    })
+      a,
+};
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -171,6 +242,8 @@ List<TimelineStep> timelineSteps(
   DateTime now,
   AppLocalizations l, {
   required String photographerName,
+  bool studioRows = false,
+  String assigneeName = '',
 }) {
   const done = TimelineStepState.done;
   const current = TimelineStepState.current;
@@ -249,14 +322,45 @@ List<TimelineStep> timelineSteps(
     subtitle: st == done && b.completedAt != null
         ? _when(b.completedAt!, now, l)
         : (st == current && s == BookingStatus.approved
-            ? l.timelineCheck
-            : (b.remaining > 0
-                ? l.timelinePayAtShoot(formatMoney(b.remaining))
-                : null)),
+              ? l.timelineCheck
+              : (b.remaining > 0
+                    ? l.timelinePayAtShoot(formatMoney(b.remaining))
+                    : null)),
     state: st,
   );
   TimelineStep step7(TimelineStepState st) =>
       TimelineStep(title: l.timelineReview, state: st);
+
+  // A studio booking, for the customer (mock S05.02-studio): who shoots, or
+  // the wait for it after the studio confirmed; overdue once the deadline
+  // passed unassigned.
+  final studio = studioRows ? b.studio : null;
+  List<TimelineStep> assignStep() {
+    if (studio == null) return const [];
+    if (studio.assignStatus == StudioAssignStatus.assigned) {
+      return [
+        TimelineStep(
+          title: l.timelineAssigned,
+          subtitle: assigneeName.isEmpty
+              ? null
+              : l.timelineAssignedBody(assigneeName),
+          state: done,
+        ),
+      ];
+    }
+    final overdue = !now.isBefore(studio.assignDeadline);
+    return [
+      TimelineStep(
+        title: l.timelineAwaitAssign,
+        subtitle: overdue
+            ? l.timelineAwaitAssignBody(
+                studioDeadlineText(studio.assignDeadline),
+              )
+            : null,
+        state: current,
+      ),
+    ];
+  }
 
   if (_isStopped(s)) {
     final reachedUpcoming = _eventAt(events, BookingStatus.upcoming) != null;
@@ -297,11 +401,14 @@ List<TimelineStep> timelineSteps(
       final TimelineStepState st4 = started
           ? done
           : (s == BookingStatus.upcoming ? current : upcoming);
+      final waitingForAssign =
+          studio != null && studio.assignStatus != StudioAssignStatus.assigned;
       return [
         step1,
         step2(done),
         step3(done),
-        step4(st4),
+        ...assignStep(),
+        step4(waitingForAssign && st4 == current ? upcoming : st4),
         step5(started ? current : upcoming),
         stepDelivery(upcoming),
         step6(upcoming),
@@ -314,6 +421,7 @@ List<TimelineStep> timelineSteps(
         step1,
         step2(done),
         step3(done),
+        ...assignStep(),
         step4(done),
         step5(done),
         stepDelivery(current),
@@ -325,6 +433,7 @@ List<TimelineStep> timelineSteps(
         step1,
         step2(done),
         step3(done),
+        ...assignStep(),
         step4(done),
         step5(done),
         stepDelivery(done),
@@ -338,6 +447,7 @@ List<TimelineStep> timelineSteps(
         step1,
         step2(done),
         step3(done),
+        ...assignStep(),
         step4(done),
         step5(done),
         stepDelivery(done),
@@ -376,6 +486,8 @@ class WorkDashboard {
     required this.heldVnd,
     required this.upcomingCount,
     this.toDeliver = const [],
+    this.studioJobs = const [],
+    this.assignedJobs = const [],
   });
 
   /// accepted/upcoming on today's Vietnamese date, earliest start.
@@ -391,9 +503,22 @@ class WorkDashboard {
   /// Bookings waiting for delivery actions (shot, revisionRequested, or delivered with pending extra round).
   final List<Booking> toDeliver;
 
+  /// A studio's own accepted bookings before their start, earliest first,
+  /// except today's (S06.01-studio: "Giao thợ", deadline, change request).
+  final List<Booking> studioJobs;
+
+  /// Accepted bookings a studio gave this photographer, before their start,
+  /// earliest first, except today's (S06.01-member: "Trả việc").
+  final List<Booking> assignedJobs;
+
   /// No shoot today, no requests, nothing to deliver and nothing upcoming.
   bool get isEmpty =>
-      today == null && requests.isEmpty && toDeliver.isEmpty && upcomingCount == 0;
+      today == null &&
+      requests.isEmpty &&
+      toDeliver.isEmpty &&
+      studioJobs.isEmpty &&
+      assignedJobs.isEmpty &&
+      upcomingCount == 0;
 }
 
 const _heldEscrow = {
@@ -469,13 +594,27 @@ WorkDashboard workDashboard(
     }
   }
 
+  final today = todays.isEmpty ? null : todays.first;
+  List<Booking> ahead(bool Function(Booking) where) => [
+    for (final b in active)
+      if (b.studio != null &&
+          b.id != today?.id &&
+          now.isBefore(startsAtOf(b)) &&
+          where(b))
+        b,
+  ]..sort((a, b) => startsAtOf(a).compareTo(startsAtOf(b)));
+
   return WorkDashboard(
-    today: todays.isEmpty ? null : todays.first,
+    today: today,
     requests: requests,
     monthRevenueVnd: month,
     heldVnd: held,
     upcomingCount: active.length,
     toDeliver: toDeliver,
+    studioJobs: ahead((b) => b.photographerId == uid),
+    assignedJobs: ahead(
+      (b) => b.photographerId != uid && b.studio!.assigneeId == uid,
+    ),
   );
 }
 
@@ -494,8 +633,15 @@ BookingRole? roleIn(Booking b, String? uid) {
   if (uid == null) return null;
   if (b.customerId == uid) return BookingRole.customer;
   if (b.photographerId == uid) return BookingRole.photographer;
+  // The member a studio assigned works on the studio's side (Decision 16).
+  if (isAssigneeOf(b, uid)) return BookingRole.photographer;
   return null;
 }
+
+/// True when [uid] shoots [b] for the studio that was booked (not the
+/// studio itself).
+bool isAssigneeOf(Booking b, String? uid) =>
+    uid != null && b.photographerId != uid && b.studio?.assigneeId == uid;
 
 /// [BookingCard] data with the day as the mock writes it ("T2 12/10").
 /// [name] is the other party: the photographer for the customer and the
@@ -525,3 +671,87 @@ Uri directionsUri(Booking b) => Uri.https('www.google.com', '/maps/search/', {
   'api': '1',
   'query': b.place.name,
 });
+
+/// Mirror of the domain's `studioFaultOf` (Decision 12): why the customer
+/// may cancel [b] with a full refund at [now], or null. Set by the server
+/// (`studioFault`), or the deadline passed with nobody assigned (even before
+/// the sweep marked it); only before the start.
+StudioFaultKind? studioFaultOf(Booking b, DateTime now) {
+  final s = b.studio;
+  if (s == null || !now.isBefore(startsAtOf(b))) return null;
+  if (s.studioFault case final f?) return f.kind;
+  if (s.assignStatus != StudioAssignStatus.assigned &&
+      !now.isBefore(s.assignDeadline)) {
+    return StudioFaultKind.assignOverdue;
+  }
+  return null;
+}
+
+/// What S05.02's "Thợ chụp cho bạn" shows the customer (mock
+/// `#S05.02-studio`, `-late`, `-change`).
+enum StudioBlockState {
+  /// Nobody yet, the deadline still ahead: "Studio sẽ báo thợ chụp trước …".
+  waiting,
+
+  /// The member card with "Xin đổi thợ (1 lần)" while it can be used.
+  assigned,
+
+  /// The card with "Đã xin đổi · chờ studio" (disabled).
+  changePending,
+
+  /// Nobody past the deadline: "Quá hạn", the warning and the 100% cancel.
+  /// Once the shoot has started the right is gone: the warning keeps its
+  /// title only, without the refund line or the cancel.
+  overdue,
+
+  /// The card, then the studio's refusal and the 100% cancel.
+  changeDeclined,
+
+  /// The card, then "Studio chưa trả lời …" and the 100% cancel.
+  changeExpired,
+
+  /// The new member's card, then "Studio đã đổi thợ khi còn dưới 24 giờ".
+  lateReassign,
+}
+
+/// The state of [b]'s studio block at [now]; null for an individual
+/// booking. The fault states follow [studioFaultOf], so they end at the
+/// start (the card stays).
+StudioBlockState? studioBlockStateOf(Booking b, DateTime now) {
+  final s = b.studio;
+  if (s == null) return null;
+  final fault = studioFaultOf(b, now);
+  if (s.assignStatus != StudioAssignStatus.assigned) {
+    return !now.isBefore(s.assignDeadline)
+        ? StudioBlockState.overdue
+        : StudioBlockState.waiting;
+  }
+  switch (fault) {
+    case StudioFaultKind.changeDeclined:
+      return StudioBlockState.changeDeclined;
+    case StudioFaultKind.changeExpired:
+      return StudioBlockState.changeExpired;
+    case StudioFaultKind.lateReassign:
+      return StudioBlockState.lateReassign;
+    case StudioFaultKind.assignOverdue:
+    case null:
+      break;
+  }
+  return s.changeRequest?.status == ChangeRequestStatus.pending
+      ? StudioBlockState.changePending
+      : StudioBlockState.assigned;
+}
+
+/// Whether the customer may still ask once to change who shoots [b]
+/// (Decision 13): assigned, confirmed, before the start, not asked yet. Never
+/// for a spot booking, whose member is the schedule's (#194 Decision 7).
+bool canRequestAssigneeChange(Booking b, DateTime now) {
+  final s = b.studio;
+  return s != null &&
+      b.spotScheduleId == null &&
+      s.assignStatus == StudioAssignStatus.assigned &&
+      s.assigneeId != null &&
+      _isActive(b.status) &&
+      now.isBefore(startsAtOf(b)) &&
+      s.changeRequest == null;
+}

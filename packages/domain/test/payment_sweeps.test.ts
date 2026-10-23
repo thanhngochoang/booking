@@ -5,7 +5,7 @@ import { createPayment } from '../src/create_payment.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { runPaymentSweeps } from '../src/payment_sweeps.js';
 import { verifyPaymentLedgerInvariant, type Payment, type Refund } from '../src/escrow.js';
-import type { BookingTx } from '../src/booking_ports.js';
+import type { StudioBookingTx } from '../src/booking_ports.js';
 
 const PRICE = 1_000_000;
 
@@ -232,7 +232,7 @@ describe('runPaymentSweeps', () => {
     const store = world.store;
     const original = store.runTransaction.bind(store);
     let calls = 0;
-    store.runTransaction = async <T>(fn: (tx: BookingTx) => Promise<T>): Promise<T> => {
+    store.runTransaction = async <T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> => {
       calls += 1;
       if (calls === 1) throw new Error('simulated store outage');
       return original(fn);

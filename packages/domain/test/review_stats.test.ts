@@ -198,3 +198,44 @@ describe('countReview', () => {
     assert.equal(mentionsPunctual('trễ giờ'), false);
   });
 });
+
+describe('countReview per document (studio booking)', () => {
+  const mk = (id: string, subjectType: 'photographer' | 'studio', subjectId: string, verdict: Verdict): Review => ({
+    id,
+    bookingId: 'book1',
+    subjectType,
+    subjectId,
+    photographerId: subjectId,
+    customerId: 'cust1',
+    serviceId: 'pkg1',
+    serviceName: 'Gói',
+    bookingDay: '2026-10-10',
+    verdict,
+    hits: 10,
+    intensity: intensityOf(10),
+    reasons: [],
+    text: 'Nhận xét đủ dài rồi',
+    photoPostId: null,
+    createdAt: new Date('2026-10-10T12:00:00Z'),
+    countedAt: null,
+  });
+
+  it('counts reviews/{id}_studio into the studio and reviews/{id} into the member, once each', async () => {
+    const store = new MemoryStatsStore();
+    store.reviews.set('book1', mk('book1', 'photographer', 'member1', 'brick'));
+    store.reviews.set('book1_studio', mk('book1_studio', 'studio', 'studio1', 'tomato'));
+    const at = new Date('2026-10-10T13:00:00Z');
+
+    assert.equal(await countReview(store, 'book1', at), 'counted');
+    assert.equal(await countReview(store, 'book1_studio', at), 'counted');
+    assert.equal(await countReview(store, 'book1', at), 'already');
+    assert.equal(await countReview(store, 'book1_studio', at), 'already');
+
+    assert.equal(store.stats.get('member1')?.brickCount, 1);
+    assert.equal(store.stats.get('member1')?.tomatoCount, 0);
+    assert.equal(store.stats.get('studio1')?.tomatoCount, 1);
+    assert.equal(store.stats.get('studio1')?.brickCount, 0);
+    assert.equal(store.stats.get('studio1')?.tomatoPct, 100);
+  });
+});
+

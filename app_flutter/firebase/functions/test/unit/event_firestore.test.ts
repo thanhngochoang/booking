@@ -37,6 +37,8 @@ const event = (over: Partial<EventRecord> = {}): EventRecord => ({
   hashtag: 'PhotoWalk1012',
   hashtagKey: 'photowalk1012',
   hashtagLocked: false,
+  spotId: 'spot-ho-guom',
+  spotDecided: true,
   status: 'draft',
   registeredCount: 0,
   heldCount: 0,
@@ -102,6 +104,22 @@ describe('Firestore mapping for events', () => {
     const e = event({ startAt: null, endAt: null, dayKey: null, location: null, capacity: null, price: null,
       registrationDeadline: null, coverUrl: null, coverPath: null });
     assert.deepEqual(eventFromFirestore('ev1', eventToFirestore(e)), e);
+  });
+
+  it('an event without spotId reads null', () => {
+    const doc = eventToFirestore(event());
+    delete doc.spotId;
+    delete doc.spotDecided;
+    const back = eventFromFirestore('ev1', doc);
+    assert.equal(back.spotId, null);
+    assert.equal(back.spotDecided, false);
+  });
+
+  it('a decided "none" round-trips as decided with spotId null', () => {
+    const e = event({ spotId: null, spotDecided: true });
+    const back = eventFromFirestore('ev1', eventToFirestore(e));
+    assert.equal(back.spotId, null);
+    assert.equal(back.spotDecided, true);
   });
 
   it('soonNoticeAt round-trips; absent reads null', () => {
@@ -212,5 +230,23 @@ describe('Firestore mapping for events', () => {
       collectionGroup: () => ({ where: () => ({ limit: () => ({ get: async () => ({ docs: [] }) }) }) }),
     };
     assert.equal(await firestoreRegistrationReader(firestore as never).get('nope'), null);
+  });
+
+  it('event adapter maps state spot to spot, not off', async () => {
+    const firestore = {
+      runTransaction: async (fn: (fTx: unknown) => Promise<unknown>) => {
+        const fTx = {
+          get: async () => ({ data: () => ({ state: 'spot' }) }),
+        };
+        return fn(fTx);
+      },
+      doc: () => ({}),
+      collection: () => ({}),
+    };
+    const store = new FirestoreEventStore(firestore as never);
+    const rec = await store.runTransaction(async (tx) => {
+      return (await tx.availability('ph1', '2026-10-18')) as { state: string };
+    });
+    assert.equal(rec.state, 'spot');
   });
 });

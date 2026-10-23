@@ -32,6 +32,9 @@ class PhotographerSummary {
     this.studioDistrict,
     this.hiddenFromDiscovery = false,
     this.deletionPending = false,
+    this.studioId,
+    this.memberCount = 0,
+    this.assignableMembers,
   });
 
   final String id;
@@ -97,6 +100,25 @@ class PhotographerSummary {
 
   /// True while account deletion is pending (30-day restore window, #205).
   final bool deletionPending;
+
+  /// The studio this photographer is an active member of (public,
+  /// server-written; #136 Decision 2); null when independent.
+  final String? studioId;
+
+  /// A studio's active members (server-written); 0 for everyone else.
+  final int memberCount;
+
+  /// A studio's members it can assign today (verified, not being deleted);
+  /// null when the server has not written it yet, and always null for
+  /// non-studios.
+  final int? assignableMembers;
+
+  /// A studio nobody can shoot for: every day of it is full (S04.02) and it
+  /// has no next free day. Without [assignableMembers] the member count
+  /// decides.
+  bool get hasNoAssignableMembers =>
+      providerType == ProviderType.studio &&
+      (assignableMembers ?? memberCount) == 0;
 
   bool get hasReviews => reviewCount > 0;
   bool get hasTomatoPct => reviewCount >= kTomatoPctMinReviews;

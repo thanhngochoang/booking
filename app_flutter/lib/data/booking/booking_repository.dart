@@ -33,6 +33,9 @@ enum BookingErrorCode {
   addonChanged,
   addonNotApplicable,
   pickupRequired,
+  outsideSchedule,
+  slotTaken,
+  spotArchived,
   network,
   unknown,
 }
@@ -99,6 +102,12 @@ BookingErrorCode _codeToBookingError(String code) {
       return BookingErrorCode.addonNotApplicable;
     case 'pickup_required':
       return BookingErrorCode.pickupRequired;
+    case 'outside_schedule':
+      return BookingErrorCode.outsideSchedule;
+    case 'slot_taken':
+      return BookingErrorCode.slotTaken;
+    case 'spot_archived':
+      return BookingErrorCode.spotArchived;
     case 'unavailable':
     case 'deadline-exceeded':
     case 'network':
@@ -123,10 +132,15 @@ enum BookingAction {
   decline,
   cancel,
   complete,
-  markShot;
+  markShot,
+
+  /// The customer cancels a studio booking with a 100% refund because the
+  /// studio broke its assignee promise (#136 Decision 12).
+  cancelStudioFault;
 
   String get code => switch (this) {
     markShot => 'mark_shot',
+    cancelStudioFault => 'cancel_studio_fault',
     _ => name,
   };
 }
@@ -168,6 +182,8 @@ abstract class BookingRepository {
     List<AddonPick> addons = const [],
     BookingPlace? pickup,
     int? expectedTotal,
+    String? spotScheduleId,
+    String? slotOfferId,
   });
 
   /// Starts (or restarts, "Tạo QR mới") the payment of a draft booking. The
@@ -202,4 +218,20 @@ abstract class BookingRepository {
     required String bookingId,
     required String reason,
   });
+
+  // ── Studio bookings (#136); refusals throw [BookingException] with the
+  // server code (`day_taken`, `not_accepting_orders`, `conflict`, ...). ──
+
+  /// The studio names (or changes) who shoots (`assignBooking`, S26.04).
+  Future<Booking> assign(String bookingId, String assigneeId);
+
+  /// The customer's one request to change the assignee
+  /// (`requestAssigneeChange`, S26.05).
+  Future<Booking> requestChange(String bookingId, {String? note});
+
+  /// The studio keeps the assignee and says why (`declineAssigneeChange`).
+  Future<Booking> declineChange(String bookingId, String reason);
+
+  /// The assignee hands the job back to the studio (`returnAssignment`).
+  Future<Booking> returnAssignment(String bookingId, {String? reason});
 }

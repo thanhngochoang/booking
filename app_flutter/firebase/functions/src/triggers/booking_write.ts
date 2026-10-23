@@ -1,6 +1,7 @@
 import {
   evaluateUserBadges,
   notifyBookingChange,
+  notifyStudioBookingChange,
   syncBookingChat,
   refreshCompletedCount,
   deliveryNotices,
@@ -12,6 +13,7 @@ import {
   type ChatDeps,
   type NotifyDeps,
   type DiscoveryDeps,
+  type Booking,
 } from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { bookingFromFirestore } from '../infra/booking_firestore.js';
@@ -24,7 +26,12 @@ export async function handleBookingWrite(
   },
   deps: ChatDeps,
   updateChatId?: (bookingId: string, chatId: string) => Promise<void>,
-  extras?: { notify: NotifyDeps; badges: BadgeDeps },
+  extras?: {
+    notify: NotifyDeps;
+    badges: BadgeDeps;
+    /** #136 Decision 26: recompute a studio's derived `full` day after a studio booking change. */
+    studioDays?: (studioId: string, day: string) => Promise<unknown>;
+  },
   discovery?: DiscoveryDeps,
 ): Promise<{ chatId: string | null; setBookingChatId: boolean }> {
   const before = event.before ? bookingFromFirestore(event.id, event.before) : null;
@@ -40,8 +47,17 @@ export async function handleBookingWrite(
   }
 
   if (extras) {
+    // The studio's derived day first, so a failing notice never leaves a freed or taken day unrecomputed (#136
+    // Decision 26); the retry of the event recomputes again, which is idempotent.
+    if (extras.studioDays) {
+      for (const key of studioDaysOf(before, after)) {
+        await extras.studioDays(key.studioId, key.day);
+      }
+    }
     // Idempotent (deterministic notification ids, badge evaluation), so a retry of the event is safe.
     await notifyBookingChange(extras.notify, before, after);
+    // Assigned, reassigned, change requested or answered, job returned (#136 Decision 23; #138's hooks).
+    await notifyStudioBookingChange(extras.notify, before, after);
 
     if (after) {
       const dNotices = deliveryNotices(before, after);
@@ -97,4 +113,25 @@ export async function handleBookingWrite(
   }
 
   return result;
+}
+
+/**
+ * The studio days a booking write can change: the studio's day before and after (one when the day did not move),
+ * when the booking appeared or went, or its status, day or assignee changed (other writes leave the load alone).
+ */
+export function studioDaysOf(before: Booking | null, after: Booking | null): { studioId: string; day: string }[] {
+  if (
+    before !== null &&
+    after !== null &&
+    before.status === after.status &&
+    before.day === after.day &&
+    (before.assigneeId ?? null) === (after.assigneeId ?? null)
+  ) {
+    return [];
+  }
+  const keys = new Map<string, { studioId: string; day: string }>();
+  for (const b of [before, after]) {
+    if (b?.isStudio === true) keys.set(`${b.photographerId}_${b.day}`, { studioId: b.photographerId, day: b.day });
+  }
+  return [...keys.values()];
 }

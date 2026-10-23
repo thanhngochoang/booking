@@ -162,16 +162,24 @@ export async function notifyQuoteNotSelected(
 
 // ── #140 Chụp ngay ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * A request can be assigned again after a photographer cancels, so the per-job notices carry the
+ * assignment (its `assignedAt` in ms) in their dedupe key: a replay of the same event still dedupes,
+ * the next photographer's job gets its own rows. Absent → the request alone (older callers).
+ */
+const perAssignment = (base: string, assignment: string | undefined): string =>
+  assignment === undefined ? base : `${base}_${assignment}`;
+
 export async function notifyInstantAssigned(
   deps: NotifyDeps,
-  e: { customerId: string; requestId: string; photographerId: string; etaMinutes: number },
+  e: { customerId: string; requestId: string; photographerId: string; etaMinutes: number; assignment?: string },
 ): Promise<NotifyResult> {
   const p = await actorOf(deps, e.photographerId, PHOTOGRAPHER);
   return notify(deps, {
     userId: e.customerId,
     content: { type: 'instant_assigned', photographer: p.name, etaMinutes: e.etaMinutes },
     target: `/instant/${e.requestId}`,
-    dedupeKey: `instant_assigned_${e.requestId}`,
+    dedupeKey: perAssignment(`instant_assigned_${e.requestId}`, e.assignment),
     ...from(p),
   });
 }
@@ -208,34 +216,34 @@ export async function notifyInstantNoMatch(
     userId: e.customerId,
     content: { type: 'instant_no_match', amount: e.amount },
     target: `/instant/${e.requestId}`,
-    dedupeKey: `instant_no_match_${e.requestId}`,
+    dedupeKey: `instant_no_match_${e.requestId}_${e.round}`,
   });
 }
 
 export async function notifyInstantArrived(
   deps: NotifyDeps,
-  e: { customerId: string; requestId: string; photographerId: string; place: string },
+  e: { customerId: string; requestId: string; photographerId: string; place: string; assignment?: string },
 ): Promise<NotifyResult> {
   const p = await actorOf(deps, e.photographerId, PHOTOGRAPHER);
   return notify(deps, {
     userId: e.customerId,
     content: { type: 'instant_arrived', photographer: p.name, place: e.place },
     target: `/instant/${e.requestId}`,
-    dedupeKey: `instant_arrived_${e.requestId}`,
+    dedupeKey: perAssignment(`instant_arrived_${e.requestId}`, e.assignment),
     ...from(p),
   });
 }
 
 export async function notifyInstantFinished(
   deps: NotifyDeps,
-  e: { customerId: string; requestId: string; photographerId: string },
+  e: { customerId: string; requestId: string; photographerId: string; assignment?: string },
 ): Promise<NotifyResult> {
   const p = await actorOf(deps, e.photographerId, PHOTOGRAPHER);
   return notify(deps, {
     userId: e.customerId,
     content: { type: 'instant_finished', photographer: p.name },
     target: `/instant/${e.requestId}`,
-    dedupeKey: `instant_finished_${e.requestId}`,
+    dedupeKey: perAssignment(`instant_finished_${e.requestId}`, e.assignment),
     ...from(p),
   });
 }
@@ -243,7 +251,7 @@ export async function notifyInstantFinished(
 /** To the party that did not cancel: the photographer (with the travel fee) or the customer. */
 export async function notifyInstantCancelled(
   deps: NotifyDeps,
-  e: { requestId: string; by: 'customer' | 'photographer'; customerId: string; photographerId: string; feeVnd: number },
+  e: { requestId: string; by: 'customer' | 'photographer'; customerId: string; photographerId: string; feeVnd: number; assignment?: string },
 ): Promise<NotifyResult> {
   const toPhotographer = e.by === 'customer';
   const other = toPhotographer
@@ -253,7 +261,7 @@ export async function notifyInstantCancelled(
     userId: toPhotographer ? e.photographerId : e.customerId,
     content: { type: 'instant_cancelled', to: toPhotographer ? 'photographer' : 'customer', name: other.name, feeVnd: e.feeVnd },
     target: toPhotographer ? `/work/instant/${e.requestId}` : `/instant/${e.requestId}`,
-    dedupeKey: `instant_cancelled_${e.requestId}_${e.by}`,
+    dedupeKey: perAssignment(`instant_cancelled_${e.requestId}_${e.by}`, e.assignment),
     ...from(other),
   });
 }

@@ -1,4 +1,5 @@
-// S05.03: cancel a booking (customer) and its photographer variant.
+// S05.03: cancel a booking (customer), its photographer variant and the
+// customer's 100% cancel after a studio fault.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
@@ -52,6 +53,67 @@ Future<bool?> showCancelSheet(
         bookingId: booking.id,
         action: BookingAction.cancel.code,
         reason: reason.value,
+      ),
+    ),
+  );
+}
+
+/// The `studioFault` mode of S05.03 (mock S05.02-studio-late): the customer
+/// cancels a studio booking the studio let down (Decision 12) and gets back
+/// everything paid — one highlighted line "Hoàn 100% số đã trả", the
+/// amount, a red "Huỷ và hoàn 100%" and "Giữ lịch". The server decides the
+/// right again (`cancel_studio_fault`) and refunds from the held money.
+/// Returns true after the server accepted the cancel.
+Future<bool?> showStudioFaultCancelSheet(
+  BuildContext context, {
+  required Booking booking,
+}) {
+  final l10n = context.l10n;
+  final repo = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(bookingRepositoryProvider);
+  return showConfirmSheet(
+    context,
+    title: l10n.cancelStudioFaultTitle,
+    body: l10n.cancelStudioFaultBody,
+    content: ScreenCode(
+      ScreenCodes.cancelBooking,
+      child: Column(
+        key: const Key('studio-fault-cancel'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PolicyTable(
+            rows: [
+              PolicyRow(
+                when: l10n.cancelStudioFaultLine,
+                outcome: l10n.cancelRefund100,
+              ),
+            ],
+            activeIndex: 0,
+          ),
+          const SizedBox(height: AppSpace.s3),
+          MoneyBreakdown(
+            lines: [
+              MoneyLine(
+                label: l10n.cancelYouGetBack,
+                vnd: booking.deposit,
+                style: MoneyLineStyle.strong,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+    confirmLabel: l10n.cancelStudioFaultConfirm,
+    keepLabel: l10n.cancelStudioFaultKeep,
+    danger: true,
+    onConfirm: () => withBookingErrorText(
+      l10n,
+      () => repo.transitionBooking(
+        bookingId: booking.id,
+        action: BookingAction.cancelStudioFault.code,
       ),
     ),
   );

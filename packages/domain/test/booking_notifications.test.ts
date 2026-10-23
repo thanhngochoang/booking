@@ -32,6 +32,11 @@ describe('bookingNotices', () => {
     ]);
   });
 
+  it('a studio_fault cancel is the customer\'s: only the studio hears about it (#136)', () => {
+    const cancelled = b({ status: 'cancelled', cancel: { by: 'studio_fault', reason: 'assign_overdue', at: 'x', refundPercent: 100 } });
+    assert.deepEqual(bookingNotices(b({ status: 'accepted' }), cancelled), [{ to: 'photographer', kind: 'cancelled' }]);
+  });
+
   it('refund once when depositRefundedAt appears', () => {
     const was = b({ status: 'declined' });
     const now = b({ status: 'declined', depositRefundedAt: '2026-10-10T10:00:00.000Z', depositRefunded: 300000 });
@@ -110,6 +115,29 @@ describe('notifyBookingChange', () => {
     const cancel = { by: 'photographer' as const, at: 'x', refundPercent: 100 };
     await notifyBookingChange(w.deps, b({ status: 'upcoming' }), b({ status: 'cancelled', cancel }));
     assert.equal(w.store.rowsOf('c1')[0]?.body, 'T2 12/10 · 15:30. Hoàn 100% số bạn đã trả.');
+  });
+
+  it('the clock\'s cancel of an unassigned studio booking at its start tells both as a system cancel (#136)', async () => {
+    // start 2026-10-12 15:30 VN = 08:30Z
+    const cancel = { by: 'studio_fault' as const, reason: 'assign_overdue', at: '2026-10-12T08:30:00.000Z', refundPercent: 100 };
+    const before = b({ status: 'accepted', isStudio: true });
+    const after = b({ status: 'cancelled', isStudio: true, cancel });
+    assert.deepEqual(bookingNotices(before, after), [
+      { to: 'customer', kind: 'cancelled' },
+      { to: 'photographer', kind: 'cancelled' },
+    ]);
+    await notifyBookingChange(w.deps, before, after);
+    const [row] = w.store.rowsOf('c1');
+    assert.equal(row?.title, 'Lịch T2 12/10 · 15:30 đã bị huỷ');
+    assert.equal(row?.body, 'Xem chi tiết trong lịch hẹn.');
+    assert.equal(w.store.rowsOf('p1')[0]?.title, 'Lịch T2 12/10 · 15:30 đã bị huỷ');
+    // the customer's own studio-fault cancel (before the start) keeps the customer's name
+    const w2 = createNotifyWorld();
+    w2.users.users.set('c1', { name: 'An', avatarUrl: null });
+    const own = { ...cancel, at: '2026-10-12T08:29:59.000Z' };
+    await notifyBookingChange(w2.deps, b({ status: 'accepted', isStudio: true }), b({ status: 'cancelled', isStudio: true, cancel: own }));
+    assert.equal(w2.store.rowsOf('p1')[0]?.title, 'An đã huỷ lịch');
+    assert.equal(w2.store.rowsOf('c1').length, 0);
   });
 
   it('a system cancel notifies both', async () => {

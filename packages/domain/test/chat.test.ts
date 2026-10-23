@@ -19,6 +19,7 @@ describe('chat model and rules (Task 1)', () => {
     kind: 'inquiry',
     customerId: 'cust1',
     photographerId: 'phot1',
+    assigneeId: null,
     bookingId: null,
     bookingStatus: null,
     photographerRepliedAt: null,

@@ -39,6 +39,67 @@ enum ReviewReason {
   }
 }
 
+/// Why a brick was thrown at the studio of a studio booking (#136
+/// Decision 21); labels from the mock.
+enum StudioReviewReason {
+  lateAssignment('late_assignment'),
+  slowResponse('slow_response'),
+  priceChanged('price_changed'),
+  poorAssignment('poor_assignment'),
+  other('other');
+
+  const StudioReviewReason(this.code);
+  final String code;
+
+  static StudioReviewReason? fromCode(Object? c) {
+    for (final r in values) {
+      if (r.code == c) return r;
+    }
+    return null;
+  }
+}
+
+/// The studio block of a studio booking's review: sent with the member
+/// block in one `submitReview` call (#130 field names).
+@immutable
+class StudioReviewDraft {
+  const StudioReviewDraft({
+    required this.verdict,
+    required this.hits,
+    this.reasons = const [],
+    required this.text,
+  });
+
+  final Verdict verdict;
+  final int hits;
+
+  /// Only on a brick.
+  final List<StudioReviewReason> reasons;
+  final String text;
+
+  Map<String, dynamic> toMap() => {
+    'verdict': verdict.code,
+    'hits': hits,
+    'reasons': [for (final r in reasons) r.code],
+    'text': text,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is StudioReviewDraft &&
+      other.verdict == verdict &&
+      other.hits == hits &&
+      listEquals(other.reasons, reasons) &&
+      other.text == text;
+
+  @override
+  int get hashCode => Object.hash(verdict, hits, Object.hashAll(reasons), text);
+}
+
+/// The document of a studio booking's studio review (Decision 21): the
+/// member review keeps `reviews/{bookingId}`.
+String studioReviewDocId(String bookingId) => '${bookingId}_studio';
+
 /// Most taps on one side of the pad.
 const int kReviewHitsMax = kVerdictHitsMax;
 
@@ -66,9 +127,14 @@ class Review {
     this.hits = 1,
     double? intensity,
     this.reasons = const [],
+    this.studioReasons = const [],
     required this.text,
     this.photoPostId,
     required this.createdAt,
+    this.viaStudioId,
+    this.viaStudioName,
+    this.assigneeId,
+    this.assigneeName,
   })  : subjectId = subjectId ?? photographerId,
         intensity = intensity ?? intensityOf(hits);
 
@@ -92,9 +158,24 @@ class Review {
   final int hits;
   final double intensity;
   final List<ReviewReason> reasons;
+
+  /// A studio review's brick reasons ([reasons] stays empty on one).
+  final List<StudioReviewReason> studioReasons;
   final String text;
   final String? photoPostId;
   final DateTime createdAt;
+
+  /// Member review of a studio booking: the studio it was booked through.
+  /// The name is a snapshot; null when absent or '' (no name).
+  final String? viaStudioId;
+  final String? viaStudioName;
+
+  /// Studio review of a studio booking: who shot it (snapshot name, null
+  /// when absent or '').
+  final String? assigneeId;
+  final String? assigneeName;
+
+  bool get isStudioReview => subjectType == 'studio';
 
   factory Review.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
@@ -128,21 +209,32 @@ class Review {
             rawIntensity.isFinite
         ? rawIntensity.toDouble()
         : intensityOf(hits);
-    // Reasons only on a brick, known codes once each.
+    // Reasons only on a brick, known codes once each; a studio review has
+    // its own list.
+    final studio = data['subjectType'] == 'studio';
     final reasons = <ReviewReason>[];
+    final studioReasons = <StudioReviewReason>[];
     if (known == Verdict.brick && data['reasons'] is List) {
       for (final c in data['reasons'] as List) {
-        final reason = ReviewReason.fromCode(c);
-        if (reason != null && !reasons.contains(reason)) reasons.add(reason);
+        if (studio) {
+          final reason = StudioReviewReason.fromCode(c);
+          if (reason != null && !studioReasons.contains(reason)) {
+            studioReasons.add(reason);
+          }
+        } else {
+          final reason = ReviewReason.fromCode(c);
+          if (reason != null && !reasons.contains(reason)) reasons.add(reason);
+        }
       }
     }
+    String? name(Object? v) => v is String && v.isNotEmpty ? v : null;
     final photographerId = data['photographerId'] as String? ?? '';
     final rawBookingId = data['bookingId'];
     return Review(
       bookingId: rawBookingId is String && rawBookingId.isNotEmpty
           ? rawBookingId
           : doc.id,
-      subjectType: data['subjectType'] == 'studio' ? 'studio' : 'photographer',
+      subjectType: studio ? 'studio' : 'photographer',
       subjectId: data['subjectId'] as String? ?? photographerId,
       customerId: data['customerId'] as String? ?? '',
       photographerId: photographerId,
@@ -153,9 +245,14 @@ class Review {
       hits: hits,
       intensity: intensity,
       reasons: reasons,
+      studioReasons: studioReasons,
       text: data['text'] as String? ?? '',
       photoPostId: data['photoPostId'] as String?,
       createdAt: toDate(data['createdAt']),
+      viaStudioId: name(data['viaStudioId']),
+      viaStudioName: name(data['viaStudioName']),
+      assigneeId: name(data['assigneeId']),
+      assigneeName: name(data['assigneeName']),
     );
   }
 
@@ -175,12 +272,17 @@ class Review {
           hits == other.hits &&
           intensity == other.intensity &&
           listEquals(reasons, other.reasons) &&
+          listEquals(studioReasons, other.studioReasons) &&
           text == other.text &&
           photoPostId == other.photoPostId &&
-          createdAt == other.createdAt;
+          createdAt == other.createdAt &&
+          viaStudioId == other.viaStudioId &&
+          viaStudioName == other.viaStudioName &&
+          assigneeId == other.assigneeId &&
+          assigneeName == other.assigneeName;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
         bookingId,
         subjectType,
         subjectId,
@@ -193,10 +295,15 @@ class Review {
         hits,
         intensity,
         Object.hashAll(reasons),
+        Object.hashAll(studioReasons),
         text,
         photoPostId,
         createdAt,
-      );
+        viaStudioId,
+        viaStudioName,
+        assigneeId,
+        assigneeName,
+      ]);
 }
 
 @immutable

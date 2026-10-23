@@ -94,6 +94,10 @@ export interface EventRecord {
   readonly hashtag: string;
   readonly hashtagKey: string;
   readonly hashtagLocked: boolean;
+  /** S29 / S12.01: the photo spot the event is tagged with; absent or null = none (old events). */
+  readonly spotId?: string | null;
+  /** The organizer made the S12.01 choice (a spot or none); absent = false (old events). */
+  readonly spotDecided?: boolean;
   readonly status: EventStatus;
   readonly registeredCount: number;
   readonly heldCount: number;
@@ -227,6 +231,8 @@ export interface EventFields {
   readonly price: number | null;
   readonly registrationDeadline: Date | null;
   readonly faq: readonly EventFaq[];
+  /** S29: the tagged spot id (null = none); only changed when the request carried `spotId`. */
+  readonly spotId: string | null;
   /** Only when the request carried one. */
   readonly hashtag: string | undefined;
   /** Keys the request carried. */
@@ -327,7 +333,7 @@ export function validateEventFields(
   const r = raw as Record<string, unknown>;
   const touched = new Set<string>();
   for (const k of ['title', 'description', 'type', 'coverUrl', 'coverPath', 'startAt', 'endAt', 'location',
-    'capacity', 'price', 'registrationDeadline', 'faq', 'hashtag']) {
+    'capacity', 'price', 'registrationDeadline', 'faq', 'hashtag', 'spotId']) {
     if (r[k] !== undefined) touched.add(k);
   }
   const has = (k: string): boolean => touched.has(k);
@@ -387,6 +393,12 @@ export function validateEventFields(
 
   const faq = has('faq') ? parseFaq(r.faq) : (existing?.faq ?? []);
 
+  let spotId = existing?.spotId ?? null;
+  if (has('spotId')) {
+    if (r.spotId !== null && !isId(r.spotId)) throw new DomainError('invalid_argument', 'spotId');
+    spotId = r.spotId;
+  }
+
   let hashtag: string | undefined;
   if (has('hashtag')) {
     if (typeof r.hashtag !== 'string' || !isValidHashtag(r.hashtag)) return bad();
@@ -407,6 +419,6 @@ export function validateEventFields(
   return {
     title, description, type, coverUrl, coverPath, startAt, endAt,
     dayKey: startAt === null ? null : formatVnDate(startAt),
-    location, capacity, price, registrationDeadline: deadline, faq, hashtag, touched,
+    location, capacity, price, registrationDeadline: deadline, faq, spotId, hashtag, touched,
   };
 }

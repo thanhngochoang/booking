@@ -28,10 +28,12 @@ import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/data/verification/verification_repository.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/photo_scope.dart';
+import '../../support/studio_world.dart' show FakeStudioRepository;
 
 /// S09.02 signed in as a provider of [type] (null: a customer), with the
 /// verification record [doc] (null: none yet) and the own intro [intro].
@@ -98,6 +100,7 @@ Future<GoRouter> _open(
       retry: (_, _) => null,
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
+        studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
         userRepositoryProvider.overrideWithValue(users),
         userContactRepositoryProvider.overrideWithValue(contacts),
         sharedPreferencesProvider.overrideWithValue(prefs),

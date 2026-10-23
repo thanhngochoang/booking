@@ -2374,6 +2374,12 @@ abstract class AppLocalizations {
   /// **'Nghỉ'**
   String get dayStateOff;
 
+  /// No description provided for @calendarDayFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết chỗ'**
+  String get calendarDayFull;
+
   /// No description provided for @calendarDaySemantics.
   ///
   /// In vi, this message translates to:
@@ -9436,6 +9442,108 @@ abstract class AppLocalizations {
   /// **'Nhập đủ cả câu hỏi và câu trả lời.'**
   String get createEventErrFaq;
 
+  /// No description provided for @eventSpotLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp · bắt buộc'**
+  String get eventSpotLabel;
+
+  /// No description provided for @eventSpotPlaceholder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn điểm chụp'**
+  String get eventSpotPlaceholder;
+
+  /// No description provided for @eventSpotSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get eventSpotSheetTitle;
+
+  /// No description provided for @eventSpotSheetHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện gắn điểm hiện ở trang điểm chụp và được tính vào độ hot.'**
+  String get eventSpotSheetHint;
+
+  /// No description provided for @eventSpotSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm điểm chụp'**
+  String get eventSpotSearch;
+
+  /// No description provided for @eventSpotClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get eventSpotClose;
+
+  /// No description provided for @eventSpotNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thuộc điểm chụp nào'**
+  String get eventSpotNone;
+
+  /// No description provided for @eventSpotNoneHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện không hiện ở trang điểm nào'**
+  String get eventSpotNoneHint;
+
+  /// No description provided for @eventSpotPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn {name}'**
+  String eventSpotPick(String name);
+
+  /// No description provided for @eventSpotPickNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gắn điểm'**
+  String get eventSpotPickNone;
+
+  /// No description provided for @eventSpotNoMatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có điểm chụp nào khớp.'**
+  String get eventSpotNoMatch;
+
+  /// No description provided for @eventSpotRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm chụp, hoặc “Không thuộc điểm chụp nào”'**
+  String get eventSpotRequired;
+
+  /// No description provided for @eventSpotFar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm nằm ngoài điểm chụp đã chọn. Sửa địa điểm hoặc chọn điểm khác.'**
+  String get eventSpotFar;
+
+  /// No description provided for @eventSpotArchived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp này không còn nhận lịch mới. Chọn điểm khác.'**
+  String get eventSpotArchived;
+
+  /// No description provided for @eventSpotGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy điểm chụp này. Chọn điểm khác.'**
+  String get eventSpotGone;
+
+  /// No description provided for @postSpotChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gắn với {name}'**
+  String postSpotChip(String name);
+
+  /// No description provided for @postSpotChipRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ gắn {name}'**
+  String postSpotChipRemove(String name);
+
   /// No description provided for @bookNotAcceptingOrders.
   ///
   /// In vi, this message translates to:
@@ -12615,6 +12723,2891 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tài khoản đang chờ xoá, không tạo bản sao mới được.'**
   String get privacyExportPending;
+
+  /// No description provided for @studioMembersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get studioMembersTitle;
+
+  /// No description provided for @studioMembersRulesA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quy định thành viên'**
+  String get studioMembersRulesA11y;
+
+  /// No description provided for @studioMembersQuota.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/{max} thợ · còn {k} thao tác hôm nay'**
+  String studioMembersQuota(int n, int max, int k);
+
+  /// No description provided for @studioMemberAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'{m} việc đang giao'**
+  String studioMemberAssigned(int m);
+
+  /// No description provided for @studioMemberNoWork.
+  ///
+  /// In vi, this message translates to:
+  /// **'chưa có việc'**
+  String get studioMemberNoWork;
+
+  /// No description provided for @studioMemberOptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuỳ chọn cho {name}'**
+  String studioMemberOptions(String name);
+
+  /// No description provided for @studioPendingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ'**
+  String get studioPendingTitle;
+
+  /// No description provided for @studioPendingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} · tối đa 5 lời mời'**
+  String studioPendingCount(int n);
+
+  /// No description provided for @studioInviteSentDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã gửi · Hết hạn sau {n} ngày'**
+  String studioInviteSentDays(int n);
+
+  /// No description provided for @studioInviteSentToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã gửi · Hết hạn trong hôm nay'**
+  String get studioInviteSentToday;
+
+  /// No description provided for @studioJoinRequestedAgo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin gia nhập · {ago}'**
+  String studioJoinRequestedAgo(String ago);
+
+  /// No description provided for @studioAgoNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'vừa xong'**
+  String get studioAgoNow;
+
+  /// No description provided for @studioAgoMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút trước'**
+  String studioAgoMinutes(int n);
+
+  /// No description provided for @studioAgoHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ trước'**
+  String studioAgoHours(int n);
+
+  /// No description provided for @studioAgoDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày trước'**
+  String studioAgoDays(int n);
+
+  /// No description provided for @studioCancelInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get studioCancelInvite;
+
+  /// No description provided for @studioDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get studioDecline;
+
+  /// No description provided for @studioApprove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt'**
+  String get studioApprove;
+
+  /// No description provided for @studioInviteAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ'**
+  String get studioInviteAction;
+
+  /// No description provided for @studioMembersEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thành viên'**
+  String get studioMembersEmpty;
+
+  /// No description provided for @studioMembersEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ ảnh bạn tin tưởng; họ nhận lời là vào studio.'**
+  String get studioMembersEmptyBody;
+
+  /// No description provided for @studioRemoveMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ khỏi studio'**
+  String get studioRemoveMember;
+
+  /// No description provided for @studioRemoveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ {name} khỏi studio?'**
+  String studioRemoveTitle(String name);
+
+  /// No description provided for @studioRemoveBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} sẽ không nhận việc của studio nữa và 7 ngày sau mới vào được studio khác.'**
+  String studioRemoveBody(String name);
+
+  /// No description provided for @studioRemoveKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get studioRemoveKeep;
+
+  /// No description provided for @studioBusyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} buổi chụp được giao'**
+  String studioBusyTitle(int n);
+
+  /// No description provided for @studioRemoveBusyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao các buổi này cho người khác hoặc chờ chụp xong rồi bỏ.'**
+  String get studioRemoveBusyBody;
+
+  /// No description provided for @studioSheetClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get studioSheetClose;
+
+  /// No description provided for @studioFullUnverified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ 3 thợ. Xác minh doanh nghiệp để nhận tới 30 thợ.'**
+  String get studioFullUnverified;
+
+  /// No description provided for @studioFullVerifyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp'**
+  String get studioFullVerifyAction;
+
+  /// No description provided for @studioQuotaOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết thao tác hôm nay. Thử lại ngày mai.'**
+  String get studioQuotaOut;
+
+  /// No description provided for @studioRulesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quy định thành viên'**
+  String get studioRulesTitle;
+
+  /// No description provided for @studioRule1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào studio cần hai bên đồng ý: studio mời và thợ nhận, hoặc thợ xin và studio duyệt.'**
+  String get studioRule1;
+
+  /// No description provided for @studioRule2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời hết hạn sau 7 ngày, tối đa 5 lời mời chờ.'**
+  String get studioRule2;
+
+  /// No description provided for @studioRule3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mỗi thợ ở tối đa một studio. Rời hoặc bị bỏ thì 7 ngày sau mới vào được studio khác.'**
+  String get studioRule3;
+
+  /// No description provided for @studioRule4.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 3 thợ khi studio chưa xác minh doanh nghiệp, 30 khi đã xác minh; tối đa 5 thao tác thành viên mỗi ngày.'**
+  String get studioRule4;
+
+  /// No description provided for @studioRule5.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không bỏ được thành viên còn buổi chụp được giao chưa xong.'**
+  String get studioRule5;
+
+  /// No description provided for @studioInviteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ'**
+  String get studioInviteTitle;
+
+  /// No description provided for @studioInviteSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm thợ theo tên'**
+  String get studioInviteSearch;
+
+  /// No description provided for @studioInviteRowAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời'**
+  String get studioInviteRowAction;
+
+  /// No description provided for @studioInviteInStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang ở {studio}'**
+  String studioInviteInStudio(String studio);
+
+  /// No description provided for @studioInviteCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời được từ {date}'**
+  String studioInviteCooldown(String date);
+
+  /// No description provided for @studioInviteInvited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get studioInviteInvited;
+
+  /// No description provided for @studioInviteMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã là thành viên'**
+  String get studioInviteMember;
+
+  /// No description provided for @studioInviteFootnote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ'**
+  String get studioInviteFootnote;
+
+  /// No description provided for @studioInviteFullPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã có 5 lời mời chờ'**
+  String get studioInviteFullPending;
+
+  /// No description provided for @studioInviteFullMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đủ {max} thợ'**
+  String studioInviteFullMembers(int max);
+
+  /// No description provided for @studioInviteNoResults.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy thợ tên này'**
+  String get studioInviteNoResults;
+
+  /// No description provided for @studioInviteDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi lời mời tới {name}'**
+  String studioInviteDone(String name);
+
+  /// No description provided for @myStudioTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio của tôi'**
+  String get myStudioTitle;
+
+  /// No description provided for @myStudioSince.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên từ {month} · {m} việc được giao'**
+  String myStudioSince(String month, int m);
+
+  /// No description provided for @myStudioSinceOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên từ {month}'**
+  String myStudioSinceOnly(String month);
+
+  /// No description provided for @myStudioView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem studio'**
+  String get myStudioView;
+
+  /// No description provided for @myStudioJobs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc studio giao'**
+  String get myStudioJobs;
+
+  /// No description provided for @myStudioAssignedBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã giao'**
+  String get myStudioAssignedBadge;
+
+  /// No description provided for @myStudioLeave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời studio'**
+  String get myStudioLeave;
+
+  /// No description provided for @myStudioInvites.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời'**
+  String get myStudioInvites;
+
+  /// No description provided for @myStudioAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get myStudioAccept;
+
+  /// No description provided for @myStudioDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get myStudioDecline;
+
+  /// No description provided for @myStudioInviteBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang ở {studio}'**
+  String myStudioInviteBlocked(String studio);
+
+  /// No description provided for @myStudioInviteExpires.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn sau {n} ngày'**
+  String myStudioInviteExpires(int n);
+
+  /// No description provided for @myStudioInviteExpiresToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn trong hôm nay'**
+  String get myStudioInviteExpiresToday;
+
+  /// No description provided for @myStudioCooldownNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời hoặc bị bỏ khỏi studio thì 7 ngày sau mới vào được studio khác.'**
+  String get myStudioCooldownNote;
+
+  /// No description provided for @myStudioNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa ở studio nào'**
+  String get myStudioNone;
+
+  /// No description provided for @myStudioNoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio mời bạn, hoặc bạn xin gia nhập từ hồ sơ studio.'**
+  String get myStudioNoneBody;
+
+  /// No description provided for @myStudioRequestPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin gia nhập {studio} · chờ duyệt'**
+  String myStudioRequestPending(String studio);
+
+  /// No description provided for @myStudioRequestSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi {ago} · hết hạn sau {n} ngày'**
+  String myStudioRequestSent(String ago, int n);
+
+  /// No description provided for @myStudioRequestSentToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi {ago} · hết hạn trong hôm nay'**
+  String myStudioRequestSentToday(String ago);
+
+  /// No description provided for @myStudioRequestCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get myStudioRequestCancel;
+
+  /// No description provided for @myStudioLeaveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rời {studio}?'**
+  String myStudioLeaveTitle(String studio);
+
+  /// No description provided for @myStudioLeaveBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'7 ngày sau bạn mới vào được studio khác, kể cả {studio}.'**
+  String myStudioLeaveBody(String studio);
+
+  /// No description provided for @myStudioLeaveKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ở lại'**
+  String get myStudioLeaveKeep;
+
+  /// No description provided for @myStudioLeaveBusyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp xong hoặc nhờ studio giao người khác rồi rời.'**
+  String get myStudioLeaveBusyBody;
+
+  /// No description provided for @settingsStudioMembersQuota.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/{max} thợ'**
+  String settingsStudioMembersQuota(int n, int max);
+
+  /// No description provided for @settingsMyStudioNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ở studio nào'**
+  String get settingsMyStudioNone;
+
+  /// No description provided for @studioErr_membership_conflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đang ở một studio khác.'**
+  String get studioErr_membership_conflict;
+
+  /// No description provided for @studioErr_cooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đủ 7 ngày kể từ lần rời studio.'**
+  String get studioErr_cooldown;
+
+  /// No description provided for @studioErr_member_busy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn buổi chụp được giao chưa xong.'**
+  String get studioErr_member_busy;
+
+  /// No description provided for @studioErr_studio_full.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đủ số thợ hoặc đủ 5 lời mời chờ.'**
+  String get studioErr_studio_full;
+
+  /// No description provided for @studioErr_rate_limited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết thao tác hôm nay. Thử lại ngày mai.'**
+  String get studioErr_rate_limited;
+
+  /// No description provided for @studioErr_not_accepting_orders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này chưa xác minh nên chưa giao việc được.'**
+  String get studioErr_not_accepting_orders;
+
+  /// No description provided for @studioErr_day_taken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đã bận ngày này.'**
+  String get studioErr_day_taken;
+
+  /// No description provided for @studioErr_conflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã được xử lý trước đó.'**
+  String get studioErr_conflict;
+
+  /// No description provided for @studioErr_generic.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại.'**
+  String get studioErr_generic;
+
+  /// No description provided for @profileMembersTile.
+  ///
+  /// In vi, this message translates to:
+  /// **'thành viên'**
+  String get profileMembersTile;
+
+  /// No description provided for @profileYearsTile.
+  ///
+  /// In vi, this message translates to:
+  /// **'hoạt động'**
+  String get profileYearsTile;
+
+  /// No description provided for @profileMembersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get profileMembersTitle;
+
+  /// No description provided for @profileMembersA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên {studio}'**
+  String profileMembersA11y(String studio);
+
+  /// No description provided for @profileMoreMembersA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'và {n} thành viên khác'**
+  String profileMoreMembersA11y(int n);
+
+  /// No description provided for @profileJoinStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin gia nhập'**
+  String get profileJoinStudio;
+
+  /// No description provided for @profileJoinRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin gia nhập'**
+  String get profileJoinRequested;
+
+  /// No description provided for @profileJoinSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu tới {studio}'**
+  String profileJoinSent(String studio);
+
+  /// No description provided for @profileJoinCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn vào được studio từ {date}'**
+  String profileJoinCooldown(String date);
+
+  /// No description provided for @profileMemberOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên của {studio}'**
+  String profileMemberOf(String studio);
+
+  /// No description provided for @workAssignAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao thợ'**
+  String get workAssignAction;
+
+  /// No description provided for @workAssignedTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ: {name}'**
+  String workAssignedTo(String name);
+
+  /// No description provided for @workAssignOverdue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn giao thợ'**
+  String get workAssignOverdue;
+
+  /// No description provided for @workAssignDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn giao thợ: {deadline}'**
+  String workAssignDeadline(String deadline);
+
+  /// No description provided for @workChangeRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách xin đổi thợ · trả lời trước {time}'**
+  String workChangeRequested(String time);
+
+  /// No description provided for @workChangeDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đổi'**
+  String get workChangeDecline;
+
+  /// No description provided for @changeDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đổi thợ?'**
+  String get changeDeclineTitle;
+
+  /// No description provided for @changeDeclineReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (bắt buộc)'**
+  String get changeDeclineReason;
+
+  /// No description provided for @changeDeclineBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ thấy lý do và được huỷ, hoàn 100% nếu không muốn giữ thợ hiện tại.'**
+  String get changeDeclineBody;
+
+  /// No description provided for @changeDeclineConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đổi'**
+  String get changeDeclineConfirm;
+
+  /// No description provided for @changeDeclineKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get changeDeclineKeep;
+
+  /// No description provided for @workReturnJob.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả việc'**
+  String get workReturnJob;
+
+  /// No description provided for @returnJobTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả lại buổi chụp này?'**
+  String get returnJobTitle;
+
+  /// No description provided for @returnJobBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{studio} được báo để giao người khác. Bạn vẫn là thợ của buổi này tới khi studio giao lại.'**
+  String returnJobBody(String studio);
+
+  /// No description provided for @returnJobReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (tuỳ chọn)'**
+  String get returnJobReason;
+
+  /// No description provided for @returnJobConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả việc'**
+  String get returnJobConfirm;
+
+  /// No description provided for @returnJobKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ việc'**
+  String get returnJobKeep;
+
+  /// No description provided for @workReturned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả việc · chờ studio giao lại'**
+  String get workReturned;
+
+  /// No description provided for @workAssigneeReturned.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã trả việc'**
+  String workAssigneeReturned(String name);
+
+  /// No description provided for @workAssigneeReturnedNoName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ đã trả việc'**
+  String get workAssigneeReturnedNoName;
+
+  /// No description provided for @assignTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao thợ'**
+  String get assignTitle;
+
+  /// No description provided for @assignSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'{service} · {day} · {start}–{end}'**
+  String assignSummary(String service, String day, String start, String end);
+
+  /// No description provided for @assignDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn giao thợ: {deadline} (còn {left})'**
+  String assignDeadline(String deadline, String left);
+
+  /// No description provided for @assignDeadlinePassed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã quá hạn giao thợ ({deadline})'**
+  String assignDeadlinePassed(String deadline);
+
+  /// No description provided for @assignLeftDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày'**
+  String assignLeftDays(int n);
+
+  /// No description provided for @assignLeftHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String assignLeftHours(int n);
+
+  /// No description provided for @assignFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh'**
+  String get assignFree;
+
+  /// No description provided for @assignBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bận {start}–{end}'**
+  String assignBusy(String start, String end);
+
+  /// No description provided for @assignBusyAllDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bận cả ngày'**
+  String get assignBusyAllDay;
+
+  /// No description provided for @assignUnverified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác minh'**
+  String get assignUnverified;
+
+  /// No description provided for @assignCurrent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giao'**
+  String get assignCurrent;
+
+  /// No description provided for @assignNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách được báo ngay; {name} vào nhóm chat của buổi chụp.'**
+  String assignNote(String name);
+
+  /// No description provided for @assignLateWarning.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn dưới 24 giờ: đổi thợ lúc này thì khách được huỷ và hoàn 100%.'**
+  String get assignLateWarning;
+
+  /// No description provided for @assignAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao cho {name}'**
+  String assignAction(String name);
+
+  /// No description provided for @assignNoMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa có thành viên nào để giao.'**
+  String get assignNoMembers;
+
+  /// No description provided for @assignPickerA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thợ chụp'**
+  String get assignPickerA11y;
+
+  /// No description provided for @changeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin đổi thợ chụp'**
+  String get changeTitle;
+
+  /// No description provided for @changeCurrent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ hiện tại'**
+  String get changeCurrent;
+
+  /// No description provided for @changeReasonLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do (tuỳ chọn)'**
+  String get changeReasonLabel;
+
+  /// No description provided for @changeNoteRespond.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio trả lời trong 6 giờ.'**
+  String get changeNoteRespond;
+
+  /// No description provided for @changeNoteRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu studio từ chối hoặc không trả lời, bạn được huỷ và hoàn 100%.'**
+  String get changeNoteRefund;
+
+  /// No description provided for @changeOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chỉ xin đổi được 1 lần.'**
+  String get changeOnce;
+
+  /// No description provided for @changeSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi yêu cầu đổi'**
+  String get changeSend;
+
+  /// No description provided for @changeSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu đổi thợ'**
+  String get changeSent;
+
+  /// No description provided for @assigneeSection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ chụp cho bạn'**
+  String get assigneeSection;
+
+  /// No description provided for @assigneeAssignedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao {date}'**
+  String assigneeAssignedOn(String date);
+
+  /// No description provided for @assigneeWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio sẽ báo thợ chụp trước {deadline}'**
+  String assigneeWaiting(String deadline);
+
+  /// No description provided for @assigneeMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{shoots} buổi · thợ của {studio}'**
+  String assigneeMeta(int shoots, String studio);
+
+  /// No description provided for @assigneeViewProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ'**
+  String get assigneeViewProfile;
+
+  /// No description provided for @assigneeChange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xin đổi thợ (1 lần)'**
+  String get assigneeChange;
+
+  /// No description provided for @assigneeChangePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xin đổi · chờ studio'**
+  String get assigneeChangePending;
+
+  /// No description provided for @assigneeOverdueLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn'**
+  String get assigneeOverdueLabel;
+
+  /// No description provided for @assigneeOverdueTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa báo thợ chụp đúng hạn (trước {deadline})'**
+  String assigneeOverdueTitle(String deadline);
+
+  /// No description provided for @assigneeOverdueBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có thể chờ thêm hoặc huỷ và được hoàn 100%.'**
+  String get assigneeOverdueBody;
+
+  /// No description provided for @assigneeCancelFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn 100%'**
+  String get assigneeCancelFull;
+
+  /// No description provided for @assigneeReminded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhắc {studio} lúc {first} và {second}.'**
+  String assigneeReminded(String studio, String first, String second);
+
+  /// No description provided for @assigneeChangeDeclinedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio không đổi thợ chụp'**
+  String get assigneeChangeDeclinedTitle;
+
+  /// No description provided for @assigneeChangeDeclinedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}. Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.'**
+  String assigneeChangeDeclinedBody(String reason);
+
+  /// No description provided for @assigneeChangeExpiredTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa trả lời yêu cầu đổi thợ'**
+  String get assigneeChangeExpiredTitle;
+
+  /// No description provided for @assigneeChangeExpiredBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn giữ thợ hiện tại hoặc huỷ và được hoàn 100%.'**
+  String get assigneeChangeExpiredBody;
+
+  /// No description provided for @assigneeLateReassignTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đổi thợ khi còn dưới 24 giờ'**
+  String get assigneeLateReassignTitle;
+
+  /// No description provided for @assigneeLateReassignBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có thể huỷ và được hoàn 100%.'**
+  String get assigneeLateReassignBody;
+
+  /// No description provided for @timelineAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã giao thợ chụp'**
+  String get timelineAssigned;
+
+  /// No description provided for @timelineAssignedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã vào nhóm chat của buổi chụp'**
+  String timelineAssignedBody(String name);
+
+  /// No description provided for @timelineAwaitAssign.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ studio giao thợ chụp'**
+  String get timelineAwaitAssign;
+
+  /// No description provided for @timelineAwaitAssignBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn từ {deadline}'**
+  String timelineAwaitAssignBody(String deadline);
+
+  /// No description provided for @detailMessageStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn studio'**
+  String get detailMessageStudio;
+
+  /// No description provided for @cancelStudioFaultTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn 100%?'**
+  String get cancelStudioFaultTitle;
+
+  /// No description provided for @cancelStudioFaultLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn 100% số đã trả'**
+  String get cancelStudioFaultLine;
+
+  /// No description provided for @cancelStudioFaultBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa giữ đúng cam kết về thợ chụp nên bạn được hoàn toàn bộ số đã trả.'**
+  String get cancelStudioFaultBody;
+
+  /// No description provided for @cancelStudioFaultConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn 100%'**
+  String get cancelStudioFaultConfirm;
+
+  /// No description provided for @cancelStudioFaultKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lịch'**
+  String get cancelStudioFaultKeep;
+
+  /// No description provided for @reviewCardAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · thợ {name}'**
+  String reviewCardAssignee(String day, String name);
+
+  /// No description provided for @reviewBlockAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ {name}'**
+  String reviewBlockAssignee(String name);
+
+  /// No description provided for @reviewBlockAssigneeNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tính cho hồ sơ thợ'**
+  String get reviewBlockAssigneeNote;
+
+  /// No description provided for @reviewBlockStudioNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tính cho studio'**
+  String get reviewBlockStudioNote;
+
+  /// No description provided for @reviewNoteForAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận xét cho thợ'**
+  String get reviewNoteForAssignee;
+
+  /// No description provided for @reviewNoteForStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận xét cho studio'**
+  String get reviewNoteForStudio;
+
+  /// No description provided for @reviewSubmitTwo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi 2 đánh giá'**
+  String get reviewSubmitTwo;
+
+  /// No description provided for @reviewMissingAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn thiếu đánh giá cho thợ'**
+  String get reviewMissingAssignee;
+
+  /// No description provided for @reviewMissingStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn thiếu đánh giá cho studio'**
+  String get reviewMissingStudio;
+
+  /// No description provided for @reviewStudioReason_late_assignment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo thợ trễ'**
+  String get reviewStudioReason_late_assignment;
+
+  /// No description provided for @reviewStudioReason_slow_response.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tư vấn chậm'**
+  String get reviewStudioReason_slow_response;
+
+  /// No description provided for @reviewStudioReason_price_changed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi giá'**
+  String get reviewStudioReason_price_changed;
+
+  /// No description provided for @reviewStudioReason_poor_assignment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao thợ không hợp'**
+  String get reviewStudioReason_poor_assignment;
+
+  /// No description provided for @reviewStudioReason_other.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get reviewStudioReason_other;
+
+  /// No description provided for @reviewA11yTomatoFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ném cà chua cho {who}, {n} trên 10'**
+  String reviewA11yTomatoFor(String who, int n);
+
+  /// No description provided for @reviewA11yBrickFor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ném gạch cho {who}, {n} trên 10'**
+  String reviewA11yBrickFor(String who, int n);
+
+  /// No description provided for @reviewShotBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name}'**
+  String reviewShotBy(String name);
+
+  /// No description provided for @reviewViaStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Qua {studio}'**
+  String reviewViaStudio(String studio);
+
+  /// No description provided for @reviewWhoAssignee.
+  ///
+  /// In vi, this message translates to:
+  /// **'thợ'**
+  String get reviewWhoAssignee;
+
+  /// No description provided for @reviewWhoStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'studio'**
+  String get reviewWhoStudio;
+
+  /// No description provided for @reviewGroupAssigneeA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá thợ {name}'**
+  String reviewGroupAssigneeA11y(String name);
+
+  /// No description provided for @reviewGroupStudioA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá {studio}'**
+  String reviewGroupStudioA11y(String studio);
+
+  /// No description provided for @reviewNoAssigneeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đánh giá được'**
+  String get reviewNoAssigneeTitle;
+
+  /// No description provided for @reviewNoAssigneeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa giao thợ chụp cho buổi này.'**
+  String get reviewNoAssigneeBody;
+
+  /// No description provided for @homeHotSpotsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp đang hot'**
+  String get homeHotSpotsTitle;
+
+  /// No description provided for @homeHotSpots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp đang hot'**
+  String get homeHotSpots;
+
+  /// No description provided for @homeHotSpotsSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get homeHotSpotsSeeAll;
+
+  /// No description provided for @homeSpotProvidersWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} thợ nhận chụp tuần này'**
+  String homeSpotProvidersWeek(int count);
+
+  /// No description provided for @spotProvidersThisWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} thợ nhận chụp tuần này'**
+  String spotProvidersThisWeek(int count);
+
+  /// No description provided for @exploreNearbySpotsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp gần bạn'**
+  String get exploreNearbySpotsTitle;
+
+  /// No description provided for @exploreSpotsNearby.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp gần bạn'**
+  String get exploreSpotsNearby;
+
+  /// No description provided for @exploreSpotSectionTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get exploreSpotSectionTitle;
+
+  /// No description provided for @spotsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get spotsTitle;
+
+  /// No description provided for @spotsFilterArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực'**
+  String get spotsFilterArea;
+
+  /// No description provided for @spotsFilterAllAreas.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi khu vực'**
+  String get spotsFilterAllAreas;
+
+  /// No description provided for @spotsFilterInSeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa'**
+  String get spotsFilterInSeason;
+
+  /// No description provided for @spotsFilterWeekend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuối tuần này có thợ'**
+  String get spotsFilterWeekend;
+
+  /// No description provided for @spotsInSeasonCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} điểm đang vào mùa'**
+  String spotsInSeasonCount(int count);
+
+  /// No description provided for @spotsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có điểm chụp nào ở khu vực này'**
+  String get spotsEmpty;
+
+  /// No description provided for @spotsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được điểm chụp.'**
+  String get spotsLoadError;
+
+  /// No description provided for @spotInSeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa'**
+  String get spotInSeason;
+
+  /// No description provided for @spotInSeasonUntil.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa · tới cuối tháng {month}'**
+  String spotInSeasonUntil(int month);
+
+  /// No description provided for @spotSeasonEnding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa · tới cuối tháng {month}'**
+  String spotSeasonEnding(int month);
+
+  /// No description provided for @spotSeasonRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mùa đẹp: tháng {from}–{to}'**
+  String spotSeasonRange(int from, int to);
+
+  /// No description provided for @spotSeasonList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mùa đẹp: tháng {months}'**
+  String spotSeasonList(String months);
+
+  /// No description provided for @spotSeasonBest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mùa đẹp: {range}'**
+  String spotSeasonBest(String range);
+
+  /// No description provided for @spotSeasonAllYear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đẹp quanh năm'**
+  String get spotSeasonAllYear;
+
+  /// No description provided for @spotPhotoAlt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh chụp tại {name}'**
+  String spotPhotoAlt(String name);
+
+  /// No description provided for @spotArchivedBand.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này không còn nhận lịch mới'**
+  String get spotArchivedBand;
+
+  /// No description provided for @spotArchivedNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này không còn nhận lịch mới'**
+  String get spotArchivedNotice;
+
+  /// No description provided for @spotsCardStats.
+  ///
+  /// In vi, this message translates to:
+  /// **'{providers} thợ · {events} sự kiện sắp tới'**
+  String spotsCardStats(int providers, int events);
+
+  /// No description provided for @spotCardStats.
+  ///
+  /// In vi, this message translates to:
+  /// **'{providers} thợ · {events} sự kiện sắp tới'**
+  String spotCardStats(int providers, int events);
+
+  /// No description provided for @spotAvailableLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt {day} · {start}–{end}'**
+  String spotAvailableLabel(String day, String start, String end);
+
+  /// No description provided for @spotProviderAvailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt {day} · {start}–{end}'**
+  String spotProviderAvailable(String day, String start, String end);
+
+  /// No description provided for @spotShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ'**
+  String get spotShare;
+
+  /// No description provided for @spotLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết điểm chụp'**
+  String get spotLinkCopied;
+
+  /// No description provided for @spotCopiedLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết điểm chụp'**
+  String get spotCopiedLink;
+
+  /// No description provided for @spotTipsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mẹo chụp'**
+  String get spotTipsTitle;
+
+  /// No description provided for @spotDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get spotDirections;
+
+  /// No description provided for @spotProvidersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ nhận chụp ở đây'**
+  String get spotProvidersTitle;
+
+  /// No description provided for @spotToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get spotToday;
+
+  /// No description provided for @spotDayToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get spotDayToday;
+
+  /// No description provided for @spotPickDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get spotPickDate;
+
+  /// No description provided for @spotDayPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get spotDayPick;
+
+  /// No description provided for @spotBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt'**
+  String get spotBook;
+
+  /// No description provided for @spotProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get spotProfile;
+
+  /// No description provided for @spotOffersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chụp tại điểm'**
+  String get spotOffersTitle;
+
+  /// No description provided for @spotOfferLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {price} · còn {count} suất {day}'**
+  String spotOfferLine(String name, String price, int count, String day);
+
+  /// No description provided for @spotOfferFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {price} · hết suất {day}'**
+  String spotOfferFull(String name, String price, String day);
+
+  /// No description provided for @spotPickSlot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn suất'**
+  String get spotPickSlot;
+
+  /// No description provided for @spotEventsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện ở đây'**
+  String get spotEventsTitle;
+
+  /// No description provided for @spotPhotosTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh chụp ở đây'**
+  String get spotPhotosTitle;
+
+  /// No description provided for @spotPhotosCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} bài'**
+  String spotPhotosCount(int count);
+
+  /// No description provided for @spotNoProviderDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thợ nhận chụp ngày này · Xem ngày khác'**
+  String get spotNoProviderDay;
+
+  /// No description provided for @spotEmptyDayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thợ nhận chụp ngày này'**
+  String get spotEmptyDayTitle;
+
+  /// No description provided for @spotEmptyDayAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem ngày khác'**
+  String get spotEmptyDayAction;
+
+  /// No description provided for @spotProviderHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn là thợ ảnh? Thêm lịch chụp ở điểm này trong Công việc.'**
+  String get spotProviderHint;
+
+  /// No description provided for @spotNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy điểm chụp.'**
+  String get spotNotFound;
+
+  /// No description provided for @spotPriceFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'từ {price}'**
+  String spotPriceFrom(String price);
+
+  /// No description provided for @spotFreeSlotsCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {count} suất {day}'**
+  String spotFreeSlotsCount(int count, String day);
+
+  /// No description provided for @spotSlotsFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết suất'**
+  String get spotSlotsFull;
+
+  /// No description provided for @spotSeeMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get spotSeeMore;
+
+  /// No description provided for @slotPickTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn suất'**
+  String get slotPickTitle;
+
+  /// No description provided for @slotTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã kín'**
+  String get slotTaken;
+
+  /// No description provided for @slotContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục · {price}'**
+  String slotContinue(String price);
+
+  /// No description provided for @slotTakenError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Suất này vừa có người đặt. Chọn suất khác.'**
+  String get slotTakenError;
+
+  /// No description provided for @slotPickDayLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · còn {free} / {total} suất'**
+  String slotPickDayLine(String day, int free, int total);
+
+  /// No description provided for @slotPickOfferMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại {spot} · {edited} ảnh chỉnh · giao trong {days} ngày. Gói chia suất không kèm dịch vụ đi kèm.'**
+  String slotPickOfferMeta(String spot, int edited, int days);
+
+  /// No description provided for @slotPickDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp'**
+  String get slotPickDays;
+
+  /// No description provided for @slotPickTimes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ bắt đầu'**
+  String get slotPickTimes;
+
+  /// No description provided for @bookAtSpot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tại {spot}'**
+  String bookAtSpot(String spot);
+
+  /// No description provided for @bookSpotPlaceLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm là điểm chụp, không đổi được.'**
+  String get bookSpotPlaceLocked;
+
+  /// No description provided for @bookSpotScheduleLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm · {days} · {start}–{end}'**
+  String bookSpotScheduleLine(String days, String start, String end);
+
+  /// No description provided for @bookSpotEndsAt.
+  ///
+  /// In vi, this message translates to:
+  /// **'{start}–{end} · chỉ giờ còn trống trong khung {from}–{to} của {name}'**
+  String bookSpotEndsAt(
+    String start,
+    String end,
+    String from,
+    String to,
+    String name,
+  );
+
+  /// No description provided for @bookSpotDaysOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ ngày có lịch tại điểm'**
+  String get bookSpotDaysOnly;
+
+  /// No description provided for @bookOutsideSchedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm vừa thay đổi. Chọn lại ngày giờ.'**
+  String get bookOutsideSchedule;
+
+  /// No description provided for @bookSlotTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ này vừa có người đặt. Chọn giờ khác.'**
+  String get bookSlotTaken;
+
+  /// No description provided for @bookSpotArchived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này không còn nhận lịch mới.'**
+  String get bookSpotArchived;
+
+  /// No description provided for @spotSchedulesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm'**
+  String get spotSchedulesTitle;
+
+  /// No description provided for @spotSchedulesOpenCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} / 8 lịch đang mở'**
+  String spotSchedulesOpenCount(int count);
+
+  /// No description provided for @spotSchedulesAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm lịch tại điểm'**
+  String get spotSchedulesAdd;
+
+  /// No description provided for @spotSchedulesVerify.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh để mở lịch'**
+  String get spotSchedulesVerify;
+
+  /// No description provided for @spotSchedulesEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lịch tại điểm'**
+  String get spotSchedulesEmptyTitle;
+
+  /// No description provided for @spotSchedulesEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm chụp đang hot và mở lịch cuối tuần để khách đặt.'**
+  String get spotSchedulesEmptyBody;
+
+  /// No description provided for @spotSchedulesRule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày tại điểm chỉ nhận booking ở điểm đó, nhiều booking không chồng giờ. Ngày đó bạn không nhận booking ở nơi khác.'**
+  String get spotSchedulesRule;
+
+  /// No description provided for @spotScheduleDaysRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekdays} · {from}–{to}'**
+  String spotScheduleDaysRange(String weekdays, String from, String to);
+
+  /// No description provided for @spotScheduleDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ngày · {start}–{end}'**
+  String spotScheduleDays(int count, String start, String end);
+
+  /// No description provided for @spotScheduleSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'{days} · {packages}'**
+  String spotScheduleSummary(String days, String packages);
+
+  /// No description provided for @spotSchedulePackagesCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} gói'**
+  String spotSchedulePackagesCount(int count);
+
+  /// No description provided for @spotSchedulePackagesAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'mọi gói'**
+  String get spotSchedulePackagesAll;
+
+  /// No description provided for @spotScheduleDayCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · {count} booking'**
+  String spotScheduleDayCount(String day, int count);
+
+  /// No description provided for @spotScheduleMoreDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'+{count} ngày'**
+  String spotScheduleMoreDays(int count);
+
+  /// No description provided for @spotScheduleDayCountsLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Booking theo ngày'**
+  String get spotScheduleDayCountsLabel;
+
+  /// No description provided for @spotScheduleNoBookings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có booking'**
+  String get spotScheduleNoBookings;
+
+  /// No description provided for @spotScheduleNoOffers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có gói chia suất'**
+  String get spotScheduleNoOffers;
+
+  /// No description provided for @spotScheduleNoBookingsNoOffers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có booking · chưa có gói chia suất'**
+  String get spotScheduleNoBookingsNoOffers;
+
+  /// No description provided for @spotScheduleOfferMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} · {count} suất/ngày'**
+  String spotScheduleOfferMeta(String price, int count);
+
+  /// No description provided for @spotScheduleEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get spotScheduleEdit;
+
+  /// No description provided for @spotScheduleOffersAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chia suất'**
+  String get spotScheduleOffersAction;
+
+  /// No description provided for @spotScheduleCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ lịch'**
+  String get spotScheduleCancel;
+
+  /// No description provided for @spotScheduleCancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ lịch tại {spot}?'**
+  String spotScheduleCancelTitle(String spot);
+
+  /// No description provided for @spotScheduleCancelBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ không đặt được các ngày còn lại của lịch này.'**
+  String get spotScheduleCancelBody;
+
+  /// No description provided for @spotScheduleCancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ lịch'**
+  String get spotScheduleCancelConfirm;
+
+  /// No description provided for @spotScheduleCancelKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get spotScheduleCancelKeep;
+
+  /// No description provided for @spotScheduleHasBookings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {count} booking ngày {day}. Liên hệ khách hoặc huỷ từng booking (khách được hoàn 100%).'**
+  String spotScheduleHasBookings(int count, String day);
+
+  /// No description provided for @spotScheduleCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ lịch tại điểm'**
+  String get spotScheduleCancelled;
+
+  /// No description provided for @spotScheduleCancelFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không huỷ được lịch. Thử lại.'**
+  String get spotScheduleCancelFailed;
+
+  /// No description provided for @spotScheduleNewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm lịch tại điểm'**
+  String get spotScheduleNewTitle;
+
+  /// No description provided for @spotScheduleEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa lịch tại điểm'**
+  String get spotScheduleEditTitle;
+
+  /// No description provided for @spotScheduleLimitCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} / 8'**
+  String spotScheduleLimitCount(int count);
+
+  /// No description provided for @spotScheduleSpot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get spotScheduleSpot;
+
+  /// No description provided for @spotScheduleSpotPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn điểm chụp'**
+  String get spotScheduleSpotPick;
+
+  /// No description provided for @spotScheduleSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm theo tên điểm'**
+  String get spotScheduleSearch;
+
+  /// No description provided for @spotScheduleSpotNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có điểm nào khớp'**
+  String get spotScheduleSpotNone;
+
+  /// No description provided for @spotScheduleSpotRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm chụp'**
+  String get spotScheduleSpotRequired;
+
+  /// No description provided for @spotScheduleMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ chụp'**
+  String get spotScheduleMember;
+
+  /// No description provided for @spotScheduleMemberRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thợ chụp ở điểm này'**
+  String get spotScheduleMemberRequired;
+
+  /// No description provided for @spotScheduleNoMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa có thợ để giao lịch.'**
+  String get spotScheduleNoMembers;
+
+  /// No description provided for @spotScheduleMemberNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này chưa được duyệt nhận đơn. Chọn thợ khác.'**
+  String get spotScheduleMemberNotAccepting;
+
+  /// No description provided for @spotScheduleDaysLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày'**
+  String get spotScheduleDaysLabel;
+
+  /// No description provided for @spotScheduleRepeat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lặp lại'**
+  String get spotScheduleRepeat;
+
+  /// No description provided for @spotSchedulePickDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get spotSchedulePickDays;
+
+  /// No description provided for @spotScheduleWeekdays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ trong tuần'**
+  String get spotScheduleWeekdays;
+
+  /// No description provided for @spotScheduleFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ ngày'**
+  String get spotScheduleFrom;
+
+  /// No description provided for @spotScheduleTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tới ngày'**
+  String get spotScheduleTo;
+
+  /// No description provided for @spotScheduleStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu'**
+  String get spotScheduleStart;
+
+  /// No description provided for @spotScheduleEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get spotScheduleEnd;
+
+  /// No description provided for @spotSchedulePackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói đặt được'**
+  String get spotSchedulePackages;
+
+  /// No description provided for @spotScheduleAllPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi gói đang bật'**
+  String get spotScheduleAllPackages;
+
+  /// No description provided for @spotScheduleConflictBooked.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} đã có booking ở nơi khác.'**
+  String spotScheduleConflictBooked(String day);
+
+  /// No description provided for @spotScheduleConflictPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} đang có booking chờ nhận.'**
+  String spotScheduleConflictPending(String day);
+
+  /// No description provided for @spotScheduleConflictOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} bạn đã đánh dấu nghỉ.'**
+  String spotScheduleConflictOff(String day);
+
+  /// No description provided for @spotScheduleConflictSpot.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} đã có lịch tại điểm khác.'**
+  String spotScheduleConflictSpot(String day);
+
+  /// No description provided for @spotScheduleConflictFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} studio hết chỗ.'**
+  String spotScheduleConflictFull(String day);
+
+  /// No description provided for @spotScheduleConflictHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ngày này để mở lịch.'**
+  String get spotScheduleConflictHint;
+
+  /// No description provided for @spotScheduleRemoveDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} trùng lịch, chạm để bỏ'**
+  String spotScheduleRemoveDay(String day);
+
+  /// No description provided for @spotScheduleOffSeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này đẹp nhất tháng {months}'**
+  String spotScheduleOffSeason(String months);
+
+  /// No description provided for @spotScheduleOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở lịch'**
+  String get spotScheduleOpen;
+
+  /// No description provided for @spotScheduleSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get spotScheduleSave;
+
+  /// No description provided for @spotScheduleSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mở lịch tại điểm'**
+  String get spotScheduleSaved;
+
+  /// No description provided for @spotScheduleUpdated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu lịch tại điểm'**
+  String get spotScheduleUpdated;
+
+  /// No description provided for @spotScheduleLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có 8 lịch tại điểm đang mở. Huỷ bớt một lịch để mở lịch mới.'**
+  String get spotScheduleLimit;
+
+  /// No description provided for @spotScheduleNoDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất một ngày'**
+  String get spotScheduleNoDays;
+
+  /// No description provided for @spotScheduleTooMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 40 ngày mỗi lịch, trong 60 ngày tới'**
+  String get spotScheduleTooMany;
+
+  /// No description provided for @spotScheduleWindowInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khung giờ từ 05:00 tới 21:00, dài 1–12 giờ'**
+  String get spotScheduleWindowInvalid;
+
+  /// No description provided for @spotScheduleNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần được duyệt nhận đơn trước khi mở lịch tại điểm.'**
+  String get spotScheduleNotAccepting;
+
+  /// No description provided for @spotScheduleError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được. Thử lại.'**
+  String get spotScheduleError;
+
+  /// No description provided for @spotScheduleNoPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật ít nhất một gói chụp trước khi mở lịch tại điểm.'**
+  String get spotScheduleNoPackages;
+
+  /// No description provided for @slotOfferTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chia suất'**
+  String get slotOfferTitle;
+
+  /// No description provided for @slotOfferDismiss.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get slotOfferDismiss;
+
+  /// No description provided for @slotOfferScheduleLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{spot} · {weekdays} · {start}–{end}'**
+  String slotOfferScheduleLine(
+    String spot,
+    String weekdays,
+    String start,
+    String end,
+  );
+
+  /// No description provided for @slotOfferName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên gói'**
+  String get slotOfferName;
+
+  /// No description provided for @slotOfferPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá mỗi suất'**
+  String get slotOfferPrice;
+
+  /// No description provided for @slotOfferDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao ảnh trong'**
+  String get slotOfferDelivery;
+
+  /// No description provided for @slotOfferDeliveryUnit.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngày'**
+  String get slotOfferDeliveryUnit;
+
+  /// No description provided for @slotOfferPhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh'**
+  String get slotOfferPhotos;
+
+  /// No description provided for @slotOfferEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh chỉnh'**
+  String get slotOfferEdited;
+
+  /// No description provided for @slotOfferMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thời lượng suất'**
+  String get slotOfferMinutes;
+
+  /// No description provided for @slotOfferMinutesRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'15–90 phút'**
+  String get slotOfferMinutesRange;
+
+  /// No description provided for @slotOfferGap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ giữa suất'**
+  String get slotOfferGap;
+
+  /// No description provided for @slotOfferGapRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'0–30 phút'**
+  String get slotOfferGapRange;
+
+  /// No description provided for @slotOfferMinutesValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} phút'**
+  String slotOfferMinutesValue(int count);
+
+  /// No description provided for @slotOfferLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt'**
+  String get slotOfferLess;
+
+  /// No description provided for @slotOfferMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm'**
+  String get slotOfferMore;
+
+  /// No description provided for @slotOfferPreview.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} suất/ngày: {times}'**
+  String slotOfferPreview(int count, String times);
+
+  /// No description provided for @slotOfferNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chia suất không kèm dịch vụ đi kèm. Tối đa 2 gói mỗi lịch.'**
+  String get slotOfferNote;
+
+  /// No description provided for @slotOfferSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get slotOfferSave;
+
+  /// No description provided for @slotOfferClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng gói'**
+  String get slotOfferClose;
+
+  /// No description provided for @slotOfferCloseTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng gói {name}?'**
+  String slotOfferCloseTitle(String name);
+
+  /// No description provided for @slotOfferCloseBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã đặt vẫn giữ suất của mình.'**
+  String get slotOfferCloseBody;
+
+  /// No description provided for @slotOfferKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get slotOfferKeep;
+
+  /// No description provided for @slotOfferLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mỗi lịch tối đa 2 gói chia suất'**
+  String get slotOfferLimit;
+
+  /// No description provided for @slotOfferErrorName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên 3–60 ký tự'**
+  String get slotOfferErrorName;
+
+  /// No description provided for @slotOfferErrorPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá từ 10.000₫ tới 100.000.000₫'**
+  String get slotOfferErrorPrice;
+
+  /// No description provided for @slotOfferErrorFit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khung giờ không đủ cho một suất'**
+  String get slotOfferErrorFit;
+
+  /// No description provided for @slotOfferErrorContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại, Zalo hoặc link ra khỏi tên gói'**
+  String get slotOfferErrorContact;
+
+  /// No description provided for @slotOfferErrorPhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh từ 1 tới 500'**
+  String get slotOfferErrorPhotos;
+
+  /// No description provided for @slotOfferErrorEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh chỉnh không quá số ảnh'**
+  String get slotOfferErrorEdited;
+
+  /// No description provided for @slotOfferErrorDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao ảnh trong 1–30 ngày'**
+  String get slotOfferErrorDelivery;
+
+  /// No description provided for @slotOfferSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu gói chia suất'**
+  String get slotOfferSaved;
+
+  /// No description provided for @slotOfferClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng gói chia suất'**
+  String get slotOfferClosed;
+
+  /// No description provided for @workSpotSchedules.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm'**
+  String get workSpotSchedules;
+
+  /// No description provided for @workSpotSchedulesSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận chụp ở điểm đang hot'**
+  String get workSpotSchedulesSub;
+
+  /// No description provided for @spotSchedulePackagesInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có gói không dùng được trong khung giờ này. Chọn lại gói.'**
+  String get spotSchedulePackagesInvalid;
+
+  /// No description provided for @spotScheduleAddOffer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói chia suất'**
+  String get spotScheduleAddOffer;
+
+  /// No description provided for @spotNameCity.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {city}'**
+  String spotNameCity(String name, String city);
+
+  /// No description provided for @spotCitySeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'{city} · {season}'**
+  String spotCitySeason(String city, String season);
+
+  /// No description provided for @spotScheduleConflictDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} ×'**
+  String spotScheduleConflictDay(String day);
+
+  /// No description provided for @workSpotSchedulesOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch tại điểm · {count} đang mở'**
+  String workSpotSchedulesOpen(int count);
+
+  /// No description provided for @instantTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay'**
+  String get instantTitle;
+
+  /// No description provided for @instantGenrePortrait.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chân dung'**
+  String get instantGenrePortrait;
+
+  /// No description provided for @instantGenreCouple.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cặp đôi'**
+  String get instantGenreCouple;
+
+  /// No description provided for @instantGenreFamily.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia đình'**
+  String get instantGenreFamily;
+
+  /// No description provided for @instantGenreEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện nhỏ'**
+  String get instantGenreEvent;
+
+  /// No description provided for @instantGenreProduct.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sản phẩm'**
+  String get instantGenreProduct;
+
+  /// No description provided for @instantDurationMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String instantDurationMinutes(int n);
+
+  /// No description provided for @instantDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String instantDurationHours(int n);
+
+  /// No description provided for @instantPackageLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'{duration} · {photos} ảnh'**
+  String instantPackageLabel(String duration, int photos);
+
+  /// No description provided for @instantStatusAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get instantStatusAssigned;
+
+  /// No description provided for @instantStatusEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang đến'**
+  String get instantStatusEnRoute;
+
+  /// No description provided for @instantStatusArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get instantStatusArrived;
+
+  /// No description provided for @instantStatusInProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get instantStatusInProgress;
+
+  /// No description provided for @instantStatusFinished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách xác nhận'**
+  String get instantStatusFinished;
+
+  /// No description provided for @instantErrorGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại nhé.'**
+  String get instantErrorGeneric;
+
+  /// No description provided for @instantErrorNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối. Thử lại nhé.'**
+  String get instantErrorNetwork;
+
+  /// No description provided for @liveShutterTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Live Shutter'**
+  String get liveShutterTitle;
+
+  /// No description provided for @liveShutterBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.'**
+  String get liveShutterBody;
+
+  /// No description provided for @liveShutterCardOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang bật · nhận lời mời ở gần bạn'**
+  String get liveShutterCardOn;
+
+  /// No description provided for @liveShutterCardOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tắt · bật để nhận việc chụp ngay'**
+  String get liveShutterCardOff;
+
+  /// No description provided for @liveShutterJobTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc chụp ngay · {name}'**
+  String liveShutterJobTitle(String name);
+
+  /// No description provided for @liveShutterJobMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{service} · {place}'**
+  String liveShutterJobMeta(String service, String place);
+
+  /// No description provided for @helpReadyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sẵn sàng hỗ trợ'**
+  String get helpReadyTitle;
+
+  /// No description provided for @helpReadyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được ưu tiên mời cả việc gấp, xa hơn một chút.'**
+  String get helpReadyBody;
+
+  /// No description provided for @priceListTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bảng giá gói'**
+  String get priceListTitle;
+
+  /// No description provided for @priceListAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản {version} · đã đồng ý'**
+  String priceListAccepted(int version);
+
+  /// No description provided for @priceListNotAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản {version} · chưa đồng ý'**
+  String priceListNotAccepted(int version);
+
+  /// No description provided for @priceListCustomerPays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách trả'**
+  String get priceListCustomerPays;
+
+  /// No description provided for @priceListYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận'**
+  String get priceListYouGet;
+
+  /// No description provided for @priceListTermsNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá do nền tảng đặt, giống nhau cho mọi nhiếp ảnh gia trong một lượt gợi ý. Đồng ý để bật Live Shutter.'**
+  String get priceListTermsNote;
+
+  /// No description provided for @priceListAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý bảng giá'**
+  String get priceListAccept;
+
+  /// No description provided for @liveShutterNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở app trong 30 phút thì tạm ngừng nhận lời mời; mở lại app là nhận tiếp. Huỷ sau khi nhận làm giảm điểm tin cậy.'**
+  String get liveShutterNote;
+
+  /// No description provided for @liveShutterOffToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt khi xong việc hôm nay'**
+  String get liveShutterOffToday;
+
+  /// No description provided for @liveShutterLockedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bật được Live Shutter'**
+  String get liveShutterLockedTitle;
+
+  /// No description provided for @liveShutterReasonNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất xác minh và hồ sơ để nhận đơn'**
+  String get liveShutterReasonNotAccepting;
+
+  /// No description provided for @liveShutterReasonPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số điện thoại'**
+  String get liveShutterReasonPhone;
+
+  /// No description provided for @liveShutterReasonPriceList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý bảng giá gói'**
+  String get liveShutterReasonPriceList;
+
+  /// No description provided for @liveShutterReasonOutside.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang ở ngoài khu vực có Chụp ngay'**
+  String get liveShutterReasonOutside;
+
+  /// No description provided for @liveShutterReasonLocation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép dùng vị trí để nhận lời mời ở gần'**
+  String get liveShutterReasonLocation;
+
+  /// No description provided for @liveShutterAddPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số'**
+  String get liveShutterAddPhone;
+
+  /// No description provided for @liveShutterOpenSettings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở cài đặt'**
+  String get liveShutterOpenSettings;
+
+  /// No description provided for @offerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời chụp ngay'**
+  String get offerTitle;
+
+  /// No description provided for @offerPendingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} lời mời đang chờ'**
+  String offerPendingCount(int n);
+
+  /// No description provided for @offerYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận · {genre} {duration} · {photos} ảnh'**
+  String offerYouGet(String genre, String duration, int photos);
+
+  /// distance is formatDistance, e.g. 2,1 km
+  ///
+  /// In vi, this message translates to:
+  /// **'{distance} · khoảng {minutes} phút · địa chỉ hiện khi bạn nhận'**
+  String offerDistance(String distance, int minutes);
+
+  /// n is shown bold, so it is passed as text
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn bạn trong {n} người. Ai nhận trước sẽ được việc.'**
+  String offerChosenAmong(String n);
+
+  /// No description provided for @offerNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'\"{note}\"'**
+  String offerNote(String note);
+
+  /// No description provided for @offerDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get offerDecline;
+
+  /// No description provided for @offerAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận việc'**
+  String get offerAccept;
+
+  /// No description provided for @offerAlreadyAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn được người khác'**
+  String get offerAlreadyAssigned;
+
+  /// No description provided for @offerExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã hết hạn'**
+  String get offerExpired;
+
+  /// No description provided for @offerNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa nhận đơn được lúc này'**
+  String get offerNotAccepting;
+
+  /// No description provided for @matchTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã match với {name}'**
+  String matchTitle(String name);
+
+  /// No description provided for @matchBodyPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang chờ ở {place}. Tiếp tục để xem đường đi.'**
+  String matchBodyPhotographer(String name, String place);
+
+  /// No description provided for @matchContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get matchContinue;
+
+  /// No description provided for @jobTitleEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang đến'**
+  String get jobTitleEnRoute;
+
+  /// No description provided for @jobTitleArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get jobTitleArrived;
+
+  /// No description provided for @jobTitleShooting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get jobTitleShooting;
+
+  /// No description provided for @jobTitleFinished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách xác nhận'**
+  String get jobTitleFinished;
+
+  /// No description provided for @jobTitleCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn thành'**
+  String get jobTitleCompleted;
+
+  /// No description provided for @jobSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {genre} {duration}'**
+  String jobSubtitle(String name, String genre, String duration);
+
+  /// No description provided for @jobDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get jobDirections;
+
+  /// km is the number only, e.g. 1,4
+  ///
+  /// In vi, this message translates to:
+  /// **'{area} · {km} km'**
+  String jobDistanceLine(String area, String km);
+
+  /// No description provided for @jobMeetPointLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{area} · điểm hẹn'**
+  String jobMeetPointLine(String area);
+
+  /// No description provided for @jobStepAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận · {time}'**
+  String jobStepAccepted(String time);
+
+  /// No description provided for @jobStepArriveHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến (bật khi còn cách 200 m)'**
+  String get jobStepArriveHint;
+
+  /// No description provided for @jobStepArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến · {time}'**
+  String jobStepArrived(String time);
+
+  /// No description provided for @jobStepShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu chụp · Hoàn thành'**
+  String get jobStepShoot;
+
+  /// No description provided for @jobLocationNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí của bạn chỉ chia sẻ với khách trong lúc đang đến. Tới nơi là dừng.'**
+  String get jobLocationNote;
+
+  /// No description provided for @jobLocationNeeded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép dùng vị trí để chia sẻ đường đi với khách.'**
+  String get jobLocationNeeded;
+
+  /// No description provided for @jobLocationAllow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép'**
+  String get jobLocationAllow;
+
+  /// No description provided for @jobArrive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến'**
+  String get jobArrive;
+
+  /// distance is e.g. 350 m or 1,4 km
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn cách {distance}. Tới gần hơn để bấm Đã đến.'**
+  String jobArriveFar(String distance);
+
+  /// a distance under a kilometre, rounded to 10 m
+  ///
+  /// In vi, this message translates to:
+  /// **'{metres} m'**
+  String instantDistanceMetres(int metres);
+
+  /// No description provided for @jobArriveForceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'GPS chưa chính xác'**
+  String get jobArriveForceTitle;
+
+  /// No description provided for @jobArriveForceBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí đang lệch khoảng {meters} m. Xác nhận bạn đã tới điểm hẹn?'**
+  String jobArriveForceBody(int meters);
+
+  /// No description provided for @jobArriveForceConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đã đến'**
+  String get jobArriveForceConfirm;
+
+  /// No description provided for @jobArriveForceKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ GPS'**
+  String get jobArriveForceKeep;
+
+  /// No description provided for @jobStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu chụp'**
+  String get jobStart;
+
+  /// No description provided for @jobFinish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành'**
+  String get jobFinish;
+
+  /// No description provided for @jobShootLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn lại'**
+  String get jobShootLeft;
+
+  /// No description provided for @jobShootNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết giờ gói hoặc bấm Hoàn thành, khách sẽ xác nhận.'**
+  String get jobShootNote;
+
+  /// No description provided for @jobStartedLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu {time} · {place}'**
+  String jobStartedLine(String time, String place);
+
+  /// No description provided for @jobFinishedLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành {time} · {place}'**
+  String jobFinishedLine(String time, String place);
+
+  /// No description provided for @jobWaitingBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ khách'**
+  String get jobWaitingBadge;
+
+  /// No description provided for @jobFinishedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách xác nhận hoặc tự hoàn thành sau 2 giờ. Tiền chuyển cho bạn 24 giờ sau khi hoàn thành.'**
+  String get jobFinishedNote;
+
+  /// No description provided for @jobBackToWork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về Công việc'**
+  String get jobBackToWork;
+
+  /// No description provided for @jobNoShow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách không có mặt'**
+  String get jobNoShow;
+
+  /// No description provided for @jobNoShowIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách không có mặt (sau {time})'**
+  String jobNoShowIn(String time);
+
+  /// No description provided for @jobNoShowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo khách không có mặt?'**
+  String get jobNoShowTitle;
+
+  /// No description provided for @jobNoShowBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách được hoàn 50%, bạn nhận {amount}.'**
+  String jobNoShowBody(String amount);
+
+  /// No description provided for @jobNoShowConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo khách không có mặt'**
+  String get jobNoShowConfirm;
+
+  /// No description provided for @jobNoShowKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ thêm'**
+  String get jobNoShowKeep;
+
+  /// No description provided for @jobCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ việc'**
+  String get jobCancel;
+
+  /// No description provided for @jobCancelledTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã huỷ yêu cầu'**
+  String get jobCancelledTitle;
+
+  /// No description provided for @jobCancelledFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận {amount} phí đi lại.'**
+  String jobCancelledFee(String amount);
+
+  /// No description provided for @jobCancelledNoFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không cần tới điểm hẹn nữa.'**
+  String get jobCancelledNoFee;
+
+  /// No description provided for @providerCancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ việc chụp ngay?'**
+  String get providerCancelTitle;
+
+  /// No description provided for @providerCancelBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách được hoàn 100%. Huỷ sau khi nhận làm giảm điểm tin cậy của bạn.'**
+  String get providerCancelBody;
+
+  /// No description provided for @providerCancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ việc'**
+  String get providerCancelConfirm;
+
+  /// No description provided for @providerCancelKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ việc'**
+  String get providerCancelKeep;
+
+  /// No description provided for @mapRecenter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về vị trí của tôi'**
+  String get mapRecenter;
+
+  /// No description provided for @mapPinYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn'**
+  String get mapPinYou;
+
+  /// No description provided for @mapSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản đồ: {pins}'**
+  String mapSemantics(String pins);
 }
 
 class _AppLocalizationsDelegate

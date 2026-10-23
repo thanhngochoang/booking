@@ -1,5 +1,7 @@
 # Instant booking I6: real payments (MoMo, VNPay) and escrow release for Chụp ngay Implementation Plan
 
+> **Superseded by** [`2026-10-07-s13-s14-dispatch-provider.md`](2026-10-07-s13-s14-dispatch-provider.md) Task 11 (#202): fake rails on V1's shared payment model; the real licensed intermediary is #129/#141. Do not execute this plan.
+
 > **iOS (2026-10-02, user):** the dependency on iOS enablement Task 1 (`ios/Flutter/Secrets.xcconfig.example`, `test/platform/ios_config_test.dart`) is deferred: skip the iOS parts of this plan and append them under "Deferred iOS steps" in the iOS enablement plan.
 
 > **Battery/performance (2026-10-02, user):** this plan has no battery, idle, blur-budget or performance task or test steps. All of that runs once at the end in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Skip any such step inside a task (e.g. `expectIdle`, `expectBlurBudget`, listener counters, profiling); keep the functional tests.

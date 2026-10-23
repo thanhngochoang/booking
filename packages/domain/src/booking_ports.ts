@@ -9,6 +9,12 @@ import type { DeliveryRound, DeliverySample, PrivateDelivery } from './delivery.
 import type { Payment, PaymentMethod, PaymentSubject, Refund, RefundMethod, LedgerEntry } from './escrow.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
+import type { ProviderType } from './provider_type.js';
+import type { StudioDayFacts } from './studio_capacity.js';
+import type { Spot } from './spot.js';
+import type { SpotSchedule } from './spot_schedule.js';
+import type { SlotOffer } from './spot_slots.js';
+import type { SpotDay } from './spot_booking.js';
 
 export interface ServiceRecord {
   readonly id: string;
@@ -25,9 +31,19 @@ export interface ServiceCatalog {
   getService(photographerId: string, serviceId: string): Promise<ServiceRecord | null>;
 }
 
+/** What an order path needs to know about the provider, from the same single read as `acceptsOrders`. */
+export interface OrderProfile {
+  readonly acceptsOrders: boolean;
+  readonly providerType: ProviderType;
+  /** The studio this photographer is an active member of (#136); absent or null otherwise. */
+  readonly studioId?: string | null;
+}
+
 /** Whether a provider currently takes orders (verified and profile complete). */
 export interface ProviderOrderGate {
   acceptsOrders(photographerId: string): Promise<boolean>;
+  /** null when there is no provider profile (which cannot take orders). */
+  orderProfile(photographerId: string): Promise<OrderProfile | null>;
 }
 
 export interface CustomerContactRecord extends UserContactRecord {
@@ -42,8 +58,11 @@ export interface CustomerContactReader {
 }
 
 export interface AvailabilityDayRecord {
-  readonly state: 'off' | 'booked' | 'pending';
+  /** `full`: derived by the server on a studio's day when its free members are all taken (#136 Decision 26); `spot`: an open spot schedule holds the day (#194). */
+  readonly state: 'off' | 'booked' | 'pending' | 'spot' | 'full';
   readonly bookingId?: string;
+  readonly scheduleId?: string;
+  readonly spotId?: string;
 }
 
 /**
@@ -135,10 +154,41 @@ export interface BookingTx {
   deleteDeliverySamples(bookingId: string, fileIds: readonly string[]): Promise<void>;
   setPrivateDelivery(bookingId: string, p: PrivateDelivery): Promise<void>;
   getPrivateDelivery(bookingId: string): Promise<PrivateDelivery | null>;
+  getSpot(id: string): Promise<Spot | null>;
+  getSpotSchedule(id: string): Promise<SpotSchedule | null>;
+  getSlotOffer(id: string): Promise<SlotOffer | null>;
+  getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null>;
+  setSpotDay(spotDay: SpotDay): Promise<void>;
+}
+
+/**
+ * `studio_day_load/{studioId}_{day}` (server-only, #136 Decision 26): the studio's open bookings of the day,
+ * without (`unassignedIds`, drafts included) and with an assignee (`assignedIds`).
+ */
+export interface StudioDayLoad {
+  readonly studioId: string;
+  readonly day: string;
+  readonly unassignedIds: readonly string[];
+  readonly assignedIds: readonly string[];
+  readonly updatedAt: string;
+}
+
+/** Counters kept on `photographers/{studioId}` (server fields). */
+export type StudioCounterField = 'lateAssignCount' | 'changeDeclinedCount' | 'lateReassignCount' | 'lateDeliveryCount';
+
+/** The booking transaction with the studio parts (#136). Every BookingStore transaction provides it. */
+export interface StudioBookingTx extends BookingTx {
+  incrementStudioCounter(studioId: string, field: StudioCounterField): void;
+  getStudioDayLoad(studioId: string, day: string): Promise<StudioDayLoad | null>;
+  setStudioDayLoad(load: StudioDayLoad): Promise<void>;
+  /** Every active member of the studio with whether they can be assigned and whether their own day is empty. */
+  getMemberDays(studioId: string, day: string): Promise<StudioDayFacts['memberDays']>;
+  /** `photographers/{uid}.studioId`: the studio the photographer is an active member of (the membership lock). */
+  getMemberStudio(uid: string): Promise<string | null>;
 }
 
 export interface BookingStore {
-  runTransaction<T>(fn: (tx: BookingTx) => Promise<T>): Promise<T>;
+  runTransaction<T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T>;
   getBooking(id: string): Promise<Booking | null>;
   getAvailabilityDay(photographerId: string, day: string): Promise<AvailabilityDayRecord | null>;
   getCustomerDraftForDay(customerId: string, photographerId: string, day: string): Promise<Booking | null>;
@@ -153,6 +203,8 @@ export interface BookingStore {
   awaitingRefundsDue(now: Date, limit: number): Promise<readonly Refund[]>;
   getLedgerEntriesForPayment(paymentId: string): Promise<readonly LedgerEntry[]>;
   getContactSnapshot(bookingId: string): Promise<BookingContactSnapshot | null>;
+  getSlotOffer?(id: string): Promise<SlotOffer | null>;
+  getSpotDay?(scheduleId: string, day: string): Promise<SpotDay | null>;
   /**
    * Every payment whose `transferCode` is `code`, any status. Codes are unique among open
    * (`created`) payments only, so closed ones can share a code.
@@ -168,6 +220,7 @@ export interface BookingStore {
   findExpiredDrafts(now: Date, limit?: number): Promise<readonly Booking[]>;
   findExpiredRequests(now: Date, limit?: number): Promise<readonly Booking[]>;
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
+  /** accepted | upcoming bookings ended before `cutoff`, without studio bookings that have no assignee. */
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
   findReleasableEscrows(cutoff: Date, limit?: number): Promise<readonly Payment[]>;
   /** status delivered, autoApproveAt <= now */
@@ -176,6 +229,19 @@ export interface BookingStore {
   findDueChecks(now: Date, limit?: number): Promise<readonly Booking[]>;
   /** status delivered, autoApproveNoticeAt null, autoApproveAt <= now + 24 h */
   findDueAutoApproveNotices(now: Date, limit?: number): Promise<readonly Booking[]>;
+}
+
+/** The sweep queries of studio bookings (#136 Decision 20). */
+export interface StudioBookingStore extends BookingStore {
+  /**
+   * Studio bookings with assignStatus unassigned, assignOverdue false, status requested | accepted and
+   * assignDeadline <= now + 24 h (reminder or overdue work), soonest deadline first.
+   */
+  findUnassignedStudioBookingsDue(now: Date, limit: number): Promise<readonly Booking[]>;
+  /** Studio bookings with assignStatus unassigned, status requested | accepted and start <= now, oldest first. */
+  findUnassignedStudioBookingsStarted(now: Date, limit: number): Promise<readonly Booking[]>;
+  /** changeRequest.status pending and changeRequest.respondBy <= now, oldest first. */
+  findDueChangeRequests(now: Date, limit: number): Promise<readonly Booking[]>;
 }
 
 export interface PaymentGateway {

@@ -5,6 +5,9 @@ import 'package:photobooking/core/phone.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
+import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_rules.dart';
 
 enum BookingStep { service, datetime, place, review }
 
@@ -15,12 +18,18 @@ class BookingFlowArgs {
     this.serviceId,
     this.day,
     this.area,
+    this.scheduleId,
+    this.slotOfferId,
+    this.start,
   });
 
   final String photographerId;
   final String? serviceId;
   final String? day;
   final String? area;
+  final String? scheduleId;
+  final String? slotOfferId;
+  final String? start;
 
   @override
   bool operator ==(Object other) =>
@@ -30,13 +39,90 @@ class BookingFlowArgs {
           photographerId == other.photographerId &&
           serviceId == other.serviceId &&
           day == other.day &&
-          area == other.area;
+          area == other.area &&
+          scheduleId == other.scheduleId &&
+          slotOfferId == other.slotOfferId &&
+          start == other.start;
 
   @override
-  int get hashCode => Object.hash(photographerId, serviceId, day, area);
+  int get hashCode => Object.hash(
+        photographerId,
+        serviceId,
+        day,
+        area,
+        scheduleId,
+        slotOfferId,
+        start,
+      );
 }
 
 enum SubmitPhase { idle, creating, paying, done }
+
+/// What a booking from a spot (S29.02 "Đặt", S29.06 "Chọn suất") is limited
+/// to: the schedule's packages, days and window; the place is the spot
+/// (Decision 9). With [offer] it is a slot booking: no add-ons (T6).
+@immutable
+class SpotBookingContext {
+  const SpotBookingContext({
+    required this.schedule,
+    required this.spotName,
+    required this.lat,
+    required this.lng,
+    this.offer,
+    this.takenByDay = const {},
+    this.failedDays = const {},
+    this.archived = false,
+  });
+
+  final SpotSchedule schedule;
+  final String spotName;
+  final double lat;
+  final double lng;
+  final SlotOffer? offer;
+
+  /// `spot_days/{scheduleId}_{day}.taken` of the days read so far.
+  final Map<String, List<SpotInterval>> takenByDay;
+
+  /// Days whose `spot_days` read failed (S04.02 offers a retry).
+  final Set<String> failedDays;
+  final bool archived;
+
+  /// Packages the schedule takes: [ServiceSummary] ids in
+  /// `serviceIds`, or every active package when it is empty.
+  List<ServiceSummary> packagesOf(List<ServiceSummary> all) {
+    final ids = schedule.serviceIds;
+    if (ids.isEmpty) return [for (final s in all) if (s.active) s];
+    return [for (final s in all) if (s.active && ids.contains(s.id)) s];
+  }
+
+  /// The schedule's days from [today] (`yyyy-MM-dd`) on; none once closed.
+  List<String> daysFrom(String today) => schedule.open
+      ? ([for (final d in schedule.days) if (d.compareTo(today) >= 0) d]
+          ..sort())
+      : const [];
+
+  SpotBookingContext copyWith({
+    SpotSchedule? schedule,
+    String? spotName,
+    double? lat,
+    double? lng,
+    SlotOffer? offer,
+    Map<String, List<SpotInterval>>? takenByDay,
+    Set<String>? failedDays,
+    bool? archived,
+  }) {
+    return SpotBookingContext(
+      schedule: schedule ?? this.schedule,
+      spotName: spotName ?? this.spotName,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      offer: offer ?? this.offer,
+      takenByDay: takenByDay ?? this.takenByDay,
+      failedDays: failedDays ?? this.failedDays,
+      archived: archived ?? this.archived,
+    );
+  }
+}
 
 @immutable
 class BookingFlowState {
@@ -62,6 +148,7 @@ class BookingFlowState {
     this.picks = const {},
     this.pickupName = '',
     this.droppedAddonNames = const [],
+    this.spot,
   });
 
   final BookingStep step;
@@ -95,11 +182,17 @@ class BookingFlowState {
   /// once and calls `consumeDropped`.
   final List<String> droppedAddonNames;
 
+  /// Set when booking from a spot (S29.02, S29.06).
+  final SpotBookingContext? spot;
+
+  /// A slot-offer booking (S29.06): opens on S04.03, no add-ons or pickup.
+  bool get isSlot => spot?.offer != null;
+
   bool get hasChoices =>
       serviceId != null ||
       day != null ||
       start != null ||
-      placeName.isNotEmpty ||
+      (spot == null && placeName.isNotEmpty) || // a spot's place is given
       note.isNotEmpty ||
       picks.isNotEmpty ||
       pickupName.isNotEmpty;
@@ -107,7 +200,7 @@ class BookingFlowState {
   /// Add-ons that apply to the chosen package, grouped in kind order.
   List<ServiceAddon> get applicableAddons {
     final id = serviceId;
-    if (id == null) return const [];
+    if (id == null || isSlot) return const []; // T6: slots carry no add-ons
     return [
       for (final kind in AddonKind.values)
         ...addons.where((a) => a.kind == kind && a.appliesTo(id)),
@@ -140,6 +233,22 @@ class BookingFlowState {
   /// What the customer pays when booking: the whole total (payments spec M2).
   int? get payVnd => totalVnd != null ? depositFor(totalVnd!).deposit : null;
 
+  /// S04.02 at a spot: start times on the chosen day that fit the package in
+  /// the schedule's window around the taken intervals (≥ 15 min apart) and
+  /// lie after [now]; null until that day's `spot_days` is read.
+  List<String>? availableStarts(DateTime now) {
+    final ctx = spot;
+    final d = day;
+    final minutes = durationMinutes;
+    if (ctx == null || d == null || minutes == null) return null;
+    final taken = ctx.takenByDay[d];
+    if (taken == null) return null;
+    return [
+      for (final t in freeStartTimes(ctx.schedule.window, minutes, taken))
+        if (BookingRules.parseBookingDateTime(d, t).isAfter(now)) t,
+    ];
+  }
+
   String? get end => (start != null && durationMinutes != null)
       ? endTimeFor(start!, durationMinutes!)
       : null;
@@ -161,6 +270,7 @@ class BookingFlowState {
       case BookingStep.review:
         final p = phone;
         if (p == null || busy) return false;
+        if (serviceId == null || day == null || start == null) return false;
         return normalizePhone(p, international: true) != null ||
             phoneFromField(p) != null;
     }
@@ -194,6 +304,7 @@ class BookingFlowState {
     Map<String, int>? picks,
     String? pickupName,
     List<String>? droppedAddonNames,
+    SpotBookingContext? spot,
   }) {
     return BookingFlowState(
       step: step ?? this.step,
@@ -218,6 +329,7 @@ class BookingFlowState {
       picks: picks ?? this.picks,
       pickupName: pickupName ?? this.pickupName,
       droppedAddonNames: droppedAddonNames ?? this.droppedAddonNames,
+      spot: spot ?? this.spot,
     );
   }
 }

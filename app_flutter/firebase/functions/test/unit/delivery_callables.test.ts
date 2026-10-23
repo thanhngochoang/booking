@@ -49,7 +49,7 @@ function createTestDeps(): {
     contacts: {
       get: async (uid) => contactsMap.get(uid) ?? null,
     },
-    providers: { acceptsOrders: async () => true },
+    providers: { acceptsOrders: async () => true, orderProfile: async () => ({ acceptsOrders: true, providerType: 'individual' }) },
     blocks,
     gateway,
     cipher: {

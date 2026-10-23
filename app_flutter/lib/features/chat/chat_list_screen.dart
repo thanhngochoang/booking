@@ -101,9 +101,7 @@ class _ChatRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final thread = item.thread;
-    final counterpartId = currentUserId == thread.customerId
-        ? thread.photographerId
-        : thread.customerId;
+    final counterpartId = thread.counterpartIdOf(currentUserId ?? '');
     final profileAsync = ref.watch(partyProfileProvider(counterpartId));
 
     if (profileAsync.isLoading && !profileAsync.hasValue) {

@@ -16,10 +16,15 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
+import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/event_create/create_event_controller.dart';
 import 'package:photobooking/features/event_create/event_draft_store.dart';
 import 'package:photobooking/features/event_create/place_field.dart';
+import 'package:photobooking/features/event_create/spot_field.dart';
+import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// The card the customer will see in the list (S11.01), made from the form:
@@ -63,6 +68,10 @@ String eventFieldErrorText(AppLocalizations l, EventField field, String code) {
     (EventField.cover, _) => l.createEventErrCover,
     (EventField.title, 'too_long') => l.createEventErrTitleLong,
     (EventField.title, _) => l.createEventErrTitle,
+    (EventField.spot, 'archived') => l.eventSpotArchived,
+    (EventField.spot, 'gone') => l.eventSpotGone,
+    (EventField.spot, 'far') => l.eventSpotFar,
+    (EventField.spot, _) => l.eventSpotRequired,
     (EventField.type, _) => l.createEventErrType,
     (EventField.description, _) => l.createEventErrDescLong,
     (EventField.day, _) => l.createEventErrDay,
@@ -350,11 +359,16 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
     if (ok) {
       _scrollTop();
     } else {
-      _say(
-        _failureText(
-          ref.read(createEventControllerProvider(widget.args)).failure,
-        ),
-      );
+      final s = ref.read(createEventControllerProvider(widget.args));
+      if (s.failure != CreateEventFailure.none) {
+        _say(_failureText(s.failure));
+      } else if (!s.form.spotDecided) {
+        // The spot choice is missing: its error shows under the field.
+        _jumpTo(EventField.spot);
+      } else if (s.serverErrors.isNotEmpty) {
+        // The server refused one field (day, hashtag, spot): go to it.
+        _jumpTo(s.serverErrors.keys.first);
+      }
     }
   }
 
@@ -648,6 +662,20 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
             labelText: l.createEventNameRequired,
             errorText: errorOf(EventField.title),
           ),
+        ),
+      ),
+      const SizedBox(height: AppSpace.s3),
+      KeyedSubtree(
+        key: _keys[EventField.spot],
+        child: _SpotSection(
+          value: s.form.spotId,
+          decided: s.form.spotDecided,
+          lat: s.form.lat,
+          lng: s.form.lng,
+          error: errorOf(EventField.spot),
+          focusNode: _nodes[EventField.spot]!,
+          enabled: !busy,
+          onChanged: (spot, previous) => ctl.setSpot(spot, previous: previous),
         ),
       ),
       const SizedBox(height: AppSpace.s3),
@@ -1154,6 +1182,67 @@ class _SaveDraftSheet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Điểm chụp" of step 1: the directory of active spots (one cached read,
+/// Decision 3), ordered for this event: those that reach the place first,
+/// else those near the organizer's device position, else the hottest.
+class _SpotSection extends ConsumerWidget {
+  const _SpotSection({
+    required this.value,
+    required this.decided,
+    required this.lat,
+    required this.lng,
+    required this.error,
+    required this.focusNode,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final bool decided;
+  final double? lat;
+  final double? lng;
+  final String? error;
+  final FocusNode focusNode;
+  final bool enabled;
+  final void Function(SpotEntry? spot, SpotEntry? previous) onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final device = ref.watch(
+      locationControllerProvider.select((s) => s.location),
+    );
+    return AsyncView<List<SpotEntry>>(
+      value: ref.watch(spotDirectoryProvider),
+      loaderSize: LoaderSize.inline,
+      skeleton: (_) => AppSkeletonScope(
+        child: AppSkeleton.group(
+          child: AppSkeleton.box(height: AppSpace.s12 + AppSpace.s2),
+        ),
+      ),
+      onRetry: () => ref.invalidate(spotDirectoryProvider),
+      data: (context, spots) {
+        final ordered = spotsForEvent(
+          spots,
+          lat: lat ?? device?.lat,
+          lng: lng ?? device?.lng,
+        );
+        return SpotField(
+          suggestions: ordered,
+          value: value,
+          decided: decided,
+          error: error,
+          focusNode: focusNode,
+          enabled: enabled,
+          onChanged: (id) => onChanged(
+            id == null ? null : ordered.firstWhere((s) => s.spotId == id),
+            ordered.where((s) => s.spotId == value).firstOrNull,
+          ),
+        );
+      },
     );
   }
 }

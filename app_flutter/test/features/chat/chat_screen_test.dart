@@ -19,6 +19,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
+import 'package:photobooking/features/safety/report_sheet.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
@@ -95,9 +96,13 @@ void main() {
         partyProfileProvider.overrideWith((ref, uid) async* {
           yield UserProfile(
             uid: uid,
-            displayName: uid == 'p1' ? 'Photographer Pro' : 'Customer C',
+            displayName: switch (uid) {
+              'p1' => 'Photographer Pro',
+              'm1' => 'Thợ Minh',
+              _ => 'Customer C',
+            },
             avatarUrl: null,
-            role: uid == 'p1' ? UserRole.photographer : UserRole.customer,
+            role: uid == 'c1' ? UserRole.customer : UserRole.photographer,
           );
         }),
         photographerProfileProvider.overrideWith((ref, uid) async {
@@ -765,6 +770,104 @@ void main() {
 
       expect(find.text('Xem buổi chụp'), findsOneWidget);
       expect(find.text('Xem hồ sơ'), findsNothing);
+    });
+  });
+
+  group('a studio booking chat (#136)', () {
+    Booking studioBooking() => _booking().copyWith(
+      studio: StudioBookingInfo(
+        assigneeId: 'm1',
+        assignStatus: StudioAssignStatus.assigned,
+        assignDeadline: DateTime.utc(2026, 10, 11, 8, 30),
+      ),
+    );
+
+    void seedThreeMembers({String? assigneeId = 'm1'}) {
+      fakeChat.seedThread(
+        ChatThread(
+          id: 'c1_p1',
+          kind: ChatKind.booking,
+          customerId: 'c1',
+          photographerId: 'p1',
+          assigneeId: assigneeId,
+          bookingId: 'b1',
+        ),
+      );
+      fakeChat.seedMessages('c1_p1', [
+        ChatMessage(
+          id: 'm_c',
+          senderId: 'c1',
+          type: MessageType.text,
+          body: 'from customer',
+          createdAt: DateTime(2026, 10, 5, 10, 0),
+        ),
+        ChatMessage(
+          id: 'm_p',
+          senderId: 'p1',
+          type: MessageType.text,
+          body: 'from studio',
+          createdAt: DateTime(2026, 10, 5, 10, 1),
+        ),
+        ChatMessage(
+          id: 'm_m',
+          senderId: 'm1',
+          type: MessageType.text,
+          body: 'from assignee',
+          createdAt: DateTime(2026, 10, 5, 10, 2),
+        ),
+      ]);
+    }
+
+    /// Text of each bubble → the name shown above it (null on mine).
+    Map<String, String?> senders(WidgetTester tester) => {
+      for (final b in tester.widgetList<ChatBubble>(find.byType(ChatBubble)))
+        if (b.content case TextContent(:final text)) text: b.senderName,
+    };
+
+    for (final (viewer, expected) in [
+      (
+        'p1',
+        {'from customer': 'Customer C', 'from studio': null, 'from assignee': 'Thợ Minh'},
+      ),
+      (
+        'm1',
+        {'from customer': 'Customer C', 'from studio': 'Photographer Pro', 'from assignee': null},
+      ),
+      (
+        'c1',
+        {'from customer': null, 'from studio': 'Photographer Pro', 'from assignee': 'Thợ Minh'},
+      ),
+    ]) {
+      testWidgets('each message is named after its sender for $viewer', (tester) async {
+        fakeChat.currentUserId = viewer;
+        seedThreeMembers();
+        await pumpScreen(tester, signedInUid: viewer, booking: studioBooking());
+        expect(senders(tester), expected);
+      });
+    }
+
+    testWidgets('the report sheet names the assignee, not the customer, for the studio', (tester) async {
+      fakeChat.currentUserId = 'p1';
+      seedThreeMembers();
+      await pumpScreen(tester, signedInUid: 'p1', booking: studioBooking());
+      await tester.longPress(find.text('from assignee'));
+      await tester.pumpAndSettle();
+      final sheet = tester.widget<ReportSheet>(find.byType(ReportSheet));
+      expect(sheet.target.ownerName, 'Thợ Minh');
+    });
+
+    testWidgets('a two-member chat still names the counterpart', (tester) async {
+      seedThreeMembers(assigneeId: null);
+      await pumpScreen(tester);
+      expect(senders(tester)['from studio'], 'Photographer Pro');
+      expect(senders(tester)['from customer'], isNull);
+    });
+
+    testWidgets('no "Đổi lịch" chip on a studio booking', (tester) async {
+      seedThreeMembers();
+      await pumpScreen(tester, booking: studioBooking());
+      expect(find.text('Gửi vị trí'), findsOneWidget);
+      expect(find.text('Đổi lịch'), findsNothing);
     });
   });
 

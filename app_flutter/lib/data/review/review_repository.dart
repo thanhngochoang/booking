@@ -36,5 +36,9 @@ abstract class ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
+
+    /// The studio block; required for a studio booking, absent otherwise
+    /// (#136 Decision 21: both documents are written in one call).
+    StudioReviewDraft? studio,
   });
 }

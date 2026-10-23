@@ -103,6 +103,10 @@ EventDetail? eventDetailFromFirestore(String id, Map<String, dynamic>? d) {
     coverPath: _str(d['coverPath']),
     priceSet: d['price'] is num,
     capacitySet: d['capacity'] is num,
+    spotId: _str(d['spotId']),
+    // The server stores the S12.01 decision itself (`spotDecided`), so a
+    // chosen "Không thuộc điểm chụp nào" survives a resume.
+    spotDecided: d['spotDecided'] == true || _str(d['spotId']) != null,
   );
 }
 

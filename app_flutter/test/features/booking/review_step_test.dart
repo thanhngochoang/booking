@@ -17,6 +17,7 @@ import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
 
 import '../../support/booking_world.dart';
+import '../../support/spot_booking_fixtures.dart';
 
 void main() {
   final now = DateTime.utc(2026, 10, 5);
@@ -531,5 +532,14 @@ void main() {
       ]);
       expect(find.textContaining('Điểm đón'), findsNothing);
     });
+  });
+
+  testWidgets('summary shows "Tại Hồ Tây"', (tester) async {
+    await walkSpotPackage(tester, until: BookingStep.review, car: true);
+
+    expect(find.byType(ReviewStep), findsOneWidget);
+    expect(find.text('Tại Hồ Tây'), findsOneWidget);
+    expect(find.text('Điểm đón: Ga Hà Nội, Đống Đa'), findsOneWidget);
+    expect(find.text('Thanh toán 1.800.000₫'), findsOneWidget);
   });
 }

@@ -13,11 +13,17 @@ String bookingPath({
   String? serviceId,
   DateTime? date,
   String? area,
+  String? scheduleId,
+  String? slotOfferId,
+  String? start,
 }) {
   final query = {
     'serviceId': ?serviceId,
     'date': ?(date == null ? null : dayKeyOf(date)),
     'area': ?area,
+    'scheduleId': ?scheduleId,
+    'offerId': ?slotOfferId,
+    'start': ?start,
   };
   return Uri(
     path: '/u/$photographerId/book',
@@ -35,12 +41,18 @@ Future<void> startBooking(
   String? serviceId,
   DateTime? date,
   String? area,
+  String? scheduleId,
+  String? slotOfferId,
+  String? start,
 }) async {
   final path = bookingPath(
     photographerId: photographerId,
     serviceId: serviceId,
     date: date,
     area: area,
+    scheduleId: scheduleId,
+    slotOfferId: slotOfferId,
+    start: start,
   );
   Object? contact;
   // currentContactProvider is autoDispose: hold a listener while we wait.

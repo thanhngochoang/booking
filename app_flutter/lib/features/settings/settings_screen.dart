@@ -10,6 +10,8 @@ import 'package:photobooking/data/photographer/photographer_setup_providers.dart
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
+import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification.dart';
@@ -104,21 +106,9 @@ class SettingsScreen extends ConsumerWidget {
           if (ownerVerified) const _BusinessTile(),
         ],
         if (studioReady && type == ProviderType.studio)
-          _LinkTile(
-            key: const Key('settings-studio-members'),
-            icon: AppIcons.people,
-            title: l.settingsStudioMembers,
-            subtitle: l.settingsStudioMembersBody,
-            path: '/studio/members',
-          )
+          const _StudioMembersTile()
         else if (studioReady && type != null)
-          _LinkTile(
-            key: const Key('settings-my-studio'),
-            icon: AppIcons.people,
-            title: l.settingsMyStudio,
-            subtitle: l.settingsMyStudioBody,
-            path: '/me/studio',
-          ),
+          const _MyStudioTile(),
         _LinkTile(
           key: const Key('profile-public'),
           icon: AppIcons.store,
@@ -573,6 +563,61 @@ class _VerifyTile extends ConsumerWidget {
       title: l.settingsVerify,
       subtitle: subtitle,
       path: '/verify/start',
+    );
+  }
+}
+
+/// "Thành viên studio" (S26.01) with "{n}/{max} thợ" once both the relations
+/// and the own intro (the max is 30 with a business record, else 3) have
+/// loaded; until then #148's line, so the max never jumps from 3 to 30.
+class _StudioMembersTile extends ConsumerWidget {
+  const _StudioMembersTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final relations = ref.watch(myStudioRelationsProvider).value;
+    final intro = ref.watch(myIntroProvider).value;
+    return _LinkTile(
+      key: const Key('settings-studio-members'),
+      icon: AppIcons.people,
+      title: l.settingsStudioMembers,
+      subtitle: relations == null || intro == null
+          ? l.settingsStudioMembersBody
+          : l.settingsStudioMembersQuota(
+              relations.activeCount,
+              studioMaxMembers(businessVerified: intro.businessVerified),
+            ),
+      path: '/studio/members',
+    );
+  }
+}
+
+/// "Studio của tôi" (S26.03) with the studio's name, or "Chưa ở studio nào"
+/// once the relations load.
+class _MyStudioTile extends ConsumerWidget {
+  const _MyStudioTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final relations = ref.watch(myMemberRelationsProvider).value;
+    final active = relations
+        ?.where((r) => r.status == RelationStatus.active)
+        .firstOrNull;
+    return _LinkTile(
+      key: const Key('settings-my-studio'),
+      icon: AppIcons.people,
+      title: l.settingsMyStudio,
+      subtitle: relations == null
+          ? l.settingsMyStudioBody
+          : active == null
+          ? l.settingsMyStudioNone
+          // A studio without a display name keeps the row's own line.
+          : active.studioName.isEmpty
+          ? l.settingsMyStudioBody
+          : active.studioName,
+      path: '/me/studio',
     );
   }
 }

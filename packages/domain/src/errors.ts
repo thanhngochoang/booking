@@ -44,18 +44,42 @@ export const ERROR_CODES = [
   'contact_leak',
   /** A delivery sample is missing, failed, or still processing. */
   'not_ready',
+  /** Studio membership (#136): the photographer is active in another studio, or a provider type change is blocked by members or an open relation. */
+  'membership_conflict',
+  /** Studio membership (#136): within 7 days of leaving or being removed from a studio. */
+  'cooldown',
+  /** Studio membership (#136): the member still has an open studio booking assigned. */
+  'member_busy',
+  /** Studio membership (#136): members + open invites reached the cap (3, or 30 business-verified), or 5 open invites. */
+  'studio_full',
+  'outside_schedule',
+  'slot_taken',
+  'day_conflict',
+  'schedule_limit',
+  'spot_archived',
+  'schedule_has_bookings',
+  /** Chụp ngay (#140): the search window ended without a match (spec §6). */
+  'no_match',
+  /** Chụp ngay (#140): the offer's 60 seconds passed by server time, or it was withdrawn. */
+  'offer_expired',
+  /** Chụp ngay (#140): another photographer took the request first, or the photographer already has a job. */
+  'already_assigned',
+  /** Chụp ngay (#140): the point is outside every open city. */
+  'outside_service_area',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
 /**
  * A refused use case. The message is the code itself, so nothing else can leak. `field` names the
- * offending input field for form errors (never user text).
+ * offending input field for form errors (never user text); `details` carries structured, non-user
+ * data the caller needs to explain the refusal (e.g. the conflicting days of a spot schedule).
  */
 export class DomainError extends Error {
   constructor(
     readonly code: ErrorCode,
     readonly field?: string,
+    readonly details?: Readonly<Record<string, unknown>>,
   ) {
     super(code);
     this.name = 'DomainError';

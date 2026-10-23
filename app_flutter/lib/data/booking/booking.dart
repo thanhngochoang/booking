@@ -3,6 +3,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/booking/studio_booking.dart';
+
+export 'package:photobooking/data/booking/studio_booking.dart';
 
 part 'booking.freezed.dart';
 part 'booking.g.dart';
@@ -171,6 +174,13 @@ abstract class Booking with _$Booking {
     DateTime? completedAt,
     DateTime? reviewedAt,
     String? chatId,
+    String? spotId,
+    String? spotScheduleId,
+    String? slotOfferId,
+    String? source,
+
+    /// The studio part (#136); null for an individual booking.
+    StudioBookingInfo? studio,
 
     /// What S04.04 pays: mirror of `bookings/{id}.checkout`, set while a draft
     /// waits for its payment. Not part of the JSON form.
@@ -337,6 +347,11 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       completedAt: toDateTime(data['completedAt']),
       reviewedAt: toDateTime(data['reviewedAt']),
       chatId: data['chatId'] as String?,
+      studio: studioBookingInfoFrom(data),
+      spotId: data['spotId'] as String?,
+      spotScheduleId: data['spotScheduleId'] as String?,
+      slotOfferId: data['slotOfferId'] as String?,
+      source: data['source'] as String?,
       checkout: bookingCheckoutFrom(data['checkout']),
       version: (data['version'] as num?)?.toInt() ?? 1,
       createdAt: createdAt,

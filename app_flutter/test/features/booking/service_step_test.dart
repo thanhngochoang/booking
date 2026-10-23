@@ -11,6 +11,7 @@ import 'package:photobooking/features/booking/steps/service_step.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
 import '../../support/booking_world.dart';
+import '../../support/spot_booking_fixtures.dart';
 
 void main() {
   testWidgets('lists active packages cheapest first with name and price', (
@@ -278,5 +279,16 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Thêm dịch vụ'), findsOneWidget);
     });
+  });
+
+  testWidgets('spot context lists only enabled packages', (tester) async {
+    await walkSpotPackage(tester, until: BookingStep.service);
+
+    expect(find.text('Gói Chân Dung'), findsOneWidget);
+    expect(find.text('Gói Ngoại Cảnh'), findsNothing);
+    expect(
+      find.widgetWithText(AppButton, 'Tiếp tục · 1.500.000₫'),
+      findsOneWidget,
+    );
   });
 }

@@ -12,8 +12,10 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 /// State of one day on a photographer's calendar. A day with no stored
 /// record is [free]; `off` is set by the photographer, `pending` and `booked`
-/// only by the server (bookings and events).
-enum DayState { free, pending, booked, off }
+/// only by the server (bookings and events). `full` is a studio day whose
+/// bookings already use every free member (server-written, #136 Decision 26):
+/// drawn like `booked`, labelled "Hết chỗ", never selectable.
+enum DayState { free, pending, booked, off, full }
 
 extension DayStateLabel on DayState {
   String label(AppLocalizations l) => switch (this) {
@@ -21,6 +23,7 @@ extension DayStateLabel on DayState {
     DayState.pending => l.dayStatePending,
     DayState.booked => l.dayStateBooked,
     DayState.off => l.dayStateOff,
+    DayState.full => l.calendarDayFull,
   };
 }
 
@@ -57,6 +60,7 @@ class AvailabilityCalendar extends StatelessWidget {
     required this.month,
     required this.states,
     this.selected,
+    this.selectedDays = const {},
     this.onSelect,
     this.onLongPress,
     this.editable = false,
@@ -75,6 +79,10 @@ class AvailabilityCalendar extends StatelessWidget {
   /// Non-free days; missing days are free.
   final Map<DateTime, DayState> states;
   final DateTime? selected;
+
+  /// More selected days, drawn like [selected] (S29.04 "Chọn ngày" picks
+  /// several); calendar days.
+  final Set<DateTime> selectedDays;
   final ValueChanged<DateTime>? onSelect;
 
   /// Starts a range on S06.04 (the alternative to dragging: press and hold the
@@ -161,7 +169,9 @@ class AvailabilityCalendar extends StatelessWidget {
                         state: states[days[w * 7 + c]] ?? DayState.free,
                         inMonth: days[w * 7 + c].month == m.month,
                         inBounds: _inBounds(days[w * 7 + c]),
-                        selected: days[w * 7 + c] == sel,
+                        selected:
+                            days[w * 7 + c] == sel ||
+                            selectedDays.contains(days[w * 7 + c]),
                         today: days[w * 7 + c] == now,
                         hasEvent: eventDays.contains(days[w * 7 + c]),
                         rangeStart: days[w * 7 + c] == range,
@@ -286,7 +296,7 @@ class _DayCell extends StatelessWidget {
       case DayState.off:
         fillColor = _field(theme);
         fg = tertiary;
-      case DayState.booked:
+      case DayState.booked || DayState.full:
         line = TextDecoration.lineThrough;
         fg = tertiary;
     }

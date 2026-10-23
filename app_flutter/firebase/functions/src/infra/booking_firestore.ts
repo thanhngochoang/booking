@@ -3,6 +3,7 @@
  */
 
 import {
+  FieldValue,
   Timestamp,
   GeoPoint,
   type DocumentData,
@@ -10,23 +11,30 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import {
+  MAX_MEMBERS_VERIFIED,
   PAYMENT_METHODS,
+  acceptsOrders,
   escrowRefundedTotal,
+  formatVnDate,
   isAddonKind,
   isAddonUnit,
   isPaymentMethod,
   isPaymentSubject,
+  parseVnDateTime,
+  waitsForAssignee,
   type AddonLine,
   type Booking,
   type BookingPickup,
   type BookingCheckout,
   type BookingContactSnapshot,
+  type BookingSource,
   type BookingStatus,
   type EscrowStatus,
   type PaymentProvider,
   type AvailabilityDayRecord,
-  type BookingStore,
-  type BookingTx,
+  type StudioBookingStore,
+  type StudioBookingTx,
+  type StudioDayLoad,
   type Payment,
   type PaymentStatus,
   type Refund,
@@ -36,6 +44,8 @@ import {
   type TransferOutcome,
   type TransferRecord,
   type DeliverySample,
+  type SlotOffer,
+  type SpotDay,
 } from '@photobooking/domain';
 import {
   deliveryRoundToFirestore,
@@ -44,6 +54,17 @@ import {
   privateDeliveryToFirestore,
   privateDeliveryFromFirestore,
 } from './delivery_firestore.js';
+import {
+  SPOTS_COLLECTION,
+  SPOT_SCHEDULES_COLLECTION,
+  SPOT_SLOT_OFFERS_COLLECTION,
+  SPOT_DAYS_COLLECTION,
+  spotFromFirestore,
+  scheduleFromFirestore,
+  offerFromFirestore,
+  spotDayFromFirestore,
+  spotDayToFirestore,
+} from './spot_firestore.js';
 
 export const BOOKINGS_COLLECTION = 'bookings';
 export const AVAILABILITY_COLLECTION = 'availability';
@@ -52,6 +73,8 @@ export const REFUNDS_COLLECTION = 'refunds';
 export const LEDGER_COLLECTION = 'ledger_entries';
 /** One handled provider notification per doc, id `${provider}_${txnId}` (server only). */
 export const PAYMENT_NOTIFICATIONS_COLLECTION = 'payment_notifications';
+/** `${studioId}_${day}`, server only (#136 Decision 26). */
+export const STUDIO_DAY_LOAD_COLLECTION = 'studio_day_load';
 
 function toIsoString(v: unknown): string | undefined {
   if (v instanceof Timestamp) return v.toDate().toISOString();
@@ -116,6 +139,108 @@ function checkoutFromFirestore(d: unknown): BookingCheckout | undefined {
     transferCode: c.transferCode,
     attempt: c.attempt,
     ...(Object.fromEntries(Object.entries(optional).filter(([, v]) => v !== undefined)) as Partial<BookingCheckout>),
+  };
+}
+
+/** The studio fields (#136); written only on studio bookings. */
+function studioFieldsToFirestore(b: Booking): DocumentData {
+  if (b.isStudio !== true) return {};
+  const cr = b.changeRequest ?? null;
+  return {
+    isStudio: true,
+    assigneeId: b.assigneeId ?? null,
+    assigneeKind: b.assigneeKind ?? null,
+    assignStatus: b.assignStatus ?? 'unassigned',
+    assignDeadline: toTimestamp(b.assignDeadline),
+    assignOverdue: b.assignOverdue ?? false,
+    assignedAt: toTimestamp(b.assignedAt),
+    assignments: (b.assignments ?? []).map((a) => ({
+      assigneeId: a.assigneeId,
+      assigneeKind: a.assigneeKind,
+      at: toTimestamp(a.at),
+      by: a.by,
+      reason: a.reason,
+      late: a.late,
+    })),
+    assignRemindersSent: [...(b.assignRemindersSent ?? [])],
+    changeRequest: cr
+      ? {
+          at: toTimestamp(cr.at),
+          note: cr.note,
+          respondBy: toTimestamp(cr.respondBy),
+          status: cr.status,
+          declineReason: cr.declineReason,
+          answeredAt: toTimestamp(cr.answeredAt),
+        }
+      : null,
+    studioFault: b.studioFault ? { kind: b.studioFault.kind, at: toTimestamp(b.studioFault.at) } : null,
+    assignmentReturned: b.assignmentReturned
+      ? { at: toTimestamp(b.assignmentReturned.at), reason: b.assignmentReturned.reason }
+      : null,
+  };
+}
+
+function studioFieldsFromFirestore(d: DocumentData): Partial<Booking> {
+  if (d.isStudio !== true) return {};
+  const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+  const cr = d.changeRequest && typeof d.changeRequest === 'object' ? (d.changeRequest as Record<string, unknown>) : null;
+  const fault = d.studioFault && typeof d.studioFault === 'object' ? (d.studioFault as Record<string, unknown>) : null;
+  const returned =
+    d.assignmentReturned && typeof d.assignmentReturned === 'object'
+      ? (d.assignmentReturned as Record<string, unknown>)
+      : null;
+  return {
+    isStudio: true,
+    assigneeId: str(d.assigneeId),
+    assigneeKind: d.assigneeKind === 'member' ? 'member' : null,
+    assignStatus: d.assignStatus === 'assigned' ? 'assigned' : 'unassigned',
+    ...(toIsoString(d.assignDeadline) !== undefined ? { assignDeadline: toIsoString(d.assignDeadline) } : {}),
+    assignOverdue: d.assignOverdue === true,
+    assignedAt: toIsoString(d.assignedAt) ?? null,
+    assignments: Array.isArray(d.assignments)
+      ? d.assignments.map((raw: Record<string, unknown>) => ({
+          assigneeId: String(raw?.assigneeId ?? ''),
+          assigneeKind: 'member' as const,
+          at: toIsoString(raw?.at) ?? '',
+          by: String(raw?.by ?? ''),
+          reason: str(raw?.reason),
+          late: raw?.late === true,
+        }))
+      : [],
+    assignRemindersSent: Array.isArray(d.assignRemindersSent)
+      ? d.assignRemindersSent.filter((r: unknown): r is 'h48' | 'h26' => r === 'h48' || r === 'h26')
+      : [],
+    changeRequest: cr
+      ? {
+          at: toIsoString(cr.at) ?? '',
+          note: str(cr.note),
+          respondBy: toIsoString(cr.respondBy) ?? '',
+          status: (['pending', 'reassigned', 'declined', 'expired'] as const).find((s) => s === cr.status) ?? 'pending',
+          declineReason: str(cr.declineReason),
+          answeredAt: toIsoString(cr.answeredAt) ?? null,
+        }
+      : null,
+    studioFault:
+      fault &&
+      (fault.kind === 'assign_overdue' ||
+        fault.kind === 'change_declined' ||
+        fault.kind === 'change_expired' ||
+        fault.kind === 'late_reassign')
+        ? { kind: fault.kind, at: toIsoString(fault.at) ?? '' }
+        : null,
+    assignmentReturned: returned ? { at: toIsoString(returned.at) ?? '', reason: str(returned.reason) } : null,
+  };
+}
+
+function studioDayLoadFromFirestore(studioId: string, day: string, d: DocumentData | undefined): StudioDayLoad | null {
+  if (!d) return null;
+  const ids = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  return {
+    studioId,
+    day,
+    unassignedIds: ids(d.unassignedIds),
+    assignedIds: ids(d.assignedIds),
+    updatedAt: toIsoString(d.updatedAt) ?? '',
   };
 }
 
@@ -201,8 +326,13 @@ export function bookingToFirestore(b: Booking): DocumentData {
       : null,
     samplesPurgeAfter: toTimestamp(b.samplesPurgeAfter),
     samplesPurged: b.samplesPurged ?? false,
+    source: b.source ?? null,
+    spotId: b.spotId ?? null,
+    spotScheduleId: b.spotScheduleId ?? null,
+    slotOfferId: b.slotOfferId ?? null,
     checkout: checkoutToFirestore(b.checkout),
     payableUntil: toTimestamp(b.payableUntil),
+    ...studioFieldsToFirestore(b),
     version: b.version,
     createdAt: toTimestamp(b.createdAt),
     updatedAt: toTimestamp(b.updatedAt),
@@ -314,6 +444,10 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     completedAt: toIsoString(d.completedAt),
     reviewedAt: toIsoString(d.reviewedAt),
     chatId: d.chatId ?? undefined,
+    ...(typeof d.source === 'string' ? { source: d.source as BookingSource } : {}),
+    ...(typeof d.spotId === 'string' ? { spotId: d.spotId } : {}),
+    ...(typeof d.spotScheduleId === 'string' ? { spotScheduleId: d.spotScheduleId } : {}),
+    ...(typeof d.slotOfferId === 'string' ? { slotOfferId: d.slotOfferId } : {}),
     ...(typeof d.revisionsIncluded === 'number' ? { revisionsIncluded: d.revisionsIncluded } : {}),
     ...(typeof d.revisionsUsed === 'number' ? { revisionsUsed: d.revisionsUsed } : {}),
     ...(typeof d.revisionsGranted === 'number' ? { revisionsGranted: d.revisionsGranted } : {}),
@@ -341,6 +475,7 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     samplesPurged: Boolean(d.samplesPurged),
     ...(checkout !== undefined ? { checkout } : {}),
     ...(payableUntil !== undefined ? { payableUntil } : {}),
+    ...studioFieldsFromFirestore(d),
     version: d.version ?? 1,
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
@@ -601,12 +736,73 @@ function paymentsOf(docs: readonly { id: string; data(): DocumentData }[]): Paym
   return res;
 }
 
-export class FirestoreBookingStore implements BookingStore {
+/** A member the studio can assign and count as capacity: verified and onboarded, not being deleted (Decision 26). */
+export function isAssignableMember(p: DocumentData | undefined): boolean {
+  return p !== undefined && p.deletionPending !== true && acceptsOrders(p);
+}
+
+/**
+ * Every active member of the studio (`photographers.studioId`, Decision 2) with whether they can be assigned and
+ * whether their own day is empty, read in `tx`. The one reader behind createBooking's capacity check and the
+ * derived `full` day, so both always agree.
+ */
+export async function readStudioMemberDays(
+  firestore: Firestore,
+  tx: Transaction,
+  studioId: string,
+  day: string,
+): Promise<{ uid: string; verified: boolean; free: boolean }[]> {
+  const members = await tx.get(
+    firestore.collection('photographers').where('studioId', '==', studioId).limit(MAX_MEMBERS_VERIFIED),
+  );
+  if (members.empty) return [];
+  const days = await tx.getAll(
+    ...members.docs.map((m) => firestore.collection(AVAILABILITY_COLLECTION).doc(m.id).collection('days').doc(day)),
+  );
+  return members.docs.map((m, i) => ({
+    uid: m.id,
+    verified: isAssignableMember(m.data()),
+    free: days[i]?.exists !== true,
+  }));
+}
+
+function bookingsOf(docs: readonly { id: string; data(): DocumentData }[]): Booking[] {
+  const res: Booking[] = [];
+  for (const doc of docs) {
+    const b = bookingFromFirestore(doc.id, doc.data());
+    if (b) res.push(b);
+  }
+  return res;
+}
+
+export class FirestoreBookingStore implements StudioBookingStore {
   constructor(private readonly firestore: Firestore) {}
 
-  async runTransaction<T>(fn: (tx: BookingTx) => Promise<T>): Promise<T> {
+  async runTransaction<T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> {
     return this.firestore.runTransaction(async (fTx: Transaction) => {
-      const tx: BookingTx = {
+      const tx: StudioBookingTx = {
+        incrementStudioCounter: (studioId, field) => {
+          fTx.set(this.firestore.collection('photographers').doc(studioId), { [field]: FieldValue.increment(1) }, { merge: true });
+        },
+        getStudioDayLoad: async (studioId, day) => {
+          const snap = await fTx.get(this.firestore.collection(STUDIO_DAY_LOAD_COLLECTION).doc(`${studioId}_${day}`));
+          return snap.exists ? studioDayLoadFromFirestore(studioId, day, snap.data()) : null;
+        },
+        setStudioDayLoad: async (load) => {
+          fTx.set(this.firestore.collection(STUDIO_DAY_LOAD_COLLECTION).doc(`${load.studioId}_${load.day}`), {
+            studioId: load.studioId,
+            day: load.day,
+            unassignedIds: [...load.unassignedIds],
+            assignedIds: [...load.assignedIds],
+            updatedAt: toTimestamp(load.updatedAt),
+          });
+        },
+        getMemberStudio: async (uid) => {
+          const snap = await fTx.get(this.firestore.collection('photographers').doc(uid));
+          const studioId = snap.data()?.studioId;
+          return typeof studioId === 'string' && studioId !== '' ? studioId : null;
+        },
+        getMemberDays: (studioId, day) => readStudioMemberDays(this.firestore, fTx, studioId, day),
         getBooking: async (id) => {
           const snap = await fTx.get(this.firestore.collection(BOOKINGS_COLLECTION).doc(id));
           return bookingFromFirestore(snap.id, snap.data());
@@ -617,7 +813,13 @@ export class FirestoreBookingStore implements BookingStore {
           );
           if (!snap.exists) return null;
           const d = snap.data();
-          return d ? { state: d.state, bookingId: d.bookingId } : null;
+          if (!d) return null;
+          return {
+            state: d.state,
+            bookingId: typeof d.bookingId === 'string' ? d.bookingId : undefined,
+            scheduleId: typeof d.scheduleId === 'string' ? d.scheduleId : undefined,
+            spotId: typeof d.spotId === 'string' ? d.spotId : undefined,
+          };
         },
         getCustomerDraftForDay: async (customerId, photographerId, day) => {
           const q = this.firestore
@@ -744,6 +946,28 @@ export class FirestoreBookingStore implements BookingStore {
           const snap = await fTx.get(ref);
           return privateDeliveryFromFirestore(snap.data());
         },
+        getSpot: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(SPOTS_COLLECTION).doc(id));
+          return spotFromFirestore(snap.id, snap.data());
+        },
+        getSpotSchedule: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(SPOT_SCHEDULES_COLLECTION).doc(id));
+          return scheduleFromFirestore(snap.id, snap.data());
+        },
+        getSlotOffer: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(SPOT_SLOT_OFFERS_COLLECTION).doc(id));
+          return offerFromFirestore(snap.id, snap.data());
+        },
+        getSpotDay: async (scheduleId, day) => {
+          const snap = await fTx.get(this.firestore.collection(SPOT_DAYS_COLLECTION).doc(`${scheduleId}_${day}`));
+          return spotDayFromFirestore(snap.data());
+        },
+        setSpotDay: async (spotDay) => {
+          fTx.set(
+            this.firestore.collection(SPOT_DAYS_COLLECTION).doc(`${spotDay.scheduleId}_${spotDay.day}`),
+            spotDayToFirestore(spotDay),
+          );
+        },
       };
 
       return fn(tx);
@@ -759,7 +983,23 @@ export class FirestoreBookingStore implements BookingStore {
     const snap = await this.firestore.collection(AVAILABILITY_COLLECTION).doc(photographerId).collection('days').doc(day).get();
     if (!snap.exists) return null;
     const d = snap.data();
-    return d ? { state: d.state, bookingId: d.bookingId } : null;
+    if (!d) return null;
+    return {
+      state: d.state,
+      bookingId: typeof d.bookingId === 'string' ? d.bookingId : undefined,
+      scheduleId: typeof d.scheduleId === 'string' ? d.scheduleId : undefined,
+      spotId: typeof d.spotId === 'string' ? d.spotId : undefined,
+    };
+  }
+
+  async getSlotOffer(id: string): Promise<SlotOffer | null> {
+    const snap = await this.firestore.collection(SPOT_SLOT_OFFERS_COLLECTION).doc(id).get();
+    return offerFromFirestore(snap.id, snap.data());
+  }
+
+  async getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null> {
+    const snap = await this.firestore.collection(SPOT_DAYS_COLLECTION).doc(`${scheduleId}_${day}`).get();
+    return spotDayFromFirestore(snap.data());
   }
 
   async getCustomerDraftForDay(customerId: string, photographerId: string, day: string): Promise<Booking | null> {
@@ -988,7 +1228,8 @@ export class FirestoreBookingStore implements BookingStore {
     const res: Booking[] = [];
     for (const doc of snap.docs) {
       const b = bookingFromFirestore(doc.id, doc.data());
-      if (b) res.push(b);
+      // A studio booking without an assignee is never marked shot (#136); the studio sweep cancels it at its start.
+      if (b && !waitsForAssignee(b)) res.push(b);
     }
     return res;
   }
@@ -1036,6 +1277,53 @@ export class FirestoreBookingStore implements BookingStore {
       if (b) res.push(b);
     }
     return res;
+  }
+
+  /**
+   * Studio bookings with assign work (#136 Decision 20a): unassigned, not yet overdue, requested | accepted, deadline
+   * within 24 h, soonest first (index `assignStatus, assignOverdue, status, assignDeadline`). Filtering the status
+   * here keeps cancelled and expired unassigned bookings from filling the page forever.
+   */
+  async findUnassignedStudioBookingsDue(now: Date, limit: number): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('assignStatus', '==', 'unassigned')
+      .where('assignOverdue', '==', false)
+      .where('status', 'in', ['requested', 'accepted'])
+      .where('assignDeadline', '<=', Timestamp.fromDate(new Date(now.getTime() + 24 * 3600 * 1000)))
+      .orderBy('assignDeadline')
+      .limit(limit)
+      .get();
+    return bookingsOf(snap.docs);
+  }
+
+  /**
+   * Unassigned studio bookings whose start has come (#136 ruling: the sweep cancels them), oldest day first
+   * (index `assignStatus, status, day`). The query stops at today in Vietnam and today's bookings not started yet
+   * are dropped here; they sort after every earlier day, and each run cancels what it returns.
+   */
+  async findUnassignedStudioBookingsStarted(now: Date, limit: number): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('assignStatus', '==', 'unassigned')
+      .where('status', 'in', ['requested', 'accepted'])
+      .where('day', '<=', formatVnDate(now))
+      .orderBy('day')
+      .limit(limit)
+      .get();
+    return bookingsOf(snap.docs).filter((b) => parseVnDateTime(b.day, b.start).getTime() <= now.getTime());
+  }
+
+  /** Pending change requests past `respondBy`, oldest first (index `changeRequest.status, changeRequest.respondBy`). */
+  async findDueChangeRequests(now: Date, limit: number): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('changeRequest.status', '==', 'pending')
+      .where('changeRequest.respondBy', '<=', Timestamp.fromDate(now))
+      .orderBy('changeRequest.respondBy')
+      .limit(limit)
+      .get();
+    return bookingsOf(snap.docs);
   }
 
   async findDueAutoApproveNotices(now: Date, limit = 100): Promise<readonly Booking[]> {

@@ -11,6 +11,7 @@ import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
@@ -24,6 +25,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 import '../../support/fake_booking_repository.dart';
 import '../../support/fake_push.dart';
+import '../../support/fake_spot_repository.dart';
 
 Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
   UserRole role,
@@ -52,6 +54,7 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
           FakeServicePackageRepository(),
         ),
         skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
+        spotRepositoryProvider.overrideWithValue(FakeSpotRepository()),
         // Push ports: no plugin runs in tests.
         pushMessagingProvider.overrideWithValue(FakePushMessaging()),
         notificationPermissionProvider.overrideWithValue(
@@ -131,6 +134,7 @@ void main() {
           FakeServicePackageRepository(),
         ),
         skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
+        spotRepositoryProvider.overrideWithValue(FakeSpotRepository()),
       ],
       child: MaterialApp.router(
         routerConfig: router,

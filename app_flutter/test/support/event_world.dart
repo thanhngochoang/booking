@@ -28,6 +28,7 @@ import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
 import 'package:photobooking/features/payment/payment_screen.dart';
 import 'fake_payments_repository.dart';
+import 'fake_spot_repository.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
@@ -36,6 +37,7 @@ import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -250,6 +252,8 @@ EventDetail detailOf(
   String? hashtag,
   int postCount = 0,
   DateTime? completedAt,
+  String? spotId,
+  bool spotDecided = false,
 }) {
   final s = summaryOf(
     id,
@@ -276,6 +280,8 @@ EventDetail detailOf(
     faq: faq,
     hostConsent: hostConsent,
     hostConsentExpiresAt: hostConsentExpiresAt,
+    spotId: spotId,
+    spotDecided: spotDecided || spotId != null,
   );
 }
 
@@ -394,6 +400,9 @@ class EventsWorld {
   final FakeEventChatRepository chat;
   final FakeNearbyEventsRepository nearby;
   final launcher = FakeExternalLauncher();
+
+  /// The spot directory S12.01 "Điểm chụp" reads; empty unless seeded.
+  final spots = FakeSpotRepository();
   final payments = FakePaymentsRepository();
   final contactRepo = FakePhotographerContactRepository();
   final contactLinks = FakeContactLinkRepository();
@@ -418,6 +427,7 @@ class EventsWorld {
     currentContactProvider.overrideWithValue(AsyncData(contact)),
     paymentsRepositoryProvider.overrideWithValue(payments),
     eventRepositoryProvider.overrideWithValue(repo),
+    spotRepositoryProvider.overrideWithValue(spots),
     eventTimelineRepositoryProvider.overrideWithValue(timeline),
     eventChatRepositoryProvider.overrideWithValue(chat),
     if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs!),

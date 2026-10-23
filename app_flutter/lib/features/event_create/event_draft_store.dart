@@ -39,6 +39,8 @@ class EventForm {
     this.deadlineDay,
     this.hashtag,
     this.faq,
+    this.spotId,
+    this.spotDecided = false,
   });
 
   /// Resume a server draft in the form.
@@ -68,6 +70,8 @@ class EventForm {
       deadlineDay: deadline?.day,
       hashtag: d.hashtag,
       faq: d.faq,
+      spotId: d.spotId,
+      spotDecided: d.spotDecided,
     );
   }
 
@@ -104,6 +108,13 @@ class EventForm {
   /// never touched (nothing is sent); an empty list clears it on the server.
   final List<EventFaq>? faq;
 
+  /// S12.01 "Điểm chụp": the tagged spot; null with [spotDecided] is "Không
+  /// thuộc điểm chụp nào".
+  final String? spotId;
+
+  /// The organizer chose (a spot or none); publishing needs it.
+  final bool spotDecided;
+
   /// The rows with both a question and an answer, trimmed: what is sent.
   List<EventFaq>? get completeFaq => faq == null
       ? null
@@ -133,6 +144,7 @@ class EventForm {
       meetingPoint.trim().isEmpty &&
       areaId == null &&
       deadlineDay == null &&
+      !spotDecided &&
       (faq ?? const <EventFaq>[]).every(
         (f) => f.question.trim().isEmpty && f.answer.trim().isEmpty,
       );
@@ -157,6 +169,8 @@ class EventForm {
     Object? deadlineDay = _keep,
     Object? hashtag = _keep,
     List<EventFaq>? faq,
+    Object? spotId = _keep,
+    bool? spotDecided,
   }) => EventForm(
     eventId: identical(eventId, _keep) ? this.eventId : eventId as String?,
     title: title ?? this.title,
@@ -183,6 +197,9 @@ class EventForm {
         : deadlineDay as DateTime?,
     hashtag: identical(hashtag, _keep) ? this.hashtag : hashtag as String?,
     faq: faq ?? this.faq,
+    spotId: identical(spotId, _keep) ? this.spotId : spotId as String?,
+    spotDecided:
+        spotDecided ?? (identical(spotId, _keep) ? this.spotDecided : true),
   );
 
   DateTime? _at(int? minute) => day == null || minute == null
@@ -243,6 +260,8 @@ class EventForm {
       registrationDeadline: deadline,
       hashtag: hashtag,
       faq: completeFaq,
+      spotId: spotId,
+      spotDecided: spotDecided,
       cleared: {
         if (existing && cover == null) 'cover',
         if (existing && place == null) 'place',
@@ -272,6 +291,8 @@ class EventForm {
     'deadlineDay': ?deadlineDay?.toIso8601String(),
     'hashtag': ?hashtag,
     'faq': ?faq?.map((f) => f.toJson()).toList(),
+    'spotId': ?spotId,
+    if (spotDecided) 'spotDecided': true,
   };
 
   /// Reads what [toJson] wrote; anything unreadable is left empty.
@@ -315,6 +336,8 @@ class EventForm {
                 if (f is Map) EventFaq.fromJson(f.cast<String, Object?>()),
             ]
           : null,
+      spotId: text(j['spotId']),
+      spotDecided: j['spotDecided'] == true || text(j['spotId']) != null,
     );
   }
 

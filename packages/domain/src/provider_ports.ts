@@ -8,6 +8,8 @@ export interface ProviderProfile {
   readonly artistSince: Date | null;
   readonly studioDistrict: string | null;
   readonly studioCity: string | null;
+  /** Studio: active members (`photographers/{uid}.memberCount`, absent = 0). */
+  readonly memberCount: number;
 }
 
 export interface StudioAddress {
@@ -25,6 +27,8 @@ export interface ProviderTx {
   countActiveBookings(uid: string): Promise<number>;
   /** Payments where payeeId = uid in escrowStatus held | partially_refunded | disputed. */
   countHeldPayments(uid: string): Promise<number>;
+  /** `studio_members` with studioId = uid or memberId = uid in invited | requested | active (#136 Decision 7). */
+  countOpenRelations(uid: string): Promise<number>;
   /** Also clears artistSince when type != 'artist'. */
   setProviderType(uid: string, type: ProviderType, now: Date): void;
   /** Private doc + public district/city. */

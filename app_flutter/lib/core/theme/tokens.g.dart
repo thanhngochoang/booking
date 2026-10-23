@@ -70,6 +70,12 @@ class AppColors {
   static const Color glass = Color(0xB8FFFFFF);
   static const Color freeInk = Color(0xFF127001);
   static const Color freeBg = Color(0xFFE3F5DF);
+  static const Color mapBg = Color(0xFFECE8E1);
+  static const Color mapBlock = Color(0xFFE2DDD4);
+  static const Color mapRoad = Color(0xFFFFFFFF);
+  static const Color mapWater = Color(0xFFBFD9EA);
+  static const Color mapPark = Color(0xFFCFE3C8);
+  static const Color mapSelf = Color(0xFF3D63FF);
 }
 
 class AppColorsDark {
@@ -141,6 +147,12 @@ class AppColorsDark {
   static const Color glass = Color(0x14FFFFFF);
   static const Color freeInk = Color(0xFF7BE070);
   static const Color freeBg = Color(0x331A9F02);
+  static const Color mapBg = Color(0xFF1A1C24);
+  static const Color mapBlock = Color(0xFF22252F);
+  static const Color mapRoad = Color(0xFF3A3E4C);
+  static const Color mapWater = Color(0xFF16324A);
+  static const Color mapPark = Color(0xFF1E3328);
+  static const Color mapSelf = Color(0xFF3D63FF);
 }
 
 class AppSpace {

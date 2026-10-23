@@ -1,7 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit, computeRefund } from '../src/booking_policy.js';
-import { createBookingWorld, payDraft } from './support/booking_world.js';
+import {
+  acceptedStudioBooking,
+  createBookingWorld,
+  payDraft,
+  withStudio,
+  type BookingWorld,
+} from './support/booking_world.js';
+import type { Booking } from '../src/booking.js';
+import { assignBooking, declineAssigneeChange, requestAssigneeChange } from '../src/studio_assignment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { openDispute } from '../src/open_dispute.js';
@@ -201,5 +209,91 @@ describe('Task 5: transitionBooking and openDispute', () => {
         }),
       (err: unknown) => err instanceof DomainError && err.code === 'conflict',
     );
+  });
+});
+
+const STUDIO_DAY = '2026-10-15';
+// 2026-10-15 14:00 VN = 07:00Z; the assign deadline is 24 h earlier.
+const STUDIO_DEADLINE = new Date('2026-10-14T07:00:00.000Z');
+const rejectsWith = (p: Promise<unknown>, code: string) =>
+  assert.rejects(p, (e: unknown) => e instanceof DomainError && e.code === code);
+const studioWorld = (): BookingWorld => withStudio(createBookingWorld());
+async function assignedStudioBooking(w: BookingWorld, assigneeId = 'm1'): Promise<Booking> {
+  const b = await acceptedStudioBooking(w);
+  return assignBooking(w.studioDeps, 's1', { bookingId: b.id, assigneeId });
+}
+
+describe('studio bookings through transitionBooking (#136)', () => {
+  it('cancel frees the assignee\'s day', async () => {
+    const w = studioWorld();
+    const b = await assignedStudioBooking(w, 'm1');
+    await transitionBooking(w.deps, { bookingId: b.id, action: 'cancel', actorId: 's1' });
+    assert.equal(await w.store.getAvailabilityDay('m1', STUDIO_DAY), null);
+    assert.deepEqual(w.store.getStudioDayLoad('s1', STUDIO_DAY)?.assignedIds, []);
+  });
+
+  it('the assignee may complete, not accept or cancel', async () => {
+    const w = studioWorld();
+    const b = await assignedStudioBooking(w, 'm1');
+    await rejectsWith(transitionBooking(w.deps, { bookingId: b.id, action: 'cancel', actorId: 'm1' }), 'permission_denied');
+    await rejectsWith(transitionBooking(w.deps, { bookingId: b.id, action: 'accept', actorId: 'm1' }), 'permission_denied');
+    w.clock.setTime(new Date('2026-10-15T09:00:00.000Z')); // after the 16:00 VN end
+    const shot = await transitionBooking(w.deps, { bookingId: b.id, action: 'complete', actorId: 'm1' });
+    assert.equal(shot.status, 'shot');
+  });
+
+  it('a former assignee cannot act on the booking', async () => {
+    const w = studioWorld();
+    const b = await assignedStudioBooking(w, 'm1');
+    await assignBooking(w.studioDeps, 's1', { bookingId: b.id, assigneeId: 'm2' });
+    w.clock.setTime(new Date('2026-10-15T09:00:00.000Z'));
+    await rejectsWith(transitionBooking(w.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'm1' }), 'permission_denied');
+  });
+
+  it('cancel_studio_fault refunds 100% when overdue (before the sweep)', async () => {
+    const w = studioWorld();
+    const b = await acceptedStudioBooking(w);
+    w.clock.setTime(STUDIO_DEADLINE);
+    const after = await transitionBooking(w.deps, { bookingId: b.id, action: 'cancel_studio_fault', actorId: 'c1' });
+    assert.equal(after.status, 'cancelled');
+    assert.deepEqual(after.cancel, { by: 'studio_fault', reason: 'assign_overdue', at: STUDIO_DEADLINE.toISOString(), refundPercent: 100 });
+    assert.equal(after.depositRefunded, b.deposit);
+    const refunds = [...w.store.refunds.values()];
+    assert.equal(refunds.length, 1);
+    assert.equal(refunds[0]?.amount, b.deposit);
+  });
+
+  it('cancel_studio_fault without a fault is not_eligible', async () => {
+    const w = studioWorld();
+    const b = await assignedStudioBooking(w);
+    await rejectsWith(
+      transitionBooking(w.deps, { bookingId: b.id, action: 'cancel_studio_fault', actorId: 'c1' }),
+      'not_eligible',
+    );
+  });
+
+  it('only the customer uses cancel_studio_fault', async () => {
+    const w = studioWorld();
+    const b = await acceptedStudioBooking(w);
+    w.clock.setTime(STUDIO_DEADLINE);
+    await rejectsWith(
+      transitionBooking(w.deps, { bookingId: b.id, action: 'cancel_studio_fault', actorId: 's1' }),
+      'permission_denied',
+    );
+  });
+
+  it('a second cancel_studio_fault is conflict', async () => {
+    const w = studioWorld();
+    const b = await assignedStudioBooking(w);
+    await requestAssigneeChange(w.studioDeps, 'c1', { bookingId: b.id });
+    await declineAssigneeChange(w.studioDeps, 's1', { bookingId: b.id, reason: 'Kín lịch' });
+    const after = await transitionBooking(w.deps, { bookingId: b.id, action: 'cancel_studio_fault', actorId: 'c1' });
+    assert.equal(after.cancel?.reason, 'change_declined');
+    assert.equal(await w.store.getAvailabilityDay('m1', STUDIO_DAY), null);
+    await rejectsWith(
+      transitionBooking(w.deps, { bookingId: b.id, action: 'cancel_studio_fault', actorId: 'c1' }),
+      'conflict',
+    );
+    assert.equal([...w.store.refunds.values()].length, 1);
   });
 });

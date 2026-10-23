@@ -27,3 +27,13 @@ String reviewReasonLabel(AppLocalizations l, ReviewReason reason) =>
       ReviewReason.priceChanged => l.reviewReasonPriceChanged,
       ReviewReason.other => l.reviewReasonOther,
     };
+
+/// The chip text of a brick reason thrown at a studio (mock S05.05-studio).
+String studioReviewReasonLabel(AppLocalizations l, StudioReviewReason reason) =>
+    switch (reason) {
+      StudioReviewReason.lateAssignment => l.reviewStudioReason_late_assignment,
+      StudioReviewReason.slowResponse => l.reviewStudioReason_slow_response,
+      StudioReviewReason.priceChanged => l.reviewStudioReason_price_changed,
+      StudioReviewReason.poorAssignment => l.reviewStudioReason_poor_assignment,
+      StudioReviewReason.other => l.reviewStudioReason_other,
+    };

@@ -3,12 +3,23 @@
  */
 
 import type { Booking, BookingContactSnapshot, BookingEventRecord } from './booking.js';
-import type { AvailabilityDayRecord, BookingStore, BookingTx, TransferRecord } from './booking_ports.js';
+import type {
+  AvailabilityDayRecord,
+  StudioBookingStore,
+  StudioBookingTx,
+  StudioCounterField,
+  StudioDayLoad,
+  TransferRecord,
+} from './booking_ports.js';
 import { parseVnDateTime } from './booking_policy.js';
 import type { DeliveryRound, DeliverySample, PrivateDelivery } from './delivery.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { Spot } from './spot.js';
+import type { SpotSchedule } from './spot_schedule.js';
+import type { SlotOffer } from './spot_slots.js';
+import type { SpotDay } from './spot_booking.js';
 
-export class MemoryBookingStore implements BookingStore {
+export class MemoryBookingStore implements StudioBookingStore {
   readonly bookings = new Map<string, Booking>();
   readonly availability = new Map<string, AvailabilityDayRecord>(); // key: `${photographerId}_${day}`
   readonly contacts = new Map<string, BookingContactSnapshot>();
@@ -20,84 +31,164 @@ export class MemoryBookingStore implements BookingStore {
   readonly deliveries = new Map<string, DeliveryRound>(); // key: `${bookingId}_${round}`
   readonly deliverySamples = new Map<string, DeliverySample>(); // key: `${bookingId}_${fileId}`
   readonly privateDeliveries = new Map<string, PrivateDelivery>(); // key: bookingId
+  /** studio_day_load, key `${studioId}_${day}`. */
+  readonly studioDayLoads = new Map<string, StudioDayLoad>();
+  /** Active member uids per studio (the store's view of `photographers where studioId == X`). */
+  readonly studioMembers = new Map<string, string[]>();
+  /** Counters on `photographers/{studioId}`. */
+  readonly studioCounters = new Map<string, Partial<Record<StudioCounterField, number>>>();
+  /** Whether a member may be assigned (verified and onboarded); a test world wires it to its provider gate. */
+  memberVerified: (uid: string) => boolean = () => true;
+
+  counterOf(studioId: string, field: StudioCounterField): number {
+    return this.studioCounters.get(studioId)?.[field] ?? 0;
+  }
+
+  getStudioDayLoad(studioId: string, day: string): StudioDayLoad | null {
+    const l = this.studioDayLoads.get(`${studioId}_${day}`);
+    return l ? { ...l, unassignedIds: [...l.unassignedIds], assignedIds: [...l.assignedIds] } : null;
+  }
+  readonly spots = new Map<string, Spot>();
+  readonly schedules = new Map<string, SpotSchedule>();
+  readonly offers = new Map<string, SlotOffer>();
+  readonly spotDays = new Map<string, SpotDay>(); // key: `${scheduleId}_${day}`
+
+  private txTail: Promise<unknown> = Promise.resolve();
 
   private availabilityKey(photographerId: string, day: string): string {
     return `${photographerId}_${day}`;
   }
 
-  async runTransaction<T>(fn: (tx: BookingTx) => Promise<T>): Promise<T> {
-    // Clone maps for transaction isolation if rollback is needed
-    const tx: BookingTx = {
-      getBooking: async (id) => this.getBooking(id),
-      getAvailabilityDay: async (photographerId, day) => this.getAvailabilityDay(photographerId, day),
-      getCustomerDraftForDay: async (customerId, photographerId, day) =>
-        this.getCustomerDraftForDay(customerId, photographerId, day),
-      setBooking: async (booking) => {
-        this.bookings.set(booking.id, { ...booking });
-      },
-      deleteBooking: async (id) => {
-        this.bookings.delete(id);
-      },
-      setAvailabilityDay: async (photographerId, day, record) => {
-        this.availability.set(this.availabilityKey(photographerId, day), { ...record });
-      },
-      deleteAvailabilityDay: async (photographerId, day) => {
-        this.availability.delete(this.availabilityKey(photographerId, day));
-      },
-      setContactSnapshot: async (bookingId, contact) => {
-        this.contacts.set(bookingId, { ...contact });
-      },
-      getContactSnapshot: async (bookingId) => this.getContactSnapshot(bookingId),
-      deleteContactSnapshot: async (bookingId) => {
-        this.contacts.delete(bookingId);
-      },
-      getPayment: async (id) => this.getPayment(id),
-      getPaymentByIdempotencyKey: async (key) => this.getPaymentByIdempotencyKey(key),
-      setPayment: async (payment) => {
-        this.payments.set(payment.id, { ...payment });
-      },
-      getRefund: async (id) => this.getRefund(id),
-      addRefund: async (refund) => {
-        this.refunds.set(refund.id, { ...refund });
-      },
-      addLedgerEntry: async (entry) => {
-        this.ledgerEntries.set(entry.id, { ...entry });
-      },
-      addBookingEvent: async (event) => {
-        this.events.push({ ...event });
-      },
-      getTransferRecord: async (id) => this.getTransferRecord(id),
-      saveTransferRecord: async (record) => {
-        this.transferRecords.set(record.id, { ...record });
-      },
-      getDelivery: async (bookingId, round) => {
-        const d = this.deliveries.get(`${bookingId}_${round}`);
-        return d ? { ...d } : null;
-      },
-      setDelivery: async (d) => {
-        this.deliveries.set(`${d.bookingId}_${d.round}`, { ...d });
-      },
-      getDeliverySamples: async (bookingId, fileIds) => {
-        return fileIds.map((fid) => {
-          const s = this.deliverySamples.get(`${bookingId}_${fid}`);
-          return s ? { ...s } : null;
-        });
-      },
-      deleteDeliverySamples: async (bookingId, fileIds) => {
-        for (const fid of fileIds) {
-          this.deliverySamples.delete(`${bookingId}_${fid}`);
-        }
-      },
-      setPrivateDelivery: async (bookingId, p) => {
-        this.privateDeliveries.set(bookingId, { ...p });
-      },
-      getPrivateDelivery: async (bookingId) => {
-        const p = this.privateDeliveries.get(bookingId);
-        return p ? { ...p } : null;
-      },
+  async runTransaction<T>(fn: (tx: StudioBookingTx) => Promise<T>): Promise<T> {
+    const run = async () => {
+      const tx: StudioBookingTx = {
+        incrementStudioCounter: (studioId, field) => {
+          const c = { ...(this.studioCounters.get(studioId) ?? {}) };
+          c[field] = (c[field] ?? 0) + 1;
+          this.studioCounters.set(studioId, c);
+        },
+        getStudioDayLoad: async (studioId, day) => this.getStudioDayLoad(studioId, day),
+        setStudioDayLoad: async (load) => {
+          this.studioDayLoads.set(`${load.studioId}_${load.day}`, {
+            ...load,
+            unassignedIds: [...load.unassignedIds],
+            assignedIds: [...load.assignedIds],
+          });
+        },
+        getMemberStudio: async (uid) => {
+          for (const [studioId, members] of this.studioMembers) if (members.includes(uid)) return studioId;
+          return null;
+        },
+        getMemberDays: async (studioId, day) =>
+          (this.studioMembers.get(studioId) ?? []).map((uid) => ({
+            uid,
+            verified: this.memberVerified(uid),
+            free: !this.availability.has(this.availabilityKey(uid, day)),
+          })),
+        getBooking: async (id) => this.getBooking(id),
+        getAvailabilityDay: async (photographerId, day) => this.getAvailabilityDay(photographerId, day),
+        getCustomerDraftForDay: async (customerId, photographerId, day) =>
+          this.getCustomerDraftForDay(customerId, photographerId, day),
+        setBooking: async (booking) => {
+          this.bookings.set(booking.id, { ...booking });
+        },
+        deleteBooking: async (id) => {
+          this.bookings.delete(id);
+        },
+        setAvailabilityDay: async (photographerId, day, record) => {
+          this.availability.set(this.availabilityKey(photographerId, day), { ...record });
+        },
+        deleteAvailabilityDay: async (photographerId, day) => {
+          this.availability.delete(this.availabilityKey(photographerId, day));
+        },
+        setContactSnapshot: async (bookingId, contact) => {
+          this.contacts.set(bookingId, { ...contact });
+        },
+        getContactSnapshot: async (bookingId) => this.getContactSnapshot(bookingId),
+        deleteContactSnapshot: async (bookingId) => {
+          this.contacts.delete(bookingId);
+        },
+        getPayment: async (id) => this.getPayment(id),
+        getPaymentByIdempotencyKey: async (key) => this.getPaymentByIdempotencyKey(key),
+        setPayment: async (payment) => {
+          this.payments.set(payment.id, { ...payment });
+        },
+        getRefund: async (id) => this.getRefund(id),
+        addRefund: async (refund) => {
+          this.refunds.set(refund.id, { ...refund });
+        },
+        addLedgerEntry: async (entry) => {
+          this.ledgerEntries.set(entry.id, { ...entry });
+        },
+        addBookingEvent: async (event) => {
+          this.events.push({ ...event });
+        },
+        getTransferRecord: async (id) => this.getTransferRecord(id),
+        saveTransferRecord: async (record) => {
+          this.transferRecords.set(record.id, { ...record });
+        },
+        getDelivery: async (bookingId, round) => {
+          const d = this.deliveries.get(`${bookingId}_${round}`);
+          return d ? { ...d } : null;
+        },
+        setDelivery: async (d) => {
+          this.deliveries.set(`${d.bookingId}_${d.round}`, { ...d });
+        },
+        getDeliverySamples: async (bookingId, fileIds) => {
+          return fileIds.map((fid) => {
+            const s = this.deliverySamples.get(`${bookingId}_${fid}`);
+            return s ? { ...s } : null;
+          });
+        },
+        deleteDeliverySamples: async (bookingId, fileIds) => {
+          for (const fid of fileIds) {
+            this.deliverySamples.delete(`${bookingId}_${fid}`);
+          }
+        },
+        setPrivateDelivery: async (bookingId, p) => {
+          this.privateDeliveries.set(bookingId, { ...p });
+        },
+        getPrivateDelivery: async (bookingId) => {
+          const p = this.privateDeliveries.get(bookingId);
+          return p ? { ...p } : null;
+        },
+        getSpot: async (id) => this.getSpot(id),
+        getSpotSchedule: async (id) => this.getSpotSchedule(id),
+        getSlotOffer: async (id) => this.getSlotOffer(id),
+        getSpotDay: async (scheduleId, day) => this.getSpotDay(scheduleId, day),
+        setSpotDay: async (spotDay) => this.setSpotDay(spotDay),
+      };
+
+      return fn(tx);
     };
 
-    return fn(tx);
+    const next = this.txTail.then(run, run);
+    this.txTail = next;
+    return next as Promise<T>;
+  }
+
+  async getSpot(id: string): Promise<Spot | null> {
+    const s = this.spots.get(id);
+    return s ? { ...s } : null;
+  }
+
+  async getSpotSchedule(id: string): Promise<SpotSchedule | null> {
+    const s = this.schedules.get(id);
+    return s ? { ...s } : null;
+  }
+
+  async getSlotOffer(id: string): Promise<SlotOffer | null> {
+    const o = this.offers.get(id);
+    return o ? { ...o } : null;
+  }
+
+  async getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null> {
+    const d = this.spotDays.get(`${scheduleId}_${day}`);
+    return d ? { ...d } : null;
+  }
+
+  async setSpotDay(spotDay: SpotDay): Promise<void> {
+    this.spotDays.set(`${spotDay.scheduleId}_${spotDay.day}`, { ...spotDay });
   }
 
   async getBooking(id: string): Promise<Booking | null> {
@@ -299,7 +390,7 @@ export class MemoryBookingStore implements BookingStore {
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
     const res: Booking[] = [];
     for (const b of this.bookings.values()) {
-      if (b.status === 'upcoming' || b.status === 'accepted') {
+      if ((b.status === 'upcoming' || b.status === 'accepted') && !(b.isStudio === true && !b.assigneeId)) {
         const endsAt = parseVnDateTime(b.day, b.end);
         // cutoff is now - 24 hours
         if (endsAt.getTime() <= cutoff.getTime()) {
@@ -363,5 +454,45 @@ export class MemoryBookingStore implements BookingStore {
       }
     }
     return res;
+  }
+
+  async findUnassignedStudioBookingsDue(now: Date, limit: number): Promise<readonly Booking[]> {
+    const horizon = now.getTime() + 24 * 60 * 60 * 1000;
+    return [...this.bookings.values()]
+      .filter(
+        (b) =>
+          b.isStudio === true &&
+          b.assignStatus === 'unassigned' &&
+          b.assignOverdue !== true &&
+          (b.status === 'requested' || b.status === 'accepted') &&
+          b.assignDeadline !== undefined &&
+          Date.parse(b.assignDeadline) <= horizon,
+      )
+      .sort((a, b) => Date.parse(a.assignDeadline ?? '') - Date.parse(b.assignDeadline ?? ''))
+      .slice(0, limit)
+      .map((b) => ({ ...b }));
+  }
+
+  async findUnassignedStudioBookingsStarted(now: Date, limit: number): Promise<readonly Booking[]> {
+    const startOf = (b: Booking) => parseVnDateTime(b.day, b.start).getTime();
+    return [...this.bookings.values()]
+      .filter(
+        (b) =>
+          b.isStudio === true &&
+          b.assignStatus === 'unassigned' &&
+          (b.status === 'requested' || b.status === 'accepted') &&
+          startOf(b) <= now.getTime(),
+      )
+      .sort((a, b) => startOf(a) - startOf(b))
+      .slice(0, limit)
+      .map((b) => ({ ...b }));
+  }
+
+  async findDueChangeRequests(now: Date, limit: number): Promise<readonly Booking[]> {
+    return [...this.bookings.values()]
+      .filter((b) => b.changeRequest?.status === 'pending' && Date.parse(b.changeRequest.respondBy) <= now.getTime())
+      .sort((a, b) => Date.parse(a.changeRequest?.respondBy ?? '') - Date.parse(b.changeRequest?.respondBy ?? ''))
+      .slice(0, limit)
+      .map((b) => ({ ...b }));
   }
 }

@@ -8,6 +8,7 @@ import {
   type EventStore,
   type EventTx,
 } from './event_ports.js';
+import type { Spot } from './spot.js';
 import type { PaymentSource } from './memory_payment_lookup.js';
 
 /** Like the Firestore adapter: a transaction that lost a race is run again a few times. */
@@ -17,6 +18,7 @@ export class MemoryEventStore implements EventStore, PaymentSource {
   readonly events = new Map<string, EventRecord>();
   readonly registrations = new Map<string, RegistrationDoc>(); // `${eventId}/${regId}`
   readonly contacts = new Map<string, RegistrationContact>(); // `${eventId}/${regId}`
+  readonly spots = new Map<string, Spot>();
   readonly hashtags = new Map<string, string>();
   readonly ticketCodes = new Map<string, { eventId: string; registrationId: string }>();
   readonly availabilityDays = new Map<string, AvailabilityRecord>(); // `${uid}/${dayKey}`
@@ -121,6 +123,10 @@ export class MemoryEventStore implements EventStore, PaymentSource {
       getEvent: async (id) => {
         read('getEvent', `event:${id}`);
         return this.events.get(id) ?? null;
+      },
+      getSpot: async (id) => {
+        read('getSpot', `spot:${id}`);
+        return this.spots.get(id) ?? null;
       },
       hashtagOwner: async (k) => {
         read('hashtagOwner', `hashtag:${k}`);

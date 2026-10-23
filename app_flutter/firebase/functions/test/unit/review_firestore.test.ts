@@ -119,8 +119,10 @@ describe('review_firestore mapping', () => {
     assert.deepEqual(reviewFromFirestore('book_1', reviewToFirestore(tomato)), tomato);
     const brick = review();
     assert.deepEqual(reviewFromFirestore('book_1', reviewToFirestore(brick)), brick);
-    const studio = review({ id: 'book_1_studio', subjectType: 'studio', subjectId: 'studio_1', photographerId: 'studio_1' });
+    const studio = review({ id: 'book_1_studio', subjectType: 'studio', subjectId: 'studio_1', photographerId: 'studio_1', reasons: ['late_assignment', 'slow_response'], assigneeId: 'member_1', assigneeName: 'Minh Thợ' });
     assert.deepEqual(reviewFromFirestore('book_1_studio', reviewToFirestore(studio)), studio);
+    const member = review({ viaStudioId: 'studio_1', viaStudioName: 'Studio Ánh Sáng' });
+    assert.deepEqual(reviewFromFirestore('book_1', reviewToFirestore(member)), member);
   });
 
   it('reviewFromFirestore maps a legacy rating 5 doc to tomato ×1 and rating 2 to brick ×1', () => {

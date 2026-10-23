@@ -48,6 +48,7 @@ import {
   BOOKING_CLOCK_OPTIONS,
   BOOKING_REFUND_CALLABLE_OPTIONS,
   CALLABLE_OPTIONS,
+  CONTENDED_CALLABLE_OPTIONS,
   CREATE_PAYOUTS_OPTIONS,
   EVENT_CLOCK_OPTIONS,
   EVENT_REFUND_CALLABLE_OPTIONS,
@@ -72,13 +73,53 @@ import { liveAcceptingOrdersWriter, liveSkillsDeps } from './infra/live_skills.j
 import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
-import { handlePhotographerEvent } from './triggers/photographer_write.js';
+import {
+  handleAnswerInstantOffer,
+  handleCancelInstantRequest,
+  handleConfirmInstantComplete,
+  handleCreateInstantRequest,
+  handleInviteInstant,
+  handleNextInstantCandidates,
+  handleSaveInstantSettings,
+  handleSetLiveShutter,
+  handleTickInstantRequest,
+  handleUpdateInstantJob,
+} from './callables/instant.js';
+import { liveInstantDeps } from './infra/live_instant.js';
+import { instantRequestFromFirestore, instantTrackPath } from './infra/instant_firestore.js';
+import { handleInstantRequestWrite } from './triggers/instant_request_write.js';
+import { handlePhotographerEvent, healNameKey, studiosToRecompute } from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
 import { handleReviewWrite } from './triggers/review_write.js';
 import { liveReviewDeps, liveStatsStore } from './infra/live_review.js';
 import { handleSetProviderType, handleSetStudioAddress } from './callables/provider.js';
 import { liveProviderDeps } from './infra/live_provider.js';
+import {
+  handleAssignBooking,
+  handleAssignmentOptions,
+  handleCancelInvite,
+  handleCancelJoinRequest,
+  handleDeclineAssigneeChange,
+  handleInviteMember,
+  handleLeaveStudio,
+  handleRemoveMember,
+  handleRequestAssigneeChange,
+  handleRequestToJoin,
+  handleRespondInvite,
+  handleRespondJoinRequest,
+  handleReturnAssignment,
+  handleSearchPhotographersToInvite,
+} from './callables/studio.js';
+import {
+  liveAssignmentOptionsDeps,
+  liveStudioBookingDeps,
+  liveStudioClockExtras,
+  liveStudioDeps,
+} from './infra/live_studio.js';
+import { FirestoreNameKeys, studioSideOf } from './infra/studio_firestore.js';
+import { recomputeStudioDay, recomputeStudioDays, refreshAssignableMembers } from './infra/studio_capacity_firestore.js';
+import { handleUserWrite } from './triggers/user_write.js';
 import {
   handleCreateAlbum,
   handleDeleteAlbum,
@@ -91,12 +132,20 @@ import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './tr
 import { liveAlbumDeps } from './infra/live_album.js';
 import { handleDeleteAddon, handleSaveAddon } from './callables/addon.js';
 import { liveAddonDeps } from './infra/live_addon.js';
+import {
+  handleSaveSpotSchedule,
+  handleCancelSpotSchedule,
+  handleSaveSlotOffer,
+  handleCloseSlotOffer,
+} from './callables/spot.js';
+import { liveSpotScheduleDeps } from './infra/live_spot.js';
 import { FirestoreFollowerCounter } from './infra/follower_counter.js';
 import { handleFollowWrite } from './triggers/engagement_counters.js';
 import { liveDiscoveryDeps } from './infra/live_discovery.js';
-import { handleAvailabilityWrite } from './triggers/availability_write.js';
+import { handleAvailabilityWrite, handleStudioDayWrite } from './triggers/availability_write.js';
 import { handleEngagementWrite } from './triggers/engagement_write.js';
 import { handleRollNextFree } from './scheduled/roll_next_free.js';
+import { handleRankSpots, liveRankSpotsDeps } from './scheduled/rank_spots.js';
 import { handleServiceDiscovery } from './triggers/service_write.js';
 import {
   handleCreateAward,
@@ -236,6 +285,7 @@ export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
       notify: liveNotifyDeps(),
       purge: { db: db(), bucket: (await import('firebase-admin/storage')).getStorage().bucket(), now: new Date() },
     },
+    studio: liveStudioClockExtras(),
   });
 });
 
@@ -259,6 +309,14 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   // `fast_reply` follows stats.responseMinutes (written by the server only).
   if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {
     await evaluateUserBadges(liveBadgeDeps(), uid);
+  }
+  // S26 (#136): a missing invite-search key is healed once; membership and gate changes move studio capacity.
+  const write = { uid, before: event.data?.before.data(), after: live?.data() };
+  await healNameKey(write, new FirestoreNameKeys(db()));
+  for (const studioId of studiosToRecompute(write)) {
+    await refreshAssignableMembers(db(), studioId);
+    // A member who just left or was removed: their own days may now change the studio's answer.
+    await recomputeStudioDays(db(), studioId, new Date(), studioId === uid ? [] : [uid]);
   }
 });
 
@@ -296,6 +354,7 @@ export const onBookingWrite = onDocumentWritten(
       {
         notify: liveNotifyDeps(),
         badges: liveBadgeDeps(),
+        studioDays: (studioId, day) => recomputeStudioDay(db(), studioId, day),
       },
       liveDiscoveryDeps(),
     );
@@ -333,6 +392,78 @@ export const setStudioAddress = onCall(CALLABLE_OPTIONS, (request) =>
   handleSetStudioAddress(request, liveProviderDeps()),
 );
 
+// ---- studio members and assignment (S26, #136) ----
+
+/** Studio invites a photographer: `{memberId}` → `{relationId}`. */
+export const inviteMember = onCall(CALLABLE_OPTIONS, (request) =>
+  handleInviteMember(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Studio withdraws an open invite: `{relationId}` → `{}`. */
+export const cancelInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelInvite(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Photographer asks to join a studio: `{studioId}` → `{relationId}`. */
+export const requestToJoin = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRequestToJoin(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Photographer withdraws their request: `{relationId}` → `{}`. */
+export const cancelJoinRequest = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelJoinRequest(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Invited photographer answers: `{relationId, accept}` → `{status}`. */
+export const respondInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondInvite(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Studio answers a join request: `{relationId, accept}` → `{status}`. */
+export const respondJoinRequest = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondJoinRequest(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Member leaves their studio: `{}` → `{}`; 7 days before another studio. */
+export const leaveStudio = onCall(CALLABLE_OPTIONS, (request) =>
+  handleLeaveStudio(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** Studio removes a member: `{memberId}` → `{}`; refused while the member has open studio bookings. */
+export const removeMember = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRemoveMember(request, liveStudioDeps(), liveNotifyDeps()),
+);
+
+/** S26.02: `{query}` (≥ 2 characters) → `{rows}` with each photographer's invite state for the calling studio. */
+export const searchPhotographersToInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSearchPhotographersToInvite(request, { firestore: db(), clock: { now: () => new Date() } }),
+);
+
+/** S26.04: `{bookingId}` → `{deadline, options}`; each member free, busy (with times), off, unverified or current. */
+export const assignmentOptions = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAssignmentOptions(request, liveAssignmentOptionsDeps()),
+);
+
+/** Studio assigns or reassigns a member: `{bookingId, assigneeId}` → Booking. */
+export const assignBooking = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAssignBooking(request, liveStudioBookingDeps()),
+);
+
+/** S26.05, customer: `{bookingId, note?}` → Booking; one change request per booking. */
+export const requestAssigneeChange = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRequestAssigneeChange(request, liveStudioBookingDeps()),
+);
+
+/** Studio keeps the assignee: `{bookingId, reason}` → Booking; the customer gains the 100% cancel right. */
+export const declineAssigneeChange = onCall(CALLABLE_OPTIONS, (request) =>
+  handleDeclineAssigneeChange(request, liveStudioBookingDeps()),
+);
+
+/** "Trả việc", assignee: `{bookingId, reason?}` → Booking; the studio is told. */
+export const returnAssignment = onCall(CALLABLE_OPTIONS, (request) =>
+  handleReturnAssignment(request, liveStudioBookingDeps()),
+);
+
 // ---- service add-ons (S08.06, #190) ----
 
 /** `{addonId?, kind, name, description?, price, unit, maxQty, serviceIds, active}` → `{addonId}`; addon_limit at 10 active. */
@@ -340,6 +471,28 @@ export const saveAddon = onCall(CALLABLE_OPTIONS, (request) => handleSaveAddon(r
 
 /** `{addonId}` → `{}`; bookings keep their snapshot lines. */
 export const deleteAddon = onCall(CALLABLE_OPTIONS, (request) => handleDeleteAddon(request, liveAddonDeps()));
+
+// ---- spot schedules and slot offers (S29) ----
+
+/** `{scheduleId?, spotId, days, window, serviceIds, assigneeId?}` → `{scheduleId, addedDays}` */
+export const saveSpotSchedule = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSaveSpotSchedule(request, liveSpotScheduleDeps()),
+);
+
+/** `{scheduleId}` → `{}` */
+export const cancelSpotSchedule = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelSpotSchedule(request, liveSpotScheduleDeps()),
+);
+
+/** `{offerId?, scheduleId, name, price, slotMinutes, gapMinutes, photoCount, editedCount, deliveryDays}` → `{offerId}` */
+export const saveSlotOffer = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSaveSlotOffer(request, liveSpotScheduleDeps()),
+);
+
+/** `{offerId}` → `{}` */
+export const closeSlotOffer = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCloseSlotOffer(request, liveSpotScheduleDeps()),
+);
 
 // ---- portfolio albums (plan C) ----
 
@@ -544,6 +697,18 @@ export const onDeviceWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: '
 /** A new account earns `new_member`. */
 export const onUserCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'users/{uid}' }, async (event) => {
   await handleUserCreated(event.params.uid, liveBadgeDeps());
+});
+
+/** A changed `displayName` refreshes `photographers/{uid}.nameKey` (S26.02 invite search, #136 Decision 19). */
+export const onUserWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'users/{uid}' }, async (event) => {
+  await handleUserWrite(
+    {
+      uid: event.params.uid,
+      before: event.data?.before.exists ? event.data.before.data() : undefined,
+      after: event.data?.after.exists ? event.data.after.data() : undefined,
+    },
+    new FirestoreNameKeys(db()),
+  );
 });
 
 /** Package changes can complete `complete_profile` and refresh discovery starting price and catalog. */
@@ -761,11 +926,23 @@ export const onFollowWrite = onDocumentWritten(
   },
 );
 
-/** An availability day write updates nextFreeDate when inside the horizon. */
+/** An availability day write updates nextFreeDate when inside the horizon, and the studio's derived full day. */
 export const onAvailabilityWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'availability/{uid}/days/{dayKey}' },
   async (event) => {
     await handleAvailabilityWrite(event.params.uid, event.params.dayKey, liveDiscoveryDeps());
+    // A member's day (or a studio's own off day) changes what the studio can take (#136 Decision 26).
+    await handleStudioDayWrite(
+      event.params.uid,
+      event.params.dayKey,
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      {
+        now: () => new Date(),
+        profile: (uid) => studioSideOf(db(), uid),
+        recompute: (studioId, day) => recomputeStudioDay(db(), studioId, day),
+      },
+    );
   },
 );
 
@@ -877,4 +1054,58 @@ export const onAccountDeletionUpdated = onDocumentWritten(
   },
 );
 
+/** Daily 03:00 Asia/Ho_Chi_Minh: updates spot stats, hotScore, and rewrites spot_rankings and spot_directory. */
+export const rankSpots = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '0 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handleRankSpots(liveRankSpotsDeps());
+  },
+);
 
+// ---------------------------------------------------------------- Chụp ngay (S13–S14, #140)
+// Contended callables use CONTENDED_CALLABLE_OPTIONS (30 s, no payment secrets: #140 moves no money), the
+// others CALLABLE_OPTIONS; #202 moves cancelInstantRequest and confirmInstantComplete to PAYMENT_CALLABLE_OPTIONS.
+// The 15-minute `bookingClock` settles due requests (step `instantSweep`); no scheduler of its own.
+
+export const createInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleCreateInstantRequest(request, liveInstantDeps()));
+
+export const nextInstantCandidates = onCall(CALLABLE_OPTIONS, (request) => handleNextInstantCandidates(request, liveInstantDeps()));
+
+export const inviteInstant = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
+
+export const cancelInstantRequest = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+
+export const confirmInstantComplete = onCall(CONTENDED_CALLABLE_OPTIONS, (request) =>
+  handleConfirmInstantComplete(request, liveInstantDeps()),
+);
+
+export const tickInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleTickInstantRequest(request, liveInstantDeps()));
+
+export const setLiveShutter = onCall(CALLABLE_OPTIONS, (request) => handleSetLiveShutter(request, liveInstantDeps()));
+
+export const saveInstantSettings = onCall(CALLABLE_OPTIONS, (request) => handleSaveInstantSettings(request, liveInstantDeps()));
+
+export const answerInstantOffer = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
+
+export const updateInstantJob = onCall(CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
+
+/** Notices (#138's hooks), the pair chat and the track clean-up of every request write (Decisions 11, 20, 21). */
+export const onInstantRequestWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'instant_requests/{requestId}' },
+  async (event) => {
+    const requestId = event.params.requestId;
+    await handleInstantRequestWrite(
+      {
+        requestId,
+        time: event.time,
+        before: instantRequestFromFirestore(requestId, event.data?.before.data()),
+        after: instantRequestFromFirestore(requestId, event.data?.after.data()),
+      },
+      {
+        notify: liveNotifyDeps(),
+        chat: liveChatDeps(),
+        deleteTrack: async (id) => { await db().doc(instantTrackPath(id)).delete(); },
+      },
+    );
+  },
+);

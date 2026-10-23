@@ -39,6 +39,15 @@ class RecordingPhotographerRepository implements PhotographerRepository {
     freeThisWeekCalls++;
     return seed.take(limit).toList();
   }
+
+  @override
+  Future<List<PhotographerSummary>> membersOf(
+    String studioId, {
+    int limit = 10,
+  }) async => [
+    for (final p in seed)
+      if (p.studioId == studioId) p,
+  ];
 }
 
 void main() {

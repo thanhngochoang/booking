@@ -17,6 +17,7 @@ import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/review/review_labels.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 class _Quiet extends StatelessWidget {
   const _Quiet(this.text);
@@ -811,10 +812,29 @@ class _ReviewTileState extends State<ReviewTile> {
     ].join(' · ');
   }
 
+  /// A studio booking's review names the other side (spec §6): who shot it
+  /// on the studio's tab, the studio on the member's; null otherwise or
+  /// without a name.
+  String? _studioTag(AppLocalizations l) {
+    final r = widget.review;
+    if (r.isStudioReview) {
+      final name = r.assigneeName;
+      return name == null ? null : l.reviewShotBy(name);
+    }
+    final studio = r.viaStudioName;
+    return studio == null ? null : l.reviewViaStudio(studio);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final tag = _studioTag(l);
+    final reasons = [
+      for (final reason in widget.review.reasons) reviewReasonLabel(l, reason),
+      for (final reason in widget.review.studioReasons)
+        studioReviewReasonLabel(l, reason),
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.s3),
       child: Column(
@@ -850,6 +870,14 @@ class _ReviewTileState extends State<ReviewTile> {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall,
                       ),
+                      if (tag != null)
+                        Text(
+                          tag,
+                          key: const Key('review-studio-tag'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
                     ],
                   ),
                 ),
@@ -861,16 +889,13 @@ class _ReviewTileState extends State<ReviewTile> {
               ],
             ),
           ),
-          if (widget.review.reasons.isNotEmpty) ...[
+          if (reasons.isNotEmpty) ...[
             const SizedBox(height: AppSpace.s2),
             Wrap(
               key: const Key('review-reasons'),
               spacing: AppSpace.s1,
               runSpacing: AppSpace.s1,
-              children: [
-                for (final reason in widget.review.reasons)
-                  _ReasonChip(reviewReasonLabel(l, reason)),
-              ],
+              children: [for (final reason in reasons) _ReasonChip(reason)],
             ),
           ],
           const SizedBox(height: AppSpace.s2),

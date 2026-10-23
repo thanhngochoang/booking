@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart' show PortfolioView;
 import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
@@ -21,6 +22,16 @@ final profilePackagesProvider = FutureProvider.autoDispose
           if (s.active) s,
       ]..sort((a, b) => a.priceVnd.compareTo(b.priceVnd));
     }, retry: (_, _) => null);
+
+/// The public name of a member's studio (`users/{studioId}`), for
+/// S03.01-member's "Thành viên của {Studio}"; '' when it has none.
+final profileStudioNameProvider = StreamProvider.autoDispose
+    .family<String, String>(
+      (ref, studioId) => ref
+          .watch(userRepositoryProvider)
+          .watch(studioId)
+          .map((p) => p?.displayName ?? ''),
+    );
 
 /// S03.01 "Thợ ảnh tương tự" (spec 3e.9). Never fails the screen: any error
 /// gives an empty list and the section hides.

@@ -42,6 +42,9 @@ import 'package:photobooking/features/explore/search/explore_search_screen.dart'
 import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
+import 'package:photobooking/features/instant_work/instant_job_screen.dart';
+import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
+import 'package:photobooking/features/instant_work/offer_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
@@ -64,6 +67,12 @@ import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
+import 'package:photobooking/features/studio/my_studio_screen.dart';
+import 'package:photobooking/features/studio/studio_members_screen.dart';
+import 'package:photobooking/features/spots/my_spot_schedules_screen.dart';
+import 'package:photobooking/features/spots/spot_screen.dart';
+import 'package:photobooking/features/spots/spot_schedule_edit_screen.dart';
+import 'package:photobooking/features/spots/spots_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
 import 'package:photobooking/features/verification/verify_fee_screen.dart';
 import 'package:photobooking/features/verification/verify_identity_screen.dart';
@@ -287,6 +296,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const MyCalendarScreen(),
       ),
       GoRoute(
+        path: '/work/instant',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const LiveShutterScreen(),
+      ),
+      GoRoute(
+        path: '/work/instant/offer/:offerId',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) =>
+            OfferScreen(offerId: state.pathParameters['offerId']!),
+      ),
+      GoRoute(
+        path: '/work/instant/:id',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) =>
+            InstantJobScreen(requestId: state.pathParameters['id']!),
+      ),
+      GoRoute(
         path: '/work/earnings',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const EarningsScreen(),
@@ -329,6 +355,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             PhotoDetailScreen(postId: state.pathParameters['postId']!),
       ),
       GoRoute(
+        path: '/spots',
+        builder: (_, state) => SpotsScreen(
+          area: state.uri.queryParameters['area'],
+        ),
+      ),
+      GoRoute(
+        path: '/spots/:spotId',
+        builder: (_, state) => SpotScreen(
+          spotId: state.pathParameters['spotId']!,
+          date: state.uri.queryParameters['date'],
+        ),
+      ),
+      GoRoute(
         path: '/u/:uid/book',
         pageBuilder: (_, state) => BookingSheetPage(
           args: BookingFlowArgs(
@@ -338,6 +377,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 state.uri.queryParameters['day'] ??
                 state.uri.queryParameters['date'],
             area: state.uri.queryParameters['area'],
+            scheduleId: state.uri.queryParameters['scheduleId'],
+            slotOfferId: state.uri.queryParameters['offerId'],
+            start: state.uri.queryParameters['start'],
           ),
         ),
       ),
@@ -423,10 +465,42 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      // S26.03 (individual, NAG) and S26.01 (studio owner); the server refuses
+      // the wrong side's calls, the settings rows pick the right screen.
+      GoRoute(
+        path: '/me/studio',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const MyStudioScreen(),
+      ),
+      GoRoute(
+        path: '/studio/members',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const StudioMembersScreen(),
+      ),
       GoRoute(
         path: '/me/addons',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const AddonsScreen(),
+      ),
+      // S29.03 and S29.04 (#194); `new` before `:scheduleId`.
+      GoRoute(
+        path: '/me/spot-schedules',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const MySpotSchedulesScreen(),
+      ),
+      GoRoute(
+        path: '/me/spot-schedules/new',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => SpotScheduleEditScreen(
+          spotId: state.uri.queryParameters['spotId'],
+        ),
+      ),
+      GoRoute(
+        path: '/me/spot-schedules/:scheduleId',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => SpotScheduleEditScreen(
+          scheduleId: state.pathParameters['scheduleId'],
+        ),
       ),
       GoRoute(
         path: '/me/saved',

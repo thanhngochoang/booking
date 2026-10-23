@@ -15,11 +15,15 @@ import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 import 'package:photobooking/features/photographer_profile/widgets/awards_strip.dart';
+import 'package:photobooking/features/photographer_profile/widgets/studio_members_section.dart';
 
 /// Top of S03.01: photo, avatar over it, name + check, genres · area, follow,
 /// the four stats, bio, skill tags, equipment, and the owner's meter. A
 /// visitor of a provider not accepting orders (S03.01-new) also sees the
 /// dashed "Chưa nhận đơn" tag under the name and a note after the stats.
+/// A studio (S03.01-studio) counts members and years active instead of the
+/// response time and lists its members after the stats; a studio member
+/// (S03.01-member) carries "Thành viên của {Studio}" under the name.
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.profile, required this.owner});
 
@@ -61,6 +65,7 @@ class ProfileHeader extends ConsumerWidget {
     );
     final cover = s.heroUrl;
     final years = skills.yearsExperience;
+    final memberOf = studio ? null : s.studioId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,6 +138,8 @@ class ProfileHeader extends ConsumerWidget {
                                 ),
                               if (meta.isNotEmpty)
                                 Text(meta, style: theme.textTheme.bodySmall),
+                              if (memberOf != null)
+                                MemberOfTag(studioId: memberOf),
                             ],
                           ),
                         ),
@@ -181,7 +188,13 @@ class ProfileHeader extends ConsumerWidget {
                     value: '${s.completedCount}',
                     label: l.profileStatShoots,
                   ),
-                  if (!artist)
+                  if (studio)
+                    StatTile(
+                      key: const Key('profile-stat-members'),
+                      value: '${s.memberCount}',
+                      label: l.profileMembersTile,
+                    )
+                  else if (!artist)
                     StatTile(
                       value: s.responseMinutes == null
                           ? '—'
@@ -189,13 +202,17 @@ class ProfileHeader extends ConsumerWidget {
                       label: l.profileStatResponse,
                     ),
                   StatTile(
+                    key: const Key('profile-stat-years'),
                     value: years == null ? '—' : l.profileYearsValue(years),
-                    label: l.profileStatYears,
+                    // A studio counts years active, a photographer
+                    // experience.
+                    label: studio ? l.profileYearsTile : l.profileStatYears,
                   ),
                 ],
               ),
               if (owner && !s.verified) const OwnerVerifyCard(),
               if (closed) _OrdersClosedNote(name: s.displayName),
+              if (studio) StudioMembersSection(studio: s),
               if (artist)
                 AwardsStrip(photographerId: s.id, reserveWhileLoading: true),
               if (profile.intro.bio.isNotEmpty) ...[

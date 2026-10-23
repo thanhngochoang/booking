@@ -13,7 +13,8 @@ import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/review/review_repository.dart';
 import 'package:photobooking/features/review/review_controller.dart';
 import 'package:photobooking/features/review/review_labels.dart';
-import 'package:photobooking/features/review/widgets/share_photo_grid.dart';
+import 'package:photobooking/features/review/widgets/review_form_parts.dart';
+import 'package:photobooking/features/review/widgets/studio_review_view.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   const ReviewScreen({super.key, required this.bookingId});
@@ -27,17 +28,24 @@ class ReviewScreen extends ConsumerStatefulWidget {
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   late final TextEditingController _textController;
 
+  /// The studio block's comment (studio bookings only).
+  late final TextEditingController _studioTextController;
+
   @override
   void initState() {
     super.initState();
     _textController = TextEditingController();
     _textController.addListener(_onTextChanged);
+    _studioTextController = TextEditingController();
+    _studioTextController.addListener(_onStudioTextChanged);
   }
 
   @override
   void dispose() {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
+    _studioTextController.removeListener(_onStudioTextChanged);
+    _studioTextController.dispose();
     super.dispose();
   }
 
@@ -47,17 +55,28 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         .setText(_textController.text);
   }
 
-  Future<void> _submit({required bool share}) async {
+  void _onStudioTextChanged() {
+    ref
+        .read(reviewControllerProvider(widget.bookingId).notifier)
+        .setStudioText(_studioTextController.text);
+  }
+
+  Future<void> _submit({required bool share, bool studio = false}) async {
     final notifier = ref.read(
       reviewControllerProvider(widget.bookingId).notifier,
     );
-    final success = await notifier.submit(share: share);
+    final success = await notifier.submit(share: share, studio: studio);
     if (!mounted) return;
 
     final state = ref.read(reviewControllerProvider(widget.bookingId));
     if (state.isConflict) {
       // Re-read review, stay and show read-only view
       ref.invalidate(bookingReviewProvider(widget.bookingId));
+      if (studio) {
+        ref.invalidate(
+          bookingReviewProvider(studioReviewDocId(widget.bookingId)),
+        );
+      }
       ref.invalidate(bookingProvider(widget.bookingId));
       return;
     }
@@ -149,11 +168,49 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 profileAsync.value?.summary.displayName ?? '';
             final thumbUrl = profileAsync.value?.summary.avatarUrl;
 
+            // A studio booking reviews who shot it and the studio; one
+            // without an assignee cannot be reviewed (`not_eligible`).
+            final studioBooking = booking.studio != null;
+            final assigneeId = booking.studio?.assigneeId;
+            if (studioBooking && assigneeId == null) {
+              return Center(
+                child: EmptyState(
+                  key: const Key('review-no-assignee'),
+                  title: l10n.reviewNoAssigneeTitle,
+                  body: l10n.reviewNoAssigneeBody,
+                  actionLabel: l10n.back,
+                  onAction: () => Navigator.of(context).maybePop(),
+                ),
+              );
+            }
+            final assignee = assigneeId == null
+                ? null
+                : ref.watch(photographerProfileProvider(assigneeId)).value;
+            final assigneeName = assignee?.summary.displayName ?? '';
+
+            final day = parseDayKey(booking.day);
             final summary = bookingSummaryOf(
               booking,
               photographerName: photographerName,
               thumbUrl: thumbUrl,
+              // Mock S05.05-studio: "T7 12/10 · thợ Minh Trí" under the title.
+              placeName: studioBooking
+                  ? l10n.reviewCardAssignee(
+                      day == null ? booking.day : formatDay(day),
+                      assigneeName,
+                    )
+                  : null,
             );
+            final StudioReviewSubject? studioSubject = studioBooking
+                ? (
+                    assigneeName: assigneeName,
+                    assigneeAvatar: assignee?.summary.avatarUrl,
+                    studioName: photographerName,
+                    studioAvatar: thumbUrl,
+                    studioSealed:
+                        profileAsync.value?.summary.businessVerified ?? false,
+                  )
+                : null;
 
             // The form only shows once the existing review has loaded.
             return AsyncView<Review?>(
@@ -165,10 +222,29 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 if (existingReview != null ||
                     BookingRules.isReviewed(booking) ||
                     controllerState.isConflict) {
+                  if (studioSubject != null) {
+                    return StudioReviewReadOnlyView(
+                      bookingId: widget.bookingId,
+                      summary: summary,
+                      subject: studioSubject,
+                      review: existingReview,
+                    );
+                  }
                   return _buildReadOnlyView(
                     context: context,
                     summary: summary,
                     review: existingReview,
+                  );
+                }
+                if (studioSubject != null) {
+                  return StudioReviewFormView(
+                    summary: summary,
+                    subject: studioSubject,
+                    state: controllerState,
+                    notifier: notifier,
+                    textController: _textController,
+                    studioTextController: _studioTextController,
+                    onSubmit: (share) => _submit(share: share, studio: true),
                   );
                 }
                 return _buildFormView(
@@ -369,106 +445,27 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpace.s6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.reviewShare,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpace.s2),
-                      Text(
-                        l10n.reviewOptional,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: context.mutedForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpace.s3),
-                  SharePhotoGrid(
-                    photos: state.photos,
+                  ReviewShareSection(
+                    state: state,
+                    notifier: notifier,
                     photographerName: photographerName,
-                    enabled: !isSubmitting,
-                    onAdd: notifier.pickPhotos,
-                    onRemove: notifier.removePhoto,
-                    onRetry: notifier.retryPhoto,
                   ),
                 ],
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(AppSpace.s4),
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              border: Border(
-                top: BorderSide(
-                  color: theme.brightness == Brightness.dark
-                      ? AppColorsDark.border
-                      : AppColors.border,
-                ),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (missing != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpace.s2),
-                    child: Text(
-                      switch (missing) {
-                        ReviewBlock.verdict => l10n.reviewNeedVerdict,
-                        ReviewBlock.reason => l10n.reviewNeedReason,
-                        ReviewBlock.text => l10n.reviewTextTooShort,
-                      },
-                      key: const Key('review_missing_hint'),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                    ),
-                  ),
-                state.photos.isEmpty
-                    ? AppButton.primary(
-                        l10n.reviewSubmit,
-                        key: const Key('submit_review_button'),
-                        loading: isSubmitting,
-                        onPressed: state.canSubmitReviewOnly
-                            ? () => _submit(share: false)
-                            : null,
-                      )
-                    : Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: AppButton.outline(
-                              l10n.reviewOnly,
-                              key: const Key('review_only_button'),
-                              loading:
-                                  isSubmitting && state.submittedShare == false,
-                              onPressed: state.canSubmitReviewOnly
-                                  ? () => _submit(share: false)
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpace.s3),
-                          Expanded(
-                            flex: 3,
-                            child: AppButton.primary(
-                              l10n.reviewSubmitShare(state.photos.length),
-                              key: const Key('submit_share_button'),
-                              loading:
-                                  isSubmitting && state.submittedShare == true,
-                              onPressed: state.canSubmitWithShare
-                                  ? () => _submit(share: true)
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
-              ],
-            ),
+          ReviewFooter(
+            state: state,
+            missing: switch (missing) {
+              ReviewBlock.verdict => l10n.reviewNeedVerdict,
+              ReviewBlock.reason => l10n.reviewNeedReason,
+              ReviewBlock.text => l10n.reviewTextTooShort,
+              null => null,
+            },
+            submitLabel: l10n.reviewSubmit,
+            canReviewOnly: state.canSubmitReviewOnly,
+            canShare: state.canSubmitWithShare,
+            onSubmit: (share) => _submit(share: share),
           ),
         ],
       ),

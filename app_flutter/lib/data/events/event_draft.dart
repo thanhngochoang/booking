@@ -86,6 +86,8 @@ class EventDraft {
     this.hashtag,
     this.faq,
     this.hostPhotographerId,
+    this.spotId,
+    this.spotDecided = false,
     this.cleared = const {},
   });
 
@@ -116,6 +118,8 @@ class EventDraft {
       hashtag: d.hashtag,
       faq: d.faq.isEmpty ? null : d.faq,
       hostPhotographerId: s.hostType == HostType.photographer ? s.hostId : null,
+      spotId: d.spotId,
+      spotDecided: d.spotDecided,
     );
   }
 
@@ -149,6 +153,15 @@ class EventDraft {
   /// Staff only: the photographer the draft is created for (owner decision O1).
   final String? hostPhotographerId;
 
+  /// The photo spot the event is tagged with (S12.01 "Điểm chụp"); null with
+  /// [spotDecided] is "Không thuộc điểm chụp nào".
+  final String? spotId;
+
+  /// The organizer made the choice. [toCallable] sends `spotId` (null
+  /// included) only then, so a draft saved before the choice leaves the
+  /// stored value alone.
+  final bool spotDecided;
+
   /// Fields the user emptied on a draft that already exists on the server
   /// (`cover`, `place`, `deadline`, `schedule`): [toCallable] sends an explicit
   /// null for them, because leaving a key out keeps the stored value. Set by
@@ -175,6 +188,9 @@ class EventDraft {
     String? hashtag,
     List<EventFaq>? faq,
     String? hostPhotographerId,
+    String? spotId,
+    bool? spotDecided,
+    bool clearSpot = false,
   }) {
     final next = {...cleared};
     void track(String key, bool clear, Object? value) {
@@ -207,6 +223,9 @@ class EventDraft {
       hashtag: hashtag ?? this.hashtag,
       faq: faq ?? this.faq,
       hostPhotographerId: hostPhotographerId ?? this.hostPhotographerId,
+      spotId: clearSpot ? null : (spotId ?? this.spotId),
+      spotDecided:
+          spotDecided ?? (clearSpot || this.spotDecided || spotId != null),
       cleared: next,
     );
   }
@@ -229,6 +248,7 @@ class EventDraft {
     'hashtag': ?hashtag,
     'faq': ?faq?.map((f) => f.toJson()).toList(),
     'hostPhotographerId': ?hostPhotographerId,
+    if (spotDecided || spotId != null) 'spotId': spotId,
     if (cleared.contains('cover') && coverUrl == null) ...{
       'coverUrl': null,
       'coverPath': null,
@@ -258,6 +278,8 @@ class EventDraft {
     'hashtag': ?hashtag,
     'faq': ?faq?.map((f) => f.toJson()).toList(),
     'hostPhotographerId': ?hostPhotographerId,
+    'spotId': ?spotId,
+    if (spotDecided) 'spotDecided': true,
     if (cleared.isNotEmpty) 'cleared': cleared.toList()..sort(),
   };
 
@@ -293,6 +315,8 @@ class EventDraft {
             ]
           : null,
       hostPhotographerId: text(json['hostPhotographerId']),
+      spotId: text(json['spotId']),
+      spotDecided: json['spotDecided'] == true || text(json['spotId']) != null,
       cleared: json['cleared'] is List
           ? {
               for (final k in json['cleared']! as List)

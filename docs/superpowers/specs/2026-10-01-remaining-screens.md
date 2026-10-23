@@ -78,34 +78,34 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S01.04 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S41 |
 | S01.05 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S29 |
 | **S02** | **Khám phá & tìm thợ** | | | | | |
-| S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) | S01 |
+| S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S01 |
 | S02.02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) · vuốt trong phạm vi album hoãn (plan C, quyết định 9: S24.01 mở `/p/:id` như Dòng thời gian) | S02 |
-| S02.03 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S13 |
+| S02.03 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S13 |
 | S02.04 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S35 |
 | S02.05 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S36 |
 | S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) | S04 |
 | S02.07 | Tìm kiếm: ô tìm, nhóm Dịch vụ / Phong cách / Địa điểm / Thợ ảnh, không kết quả có "Xem tất cả thợ ảnh" | `/explore/search` | cả hai | 3 | ⬜ có mock, có plan (#132) | — |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
-| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm · khớp mock: nút lưu & chia sẻ/tuỳ chọn trên ảnh bìa, nút theo dõi xs, bố cục header · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) | S03 |
+| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm · khớp mock: nút lưu & chia sẻ/tuỳ chọn trên ảnh bìa, nút theo dõi xs, bố cục header · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S03 |
 | S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ✅ đã làm (10a) · "Được đánh giá cao" theo % cà chua (#130) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) | S05 |
-| S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
+| S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S06 |
 | S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · bước địa điểm chưa có bản đồ · dòng dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) | S07 |
 | S04.04 | Chờ thanh toán | `/b/:id/pay`, `/e/:eventId/pay/:regId` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · dùng chung mọi chủ thể (PR #200) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
-| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) | S09 |
+| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S09 |
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) · ScreenCode ✅ (#152) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
-| S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) | S12 |
+| S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S12 |
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.08 | Huỷ phần bàn giao khi trễ hạn (sheet: hoàn mốc 2, thợ giữ mốc 1) | — (sheet) | khách | spec 10-05 §4.1.5 | kế hoạch `2026-10-18-s05-late-delivery-cancel.md` ([#207](https://github.com/thanhngochoang/booking/issues/207)) | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) | S19 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · Live Shutter: [#140](https://github.com/thanhngochoang/booking/issues/140) | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
@@ -125,10 +125,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio ẩn tới #136 | S31 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio: [#136](https://github.com/thanhngochoang/booking/issues/136) | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
-| S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |
+| S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S21 |
 | **S11** | **Tham gia sự kiện** | | | | | |
 | S11.01 | Danh sách sự kiện | `/events` | cả hai | 3b | ✅ đã làm (10c) | S15 |
 | S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ✅ đã làm (10c) | S16 |
@@ -137,22 +137,22 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S11.05 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S11.02) | cả hai | 3b | ✅ đã làm (10c) | S45 |
 | S11.06 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b | ✅ đã làm (10c) | S46 |
 | **S12** | **Tổ chức sự kiện** | | | | | |
-| S12.01 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ✅ đã làm (10c) | S25 |
+| S12.01 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ✅ đã làm (10c) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S25 |
 | S12.02 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b | ✅ đã làm (10c) | S26 |
 | S12.03 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ✅ đã làm (10c) | S27 |
 | **S13** | **Chụp ngay (khách)** | | | | | |
-| S13.01 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá; "Xem nhiếp ảnh gia phù hợp" | `/instant` | khách | I5 | ⬜ plan I5 | S47 |
-| S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | ⬜ plan I5 (viết lại) | — (mới) |
-| S13.03 | Đang chờ trả lời (người đã mời, trạng thái từng người) | `/instant/:id` (`searching`) | khách | I5 | ⬜ plan I5 | S48 |
-| S13.04 | Đã match (chuyển tiếp, cả hai bên) | — (lớp phủ trên S13.05/S14.03) | cả hai | I4 · I5 | ⬜ plan I4 · I5 (viết lại) | — (mới) |
-| S13.05 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 | ⬜ plan I5 | S49 |
-| S13.06 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 | ⬜ plan I5 | S50 |
-| S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | ⬜ plan I5 | S51 |
-| S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 | ⬜ plan I4 · I5 | S55 |
+| S13.01 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá; "Xem nhiếp ảnh gia phù hợp" | `/instant` | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S47 |
+| S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
+| S13.03 | Đang chờ trả lời (người đã mời, trạng thái từng người) | `/instant/:id` (`searching`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S48 |
+| S13.04 | Đã match (chuyển tiếp, cả hai bên) | — (lớp phủ trên S13.05/S14.02) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
+| S13.05 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S49 |
+| S13.06 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S50 |
+| S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S51 |
+| S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S55 |
 | **S14** | **Chụp ngay (nhiếp ảnh gia)** | | | | | |
-| S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | ⬜ plan I4 | S52 |
-| S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | ⬜ plan I4 | S53 |
-| S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | ⬜ plan I4 | S54 |
+| S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S52 |
+| S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S53 |
+| S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S54 |
 | **S15** | **Đăng việc (khách)** | | | | | |
 | S15.01 | Đăng việc (2 bước: việc gì; khi nào, ở đâu, ngân sách, ai được báo giá) | `/jobs/new` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S56 |
 | S15.02 | Việc của tôi (tab "Việc đăng" của S05.01) / chi tiết việc | `/bookings?tab=jobs`, `/jobs/:id` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S57 |
@@ -222,11 +222,11 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · khớp mock (#145) | — |
 | S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · có mock | — |
 | **S26** | **Studio và thành viên** | | | | | |
-| S26.01 | Thành viên studio | `/studio/members` | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.02 | Mời thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.03 | Studio của tôi | `/me/studio` | thợ ảnh | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.04 | Giao thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
-| S26.05 | Xin đổi thợ (sheet) | — (sheet) | khách | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
+| S26.01 | Thành viên studio | `/studio/members` | studio | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
+| S26.02 | Mời thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
+| S26.03 | Studio của tôi | `/me/studio` | thợ ảnh | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
+| S26.04 | Giao thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
+| S26.05 | Xin đổi thợ (sheet) | — (sheet) | khách | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
 | **S27** | **Studio tuyển thợ** | | | | | |
 | S27.01 | Tin tuyển: danh sách, lọc khu vực / thể loại / loại (tab "Tuyển thợ" trong S06.01) | `/recruit` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.02 | Chi tiết tin tuyển | `/recruit/:postId` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
@@ -247,12 +247,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S28.09 | Đánh giá của studio (chỉ xem) | `/studio/reviews` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
 | S28.10 | Tin nhắn: hỏi trước và hội thoại booking, chữ và ảnh | `/studio/messages` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
 | **S29** | **Điểm chụp đang hot** | | | | | |
-| S29.01 | Điểm chụp: danh sách, lọc khu vực / "Đang vào mùa" / "Cuối tuần này có thợ" (+ khu ở S02.01, lưới tab Địa điểm ở S02.03) | `/spots` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
-| S29.02 | Trang điểm chụp: mô tả, mẹo, bản đồ; thợ nhận chụp theo ngày; gói chia suất; sự kiện; ảnh (trống ngày, ngoài mùa) | `/spots/:spotId` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
-| S29.03 | Lịch tại điểm của tôi | `/me/spot-schedules` | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
-| S29.04 | Thêm / sửa lịch tại điểm | `/me/spot-schedules/new`, `/me/spot-schedules/:id/edit` | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
-| S29.05 | Gói chia suất (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
-| S29.06 | Chọn suất (sheet, phía khách) | — (sheet) | khách | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| S29.01 | Điểm chụp: danh sách, lọc khu vực / "Đang vào mùa" / "Cuối tuần này có thợ" (+ khu ở S02.01, lưới tab Địa điểm ở S02.03) | `/spots` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.02 | Trang điểm chụp: mô tả, mẹo, bản đồ; thợ nhận chụp theo ngày; gói chia suất; sự kiện; ảnh (trống ngày, ngoài mùa) | `/spots/:spotId` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.03 | Lịch tại điểm của tôi | `/me/spot-schedules` | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.04 | Thêm / sửa lịch tại điểm | `/me/spot-schedules/new`, `/me/spot-schedules/:id/edit` | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.05 | Gói chia suất (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.06 | Chọn suất (sheet, phía khách) | — (sheet) | khách | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
 | **S30** | **Chủ sự kiện & vé vào cửa** | | | | | |
 | S30.01 | Trở thành chủ sự kiện | `/organizer/apply` | mọi người dùng | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
 | S30.02 | Nhận quản lý điểm chụp (minh chứng, staff duyệt) | `/organizer/spots/claim` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
@@ -262,7 +262,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S30.06 | Nhân viên soát vé | `/organizer/gate-staff` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
 | S30.07 | Quét mã: soát vé ở cổng, thợ gặp khách ("Đang chụp") | `/scan` | chủ sự kiện · nhân viên soát vé · thợ ảnh · studio | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
 
-Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
+Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6; giai đoạn 1 chạy trên Functions + Firestore, hộp ở mục 5 của spec đó); từng màn phía thợ (S14.01–S14.03, S13.04 và S13.08 phía thợ, thẻ ở S06.01) ở [`screens/instant.md`](screens/instant.md). Cả hai phía thuộc #140 (PR 1 điều phối và app thợ, PR 2 app khách); tiền ở #202.
 
 Use case S26 (**Studio và thành viên**) đặc tả ở [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md); S05.06, S05.07, S06.07 (bàn giao hai lớp) ở [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đánh giá cà chua/gạch (S05.05) ở [`2026-10-06-tomato-brick-reviews-design.md`](2026-10-06-tomato-brick-reviews-design.md).
 
@@ -846,8 +846,8 @@ Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notific
 | `collab_pay_disputed` | studio | `payment` · đỏ | Công việc | `/collab` | Việc đăng tuyển | |
 | `instant_assigned` | khách | `instant` · xanh | Đặt lịch | `/instant/:id` (S13.05) | Chụp ngay | |
 | `instant_missed` | thợ ảnh | `instant` · xám | Công việc | `/work/instant` (S14.01) | Chụp ngay | Bản ghi "bỏ lỡ lời mời" |
-| `instant_round_ended` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | "Chưa ai nhận. Chọn thêm người nhé." (#140) |
-| `instant_no_match` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | Tiền vẫn được giữ, huỷ thì hoàn đủ |
+| `instant_round_ended` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | "Chưa ai nhận. Chọn thêm người nhé." (#140); một dòng mỗi lượt; không có dòng khi mọi người của lượt đều bận lúc gửi (khách biết ngay trong câu trả lời của `inviteInstant`) |
+| `instant_no_match` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | Tiền vẫn được giữ, huỷ thì hoàn đủ; khi chưa trả (mọi yêu cầu của #140) nội dung là "Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn", không bao giờ "0₫ vẫn được giữ"; khoá chống trùng theo lượt |
 | `instant_arrived` | khách | `instant` · xanh | Đặt lịch | `/instant/:id` | Chụp ngay | |
 | `instant_finished` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | Xác nhận trong 2 giờ, nếu không tự hoàn thành |
 | `instant_cancelled` | bên còn lại (thợ hoặc khách) | `instant` · đỏ | Đặt lịch / Công việc | thợ: `/work/instant/:id`; khách: `/instant/:id` | Chụp ngay | Quan trọng; thợ nhận kèm phí đi lại nếu có |
@@ -863,6 +863,8 @@ Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notific
 | `promo` | cả hai | `info` · tím | Hệ thống | theo `target` | Khuyến mãi | Tắt mặc định (S17.02); chưa có nơi phát (cần công cụ staff) |
 
 Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = thành công, vàng = cần hành động, đỏ = bị từ chối hoặc huỷ, xám = đã qua, tím = mặc định). Loại lạ hiện biểu tượng `info` tông tím. Hàng "Đặt lịch và thanh toán" của S17.02 không tắt được kênh Trong app; dòng quan trọng luôn vào hộp thư dù kênh tắt.
+
+Bảy loại `instant_*` của bảng là dòng hộp thư; chủ phát duy nhất là trigger `onInstantRequestWrite` (#140) qua bộ quyết định thuần `instantNotices(before, after)`. Lời mời (S14.02) là push riêng `offerPushMessage` ("Lời mời chụp ngay" / "{kiểu chụp} {thời lượng} · {khu} · bạn nhận {số tiền}. Còn 60 giây."), kênh `default` ưu tiên cao kể cả giờ yên lặng, không có dòng hộp thư. Một yêu cầu có thể được nhận lại sau khi thợ huỷ, nên khoá chống trùng của `instant_assigned`, `instant_arrived`, `instant_finished`, `instant_cancelled` kèm mốc nhận việc (`assignedAt` tính bằng ms), của `instant_no_match` kèm số lượt; nội dung và `target` không đổi.
 
 **Nhắc sự kiện (`event_soon`)**: `eventClock` (5 phút một lần, không thêm job) tìm sự kiện `open`, `full` hoặc `closed` chưa có `soonNoticeAt`, bắt đầu trong 48 giờ tới; gửi một thông báo cho mỗi vé `paid` (khoá chống trùng `event_soon_{eventId}_{regId}`), rồi đặt `Event.soonNoticeAt` **chỉ khi mọi vé `paid` đều đã được nhắc**. Sau mỗi lượt, sự kiện ghi các vé đã gửi xong vào `soonNotifiedRegIds` (chỉ máy chủ ghi); lỗi thì tick sau chỉ gửi cho các vé chưa có trong danh sách, nên người tắt hộp thư "Sự kiện" nhưng bật push không nhận push lặp lại; danh sách được xoá khi đặt `soonNoticeAt`. Tiêu đề theo ngày lịch Việt Nam: từ 2 ngày "… bắt đầu sau {n} ngày", "… bắt đầu ngày mai", "… bắt đầu hôm nay"; nội dung "Tập trung {HH:mm} tại {điểm hẹn hoặc tên địa điểm}. Mang vé trong mục Vé." Vé mua sau lượt này không nhận nhắc; sự kiện tạo trước thay đổi này (không có trường) không được nhắc; dời giờ bắt đầu không đặt lại `soonNoticeAt`. Câu hỏi mở với chủ dự án: người giữ vé có nhận thông báo khi sự kiện bị huỷ (hoàn tiền) hoặc đổi giờ không; hiện **không có** loại `event_cancelled` / `event_changed`.
 

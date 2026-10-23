@@ -448,7 +448,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Địa điểm'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('category-places-hcm-q1')), findsOneWidget);
+      expect(find.byKey(const Key('spot-tile-cau-dat')), findsOneWidget);
       await tester.tap(find.text('Phong cách'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('category-styles-film')), findsOneWidget);

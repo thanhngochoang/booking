@@ -7,6 +7,8 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/features/booking/steps/place_step.dart';
 
 import '../../support/booking_world.dart';
+import '../../support/spot_booking_fixtures.dart';
+import 'package:photobooking/features/booking/booking_flow_controller.dart';
 
 void main() {
   final now = DateTime.utc(2026, 10, 5);
@@ -221,4 +223,32 @@ void main() {
       );
     });
   });
+
+  testWidgets(
+    'spot context shows the locked field and the note; pickup still appears with transport',
+    (tester) async {
+      await walkSpotPackage(tester, until: BookingStep.place, car: true);
+
+      final place = tester.widget<TextField>(
+        find.byKey(const Key('book-place-locked')),
+      );
+      expect(place.controller!.text, 'Hồ Tây');
+      expect(place.readOnly, isTrue);
+      expect(find.text('Địa điểm là điểm chụp, không đổi được.'), findsOneWidget);
+      // Suggestions are for the pickup only.
+      expect(find.widgetWithText(AppChip, 'Quận 3'), findsOneWidget);
+      expect(find.byKey(const Key('book-pickup-chip-Quận 3')), findsOneWidget);
+      expect(find.byKey(const Key('book-pickup-field')), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('book-pickup-field')),
+        'Ga Hà Nội',
+      );
+      await tester.pump();
+      final next = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Tiếp tục · 1.800.000₫'),
+      );
+      expect(next.onPressed, isNotNull);
+    },
+  );
 }

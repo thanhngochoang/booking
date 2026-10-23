@@ -23,13 +23,18 @@ class FakeReviewRepository implements ReviewRepository {
 
   final List<Map<String, dynamic>> submitCalls = [];
 
+  /// Stores [review] under its document id: `{bookingId}` for a member or
+  /// individual review, `{bookingId}_studio` for a studio review.
   void seedReview(Review review) {
-    reviews[review.bookingId] = review;
-    _notifyReview(review.bookingId);
+    final id = review.isStudioReview
+        ? studioReviewDocId(review.bookingId)
+        : review.bookingId;
+    reviews[id] = review;
+    _notifyReview(id);
   }
 
-  void _notifyReview(String bookingId) {
-    _reviewControllers[bookingId]?.add(reviews[bookingId]);
+  void _notifyReview(String reviewId) {
+    _reviewControllers[reviewId]?.add(reviews[reviewId]);
   }
 
   @override
@@ -98,6 +103,7 @@ class FakeReviewRepository implements ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
+    StudioReviewDraft? studio,
   }) async {
     if (nextException != null) {
       final ex = nextException!;
@@ -125,14 +131,22 @@ class FakeReviewRepository implements ReviewRepository {
       'text': text,
       'postId': postId,
       'photos': photos,
+      'studio': studio,
     });
 
+    final booking = bookingRepository?.bookings[bookingId];
     final photogId =
         bookingPhotographerIds[bookingId] ?? defaultPhotographerId;
+    final studioId = booking?.photographerId ?? photogId;
+    // A studio booking: the member review counts for the assignee, the
+    // studio review (`{bookingId}_studio`) for the studio (Decision 21).
+    final assigneeId = booking?.studio?.assigneeId;
     final review = Review(
       bookingId: bookingId,
       customerId: currentUserId,
-      photographerId: photogId,
+      photographerId: studio != null && assigneeId != null
+          ? assigneeId
+          : photogId,
       serviceId: 'srv1',
       verdict: verdict,
       hits: hits,
@@ -140,9 +154,25 @@ class FakeReviewRepository implements ReviewRepository {
       text: text,
       photoPostId: postId,
       createdAt: DateTime.now(),
+      viaStudioId: studio != null ? studioId : null,
     );
 
     seedReview(review);
+    if (studio != null) {
+      seedReview(Review(
+        bookingId: bookingId,
+        subjectType: 'studio',
+        customerId: currentUserId,
+        photographerId: studioId,
+        serviceId: 'srv1',
+        verdict: studio.verdict,
+        hits: studio.hits,
+        studioReasons: studio.reasons,
+        text: studio.text,
+        createdAt: DateTime.now(),
+        assigneeId: assigneeId,
+      ));
+    }
 
     if (bookingRepository != null &&
         bookingRepository!.bookings.containsKey(bookingId)) {

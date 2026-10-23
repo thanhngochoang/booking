@@ -9,6 +9,7 @@ import {
   type ContactChannels,
   type ContactNumbers,
   type GetContactLinkDeps,
+  type InstantContactRecord,
   type RegistrationRecord,
 } from '../src/index.js';
 
@@ -23,6 +24,7 @@ const booking = (over: Partial<BookingRecord> = {}): BookingRecord => ({
 interface Setup {
   bookings?: BookingRecord[];
   registrations?: RegistrationRecord[];
+  instantRequests?: (InstantContactRecord & { id: string })[];
   channels?: ContactChannels | null;
   numbers?: ContactNumbers | null;
   failLog?: boolean;
@@ -34,6 +36,7 @@ function harness(s: Setup = {}) {
   const logs: ContactAccessLogEntry[] = [];
   let next = 0;
   const registrations = s.registrations;
+  const instantRequests = s.instantRequests;
   const deps: GetContactLinkDeps = {
     bookings: {
       async get(id) {
@@ -48,6 +51,15 @@ function harness(s: Setup = {}) {
           reads.documents += 1;
           reads.roundTrips += 1;
           return registrations.find((r) => r.id === id) ?? null;
+        },
+      },
+    }),
+    ...(instantRequests === undefined ? {} : {
+      instantRequests: {
+        async get(id: string) {
+          reads.documents += 1;
+          reads.roundTrips += 1;
+          return instantRequests.find((r) => r.id === id) ?? null;
         },
       },
     }),
@@ -197,5 +209,66 @@ describe('getContactLink', () => {
       isCode('blocked'),
     );
     assert.deepEqual(logs.map((l) => [l.requesterId, l.granted]), [['c1', false]]);
+  });
+});
+
+describe('getContactLink: instant_request (#140 Decision 22)', () => {
+  const instant = (over: Partial<InstantContactRecord & { id: string }> = {}): InstantContactRecord & { id: string } => ({
+    id: 'ir1', customerId: 'c1', photographerId: 'p1', status: 'en_route', paidAt: new Date(NOW.getTime() - DAY), completedAt: null, ...over,
+  });
+  const ask = (uid: string, r: InstantContactRecord & { id: string }, data: Record<string, unknown> = {}) => {
+    const h = harness({ instantRequests: [r] });
+    return { h, call: getContactLink(uid, { instantRequestId: 'ir1', channel: 'call', ...data }, h.deps) };
+  };
+
+  test('instant_request: unlocked for the customer while a photographer is assigned and the request is paid', async () => {
+    for (const status of ['assigned', 'en_route', 'arrived', 'in_progress', 'finished']) {
+      const { h, call } = ask('c1', instant({ status }));
+      assert.deepEqual(await call, { url: 'tel:+84912000001' }, status);
+      assert.deepEqual(h.logs.map((l) => [l.subjectType, l.subjectId, l.granted]), [['instant_request', 'ir1', true]]);
+    }
+  });
+
+  test('locked while unpaid even when assigned (contact_locked; every #140 request)', async () => {
+    const { h, call } = ask('c1', instant({ paidAt: null }));
+    await assert.rejects(call, isCode('contact_locked'));
+    assert.deepEqual(h.reads, { documents: 1, roundTrips: 1 });
+  });
+
+  test('locked before assignment (contact_locked)', async () => {
+    for (const status of ['choosing', 'searching', 'no_match']) {
+      await assert.rejects(ask('c1', instant({ status, photographerId: null })).call, isCode('contact_locked'), status);
+    }
+    await assert.rejects(ask('c1', instant({ status: 'cancelled_by_customer' })).call, isCode('contact_locked'));
+  });
+
+  test('unlocked 7 days after completion, locked on day 8', async () => {
+    const done = (days: number) => instant({ status: 'completed', completedAt: new Date(NOW.getTime() - days * DAY) });
+    assert.deepEqual(await ask('c1', done(7)).call, { url: 'tel:+84912000001' });
+    await assert.rejects(ask('c1', done(8)).call, isCode('contact_locked'));
+    await assert.rejects(ask('c1', instant({ status: 'completed', completedAt: null })).call, isCode('contact_locked'));
+  });
+
+  test('another user is permission_denied', async () => {
+    await assert.rejects(ask('p1', instant()).call, isCode('permission_denied'));
+    await assert.rejects(ask('c2', instant()).call, isCode('permission_denied'));
+  });
+
+  test('not_found without a reader or for an unknown request', async () => {
+    await assert.rejects(getContactLink('c1', { instantRequestId: 'ir1', channel: 'call' }, harness().deps), isCode('not_found'));
+    await assert.rejects(getContactLink('c1', { instantRequestId: 'ir9', channel: 'call' }, harness({ instantRequests: [] }).deps), isCode('not_found'));
+  });
+
+  test('parse refuses two subject keys', async () => {
+    const { deps, reads, logs } = harness({ instantRequests: [instant()] });
+    for (const data of [
+      { instantRequestId: 'ir1', bookingId: 'b1', channel: 'call' },
+      { instantRequestId: 'ir1', registrationId: 'r1', channel: 'call' },
+      { instantRequestId: 'ir/1', channel: 'call' },
+    ]) {
+      await assert.rejects(getContactLink('c1', data, deps), isCode('invalid_argument'));
+    }
+    assert.deepEqual(reads, { documents: 0, roundTrips: 0 });
+    assert.equal(logs.length, 0);
   });
 });

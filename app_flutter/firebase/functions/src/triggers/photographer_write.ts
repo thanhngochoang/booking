@@ -2,12 +2,16 @@ import type { DocumentData } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
 import {
   acceptingOrdersPatch,
+  foldNameKey,
+  providerTypeOf,
   scorePhotographerSkills,
   refreshNextFreeDate,
   type ScoreSkillsDeps,
   type ScoreSkillsOutcome,
   type DiscoveryDeps,
 } from '@photobooking/domain';
+import { isAssignableMember } from '../infra/booking_firestore.js';
+import type { NameKeyStore } from './user_write.js';
 
 /** The two snapshots of one `photographers/{uid}` write; `after` undefined when it was deleted. */
 export interface PhotographerWriteInput {
@@ -112,4 +116,43 @@ export async function handlePhotographerEvent(
     logger.error('onPhotographerWrite: permanent Firestore error; not retried', { uid: input.uid, code: (e as { code: number }).code });
     return 'failed';
   }
+}
+
+/**
+ * Heals a missing `nameKey` (S26.02 search, Decision 19) from `users/{uid}.displayName`, once: the write that
+ * follows finds the key present. A name change is `onUserWrite`'s.
+ */
+export async function healNameKey(input: PhotographerWriteInput, store: NameKeyStore): Promise<'written' | 'present' | 'deleted'> {
+  if (input.after === undefined) return 'deleted';
+  if (typeof input.after.nameKey === 'string') return 'present';
+  await store.setNameKey(input.uid, foldNameKey((await store.displayName(input.uid)) ?? ''));
+  return 'written';
+}
+
+function studioIdOf(d: DocumentData | undefined): string | null {
+  return typeof d?.studioId === 'string' && d.studioId !== '' ? d.studioId : null;
+}
+
+const assignable = (d: DocumentData | undefined): boolean => isAssignableMember(d);
+
+/**
+ * Studios whose derived `full` days and `assignableMembers` a photographer write can change (#136 Decision 26):
+ * both studios of a member who joined, left or was removed (`studioId` is written in the membership commit), the
+ * studio of a member who became assignable or stopped being so, a provider that became a studio (its count
+ * starts at 0) and one that stopped being a studio (its marks are cleared).
+ */
+export function studiosToRecompute(input: PhotographerWriteInput): string[] {
+  const out = new Set<string>();
+  const was = studioIdOf(input.before);
+  const now = studioIdOf(input.after);
+  if (was !== now) {
+    if (was !== null) out.add(was);
+    if (now !== null) out.add(now);
+  } else if (now !== null && assignable(input.before) !== assignable(input.after)) {
+    out.add(now);
+  }
+  const wasStudio = input.before !== undefined && providerTypeOf(input.before.providerType) === 'studio';
+  const isStudioNow = input.after !== undefined && providerTypeOf(input.after.providerType) === 'studio';
+  if (wasStudio !== isStudioNow) out.add(input.uid);
+  return [...out];
 }

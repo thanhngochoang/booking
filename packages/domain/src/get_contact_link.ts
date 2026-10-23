@@ -2,6 +2,7 @@ import type { BlockGate } from './block_ports.js';
 import {
   bookingContactUnlocked,
   contactUrlFor,
+  instantContactUnlocked,
   parseContactLinkRequest,
   ticketContactUnlocked,
   type ContactSubject,
@@ -17,10 +18,26 @@ import type {
   RegistrationReader,
 } from './ports.js';
 
+/** The fields of `instant_requests/{id}` the contact decision needs (#140 Decision 22). */
+export interface InstantContactRecord {
+  readonly customerId: string;
+  readonly photographerId: string | null;
+  /** `InstantStatus` code; unknown codes are treated as locked. */
+  readonly status: string;
+  readonly paidAt: Date | null;
+  readonly completedAt: Date | null;
+}
+
+export interface InstantContactReader {
+  get(id: string): Promise<InstantContactRecord | null>;
+}
+
 export interface GetContactLinkDeps {
   readonly bookings: BookingReader;
   /** Absent until event registrations exist (events plan): registration requests are then `not_found`. */
   readonly registrations?: RegistrationReader;
+  /** Absent → `instantRequestId` requests are `not_found` (wired by #140 Task 5). */
+  readonly instantRequests?: InstantContactReader;
   readonly photographers: PhotographerContactReader;
   readonly blocks?: BlockGate;
   readonly log: ContactAccessLogWriter;
@@ -89,6 +106,13 @@ async function findParty(
     if (booking.customerId !== requesterId) return { error: 'permission_denied' };
     if (!bookingContactUnlocked(booking, now)) return { error: 'contact_locked' };
     return { photographerId: booking.photographerId };
+  }
+  if (subject.type === 'instant_request') {
+    const request = deps.instantRequests ? await deps.instantRequests.get(subject.id) : null;
+    if (request === null) return { error: 'not_found' };
+    if (request.customerId !== requesterId) return { error: 'permission_denied' };
+    if (!instantContactUnlocked(request, now) || request.photographerId === null) return { error: 'contact_locked' };
+    return { photographerId: request.photographerId };
   }
   const registration = deps.registrations ? await deps.registrations.get(subject.id) : null;
   if (registration === null || registration.photographerId === null) return { error: 'not_found' };
