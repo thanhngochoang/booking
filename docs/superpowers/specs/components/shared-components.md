@@ -314,12 +314,22 @@ Hàng có tay nắm ≡ (vùng chạm 48dp, nhấn giữ để kéo), ảnh, tê
 Lưới 3 cột chọn nhiều, ô chọn có số thứ tự (thứ tự chọn), nhãn góc dưới ("4 ảnh", tên album hiện tại). Giới hạn số ô chọn; ô vượt giới hạn vô hiệu.
 
 #### JobCard · Mới
+`JobCard({super.key, required this.data, this.onTap, this.variant = JobCardVariant.customer})`
+`JobCard.skeleton({JobCardVariant variant = JobCardVariant.customer})`
+
 Biến thể `customer` (S15.02: tag thể loại, `StatusBadge`, tiêu đề, ngày · quận · ngân sách, hàng avatar người báo giá + "{n} báo giá · {m} mới", thời gian còn) và `photographer` (S16.02: tag + "Bạn được mời", `FitPill`, tiêu đề, ngày · giờ · quận · khoảng cách, ngân sách, "{n} báo giá · còn {m} ngày"; biến thể khoá mờ với dòng lý do). Không bao giờ hiện số điện thoại hay địa chỉ cụ thể.
 
 #### QuoteCard, DeliverableChips, FitPill · Mới
+`FitPill({super.key, required this.percent})`
+`DeliverableChips({super.key, required this.items, this.grid = false})`
+`QuoteCard({super.key, required this.data, this.onView, this.onToggleSave})`
+`QuoteCard.skeleton()`
+
 `QuoteCard` (S15.03): người báo giá + `ProviderMark` (+ tag "Được mời"), dòng tin cậy, giá + so với ngân sách bằng chữ ("trong ngân sách" / "vượt {x}"), `DeliverableChips` (ảnh chỉnh, ngày giao, lần sửa, "Rảnh {ngày}" tô xanh), câu đầu lời nhắn một dòng, `FitPill` "Hợp {n}%", nút lưu, nút "Xem". `DeliverableChips` có biến thể `grid` 4 ô (S15.04: số lớn serif + nhãn).
 
 #### MilestoneTable · Mới
+`MilestoneTable({super.key, required this.lines})`
+
 Bảng mốc tiền: mỗi dòng đĩa số thứ tự, tên mốc + dòng phụ, số tiền tabular; dùng ở S15.04, S16.03 (dạng một dòng chữ) và S04.03 / S05.02 khi hợp đồng 100% được chốt. Mốc cuối nhận phần dư làm tròn.
 
 ### `ImagePurpose` / `MediaUploader.upload(purpose:)` · Đã có (#147)

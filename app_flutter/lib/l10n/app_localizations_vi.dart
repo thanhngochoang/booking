@@ -9162,4 +9162,109 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get jobErrPhone => 'Thêm số điện thoại để tiếp tục.';
+
+  @override
+  String fitPill(int n) {
+    return 'Hợp $n%';
+  }
+
+  @override
+  String get quoteInBudget => 'trong ngân sách';
+
+  @override
+  String quoteInBudgetRange(String range) {
+    return 'trong ngân sách $range';
+  }
+
+  @override
+  String quoteOverBudget(String amount) {
+    return 'vượt $amount';
+  }
+
+  @override
+  String get quoteInvited => 'Được mời';
+
+  @override
+  String quoteFree(String date) {
+    return 'Rảnh $date';
+  }
+
+  @override
+  String get quoteView => 'Xem';
+
+  @override
+  String get quoteBookmark => 'Lưu báo giá';
+
+  @override
+  String get quoteUnbookmark => 'Bỏ lưu báo giá';
+
+  @override
+  String get quoteWithdrawnTag => 'Đã rút';
+
+  @override
+  String quoteEditedChip(int n) {
+    return '$n ảnh chỉnh';
+  }
+
+  @override
+  String quoteDaysChip(int n) {
+    return 'giao $n ngày';
+  }
+
+  @override
+  String quoteRevisionsChip(int n) {
+    return 'sửa $n lần';
+  }
+
+  @override
+  String quoteTrustSessions(int n) {
+    return '$n buổi';
+  }
+
+  @override
+  String quoteTrustAwards(int n) {
+    return '$n giải';
+  }
+
+  @override
+  String get jobYouInvited => 'Bạn được mời';
+
+  @override
+  String get jobArtistOnly => 'Chỉ Nhiếp ảnh gia';
+
+  @override
+  String jobArtistLock(int k) {
+    return 'Chỉ NAG báo giá được · bạn còn $k giải đã duyệt nữa';
+  }
+
+  @override
+  String jobCardMeta(int n, int m) {
+    return '$n báo giá · còn $m ngày';
+  }
+
+  @override
+  String jobQuotes(int n) {
+    return '$n báo giá';
+  }
+
+  @override
+  String jobQuotesNew(int n) {
+    return '$n mới';
+  }
+
+  @override
+  String get jobOpenBooking => 'Mở buổi chụp →';
+
+  @override
+  String jobExpiredNoPick(int n) {
+    return 'Hết hạn · $n báo giá · chưa chọn ai';
+  }
+
+  @override
+  String get jobRepost => 'Đăng lại';
+
+  @override
+  String jobDistance(String km) {
+    return '$km km';
+  }
 }

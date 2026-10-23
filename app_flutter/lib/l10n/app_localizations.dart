@@ -15722,6 +15722,156 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thêm số điện thoại để tiếp tục.'**
   String get jobErrPhone;
+
+  /// No description provided for @fitPill.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hợp {n}%'**
+  String fitPill(int n);
+
+  /// No description provided for @quoteInBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'trong ngân sách'**
+  String get quoteInBudget;
+
+  /// No description provided for @quoteInBudgetRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'trong ngân sách {range}'**
+  String quoteInBudgetRange(String range);
+
+  /// No description provided for @quoteOverBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'vượt {amount}'**
+  String quoteOverBudget(String amount);
+
+  /// No description provided for @quoteInvited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được mời'**
+  String get quoteInvited;
+
+  /// No description provided for @quoteFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh {date}'**
+  String quoteFree(String date);
+
+  /// No description provided for @quoteView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem'**
+  String get quoteView;
+
+  /// No description provided for @quoteBookmark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu báo giá'**
+  String get quoteBookmark;
+
+  /// No description provided for @quoteUnbookmark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu báo giá'**
+  String get quoteUnbookmark;
+
+  /// No description provided for @quoteWithdrawnTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã rút'**
+  String get quoteWithdrawnTag;
+
+  /// No description provided for @quoteEditedChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh chỉnh'**
+  String quoteEditedChip(int n);
+
+  /// No description provided for @quoteDaysChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'giao {n} ngày'**
+  String quoteDaysChip(int n);
+
+  /// No description provided for @quoteRevisionsChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'sửa {n} lần'**
+  String quoteRevisionsChip(int n);
+
+  /// No description provided for @quoteTrustSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} buổi'**
+  String quoteTrustSessions(int n);
+
+  /// No description provided for @quoteTrustAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giải'**
+  String quoteTrustAwards(int n);
+
+  /// No description provided for @jobYouInvited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được mời'**
+  String get jobYouInvited;
+
+  /// No description provided for @jobArtistOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Nhiếp ảnh gia'**
+  String get jobArtistOnly;
+
+  /// No description provided for @jobArtistLock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa'**
+  String jobArtistLock(int k);
+
+  /// No description provided for @jobCardMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} báo giá · còn {m} ngày'**
+  String jobCardMeta(int n, int m);
+
+  /// No description provided for @jobQuotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} báo giá'**
+  String jobQuotes(int n);
+
+  /// No description provided for @jobQuotesNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} mới'**
+  String jobQuotesNew(int n);
+
+  /// No description provided for @jobOpenBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở buổi chụp →'**
+  String get jobOpenBooking;
+
+  /// No description provided for @jobExpiredNoPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn · {n} báo giá · chưa chọn ai'**
+  String jobExpiredNoPick(int n);
+
+  /// No description provided for @jobRepost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng lại'**
+  String get jobRepost;
+
+  /// No description provided for @jobDistance.
+  ///
+  /// In vi, this message translates to:
+  /// **'{km} km'**
+  String jobDistance(String km);
 }
 
 class _AppLocalizationsDelegate
