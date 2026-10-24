@@ -5,14 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/disputes/dispute.dart';
-import 'package:photobooking/l10n/app_localizations.dart';
-
-/// Who receives the released money: the provider's name, or "ứng dụng" for a
-/// platform-hosted event.
-String disputeReceiverName(AppLocalizations l, Dispute d) =>
-    d.providerId == 'platform'
-    ? l.disputePlatformName
-    : (d.providerName ?? d.title);
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 
 class DisputeOutcomeCard extends StatelessWidget {
   const DisputeOutcomeCard({

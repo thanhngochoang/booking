@@ -7,7 +7,7 @@ import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/disputes/dispute.dart';
 import 'package:photobooking/data/disputes/dispute_providers.dart';
 import 'package:photobooking/data/support/support_providers.dart';
-import 'package:photobooking/features/disputes/widgets/dispute_outcome_card.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/help/help_faq.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -154,7 +154,9 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
               }
             });
           },
-          borderRadius: const BorderRadius.all(Radius.circular(28)),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(AppRadius.sheet),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: Column(
@@ -247,8 +249,11 @@ class _DisputeRow extends StatelessWidget {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     final d = dispute;
-    // The customer sees who receives the money; the provider the booking.
-    final name = viewerIsProvider ? d.title : disputeReceiverName(l, d);
+    // The customer sees who receives the money; the provider (whose own name
+    // is in the title) the date and slot of the disputed booking or ticket.
+    final name = viewerIsProvider
+        ? (d.subtitle.isNotEmpty ? d.subtitle : d.title)
+        : disputeReceiverName(l, d);
     final status = d.status == DisputeStatus.open
         ? l.disputeStatusOpen
         : l.disputeStatusResolved;

@@ -54,10 +54,14 @@ void main() {
   testWidgets('help without disputes shows no "Khiếu nại của bạn" section', (
     tester,
   ) async {
-    await tester.pumpWidget(_wrap(const HelpScreen()));
+    final disputes = FakeDisputeRepository();
+    await tester.pumpWidget(_wrap(const HelpScreen(), disputes: disputes));
     await tester.pumpAndSettle();
 
+    // The list was read and came back empty: no section.
+    expect(disputes.mineCalls, 1);
     expect(find.text('Khiếu nại của bạn'), findsNothing);
+    expect(find.byKey(const Key('help-dispute-01JDZ8Y3VQK7Q2')), findsNothing);
     expect(find.text('Câu hỏi thường gặp'), findsOneWidget);
   });
 
@@ -288,9 +292,8 @@ void main() {
     expect(find.text('dispute 01JDZ8Y3VQK7Q2'), findsOneWidget);
   });
 
-  testWidgets('the provider\'s row names the booking instead of themself', (
-    tester,
-  ) async {
+  testWidgets('the provider\'s row shows the booking\'s date and slot instead '
+      'of their own name', (tester) async {
     await tester.pumpWidget(
       _wrap(
         const HelpScreen(),
@@ -307,6 +310,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Khiếu nại #K7Q2 · Minh Trí · Chân dung'), findsOneWidget);
+    expect(
+      find.text('Khiếu nại #K7Q2 · T2 19/10 · 15:30–17:30'),
+      findsOneWidget,
+    );
+    expect(find.text('Khiếu nại #K7Q2 · Minh Trí · Chân dung'), findsNothing);
   });
 }

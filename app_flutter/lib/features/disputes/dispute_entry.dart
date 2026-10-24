@@ -75,6 +75,11 @@ String disputeReasonLabel(AppLocalizations l, DisputeReason r) => switch (r) {
   DisputeReason.other => l.disputeReasonOther,
 };
 
+/// Who receives the released money (S18.02, S18.03): the provider's name, or
+/// "ứng dụng" for a platform-hosted event.
+String disputeReceiverName(AppLocalizations l, Dispute d) =>
+    d.isPlatformHosted ? l.disputePlatformName : (d.providerName ?? d.title);
+
 /// Opens S18.01. Resolves to the new dispute id after a successful submit,
 /// null when closed.
 Future<String?> showOpenDisputeSheet(
@@ -121,9 +126,14 @@ bool _holdsMoney(EscrowStatus? s) =>
 /// none. Mirrors the server's `disputeWindow` (Decision 2): `shot` → 24 h
 /// after the shoot; `approved` → the end of the delivery check; `completed`
 /// / `reviewed` with money still held (a payment without milestones) → 24 h
-/// after completion. Only while money is held and no dispute is linked.
+/// after completion. Only while money is held (`disputed` = the linked
+/// dispute is still open). One open dispute per booking, but each milestone
+/// has its own window: with a resolved dispute linked, only `approved` (the
+/// delivery check) stays open — that dispute was on the shoot milestone and
+/// the delivery money is still held. The server decides (`openDispute`).
 DateTime? bookingDisputeClosesAt(Booking b) {
-  if (b.disputeId != null || !_holdsMoney(b.escrowStatus)) {
+  if (!_holdsMoney(b.escrowStatus) ||
+      (b.disputeId != null && b.status != BookingStatus.approved)) {
     return null;
   }
   return switch (b.status) {

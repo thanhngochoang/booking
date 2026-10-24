@@ -14,6 +14,7 @@ import {
   type Dispute,
   type DisputeOutcomeKind,
 } from './dispute.js';
+import { formatVnDate, formatVnTime } from './booking_policy.js';
 import type { DisputeDeps, DisputeSubjectView } from './dispute_ports.js';
 import { DomainError } from './errors.js';
 import {
@@ -40,8 +41,12 @@ const PLATFORM = 'platform';
 const SYSTEM_NAME = 'Hệ thống';
 const PREVIEW_MAX = 80;
 
-/** The system line that opens every dispute thread (the seed writes the same text). */
-export const DISPUTE_OPENED_TEXT = 'Khiếu nại đã được gửi. Tiền được giữ tới khi có kết quả.';
+/** The system line that opens every dispute thread, `Đã mở khiếu nại · 10:12 14/10` (Vietnam time; the seed writes the same). */
+export function disputeOpenedText(at: string): string {
+  const when = new Date(at);
+  const [, m, d] = formatVnDate(when).split('-');
+  return `Đã mở khiếu nại · ${formatVnTime(when)} ${d}/${m}`;
+}
 
 function newDisputeThread(d: Dispute, at: string): SupportThread {
   return {
@@ -72,8 +77,8 @@ function sameOpen(existing: Dispute, callerId: string): Dispute {
 }
 
 /**
- * Customer opens a dispute (Decisions 2–5): only the paying customer, inside the window, one
- * dispute per subject (a resolved one still counts). Freezes the window's milestone (#152's `disputeMilestone`), or a payment
+ * Customer opens a dispute (Decisions 2–5): only the paying customer, inside the window, one open
+ * dispute per subject (a booking's two milestones can each be disputed once, in their own windows). Freezes the window's milestone (#152's `disputeMilestone`), or a payment
  * without milestones whole (`escrowStatus: disputed`, `prevEscrowStatus` kept), mirrors the subject,
  * and opens the three-party thread with a system message and the description as the first message.
  */
@@ -102,8 +107,12 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     if (subject.customerId !== callerId) throw new DomainError('permission_denied');
     const payment = await tx.findSubjectPayment(subject);
     const window = disputeWindow(subject, now, payment?.milestones !== undefined);
-    // One dispute per subject, ever (open or resolved): the outcome is final (Review Focus 4).
-    if (subject.disputeId) throw new DomainError('conflict');
+    // One OPEN dispute per subject (spec §3i.1). After a resolved shoot dispute the delivery milestone
+    // may still be disputed in its own window; the held-milestone check below refuses the same one twice.
+    if (subject.disputeId) {
+      const current = await tx.getDispute(subject.disputeId);
+      if (current?.status === 'open') throw new DomainError('conflict');
+    }
     if (!payment || !isSettledPayment(payment)) throw new DomainError('not_eligible');
     // The refunds read above belong to another payment: let the caller retry.
     if (!payment.milestones && payment.id !== pre.paymentId) throw new DomainError('conflict');
@@ -176,7 +185,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     tx.linkSubject(subject, { disputeId: dispute.id, escrowStatus: frozen.escrowStatus });
     tx.setDispute(dispute);
     tx.putThread(thread);
-    tx.addMessage(systemMessage(dispute.threadId, deps.ids.newId(), DISPUTE_OPENED_TEXT, at));
+    tx.addMessage(systemMessage(dispute.threadId, deps.ids.newId(), disputeOpenedText(at), at));
     tx.addMessage(first);
     return dispute;
   });

@@ -45,8 +45,8 @@ enum DetailAction {
   /// (Decision 14), once.
   returnJob,
 
-  /// "Báo vấn đề · còn {h} giờ" (S18.01): the customer while the dispute
-  /// window is open, money is held and no dispute is linked (#142).
+  /// "Báo vấn đề · còn {h} giờ" (S18.01): the customer while a dispute
+  /// window is open and its money held (`bookingDisputeClosesAt`, #142).
   reportProblem,
 }
 

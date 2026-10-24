@@ -68,7 +68,7 @@ import {
   type Spot,
   type SpotSchedule,
   type SlotOffer,
-  DISPUTE_OPENED_TEXT,
+  disputeOpenedText,
   DISPUTE_WINDOW_HOURS,
   disputeEscrowPayment,
   disputeThreadId,
@@ -920,7 +920,7 @@ function seedDispute(
   const message = (i: number, m: Omit<SupportMessage, 'id' | 'threadId'>): SupportMessage =>
     ({ id: `seed-msg-${input.disputeId}-${i}`, threadId: dispute.threadId, ...m });
   const messages: SupportMessage[] = [
-    message(1, { senderId: null, senderRole: 'system', senderName: 'Hệ thống', body: DISPUTE_OPENED_TEXT, createdAt: at }),
+    message(1, { senderId: null, senderRole: 'system', senderName: 'Hệ thống', body: disputeOpenedText(at), createdAt: at }),
     message(2, { senderId: b.customerId, senderRole: 'customer', senderName: nameOf(b.customerId), body: input.description, createdAt: msgAt(1), opening: true }),
     message(3, {
       senderId: ADMIN, senderRole: 'staff', senderName: 'Hỗ trợ',

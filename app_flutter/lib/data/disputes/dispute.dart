@@ -188,6 +188,10 @@ class Dispute {
   final DateTime? resolvedAt;
 
   bool isCustomer(String uid) => uid == customerId;
+
+  /// A ticket of a platform-hosted event: the released money stays with the
+  /// platform (`providerId == 'platform'`), there is no provider party.
+  bool get isPlatformHosted => providerId == 'platform';
 }
 
 /// `#K7Q2` without the hash: the last 4 characters of the id, upper case

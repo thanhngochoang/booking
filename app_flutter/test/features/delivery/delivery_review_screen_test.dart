@@ -243,14 +243,19 @@ void main() {
     expect(router.state.uri.toString(), '/b/b-rev/dispute?from=delivery');
   });
 
-  testWidgets('a booking already in dispute has no report button on the check card', (tester) async {
+  Future<void> pumpApproved(
+    WidgetTester tester, {
+    String? disputeId,
+    EscrowStatus escrow = EscrowStatus.held,
+  }) async {
     final approvedTime = DateTime.utc(2026, 10, 15, 10, 0);
     currentTime = approvedTime.add(const Duration(hours: 1));
     fakeBookingRepo.bookings['b-rev'] = testBooking.copyWith(
       status: BookingStatus.approved,
       approvedAt: approvedTime,
       checkUntil: approvedTime.add(const Duration(hours: 48)),
-      disputeId: 'dK7Q2',
+      disputeId: disputeId,
+      escrowStatus: escrow,
     );
     fakeDeliveryRepo.seedRound('b-rev', deliveredRound);
 
@@ -258,8 +263,21 @@ void main() {
       buildApp(const DeliveryReviewScreen(bookingId: 'b-rev')),
     );
     await tester.pumpAndSettle();
-
     expect(find.text('còn 47 giờ'), findsOneWidget);
+  }
+
+  testWidgets('a booking with an open dispute has no report button on the check card', (tester) async {
+    await pumpApproved(tester, disputeId: 'dK7Q2', escrow: EscrowStatus.disputed);
+    expect(find.text('Báo vấn đề với ảnh gốc'), findsNothing);
+  });
+
+  testWidgets('after a resolved shoot dispute the delivery can still be reported', (tester) async {
+    await pumpApproved(tester, disputeId: 'dK7Q2');
+    expect(find.text('Báo vấn đề với ảnh gốc'), findsOneWidget);
+  });
+
+  testWidgets('"Báo vấn đề với ảnh gốc" is hidden when escrow no longer holds money', (tester) async {
+    await pumpApproved(tester, escrow: EscrowStatus.released);
     expect(find.text('Báo vấn đề với ảnh gốc'), findsNothing);
   });
 

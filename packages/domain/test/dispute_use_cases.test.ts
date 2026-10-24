@@ -65,6 +65,7 @@ describe('openDispute', () => {
     assert.equal(thread.lastSenderRole, 'customer');
     const msgs = [...(await w.store.listMessages('dispute_d1', 10))].reverse();
     assert.deepEqual(msgs.map((m) => [m.senderRole, m.senderId]), [['system', null], ['customer', 'c1']]);
+    assert.equal(msgs[0]?.body, 'Đã mở khiếu nại · 17:00 20/10');
     assert.equal(msgs[1]?.senderName, 'An');
     assert.equal(msgs[1]?.body, 'Thợ đến muộn hai tiếng và thiếu ảnh');
   });
@@ -109,18 +110,29 @@ describe('openDispute', () => {
     await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd2', evidencePaths: [] })), 'conflict');
   });
 
-  it('a resolved dispute still blocks a second one on the same booking (one dispute per subject) → conflict', async () => {
+  it('after a resolved shoot dispute the delivery milestone can be disputed in its window; the shoot one not again', async () => {
     const w = createDisputeWorld();
     seedShotBooking(w);
     await openDispute(w.deps, 'c1', openInput({ reason: 'no_show' }));
+    // The same id again is still answered with the first dispute (idempotent path first).
+    assert.equal((await openDispute(w.deps, 'c1', openInput({ reason: 'no_show' }))).id, 'd1');
     await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: NOTE });
-    // The photographer delivers and the customer approves: the delivery milestone is held and its window open.
+
+    // Still `shot`: the shoot milestone is no longer held → refused.
+    await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd2', evidencePaths: [] })), 'not_eligible');
+
+    // The photographer delivers and the customer approves: delivery held, its window open.
     const view = w.store.subjects.get('booking::b1');
     assert.ok(view);
     w.store.putSubject({ ...view, state: 'approved', checkUntil: hoursFrom(24) });
-    assert.equal(milestone(w, 'delivery')?.status, 'held');
-    await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd2', evidencePaths: [] })), 'conflict');
-    assert.equal(w.store.disputes.size, 1);
+    const d3 = await openDispute(w.deps, 'c1', openInput({ disputeId: 'd3', reason: 'link_broken', evidencePaths: [] }));
+    assert.equal(d3.status, 'open');
+    assert.equal(milestone(w, 'delivery')?.status, 'disputed');
+    assert.equal(payment(w).dispute?.milestone, 'delivery');
+    assert.equal(w.store.subjects.get('booking::b1')?.disputeId, 'd3');
+    assert.deepEqual(w.store.mirrors.get('booking::b1'), { disputeId: 'd3', escrowStatus: 'disputed' });
+    // While d3 is open, another one → conflict.
+    await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd4', evidencePaths: [] })), 'conflict');
   });
 
   it('another customer → permission_denied', async () => {

@@ -408,10 +408,10 @@ class _EvidenceViewerState extends State<_EvidenceViewer> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: const Key('dispute-evidence-viewer'),
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.heroCanvas,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.heroCanvas,
+        foregroundColor: AppColors.onScrim,
         title: Text(context.l10n.disputeEvidencePhoto(_index + 1)),
       ),
       body: PageView.builder(
@@ -427,7 +427,7 @@ class _EvidenceViewerState extends State<_EvidenceViewer> {
                 error: (_, _, _) => const AppIcon(
                   AppIcons.brokenImage,
                   size: 48,
-                  color: Colors.white54,
+                  color: AppColors.onScrim,
                 ),
                 data: (_, url) => NetworkPhoto(url: url, fit: BoxFit.contain),
               ),

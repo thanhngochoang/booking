@@ -67,7 +67,7 @@ final _thread = [
     SupportSenderRole.system,
     null,
     'Hệ thống',
-    'Khiếu nại đã được gửi. Tiền được giữ tới khi có kết quả.',
+    'Đã mở khiếu nại · 10:12 14/10',
     12,
   ),
   _msg(

@@ -91,6 +91,41 @@ void main() {
       expect(bookingDisputeClosesAt(b), _now.add(const Duration(hours: 22)));
     });
 
+    test('a resolved shoot dispute leaves the delivery window open once '
+        'approved; an open one or a shot booking hides it', () {
+      final until = _now.add(const Duration(hours: 47));
+      // Resolved (escrow no longer `disputed`), delivery still held.
+      expect(
+        bookingDisputeClosesAt(
+          _booking(BookingStatus.approved, checkUntil: until, disputeId: 'd1'),
+        ),
+        until,
+      );
+      // The linked dispute is still open.
+      expect(
+        bookingDisputeClosesAt(
+          _booking(
+            BookingStatus.approved,
+            checkUntil: until,
+            disputeId: 'd1',
+            escrow: EscrowStatus.disputed,
+          ),
+        ),
+        isNull,
+      );
+      // Still `shot`: the resolved dispute was the shoot one.
+      expect(
+        bookingDisputeClosesAt(
+          _booking(
+            BookingStatus.shot,
+            shotAt: _now.subtract(const Duration(hours: 2)),
+            disputeId: 'd1',
+          ),
+        ),
+        isNull,
+      );
+    });
+
     test('nothing held, a dispute already linked, or another state → null', () {
       final done = _now.subtract(const Duration(hours: 2));
       expect(
