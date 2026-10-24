@@ -1,13 +1,23 @@
 // test/support/recruit_world.dart
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/collab/collab_providers.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/recruit/recruit_repository.dart';
+
+import 'screen_host.dart';
 
 /// Tuesday 21/10/2026 10:00 in Vietnam (S27 fixtures).
 final recruitNow = DateTime.utc(2026, 10, 21, 3);
@@ -172,12 +182,14 @@ ProviderFacts makeProviderFacts({
   bool acceptingOrders = true,
   bool businessVerified = false,
   List<String> recruitMatchKeys = const [],
+  String? studioId,
 }) => ProviderFacts(
   role: role,
   providerType: providerType,
   acceptingOrders: acceptingOrders,
   businessVerified: businessVerified,
   recruitMatchKeys: recruitMatchKeys,
+  studioId: studioId,
 );
 
 /// In-memory recruit and collaboration repositories, signed in as [uid] at
@@ -202,4 +214,71 @@ class RecruitWorld {
     recruitRepositoryProvider.overrideWithValue(recruits),
     collabRepositoryProvider.overrideWithValue(collabs),
   ];
+
+  /// Public profiles (the studio row of S27.02 reads its stats).
+  final profiles = FakePublicProfileRepository();
+
+  /// Every post of the app; the signed-in provider's own are S27.03's
+  /// samples.
+  final posts = FakePostRepository();
+
+  late GoRouter router;
+
+  /// Location of the top-most route, pushed ones included.
+  String get location => router.state.uri.toString();
+
+  /// Seeds the public profile of a studio (S27.02 studio row).
+  void seedStudio({
+    String id = 'cuc',
+    String name = 'Studio Cúc',
+    int tomatoPct = 96,
+    int reviewCount = 25,
+    int completedCount = 128,
+  }) => profiles.add(
+    PhotographerProfile(
+      summary: PhotographerSummary(
+        id: id,
+        displayName: name,
+        providerType: ProviderType.studio,
+        verified: true,
+        tomatoPct: tomatoPct,
+        reviewCount: reviewCount,
+        completedCount: completedCount,
+      ),
+      intro: const PhotographerIntro(providerType: ProviderType.studio),
+    ),
+  );
+
+  /// Hosts [location] with the feature's [routes], stub pages for
+  /// [stubs], and everything the recruit screens read.
+  Widget app(
+    String location, {
+    required List<RouteBase> routes,
+    List<String> stubs = const ['/verify/start', '/studio/recruit', '/u/:uid'],
+    double textScale = 1.0,
+    List<Override> extraOverrides = const [],
+  }) {
+    Widget stub(BuildContext _, GoRouterState s) =>
+        Scaffold(body: Text('stub ${s.uri}'));
+    router = GoRouter(
+      initialLocation: location,
+      routes: [
+        ...routes,
+        for (final p in stubs) GoRoute(path: p, builder: stub),
+      ],
+    );
+    return screenRouterApp(
+      router: router,
+      textScale: textScale,
+      overrides: [
+        ...overrides,
+        authRepositoryProvider.overrideWithValue(
+          FakeAuthRepository(initialUser: AuthUser(uid: uid)),
+        ),
+        publicProfileRepositoryProvider.overrideWithValue(profiles),
+        postRepositoryProvider.overrideWithValue(posts),
+        ...extraOverrides,
+      ],
+    );
+  }
 }

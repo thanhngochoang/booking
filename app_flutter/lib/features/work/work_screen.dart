@@ -1,5 +1,6 @@
 // S06.01: the photographer's work tab: today's shoot, new requests with a
-// live deadline, and the month's numbers.
+// live deadline, and the month's numbers; the last segment "Tuyển thợ" is
+// S27.01 (Decision 20 of #151).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,12 +25,18 @@ import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/event_manage/my_events_section.dart';
 import 'package:photobooking/features/instant_work/live_shutter_card.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:photobooking/features/recruit/recruit_list_screen.dart';
+import 'package:photobooking/features/recruit/recruit_list_view.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/decline_change_sheet.dart';
 import 'package:photobooking/features/studio/return_job_sheet.dart';
 import 'package:photobooking/features/work/studio_work_cards.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
+
+/// The segments of S06.01 (`SegmentedTabs`, Decision 20 of #151): the jobs
+/// plan (#139) inserts its two between them.
+enum WorkSegment { today, recruit }
 
 /// Tab root of `/bookings` for photographers.
 class WorkScreen extends ConsumerStatefulWidget {
@@ -44,6 +51,8 @@ class WorkScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkScreenState extends ConsumerState<WorkScreen> {
+  WorkSegment _segment = WorkSegment.today;
+
   /// The request being accepted; every Nhận/Từ chối waits for it.
   String? _accepting;
 
@@ -183,6 +192,8 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         ref.read(clockProvider)();
     final features = ref.watch(bookingFeaturesProvider);
 
+    final recruit = _segment == WorkSegment.recruit;
+
     return ScreenCode(
       ScreenCodes.work,
       child: Scaffold(
@@ -190,52 +201,96 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         appBar: AppBar(
           centerTitle: false,
           titleTextStyle: tabRootTitleStyle(context),
-          // Mock: small "Công việc" over today's date.
-          title: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.workTitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: dark
-                      ? AppColorsDark.foregroundSecondary
-                      : AppColors.foregroundSecondary,
+          // Mock: small "Công việc" over today's date (S27.01: over "Tuyển
+          // thợ").
+          title: recruit
+              ? const RecruitBarTitle()
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.workTitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: dark
+                            ? AppColorsDark.foregroundSecondary
+                            : AppColors.foregroundSecondary,
+                      ),
+                    ),
+                    Text(_dateTitle(context, now)),
+                  ],
                 ),
-              ),
-              Text(_dateTitle(context, now)),
-            ],
-          ),
           actions: [
-            IconButton(
-              key: const Key('open-calendar'),
-              tooltip: l10n.myCalendarTitle,
-              icon: const AppIcon(AppIcons.calendarCheck),
-              onPressed: () => context.push('/work/calendar'),
-            ),
+            if (recruit)
+              const RecruitStudioPostsAction()
+            else
+              IconButton(
+                key: const Key('open-calendar'),
+                tooltip: l10n.myCalendarTitle,
+                icon: const AppIcon(AppIcons.calendarCheck),
+                onPressed: () => context.push('/work/calendar'),
+              ),
           ],
         ),
-        body: AsyncView<WorkDashboard>(
-          value: dashboard,
-          skeleton: (_) => _skeleton(),
-          onRetry: () =>
-              ref.invalidate(myBookingsProvider(BookingRole.photographer)),
-          isEmpty: (d) => d.isEmpty,
-          // Scrolls, so the entry under S06.02 fits 320 dp at 1.3× text.
-          empty: (_) => ListView(
-            children: [
-              const _InstantEntry(),
-              const SizedBox(height: 480, child: WorkEmptyState()),
-              const _SpotSchedulesEntry(),
-              if (widget.showEvents) const MyEventsSection(),
-              const SizedBox(height: AppSpace.s4),
-            ],
-          ),
-          data: (context, d) => _dashboard(context, d, features, now),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s4,
+                AppSpace.s1,
+                AppSpace.s4,
+                AppSpace.s2,
+              ),
+              child: SegmentedTabs<WorkSegment>(
+                key: const Key('work-segments'),
+                options: [
+                  SegmentOption(
+                    value: WorkSegment.today,
+                    label: l10n.workToday,
+                  ),
+                  SegmentOption(
+                    value: WorkSegment.recruit,
+                    label: l10n.recruitTab,
+                  ),
+                ],
+                value: _segment,
+                onChanged: (v) => setState(() => _segment = v),
+              ),
+            ),
+            Expanded(
+              child: recruit
+                  ? const RecruitListView()
+                  : _today(context, dashboard, features, now),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _today(
+    BuildContext context,
+    AsyncValue<WorkDashboard> dashboard,
+    BookingFeatures features,
+    DateTime now,
+  ) => AsyncView<WorkDashboard>(
+    value: dashboard,
+    skeleton: (_) => _skeleton(),
+    onRetry: () => ref.invalidate(myBookingsProvider(BookingRole.photographer)),
+    isEmpty: (d) => d.isEmpty,
+    // Scrolls, so the entry under S06.02 fits 320 dp at 1.3× text.
+    empty: (_) => ListView(
+      children: [
+        const _InstantEntry(),
+        const SizedBox(height: 480, child: WorkEmptyState()),
+        const _SpotSchedulesEntry(),
+        if (widget.showEvents) const MyEventsSection(),
+        const SizedBox(height: AppSpace.s4),
+      ],
+    ),
+    data: (context, d) => _dashboard(context, d, features, now),
+  );
 
   /// "Thứ 5, 08/10" on the Vietnamese calendar.
   String _dateTitle(BuildContext context, DateTime now) {

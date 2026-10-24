@@ -405,6 +405,7 @@ class ProviderFacts {
     required this.acceptingOrders,
     required this.businessVerified,
     required this.recruitMatchKeys,
+    this.studioId,
   });
 
   final String? role;
@@ -412,6 +413,10 @@ class ProviderFacts {
   final bool acceptingOrders;
   final bool businessVerified;
   final List<String> recruitMatchKeys;
+
+  /// The studio this provider is an active member of (S26, server-written
+  /// `photographers.studioId`); null when independent.
+  final String? studioId;
 
   bool get isProviderAccount => role == 'photographer';
   bool get isStudio => providerType == ProviderType.studio;
@@ -423,7 +428,8 @@ class ProviderFacts {
       other.providerType == providerType &&
       other.acceptingOrders == acceptingOrders &&
       other.businessVerified == businessVerified &&
-      listEquals(other.recruitMatchKeys, recruitMatchKeys);
+      listEquals(other.recruitMatchKeys, recruitMatchKeys) &&
+      other.studioId == studioId;
 
   @override
   int get hashCode => Object.hash(
@@ -432,6 +438,7 @@ class ProviderFacts {
     acceptingOrders,
     businessVerified,
     Object.hashAll(recruitMatchKeys),
+    studioId,
   );
 }
 

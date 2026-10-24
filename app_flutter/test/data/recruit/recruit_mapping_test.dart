@@ -234,6 +234,22 @@ void main() {
       expect(customerMode.acceptingOrders, isFalse);
       expect(customerMode.businessVerified, isFalse);
       expect(customerMode.recruitMatchKeys, isEmpty);
+      expect(customerMode.studioId, isNull);
+    });
+
+    test('reads the studio a provider is a member of (S27.02 member line)', () {
+      final f = providerFactsFrom(
+        role: 'photographer',
+        photographer: {'providerType': 'individual', 'studioId': 'cuc'},
+      )!;
+      expect(f.studioId, 'cuc');
+      expect(
+        providerFactsFrom(
+          role: 'photographer',
+          photographer: {'studioId': ''},
+        )!.studioId,
+        isNull,
+      );
     });
   });
 }

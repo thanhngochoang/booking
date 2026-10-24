@@ -150,6 +150,15 @@ class FakeRecruitRepository implements RecruitRepository {
   /// The `filterKeys` value (or `studio:<id>`) of every `list` call.
   final listedKeys = <String>[];
 
+  /// The `after` cursor of every `list` call (null = first page).
+  final listedCursors = <Object?>[];
+
+  /// The post id of every `get` call.
+  final getCalls = <String>[];
+
+  /// The studio id of every `openCountOf` call.
+  final openCountCalls = <String>[];
+
   /// When set, every write throws it.
   RecruitError? failWith;
 
@@ -210,6 +219,7 @@ class FakeRecruitRepository implements RecruitRepository {
     listedKeys.add(
       filter.studioId != null ? 'studio:${filter.studioId}' : filter.key,
     );
+    listedCursors.add(after);
     final all =
         posts.values
             .where((p) => p.status == RecruitPostStatus.open)
@@ -224,17 +234,21 @@ class FakeRecruitRepository implements RecruitRepository {
 
   @override
   Future<RecruitPost?> get(String postId) async {
+    getCalls.add(postId);
     final err = readError;
     if (err != null) throw err;
     return posts[postId];
   }
 
   @override
-  Future<int> openCountOf(String studioId) async => posts.values
-      .where(
-        (p) => p.studioId == studioId && p.status == RecruitPostStatus.open,
-      )
-      .length;
+  Future<int> openCountOf(String studioId) async {
+    openCountCalls.add(studioId);
+    return posts.values
+        .where(
+          (p) => p.studioId == studioId && p.status == RecruitPostStatus.open,
+        )
+        .length;
+  }
 
   @override
   Stream<List<RecruitPost>> watchStudioPosts(

@@ -9602,4 +9602,226 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get collabCsvHeader =>
       'Ngày chụp,Dịch vụ,Cộng tác viên,Thù lao,Trạng thái,Ngày trả,Cách trả';
+
+  @override
+  String get recruitTab => 'Tuyển thợ';
+
+  @override
+  String get recruitTitle => 'Tuyển thợ';
+
+  @override
+  String get recruitStudioPostsTooltip => 'Tin tuyển của studio';
+
+  @override
+  String get recruitFilterArea => 'Khu vực';
+
+  @override
+  String get recruitFilterSpecialty => 'Thể loại';
+
+  @override
+  String get recruitFilterAll => 'Tất cả';
+
+  @override
+  String get recruitKindCollaborator => 'Cộng tác theo việc';
+
+  @override
+  String get recruitKindMember => 'Vào studio';
+
+  @override
+  String get recruitMatch => 'Hợp với bạn';
+
+  @override
+  String recruitFeePerShoot(String amount) {
+    return '$amount/buổi';
+  }
+
+  @override
+  String get recruitFeeNegotiable => 'Thoả thuận';
+
+  @override
+  String get recruitFrequencyOccasional => 'Vài buổi/tháng';
+
+  @override
+  String get recruitFrequencyWeekly => 'Hằng tuần';
+
+  @override
+  String get recruitFrequencySeasonal => 'Theo mùa';
+
+  @override
+  String get recruitFrequencyOccasionalLong => 'Vài buổi mỗi tháng';
+
+  @override
+  String get recruitFrequencyWeeklyLong => 'Hằng tuần';
+
+  @override
+  String get recruitFrequencySeasonalLong => 'Theo mùa (cưới, Tết…)';
+
+  @override
+  String recruitCardFooter(String frequency, String ago) {
+    return '$frequency · $ago';
+  }
+
+  @override
+  String get recruitAgoYesterday => 'hôm qua';
+
+  @override
+  String recruitAgoWeeks(int n) {
+    return '$n tuần trước';
+  }
+
+  @override
+  String get recruitOnlyProvidersNote => 'Chỉ thợ ảnh và studio thấy mục này.';
+
+  @override
+  String get recruitEmpty => 'Chưa có tin tuyển nào hợp bộ lọc.';
+
+  @override
+  String get recruitLoadMore => 'Xem thêm';
+
+  @override
+  String get recruitSpecialtiesLabel => 'Thể loại';
+
+  @override
+  String get recruitAreasLabel => 'Khu vực làm việc';
+
+  @override
+  String get recruitFrequencyLabel => 'Tần suất';
+
+  @override
+  String get recruitFeeLabel =>
+      'Thù lao tham khảo · studio trả trực tiếp cho bạn, ngoài ứng dụng';
+
+  @override
+  String get recruitRequirements => 'Yêu cầu';
+
+  @override
+  String recruitStats(int count, int days) {
+    return '$count người đã ứng tuyển · còn $days ngày';
+  }
+
+  @override
+  String recruitStudioShoots(int n) {
+    return '$n buổi chụp';
+  }
+
+  @override
+  String get recruitViewStudio => 'Xem studio';
+
+  @override
+  String get recruitApply => 'Ứng tuyển';
+
+  @override
+  String get recruitVerifyToApply => 'Xác minh để ứng tuyển';
+
+  @override
+  String get recruitVerifyNote =>
+      'Bạn cần xác minh danh tính trước khi ứng tuyển.';
+
+  @override
+  String get recruitApplied => 'Đã ứng tuyển · chờ studio';
+
+  @override
+  String get recruitWithdraw => 'Rút ứng tuyển';
+
+  @override
+  String get recruitWithdrawConfirmTitle => 'Rút ứng tuyển?';
+
+  @override
+  String get recruitWithdrawConfirmBody =>
+      'Mỗi tin chỉ ứng tuyển một lần, rút rồi không gửi lại được.';
+
+  @override
+  String get recruitWithdrawKeep => 'Giữ lại';
+
+  @override
+  String recruitAlreadyMember(String studio) {
+    return 'Bạn đang là thành viên của $studio.';
+  }
+
+  @override
+  String get recruitStudioViewerNote =>
+      'Studio xem được tin nhưng không ứng tuyển.';
+
+  @override
+  String get recruitClosedNote => 'Tin đã đóng hoặc hết hạn.';
+
+  @override
+  String get recruitResultAccepted => 'Studio đã nhận bạn';
+
+  @override
+  String get recruitResultDeclined => 'Studio chưa nhận ứng tuyển này';
+
+  @override
+  String get recruitApplyTitle => 'Ứng tuyển';
+
+  @override
+  String recruitApplySubtitle(String title, String studio) {
+    return '$title · $studio';
+  }
+
+  @override
+  String get recruitSheetClose => 'Đóng';
+
+  @override
+  String get recruitMessageLabel => 'Lời nhắn cho studio';
+
+  @override
+  String get recruitMessageHint =>
+      'Giới thiệu ngắn về kinh nghiệm và thiết bị của bạn';
+
+  @override
+  String get recruitSamplesLabel => 'Ảnh tiêu biểu';
+
+  @override
+  String get recruitSamplesHint => 'Chọn tối đa 3 bài từ portfolio';
+
+  @override
+  String recruitSamplesCount(int n) {
+    return '$n/3';
+  }
+
+  @override
+  String get recruitSamplesEmpty => 'Chưa có bài nào trong portfolio.';
+
+  @override
+  String get collabTermsTitle => 'Điều khoản cộng tác';
+
+  @override
+  String get collabTerm1 =>
+      'Hợp đồng dịch vụ theo từng buổi chụp: bạn tự quyết cách làm, không có giờ làm cố định, không độc quyền.';
+
+  @override
+  String get collabTerm2 =>
+      'Thù lao do hai bên thoả thuận từng việc. Studio trả trực tiếp cho bạn ngoài ứng dụng; ứng dụng không bảo lãnh khoản này.';
+
+  @override
+  String get collabTerm3 =>
+      'Bạn không chào trực tiếp khách mà studio giao cho bạn trong 6 tháng.';
+
+  @override
+  String get collabTermsAgree => 'Tôi đồng ý điều khoản cộng tác';
+
+  @override
+  String get recruitNoContactNote =>
+      'Không ghi số điện thoại, Zalo hay link trong lời nhắn.';
+
+  @override
+  String recruitMemberNote(String studio) {
+    return 'Được nhận thì bạn vào $studio như thành viên (mỗi thợ ở một studio).';
+  }
+
+  @override
+  String get recruitSend => 'Gửi ứng tuyển';
+
+  @override
+  String get recruitSentToast => 'Đã gửi ứng tuyển';
+
+  @override
+  String get recruitContactError =>
+      'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung';
+
+  @override
+  String profileRecruiting(int n) {
+    return 'Đang tuyển · $n tin';
+  }
 }

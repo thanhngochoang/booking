@@ -64,6 +64,8 @@ import 'package:photobooking/features/saved/followers_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
+import 'package:photobooking/features/recruit/recruit_detail_screen.dart';
+import 'package:photobooking/features/recruit/recruit_list_screen.dart';
 import 'package:photobooking/features/safety/blocked_users_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
@@ -571,6 +573,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.queryParameters['tab'],
           ),
         ),
+      ),
+      // S27.01 / S27.02: provider accounts only; the screens query nothing
+      // for anyone else (R3).
+      GoRoute(
+        path: '/recruit',
+        builder: (_, state) =>
+            RecruitListScreen(studioId: state.uri.queryParameters['studioId']),
+      ),
+      GoRoute(
+        path: '/recruit/:postId',
+        builder: (_, state) =>
+            RecruitDetailScreen(postId: state.pathParameters['postId']!),
       ),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
       GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),

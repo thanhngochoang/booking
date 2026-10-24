@@ -140,6 +140,7 @@ ProviderFacts? providerFactsFrom({
     acceptingOrders: photographer['acceptingOrders'] == true,
     businessVerified: photographer['businessVerified'] == true,
     recruitMatchKeys: stringsOf(photographer['recruitMatchKeys']),
+    studioId: nonEmptyOf(photographer['studioId']),
   );
 }
 

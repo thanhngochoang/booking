@@ -21,6 +21,7 @@ class AppChip extends StatelessWidget {
     required this.onChanged,
     this.kind = AppChipKind.filter,
     this.leading,
+    this.trailing,
     this.semanticsLabel,
   });
 
@@ -35,6 +36,10 @@ class AppChip extends StatelessWidget {
   final ValueChanged<bool> onChanged;
   final AppChipKind kind;
   final Widget? leading;
+
+  /// After the label, e.g. `expand_more` on a chip that opens a picker
+  /// (S27.01 "Khu vực ▾").
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +104,13 @@ class AppChip extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (trailing != null) ...[
+                          const SizedBox(width: 2),
+                          IconTheme(
+                            data: IconThemeData(color: text, size: 16),
+                            child: trailing!,
+                          ),
+                        ],
                       ],
                     ),
                   ),
