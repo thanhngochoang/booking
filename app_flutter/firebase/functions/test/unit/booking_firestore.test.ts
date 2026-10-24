@@ -235,6 +235,15 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual(acceptedBack?.assignments, accepted.assignments);
     // A member booking written before S27 has no assigneeAccepted: it stays absent.
     assert.equal('assigneeAccepted' in (bookingFromFirestore('b_01', studioDoc) ?? {}), false);
+
+    // #141 S22.04: the server flag while the cancel refund waits for the customer's account.
+    for (const flag of [true, false]) {
+      const flagged = bookingToFirestore({ ...sampleBooking, refundAccountNeeded: flag });
+      assert.equal(flagged.refundAccountNeeded, flag);
+      assert.equal(bookingFromFirestore('b_01', flagged)?.refundAccountNeeded, flag);
+    }
+    assert.equal('refundAccountNeeded' in docData, false);
+    assert.equal('refundAccountNeeded' in (restored ?? {}), false);
   });
 
   it('a booking without add-ons writes neither addons nor pickup', () => {
@@ -496,6 +505,7 @@ describe('Firestore <-> Domain booking mappers', () => {
     const minRestored = refundFromFirestore('ref_min', minimalDoc);
     assert.equal(minRestored?.method, 'gateway');
     assert.equal(minRestored?.attempts, 0);
+    assert.equal(minRestored?.candidate, undefined);
 
     const sampleEntry: LedgerEntry = {
       id: 'led_01',
@@ -532,6 +542,40 @@ describe('Firestore <-> Domain booking mappers', () => {
     },
     payableUntil: '2026-10-10T09:20:00.000Z',
   };
+
+  it('refund candidate and confirmBy round-trip', () => {
+    const waiting: Refund = {
+      id: 'ref_03',
+      paymentId: 'pay_01',
+      subjectType: 'booking',
+      amount: 1_000_000,
+      percent: 100,
+      status: 'awaiting_account',
+      method: 'bank_transfer',
+      destination: {
+        bankCode: 'VCB', bankName: 'Vietcombank', accountNumberEnc: 'v1:enc-payer', accountLast4: '3456',
+        holderName: 'NGUYEN THANH HA', source: 'payer',
+      },
+      confirmBy: '2026-10-13T10:00:00.000Z',
+      candidate: {
+        bankCode: 'MB', bankName: 'MBBank', accountNumberEnc: 'v1:enc-candidate', accountLast4: '4321', holderName: 'TRAN VAN B',
+      },
+      attempts: 0,
+      manual: false,
+      fromEscrow: true,
+      reason: 'Bận việc',
+      createdAt: '2026-10-12T10:00:00.000Z',
+      updatedAt: '2026-10-12T11:00:00.000Z',
+    };
+    const doc = refundToFirestore(waiting);
+    assert.ok(doc.confirmBy instanceof Timestamp);
+    assert.deepEqual(Object.keys(doc.candidate as object).sort(), ['accountLast4', 'accountNumberEnc', 'bankCode', 'bankName', 'holderName']);
+    assert.deepEqual(refundFromFirestore('ref_03', doc), waiting);
+    // Chosen: the candidate is cleared (null) and reads back as absent.
+    const chosen = refundToFirestore({ ...waiting, status: 'pending', candidate: null });
+    assert.equal(chosen.candidate, null);
+    assert.equal('candidate' in (refundFromFirestore('ref_03', chosen) ?? {}), false);
+  });
 
   it('round-trips the booking checkout mirror and payableUntil as Timestamps', () => {
     const docData = bookingToFirestore(checkoutBooking);

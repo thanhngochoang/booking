@@ -212,12 +212,13 @@ describe('unassigned studio bookings at their start (#136 ruling)', () => {
     assert.equal(after.depositRefunded, paid);
     assert.equal(w.store.counterOf('s1', 'lateAssignCount'), 1);
     assert.deepEqual(w.store.getStudioDayLoad('s1', after.day)?.unassignedIds ?? [], []);
-    // both are told by the booking write (a system cancel), the customer also of the refund
+    // both are told by the booking write (a system cancel); the bank-QR refund waits for the
+    // customer's account (#141 S22.04: refundAccountNeeded), so refund_done comes once it is sent.
     assert.deepEqual(bookingNotices(before, after), [
       { to: 'customer', kind: 'cancelled' },
       { to: 'photographer', kind: 'cancelled' },
-      { to: 'customer', kind: 'refund' },
     ]);
+    assert.equal(after.refundAccountNeeded, true);
 
     assert.deepEqual(await sweepAt(w, n, START_MS + HOUR), {
       overdue: 0, reminders: 0, changesExpired: 0, cancelledAtStart: 0, notifyFailed: 0,

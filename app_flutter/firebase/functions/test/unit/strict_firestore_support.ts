@@ -30,7 +30,13 @@ export function strictFirestore(docs: Record<string, DocumentData>) {
     get: async () => run(coll, filters),
   });
   const collection = (path: string): unknown => ({ ...(query(path, []) as object), doc: (id: string) => docRef(`${path}/${id}`) });
-  const docRef = (path: string): unknown => ({ path, id: path.split('/').pop(), collection: (c: string) => collection(`${path}/${c}`) });
+  // `get` outside a transaction (no read-after-write check), like the query's.
+  const docRef = (path: string): unknown => ({
+    path,
+    id: path.split('/').pop(),
+    collection: (c: string) => collection(`${path}/${c}`),
+    get: async () => snapOf(path),
+  });
   const firestore = {
     collection,
     doc: (path: string) => docRef(path),

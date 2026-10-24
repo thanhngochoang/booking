@@ -67,6 +67,12 @@ import {
   handleRequestPayoutOtp,
   handleSavePayoutAccount,
 } from './callables/payout_account.js';
+import {
+  handleChooseRefundAccount,
+  handleLookupRefundAccount,
+  handlePendingRefund,
+} from './callables/refund_account.js';
+import { liveRefundAccountDeps } from './infra/live_refund_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handleRefundWrite } from './triggers/refund_write.js';
 import { handleBookingPayerRows } from './triggers/booking_payer_rows.js';
@@ -289,7 +295,10 @@ export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) =>
   servePaymentWebhook(req, res, liveSettlementDeps(), undefined, liveRefundSubjects()),
 );
 
-/** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
+/**
+ * Every 5 minutes: reconcile open payments with the provider, expire unpaid QRs, re-send pending
+ * refunds and (#141) send refunds still waiting for an account after 24 hours to the paying account.
+ */
 export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
   await handlePaymentClock(liveSettlementDeps());
 });
@@ -912,6 +921,33 @@ export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_
   handleSavePayoutAccount(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
 );
 
+// ---- refund account (S22.04, #141) ----
+
+/**
+ * S22.04 `{bookingId}` | `{eventId, registrationId}` | `{disputeId}` → the caller's refund waiting
+ * for an account (amount, paying account masked, `confirmBy`), or null. No secret: nothing is decrypted.
+ */
+export const pendingRefund = onCall(CALLABLE_OPTIONS, (request) =>
+  handlePendingRefund(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/**
+ * S22.04 `{refundId, bankCode, accountNumber}` → `{holderName, bankName, accountLast4}`: the bank's
+ * holder name for another account (fake lookup on the emulator/dev only, else `not_eligible`); the
+ * account is kept on the refund encrypted with PAYOUT_ACCOUNT_KEY until the customer chooses it.
+ */
+export const lookupRefundAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
+  handleLookupRefundAccount(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/**
+ * S22.04 `{refundId, use: 'payer' | 'candidate'}` → `{status}`: sends the waiting refund to the paying
+ * account or the looked-up one, once (the 24-hour default of `paymentClock` racing it never pays twice).
+ */
+export const chooseRefundAccount = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleChooseRefundAccount(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
 /** A payment write refreshes the payee's earnings rows and totals and the payer's S22.01 row (#141). */
 export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payments/{paymentId}' }, async (event) => {
   await handlePaymentWrite(
@@ -923,13 +959,17 @@ export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document
   );
 });
 
-/** S22.01 (#141): every refund write refreshes the payer's row of its payment and their totals. */
+/**
+ * S22.01 (#141): every refund write refreshes the payer's row of its payment and their totals; a
+ * refund entering `awaiting_account` tells its payer to choose the account (S22.04, `refund_account_needed`).
+ */
 export const onRefundWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'refunds/{refundId}' }, async (event) => {
   await handleRefundWrite(
     event.params.refundId,
     event.data?.before.exists ? event.data.before.data() : undefined,
     event.data?.after.exists ? event.data.after.data() : undefined,
     livePayerHistoryDeps(),
+    { notify: liveNotifyDeps(), payments: liveBookingDeps().store },
   );
 });
 

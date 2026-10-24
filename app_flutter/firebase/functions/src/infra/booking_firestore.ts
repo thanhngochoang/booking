@@ -44,6 +44,7 @@ import {
   type PaymentStatus,
   type Refund,
   type RefundStatus,
+  type StoredBankAccount,
   type LedgerEntry,
   type LedgerEntryType,
   type TransferOutcome,
@@ -325,6 +326,7 @@ export function bookingToFirestore(b: Booking): DocumentData {
     depositProvider: b.depositProvider ?? null,
     depositPaidAt: toTimestamp(b.depositPaidAt),
     depositRefundedAt: toTimestamp(b.depositRefundedAt),
+    ...(b.refundAccountNeeded !== undefined ? { refundAccountNeeded: b.refundAccountNeeded } : {}),
     acceptDeadline: toTimestamp(b.acceptDeadline),
     cancel: b.cancel
       ? {
@@ -475,6 +477,7 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     depositProvider: (d.depositProvider as PaymentProvider) ?? undefined,
     depositPaidAt: toIsoString(d.depositPaidAt),
     depositRefundedAt: toIsoString(d.depositRefundedAt),
+    ...(typeof d.refundAccountNeeded === 'boolean' ? { refundAccountNeeded: d.refundAccountNeeded } : {}),
     acceptDeadline: toIsoString(d.acceptDeadline),
     cancel: cancelObj,
     completedAt: toIsoString(d.completedAt),
@@ -672,6 +675,8 @@ export function refundToFirestore(r: Refund): DocumentData {
       source: r.destination.source,
     } : null,
     confirmBy: toTimestamp(r.confirmBy),
+    // S22.04 (#141): the account the customer looked up, number encrypted; cleared once chosen.
+    candidate: r.candidate ? storedBankAccountToFirestore(r.candidate) : null,
     attempts: r.attempts,
     lastAttemptAt: toTimestamp(r.lastAttemptAt),
     failureReason: r.failureReason ?? null,
@@ -684,8 +689,33 @@ export function refundToFirestore(r: Refund): DocumentData {
   };
 }
 
+/** A stored bank account (refund `candidate`): number encrypted, never a plain field. */
+function storedBankAccountToFirestore(a: StoredBankAccount): DocumentData {
+  return {
+    bankCode: a.bankCode,
+    bankName: a.bankName,
+    accountNumberEnc: a.accountNumberEnc,
+    accountLast4: a.accountLast4,
+    holderName: a.holderName,
+  };
+}
+
+function storedBankAccountFromFirestore(v: unknown): StoredBankAccount | undefined {
+  if (typeof v !== 'object' || v === null) return undefined;
+  const a = v as Record<string, unknown>;
+  if (typeof a.bankCode !== 'string' || typeof a.accountNumberEnc !== 'string') return undefined;
+  return {
+    bankCode: a.bankCode,
+    bankName: typeof a.bankName === 'string' ? a.bankName : a.bankCode,
+    accountNumberEnc: a.accountNumberEnc,
+    accountLast4: typeof a.accountLast4 === 'string' ? a.accountLast4 : '',
+    holderName: typeof a.holderName === 'string' ? a.holderName : '',
+  };
+}
+
 export function refundFromFirestore(id: string, d: DocumentData | undefined): Refund | null {
   if (!d) return null;
+  const candidate = storedBankAccountFromFirestore(d.candidate);
   const destination = d.destination && typeof d.destination === 'object' && typeof d.destination.bankCode === 'string'
     ? {
         bankCode: d.destination.bankCode,
@@ -707,6 +737,7 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
     method: (d.method as Refund['method']) ?? 'gateway',
     ...(destination ? { destination } : {}),
     ...(toIsoString(d.confirmBy) !== undefined ? { confirmBy: toIsoString(d.confirmBy) } : {}),
+    ...(candidate ? { candidate } : {}),
     attempts: typeof d.attempts === 'number' ? d.attempts : 0,
     ...(toIsoString(d.lastAttemptAt) !== undefined ? { lastAttemptAt: toIsoString(d.lastAttemptAt) } : {}),
     ...(typeof d.failureReason === 'string' ? { failureReason: d.failureReason } : {}),

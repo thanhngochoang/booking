@@ -6,8 +6,16 @@ import { dispatchRefund } from '../src/refunds.js';
 import { applyRefundEvent } from '../src/refund_subjects.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { transitionBooking } from '../src/transition_booking.js';
-import { createBookingWorld, newDraft, payDraft, transferOf, TEST_PAYER } from './support/booking_world.js';
+import { createBookingWorld, newDraft, payDraft, transferOf, TEST_PAYER, type BookingWorld } from './support/booking_world.js';
 import { TEST_CIPHER } from './support/test_cipher.js';
+import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
+
+/** #141 (S22.04): c1 confirms the paying account for the booking's waiting cancel refund, which sends it. */
+async function confirmPayer(world: BookingWorld, paymentId: string): Promise<void> {
+  const [waiting] = await world.store.getRefundsForPayment(paymentId);
+  assert.equal(waiting?.status, 'awaiting_account');
+  await confirmRefundToPayer(refundAccountDepsOf({ bookings: world.deps }), waiting?.id ?? '');
+}
 
 const PRICE = 1_000_000;
 
@@ -212,6 +220,7 @@ describe('Task 2: payer capture, refund destination and booking dispatch', () =>
       actorId: 'c1',
       reason: 'Bận việc',
     });
+    await confirmPayer(world, paymentId);
 
     const payment = await world.store.getPayment(paymentId);
     assert.equal(payment?.status, 'refunded');
@@ -414,6 +423,7 @@ describe('Task 2: payer capture, refund destination and booking dispatch', () =>
       return { success: false, error: 'late_refusal' };
     };
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    await confirmPayer(world, paymentId);
 
     assert.equal(eventOutcome, 'refund_applied');
     const [refund] = await world.store.getRefundsForPayment(paymentId);
@@ -425,6 +435,7 @@ describe('Task 2: payer capture, refund destination and booking dispatch', () =>
     const draft = await newDraft(world);
     const { paymentId } = await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    await confirmPayer(world, paymentId);
 
     const [refund] = await world.store.getRefundsForPayment(paymentId);
     assert.ok(refund);
