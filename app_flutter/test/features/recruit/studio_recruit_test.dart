@@ -275,6 +275,7 @@ void main() {
     ),
     (RecruitErrorCode.studioFull, 'Studio đã đủ thành viên.'),
     (RecruitErrorCode.collabFull, 'Đã đủ số cộng tác viên.'),
+    (RecruitErrorCode.notAcceptingOrders, 'Thảo Vy hiện chưa nhận đơn được.'),
   ]) {
     testWidgets('"Nhận" on a member post that fails with ${code.name} shows '
         '"$text"', (tester) async {
@@ -463,6 +464,81 @@ void main() {
     final w = await _open(tester, facts: makeProviderFacts());
     expect(w.location, '/recruit');
     expect(w.recruits.calls, isEmpty);
+    // Nothing of the studio side was read.
+    expect(w.recruits.reads, isEmpty);
+  });
+
+  testWidgets('closing the selected post clears its applicants', (
+    tester,
+  ) async {
+    final w = await _open(tester, applications: [_vy(), _phuc()]);
+    expect(_key('recruit-applicant-vy'), findsOneWidget);
+    await _tap(tester, _inKey('recruit-post-p1', find.text('Đóng tin')));
+    await tester.tap(find.widgetWithText(FilledButton, 'Đóng tin'));
+    await _settle(tester);
+    expect(w.recruits.calls.single.$1, 'closeRecruitPost');
+    // The closed post stays selected and says why nobody is listed.
+    expect(find.text('Ứng viên · Thợ phụ chụp cưới mùa cưới'), findsOneWidget);
+    expect(_key('recruit-applicants-closed'), findsOneWidget);
+    expect(_key('recruit-applicant-vy'), findsNothing);
+    expect(_key('recruit-accept-vy'), findsNothing);
+    expect(find.textContaining('chờ trả lời'), findsNothing);
+  });
+
+  testWidgets('a post past its expiry lists no applicants and reads none', (
+    tester,
+  ) async {
+    final w = await _open(
+      tester,
+      location: '/studio/recruit?post=p1',
+      posts: [
+        makeRecruitPost(
+          id: 'p1',
+          title: 'Thợ phụ chụp cưới mùa cưới',
+          expiresAt: recruitNow.subtract(const Duration(minutes: 5)),
+        ),
+      ],
+      applications: [_vy()],
+    );
+    expect(_key('recruit-applicants-closed'), findsOneWidget);
+    expect(find.text('Tin đã đóng hoặc hết hạn.'), findsOneWidget);
+    expect(_key('recruit-accept-vy'), findsNothing);
+    expect(_key('recruit-decline-vy'), findsNothing);
+    expect(w.recruits.reads, isNot(contains('applicantsOf:p1')));
+  });
+
+  testWidgets('a notification to ?post=p2 while S27.05 is open selects p2', (
+    tester,
+  ) async {
+    final w = await _open(
+      tester,
+      applications: [
+        _vy(postId: 'p2', kind: RecruitKind.member),
+        _phuc(),
+      ],
+    );
+    expect(find.text('Ứng viên · Thợ phụ chụp cưới mùa cưới'), findsOneWidget);
+    w.router.go('/studio/recruit?post=p2');
+    await _settle(tester);
+    expect(
+      find.text('Ứng viên · Tuyển thành viên chụp kỷ yếu'),
+      findsOneWidget,
+    );
+    expect(_key('recruit-applicant-vy'), findsOneWidget);
+    expect(_key('recruit-applicant-phuc'), findsNothing);
+  });
+
+  testWidgets('a refused decline keeps the card and says why', (tester) async {
+    final w = await _open(tester, applications: [_vy()]);
+    w.recruits.failWith = const RecruitError(RecruitErrorCode.rateLimited);
+    await _tap(tester, _key('recruit-decline-vy'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Từ chối'));
+    await _settle(tester);
+    expect(
+      find.text('Bạn đã dùng hết lượt hôm nay. Thử lại ngày mai.'),
+      findsOneWidget,
+    );
+    expect(_key('recruit-applicant-vy'), findsOneWidget);
   });
 
   testWidgets('exactly one AppButton.primary', (tester) async {

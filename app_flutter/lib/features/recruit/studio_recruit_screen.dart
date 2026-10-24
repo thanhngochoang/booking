@@ -93,6 +93,13 @@ class _BodyState extends ConsumerState<_Body> {
   late String? _selected = widget.postId;
 
   @override
+  void didUpdateWidget(_Body old) {
+    super.didUpdateWidget(old);
+    // A notification opened `?post=…` while S27.05 was already showing.
+    if (widget.postId != old.postId) _selected = widget.postId;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
@@ -110,6 +117,9 @@ class _BodyState extends ConsumerState<_Body> {
         skeleton: (_) => const _Skeleton(),
         data: (context, posts) {
           final selected = selectedRecruitPost(posts, _selected, now);
+          // Keep the shown post selected: once closed it must not hand its
+          // place to the next open one (its card says why it is empty).
+          _selected ??= selected?.id;
           final blockedUntil = counters.isBlocked(now)
               ? counters.recruitBlockedUntil
               : null;
@@ -157,6 +167,7 @@ class _BodyState extends ConsumerState<_Body> {
               if (selected != null)
                 _Applicants(
                   post: selected,
+                  open: recruitPostIsOpen(selected, now),
                   canAnswer: counters.collabActionsLeft(now) > 0,
                   blockedUntil: blockedUntil,
                 ),
@@ -251,10 +262,10 @@ class _PostCard extends ConsumerWidget {
       ..showSnackBar(SnackBar(content: Text(text)));
   }
 
-  Future<void> _close(BuildContext context, WidgetRef ref) {
+  Future<void> _close(BuildContext context, WidgetRef ref) async {
     final l = context.l10n;
     final repo = ref.read(recruitRepositoryProvider);
-    return showConfirmSheet(
+    final closed = await showConfirmSheet(
       context,
       title: l.recruitCloseConfirmTitle,
       body: l.recruitCloseConfirmBody,
@@ -268,6 +279,10 @@ class _PostCard extends ConsumerWidget {
         }
       },
     );
+    // The server declined every waiting application (Decision 9).
+    if (closed && context.mounted) {
+      ref.invalidate(studioRecruitApplicantsProvider(post.id));
+    }
   }
 
   @override
@@ -380,15 +395,20 @@ class _PostCard extends ConsumerWidget {
 }
 
 /// "Ứng viên · {title}" with "{n} chờ trả lời", then one card per applicant
-/// (or "Chưa có ai ứng tuyển.").
+/// (or "Chưa có ai ứng tuyển."). A closed post, or one past its expiry,
+/// has nobody left to answer: only "Tin đã đóng hoặc hết hạn.", no query.
 class _Applicants extends ConsumerWidget {
   const _Applicants({
     required this.post,
+    required this.open,
     required this.canAnswer,
     required this.blockedUntil,
   });
 
   final RecruitPost post;
+
+  /// Open at the clock's now ([recruitPostIsOpen]).
+  final bool open;
 
   /// Accepting and declining spend the day's collaboration actions.
   final bool canAnswer;
@@ -397,6 +417,18 @@ class _Applicants extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    if (!open) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          StudioSectionHeader(title: l.recruitApplicantsHeader(post.title)),
+          StudioNote(
+            l.recruitClosedNote,
+            key: const Key('recruit-applicants-closed'),
+          ),
+        ],
+      );
+    }
     final applicants = ref.watch(studioRecruitApplicantsProvider(post.id));
     final count = applicants.value?.length;
     return Column(
@@ -582,7 +614,7 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
                         ),
                         AsyncView<PhotographerProfile?>(
                           value: profile,
-                          skeleton: (_) => AppSkeleton.line(width: 120),
+                          skeleton: (_) => AppSkeleton.line(widthFactor: 0.4),
                           error: (_, _, _) => const SizedBox.shrink(),
                           data: (context, p) {
                             final s = p?.summary;

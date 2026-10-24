@@ -4233,6 +4233,8 @@
   "@recruitAcceptCooldown": {"placeholders": {"name": {"type": "String"}}},
   "recruitAcceptStudioFull": "Studio đã đủ thành viên.",
   "recruitAcceptCollabFull": "Đã đủ số cộng tác viên.",
+  "recruitAcceptNotAccepting": "{name} hiện chưa nhận đơn được.",
+  "@recruitAcceptNotAccepting": {"placeholders": {"name": {"type": "String"}}},
   "profileRecruiting": "Đang tuyển · {n} tin",
   "@profileRecruiting": {"placeholders": {"n": {"type": "int"}}}
 }

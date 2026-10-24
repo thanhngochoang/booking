@@ -10036,6 +10036,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get recruitAcceptCollabFull => 'Đã đủ số cộng tác viên.';
 
   @override
+  String recruitAcceptNotAccepting(String name) {
+    return '$name hiện chưa nhận đơn được.';
+  }
+
+  @override
   String profileRecruiting(int n) {
     return 'Đang tuyển · $n tin';
   }

@@ -17169,6 +17169,12 @@ abstract class AppLocalizations {
   /// **'Đã đủ số cộng tác viên.'**
   String get recruitAcceptCollabFull;
 
+  /// No description provided for @recruitAcceptNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} hiện chưa nhận đơn được.'**
+  String recruitAcceptNotAccepting(String name);
+
   /// No description provided for @profileRecruiting.
   ///
   /// In vi, this message translates to:

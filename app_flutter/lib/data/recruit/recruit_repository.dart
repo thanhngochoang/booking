@@ -159,6 +159,13 @@ class FakeRecruitRepository implements RecruitRepository {
   /// The studio id of every `openCountOf` call.
   final openCountCalls = <String>[];
 
+  /// `watchStudioPosts:<studio>`, `applicantsOf:<post>` and
+  /// `watchCounters:<uid>` of every such read, in order.
+  final reads = <String>[];
+
+  /// When set, `watchCounters` emits it as an error.
+  Object? countersError;
+
   /// When set, every write throws it.
   RecruitError? failWith;
 
@@ -254,39 +261,48 @@ class FakeRecruitRepository implements RecruitRepository {
   Stream<List<RecruitPost>> watchStudioPosts(
     String studioId, {
     int limit = 10,
-  }) => _watch(
-    () =>
-        (posts.values.where((p) => p.studioId == studioId).toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
-            .take(limit)
-            .toList(),
-  );
+  }) {
+    reads.add('watchStudioPosts:$studioId');
+    return _watch(
+      () =>
+          (posts.values.where((p) => p.studioId == studioId).toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+              .take(limit)
+              .toList(),
+    );
+  }
 
   @override
   Future<List<RecruitApplication>> applicantsOf(
     String studioId,
     String postId, {
     int limit = 30,
-  }) async =>
-      (applications.values
-              .where(
-                (a) =>
-                    a.studioId == studioId &&
-                    a.postId == postId &&
-                    a.status == ApplicationStatus.applied,
-              )
-              .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
-          .take(limit)
-          .toList();
+  }) async {
+    reads.add('applicantsOf:$postId');
+    return (applications.values
+            .where(
+              (a) =>
+                  a.studioId == studioId &&
+                  a.postId == postId &&
+                  a.status == ApplicationStatus.applied,
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+        .take(limit)
+        .toList();
+  }
 
   @override
   Stream<RecruitApplication?> watchMyApplication(String postId, String uid) =>
       _watch(() => applications['${postId}_$uid']);
 
   @override
-  Stream<RecruitCounters> watchCounters(String uid) =>
-      _watch(() => counters[uid] ?? RecruitCounters.empty);
+  Stream<RecruitCounters> watchCounters(String uid) {
+    reads.add('watchCounters:$uid');
+    final err = countersError;
+    if (err != null) return Stream.error(err);
+    return _watch(() => counters[uid] ?? RecruitCounters.empty);
+  }
 
   @override
   Stream<ProviderFacts?> watchMyProviderFacts(String uid) =>

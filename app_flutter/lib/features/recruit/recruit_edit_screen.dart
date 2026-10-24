@@ -129,13 +129,19 @@ class _FormState extends ConsumerState<_Form> {
     final l = context.l10n;
     final theme = Theme.of(context);
     final now = ref.watch(clockProvider)();
-    final counters = ref.watch(myRecruitCountersProvider).value;
+    final countersValue = ref.watch(myRecruitCountersProvider);
+    final counters = countersValue.value;
     final blockedUntil = counters != null && counters.isBlocked(now)
         ? counters.recruitBlockedUntil
         : null;
-    // A new post waits for the counters; a blocked studio posts nothing new
-    // (Decision 15) — editing a running post stays possible.
-    final canCreate = counters != null && blockedUntil == null;
+    // A new post waits for the counters and follows S27.05's rule: not
+    // blocked (Decision 15), under 3 open posts, a post action left today.
+    // Editing a running post stays possible.
+    final full =
+        counters != null && counters.openPostCount >= kRecruitMaxOpenPosts;
+    final noActions = counters != null && counters.postActionsLeft(now) <= 0;
+    final canCreate =
+        counters != null && blockedUntil == null && !full && !noActions;
     final secondary = theme.brightness == Brightness.dark
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
@@ -293,6 +299,26 @@ class _FormState extends ConsumerState<_Form> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (!editing)
+              // Shows only a failure of the counters, with "Thử lại".
+              AsyncView<RecruitCounters>(
+                value: countersValue,
+                loaderSize: LoaderSize.inline,
+                skeleton: (_) => const SizedBox.shrink(),
+                error: (context, e, _) => _CountersError(
+                  message: errorMessage(e, l),
+                  onRetry: () => ref.invalidate(myRecruitCountersProvider),
+                ),
+                data: (_, _) => const SizedBox.shrink(),
+              ),
+            if (!editing && noActions && !full && blockedUntil == null) ...[
+              Text(
+                l.recruitErrorRateLimited,
+                key: const Key('recruit-no-actions'),
+                style: theme.textTheme.bodySmall?.copyWith(color: secondary),
+              ),
+              const SizedBox(height: AppSpace.s2),
+            ],
             if (_c.formError case final e?) ...[
               Text(
                 e,
@@ -303,14 +329,19 @@ class _FormState extends ConsumerState<_Form> {
               ),
               const SizedBox(height: AppSpace.s2),
             ],
-            _primary(l, editing || canCreate, blockedUntil),
+            _primary(l, editing || canCreate, blockedUntil, full: full),
           ],
         ),
       ),
     );
   }
 
-  Widget _primary(AppLocalizations l, bool allowed, DateTime? blockedUntil) {
+  Widget _primary(
+    AppLocalizations l,
+    bool allowed,
+    DateTime? blockedUntil, {
+    required bool full,
+  }) {
     if (!widget.facts.acceptingOrders &&
         !_c.editing &&
         ref.watch(verifyStartReadyProvider)) {
@@ -321,7 +352,11 @@ class _FormState extends ConsumerState<_Form> {
       );
     }
     return AppButton.primary(
-      _c.editing ? l.recruitSave : l.recruitPublish,
+      _c.editing
+          ? l.recruitSave
+          : full
+          ? l.recruitFull
+          : l.recruitPublish,
       key: const Key('recruit-submit'),
       loading: _c.sending,
       onPressed: allowed ? () => _submit(blockedUntil) : null,
@@ -378,9 +413,8 @@ class _Label extends StatelessWidget {
         header: true,
         child: Text(
           text.toUpperCase(),
-          style: TextStyle(
+          style: theme.textTheme.labelSmall?.copyWith(
             fontSize: AppText.xs,
-            letterSpacing: 0.7,
             fontWeight: FontWeight.w600,
             color: theme.brightness == Brightness.dark
                 ? AppColorsDark.foregroundMuted
@@ -444,6 +478,41 @@ class _ChipsField extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// A failed counters read in the footer: the message and "Thử lại".
+class _CountersError extends StatelessWidget {
+  const _CountersError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              key: const Key('recruit-counters-error'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+          AppButton.text(
+            context.l10n.retry,
+            key: const Key('recruit-counters-retry'),
+            size: AppButtonSize.xsmall,
+            onPressed: onRetry,
+          ),
+        ],
+      ),
     );
   }
 }

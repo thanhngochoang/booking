@@ -233,7 +233,7 @@ class _StudioRow extends ConsumerWidget {
               ),
               AsyncView<PhotographerProfile?>(
                 value: ref.watch(photographerProfileProvider(post.studioId)),
-                skeleton: (_) => AppSkeleton.line(width: 120),
+                skeleton: (_) => AppSkeleton.line(widthFactor: 0.4),
                 error: (_, _, _) => const SizedBox.shrink(),
                 data: (context, p) {
                   final s = p?.summary;

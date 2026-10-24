@@ -344,9 +344,91 @@ void main() {
     );
   });
 
+  testWidgets('a contact in the title shows the contact error under it', (
+    tester,
+  ) async {
+    final w = await _open(tester);
+    await _fill(tester);
+    w.recruits.failWith = const RecruitError(
+      RecruitErrorCode.invalidArgument,
+      field: 'title.contact',
+    );
+    await _submit(tester);
+    expect(
+      _inKey(
+        'recruit-title',
+        find.text('Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('three open posts: create disabled "Đã đủ 3 tin mở"', (
+    tester,
+  ) async {
+    await _open(tester, counters: const RecruitCounters(openPostCount: 3));
+    expect(find.text('Còn 0/3 tin mở'), findsOneWidget);
+    expect(find.text('Đã đủ 3 tin mở'), findsOneWidget);
+    expect(_enabled(tester, _key('recruit-submit')), isFalse);
+  });
+
+  testWidgets('no post action left today: create disabled with the note', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      counters: const RecruitCounters(
+        openPostCount: 1,
+        postActions: RecruitDaily(day: '2026-10-21', count: 5),
+      ),
+    );
+    expect(
+      find.text('Bạn đã dùng hết lượt hôm nay. Thử lại ngày mai.'),
+      findsOneWidget,
+    );
+    expect(_enabled(tester, _key('recruit-submit')), isFalse);
+  });
+
+  testWidgets('a failed counters read shows the error with "Thử lại"', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final w = RecruitWorld(uid: 'cuc');
+    w.recruits
+      ..setFacts(w.uid, makeProviderFacts(providerType: ProviderType.studio))
+      ..countersError = Exception('offline');
+    await tester.pumpWidget(
+      w.app('/studio/recruit/new', routes: _routes, stubs: const ['/recruit']),
+    );
+    await _settle(tester);
+    expect(_key('recruit-counters-error'), findsOneWidget);
+    expect(_enabled(tester, _key('recruit-submit')), isFalse);
+    w.recruits.countersError = null;
+    await _tap(tester, _key('recruit-counters-retry'));
+    expect(_key('recruit-counters-error'), findsNothing);
+    expect(_enabled(tester, _key('recruit-submit')), isTrue);
+  });
+
+  testWidgets('an unverified studio creating gets "Xác minh để đăng tin" → '
+      '/verify/start', (tester) async {
+    final w = await _open(
+      tester,
+      facts: makeProviderFacts(
+        providerType: ProviderType.studio,
+        acceptingOrders: false,
+      ),
+    );
+    expect(find.text('Đăng tin'), findsNothing);
+    await _tap(tester, find.text('Xác minh để đăng tin'));
+    expect(w.location, '/verify/start');
+  });
+
   testWidgets('an individual is sent to /recruit', (tester) async {
     final w = await _open(tester, facts: makeProviderFacts());
     expect(w.location, '/recruit');
+    expect(w.recruits.reads, isEmpty);
   });
 
   testWidgets('exactly one AppButton.primary', (tester) async {

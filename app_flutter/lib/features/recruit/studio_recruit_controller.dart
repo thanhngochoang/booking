@@ -80,6 +80,7 @@ String recruitRespondErrorText(
     RecruitErrorCode.recruitBlocked when blockedUntil != null =>
       l.recruitBlocked(recruitBlockedDate(blockedUntil)),
     RecruitErrorCode.deadlinePassed => l.recruitErrorClosed,
+    RecruitErrorCode.notAcceptingOrders => l.recruitAcceptNotAccepting(name),
     RecruitErrorCode.conflict => l.studioErr_conflict,
     RecruitErrorCode.network => l.authErrorNetwork,
     _ => l.recruitErrorGeneric,

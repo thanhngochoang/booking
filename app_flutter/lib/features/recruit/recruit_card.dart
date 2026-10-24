@@ -251,7 +251,7 @@ class RecruitCard extends StatelessWidget {
                         alignment: PlaceholderAlignment.middle,
                         child: Padding(
                           padding: const EdgeInsets.only(left: AppSpace.s1),
-                          child: ProviderMark(mark, size: AppText.base2),
+                          child: ProviderMark(mark),
                         ),
                       ),
                     for (final part in where) TextSpan(text: ' · $part'),
