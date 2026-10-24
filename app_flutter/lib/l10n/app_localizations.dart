@@ -12502,6 +12502,216 @@ abstract class AppLocalizations {
   /// **'Xem khiếu nại'**
   String get disputeBannerView;
 
+  /// No description provided for @disputeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại #{code}'**
+  String disputeTitle(String code);
+
+  /// No description provided for @disputeStatusOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xem xét'**
+  String get disputeStatusOpen;
+
+  /// No description provided for @disputeStatusResolved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xử lý'**
+  String get disputeStatusResolved;
+
+  /// No description provided for @disputeHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền đang giữ'**
+  String get disputeHeld;
+
+  /// No description provided for @disputeHeldNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm dừng chuyển cho tới khi có kết quả'**
+  String get disputeHeldNote;
+
+  /// No description provided for @disputeOpenedAt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lúc'**
+  String get disputeOpenedAt;
+
+  /// No description provided for @disputeStepSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi khiếu nại'**
+  String get disputeStepSent;
+
+  /// No description provided for @disputeStepSentBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả và {count} ảnh bằng chứng'**
+  String disputeStepSentBody(int count);
+
+  /// No description provided for @disputeStepReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỗ trợ đang xem xét'**
+  String get disputeStepReview;
+
+  /// No description provided for @disputeStepReviewBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hai bên trao đổi và gửi thêm bằng chứng ở mục Trao đổi'**
+  String get disputeStepReviewBody;
+
+  /// No description provided for @disputeStepOutcome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết quả'**
+  String get disputeStepOutcome;
+
+  /// No description provided for @disputeStepOutcomeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển cho người nhận, hoàn cho bạn, hoặc chia'**
+  String get disputeStepOutcomeBody;
+
+  /// No description provided for @disputeDetailsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả & ảnh'**
+  String get disputeDetailsTitle;
+
+  /// No description provided for @disputeThreadTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trao đổi'**
+  String get disputeThreadTitle;
+
+  /// No description provided for @disputeThreadHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn cho hỗ trợ…'**
+  String get disputeThreadHint;
+
+  /// No description provided for @disputeThreadClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại đã đóng. Cần thêm hỗ trợ? Liên hệ ở mục Trợ giúp.'**
+  String get disputeThreadClosed;
+
+  /// No description provided for @disputeSenderSupport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỗ trợ'**
+  String get disputeSenderSupport;
+
+  /// No description provided for @disputeSenderProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · nhiếp ảnh gia'**
+  String disputeSenderProvider(String name);
+
+  /// No description provided for @disputeSenderHost.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · chủ sự kiện'**
+  String disputeSenderHost(String name);
+
+  /// No description provided for @disputeSenderCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · khách'**
+  String disputeSenderCustomer(String name);
+
+  /// No description provided for @disputeResolvedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã có kết quả · {when}'**
+  String disputeResolvedToast(String when);
+
+  /// No description provided for @disputeOutcome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết quả'**
+  String get disputeOutcome;
+
+  /// No description provided for @disputeOutcomeRelease.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển tiền cho {name}'**
+  String disputeOutcomeRelease(String name);
+
+  /// No description provided for @disputeOutcomeRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn 100%'**
+  String get disputeOutcomeRefund;
+
+  /// No description provided for @disputeOutcomeSplit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia: hoàn {percent}%'**
+  String disputeOutcomeSplit(int percent);
+
+  /// No description provided for @disputeRefundToYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn cho bạn'**
+  String get disputeRefundToYou;
+
+  /// No description provided for @disputeRefundToCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn cho khách'**
+  String get disputeRefundToCustomer;
+
+  /// No description provided for @disputeReleaseTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển cho {name}'**
+  String disputeReleaseTo(String name);
+
+  /// No description provided for @disputeReleaseToYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển cho bạn'**
+  String get disputeReleaseToYou;
+
+  /// No description provided for @disputeRefundWhere.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về tài khoản hoặc ví đã thanh toán'**
+  String get disputeRefundWhere;
+
+  /// No description provided for @disputeStaffNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú của hỗ trợ: {note}'**
+  String disputeStaffNote(String note);
+
+  /// No description provided for @disputePlatformName.
+  ///
+  /// In vi, this message translates to:
+  /// **'ứng dụng'**
+  String get disputePlatformName;
+
+  /// No description provided for @disputeNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy khiếu nại'**
+  String get disputeNotFound;
+
+  /// No description provided for @disputeNotFoundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại này không tồn tại hoặc bạn không có quyền xem.'**
+  String get disputeNotFoundBody;
+
+  /// No description provided for @disputeEvidencePhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh bằng chứng {index}'**
+  String disputeEvidencePhoto(int index);
+
   /// No description provided for @settingsPaymentsData.
   ///
   /// In vi, this message translates to:

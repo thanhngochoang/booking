@@ -7180,6 +7180,137 @@ class AppLocalizationsVi extends AppLocalizations {
   String get disputeBannerView => 'Xem khiếu nại';
 
   @override
+  String disputeTitle(String code) {
+    return 'Khiếu nại #$code';
+  }
+
+  @override
+  String get disputeStatusOpen => 'Đang xem xét';
+
+  @override
+  String get disputeStatusResolved => 'Đã xử lý';
+
+  @override
+  String get disputeHeld => 'Tiền đang giữ';
+
+  @override
+  String get disputeHeldNote => 'Tạm dừng chuyển cho tới khi có kết quả';
+
+  @override
+  String get disputeOpenedAt => 'Gửi lúc';
+
+  @override
+  String get disputeStepSent => 'Đã gửi khiếu nại';
+
+  @override
+  String disputeStepSentBody(int count) {
+    return 'Mô tả và $count ảnh bằng chứng';
+  }
+
+  @override
+  String get disputeStepReview => 'Hỗ trợ đang xem xét';
+
+  @override
+  String get disputeStepReviewBody =>
+      'Hai bên trao đổi và gửi thêm bằng chứng ở mục Trao đổi';
+
+  @override
+  String get disputeStepOutcome => 'Kết quả';
+
+  @override
+  String get disputeStepOutcomeBody =>
+      'Chuyển cho người nhận, hoàn cho bạn, hoặc chia';
+
+  @override
+  String get disputeDetailsTitle => 'Mô tả & ảnh';
+
+  @override
+  String get disputeThreadTitle => 'Trao đổi';
+
+  @override
+  String get disputeThreadHint => 'Nhắn cho hỗ trợ…';
+
+  @override
+  String get disputeThreadClosed =>
+      'Khiếu nại đã đóng. Cần thêm hỗ trợ? Liên hệ ở mục Trợ giúp.';
+
+  @override
+  String get disputeSenderSupport => 'Hỗ trợ';
+
+  @override
+  String disputeSenderProvider(String name) {
+    return '$name · nhiếp ảnh gia';
+  }
+
+  @override
+  String disputeSenderHost(String name) {
+    return '$name · chủ sự kiện';
+  }
+
+  @override
+  String disputeSenderCustomer(String name) {
+    return '$name · khách';
+  }
+
+  @override
+  String disputeResolvedToast(String when) {
+    return 'Đã có kết quả · $when';
+  }
+
+  @override
+  String get disputeOutcome => 'Kết quả';
+
+  @override
+  String disputeOutcomeRelease(String name) {
+    return 'Chuyển tiền cho $name';
+  }
+
+  @override
+  String get disputeOutcomeRefund => 'Hoàn 100%';
+
+  @override
+  String disputeOutcomeSplit(int percent) {
+    return 'Chia: hoàn $percent%';
+  }
+
+  @override
+  String get disputeRefundToYou => 'Hoàn cho bạn';
+
+  @override
+  String get disputeRefundToCustomer => 'Hoàn cho khách';
+
+  @override
+  String disputeReleaseTo(String name) {
+    return 'Chuyển cho $name';
+  }
+
+  @override
+  String get disputeReleaseToYou => 'Chuyển cho bạn';
+
+  @override
+  String get disputeRefundWhere => 'Về tài khoản hoặc ví đã thanh toán';
+
+  @override
+  String disputeStaffNote(String note) {
+    return 'Ghi chú của hỗ trợ: $note';
+  }
+
+  @override
+  String get disputePlatformName => 'ứng dụng';
+
+  @override
+  String get disputeNotFound => 'Không tìm thấy khiếu nại';
+
+  @override
+  String get disputeNotFoundBody =>
+      'Khiếu nại này không tồn tại hoặc bạn không có quyền xem.';
+
+  @override
+  String disputeEvidencePhoto(int index) {
+    return 'Ảnh bằng chứng $index';
+  }
+
+  @override
   String get settingsPaymentsData => 'Thanh toán và dữ liệu';
 
   @override

@@ -40,6 +40,7 @@ import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/search/explore_search_screen.dart';
+import 'package:photobooking/features/disputes/dispute_detail_screen.dart';
 import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
@@ -636,6 +637,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         builder: (_, state) =>
             CollabScreen(offerBookingId: state.uri.queryParameters['offer']),
+      ),
+      // S18.02: outside the tab shell, for the dispute's customer and provider.
+      GoRoute(
+        path: '/disputes/:id',
+        builder: (_, state) =>
+            DisputeDetailScreen(disputeId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
       GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),

@@ -11,6 +11,7 @@ import 'package:photobooking/data/disputes/dispute.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/features/disputes/open_dispute_controller.dart';
 import 'package:photobooking/features/disputes/open_dispute_sheet.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 export 'package:photobooking/data/disputes/dispute.dart' show DisputeOrigin;
 
@@ -61,6 +62,18 @@ class DisputeSubjectSummary {
   final String? thumbUrl;
   final String? badge;
 }
+
+/// The chip label of [r] (S18.01) and the reason line of S18.02.
+String disputeReasonLabel(AppLocalizations l, DisputeReason r) => switch (r) {
+  DisputeReason.noShow => l.disputeReasonNoShow,
+  DisputeReason.notAsAgreed => l.disputeReasonNotAsAgreed,
+  DisputeReason.photosMissing => l.disputeReasonPhotosMissing,
+  DisputeReason.notAsSample => l.disputeReasonNotAsSample,
+  DisputeReason.linkBroken => l.disputeReasonLinkBroken,
+  DisputeReason.eventNotHeld => l.disputeReasonEventNotHeld,
+  DisputeReason.notAsDescribed => l.disputeReasonNotAsDescribed,
+  DisputeReason.other => l.disputeReasonOther,
+};
 
 /// Opens S18.01. Resolves to the new dispute id after a successful submit,
 /// null when closed.

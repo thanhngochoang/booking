@@ -199,7 +199,9 @@ class _OpenDisputeSheetState extends ConsumerState<OpenDisputeSheet> {
                     ),
                     const SizedBox(height: AppSpace.s2),
                     ReasonPicker(
-                      reasons: [for (final r in reasons) _reasonLabel(l, r)],
+                      reasons: [
+                        for (final r in reasons) disputeReasonLabel(l, r),
+                      ],
                       selected: selected != null && selected >= 0
                           ? selected
                           : null,
@@ -337,17 +339,6 @@ class _OpenDisputeSheetState extends ConsumerState<OpenDisputeSheet> {
     );
   }
 }
-
-String _reasonLabel(AppLocalizations l, DisputeReason r) => switch (r) {
-  DisputeReason.noShow => l.disputeReasonNoShow,
-  DisputeReason.notAsAgreed => l.disputeReasonNotAsAgreed,
-  DisputeReason.photosMissing => l.disputeReasonPhotosMissing,
-  DisputeReason.notAsSample => l.disputeReasonNotAsSample,
-  DisputeReason.linkBroken => l.disputeReasonLinkBroken,
-  DisputeReason.eventNotHeld => l.disputeReasonEventNotHeld,
-  DisputeReason.notAsDescribed => l.disputeReasonNotAsDescribed,
-  DisputeReason.other => l.disputeReasonOther,
-};
 
 String _errorText(AppLocalizations l, String code) => switch (code) {
   'conflict' => l.disputeErrConflict,
