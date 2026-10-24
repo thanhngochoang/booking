@@ -9828,6 +9828,214 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chỉ chọn tối đa 3 bài trong portfolio của bạn.';
 
   @override
+  String get recruitNewTitle => 'Đăng tin tuyển';
+
+  @override
+  String get recruitEditTitle => 'Sửa tin tuyển';
+
+  @override
+  String recruitOpenSlots(int left) {
+    return 'Còn $left/3 tin mở';
+  }
+
+  @override
+  String get recruitKindLabel => 'Loại tin';
+
+  @override
+  String get recruitKindCollaboratorHint =>
+      'Thợ làm từng buổi, không vào studio';
+
+  @override
+  String get recruitKindMemberLabel => 'Thành viên studio';
+
+  @override
+  String get recruitKindMemberHint => 'Thợ vào studio của bạn';
+
+  @override
+  String get recruitTitleLabel => 'Tiêu đề';
+
+  @override
+  String get recruitSpecialtiesPick => 'Thể loại (tối đa 4)';
+
+  @override
+  String get recruitAreasPick => 'Khu vực (tối đa 5)';
+
+  @override
+  String get recruitFeePick => 'Thù lao tham khảo';
+
+  @override
+  String get recruitFeeKindPerShoot => 'Theo buổi';
+
+  @override
+  String get recruitFeeKindNegotiable => 'Thoả thuận';
+
+  @override
+  String get recruitFeeAmountHint => 'Số tiền mỗi buổi';
+
+  @override
+  String get recruitFeeAmountSuffix => '₫ / buổi';
+
+  @override
+  String get recruitRequirementsHint => 'Thiết bị, kinh nghiệm, cách làm việc';
+
+  @override
+  String get recruitFormNote =>
+      'Không ghi số điện thoại, Zalo hay link. Tin hiện 30 ngày, chỉ thợ ảnh và studio thấy.';
+
+  @override
+  String get recruitPublish => 'Đăng tin';
+
+  @override
+  String get recruitSave => 'Lưu thay đổi';
+
+  @override
+  String get recruitPostedToast => 'Đã đăng tin';
+
+  @override
+  String get recruitSavedToast => 'Đã lưu thay đổi';
+
+  @override
+  String get recruitTitleError => 'Tiêu đề 8–80 ký tự';
+
+  @override
+  String get recruitSpecialtiesError => 'Chọn 1–4 thể loại';
+
+  @override
+  String get recruitAreasError => 'Chọn 1–5 khu vực';
+
+  @override
+  String get recruitFeeError => 'Nhập số tiền mỗi buổi';
+
+  @override
+  String get recruitRequirementsError => 'Yêu cầu tối đa 600 ký tự';
+
+  @override
+  String get recruitVerifyToPostNote =>
+      'Studio cần xác minh trước khi đăng tin.';
+
+  @override
+  String get recruitStudioTitle => 'Tin tuyển của studio';
+
+  @override
+  String recruitStudioMeta(int open, int left) {
+    return '$open/3 tin mở · còn $left lượt đăng/đóng hôm nay';
+  }
+
+  @override
+  String get recruitStatusOpen => 'Đang mở';
+
+  @override
+  String get recruitStatusClosed => 'Đã đóng';
+
+  @override
+  String get recruitStatusExpired => 'Hết hạn';
+
+  @override
+  String recruitPostMeta(int count, int days) {
+    return '$count ứng viên · còn $days ngày';
+  }
+
+  @override
+  String recruitPostMetaEnded(int count) {
+    return '$count ứng viên';
+  }
+
+  @override
+  String get recruitEdit => 'Sửa';
+
+  @override
+  String get recruitRenew => 'Gia hạn 30 ngày';
+
+  @override
+  String recruitRenewedToast(String date) {
+    return 'Đã gia hạn tới $date';
+  }
+
+  @override
+  String get recruitClose => 'Đóng tin';
+
+  @override
+  String get recruitCloseConfirmTitle => 'Đóng tin này?';
+
+  @override
+  String get recruitCloseConfirmBody =>
+      'Ứng viên đang chờ được báo là chưa được nhận.';
+
+  @override
+  String get recruitCloseKeep => 'Giữ tin';
+
+  @override
+  String recruitApplicantsHeader(String title) {
+    return 'Ứng viên · $title';
+  }
+
+  @override
+  String recruitApplicantsPending(int n) {
+    return '$n chờ trả lời';
+  }
+
+  @override
+  String get recruitAccept => 'Nhận';
+
+  @override
+  String get recruitDecline => 'Từ chối';
+
+  @override
+  String recruitAcceptedToast(String name) {
+    return 'Đã nhận $name';
+  }
+
+  @override
+  String recruitDeclineConfirmTitle(String name) {
+    return 'Từ chối $name?';
+  }
+
+  @override
+  String recruitDeclineConfirmBody(String name) {
+    return '$name được báo là studio chưa nhận ứng tuyển này.';
+  }
+
+  @override
+  String get recruitDeclineKeep => 'Quay lại';
+
+  @override
+  String get recruitNewPost => 'Đăng tin mới';
+
+  @override
+  String get recruitFull => 'Đã đủ 3 tin mở';
+
+  @override
+  String get recruitVerifyToPost => 'Xác minh để đăng tin';
+
+  @override
+  String recruitBlocked(String date) {
+    return 'Bạn tạm không đăng tin và mời cộng tác viên tới $date vì chưa trả thù lao cho cộng tác viên.';
+  }
+
+  @override
+  String get recruitNoApplicants => 'Chưa có ai ứng tuyển.';
+
+  @override
+  String get recruitNoPosts =>
+      'Chưa có tin tuyển. Đăng tin để thợ ảnh khu vực của bạn thấy.';
+
+  @override
+  String recruitAcceptConflict(String name) {
+    return '$name đang ở studio khác hoặc đang cộng tác với studio bạn.';
+  }
+
+  @override
+  String recruitAcceptCooldown(String name) {
+    return '$name mới rời studio, chưa vào được studio mới.';
+  }
+
+  @override
+  String get recruitAcceptStudioFull => 'Studio đã đủ thành viên.';
+
+  @override
+  String get recruitAcceptCollabFull => 'Đã đủ số cộng tác viên.';
+
+  @override
   String profileRecruiting(int n) {
     return 'Đang tuyển · $n tin';
   }

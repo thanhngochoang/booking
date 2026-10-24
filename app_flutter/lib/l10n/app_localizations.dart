@@ -16815,6 +16815,360 @@ abstract class AppLocalizations {
   /// **'Chỉ chọn tối đa 3 bài trong portfolio của bạn.'**
   String get recruitSamplesInvalid;
 
+  /// No description provided for @recruitNewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng tin tuyển'**
+  String get recruitNewTitle;
+
+  /// No description provided for @recruitEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa tin tuyển'**
+  String get recruitEditTitle;
+
+  /// No description provided for @recruitOpenSlots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {left}/3 tin mở'**
+  String recruitOpenSlots(int left);
+
+  /// No description provided for @recruitKindLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại tin'**
+  String get recruitKindLabel;
+
+  /// No description provided for @recruitKindCollaboratorHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ làm từng buổi, không vào studio'**
+  String get recruitKindCollaboratorHint;
+
+  /// No description provided for @recruitKindMemberLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên studio'**
+  String get recruitKindMemberLabel;
+
+  /// No description provided for @recruitKindMemberHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ vào studio của bạn'**
+  String get recruitKindMemberHint;
+
+  /// No description provided for @recruitTitleLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề'**
+  String get recruitTitleLabel;
+
+  /// No description provided for @recruitSpecialtiesPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thể loại (tối đa 4)'**
+  String get recruitSpecialtiesPick;
+
+  /// No description provided for @recruitAreasPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực (tối đa 5)'**
+  String get recruitAreasPick;
+
+  /// No description provided for @recruitFeePick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao tham khảo'**
+  String get recruitFeePick;
+
+  /// No description provided for @recruitFeeKindPerShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo buổi'**
+  String get recruitFeeKindPerShoot;
+
+  /// No description provided for @recruitFeeKindNegotiable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thoả thuận'**
+  String get recruitFeeKindNegotiable;
+
+  /// No description provided for @recruitFeeAmountHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền mỗi buổi'**
+  String get recruitFeeAmountHint;
+
+  /// No description provided for @recruitFeeAmountSuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'₫ / buổi'**
+  String get recruitFeeAmountSuffix;
+
+  /// No description provided for @recruitRequirementsHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị, kinh nghiệm, cách làm việc'**
+  String get recruitRequirementsHint;
+
+  /// No description provided for @recruitFormNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không ghi số điện thoại, Zalo hay link. Tin hiện 30 ngày, chỉ thợ ảnh và studio thấy.'**
+  String get recruitFormNote;
+
+  /// No description provided for @recruitPublish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng tin'**
+  String get recruitPublish;
+
+  /// No description provided for @recruitSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get recruitSave;
+
+  /// No description provided for @recruitPostedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng tin'**
+  String get recruitPostedToast;
+
+  /// No description provided for @recruitSavedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thay đổi'**
+  String get recruitSavedToast;
+
+  /// No description provided for @recruitTitleError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề 8–80 ký tự'**
+  String get recruitTitleError;
+
+  /// No description provided for @recruitSpecialtiesError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn 1–4 thể loại'**
+  String get recruitSpecialtiesError;
+
+  /// No description provided for @recruitAreasError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn 1–5 khu vực'**
+  String get recruitAreasError;
+
+  /// No description provided for @recruitFeeError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số tiền mỗi buổi'**
+  String get recruitFeeError;
+
+  /// No description provided for @recruitRequirementsError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu tối đa 600 ký tự'**
+  String get recruitRequirementsError;
+
+  /// No description provided for @recruitVerifyToPostNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio cần xác minh trước khi đăng tin.'**
+  String get recruitVerifyToPostNote;
+
+  /// No description provided for @recruitStudioTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin tuyển của studio'**
+  String get recruitStudioTitle;
+
+  /// No description provided for @recruitStudioMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{open}/3 tin mở · còn {left} lượt đăng/đóng hôm nay'**
+  String recruitStudioMeta(int open, int left);
+
+  /// No description provided for @recruitStatusOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang mở'**
+  String get recruitStatusOpen;
+
+  /// No description provided for @recruitStatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng'**
+  String get recruitStatusClosed;
+
+  /// No description provided for @recruitStatusExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get recruitStatusExpired;
+
+  /// No description provided for @recruitPostMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ứng viên · còn {days} ngày'**
+  String recruitPostMeta(int count, int days);
+
+  /// No description provided for @recruitPostMetaEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ứng viên'**
+  String recruitPostMetaEnded(int count);
+
+  /// No description provided for @recruitEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get recruitEdit;
+
+  /// No description provided for @recruitRenew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia hạn 30 ngày'**
+  String get recruitRenew;
+
+  /// No description provided for @recruitRenewedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gia hạn tới {date}'**
+  String recruitRenewedToast(String date);
+
+  /// No description provided for @recruitClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng tin'**
+  String get recruitClose;
+
+  /// No description provided for @recruitCloseConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng tin này?'**
+  String get recruitCloseConfirmTitle;
+
+  /// No description provided for @recruitCloseConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ứng viên đang chờ được báo là chưa được nhận.'**
+  String get recruitCloseConfirmBody;
+
+  /// No description provided for @recruitCloseKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ tin'**
+  String get recruitCloseKeep;
+
+  /// No description provided for @recruitApplicantsHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ứng viên · {title}'**
+  String recruitApplicantsHeader(String title);
+
+  /// No description provided for @recruitApplicantsPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} chờ trả lời'**
+  String recruitApplicantsPending(int n);
+
+  /// No description provided for @recruitAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get recruitAccept;
+
+  /// No description provided for @recruitDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get recruitDecline;
+
+  /// No description provided for @recruitAcceptedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận {name}'**
+  String recruitAcceptedToast(String name);
+
+  /// No description provided for @recruitDeclineConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối {name}?'**
+  String recruitDeclineConfirmTitle(String name);
+
+  /// No description provided for @recruitDeclineConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} được báo là studio chưa nhận ứng tuyển này.'**
+  String recruitDeclineConfirmBody(String name);
+
+  /// No description provided for @recruitDeclineKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get recruitDeclineKeep;
+
+  /// No description provided for @recruitNewPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng tin mới'**
+  String get recruitNewPost;
+
+  /// No description provided for @recruitFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ 3 tin mở'**
+  String get recruitFull;
+
+  /// No description provided for @recruitVerifyToPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh để đăng tin'**
+  String get recruitVerifyToPost;
+
+  /// No description provided for @recruitBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn tạm không đăng tin và mời cộng tác viên tới {date} vì chưa trả thù lao cho cộng tác viên.'**
+  String recruitBlocked(String date);
+
+  /// No description provided for @recruitNoApplicants.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ai ứng tuyển.'**
+  String get recruitNoApplicants;
+
+  /// No description provided for @recruitNoPosts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tin tuyển. Đăng tin để thợ ảnh khu vực của bạn thấy.'**
+  String get recruitNoPosts;
+
+  /// No description provided for @recruitAcceptConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang ở studio khác hoặc đang cộng tác với studio bạn.'**
+  String recruitAcceptConflict(String name);
+
+  /// No description provided for @recruitAcceptCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} mới rời studio, chưa vào được studio mới.'**
+  String recruitAcceptCooldown(String name);
+
+  /// No description provided for @recruitAcceptStudioFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đủ thành viên.'**
+  String get recruitAcceptStudioFull;
+
+  /// No description provided for @recruitAcceptCollabFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ số cộng tác viên.'**
+  String get recruitAcceptCollabFull;
+
   /// No description provided for @profileRecruiting.
   ///
   /// In vi, this message translates to:

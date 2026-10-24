@@ -249,6 +249,28 @@ class RecruitWorld {
     ),
   );
 
+  /// Seeds the public profile of an individual applicant (S27.05 card:
+  /// "🍅 95% · 42 buổi chụp").
+  void seedApplicant({
+    required String id,
+    required String name,
+    int tomatoPct = 95,
+    int reviewCount = 20,
+    int completedCount = 42,
+  }) => profiles.add(
+    PhotographerProfile(
+      summary: PhotographerSummary(
+        id: id,
+        displayName: name,
+        verified: true,
+        tomatoPct: tomatoPct,
+        reviewCount: reviewCount,
+        completedCount: completedCount,
+      ),
+      intro: const PhotographerIntro(),
+    ),
+  );
+
   /// Hosts [location] with the feature's [routes], stub pages for
   /// [stubs], and everything the recruit screens read.
   Widget app(

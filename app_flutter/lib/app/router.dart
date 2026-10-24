@@ -65,7 +65,9 @@ import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/recruit/recruit_detail_screen.dart';
+import 'package:photobooking/features/recruit/recruit_edit_screen.dart';
 import 'package:photobooking/features/recruit/recruit_list_screen.dart';
+import 'package:photobooking/features/recruit/studio_recruit_screen.dart';
 import 'package:photobooking/features/safety/blocked_users_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
@@ -147,6 +149,12 @@ String? computeRedirect({
 /// S06.04 and S08.01 are for photographers only (spec screens/README.md "Vai trò").
 String? photographerOnlyRedirect(UserRole? role) =>
     role == UserRole.photographer ? null : AppTab.home.path;
+
+/// S27.04 and S27.05 belong to a studio: anyone not in photographer mode
+/// goes to S27.01 (which shows them only the R3 note); the screens send a
+/// photographer who is not a studio there too once its facts load.
+String? studioRecruitRedirect(UserRole? role) =>
+    role == UserRole.photographer ? null : '/recruit';
 
 /// S13 Chụp ngay is for customers, and only while it is on (Decision 9, 14).
 /// A role not known yet (profile loading) does not redirect: a cold-start
@@ -585,6 +593,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/recruit/:postId',
         builder: (_, state) =>
             RecruitDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      // S27.05 (query `post`), S27.04 new and edit: studios only.
+      GoRoute(
+        path: '/studio/recruit',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            StudioRecruitScreen(postId: state.uri.queryParameters['post']),
+      ),
+      GoRoute(
+        path: '/studio/recruit/new',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, _) => const RecruitEditScreen(),
+      ),
+      GoRoute(
+        path: '/studio/recruit/:postId/edit',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            RecruitEditScreen(postId: state.pathParameters['postId']),
       ),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
       GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),
