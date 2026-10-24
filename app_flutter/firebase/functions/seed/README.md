@@ -257,12 +257,29 @@ photographer carries `nameKey` (the S26.02 search key).
 |---|---|---|
 | `studio_members/seed-photographer-cuc_seed-photographer-an_…` | Cúc ↔ An | `active`, joined 30 days before seeding; `photographers/seed-photographer-an.studioId` is Cúc |
 | `studio_members/seed-photographer-cuc_seed-photographer-binh_…` | Cúc → Bình | `invited`, expires 5 days after seeding (sign in as Bình to answer in S26.03) |
-| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to approve in S26.01) |
+| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to answer in S26.01: approving is refused `membership_conflict` while Dũng is Cúc's active collaborator (S27), declining works) |
 | `seed-booking-studio-assigned` | Lan ↔ Cúc | accepted, assigned to An, 3 days ahead (the next day An is free); An's day is `booked`; Cúc's day is `full` (its one member is taken) |
 | `seed-booking-studio-unassigned` | Lan ↔ Cúc | accepted, unassigned, starts about 20 h after seeding: its assign deadline has passed, so the first `npm run clock -- bookings` marks it overdue (`assign_overdue`, Lan may cancel with 100% back) |
 
 `studio_day_load/seed-photographer-cuc_{day}` holds both bookings' days (server only). Studio bookings never write
 the studio's own day as `booked`/`pending`; Cúc's `availability/{day}` only shows the derived `full`.
+
+## Studio recruiting (S27)
+
+Written with the domain's helpers (`recruitMatchKeys`, `recruitFilterKeys`) and the Functions mapping.
+
+| Document | Who | State |
+|---|---|---|
+| `recruitPosts/seed-recruit-cuc-ctv` | Cúc | open collaborator post "Tuyển CTV chụp cưới cuối tuần", Q1 + Q3 (TP.HCM), cưới + gia đình, 800 000 ₫/buổi, posted 2 days before seeding, 1 application |
+| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-an` | An → Cúc | `applied` (terms accepted). An is also Cúc's S26 member, so Cúc can only decline it in S27.05 (accepting is `membership_conflict`) |
+| `studio_collaborations/seed-photographer-cuc_seed-photographer-dung` | Cúc ↔ Dũng | `active` collaborator since 10 days, default fee 600 000 ₫ (S27.06 on both sides; Cúc can offer a studio booking to Dũng in S26.04) |
+| `photographers/{uid}/private/recruit` | Cúc, Dũng, An | Cúc `openPostCount` 1 and `activeCollabCount` 1; Dũng `activeCollabCount` 1; An `openApplicationCount` 1 |
+| `photographers/{uid}.recruitMatchKeys` | every photographer | what `onPhotographerWrite` keeps: An (Hà Nội), Bình (Đà Nẵng), Dũng (Huế), Giang (Cần Thơ, no area → none); Cúc (studio) none |
+
+Who sees what: Lan and Minh (customers) see no "Tuyển thợ" tab and no "Đang tuyển" line on Cúc's profile (the rules
+refuse them `recruitPosts`); Bình (unverified) sees the post and "Xác minh để ứng tuyển" instead of "Ứng tuyển"; An sees
+the post with "Đã ứng tuyển"; Cúc sees it in "Tin tuyển của studio" (S27.05) with An as applicant. No seeded provider
+matches the post's HCM keys, so posting a new HCM post notifies nobody until a provider serves TP.HCM.
 
 ## Discovery stats (S02)
 

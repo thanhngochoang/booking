@@ -45,7 +45,12 @@ import {
   afterMessage,
   chatIdFor,
   chatPreview,
+  EMPTY_COUNTERS,
+  recruitFilterKeys,
+  recruitMatchKeys,
+  recruitMatchKeysOf,
   type Chat,
+  type RecruitCounters,
   type EarningItem,
   type Message,
   type EventRecord,
@@ -73,6 +78,12 @@ import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
 import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
 import { relationToFirestore } from '../src/infra/studio_firestore.js';
+import {
+  applicationToDoc,
+  collaborationToDoc,
+  countersToDoc,
+  recruitPostToDoc,
+} from '../src/infra/recruit_mapping.js';
 import {
   spotToFirestore,
   scheduleToFirestore,
@@ -373,6 +384,98 @@ function studioMemberDocuments(now: Date): SeedDocument[] {
 }
 
 /** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
+// ---- S27 studio recruiting (#151) ----
+
+export const SEED_RECRUIT_POST_CUC = 'seed-recruit-cuc-ctv';
+export const SEED_COLLAB_DEFAULT_FEE = 600_000;
+
+/**
+ * Cúc's open collaborator post (TP.HCM Q1/Q3, cưới and gia đình; keys computed by the domain), An's applied
+ * application to it (An is also Cúc's S26 member, so Cúc can only decline it: accepting is membership_conflict),
+ * the active collaboration Cúc–Dũng (default fee 600.000₫) and the counters these imply.
+ */
+function recruitDocuments(now: Date): SeedDocument[] {
+  const createdAt = new Date(now.getTime() - 2 * DAY_MS);
+  const cuc = SEED_USERS.find((u) => u.uid === CUC)?.displayName ?? '';
+  const dung = SEED_USERS.find((u) => u.uid === DUNG)?.displayName ?? '';
+  const an = SEED_USERS.find((u) => u.uid === AN)?.displayName ?? '';
+  const areas = ['hcm-q1', 'hcm-q3'];
+  const specialties = ['wedding', 'family'];
+  const title = 'Tuyển CTV chụp cưới cuối tuần';
+  const appliedAt = new Date(now.getTime() - DAY_MS);
+  const activeAt = new Date(now.getTime() - 10 * DAY_MS);
+  const counters = (patch: Partial<RecruitCounters>): Record<string, unknown> => countersToDoc({ ...EMPTY_COUNTERS, ...patch });
+  return [
+    {
+      path: `recruitPosts/${SEED_RECRUIT_POST_CUC}`,
+      data: recruitPostToDoc({
+        id: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        studio: { name: cuc, avatarUrl: null, businessVerified: false },
+        kind: 'collaborator',
+        title,
+        specialties,
+        areas,
+        frequency: 'weekly',
+        feeHint: { type: 'per_shoot', amount: 800_000 },
+        requirements: 'Có máy full-frame, đã chụp cưới ít nhất một năm.',
+        status: 'open',
+        renewed: false,
+        applicationCount: 1,
+        matchKeys: recruitMatchKeys(areas, specialties),
+        filterKeys: recruitFilterKeys({ kind: 'collaborator', areas, specialties }),
+        createdAt,
+        updatedAt: appliedAt,
+        expiresAt: new Date(createdAt.getTime() + 30 * DAY_MS),
+        closedAt: null,
+      }),
+    },
+    {
+      path: `recruitApplications/${SEED_RECRUIT_POST_CUC}_${AN}`,
+      data: applicationToDoc({
+        id: `${SEED_RECRUIT_POST_CUC}_${AN}`,
+        postId: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        applicantId: AN,
+        kind: 'collaborator',
+        postTitle: title,
+        applicant: { name: an, avatarUrl: null },
+        status: 'applied',
+        message: 'Em chụp cưới 3 năm, rảnh cuối tuần.',
+        samplePostIds: [],
+        termsAcceptedAt: appliedAt,
+        createdAt: appliedAt,
+        expiresAt: new Date(appliedAt.getTime() + 7 * DAY_MS),
+        respondedAt: null,
+      }),
+    },
+    {
+      path: `studio_collaborations/${CUC}_${DUNG}`,
+      data: collaborationToDoc({
+        id: `${CUC}_${DUNG}`,
+        studioId: CUC,
+        collaboratorId: DUNG,
+        studio: { name: cuc, avatarUrl: null },
+        collaborator: { name: dung, avatarUrl: null },
+        status: 'active',
+        initiatedBy: 'studio',
+        applicationId: null,
+        defaultFee: SEED_COLLAB_DEFAULT_FEE,
+        termsAcceptedAt: activeAt,
+        createdAt: new Date(activeAt.getTime() - DAY_MS),
+        expiresAt: new Date(activeAt.getTime() + 6 * DAY_MS),
+        activeAt,
+        endedAt: null,
+        endedBy: null,
+        updatedAt: activeAt,
+      }),
+    },
+    { path: `photographers/${CUC}/private/recruit`, data: counters({ openPostCount: 1, activeCollabCount: 1 }) },
+    { path: `photographers/${DUNG}/private/recruit`, data: counters({ activeCollabCount: 1 }) },
+    { path: `photographers/${AN}/private/recruit`, data: counters({ openApplicationCount: 1 }) },
+  ];
+}
+
 export const SEED_AN_ACCOUNT = { id: 'seed-account-an-1', bankCode: 'VCB', number: '0123456789', holderName: 'NGUYEN VAN AN' } as const;
 export const SEED_PAYOUT_AN = 'seed-payout-an-1';
 /** An's verified legal name (`users/{uid}/private/identity.legalName`; test value). */
@@ -766,6 +869,13 @@ export function seedDocuments(now: Date): SeedDocument[] {
         // S26: the invite-search key, Cúc's member counts (An is verified) and An's membership (#136).
         nameKey: foldNameKey(SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? ''),
         ...(p.uid === CUC ? { memberCount: 1, assignableMembers: 1 } : {}),
+        // S27 (#151 Decision 7): what onPhotographerWrite keeps (Cúc, a studio, matches nothing).
+        recruitMatchKeys: [...recruitMatchKeysOf({
+          role: SEED_USERS.find((u) => u.uid === p.uid)?.role,
+          providerType: p.providerType,
+          serviceArea: { city: p.city, radiusKm: p.radiusKm },
+          specialties: p.specialties,
+        })].sort(),
         ...(p.uid === AN
           ? { studioId: CUC, studioJoinedAt: new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS) }
           : {}),
@@ -1141,6 +1251,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...directChatDocuments(now, docs));
   docs.push(...verificationDocuments(now));
   docs.push(...studioMemberDocuments(now));
+  docs.push(...recruitDocuments(now));
   for (const l of studioLoads(now)) {
     docs.push({
       path: `studio_day_load/${CUC}_${l.day}`,

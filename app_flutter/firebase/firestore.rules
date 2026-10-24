@@ -179,7 +179,9 @@ service cloud.firestore {
                               // S26 studio members (#136): membership, studio counters and the invite-search key.
                               'studioId', 'studioJoinedAt', 'studioCooldownUntil', 'memberCount', 'lateAssignCount',
                               'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount', 'nameKey',
-                              'assignableMembers']);
+                              'assignableMembers',
+                              // S27 (#151 Decision 7): the recruit fan-out keys, kept by onPhotographerWrite.
+                              'recruitMatchKeys']);
     }
 
     // Setup, once finished, stays finished: an update may not move onboardingComplete from true
@@ -473,6 +475,25 @@ service cloud.firestore {
             && request.time <= b.completedAt + duration.value(30, 'd'));
     }
 
+    // S27 (#151, R8; mirrors collaboratorContactOpen in packages/domain/src/collab_jobs.ts): the assignee's
+    // access to the customer's contact. A member follows the photographer's unlock rule (S26). A collaborator
+    // only once the offer is accepted (the booking is paid by then) while the booking runs, and until 7 days
+    // after it was completed or cancelled; a pending or declined offer opens nothing, and a replaced
+    // collaborator is no longer `assigneeId`.
+    function isAssigneeContactOpen(b) {
+      return b.get('assigneeKind', 'member') != 'collaborator'
+        ? isBookingContactUnlocked(b)
+        : b.get('assigneeAccepted', false) == true
+          && (b.status in ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved']
+              || (b.status in ['completed', 'reviewed']
+                  && b.get('completedAt', null) != null
+                  && request.time < b.completedAt + duration.value(7, 'd'))
+              || (b.status == 'cancelled'
+                  && b.get('cancel', null) != null
+                  && b.cancel.get('at', null) != null
+                  && request.time < b.cancel.at + duration.value(7, 'd')));
+    }
+
     // bookings: the customer, the photographer (or studio) and, for a studio booking, the member it
     // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The assignee
     // also reads the events and, under the photographer's unlock rule, the customer's contact (#136
@@ -492,7 +513,8 @@ service cloud.firestore {
         allow read: if signedIn() && (
           (docId == 'contact'
             && (bk().customerId == request.auth.uid
-                || ((bk().photographerId == request.auth.uid || isAssignee(bk())) && isBookingContactUnlocked(bk()))))
+                || (bk().photographerId == request.auth.uid && isBookingContactUnlocked(bk()))
+                || (isAssignee(bk()) && isAssigneeContactOpen(bk()))))
           || (docId == 'delivery'
             && (bk().photographerId == request.auth.uid
                 || (bk().customerId == request.auth.uid && bk().status in ['approved', 'completed']))));
@@ -515,6 +537,56 @@ service cloud.firestore {
       allow read: if signedIn()
         && (resource.data.studioId == request.auth.uid || resource.data.memberId == request.auth.uid);
       allow write: if false;
+    }
+
+    // ---- S27 studio recruiting and collaborators (#151); every write is a Cloud Function ----
+
+    // R3 / Decision 2: a provider account is role `photographer` in users/{uid} AND a photographers/{uid}
+    // doc (any provider type, verified or not). A customer, and a customer-mode account that still has an
+    // old photographers doc, cannot read recruit posts (get or list).
+    function isProviderAccount() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', null) == 'photographer'
+        && exists(/databases/$(database)/documents/photographers/$(request.auth.uid));
+    }
+
+    match /recruitPosts/{postId} {
+      allow read: if isProviderAccount();
+      allow write: if false;
+    }
+
+    // An application is read by its applicant and the posting studio only.
+    match /recruitApplications/{appId} {
+      allow read: if signedIn()
+        && (resource.data.applicantId == request.auth.uid || resource.data.studioId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // The latest relationship of a pair and its history: the two parties only.
+    match /studio_collaborations/{collabId} {
+      allow read: if signedIn()
+        && (resource.data.studioId == request.auth.uid || resource.data.collaboratorId == request.auth.uid);
+      allow write: if false;
+
+      match /history/{historyId} {
+        allow read: if signedIn()
+          && (get(/databases/$(database)/documents/studio_collaborations/$(collabId)).data.studioId == request.auth.uid
+              || get(/databases/$(database)/documents/studio_collaborations/$(collabId)).data.collaboratorId == request.auth.uid);
+        allow write: if false;
+      }
+    }
+
+    // Decision 3 (Review Focus 2): the agreed fee and the off-app pay record. The studio and that
+    // collaborator only; the customer, who reads the booking, never reads these.
+    match /collab_jobs/{jobId} {
+      allow read: if signedIn()
+        && (resource.data.studioId == request.auth.uid || resource.data.collaboratorId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Staff records (Decision 18 poaching signal): no client access.
+    match /staff_flags/{flagId} {
+      allow read, write: if false;
     }
 
     // Daily membership actions of `uid` (studio or member side).

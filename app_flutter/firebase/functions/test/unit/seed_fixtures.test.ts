@@ -58,6 +58,13 @@ import {
 } from '../../seed/fixtures.js';
 import { bookingFromFirestore } from '../../src/infra/booking_firestore.js';
 import { relationFromFirestore } from '../../src/infra/studio_firestore.js';
+import {
+  applicationFromDoc,
+  collaborationFromDoc,
+  countersFromDoc,
+  recruitPostFromDoc,
+} from '../../src/infra/recruit_mapping.js';
+import { recruitFilterKeys, recruitMatchKeys, recruitMatchKeysOf } from '@photobooking/domain';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 /** A seeded time: a Date, or a Timestamp when the doc comes from a src/infra mapper. */
@@ -987,3 +994,61 @@ describe('seed photo spots (S29)', () => {
   });
 });
 
+
+describe('seed recruiting (S27, #151)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+  const under = (prefix: string) => docs.filter((d) => d.path.startsWith(prefix));
+
+  test('seeds one open collaborator post by Cúc Studio with matchKeys and filterKeys from the domain', () => {
+    const posts = under('recruitPosts/').map((d) => recruitPostFromDoc(d.path.slice('recruitPosts/'.length), d.data));
+    assert.equal(posts.length, 1);
+    const post = posts[0];
+    assert.ok(post);
+    assert.equal(post.studioId, CUC);
+    assert.equal(post.kind, 'collaborator');
+    assert.equal(post.status, 'open');
+    assert.equal(post.studio.name, SEED_USERS.find((u) => u.uid === CUC)?.displayName);
+    assert.ok(post.expiresAt.getTime() > NOW.getTime());
+    assert.deepEqual(post.matchKeys, recruitMatchKeys(post.areas, post.specialties));
+    assert.deepEqual(post.filterKeys, recruitFilterKeys(post));
+    assert.ok(isId(post.id));
+    assert.equal(countersFromDoc(get(`photographers/${CUC}/private/recruit`)).openPostCount, 1);
+  });
+
+  test('seeds an applied application by An', () => {
+    const apps = under('recruitApplications/').map((d) => applicationFromDoc(d.path.slice('recruitApplications/'.length), d.data));
+    assert.equal(apps.length, 1);
+    const app = apps[0];
+    assert.ok(app);
+    assert.equal(app.applicantId, AN);
+    assert.equal(app.studioId, CUC);
+    assert.equal(app.status, 'applied');
+    assert.ok(app.termsAcceptedAt, 'a collaborator application carries the accepted terms');
+    assert.equal(app.id, `${app.postId}_${AN}`);
+    const post = recruitPostFromDoc(app.postId, get(`recruitPosts/${app.postId}`));
+    assert.equal(post?.applicationCount, 1);
+    assert.equal(countersFromDoc(get(`photographers/${AN}/private/recruit`)).openApplicationCount, 1);
+  });
+
+  test('seeds an active collaboration Cúc–Dũng with defaultFee 600000 and both counters', () => {
+    const c = collaborationFromDoc(`${CUC}_${DUNG}`, get(`studio_collaborations/${CUC}_${DUNG}`));
+    assert.ok(c);
+    assert.equal(c.status, 'active');
+    assert.equal(c.defaultFee, 600_000);
+    assert.equal(c.collaboratorId, DUNG);
+    assert.ok(c.termsAcceptedAt && c.activeAt);
+    assert.equal(countersFromDoc(get(`photographers/${CUC}/private/recruit`)).activeCollabCount, 1);
+    assert.equal(countersFromDoc(get(`photographers/${DUNG}/private/recruit`)).activeCollabCount, 1);
+  });
+
+  test('every seeded photographer carries the recruitMatchKeys the trigger would write', () => {
+    for (const p of SEED_PHOTOGRAPHERS) {
+      const doc = get(`photographers/${p.uid}`);
+      const role = SEED_USERS.find((u) => u.uid === p.uid)?.role;
+      const expected = [...recruitMatchKeysOf({ role, providerType: doc?.providerType, serviceArea: doc?.serviceArea, specialties: p.specialties })].sort();
+      assert.deepEqual(doc?.recruitMatchKeys, expected, p.uid);
+    }
+    assert.deepEqual(get(`photographers/${CUC}`)?.recruitMatchKeys, []);
+  });
+});
