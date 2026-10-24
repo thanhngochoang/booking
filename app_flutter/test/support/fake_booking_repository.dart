@@ -71,7 +71,16 @@ class FakeBookingRepository implements BookingRepository {
     _bookingChanges.add(id);
   }
 
+  /// A raw server code the next call is refused with (codes outside
+  /// [BookingErrorCode], e.g. S27's `recruit_blocked`); wins over [nextError].
+  String? nextErrorCode;
+
   void _checkNextError() {
+    final raw = nextErrorCode;
+    if (raw != null) {
+      nextErrorCode = null;
+      throw BookingException(raw);
+    }
     final err = nextError;
     if (err != null) {
       nextError = null;

@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/collab/collab_controller.dart';
@@ -24,6 +26,32 @@ final assignmentOptionsProvider = FutureProvider.autoDispose
           ref.watch(studioRepositoryProvider).assignmentOptions(bookingId),
       retry: (_, _) => null,
     );
+
+/// What to say when a collaborator offer ([name]) is refused: the codes a
+/// retry never fixes have their own line (offer window too short, recruiting
+/// block, blocked pair, collaboration ended); the rest read like S26.
+String assignOfferErrorText(
+  BuildContext context,
+  Object error, {
+  required String name,
+  DateTime? blockedUntil,
+}) {
+  final l = context.l10n;
+  final code = switch (error) {
+    StudioError(:final code) => code,
+    BookingException(:final code) => code,
+    _ => '',
+  };
+  return switch (code) {
+    'deadline_passed' => l.assignCollabErrDeadline,
+    'recruit_blocked' when blockedUntil != null => l.recruitBlocked(
+      formatDayMonth(toVn(blockedUntil)),
+    ),
+    'blocked' => l.assignCollabErrBlocked,
+    'not_found' => l.assignCollabErrEnded(name),
+    _ => studioErrorText(context, code),
+  };
+}
 
 /// Opens S26.04 "Giao thợ" for [bookingId] over S06.01 or S05.02; true once
 /// the server took the assignment.
@@ -118,6 +146,15 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
             collaborator: true,
             agreedFee: fee,
           ),
+      errorText: (context, e) => assignOfferErrorText(
+        context,
+        e,
+        name: c.collaboratorName,
+        blockedUntil: ref
+            .read(myRecruitCountersProvider)
+            .value
+            ?.recruitBlockedUntil,
+      ),
     );
   }
 
@@ -125,13 +162,31 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
     () => ref.read(bookingRepositoryProvider).assign(widget.bookingId, o.uid),
   );
 
-  Future<void> _send(Future<void> Function() action) async {
+  Future<void> _send(
+    Future<void> Function() action, {
+    String Function(BuildContext context, Object error)? errorText,
+  }) async {
     setState(() {
       _sending = true;
       _feeError = null;
     });
     final navigator = Navigator.of(context);
-    final ok = await runStudioAction(context, action);
+    final messenger = ScaffoldMessenger.of(context);
+    var ok = true;
+    try {
+      await action();
+    } catch (e) {
+      ok = false;
+      if (mounted) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text((errorText ?? studioFailureText)(context, e)),
+            ),
+          );
+      }
+    }
     if (!mounted) return;
     if (ok) {
       navigator.pop(true);
@@ -246,9 +301,17 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
   ) {
     final l = context.l10n;
     final now = ref.read(clockProvider)();
-    final collaborator = collaborators
-        .where((c) => c.collaboratorId == _collaborator?.collaboratorId)
-        .firstOrNull;
+    // Decision 15: a studio blocked from recruiting cannot offer work to its
+    // collaborators either (the server refuses `recruit_blocked`).
+    final blockedUntil = switch (ref.watch(myRecruitCountersProvider).value) {
+      final c? when c.isBlocked(now) => c.recruitBlockedUntil,
+      _ => null,
+    };
+    final collaborator = blockedUntil != null
+        ? null
+        : collaborators
+              .where((c) => c.collaboratorId == _collaborator?.collaboratorId)
+              .firstOrNull;
     final choice = collaborator == null ? _choice(options) : null;
     final name = collaborator?.collaboratorName ?? choice?.name ?? '';
     // A pending collaborator offer is not an assignee to replace (S27).
@@ -289,7 +352,7 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
         decorative: true,
       ),
       selected: c.collaboratorId == collaborator?.collaboratorId,
-      enabled: !_sending,
+      enabled: !_sending && blockedUntil == null,
       onTap: () => _pickCollaborator(c),
     );
     final tiles = <Widget>[
@@ -306,6 +369,12 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
           l.assignGroupCollaborators,
           key: const Key('assign-group-collaborators'),
         ),
+        if (blockedUntil != null)
+          StudioNote(
+            l.recruitBlocked(formatDayMonth(toVn(blockedUntil))),
+            key: const Key('assign-collab-blocked'),
+            icon: AppIcons.warning,
+          ),
         for (final c in collaborators) collaboratorTile(c),
       ],
     ];

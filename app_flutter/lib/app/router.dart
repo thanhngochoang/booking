@@ -143,7 +143,10 @@ String? computeRedirect({
   }
   if (needsRole) return location == _onboardingRoute ? null : _onboardingRoute;
   if (location == _splashRoute) {
-    return (from == null || _nonResumable.contains(Uri.parse(from).path))
+    // A malformed `from` (hand-typed `/splash?from=::`) goes home; parsing
+    // must not throw inside the top-level redirect.
+    final fromPath = from == null ? null : Uri.tryParse(from)?.path;
+    return (fromPath == null || _nonResumable.contains(fromPath))
         ? AppTab.home.path
         : from;
   }

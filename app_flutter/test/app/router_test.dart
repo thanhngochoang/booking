@@ -3,6 +3,21 @@ import 'package:photobooking/app/router.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 
 void main() {
+  test('a malformed splash `from` goes home instead of throwing', () {
+    for (final from in ['::', 'http://[::1']) {
+      expect(
+        computeRedirect(
+          signedIn: true,
+          profileLoaded: true,
+          needsRole: false,
+          location: '/splash',
+          from: from,
+        ),
+        '/home',
+        reason: from,
+      );
+    }
+  });
   test('signed out users go to /login except on auth routes', () {
     expect(
       computeRedirect(

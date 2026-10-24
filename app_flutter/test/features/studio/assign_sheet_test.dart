@@ -11,8 +11,9 @@ import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
-import 'package:photobooking/features/collab/collab_controller.dart';
+import 'package:photobooking/data/recruit/recruit_post.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
+import 'package:photobooking/features/collab/collab_controller.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 
 import '../../support/meta_finders.dart';
@@ -70,6 +71,7 @@ Future<_Host> _open(
   double width = 390,
   double height = 900,
   double textScale = 1.0,
+  RecruitCounters counters = RecruitCounters.empty,
   List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = Size(width, height);
@@ -78,6 +80,7 @@ Future<_Host> _open(
   final w = StudioWorld(now: now);
   w.bookings.seedBooking(booking ?? makeStudioBooking());
   w.studios.options = options;
+  w.recruitCounters = counters;
   for (final c in collaborators) {
     w.collabs.seedCollaboration(c);
   }
@@ -456,6 +459,80 @@ void main() {
       expect(_key('assign-group-collaborators'), findsNothing);
       expect(_key('assign-option-lan'), findsNothing);
       expect(_submit(tester).label, 'Giao cho Minh Trí');
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      expect(h.world.bookings.studioCalls.single.$2, {
+        'bookingId': 'sb1',
+        'assigneeId': 'minh',
+      });
+    });
+
+    for (final (code, text) in [
+      (
+        'deadline_passed',
+        'Không còn đủ thời gian để cộng tác viên nhận. Giao cho thành viên.',
+      ),
+      ('blocked', 'Không giao việc được: hai bên đã chặn nhau.'),
+      ('not_found', 'Cộng tác với Lan Phương đã kết thúc.'),
+    ]) {
+      testWidgets('an offer refused $code says why, not "Thử lại"', (
+        tester,
+      ) async {
+        final h = await _open(tester, collaborators: collaborators);
+        await tester.tap(_key('assign-option-lan'));
+        await tester.pump();
+        h.world.bookings.nextErrorCode = code;
+        await tester.ensureVisible(_key('assign-submit'));
+        await tester.tap(_key('assign-submit'));
+        await _settle(tester);
+        expect(find.text(text), findsOneWidget);
+        expect(find.text('Chưa thực hiện được. Thử lại.'), findsNothing);
+        expect(find.byType(AssignSheet), findsOneWidget);
+        expect(h.result, isNull);
+      });
+    }
+
+    testWidgets('an offer refused recruit_blocked names the end date', (
+      tester,
+    ) async {
+      await _open(tester, collaborators: collaborators);
+      expect(
+        assignOfferErrorText(
+          tester.element(find.byType(AssignSheet)),
+          const BookingException('recruit_blocked'),
+          name: 'Lan Phương',
+          blockedUntil: DateTime.utc(2026, 11, 12, 3),
+        ),
+        'Bạn tạm không đăng tin và mời cộng tác viên tới 12/11 vì chưa trả '
+        'thù lao cho cộng tác viên.',
+      );
+    });
+
+    testWidgets('a studio blocked from recruiting sees the collaborators '
+        'dimmed with the block line', (tester) async {
+      final h = await _open(
+        tester,
+        collaborators: collaborators,
+        counters: RecruitCounters(
+          recruitBlockedUntil: studioNow.add(const Duration(days: 3)),
+        ),
+      );
+      await _reveal(tester, 'assign-collab-blocked');
+      expect(
+        find.textContaining('Bạn tạm không đăng tin và mời cộng tác viên tới'),
+        findsOneWidget,
+      );
+      await _reveal(tester, 'assign-option-lan');
+      expect(
+        tester.widget<AppOptionTile>(_key('assign-option-lan')).enabled,
+        isFalse,
+      );
+      await tester.tap(_key('assign-option-lan'), warnIfMissed: false);
+      await tester.pump();
+      expect(_key('assign-fee'), findsNothing);
+      // Members can still be given the booking.
+      expect(_submit(tester).label, 'Giao cho Minh Trí');
+      await tester.ensureVisible(_key('assign-submit'));
       await tester.tap(_key('assign-submit'));
       await _settle(tester);
       expect(h.world.bookings.studioCalls.single.$2, {

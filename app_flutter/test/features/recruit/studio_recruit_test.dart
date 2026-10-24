@@ -244,6 +244,25 @@ void main() {
     expect(_key('recruit-applicant-phuc'), findsNothing);
   });
 
+  testWidgets('a new application on the shown post lists the applicant '
+      'live (applicationCount moved)', (tester) async {
+    final w = await _open(tester, applications: [_vy()]);
+    expect(find.text('1 chờ trả lời'), findsOneWidget);
+    expect(_key('recruit-applicant-phuc'), findsNothing);
+    w.recruits.seedApplication(_phuc());
+    w.recruits.seedPost(
+      makeRecruitPost(
+        id: 'p1',
+        title: 'Thợ phụ chụp cưới mùa cưới',
+        applicationCount: 13,
+        createdAt: recruitNow.subtract(const Duration(days: 4)),
+      ),
+    );
+    await _settle(tester);
+    expect(find.text('2 chờ trả lời'), findsOneWidget);
+    expect(_key('recruit-applicant-phuc'), findsOneWidget);
+  });
+
   testWidgets('a post without applicants says so', (tester) async {
     await _open(tester);
     expect(find.text('Chưa có ai ứng tuyển.'), findsOneWidget);

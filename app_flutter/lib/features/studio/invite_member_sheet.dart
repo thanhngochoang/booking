@@ -410,6 +410,10 @@ class _CollaboratorLine extends StatelessWidget {
         ? endedAt.add(const Duration(days: kCollabReinviteDays))
         : null;
     if (c.state == InviteState.member) return dimmed(l.collabInviteRowMember);
+    // A pending S26 member invite: the server refuses a collaborator invite.
+    if (c.state == InviteState.invited) {
+      return dimmed(l.collabInviteRowMemberInvited);
+    }
     if (p?.status == CollabStatus.active) {
       return dimmed(l.collabInviteRowActive);
     }

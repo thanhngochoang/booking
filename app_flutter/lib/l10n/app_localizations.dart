@@ -17409,6 +17409,12 @@ abstract class AppLocalizations {
   /// **'Thành viên của studio bạn'**
   String get collabInviteRowMember;
 
+  /// S26.02-collab: the studio already sent this photographer an S26 member invite that is still pending, so no collaborator invite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời làm thành viên'**
+  String get collabInviteRowMemberInvited;
+
   /// No description provided for @collabInviteRowActive.
   ///
   /// In vi, this message translates to:
@@ -17666,6 +17672,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Nhập thù lao cho cộng tác viên'**
   String get assignFeeRequired;
+
+  /// S26.04-collab: assignBooking refused deadline_passed for a collaborator offer (under 15 minutes left, Decision 13).
+  ///
+  /// In vi, this message translates to:
+  /// **'Không còn đủ thời gian để cộng tác viên nhận. Giao cho thành viên.'**
+  String get assignCollabErrDeadline;
+
+  /// S26.04-collab: assignBooking refused blocked (the studio and the collaborator blocked each other).
+  ///
+  /// In vi, this message translates to:
+  /// **'Không giao việc được: hai bên đã chặn nhau.'**
+  String get assignCollabErrBlocked;
+
+  /// S26.04-collab: assignBooking refused not_found (the collaboration ended).
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác với {name} đã kết thúc.'**
+  String assignCollabErrEnded(String name);
 
   /// No description provided for @assignCollabNote.
   ///

@@ -429,6 +429,21 @@ class _Applicants extends ConsumerWidget {
         ],
       );
     }
+    // The list is a one-shot query: read it again when the post's live
+    // `applicationCount` moves (someone applied while the screen is open).
+    ref.listen(
+      studioRecruitPostsProvider.select(
+        (posts) => posts.value
+            ?.where((p) => p.id == post.id)
+            .firstOrNull
+            ?.applicationCount,
+      ),
+      (previous, next) {
+        if (previous != null && next != null && previous != next) {
+          ref.invalidate(studioRecruitApplicantsProvider(post.id));
+        }
+      },
+    );
     final applicants = ref.watch(studioRecruitApplicantsProvider(post.id));
     final count = applicants.value?.length;
     return Column(

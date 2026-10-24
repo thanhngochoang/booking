@@ -10185,6 +10185,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get collabInviteRowMember => 'Thành viên của studio bạn';
 
   @override
+  String get collabInviteRowMemberInvited => 'Đã mời làm thành viên';
+
+  @override
   String get collabInviteRowActive => 'Đang cộng tác';
 
   @override
@@ -10342,6 +10345,19 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get assignFeeRequired => 'Nhập thù lao cho cộng tác viên';
+
+  @override
+  String get assignCollabErrDeadline =>
+      'Không còn đủ thời gian để cộng tác viên nhận. Giao cho thành viên.';
+
+  @override
+  String get assignCollabErrBlocked =>
+      'Không giao việc được: hai bên đã chặn nhau.';
+
+  @override
+  String assignCollabErrEnded(String name) {
+    return 'Cộng tác với $name đã kết thúc.';
+  }
 
   @override
   String assignCollabNote(String name) {

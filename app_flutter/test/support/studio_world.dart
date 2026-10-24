@@ -18,6 +18,8 @@ import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/recruit/recruit_post.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
@@ -301,6 +303,10 @@ class StudioWorld {
   /// S27 collaborators (the S26.04 "Cộng tác viên" group).
   final FakeCollabRepository collabs;
 
+  /// The studio's S27 counters (S26.04 dims the collaborators while
+  /// `recruitBlockedUntil` is ahead).
+  RecruitCounters recruitCounters = RecruitCounters.empty;
+
   List<Override> get overrides => [
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     clockProvider.overrideWithValue(() => now),
@@ -308,6 +314,9 @@ class StudioWorld {
     bookingRepositoryProvider.overrideWithValue(bookings),
     photographerRepositoryProvider.overrideWithValue(photographers),
     collabRepositoryProvider.overrideWithValue(collabs),
+    myRecruitCountersProvider.overrideWith(
+      (ref) => Stream.value(recruitCounters),
+    ),
   ];
 
   /// The signed-in user's own `photographers` intro (S26.01's cap and

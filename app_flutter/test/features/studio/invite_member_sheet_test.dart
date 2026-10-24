@@ -253,6 +253,13 @@ void main() {
         name: 'Văn Toàn',
         state: InviteState.invitable,
       ),
+      // A pending S26 member invite: not a collaborator invite too.
+      InviteCandidate(
+        uid: 'thu',
+        name: 'Minh Thư',
+        verified: true,
+        state: InviteState.invited,
+      ),
       // In another studio: still invitable as a collaborator (R6).
       InviteCandidate(
         uid: 'duc',
@@ -308,16 +315,23 @@ void main() {
       expect(findMeta('Đang cộng tác'), findsOneWidget);
       expect(findMeta('Mời lại được từ 23/10'), findsOneWidget);
       expect(findMeta('Chưa xác minh'), findsOneWidget);
+      expect(findMeta('Đã mời làm thành viên'), findsOneWidget);
       expect(findMeta('93% · Quận 10'), findsOneWidget);
       MemberRow row(String name) => tester.widget<MemberRow>(
         find.ancestor(of: find.text(name), matching: find.byType(MemberRow)),
       );
-      for (final name in ['Hồng Nhung', 'Lan Phương', 'Bảo Ngọc', 'Văn Toàn']) {
+      for (final name in [
+        'Hồng Nhung',
+        'Lan Phương',
+        'Bảo Ngọc',
+        'Văn Toàn',
+        'Minh Thư',
+      ]) {
         expect(row(name).enabled, isFalse, reason: name);
       }
       expect(row('Hoàng Yến').enabled, isTrue);
       expect(row('Đức Anh').enabled, isTrue);
-      for (final uid in ['nhung', 'lan', 'ngoc', 'toan']) {
+      for (final uid in ['nhung', 'lan', 'ngoc', 'toan', 'thu']) {
         expect(_key('invite-$uid'), findsNothing, reason: uid);
       }
       expect(
