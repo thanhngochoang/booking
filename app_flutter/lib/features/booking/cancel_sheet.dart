@@ -8,8 +8,10 @@ import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
+import 'package:photobooking/features/payments/refund_account_sheet.dart';
 
 /// Longest reason text sent with a cancel.
 const cancelReasonMaxLength = 200;
@@ -56,6 +58,21 @@ Future<bool?> showCancelSheet(
       ),
     ),
   );
+}
+
+/// After a customer's cancel with money back (S05.03 → S22.04): a booking
+/// paid by bank transfer has its refund waiting for an account, so the
+/// refund account sheet opens; a wallet refund goes back to the wallet and
+/// nothing opens. The method is the booking's last checkout (the booking
+/// carries no other); the sheet itself opens only while the server says a
+/// refund waits.
+Future<void> openRefundAccountAfterCancel(
+  BuildContext context,
+  WidgetRef ref,
+  Booking booking,
+) async {
+  if (booking.checkout?.method != PayMethod.bankQr) return;
+  await showRefundAccountSheet(context, ref, BookingRefund(booking.id));
 }
 
 /// The `studioFault` mode of S05.03 (mock S05.02-studio-late): the customer

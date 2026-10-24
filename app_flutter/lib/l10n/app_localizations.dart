@@ -18188,6 +18188,156 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.'**
   String get collabDeclineConfirmBody;
+
+  /// S22.04 (mock): sheet title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản nhận hoàn'**
+  String get refundAccountTitle;
+
+  /// No description provided for @refundAccountYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được hoàn'**
+  String get refundAccountYouGet;
+
+  /// No description provided for @refundAccountToPayer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền hoàn về tài khoản đã chuyển:'**
+  String get refundAccountToPayer;
+
+  /// No description provided for @refundAccountConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn về tài khoản này'**
+  String get refundAccountConfirm;
+
+  /// No description provided for @refundAccountOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng tài khoản khác'**
+  String get refundAccountOther;
+
+  /// No description provided for @refundAccountWalletNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví MoMo/ZaloPay: hoàn về ví, không cần chọn.'**
+  String get refundAccountWalletNote;
+
+  /// No description provided for @refundAccountAutoNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không chọn thì sau 24 giờ tiền tự hoàn về tài khoản đã chuyển.'**
+  String get refundAccountAutoNote;
+
+  /// No description provided for @refundAccountNoPayer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thông tin tài khoản đã chuyển. Nhập tài khoản để nhận tiền hoàn.'**
+  String get refundAccountNoPayer;
+
+  /// No description provided for @refundAccountBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng'**
+  String get refundAccountBank;
+
+  /// No description provided for @refundAccountNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản'**
+  String get refundAccountNumber;
+
+  /// No description provided for @refundAccountLookup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tra tên chủ tài khoản'**
+  String get refundAccountLookup;
+
+  /// No description provided for @refundAccountLookupNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ.'**
+  String get refundAccountLookupNote;
+
+  /// No description provided for @refundAccountEncrypted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản được mã hoá, chỉ hiện 4 số cuối.'**
+  String get refundAccountEncrypted;
+
+  /// No description provided for @refundAccountNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy tài khoản này. Kiểm tra lại ngân hàng và số tài khoản.'**
+  String get refundAccountNotFound;
+
+  /// No description provided for @refundAccountUnsupported.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng này chưa tra được tên chủ tài khoản. Chọn ngân hàng khác hoặc hoàn về tài khoản đã chuyển.'**
+  String get refundAccountUnsupported;
+
+  /// S22.04: the 21st holder-name lookup of the day for this refund (limit_exceeded).
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.'**
+  String get refundAccountLookupLimit;
+
+  /// No description provided for @refundAccountLookupError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tra được tên. Thử lại'**
+  String get refundAccountLookupError;
+
+  /// No description provided for @refundAccountSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu hoàn tiền'**
+  String get refundAccountSent;
+
+  /// S22.04: the refund no longer waits (24-hour default or staff) when the customer confirms; the real destination is on S22.01.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền hoàn đã được gửi đi trước khi bạn chọn. Xem nơi nhận ở Lịch sử thanh toán.'**
+  String get refundAccountAlreadySent;
+
+  /// No description provided for @refundAccountFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được, thử lại sau.'**
+  String get refundAccountFailed;
+
+  /// No description provided for @refundAccountLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa mở được tài khoản nhận hoàn, thử lại sau.'**
+  String get refundAccountLoadError;
+
+  /// No description provided for @refundAccountClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get refundAccountClose;
+
+  /// No description provided for @payChooseRefundAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tài khoản nhận hoàn'**
+  String get payChooseRefundAccount;
+
+  /// S05.02-refund (mock): the refund waiting for the customer's account.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được hoàn {amount}'**
+  String detailRefundAccountTitle(String amount);
+
+  /// No description provided for @detailRefundAccountBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tài khoản để nhận tiền hoàn.'**
+  String get detailRefundAccountBody;
 }
 
 class _AppLocalizationsDelegate

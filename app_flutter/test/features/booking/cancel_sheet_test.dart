@@ -5,10 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
+import '../../support/fake_payments_repository.dart';
 
 /// Shoot on Monday 12/10 15:30–17:30 Vietnam = 08:30–10:30 UTC.
 final _startsAt = DateTime.utc(2026, 10, 12, 8, 30);
@@ -61,6 +64,7 @@ Future<BookingDetailHandles> _openCustomer(
   required DateTime now,
   RecordingBookingRepository? bookings,
   TestClock? clock,
+  FakePaymentsRepository? payments,
 }) async {
   final handles = await pumpBookingDetail(
     tester,
@@ -68,6 +72,7 @@ Future<BookingDetailHandles> _openCustomer(
     path: '/b/b1/cancel',
     clock: clock ?? TestClock(now),
     bookings: bookings ?? _repo(),
+    payments: payments,
   );
   await _settle(tester);
   return handles;
@@ -96,7 +101,73 @@ Future<BookingDetailHandles> _openPhotographer(
   return handles;
 }
 
+/// The booking's last checkout, paid with [method].
+BookingCheckout _checkout(PayMethod method) => BookingCheckout(
+  paymentId: 'pay_b1',
+  method: method,
+  amount: 1500000,
+  expiresAt: DateTime.utc(2026, 10, 1, 10, 15),
+  transferCode: 'PB 7F3K2Q',
+  attempt: 1,
+);
+
+/// A customer cancel 3 days before (100% back) of a booking paid by
+/// [method], with a refund waiting for its account on the server.
+Future<(BookingDetailHandles, FakePaymentsRepository)> _cancelPaidWith(
+  WidgetTester tester,
+  PayMethod method,
+) async {
+  final payments = FakePaymentsRepository()
+    ..pendingBySubject[const BookingRefund('b1')] = PendingRefund(
+      refundId: 'r1',
+      amount: 450000,
+      payer: (
+        bankName: 'Vietcombank',
+        accountLast4: '6789',
+        holderName: 'NGUYEN THANH HA',
+      ),
+      confirmBy: _startsAt,
+    );
+  final repo = RecordingBookingRepository()
+    ..seedBooking(_booking().copyWith(checkout: _checkout(method)))
+    ..seedContact('b1', testContactSnapshot);
+  final handles = await _openCustomer(
+    tester,
+    now: _startsAt.subtract(const Duration(days: 3)),
+    bookings: repo,
+    payments: payments,
+  );
+  await tester.tap(_inSheet(find.widgetWithText(AppButton, 'Huỷ buổi chụp')));
+  await _settle(tester);
+  return (handles, payments);
+}
+
 void main() {
+  testWidgets('cancel of a bank_qr booking opens the sheet after the success '
+      'toast', (tester) async {
+    final (handles, payments) = await _cancelPaidWith(
+      tester,
+      PayMethod.bankQr,
+    );
+
+    expect(handles.bookings.transitions.single.action, 'cancel');
+    expect(find.text('Đã huỷ. Hoàn 450.000₫ trong 3–5 ngày'), findsOneWidget);
+    expect(payments.pendingCalls, [const BookingRefund('b1')]);
+    expect(_inSheet(find.text('Tài khoản nhận hoàn')), findsOneWidget);
+    expect(_inSheet(find.text('Vietcombank •••• 6789')), findsOneWidget);
+  });
+
+  testWidgets('wallet bookings never open the sheet after cancel', (
+    tester,
+  ) async {
+    final (handles, payments) = await _cancelPaidWith(tester, PayMethod.momo);
+
+    expect(handles.bookings.transitions.single.action, 'cancel');
+    expect(find.text('Đã huỷ. Hoàn 450.000₫ trong 3–5 ngày'), findsOneWidget);
+    expect(payments.pendingCalls, isEmpty);
+    expect(find.text('Tài khoản nhận hoàn'), findsNothing);
+  });
+
   testWidgets('S05.03 shows the refund of the total (50% at 24–48 h → '
       '1.700.000₫)', (tester) async {
     final repo = RecordingBookingRepository()

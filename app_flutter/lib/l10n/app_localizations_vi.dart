@@ -10669,4 +10669,91 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get collabDeclineConfirmBody =>
       'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.';
+
+  @override
+  String get refundAccountTitle => 'Tài khoản nhận hoàn';
+
+  @override
+  String get refundAccountYouGet => 'Bạn được hoàn';
+
+  @override
+  String get refundAccountToPayer => 'Tiền hoàn về tài khoản đã chuyển:';
+
+  @override
+  String get refundAccountConfirm => 'Hoàn về tài khoản này';
+
+  @override
+  String get refundAccountOther => 'Dùng tài khoản khác';
+
+  @override
+  String get refundAccountWalletNote =>
+      'Ví MoMo/ZaloPay: hoàn về ví, không cần chọn.';
+
+  @override
+  String get refundAccountAutoNote =>
+      'Không chọn thì sau 24 giờ tiền tự hoàn về tài khoản đã chuyển.';
+
+  @override
+  String get refundAccountNoPayer =>
+      'Chưa có thông tin tài khoản đã chuyển. Nhập tài khoản để nhận tiền hoàn.';
+
+  @override
+  String get refundAccountBank => 'Ngân hàng';
+
+  @override
+  String get refundAccountNumber => 'Số tài khoản';
+
+  @override
+  String get refundAccountLookup => 'Tra tên chủ tài khoản';
+
+  @override
+  String get refundAccountLookupNote =>
+      'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ.';
+
+  @override
+  String get refundAccountEncrypted =>
+      'Số tài khoản được mã hoá, chỉ hiện 4 số cuối.';
+
+  @override
+  String get refundAccountNotFound =>
+      'Không tìm thấy tài khoản này. Kiểm tra lại ngân hàng và số tài khoản.';
+
+  @override
+  String get refundAccountUnsupported =>
+      'Ngân hàng này chưa tra được tên chủ tài khoản. Chọn ngân hàng khác hoặc hoàn về tài khoản đã chuyển.';
+
+  @override
+  String get refundAccountLookupLimit =>
+      'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get refundAccountLookupError => 'Không tra được tên. Thử lại';
+
+  @override
+  String get refundAccountSent => 'Đã gửi yêu cầu hoàn tiền';
+
+  @override
+  String get refundAccountAlreadySent =>
+      'Tiền hoàn đã được gửi đi trước khi bạn chọn. Xem nơi nhận ở Lịch sử thanh toán.';
+
+  @override
+  String get refundAccountFailed => 'Chưa gửi được, thử lại sau.';
+
+  @override
+  String get refundAccountLoadError =>
+      'Chưa mở được tài khoản nhận hoàn, thử lại sau.';
+
+  @override
+  String get refundAccountClose => 'Đóng';
+
+  @override
+  String get payChooseRefundAccount => 'Chọn tài khoản nhận hoàn';
+
+  @override
+  String detailRefundAccountTitle(String amount) {
+    return 'Bạn được hoàn $amount';
+  }
+
+  @override
+  String get detailRefundAccountBody => 'Chọn tài khoản để nhận tiền hoàn.';
 }

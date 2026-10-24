@@ -5,11 +5,14 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/disputes/dispute.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/support/support_providers.dart';
 import 'package:photobooking/data/support/support_thread.dart';
 import 'package:photobooking/features/disputes/dispute_detail_screen.dart';
 
 import '../../support/dispute_world.dart';
+import '../../support/fake_payments_repository.dart';
 import '../../support/fake_support_repository.dart';
 import '../../support/screen_host.dart';
 
@@ -97,9 +100,10 @@ final _thread = [
 ];
 
 class _Harness {
-  _Harness(this.world, this.support);
+  _Harness(this.world, this.support, this.payments);
   final DisputeWorld world;
   final FakeSupportRepository support;
+  final FakePaymentsRepository payments;
 }
 
 Future<_Harness> _open(
@@ -110,7 +114,9 @@ Future<_Harness> _open(
   List<SupportMessage>? messages,
   double width = 390,
   double textScale = 1.0,
+  FakePaymentsRepository? payments,
 }) async {
+  final paymentsRepo = payments ?? FakePaymentsRepository();
   tester.view.physicalSize = Size(width * 2, 800 * 2);
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
@@ -150,12 +156,13 @@ Future<_Harness> _open(
           FakeAuthRepository(initialUser: AuthUser(uid: uid)),
         ),
         supportRepositoryProvider.overrideWithValue(support),
+        paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
       ],
     ),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
-  return _Harness(world, support);
+  return _Harness(world, support, paymentsRepo);
 }
 
 Finder get _scrollable => find
@@ -257,6 +264,91 @@ void main() {
     expect(find.text('Về tài khoản hoặc ví đã thanh toán'), findsOneWidget);
     expect(find.text('Chuyển cho Minh Trí'), findsOneWidget);
     expect(find.text('Hoàn cho khách'), findsNothing);
+  });
+
+  testWidgets('S18.02 shows "Chọn tài khoản nhận hoàn" while the dispute '
+      'refund waits and opens the sheet for DisputeRefund', (tester) async {
+    final payments = FakePaymentsRepository()
+      ..pendingBySubject[const DisputeRefund(_id)] = const PendingRefund(
+        refundId: 'r9',
+        amount: 600000,
+      );
+    final h = await _open(
+      tester,
+      payments: payments,
+      disputes: [
+        _resolved(
+          _outcome(
+            DisputeOutcomeKind.split,
+            percent: 40,
+            refund: 600000,
+            release: 900000,
+          ),
+        ),
+      ],
+    );
+    // The waiting refund is asked once the outcome is on screen (AsyncView
+    // keeps a shown loader 400 ms).
+    await tester.pump(const Duration(milliseconds: 600));
+    final choose = find.widgetWithText(AppButton, 'Chọn tài khoản nhận hoàn');
+    expect(choose, findsOneWidget);
+    expect(h.payments.pendingCalls, [const DisputeRefund(_id)]);
+
+    await tester.tap(choose);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(h.payments.pendingCalls.last, const DisputeRefund(_id));
+    expect(find.text('Tài khoản nhận hoàn'), findsOneWidget);
+    // No paying account on file: straight to the form.
+    expect(
+      find.text(
+        'Chưa có thông tin tài khoản đã chuyển. Nhập tài khoản để nhận '
+        'tiền hoàn.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('S18.02 shows no refund-account button when nothing waits', (
+    tester,
+  ) async {
+    final resolved = _resolved(
+      _outcome(
+        DisputeOutcomeKind.split,
+        percent: 40,
+        refund: 600000,
+        release: 900000,
+      ),
+    );
+    await _open(tester, disputes: [resolved]);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('Chọn tài khoản nhận hoàn'), findsNothing);
+  });
+
+  testWidgets('the provider never sees the refund-account button', (
+    tester,
+  ) async {
+    final resolved = _resolved(
+      _outcome(
+        DisputeOutcomeKind.split,
+        percent: 40,
+        refund: 600000,
+        release: 900000,
+      ),
+    );
+    final payments = FakePaymentsRepository()
+      ..pendingBySubject[const DisputeRefund(_id)] = const PendingRefund(
+        refundId: 'r9',
+        amount: 600000,
+      );
+    final h = await _open(
+      tester,
+      uid: 'p1',
+      payments: payments,
+      disputes: [resolved],
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('Chọn tài khoản nhận hoàn'), findsNothing);
+    expect(h.payments.pendingCalls, isEmpty);
   });
 
   testWidgets('release outcome reads "Chuyển tiền cho {name}"; refund reads '

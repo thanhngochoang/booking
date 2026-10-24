@@ -521,6 +521,7 @@ class BookingDetailHandles {
     required this.launcher,
     required this.links,
     required this.clock,
+    required this.payments,
   });
 
   final GoRouter router;
@@ -528,6 +529,9 @@ class BookingDetailHandles {
   final FakeExternalLauncher launcher;
   final FakeContactLinkRepository links;
   final TestClock clock;
+
+  /// S22.04's refund account calls (#141).
+  final FakePaymentsRepository payments;
 
   /// Location of the top-most route, pushed ones included.
   String get location => router.state.uri.toString();
@@ -563,8 +567,12 @@ Future<BookingDetailHandles> pumpBookingDetail(
   /// More public profiles by uid (a studio and its member); each also gets
   /// [photographerChannels].
   Map<String, PhotographerProfile> profiles = const {},
+
+  /// The refund account calls of S22.04 (#141); a fresh fake by default.
+  FakePaymentsRepository? payments,
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
+  final paymentsRepo = payments ?? FakePaymentsRepository();
   tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -631,6 +639,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
     photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
     if (!hasCustomChat)
       chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
+    paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
     ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];
@@ -653,6 +662,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
     launcher: launcher,
     links: links,
     clock: effectiveClock,
+    payments: paymentsRepo,
   );
 }
 

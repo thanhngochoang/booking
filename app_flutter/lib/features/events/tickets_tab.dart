@@ -13,11 +13,13 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payments/refund_account_sheet.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Hours before the start up to which cancelling a paid ticket refunds all of
@@ -126,6 +128,18 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
 
   String? get highlightId => widget.highlightId;
 
+  /// A paid ticket was cancelled with money back: a bank-transfer refund
+  /// waits for the customer's account (S22.04). The registration does not
+  /// carry the payment method, so the server decides: nothing waits for a
+  /// wallet and no sheet opens. Opened from the tab, which outlives the
+  /// ticket's row (a cancelled ticket moves down the list).
+  void _afterRefundedCancel(EventRegistration r) {
+    if (!mounted) return;
+    unawaited(
+      showRefundAccountSheet(context, ref, TicketRefund(r.eventId, r.id)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -221,6 +235,7 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
                   ? views[r.id]!
                   : ticketViewOf(r, now: expiresAt, l: l),
               highlighted: r.id == emphasised,
+              onRefundedCancel: _afterRefundedCancel,
             ),
           );
         }
@@ -229,6 +244,7 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
           registration: r,
           view: views[r.id]!,
           highlighted: r.id == emphasised,
+          onRefundedCancel: _afterRefundedCancel,
         );
       },
     );
@@ -241,11 +257,15 @@ class _TicketTile extends ConsumerWidget {
     required this.registration,
     required this.view,
     required this.highlighted,
+    required this.onRefundedCancel,
   });
 
   final EventRegistration registration;
   final TicketView view;
   final bool highlighted;
+
+  /// Called after a cancel the server accepted with money back.
+  final void Function(EventRegistration) onRefundedCancel;
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
     final l = context.l10n;
@@ -282,6 +302,7 @@ class _TicketTile extends ConsumerWidget {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(l.ticketCancelDone)));
+      if (pct != null && pct > 0) onRefundedCancel(r);
     }
   }
 
