@@ -100,6 +100,15 @@
 - **Phán quyết khi làm:** `pending_payment` không bị "bỏ dở 30 phút" khi cửa sổ thanh toán còn mở (ghi chú #202 ở trên). Huỷ thật có thể gửi `expectedRule`/`expectedRefundVnd` của bản tính thử, server trả `conflict` khi khác (cả hai sheet S13.08 gửi). "Khách không có mặt" lấy số của server (`updateInstantJob` `no_show` `dryRun`), app không tự tính 50%. Phí nền tảng của yêu cầu được chụp lên khoản tiền (`Payment.feeBp`), `payoutLineOf(..., feeBp)` và dòng thu nhập dùng nó (Decision 6). Đổi người nhận tiền (thợ huỷ) làm mới cả người nhận cũ để dòng thu nhập của họ biến mất.
 - **Phán quyết rà soát (controller, #202 vòng sửa 1):** mock S06.05 thắng plan: dòng thu nhập chụp ngay mở ra phần Hoa hồng / Thuế khấu trừ / Thực nhận như dòng lịch thường, không mở `/work/instant/{id}`. Lời mời gửi sau khi trả dùng bảng giá khách đã trả (`priceListVersion`, `earningVnd` của yêu cầu), không dùng cấu hình mới; danh sách người được chọn đổi giữa lần đọc trước và giao dịch thì được kiểm lại. Dòng đã chi trả lấy mức phí của chính khoản tiền (`feeBp`).
 - **Functions:** `checkInstantPayment` mới; `inviteInstant`, `checkInstantPayment`, `cancelInstantRequest`, `confirmInstantComplete`, `updateInstantJob` chạy với `PAYMENT_CALLABLE_OPTIONS` (hoàn tiền cần `PAYOUT_ACCOUNT_KEY`; `inviteInstant` và `updateInstantJob` thêm so với plan); `answerInstantOffer` vẫn `CONTENDED_CALLABLE_OPTIONS`. Chốt `fakePaymentsAllowed()` của #140 trên `inviteInstant` đã gỡ: tắt thanh toán là `not_eligible` qua `checkoutGatewayAvailable()`. CLI `npm run instant` trả tiền giả trước khi gửi lời mời. Test rules và test tích hợp: viết, không chạy.
+- **Hoàn tiền sau commit:** `sendInstantRefunds` không bao giờ ném: giao dịch ghi hoàn tiền đã commit nên câu trả lời của callable giữ nguyên; một lần gửi hoặc lần ghi kết quả lỗi thì khoản hoàn ở lại `pending` và bước gửi lại của V2 (`resendPendingRefunds` với `instantRefundHandler` trong `liveRefundSubjects()`) gửi lại cùng id. Số lần lỗi đi vào cổng log tuỳ chọn `InstantDeps.log` (`InstantLog.refundSendsFailed`), Functions ghi `instant refund sends failed {count}` (chỉ số đếm, không id, không dữ liệu cá nhân).
+- **Bảng giá đã trả:** lời mời sau khi trả dùng `priceListVersion` của yêu cầu; thợ đã nhận bảng giá mới hơn thì bị tính là bận (`unavailable`) cho lời mời đó, yêu cầu về `choosing` khi không ai nhận được, tiền vẫn giữ (khách chọn người khác hoặc huỷ, hoàn 100%).
+- **Rà soát cuối toàn nhánh (#202):** server sẵn sàng, app và tài liệu cần sửa; đã sửa: log số lần gửi hoàn lỗi (S1), test bước gửi lại của V2 trên một khoản hoàn `instant_request` qua adapter Firestore (S2), `paymentToFirestore` chỉ ghi `feeBp` khi có (S3); S14.03 "Khách không có mặt" chặn bấm lần hai và hiện đang tải khi hỏi số (AD4); hai sheet S13.08 gửi lại nguyên mã luật app chưa biết (AD5); spec, ô trạng thái và sổ này (AD1, AD7).
+- **Đợt cuối (FINAL WAVE của Task 1):** log số lần gửi hoàn lỗi ở callable — _đã làm qua `InstantDeps.log` (mọi nơi gọi `sendInstantRefunds`: callable, trigger thanh toán, quét)._ Bước gửi lại của V2 có phủ khoản hoàn chụp ngay không — _có, test trong `instant_firestore.test.ts`._ Cổng trả về một `refundId` lặp lại là cùng một khoản hoàn — _giả định của cổng giả; là tiêu chí nghiệm thu cho trung gian thanh toán thật (#129, hoãn), không phải lỗi của #202._
+
+Giữ hoãn (rà soát cuối #202, có lý do):
+- Tiền giữ ở `no_match`, và ở `choosing` sau khi thợ huỷ, tới khi khách huỷ (câu hỏi 4): khách luôn huỷ được với hoàn 100%; nhắc thêm chờ chủ dự án.
+- Chuyển khoản tới trong cửa sổ trả nhưng báo về sau khi yêu cầu không còn chờ tiền thì hoàn 100% (`late_payment`, bất biến 2: không có lời mời khi chưa xác nhận tiền); khách mời lại là trả lại.
+- Khách huỷ khi `pending_payment`: khoản đang mở không bị đóng ngay mà hết hạn qua bước quét của V1 (`expireUnpaid` hoàn phần đã nhận, nếu có).
 
 ## Câu hỏi cho chủ dự án
 
@@ -114,6 +123,7 @@
 9. Chữ xin quyền vị trí iOS "Vị trí không được lưu lên máy chủ" sai với Live Shutter (presence lưu vị trí): cần chữ mới trước khi bật tính năng.
 10. Khi thợ đang có việc mà nhận lời mời khác, server trả `already_assigned` và app nói "Khách đã chọn được người khác": nên nói "Bạn đang có việc" và mở việc đó?
 11. Đã đến thì thợ không còn "Huỷ việc" (chỉ "Khách không có mặt" hoặc hỗ trợ), dù domain vẫn cho huỷ ở `arrived`: có thêm nút không?
+12. (#202, Decision 6) Lời mời S14.02 hiện `earningVnd` (giá gói trừ phí nền tảng) dưới nhãn "Bạn nhận · …" (`offerYouGet`), tức là **trước thuế**, còn khi chi trả thợ cá nhân/NAG bị khấu trừ thuế (S06.05 "Thuế khấu trừ"): giữ số trước thuế hay hiện số sau thuế / thêm chữ "trước thuế"? Mặc định: giữ số trước thuế.
 
 ## Hoãn
 

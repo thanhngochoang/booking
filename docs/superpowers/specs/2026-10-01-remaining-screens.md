@@ -142,13 +142,13 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S12.03 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ✅ đã làm (10c) | S27 |
 | **S13** | **Chụp ngay (khách)** | | | | | |
 | S13.01 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá; "Xem nhiếp ảnh gia phù hợp" | `/instant` | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S47 |
-| S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
+| S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140), [#202](https://github.com/thanhngochoang/booking/issues/202) | — (mới) |
 | S13.03 | Đang chờ trả lời (người đã mời, trạng thái từng người) | `/instant/:id` (`searching`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S48 |
 | S13.04 | Đã match (chuyển tiếp, cả hai bên) | — (khách: trạng thái của `/instant/:id` trước S13.05; thợ: trên S14.02) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
 | S13.05 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S49 |
 | S13.06 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S50 |
 | S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S51 |
-| S13.08 | Huỷ chụp ngay (sheet) và màn đã đóng | — (sheet trên `/instant/:id` và S14.03; màn đã đóng `/instant/:id`) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S55 |
+| S13.08 | Huỷ chụp ngay (sheet) và màn đã đóng | — (sheet trên `/instant/:id` và S14.03; màn đã đóng `/instant/:id`) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140), [#202](https://github.com/thanhngochoang/booking/issues/202) | S55 |
 | **S14** | **Chụp ngay (nhiếp ảnh gia)** | | | | | |
 | S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S52 |
 | S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S53 |
