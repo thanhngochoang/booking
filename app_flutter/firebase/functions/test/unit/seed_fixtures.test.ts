@@ -1129,6 +1129,8 @@ describe('seed disputes (S18, #142)', () => {
       .sort((a, b) => millis(a.createdAt) - millis(b.createdAt));
     assert.deepEqual(messages.map((m) => m.senderRole), ['system', 'customer', 'staff', 'provider']);
     assert.equal(messages[1]?.body, d.description);
+    // Like openDispute: only the description carries the opening marker (no dispute_message for it).
+    assert.deepEqual(messages.map((m) => m.opening === true), [false, true, false, false]);
     assert.equal(messages[2]?.senderId, ADMIN);
     assert.equal(messages[3]?.senderId, AN);
     // The last word is the provider's: support has something to read.

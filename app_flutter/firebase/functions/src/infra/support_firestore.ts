@@ -95,6 +95,8 @@ export function supportMessageToFirestore(m: SupportMessage): DocumentData {
     senderName: m.senderName,
     body: m.body,
     createdAt: toTimestamp(m.createdAt),
+    // Only on a dispute's opening description (S18): keeps it out of the message notices.
+    ...(m.opening === true ? { opening: true } : {}),
   };
 }
 
@@ -108,6 +110,7 @@ export function supportMessageFromFirestore(d: DocumentData | null | undefined):
     senderName: String(d.senderName ?? ''),
     body: String(d.body ?? ''),
     createdAt: toIsoString(d.createdAt) ?? '',
+    ...(d.opening === true ? { opening: true as const } : {}),
   };
 }
 

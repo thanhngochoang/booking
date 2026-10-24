@@ -155,6 +155,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       version: 1,
     };
     // The description is the first message; it is stamped 1 ms after the system line so both sort in order.
+    // `opening` keeps it out of the message notices (the provider gets `dispute_opened` for it).
     const firstAt = new Date(now.getTime() + 1).toISOString();
     const first: SupportMessage = {
       id: deps.ids.newId(),
@@ -164,6 +165,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       senderName: customerName,
       body: input.description,
       createdAt: firstAt,
+      opening: true,
     };
     const thread: SupportThread = {
       ...newDisputeThread(dispute, at),

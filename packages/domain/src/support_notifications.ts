@@ -5,7 +5,8 @@ import type { SupportMessage, SupportThread } from './support_thread.js';
 /**
  * Decides who hears about a new support message (the `onSupportMessageCreated` trigger), through #138's hooks:
  * - staff in a help thread → `notifySupportReply` to the owner; in a dispute thread → to every participant;
- * - a dispute party (customer or provider) → `notifyDisputeMessage` to the other participants;
+ * - a dispute party (customer or provider) → `notifyDisputeMessage` to the other participants, except the
+ *   opening description (`opening`), which `dispute_opened` already announced;
  * - a help-thread user message or a system message → nobody.
  */
 export async function notifySupportMessage(
@@ -26,7 +27,8 @@ export async function notifySupportMessage(
   }
 
   const partyMessage = message.senderRole === 'customer' || message.senderRole === 'provider';
-  if (thread.kind === 'dispute' && thread.disputeId && partyMessage && message.senderId) {
+  // The opening description is announced by `dispute_opened` (notifyDisputeChange), not again here.
+  if (thread.kind === 'dispute' && thread.disputeId && partyMessage && message.senderId && message.opening !== true) {
     const recipientIds = thread.participants.filter((uid) => uid !== message.senderId);
     if (recipientIds.length === 0) return;
     await notifyDisputeMessage(deps, {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { openDispute, type SupportMessage } from '@photobooking/domain';
-import { HELP, parseArgs, runCli, type DisputesCliIo } from '../../tools/disputes.js';
+import { HELP, guardEnv, parseArgs, runCli, type DisputesCliIo } from '../../tools/disputes.js';
 import {
   createDisputeWorld,
   hoursFrom,
@@ -72,6 +72,9 @@ describe('disputes CLI', () => {
     assert.throws(() => parseArgs(['show']), /missing dispute id/);
     assert.throws(() => parseArgs(['resolve', 'd1', 'keep', 'Ghi chú', '--actor', 'staff1']), /release, refund or split/);
     assert.throws(() => parseArgs(['resolve', 'd1', 'release', 'Ghi chú', '--actor']), /--actor needs a uid/);
+    // A flag where the uid should be is a mistake, never a uid.
+    assert.throws(() => parseArgs(['resolve', 'd1', 'release', 'Ghi chú', '--actor', '--help']), /--actor needs a uid/);
+    assert.throws(() => parseArgs(['--actor', '--note', 'resolve', 'd1', 'release', 'Ghi chú']), /--actor needs a uid/);
   });
 
   it('split needs 1–99', () => {
@@ -110,13 +113,34 @@ describe('disputes CLI', () => {
     assert.match(HELP, /usage: disputes list \[open\|resolved\] \| show <id> \| resolve <id> release\|refund "<note>" --actor <uid>/);
     assert.match(HELP, /resolve <id> split <percent> "<note>" --actor <uid>/);
     assert.match(HELP, /staffRole = admin/);
-    assert.match(HELP, /local emulators only/);
+    assert.match(HELP, /GOOGLE_APPLICATION_CREDENTIALS/);
+    assert.match(HELP, /PAYOUT_ACCOUNT_KEY/);
     assert.equal(t.opened(), 0);
   });
 
-  it('refuses anything but local emulators before opening the deps', async () => {
+  it('guardEnv: no emulator host is the real project, which needs GCLOUD_PROJECT and PAYOUT_ACCOUNT_KEY', () => {
+    const real = { GOOGLE_APPLICATION_CREDENTIALS: '/keys/sa.json', GCLOUD_PROJECT: 'booking-prod-1', PAYOUT_ACCOUNT_KEY: 'a2V5' };
+    assert.equal(guardEnv(real), 'project');
+    assert.throws(() => guardEnv({ ...real, GCLOUD_PROJECT: '' }), /GCLOUD_PROJECT is not set/);
+    assert.throws(() => guardEnv({ ...real, PAYOUT_ACCOUNT_KEY: undefined }), /set PAYOUT_ACCOUNT_KEY/);
+  });
+
+  it('guardEnv: any emulator host means every one local and no credentials', () => {
+    assert.equal(guardEnv(LOCAL), 'emulator');
+    // The emulator key is the default: PAYOUT_ACCOUNT_KEY is not needed here.
+    assert.equal(guardEnv({ ...LOCAL, PAYOUT_ACCOUNT_KEY: undefined }), 'emulator');
+    assert.throws(() => guardEnv({ ...LOCAL, FIREBASE_AUTH_EMULATOR_HOST: undefined }), /Refusing to run: FIREBASE_AUTH_EMULATOR_HOST/);
+    assert.throws(
+      () => guardEnv({ ...LOCAL, FIRESTORE_EMULATOR_HOST: 'firestore.googleapis.com:443' }),
+      /Refusing to run: FIRESTORE_EMULATOR_HOST/,
+    );
+    assert.throws(() => guardEnv({ ...LOCAL, GOOGLE_APPLICATION_CREDENTIALS: '/keys/sa.json' }), /GOOGLE_APPLICATION_CREDENTIALS is set/);
+  });
+
+  it('refuses a mixed or incomplete environment before opening the deps', async () => {
     const t = cli(null);
-    await assert.rejects(runCli(['list'], { GCLOUD_PROJECT: 'demo-nag' }, t.io), /Refusing to run/);
+    await assert.rejects(runCli(['list'], {}, t.io), /GCLOUD_PROJECT is not set/);
+    await assert.rejects(runCli(['list'], { GCLOUD_PROJECT: 'booking-prod-1' }, t.io), /set PAYOUT_ACCOUNT_KEY/);
     await assert.rejects(
       runCli(['resolve', 'd1', 'refund', 'Thợ không đến', '--actor', 'staff1'], { ...LOCAL, FIRESTORE_EMULATOR_HOST: 'firestore.googleapis.com:443' }, t.io),
       /Refusing to run: FIRESTORE_EMULATOR_HOST/,
@@ -135,6 +159,24 @@ describe('disputes CLI', () => {
     const none = cli(w);
     assert.equal(await runCli(['list', 'resolved'], LOCAL, none.io), 0);
     assert.deepEqual(none.out, ['no resolved disputes']);
+  });
+
+  it('list says when it shows only the first 50', async () => {
+    const w = await openedWorld();
+    const d1 = w.store.disputes.get('d1');
+    assert.ok(d1);
+    const exactly = cli(w);
+    for (let i = 2; i <= 50; i += 1) w.store.disputes.set(`d${i}`, { ...d1, id: `d${i}`, createdAt: hoursFrom(i).toISOString() });
+    assert.equal(await runCli(['list'], LOCAL, exactly.io), 0);
+    assert.equal(exactly.out.length, 50);
+    assert.equal(exactly.out.some((l) => l.startsWith('showing first')), false);
+
+    w.store.disputes.set('d51', { ...d1, id: 'd51', createdAt: hoursFrom(51).toISOString() });
+    const cut = cli(w);
+    assert.equal(await runCli(['list'], LOCAL, cut.io), 0);
+    assert.equal(cut.out.length, 51);
+    assert.match(cut.out[49] ?? '', /^d50 /);
+    assert.equal(cut.out[50], 'showing first 50 (oldest first)');
   });
 
   it('show prints the dispute, its evidence paths and the last 30 thread messages, oldest first', async () => {

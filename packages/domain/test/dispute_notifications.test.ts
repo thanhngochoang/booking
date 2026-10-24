@@ -119,4 +119,28 @@ describe('dispute notifications', () => {
     await notifySupportMessage(n.deps, thread, message({ id: 'm_sys', senderId: null, senderRole: 'system', senderName: 'Hệ thống', body: 'Đã mở' }));
     assert.equal(n.store.rows.size, 0);
   });
+  it('opening a dispute notifies the provider once', async () => {
+    const n = notifyWorld();
+    const w = createDisputeWorld();
+    seedApprovedBooking(w);
+    const dispute = await openDispute(w.deps, 'c1', openInput());
+    const thread = w.store.threads.get(dispute.threadId);
+    assert.ok(thread);
+    const written = await w.store.listMessages(dispute.threadId, 10);
+    assert.equal(written.length, 2);
+    // The description carries the opening marker; the system line does not.
+    assert.deepEqual(written.filter((m) => m.opening === true).map((m) => m.senderRole), ['customer']);
+
+    // What the two triggers do with this one open: the dispute write, then each created message.
+    await notifyDisputeChange(n.deps, null, dispute);
+    for (const m of written) await notifySupportMessage(n.deps, thread, m);
+    const rows = n.store.rowsOf('p1');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.type, 'dispute_opened');
+    assert.equal(n.store.rowsOf('c1').length, 0);
+
+    // A later customer message is a dispute_message again.
+    await notifySupportMessage(n.deps, thread, message({ id: 'm9', senderId: 'c1', senderRole: 'customer', senderName: 'An', body: 'Bổ sung ảnh' }));
+    assert.deepEqual(n.store.rowsOf('p1').map((r) => r.type).sort(), ['dispute_message', 'dispute_opened']);
+  });
 });

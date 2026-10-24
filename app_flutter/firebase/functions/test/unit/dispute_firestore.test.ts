@@ -89,9 +89,20 @@ function fakeFirestore(docs: Record<string, DocumentData>) {
       for (const w of pending) {
         const base: DocumentData = w.op === 'set' && w.merge !== true ? {} : { ...(docs[w.path] ?? {}) };
         for (const [k, v] of Object.entries(w.data)) {
-          // FieldValue.increment(n) carries its operand; other sentinels are not used by these adapters.
-          const operand = v instanceof FieldValue ? (v as unknown as { operand?: unknown }).operand : undefined;
-          base[k] = typeof operand === 'number' ? (typeof base[k] === 'number' ? base[k] : 0) + operand : v;
+          if (!(v instanceof FieldValue)) {
+            base[k] = v;
+            continue;
+          }
+          // FieldValue.increment(n) is the only sentinel these adapters write. Its amount sits in the SDK's
+          // private `operand` field (firebase-admin NumericIncrementTransform): if an SDK upgrade renames
+          // it, fail here loudly instead of silently storing the sentinel and passing for the wrong reason.
+          const operand = (v as unknown as { operand?: unknown }).operand;
+          assert.equal(
+            typeof operand,
+            'number',
+            `fake Firestore: ${w.path}.${k} is a FieldValue without a numeric 'operand' (not an increment, or the SDK changed); teach the fake to apply it`,
+          );
+          base[k] = (typeof base[k] === 'number' ? base[k] : 0) + (operand as number);
         }
         docs[w.path] = base;
       }

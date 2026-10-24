@@ -338,13 +338,18 @@ To try the other side of S18.01: `seed-booking-completed-window` (booking) and `
 dashboard exists, `tools/disputes.ts` is the staff side: `list [open|resolved]` (oldest first: id,
 opened at, subject, amount held, status), `show <id>` (the dispute, its evidence paths and the last 30
 thread messages) and `resolve`, which runs the same `resolveDispute` use case as the callable and then
-sends the refund on the fake gateway (`dispatchDisputeRefund`). `--actor` must be a user with the
+sends the refund through the live gateway, the fake rails until a licensed intermediary is wired
+(`dispatchDisputeRefund`). `--actor` must be a user with the
 admin claim; the note (5–500 characters) is shown to both parties. Staff answer in the dispute thread
 with `npm run support -- reply dispute_<id> "<text>" --actor seed-staff-admin`.
 
-The tool refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` point at a local
-host (money only moves on the fake rails); `PAYOUT_ACCOUNT_KEY` defaults to the emulator key of
-`.secret.local`. `npm run disputes -- --help` lists the commands.
+The environment rules are those of `npm run awards`. Locally, `FIRESTORE_EMULATOR_HOST` and
+`FIREBASE_AUTH_EMULATOR_HOST` must both point at a local host and `GOOGLE_APPLICATION_CREDENTIALS`
+must be unset (a mixed environment is refused); `PAYOUT_ACCOUNT_KEY` defaults to the emulator key of
+`.secret.local`. On a real project (no emulator host) set `GOOGLE_APPLICATION_CREDENTIALS`,
+`GCLOUD_PROJECT` and `PAYOUT_ACCOUNT_KEY` (required there); the refund goes through the same live
+gateway as the callable. `npm run disputes -- --help` lists the commands; `list` shows at most 50 and
+says so when there are more.
 
 ```bash
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>

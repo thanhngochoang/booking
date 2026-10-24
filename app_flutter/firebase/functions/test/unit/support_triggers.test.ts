@@ -162,6 +162,31 @@ describe('support triggers', () => {
     assert.equal(notifStore.rowsOf('p1').length, 0);
   });
 
+  it('a replayed dispute_message event writes one row with count 1', async () => {
+    users.users.set('c1', { name: 'An', avatarUrl: null });
+    users.users.set('p1', { name: 'Minh Trí', avatarUrl: null });
+    await supportStore.runTransaction(async (tx) => {
+      tx.putThread({
+        id: 'dispute_d1', kind: 'dispute', ownerId: null, disputeId: 'd1', participants: ['c1', 'p1'], status: 'open',
+        awaitingStaff: true, lastMessageAt: null, lastMessagePreview: null, lastSenderRole: null, rate: {},
+        createdAt: '2026-10-10T11:00:00.000Z', updatedAt: '2026-10-10T11:00:00.000Z',
+      });
+    });
+    const event = {
+      threadId: 'dispute_d1',
+      messageId: 'msg_c1_2',
+      messageData: {
+        senderId: 'c1', senderRole: 'customer', senderName: 'An', body: 'Vẫn thiếu ảnh', createdAt: '2026-10-10T12:00:00.000Z',
+      },
+    };
+    await handleSupportMessageCreated(event, { notify: mockNotifyDeps(), store: supportStore });
+    await handleSupportMessageCreated(event, { notify: mockNotifyDeps(), store: supportStore });
+    const rows = notifStore.rowsOf('p1');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.type, 'dispute_message');
+    assert.equal(rows[0]?.count, 1);
+  });
+
   it('a retry of the same event writes no second row (dedupe)', async () => {
     const thread: SupportThread = {
       id: 'help_u1',

@@ -4,10 +4,11 @@
 //   npm run disputes -- resolve <disputeId> release|refund "<note>" --actor <uid>
 //   npm run disputes -- resolve <disputeId> split <percent> "<note>" --actor <uid>
 // `resolve` runs the same `resolveDispute` use case as the callable, then sends the refund with
-// `dispatchDisputeRefund` (the fake rails: money moves only on FakePaymentGateway), so the outcome,
-// ledger, thread message and the `onDisputeWrite` notices are the callable's. `--actor` must be a user
-// with the claim staffRole = admin. Local emulators only: refuses unless FIRESTORE_EMULATOR_HOST and
-// FIREBASE_AUTH_EMULATOR_HOST point at a local host, before anything is opened.
+// `dispatchDisputeRefund` (the live gateway: the fake rails until a licensed intermediary is wired),
+// so the outcome, ledger, thread message and the `onDisputeWrite` notices are the callable's.
+// `--actor` must be a user with the claim staffRole = admin. Environment as `npm run awards`: a real
+// project with credentials (PAYOUT_ACCOUNT_KEY required), or the local emulators (every emulator host
+// local, no credentials); a mixed environment is refused before anything is opened.
 
 import { fileURLToPath } from 'node:url';
 import {
@@ -28,19 +29,47 @@ export const USAGE =
   'usage: disputes list [open|resolved] | show <id> | resolve <id> release|refund "<note>" --actor <uid> | resolve <id> split <percent> "<note>" --actor <uid>';
 
 export const HELP = `${USAGE}
-(local emulators only)
 
-  list [open|resolved]   disputes with that status (default open), oldest first: id, opened at, subject, amount held, status
+  list [open|resolved]   disputes with that status (default open), oldest first (at most 50): id, opened at, subject,
+                         amount held, status
   show <id>              the dispute, its evidence paths (private Storage files) and the last 30 thread messages
   resolve <id> ...       release (0% back), refund (100% back) or split <1-99>% back to the customer, of the
                          amount the dispute holds; the note (5-500 characters) goes to both parties
 
 Environment:
+  GOOGLE_APPLICATION_CREDENTIALS  path to a service account key (real project)
+  GCLOUD_PROJECT                  project id
+  PAYOUT_ACCOUNT_KEY              base64 key of the account cipher (32 bytes); required on a real project, with the
+                                  emulators the key from .secret.local is used when it is unset
   FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST
-                         must point at local emulators (scripts/backend-local.sh); anything else is refused
-  GCLOUD_PROJECT         project id of the emulators
-  PAYOUT_ACCOUNT_KEY     optional; the emulator key from .secret.local is used when it is unset
+                                  use these instead of credentials to work against the emulators: both must be
+                                  local, and GOOGLE_APPLICATION_CREDENTIALS must be unset
 --actor must be a user with the custom claim staffRole = admin (seed: seed-staff-admin).`;
+
+const EMULATOR_HOST_VARS = ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST'] as const;
+
+/** 'emulator' when an emulator host is set, else 'project'. */
+export type CliMode = 'emulator' | 'project';
+
+const set = (v: string | undefined): v is string => v !== undefined && v !== '';
+
+/**
+ * Like `npm run awards` (without its Storage part): no emulator host → the real project, which needs
+ * GCLOUD_PROJECT and PAYOUT_ACCOUNT_KEY (a refund may need the cipher); any emulator host → every one
+ * local and no credentials, so a decision can never reach a real project half-way.
+ */
+export function guardEnv(env: Readonly<Record<string, string | undefined>>): CliMode {
+  if (!EMULATOR_HOST_VARS.some((k) => set(env[k]))) {
+    if (!set(env.GCLOUD_PROJECT)) throw new Error('Refusing to run: GCLOUD_PROJECT is not set.');
+    if (!set(env.PAYOUT_ACCOUNT_KEY)) throw new Error('set PAYOUT_ACCOUNT_KEY (base64, 32 bytes) for a real project');
+    return 'project';
+  }
+  assertLocalEmulators({ allowAnyProject: true }, env as NodeJS.ProcessEnv);
+  if (set(env.GOOGLE_APPLICATION_CREDENTIALS)) {
+    throw new Error('Refusing to run: GOOGLE_APPLICATION_CREDENTIALS is set while the emulator hosts are; unset it.');
+  }
+  return 'emulator';
+}
 
 /** The CLI's deps: the dispute use cases' plus the thread messages of `show`. */
 export type DisputesCliDeps = DisputeDeps & { readonly store: DisputeStore & Pick<SupportStore, 'listMessages'> };
@@ -68,7 +97,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     if (a === '--actor') {
       actor = argv[i + 1] ?? null;
       i += 1;
-      if (actor === null) throw new Error(`--actor needs a uid. ${USAGE}`);
+      if (actor === null || actor.startsWith('--')) throw new Error(`--actor needs a uid. ${USAGE}`);
     } else {
       rest.push(a);
     }
@@ -115,7 +144,7 @@ export interface DisputesCliIo {
   isAdmin(uid: string): Promise<boolean>;
 }
 
-/** Returns the exit code. Refuses (throws) before opening anything when the hosts are not local. */
+/** Returns the exit code. Refuses (throws) before opening anything when the environment is mixed or incomplete. */
 export async function runCli(
   argv: readonly string[],
   env: Readonly<Record<string, string | undefined>>,
@@ -126,7 +155,7 @@ export async function runCli(
     return 0;
   }
   const args = parseArgs(argv);
-  assertLocalEmulators({ allowAnyProject: true }, env as NodeJS.ProcessEnv);
+  guardEnv(env);
   if (args.command === 'resolve') {
     if (args.actor === null) throw new Error(`resolve needs --actor <uid> of an admin. ${USAGE}`);
     if (!(await io.isAdmin(args.actor))) throw new Error(`${args.actor} does not have the admin claim`);
@@ -144,11 +173,13 @@ export async function runCli(
 }
 
 async function list(deps: DisputesCliDeps, status: DisputeStatus, io: DisputesCliIo): Promise<number> {
-  const disputes = await deps.store.listByStatus(status, LIST_LIMIT);
-  if (disputes.length === 0) io.print(`no ${status} disputes`);
-  for (const d of disputes) {
+  // One more than shown, to know whether the list was cut.
+  const found = await deps.store.listByStatus(status, LIST_LIMIT + 1);
+  if (found.length === 0) io.print(`no ${status} disputes`);
+  for (const d of found.slice(0, LIST_LIMIT)) {
     io.print(`${d.id}  ${d.createdAt}  ${d.subjectType}  ${d.snapshot.title}  held ${formatVnd(d.amountHeld)}  ${d.status}`);
   }
+  if (found.length > LIST_LIMIT) io.print(`showing first ${LIST_LIMIT} (oldest first)`);
   return 0;
 }
 
@@ -202,7 +233,8 @@ async function main(): Promise<void> {
       const { lazyAccountCipher } = await import('../src/infra/account_cipher.js');
       const { emulatorPayoutKey } = await import('../seed/emulator_key.js');
       const key = process.env.PAYOUT_ACCOUNT_KEY;
-      // Emulators only (guarded above): the committed emulator key unless one is given; read on first use.
+      // guardEnv requires the key on a real project; with the emulators the committed emulator key is the
+      // default. Read on first use.
       return { ...liveDisputeDeps(), cipher: lazyAccountCipher(() => (key !== undefined && key !== '' ? key : emulatorPayoutKey())) };
     },
     isAdmin: async (uid) => {
