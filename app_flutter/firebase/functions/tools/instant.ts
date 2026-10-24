@@ -2,15 +2,16 @@
 //   npm run instant -- offer --photographer <uid> [--customer seed-customer-lan] [--package p60] [--genre portrait]
 //   npm run instant -- status <requestId>
 // `offer` needs the photographer online in Live Shutter (S14.01) with a fresh heartbeat: it creates a
-// request for the customer 500 m north of them (meet point "Điểm hẹn thử (CLI)") and invites them, so
-// S14.02/S14.03 can be checked on a device before the customer app exists. #140 has no payment: the
-// offer goes out at once (#202, Task 11, confirms a fake payment first). Push is only logged. When the
-// photographer cannot get the offer, the request is cancelled again so the customer's lock is free.
+// request for the customer 500 m north of them (meet point "Điểm hẹn thử (CLI)"), invites them (bank
+// QR) and confirms the fake payment (V1's `confirmFakePayment`, #202), which sends the offer, so
+// S14.02/S14.03 can be checked on a device. Push is only logged. When the photographer cannot get the
+// offer, the request is cancelled again (paid: refunded 100%) so the customer's lock is free.
 // Refuses unless FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST point at a local host.
 
 import { fileURLToPath } from 'node:url';
 import {
   cancelInstantRequest,
+  confirmFakePayment,
   createInstantRequest,
   inviteInstant,
   isDomainError,
@@ -18,6 +19,7 @@ import {
   peekInstantRequest,
   presenceFresh,
   type InstantDeps,
+  type SettlementDeps,
 } from '@photobooking/domain';
 import { assertLocalEmulators } from '../seed/local_guard.js';
 
@@ -33,6 +35,8 @@ export interface InstantCliIo {
   print(line: string): void;
   /** Opened only after the guard passed (the live wiring starts the Admin SDK). */
   deps(): Promise<InstantDeps>;
+  /** V1's settlement whose `instant_request` settler runs on `deps` (for the fake payment). */
+  settlement(deps: InstantDeps): Promise<SettlementDeps>;
 }
 
 export type InstantCommand =
@@ -76,7 +80,7 @@ export async function runInstantCli(argv: readonly string[], env: NodeJS.Process
   assertLocalEmulators({ allowAnyProject: true }, env);
   const deps = await io.deps();
   try {
-    return cmd.kind === 'offer' ? await offer(deps, cmd, io) : await status(deps, cmd.requestId, io);
+    return cmd.kind === 'offer' ? await offer(deps, await io.settlement(deps), cmd, io) : await status(deps, cmd.requestId, io);
   } catch (e) {
     if (!isDomainError(e)) throw e;
     io.print(`refused: ${e.code}`);
@@ -84,7 +88,12 @@ export async function runInstantCli(argv: readonly string[], env: NodeJS.Process
   }
 }
 
-async function offer(deps: InstantDeps, cmd: Extract<InstantCommand, { kind: 'offer' }>, io: InstantCliIo): Promise<number> {
+async function offer(
+  deps: InstantDeps,
+  settlement: SettlementDeps,
+  cmd: Extract<InstantCommand, { kind: 'offer' }>,
+  io: InstantCliIo,
+): Promise<number> {
   if (!isInstantGenre(cmd.genre)) {
     io.print(`unknown genre ${cmd.genre} (portrait, couple, family, event, product)`);
     return 2;
@@ -106,22 +115,30 @@ async function offer(deps: InstantDeps, cmd: Extract<InstantCommand, { kind: 'of
   }
   const res = await inviteInstant(deps, customer, {
     requestId: created.requestId, photographerIds: [cmd.photographer], skipped: [], expectedAmountVnd: created.amountVnd,
+    payMethod: 'bank_qr',
   });
   io.print(`request ${created.requestId}`);
-  if (res.kind !== 'invited' || !res.invited.includes(cmd.photographer)) {
-    io.print(res.kind === 'invited' ? `${cmd.photographer} is unavailable; nothing sent` : `price changed to ${res.amountVnd}; run again`);
+  if (res.kind !== 'payment') {
+    io.print(res.kind === 'price_changed' ? `price changed to ${res.amountVnd}; run again` : `unexpected answer ${res.kind}; nothing sent`);
     await dropOrphan(deps, customer, created.requestId, io);
     return 1;
   }
+  const paid = await confirmFakePayment(settlement, customer, { paymentId: res.instructions.paymentId });
+  io.print(`paid ${res.instructions.paymentId} (${paid.outcome})`);
   const after = await peekInstantRequest(deps, created.requestId);
   const row = after?.offers.find((o) => o.photographerId === cmd.photographer);
-  io.print(`offer ${row?.offerId ?? '?'}`);
+  if (row?.outcome !== 'pending' || row.offerId === null) {
+    io.print(`${cmd.photographer} is unavailable; nothing sent`);
+    await dropOrphan(deps, customer, created.requestId, io);
+    return 1;
+  }
+  io.print(`offer ${row.offerId}`);
   return 0;
 }
 
 /**
  * A request the photographer cannot get would keep the customer's one-active-request lock (and every
- * later `offer` run would answer `conflict`): cancel it (unpaid in #140, so no money) and say so.
+ * later `offer` run would answer `conflict`): cancel it (a paid one is refunded 100%) and say so.
  */
 async function dropOrphan(deps: InstantDeps, customer: { uid: string }, requestId: string, io: InstantCliIo): Promise<void> {
   const res = await cancelInstantRequest(deps, customer, { requestId, dryRun: false });
@@ -148,6 +165,12 @@ async function main(): Promise<void> {
       const { liveInstantDeps } = await import('../src/infra/live_instant.js');
       const { LoggingPushSender } = await import('../src/infra/fcm_push.js');
       return { ...liveInstantDeps(), push: new LoggingPushSender() };
+    },
+    settlement: async (deps) => {
+      const { liveSettlementDeps } = await import('../src/infra/live_payments.js');
+      const { InstantPaymentSettler } = await import('@photobooking/domain');
+      const live = liveSettlementDeps();
+      return { ...live, subjects: { ...live.subjects, instant_request: new InstantPaymentSettler(deps) } };
     },
   };
   process.exitCode = await runInstantCli(process.argv.slice(2), process.env, io);

@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
-import { cancelInstantRequest, createInstantRequest, type InstantDeps, type InstantOffer } from '@photobooking/domain';
+import {
+  InstantPaymentSettler,
+  answerInstantOffer,
+  cancelInstantRequest,
+  createInstantRequest,
+  fakeTransferFor,
+  inviteInstant,
+  type InstantDeps,
+  type InstantOffer,
+  type Payment,
+} from '@photobooking/domain';
+import { paymentFromFirestore, paymentToFirestore } from '../../src/infra/booking_firestore.js';
 import {
   FirestoreInstantStore,
   FirestoreInstantTx,
@@ -33,13 +44,35 @@ function undefinedPaths(v: unknown, path = ''): string[] {
 }
 
 /**
- * A small in-memory Firestore: `doc(path)`, `getAll`, `runTransaction` (writes applied at the end,
- * no retries). Records every transaction's reads and writes by path.
+ * A small in-memory Firestore: `doc(path)`, `getAll`, equality queries (`collection().where()`),
+ * `runTransaction` (writes applied at the end, no retries). Records every transaction's reads and
+ * writes by path. Like the Admin SDK, a transaction refuses a read after its first write.
  */
 class FakeFirestore {
   readonly docs = new Map<string, DocumentData>();
   readonly getAllCalls: string[][] = [];
   readonly txLog: Array<{ reads: string[]; writes: string[] }> = [];
+
+  collection(path: string) {
+    const query = (filters: Array<[string, unknown]>) => ({
+      kind: 'query' as const,
+      path,
+      filters,
+      where: (field: string, op: string, value: unknown) => {
+        assert.equal(op, '==', 'the fake answers equality filters only');
+        return query([...filters, [field, value]]);
+      },
+    });
+    return query([]);
+  }
+
+  private run(q: { path: string; filters: Array<[string, unknown]> }) {
+    const depth = q.path.split('/').length + 1;
+    const docs = [...this.docs.entries()]
+      .filter(([k, d]) => k.startsWith(`${q.path}/`) && k.split('/').length === depth && q.filters.every(([f, v]) => d[f] === v))
+      .map(([k, d]) => ({ id: k.split('/').pop() ?? '', data: () => d }));
+    return { docs, empty: docs.length === 0, size: docs.length };
+  }
 
   private snap(path: string) {
     const data = this.docs.get(path);
@@ -58,10 +91,19 @@ class FakeFirestore {
   async runTransaction<T>(fn: (tx: unknown) => Promise<T>): Promise<T> {
     const log = { reads: [] as string[], writes: [] as string[] };
     const staged: Array<() => void> = [];
+    const noWriteYet = (what: string) => {
+      if (log.writes.length > 0) throw new Error(`read after write: ${what}`);
+    };
     const tx = {
       getAll: async (...refs: Array<{ path: string }>) => {
+        noWriteYet(refs.map((r) => r.path).join(','));
         log.reads.push(...refs.map((r) => r.path));
         return refs.map((r) => this.snap(r.path));
+      },
+      get: async (q: { kind: 'query'; path: string; filters: Array<[string, unknown]> }) => {
+        noWriteYet(q.path);
+        log.reads.push(`${q.path}?${q.filters.map(([f, v]) => `${f}=${String(v)}`).join('&')}`);
+        return this.run(q);
       },
       set: (ref: { path: string }, data: DocumentData) => {
         log.writes.push(ref.path);
@@ -260,6 +302,85 @@ describe('instant transaction adapter', () => {
     });
     assert.equal(db.docs.has('instant_tracks/ir_01'), false);
     assert.deepEqual(db.txLog.at(-1)?.writes, ['instant_tracks/ir_01']);
+  });
+});
+
+describe('instant money over the Firestore adapter (#202; strict: every read before the first write)', () => {
+  function moneyWorld() {
+    const w = createInstantWorld();
+    const db = new FakeFirestore();
+    for (const p of w.store.presences.values()) db.docs.set(`instant_presence/${p.uid}`, instantPresenceToFirestore(p));
+    const deps: InstantDeps = { ...w.deps, store: new FirestoreInstantStore(db.firestore) };
+    const paymentDoc = (id: string): Payment => {
+      const p = paymentFromFirestore(id, db.docs.get(`payments/${id}`));
+      assert.ok(p, `payments/${id}`);
+      return p;
+    };
+    return { w, db, deps, paymentDoc };
+  }
+
+  it('invite, fake payment, accept and a paid cancel write payments, refunds, ledger and the transfer record', async () => {
+    const { w, db, deps, paymentDoc } = moneyWorld();
+    const { requestId } = await createInstantRequest(deps, LAN, { packageCode: 'p60', genre: 'portrait', meetPoint: MEET });
+    const res = await inviteInstant(deps, LAN, {
+      requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000, payMethod: 'bank_qr',
+    });
+    assert.equal(res.kind, 'payment');
+    if (res.kind !== 'payment') return;
+    const created = paymentDoc(res.instructions.paymentId);
+    assert.deepEqual([created.status, created.subjectType, created.subjectId], ['created', 'instant_request', requestId]);
+    assert.ok(created.instructions?.qrPayload, 'the gateway answer is saved on the open payment');
+    assert.equal(db.docs.get(instantRequestPath(requestId))?.status, 'pending_payment');
+
+    const transfer = fakeTransferFor(created as Payment & { transferCode: string }, 'exact', w.clock.now());
+    assert.equal(await new InstantPaymentSettler(deps).settle(created.id, transfer), 'paid');
+    assert.equal(paymentDoc(created.id).status, 'paid');
+    assert.equal(db.docs.get(`payment_notifications/fake_${transfer.txnId}`)?.outcome, 'paid');
+    assert.equal(db.docs.get(instantRequestPath(requestId))?.status, 'searching');
+    const offerPath = [...db.docs.keys()].find((k) => k.startsWith('instant_offers/p1/offers/'));
+    assert.ok(offerPath !== undefined);
+
+    await answerInstantOffer(deps, { uid: 'p1' }, { offerId: offerPath.split('/').pop(), action: 'accept' });
+    assert.equal(paymentDoc(created.id).payeeId, 'p1');
+    assert.equal(db.docs.get(`instant_requests/${requestId}/private/contact`)?.phone, '+84901234567');
+
+    w.clock.advance(5 * 60_000); // past the free window, before the late deadline: 80% back
+    const q = await cancelInstantRequest(deps, LAN, { requestId, dryRun: false });
+    assert.deepEqual([q.rule, q.refundVnd, q.feeVnd], ['en_route', 552_000, 138_000]);
+    const after = paymentDoc(created.id);
+    assert.deepEqual([after.status, after.escrowStatus], ['partially_refunded', 'partially_refunded']);
+    assert.ok(after.releaseAfter !== undefined);
+    const refunds = [...db.docs.entries()].filter(([k]) => k.startsWith('refunds/'));
+    assert.deepEqual(refunds.map(([, d]) => [d.amount, d.reason, d.status, d.subjectType]), [[552_000, 'en_route', 'done', 'instant_request']]);
+    const ledger = [...db.docs.entries()].filter(([k]) => k.startsWith('ledger_entries/')).map(([, d]) => d.amount as number);
+    assert.equal(ledger.reduce((a, b) => a + b, 0), 138_000);
+    assert.equal(db.docs.get(instantRequestPath(requestId))?.refundStatus, 'done');
+    // Every transaction read before it wrote (the fake throws otherwise) and some did both.
+    assert.ok(db.txLog.some((t) => t.reads.length > 0 && t.writes.length > 0));
+  });
+
+  it('paymentsOfRequest is a transactional equality query on subjectType and subjectId', async () => {
+    const db = new FakeFirestore();
+    const base: Payment = {
+      id: 'pay_a', subjectType: 'instant_request', subjectId: 'ir_1', payerId: 'c-lan', payeeId: '', provider: 'fake',
+      amount: 690_000, status: 'created', escrowStatus: 'held', idempotencyKey: 'inst_ir_1_1',
+      createdAt: T0.toISOString(), updatedAt: T0.toISOString(),
+    };
+    db.docs.set('payments/pay_a', paymentToFirestore(base));
+    db.docs.set('payments/pay_b', paymentToFirestore({ ...base, id: 'pay_b', subjectType: 'booking' }));
+    db.docs.set('payments/pay_c', paymentToFirestore({ ...base, id: 'pay_c', subjectId: 'ir_2' }));
+    const store = new FirestoreInstantStore(db.firestore);
+    const found = await store.runTransaction((tx) => tx.paymentsOfRequest('ir_1'));
+    assert.deepEqual(found.map((p) => p.id), ['pay_a']);
+    assert.deepEqual(db.txLog.at(-1)?.reads, ['payments?subjectType=instant_request&subjectId=ir_1']);
+    await assert.rejects(
+      db.runTransaction(async (fTx) => {
+        const tx = new FirestoreInstantTx(db.firestore, fTx as never);
+        tx.putPayment(base);
+        await tx.paymentsOfRequest('ir_1');
+      }),
+      /read after write/,
+    );
   });
 });
 

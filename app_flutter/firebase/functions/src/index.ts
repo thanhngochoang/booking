@@ -102,6 +102,7 @@ import { FirestoreChatStore } from './infra/chat_firestore.js';
 import {
   handleAnswerInstantOffer,
   handleCancelInstantRequest,
+  handleCheckInstantPayment,
   handleConfirmInstantComplete,
   handleCreateInstantRequest,
   handleInviteInstant,
@@ -1190,19 +1191,25 @@ export const rankSpots = onSchedule(
 );
 
 // ---------------------------------------------------------------- Chụp ngay (S13–S14, #140)
-// Contended callables use CONTENDED_CALLABLE_OPTIONS (30 s, no payment secrets: #140 moves no money), the
-// others CALLABLE_OPTIONS; #202 moves cancelInstantRequest and confirmInstantComplete to PAYMENT_CALLABLE_OPTIONS.
+// Callables that move money (#202: open a payment, refund, release) use PAYMENT_CALLABLE_OPTIONS (30 s and
+// PAYOUT_ACCOUNT_KEY: a refund reveals the payer's account): inviteInstant (a replaced QR refunds what it
+// received), checkInstantPayment, cancelInstantRequest, confirmInstantComplete, updateInstantJob (no-show);
+// answerInstantOffer stays contended without secrets (it only sets the payee), the others CALLABLE_OPTIONS.
 // The 15-minute `bookingClock` settles due requests (step `instantSweep`); no scheduler of its own.
 
 export const createInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleCreateInstantRequest(request, liveInstantDeps()));
 
 export const nextInstantCandidates = onCall(CALLABLE_OPTIONS, (request) => handleNextInstantCandidates(request, liveInstantDeps()));
 
-export const inviteInstant = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
+export const inviteInstant = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
 
-export const cancelInstantRequest = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+export const checkInstantPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCheckInstantPayment(request, { ...liveInstantDeps(), settlement: liveSettlementDeps() }),
+);
 
-export const confirmInstantComplete = onCall(CONTENDED_CALLABLE_OPTIONS, (request) =>
+export const cancelInstantRequest = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+
+export const confirmInstantComplete = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
   handleConfirmInstantComplete(request, liveInstantDeps()),
 );
 
@@ -1214,7 +1221,7 @@ export const saveInstantSettings = onCall(CALLABLE_OPTIONS, (request) => handleS
 
 export const answerInstantOffer = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
 
-export const updateInstantJob = onCall(CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
+export const updateInstantJob = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
 
 /** Notices (#138's hooks), the pair chat and the track clean-up of every request write (Decisions 11, 20, 21). */
 export const onInstantRequestWrite = onDocumentWritten(

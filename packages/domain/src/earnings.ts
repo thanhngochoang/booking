@@ -139,7 +139,7 @@ export function earningItemOf(i: {
     milestonesTotal = payment.milestones.length;
   }
 
-  const breakdown = breakdownOf(state, payment.id, net, payout, payeeType, policy);
+  const breakdown = breakdownOf(state, payment, net, payout, payeeType, policy);
   return {
     id: payment.id,
     payeeId: payment.payeeId,
@@ -165,13 +165,13 @@ export function earningItemOf(i: {
 /** What a paid-out row's payout item withheld, or the policy's estimate for any other row. */
 function breakdownOf(
   state: EarningState,
-  paymentId: string,
+  payment: Pick<Payment, 'id' | 'feeBp'>,
   gross: number,
   payout: Payout | null,
   payeeType: ProviderType,
   policy: PayoutPolicy,
 ): Pick<EarningItem, 'platformFee' | 'taxWithheld' | 'netAmount' | 'feeRateBp' | 'taxRateBp' | 'estimated'> {
-  const item = state === 'paid_out' ? payout?.items.find((it) => it.paymentId === paymentId) : undefined;
+  const item = state === 'paid_out' ? payout?.items.find((it) => it.paymentId === payment.id) : undefined;
   if (payout && item) {
     return {
       platformFee: item.fee,
@@ -182,7 +182,7 @@ function breakdownOf(
       estimated: false,
     };
   }
-  const line = payoutLineOf(gross, payeeType, policy);
+  const line = payoutLineOf(gross, payeeType, policy, payment.feeBp);
   return {
     platformFee: line.fee,
     taxWithheld: line.tax,

@@ -177,6 +177,7 @@ export * from './instant_work.js';
 export * from './instant_requests.js';
 export * from './instant_jobs.js';
 export * from './instant_notices.js';
+export * from './instant_payments.js';
 export * from './recruit_areas.js';
 export * from './recruit.js';
 export * from './recruit_ports.js';

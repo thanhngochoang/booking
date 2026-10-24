@@ -31,8 +31,11 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
   typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 
-/** `verification_fee`: the S21 fee, platform revenue (payee `platform`), never earnings or payouts (#203). */
-export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee'] as const;
+/**
+ * `verification_fee`: the S21 fee, platform revenue (payee `platform`), never earnings or payouts (#203).
+ * `instant_request`: a Chụp ngay request (#202); payee `''` until a photographer is assigned.
+ */
+export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee', 'instant_request'] as const;
 export type PaymentSubject = (typeof PAYMENT_SUBJECTS)[number];
 export const isPaymentSubject = (v: unknown): v is PaymentSubject =>
   typeof v === 'string' && (PAYMENT_SUBJECTS as readonly string[]).includes(v);
@@ -85,6 +88,11 @@ export interface Payment {
   readonly milestones?: readonly import('./milestones.js').PaymentMilestone[];
   /** VND of released, unbatched milestones available for payout. */
   readonly payableAmount?: number;
+  /**
+   * The platform fee rate this payment's payout takes, basis points (Decision 6 of #140/#202: an
+   * `instant_request` payment snapshots its request's `platformFeeBp`); absent → the payout policy's.
+   */
+  readonly feeBp?: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

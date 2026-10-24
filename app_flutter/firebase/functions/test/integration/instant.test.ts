@@ -1,12 +1,23 @@
-// Chụp ngay on the emulators (#140 Task 4). Written, not run locally: CI runs `npm run test:integration`.
+// Chụp ngay on the emulators (#140 Task 4; money #202 Task 11). Written, not run locally: CI runs `npm run test:integration`.
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { FakePaymentGateway, newUlid, runBookingSweeps, type BookingDeps } from '@photobooking/domain';
 import { applySeed } from '../../seed/apply.js';
 import { callCallable, emulatorProject, resetEmulators, signIn, type CallableResponse } from '../../seed/emulator_client.js';
+import { emulatorPayoutKey } from '../../seed/emulator_key.js';
 import { LAN, SEED_PASSWORD } from '../../seed/fixtures.js';
+import { aesGcmCipher } from '../../src/infra/account_cipher.js';
+import { FirestoreAddonCatalog } from '../../src/infra/addon_firestore.js';
+import { FirestoreBookingStore } from '../../src/infra/booking_firestore.js';
+import {
+  FirestoreCustomerContactReader,
+  FirestoreProviderOrderGate,
+  FirestoreServiceCatalog,
+} from '../../src/infra/booking_readers.js';
+import { FirestoreBlockGate } from '../../src/infra/safety_firestore.js';
 
 let app: App;
 let db: Firestore;
@@ -67,19 +78,56 @@ async function create(uid: string): Promise<{ requestId: string; amountVnd: numb
   }));
 }
 
+/** "Thanh toán … và gửi lời mời" (#202): the first invite answers how to pay, the fake transfer pays it. */
+async function inviteAndPay(uid: string, requestId: string, photographerIds: string[], amountVnd: number): Promise<string> {
+  const res = ok<{ kind: string; instructions: { paymentId: string; transferCode: string; qrPayload?: string } }>(
+    await call('inviteInstant', uid, { requestId, photographerIds, skipped: [], expectedAmountVnd: amountVnd, payMethod: 'bank_qr' }),
+  );
+  assert.equal(res.kind, 'payment');
+  const paid = ok<{ outcome: string; subjectType: string }>(await call('confirmFakePayment', uid, { paymentId: res.instructions.paymentId }));
+  assert.deepEqual([paid.outcome, paid.subjectType], ['paid', 'instant_request']);
+  return res.instructions.paymentId;
+}
+
+/** The booking clock's sweeps (release step) at an injected time. */
+function sweepDeps(now: Date): BookingDeps {
+  return {
+    store: new FirestoreBookingStore(db),
+    services: new FirestoreServiceCatalog(db),
+    addons: new FirestoreAddonCatalog(db),
+    contacts: new FirestoreCustomerContactReader(db),
+    providers: new FirestoreProviderOrderGate(db),
+    blocks: new FirestoreBlockGate(db),
+    gateway: new FakePaymentGateway(),
+    cipher: aesGcmCipher(emulatorPayoutKey()),
+    clock: { now: () => now },
+    ids: { newId: () => newUlid(Date.now()) },
+  };
+}
+
 async function pendingOffersOf(uid: string): Promise<number> {
   const snap = await db.collection(`instant_offers/${uid}/offers`).where('outcome', '==', 'pending').get();
   return snap.docs.filter((d) => d.get('expiresAt').toMillis() > Date.now()).length;
 }
 
 describe('Chụp ngay on the emulators', () => {
-  test('full flow on the emulator without money: create → invite → accept → route → arrive → start → finish → confirm', async () => {
+  test('full flow on the emulator: create → invite → fake pay → accept → start_route → arrive → start → finish → confirm → clock releases after 24 h (clock injected)', async () => {
     const { requestId, amountVnd, candidateCount } = await create(LAN);
     assert.equal(candidateCount, 5);
-    const invited = ok<{ kind: string; invited: string[] }>(
-      await call('inviteInstant', LAN, { requestId, photographerIds: ['it-inst-p1'], skipped: [], expectedAmountVnd: amountVnd }),
+    const pay = ok<{ kind: string; amountVnd: number; instructions: { paymentId: string; transferCode: string; qrPayload?: string; subjectType: string } }>(
+      await call('inviteInstant', LAN, { requestId, photographerIds: ['it-inst-p1'], skipped: [], expectedAmountVnd: amountVnd, payMethod: 'bank_qr' }),
     );
-    assert.deepEqual(invited, { kind: 'invited', invited: ['it-inst-p1'], unavailable: [] });
+    assert.equal(pay.kind, 'payment');
+    assert.equal(pay.instructions.subjectType, 'instant_request');
+    assert.match(pay.instructions.transferCode, /^PB /);
+    assert.ok(pay.instructions.qrPayload);
+    // Nothing goes out before the money is in.
+    assert.equal((await db.doc(`instant_requests/${requestId}`).get()).get('status'), 'pending_payment');
+    assert.equal((await db.collection('instant_offers/it-inst-p1/offers').where('requestId', '==', requestId).get()).size, 0);
+    assert.deepEqual(ok(await call('checkInstantPayment', LAN, { requestId })), { paid: false, status: 'pending_payment' });
+    const paymentId = pay.instructions.paymentId;
+    const paid = ok<{ outcome: string; subjectStatus: string }>(await call('confirmFakePayment', LAN, { paymentId }));
+    assert.deepEqual([paid.outcome, paid.subjectStatus], ['paid', 'searching']);
 
     const offers = await db.collection('instant_offers/it-inst-p1/offers').where('requestId', '==', requestId).get();
     assert.equal(offers.size, 1);
@@ -88,6 +136,8 @@ describe('Chụp ngay on the emulators', () => {
     assert.equal(offers.docs[0]?.get('meetPoint'), undefined);
 
     assert.deepEqual(ok(await call('answerInstantOffer', 'it-inst-p1', { offerId, action: 'accept' })), { outcome: 'accepted', requestId });
+    assert.equal((await db.doc(`payments/${paymentId}`).get()).get('payeeId'), 'it-inst-p1');
+    assert.ok((await db.doc(`instant_requests/${requestId}/private/contact`).get()).exists, 'paid: the customer contact copy');
     const at = { ...TAO_DAN, accuracyM: 15 };
     for (const [action, status] of [['start_route', 'en_route'], ['arrive', 'arrived'], ['start', 'in_progress'], ['finish', 'finished']] as const) {
       assert.deepEqual(ok(await call('updateInstantJob', 'it-inst-p1', { requestId, action, location: at })), { status }, action);
@@ -99,18 +149,49 @@ describe('Chụp ngay on the emulators', () => {
     const r = await db.doc(`instant_requests/${requestId}`).get();
     assert.equal(r.get('status'), 'completed');
     assert.equal(r.get('active'), false);
-    assert.equal(r.get('paidAt'), null);
+    assert.ok(r.get('paidAt') !== null);
     assert.equal(r.get('excludedIds'), undefined);
     assert.equal((await db.doc(`instant_customers/${LAN}`).get()).get('activeRequestId'), null);
-    assert.equal((await db.doc('instant_presence/it-inst-p1').get()).get('activeRequestId'), null);
     assert.equal((await db.doc(`instant_tracks/${requestId}`).get()).exists, false);
-    const payments = await db.collection('payments').where('subjectId', '==', requestId).get();
-    assert.equal(payments.size, 0, 'no payments document in #140');
+    const held = (await db.doc(`payments/${paymentId}`).get()).data() ?? {};
+    assert.deepEqual([held.status, held.escrowStatus, held.payeeId], ['paid', 'held', 'it-inst-p1']);
+    const releaseAfter = (held.releaseAfter as { toMillis(): number }).toMillis();
+    assert.ok(Math.abs(releaseAfter - (Date.now() + 24 * 3_600_000)) < 5 * 60_000, 'released 24 h after completion');
+
+    // The clock one hour before: still held; one minute after: released to the photographer.
+    await runBookingSweeps(sweepDeps(new Date(releaseAfter - 3_600_000)));
+    assert.equal((await db.doc(`payments/${paymentId}`).get()).get('escrowStatus'), 'held');
+    await runBookingSweeps(sweepDeps(new Date(releaseAfter + 60_000)));
+    const released = (await db.doc(`payments/${paymentId}`).get()).data() ?? {};
+    assert.equal(released.escrowStatus, 'released');
+    const entries = await db.collection('ledger_entries').where('paymentId', '==', paymentId).get();
+    const byType = Object.fromEntries(entries.docs.map((d) => [d.get('type'), d.get('amount')]));
+    assert.deepEqual(byType, { payment_received: amountVnd, escrow_released: amountVnd });
+  });
+
+  test('a paid cancel en route refunds 80% on the fake gateway and releases the 20% after 24 h', async () => {
+    const { requestId, amountVnd } = await create(LAN);
+    const paymentId = await inviteAndPay(LAN, requestId, ['it-inst-p2'], amountVnd);
+    const offers = await db.collection('instant_offers/it-inst-p2/offers').where('requestId', '==', requestId).get();
+    ok(await call('answerInstantOffer', 'it-inst-p2', { offerId: offers.docs[0]?.id, action: 'accept' }));
+    // The free window is 2 minutes of server time: shift the assignment back instead of waiting.
+    await db.doc(`instant_requests/${requestId}`).update({ freeCancelUntil: new Date(Date.now() - 1000) });
+    const quote = ok<{ rule: string; refundVnd: number }>(await call('cancelInstantRequest', LAN, { requestId, dryRun: true }));
+    assert.equal(quote.rule, 'en_route');
+    const res = ok<{ rule: string; refundVnd: number; feeVnd: number }>(
+      await call('cancelInstantRequest', LAN, { requestId, dryRun: false, expectedRule: quote.rule, expectedRefundVnd: quote.refundVnd }),
+    );
+    assert.equal(res.refundVnd + res.feeVnd, amountVnd);
+    const refunds = await db.collection('refunds').where('paymentId', '==', paymentId).get();
+    assert.deepEqual(refunds.docs.map((d) => [d.get('amount'), d.get('status'), d.get('subjectType')]), [[res.refundVnd, 'done', 'instant_request']]);
+    const p = (await db.doc(`payments/${paymentId}`).get()).data() ?? {};
+    assert.equal(p.escrowStatus, 'partially_refunded');
+    assert.equal((await db.doc(`instant_requests/${requestId}`).get()).get('refundStatus'), 'done');
   });
 
   test('five parallel accepts, one winner', async () => {
     const { requestId, amountVnd } = await create(LAN);
-    ok(await call('inviteInstant', LAN, { requestId, photographerIds: PHOTOGRAPHERS, skipped: [], expectedAmountVnd: amountVnd }));
+    await inviteAndPay(LAN, requestId, PHOTOGRAPHERS, amountVnd);
     const offerIds = await Promise.all(PHOTOGRAPHERS.map(async (uid) => {
       const snap = await db.collection(`instant_offers/${uid}/offers`).where('requestId', '==', requestId).get();
       return snap.docs[0]?.id;
@@ -138,18 +219,16 @@ describe('Chụp ngay on the emulators', () => {
     const requests = await Promise.all(CUSTOMERS.map(async (uid) => ({ uid, ...(await create(uid)) })));
     // Ten at a time contend on the target's presence document (the emulator's lock waits stay short);
     // after each batch the target never holds more than 3 live pending offers (an expired one frees a slot).
-    const answers: CallableResponse[] = [];
     for (let i = 0; i < requests.length; i += 10) {
-      answers.push(...(await Promise.all(requests.slice(i, i + 10).map((r) =>
-        call('inviteInstant', r.uid, { requestId: r.requestId, photographerIds: [target], skipped: [], expectedAmountVnd: r.amountVnd }),
-      ))));
+      // Each pays first (#202); the offer goes out inside the payment's settlement.
+      await Promise.all(requests.slice(i, i + 10).map((r) => inviteAndPay(r.uid, r.requestId, [target], r.amountVnd)));
       assert.ok((await pendingOffersOf(target)) <= 3);
       const presence = await db.doc(`instant_presence/${target}`).get();
       const live = (presence.get('pendingOffers') as { expiresAt: { toMillis(): number } }[]).filter((o) => o.expiresAt.toMillis() > Date.now());
       assert.ok(live.length <= 3, `${live.length} live pending offers`);
     }
-    for (const a of answers) assert.equal(a.status, 200, a.text);
-    const invited = answers.filter((a) => (a.result as { invited: string[] }).invited.includes(target)).length;
+    const rows = await Promise.all(requests.map(async (r) => (await db.doc(`instant_requests/${r.requestId}`).get()).get('offers') as { photographerId: string; outcome: string }[]));
+    const invited = rows.filter((offers) => offers.some((o) => o.photographerId === target && o.outcome !== 'unavailable')).length;
     assert.ok(invited >= 1 && invited < CUSTOMERS.length, `${invited} offers went out`);
   });
 });

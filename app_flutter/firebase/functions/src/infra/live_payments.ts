@@ -1,15 +1,18 @@
 import {
   BookingPaymentSettler,
+  InstantPaymentSettler,
   TicketPaymentSettler,
   VerificationFeeSettler,
   type BookingDeps,
   type EventPaymentDeps,
+  type InstantDeps,
   type SettlementDeps,
   type VerificationDeps,
 } from '@photobooking/domain';
 import { db } from './admin.js';
 import { getSharedFakeGateway, liveBookingDeps } from './live_booking.js';
 import { liveEventPaymentDeps } from './live_event.js';
+import { liveInstantDeps } from './live_instant.js';
 import { liveVerificationDeps } from './live_verification.js';
 import { FirestorePaymentLookup } from './payment_firestore.js';
 
@@ -18,6 +21,7 @@ export interface SettlementSubjectDeps {
   readonly booking?: BookingDeps;
   readonly event?: EventPaymentDeps;
   readonly verification?: VerificationDeps;
+  readonly instant?: InstantDeps;
 }
 
 /**
@@ -29,6 +33,7 @@ export function settlementSubjectsOf(d: SettlementSubjectDeps): SettlementDeps['
     ...(d.booking !== undefined ? { booking: new BookingPaymentSettler(d.booking) } : {}),
     ...(d.event !== undefined ? { event_registration: new TicketPaymentSettler(d.event) } : {}),
     ...(d.verification !== undefined ? { verification_fee: new VerificationFeeSettler(d.verification) } : {}),
+    ...(d.instant !== undefined ? { instant_request: new InstantPaymentSettler(d.instant) } : {}),
   };
 }
 
@@ -42,6 +47,7 @@ export function liveSettlementDeps(): SettlementDeps {
       booking: liveBookingDeps(),
       event: liveEventPaymentDeps(),
       verification: liveVerificationDeps(),
+      instant: liveInstantDeps(),
     }),
   };
 }

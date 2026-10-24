@@ -22,7 +22,11 @@ export async function refreshEarnings(
     const next = new Map(existing);
     for (const id of new Set(paymentIds)) {
       const p = await tx.getPayment(id);
-      if (p !== null && p.payeeId !== payeeId) continue;
+      // A payment of another payee (or of none: an instant photographer who cancelled) has no row here.
+      if (p !== null && p.payeeId !== payeeId) {
+        next.delete(id);
+        continue;
+      }
       const subject = p === null ? null : await tx.getSubject(p);
       const item =
         p === null || subject === null

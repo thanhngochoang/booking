@@ -7,6 +7,8 @@
  * - `instant_requests/{id}/private/dispatch`: `{excludedIds}` (server only, Task 3 privacy ruling: who
  *   was skipped, declined or let an offer expire never reaches the photographer who got the job);
  * - `instant_requests/{id}/private/contact`: the customer's contact for the assigned photographer (#202);
+ * - #202's money: `payments/{id}` (subject `instant_request`), `refunds/{id}`, `ledger_entries/{id}` and V1's
+ *   transfer records `payment_notifications/{id}`, in the same transaction as the request;
  * - `instant_customers/{uid}`: `{activeRequestId}`, the lock that makes "one active request per customer"
  *   (Decision 18) hold under concurrency: a query does not lock documents that do not exist yet, a
  *   document read and written in the same transaction does;
@@ -49,16 +51,20 @@ import {
   type PresenceDirectory,
   type Refund,
   type RefundStatus,
+  type TransferRecord,
 } from '@photobooking/domain';
 import {
   LEDGER_COLLECTION,
   PAYMENTS_COLLECTION,
+  PAYMENT_NOTIFICATIONS_COLLECTION,
   REFUNDS_COLLECTION,
   ledgerEntryToFirestore,
   paymentFromFirestore,
   paymentToFirestore,
   refundFromFirestore,
   refundToFirestore,
+  transferRecordFromFirestore,
+  transferRecordToFirestore,
 } from './booking_firestore.js';
 
 export const INSTANT_REQUESTS = 'instant_requests';
@@ -411,6 +417,23 @@ export class FirestoreInstantTx implements InstantTx {
     return snap.exists ? refundFromFirestore(id, snap.data()) : null;
   }
 
+  async getTransferRecord(id: string): Promise<TransferRecord | null> {
+    const snap = await this.read(`${PAYMENT_NOTIFICATIONS_COLLECTION}/${id}`);
+    return snap.exists ? transferRecordFromFirestore(id, snap.data()) : null;
+  }
+
+  /** A transactional query (equality on two fields, no composite index: like `getPaymentsForBooking`). */
+  async paymentsOfRequest(requestId: string): Promise<readonly Payment[]> {
+    this.beforeRead();
+    const snap = await this.fTx.get(
+      this.firestore.collection(PAYMENTS_COLLECTION).where('subjectType', '==', 'instant_request').where('subjectId', '==', requestId),
+    );
+    return snap.docs.flatMap((d) => {
+      const p = paymentFromFirestore(d.id, d.data());
+      return p === null ? [] : [p];
+    });
+  }
+
   async findActiveRequestOfCustomer(customerId: string): Promise<InstantRequest | null> {
     const snap = await this.read(instantCustomerLockPath(customerId));
     const activeId = snap.exists ? strOrNull(snap.data()?.activeRequestId) : null;
@@ -460,6 +483,10 @@ export class FirestoreInstantTx implements InstantTx {
 
   putLedgerEntry(e: LedgerEntry): void {
     this.write(`${LEDGER_COLLECTION}/${e.id}`, { kind: 'set', data: ledgerEntryToFirestore(e) });
+  }
+
+  putTransferRecord(r: TransferRecord): void {
+    this.write(`${PAYMENT_NOTIFICATIONS_COLLECTION}/${r.id}`, { kind: 'set', data: transferRecordToFirestore(r) });
   }
 
   putContact(requestId: string, c: BookingContactSnapshot): void {

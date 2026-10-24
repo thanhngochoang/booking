@@ -33,6 +33,19 @@ describe('refreshEarnings', () => {
     assert.equal(w.earningsStore.itemWrites, 0);
   });
 
+  it("a payment whose payee changed drops the old payee's row (instant photographer cancel)", async () => {
+    const w = createPayoutWorld();
+    const a = await paidBooking(w, '2026-10-15');
+    await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId] });
+    assert.equal(w.earningsStore.items.has(`p1/${a.paymentId}`), true);
+    const p = w.store.payments.get(a.paymentId);
+    assert.ok(p);
+    w.store.payments.set(a.paymentId, { ...p, payeeId: '' });
+    const s = await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId] });
+    assert.equal(w.earningsStore.items.has(`p1/${a.paymentId}`), false);
+    assert.equal(s.heldAmount, 0);
+  });
+
   it('refresh is idempotent', async () => {
     const w = createPayoutWorld();
     const a = await paidBooking(w, '2026-10-15');

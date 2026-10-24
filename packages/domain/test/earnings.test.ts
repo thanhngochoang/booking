@@ -243,3 +243,21 @@ describe('earnings summary', () => {
     assert.equal(w.earningsStore.items.get(`p1/${c.paymentId}`)?.holdReason, HOLD_REASON_DISPUTE);
   });
 });
+
+describe('instant payments (#202)', () => {
+  it("an instant_request row is estimated with the payment's own fee rate", () => {
+    const item = earningItemOf({
+      payment: payment({ subjectType: 'instant_request', subjectId: 'ir1', amount: 690_000, feeBp: 1_000 }),
+      refunded: 0,
+      subject: { counterpartName: 'Lan Anh', label: 'Chụp ngay · 1 giờ', day: '2026-10-22', milestones: null },
+      payout: null,
+      payeeType: 'studio',
+      policy: DEFAULT_PAYOUT_POLICY,
+      now: NOW,
+    });
+    assert.deepEqual(
+      [item?.subjectType, item?.amount, item?.platformFee, item?.netAmount, item?.feeRateBp],
+      ['instant_request', 690_000, 69_000, 621_000, 1_000],
+    );
+  });
+});

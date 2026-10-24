@@ -41,12 +41,13 @@ export function taxRateBpOf(payee: ProviderType, policy: PayoutPolicy): number {
 /**
  * Integer VND; tax only for 'individual' and 'artist'; Math.round per line. Both fee and tax are
  * taken on the gross amount and net = gross − fee − tax, never below 0. A negative or non-integer
- * gross is `invalid_argument`.
+ * gross is `invalid_argument`. `feeBp`, when given, replaces the policy's fee rate: a payment that
+ * snapshotted its own (`Payment.feeBp`, an instant request's `platformFeeBp`, Decision 6).
  */
-export function payoutLineOf(gross: number, payee: ProviderType, policy: PayoutPolicy): PayoutLine {
+export function payoutLineOf(gross: number, payee: ProviderType, policy: PayoutPolicy, feeBp?: number): PayoutLine {
   if (!Number.isSafeInteger(gross) || gross < 0) throw new DomainError('invalid_argument');
   const amount = gross;
-  const feeRateBp = policy.feeBp[payee];
+  const feeRateBp = feeBp ?? policy.feeBp[payee];
   const taxRateBp = taxRateBpOf(payee, policy);
   const fee = Math.min(amount, Math.round((amount * feeRateBp) / BP));
   const tax = Math.min(amount - fee, Math.round((amount * taxRateBp) / BP));

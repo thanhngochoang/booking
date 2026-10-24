@@ -3,7 +3,10 @@
  * settles through it, decides, then changes documents in memory; `flush` is the only writer.
  */
 import type { BookingContactSnapshot } from './booking.js';
+import { DISPUTE_WINDOW_HOURS } from './booking_policy.js';
+import type { TransferRecord } from './booking_ports.js';
 import { DomainError } from './errors.js';
+import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import {
   isInstantActive,
   livePendingOffers,
@@ -18,6 +21,11 @@ import { nextDeadlineOf, settleInstant } from './instant_settle.js';
 
 interface Slot<T> { readonly base: T | null; cur: T | null }
 
+/** A refund written in this transaction, sent after the commit (V2's `sendRefundOnce`). */
+export interface InstantRefundSend { readonly refund: Refund; readonly payment: Payment }
+
+const HOUR = 3_600_000;
+
 /**
  * Everything one instant transaction reads and decides on: documents are read once through the
  * transaction (all reads happen before `flush`, which is the only place that writes), changed in
@@ -28,8 +36,13 @@ export class InstantWork {
   private readonly requests = new Map<string, Slot<InstantRequest>>();
   private readonly offers = new Map<string, Slot<InstantOffer>>();
   private readonly presences = new Map<string, Slot<InstantPresence>>();
+  private readonly payments = new Map<string, Slot<Payment>>();
   private side: Array<(tx: InstantTx) => void> = [];
-  private mark: { requests: Map<string, InstantRequest | null>; offers: Map<string, InstantOffer | null>; presences: Map<string, InstantPresence | null>; side: number } | null = null;
+  private sends: InstantRefundSend[] = [];
+  private mark: {
+    requests: Map<string, InstantRequest | null>; offers: Map<string, InstantOffer | null>;
+    presences: Map<string, InstantPresence | null>; payments: Map<string, Payment | null>; side: number; sends: number;
+  } | null = null;
   private discarded = false;
 
   constructor(readonly tx: InstantTx, readonly now: Date) {}
@@ -63,6 +76,73 @@ export class InstantWork {
       this.presences.set(uid, s);
     }
     return s.cur;
+  }
+
+  /** #202: a payment, read once through the transaction. */
+  async payment(id: string): Promise<Payment | null> {
+    let s = this.payments.get(id);
+    if (s === undefined) {
+      const p = await this.tx.getPayment(id);
+      s = { base: p, cur: p };
+      this.payments.set(id, s);
+    }
+    return s.cur;
+  }
+
+  /** Plain reads (no slot): a refund, V1's transfer record, the payments of a request. */
+  refund(id: string): Promise<Refund | null> {
+    return this.tx.getRefund(id);
+  }
+
+  transferRecord(id: string): Promise<TransferRecord | null> {
+    return this.tx.getTransferRecord(id);
+  }
+
+  paymentsOfRequest(requestId: string): Promise<readonly Payment[]> {
+    return this.tx.paymentsOfRequest(requestId);
+  }
+
+  setPayment(p: Payment): void {
+    const s = this.payments.get(p.id);
+    if (s === undefined) this.payments.set(p.id, { base: null, cur: p });
+    else s.cur = p;
+  }
+
+  putRefund(r: Refund): void {
+    this.side.push((tx) => tx.putRefund(r));
+  }
+
+  putLedgerEntry(e: LedgerEntry): void {
+    this.side.push((tx) => tx.putLedgerEntry(e));
+  }
+
+  putTransferRecord(r: TransferRecord): void {
+    this.side.push((tx) => tx.putTransferRecord(r));
+  }
+
+  /** A new refund (stored with `putRefund`) to send after the commit. */
+  queueRefundSend(refund: Refund, payment: Payment): void {
+    this.sends.push({ refund, payment });
+  }
+
+  /** The refunds to send once this transaction has committed. */
+  refundSends(): InstantRefundSend[] {
+    return this.discarded ? [] : [...this.sends];
+  }
+
+  /**
+   * Decision 7: a paid request's money is released 24 h (`DISPUTE_WINDOW_HOURS`) after `at` by the
+   * existing bookingClock release step; only while escrow still holds some of it.
+   */
+  async stampRelease(r: InstantRequest, at: Date): Promise<void> {
+    if (r.paidAt === null || r.paymentId === null) return;
+    const p = await this.payment(r.paymentId);
+    if (p === null || (p.escrowStatus !== 'held' && p.escrowStatus !== 'partially_refunded')) return;
+    this.setPayment({
+      ...p,
+      releaseAfter: new Date(at.getTime() + DISPUTE_WINDOW_HOURS * HOUR).toISOString(),
+      updatedAt: this.now.toISOString(),
+    });
   }
 
   setRequest(r: InstantRequest): void {
@@ -125,6 +205,10 @@ export class InstantWork {
         // Spec §2.2 item 5: the shoot timer ended the shoot, so the photographer is available again.
         await this.freePresence(out.request.photographerId, id);
       }
+      // Auto-complete (#202, Decision 7): the money is released 24 h after completion.
+      if (out.request.status === 'completed' && out.request.completedAt !== null) {
+        await this.stampRelease(out.request, out.request.completedAt);
+      }
       this.setRequest(out.request);
     } else if ((r.nextDeadlineAt?.getTime() ?? null) !== (nextDeadlineOf(r)?.getTime() ?? null)) {
       this.setRequest({ ...r }); // a stale stored deadline would make the clock step pick it forever
@@ -164,7 +248,10 @@ export class InstantWork {
 
   private checkpoint(): void {
     const snap = <T>(m: Map<string, Slot<T>>): Map<string, T | null> => new Map([...m].map(([k, s]) => [k, s.cur]));
-    this.mark = { requests: snap(this.requests), offers: snap(this.offers), presences: snap(this.presences), side: this.side.length };
+    this.mark = {
+      requests: snap(this.requests), offers: snap(this.offers), presences: snap(this.presences), payments: snap(this.payments),
+      side: this.side.length, sends: this.sends.length,
+    };
   }
 
   /** Back to the last settle; false when nothing was settled (then nothing is worth writing). */
@@ -180,7 +267,9 @@ export class InstantWork {
     restore(this.requests, this.mark.requests);
     restore(this.offers, this.mark.offers);
     restore(this.presences, this.mark.presences);
+    restore(this.payments, this.mark.payments);
     this.side = this.side.slice(0, this.mark.side);
+    this.sends = this.sends.slice(0, this.mark.sends);
     return true;
   }
 
@@ -206,6 +295,9 @@ export class InstantWork {
     for (const s of this.presences.values()) {
       if (s.cur === null || s.cur === s.base) continue;
       this.tx.putPresence({ ...s.cur, pendingOffers: livePendingOffers(s.cur, this.now), updatedAt: this.now });
+    }
+    for (const s of this.payments.values()) {
+      if (s.cur !== null && s.cur !== s.base) this.tx.putPayment(s.cur);
     }
     for (const write of this.side) write(this.tx);
   }

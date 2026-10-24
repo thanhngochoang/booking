@@ -678,6 +678,31 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.ok(restored);
     assert.equal(restored.subjectType, 'event_registration');
   });
+
+  it('a refund with subjectType instant_request keeps it', () => {
+    const r: Refund = {
+      id: 'ref_inst_1', paymentId: 'pay_inst_1', subjectType: 'instant_request', amount: 552_000, percent: 80,
+      status: 'pending', manual: false, fromEscrow: true, method: 'gateway', attempts: 0, reason: 'en_route',
+      createdAt: '2026-10-10T09:00:00.000Z', updatedAt: '2026-10-10T09:00:00.000Z',
+    };
+    const restored = refundFromFirestore(r.id, refundToFirestore(r));
+    assert.equal(restored?.subjectType, 'instant_request');
+  });
+
+  it("an instant payment keeps its subject, empty payee and fee snapshot (feeBp); others have none", () => {
+    const p: Payment = {
+      id: 'pay_inst_1', subjectType: 'instant_request', subjectId: 'ir_1', payerId: 'c-lan', payeeId: '', provider: 'fake',
+      amount: 690_000, status: 'paid', escrowStatus: 'held', idempotencyKey: 'inst_ir_1_1', method: 'momo', feeBp: 1_000,
+      createdAt: '2026-10-10T09:00:00.000Z', updatedAt: '2026-10-10T09:00:00.000Z',
+    };
+    const doc = paymentToFirestore(p);
+    assert.equal(doc.feeBp, 1_000);
+    const back = paymentFromFirestore(p.id, doc);
+    assert.deepEqual([back?.subjectType, back?.payeeId, back?.feeBp], ['instant_request', '', 1_000]);
+    const plain = paymentFromFirestore('pay_b', paymentToFirestore({ ...p, subjectType: 'booking', feeBp: undefined }));
+    assert.equal(plain?.feeBp, undefined);
+    assert.equal(paymentToFirestore({ ...p, feeBp: undefined }).feeBp, null);
+  });
 });
 
 /** Records the query a FirestoreBookingStore sweep builds and answers it with `docs`. */

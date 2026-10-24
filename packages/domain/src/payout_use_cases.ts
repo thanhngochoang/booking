@@ -84,7 +84,7 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
     if (payableItems.length === 0) throw new DomainError('not_eligible');
 
     const items: PayoutItem[] = payableItems.map(({ payment, gross, milestone }) => {
-      const line = payoutLineOf(gross, payeeType, deps.policy);
+      const line = payoutLineOf(gross, payeeType, deps.policy, payment.feeBp);
       return {
         paymentId: payment.id,
         amount: line.gross,

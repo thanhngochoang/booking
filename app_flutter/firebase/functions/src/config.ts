@@ -49,11 +49,10 @@ export const PAYMENT_CALLABLE_OPTIONS = {
 } as const satisfies CallableOptions;
 
 /**
- * Contended callables that move no money (Chụp ngay `inviteInstant`, `answerInstantOffer`,
- * `cancelInstantRequest`, `confirmInstantComplete`, #140): the 30 s of the payment callables for the
- * first-accept-wins transaction, without the payment secrets (least privilege). #202 moves
- * `cancelInstantRequest` and `confirmInstantComplete` back to `PAYMENT_CALLABLE_OPTIONS` when their
- * refunds and release land.
+ * Contended callables that move no money (Chụp ngay `answerInstantOffer`): the 30 s of the payment
+ * callables for the first-accept-wins transaction, without the payment secrets (least privilege).
+ * #202 moved `inviteInstant`, `cancelInstantRequest` and `confirmInstantComplete` (and the no-show of
+ * `updateInstantJob`) to `PAYMENT_CALLABLE_OPTIONS` with their payments, refunds and release.
  */
 export const CONTENDED_CALLABLE_OPTIONS = {
   ...CALLABLE_OPTIONS,
