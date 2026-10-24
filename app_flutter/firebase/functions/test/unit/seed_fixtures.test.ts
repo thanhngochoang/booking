@@ -403,10 +403,15 @@ describe('seed payouts and earnings', () => {
     //   - delivered: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - revision_requested: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - approved: shoot released (soon 750k), delivery released (soon 750k) -> soon 1.5m
-    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) = 9m
+    // - Lan's paid ticket of the past workshop (S18): held 250k until the end + 24 h
+    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) = 9.25m
     // Total soon = 1.5m (recent) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 4.5m
     // Total received = 1.5m (completed-old)
-    assert.equal(e?.heldAmount, 9_000_000);
+    assert.equal(e?.heldAmount, 9_250_000);
+    const ticket = get('earnings/seed-photographer-an/items/seed-payment-ticket-lan-past');
+    assert.equal(ticket?.state, 'held');
+    assert.equal(ticket?.amount, 250_000);
+    assert.equal(ticket?.counterpartName, 'Lan (seed)');
     assert.equal(e?.soonAmount, 4_500_000);
     assert.equal(e?.receivedAmount, dep(1_500_000));
     assert.equal((e?.lastPayout as { status: string }).status, 'paid');

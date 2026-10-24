@@ -1,6 +1,6 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
-import { dispatchDisputeRefund, openDispute, resolveDispute, type DisputeDeps } from '@photobooking/domain';
+import { dispatchDisputeRefund, isDomainError, openDispute, resolveDispute, type DisputeDeps } from '@photobooking/domain';
 import { handleCallableError } from './booking.js';
 
 /** The part of a callable request the dispute handlers use (a `CallableRequest` fits). */
@@ -53,9 +53,18 @@ export async function handleResolveDispute(
   if (refund !== null) {
     try {
       const payment = await deps.store.runTransaction((tx) => tx.getPayment(dispute.paymentId));
-      if (payment !== null) await dispatchDisputeRefund(deps, payment, refund);
-    } catch {
-      logger.error('dispute_refund_send_failed', { disputeId: dispute.id });
+      if (payment === null) {
+        logger.warn('dispute_refund_send_skipped', { disputeId: dispute.id, refundId: refund.id, reason: 'payment_not_found' });
+      } else {
+        await dispatchDisputeRefund(deps, payment, refund);
+      }
+    } catch (e) {
+      // Ids and the domain code only (no amounts, names or messages): the pending refund is V2's to re-send.
+      logger.error('dispute_refund_send_failed', {
+        disputeId: dispute.id,
+        refundId: refund.id,
+        code: isDomainError(e) ? e.code : 'unexpected',
+      });
     }
   }
   logger.info('dispute_resolved', { disputeId: dispute.id });

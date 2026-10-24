@@ -80,7 +80,7 @@ Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data
 | `users/{uid}/private/identity` | An | identity legalName (An): `Nguyễn Văn An`, `method`/`provider` `fake` (test value; the doc's full shape is #135's) |
 | Payout `seed-payout-an-1` | An | `paid`, the first payout to the account (approved by `seed-staff-admin`); 1 500 000 gross, tax 7% 105 000, net 1 395 000; its payment (`seed-payment-seed-booking-completed-old`) is `paid_out`, with `payout_paid` −1 395 000 and `tax_withheld` −105 000 ledger entries |
 | `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed` by `seed-dispute-lan-an` (see Disputes) |
-| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 4 × 1 500 000 among the legacy bookings, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
+| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 4 × 1 500 000 among the legacy bookings plus Lan's 250 000 ticket of the past workshop, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
 | Payout account | Bình | none (the S06.05 add-account card) |
 
 ## Chats (S07)

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { beforeEach, describe, test } from 'node:test';
+import { beforeEach, describe, test, type TestContext } from 'node:test';
 import { HttpsError } from 'firebase-functions/v2/https';
 import {
+  DomainError,
   FakePaymentGateway,
   MemoryDisputeStore,
   type DisputeDeps,
+  type DisputeStore,
   type DisputeSubjectView,
   type Payment,
 } from '@photobooking/domain';
@@ -145,5 +147,59 @@ describe('dispute callables', () => {
     );
     assert.deepEqual(released, { disputeId: other, refundAmount: 0, releaseAmount: 1_000_000 });
     assert.equal(gateway.refundCalls.length, 1);
+  });
+  /** The Functions logger writes warnings and errors as JSON lines to stderr (info to stdout). */
+  function captureLogs(t: TestContext): string[] {
+    const lines: string[] = [];
+    for (const stream of [process.stdout, process.stderr]) {
+      t.mock.method(stream, 'write', (chunk: unknown) => {
+        lines.push(String(chunk));
+        return true;
+      });
+    }
+    return lines;
+  }
+
+  /** The store, except that every transaction after the decision is committed runs `after` instead. */
+  function afterResolve(after: (fn: Parameters<DisputeStore['runTransaction']>[0]) => Promise<unknown>): DisputeStore {
+    return {
+      runTransaction: (fn) =>
+        (store.disputes.get(DISPUTE_ID)?.status === 'resolved' ? after(fn) : store.runTransaction(fn)) as never,
+      getRefundsForPayment: (id) => store.getRefundsForPayment(id),
+      listByStatus: (status, limit) => store.listByStatus(status, limit),
+    };
+  }
+
+  const admin = { uid: 'staff1', token: { staffRole: 'admin' } };
+  const refundAll = { disputeId: DISPUTE_ID, outcome: 'refund', note: 'Thiếu ảnh thật.' };
+
+  test('a refund send that throws logs the domain code with ids only; the decision stands', async (t) => {
+    await handleOpenDispute({ auth: { uid: 'c1' }, data: openInput() }, deps());
+    const failing = { ...deps(), store: afterResolve(async () => { throw new DomainError('not_found'); }) };
+    const logs = captureLogs(t);
+    const res = await handleResolveDispute({ auth: admin, data: refundAll }, failing);
+    t.mock.restoreAll();
+    assert.deepEqual(res, { disputeId: DISPUTE_ID, refundAmount: 1_000_000, releaseAmount: 0 });
+    const line = logs.find((l) => l.includes('dispute_refund_send_failed'));
+    assert.ok(line, logs.join(''));
+    assert.match(line, /"code":"not_found"/);
+    assert.match(line, new RegExp(`"refundId":"${store.disputes.get(DISPUTE_ID)?.outcome?.refundId}"`));
+    assert.doesNotMatch(line, /Thiếu|1000000|An|Minh/);
+    assert.deepEqual(gateway.refundCalls, []);
+    assert.equal(store.refunds.get(store.disputes.get(DISPUTE_ID)?.outcome?.refundId ?? '')?.status, 'pending');
+  });
+
+  test('a refund whose payment cannot be read again is skipped with a log line, not sent', async (t) => {
+    await handleOpenDispute({ auth: { uid: 'c1' }, data: openInput() }, deps());
+    const missing = { ...deps(), store: afterResolve((fn) => store.runTransaction((tx) => fn({ ...tx, getPayment: async () => null }))) };
+    const logs = captureLogs(t);
+    const res = await handleResolveDispute({ auth: admin, data: refundAll }, missing);
+    t.mock.restoreAll();
+    assert.equal(res.refundAmount, 1_000_000);
+    const line = logs.find((l) => l.includes('dispute_refund_send_skipped'));
+    assert.ok(line, logs.join(''));
+    assert.match(line, /"reason":"payment_not_found"/);
+    assert.equal(logs.some((l) => l.includes('dispute_refund_send_failed')), false);
+    assert.deepEqual(gateway.refundCalls, []);
   });
 });

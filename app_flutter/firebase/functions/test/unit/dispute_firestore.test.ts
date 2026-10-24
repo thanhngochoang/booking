@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { FieldValue, Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
-import type { Booking, Dispute, EventRecord, Payment, Refund, RegistrationDoc } from '@photobooking/domain';
+import {
+  FakePaymentGateway,
+  dispatchDisputeRefund,
+  openDispute,
+  resolveDispute,
+  type Booking,
+  type Dispute,
+  type DisputeDeps,
+  type EventRecord,
+  type Payment,
+  type Refund,
+  type RegistrationDoc,
+} from '@photobooking/domain';
 import { bookingToFirestore, paymentToFirestore, refundToFirestore } from '../../src/infra/booking_firestore.js';
 import {
   FirestoreDisputeStore,
@@ -10,13 +22,14 @@ import {
 } from '../../src/infra/dispute_firestore.js';
 import { eventToFirestore, registrationToFirestore } from '../../src/infra/event_firestore.js';
 import { FirestoreSupportStore } from '../../src/infra/support_firestore.js';
+import { TEST_CIPHER } from '../../../../../packages/domain/test/support/test_cipher.js';
 
 // ---- A small in-memory Firestore: documents by path, one transaction that records its writes. ----
 
 type Filter = [string, string, unknown];
 interface FakeQuery { readonly coll: string; readonly filters: Filter[]; readonly order: string[]; where(f: string, op: string, v: unknown): FakeQuery; orderBy(f: string, dir?: string): FakeQuery; limit(n: number): FakeQuery; get(): Promise<FakeQuerySnap> }
 interface FakeQuerySnap { readonly empty: boolean; readonly docs: { id: string; data(): DocumentData }[] }
-interface Write { readonly op: 'set' | 'update'; readonly path: string; readonly data: DocumentData }
+interface Write { readonly op: 'set' | 'update'; readonly path: string; readonly data: DocumentData; readonly merge?: true }
 
 function fakeFirestore(docs: Record<string, DocumentData>) {
   const writes: Write[] = [];
@@ -49,20 +62,50 @@ function fakeFirestore(docs: Record<string, DocumentData>) {
     doc: (id: string) => docRef(`${path}/${id}`),
   });
   const docRef = (path: string): unknown => ({ path, id: path.split('/').pop(), collection: (c: string) => collection(`${path}/${c}`) });
-  const tx = {
-    get: async (x: { path?: string; coll?: string; filters?: Filter[] }) => {
-      if (x.filters !== undefined && x.coll !== undefined) {
-        queries.push({ coll: x.coll, filters: x.filters, order: [] });
-        return run({ coll: x.coll, filters: x.filters });
+  // One transaction: like the Admin SDK, a read after the first write throws; the writes reach the
+  // documents only when the transaction function resolves (commit).
+  const newTx = () => {
+    let wrote = false;
+    const pending: Write[] = [];
+    const write = (w: Write) => {
+      wrote = true;
+      pending.push(w);
+      writes.push(w);
+    };
+    const tx = {
+      get: async (x: { path?: string; coll?: string; filters?: Filter[] }) => {
+        if (wrote) throw new Error(`read after write: ${x.path ?? x.coll ?? '?'}`);
+        if (x.filters !== undefined && x.coll !== undefined) {
+          queries.push({ coll: x.coll, filters: x.filters, order: [] });
+          return run({ coll: x.coll, filters: x.filters });
+        }
+        return snapOf(String(x.path));
+      },
+      set: (ref: { path: string }, data: DocumentData, opts?: { merge?: boolean }) =>
+        write({ op: 'set', path: ref.path, data, ...(opts?.merge === true ? { merge: true as const } : {}) }),
+      update: (ref: { path: string }, data: DocumentData) => write({ op: 'update', path: ref.path, data }),
+    };
+    const commit = () => {
+      for (const w of pending) {
+        const base: DocumentData = w.op === 'set' && w.merge !== true ? {} : { ...(docs[w.path] ?? {}) };
+        for (const [k, v] of Object.entries(w.data)) {
+          // FieldValue.increment(n) carries its operand; other sentinels are not used by these adapters.
+          const operand = v instanceof FieldValue ? (v as unknown as { operand?: unknown }).operand : undefined;
+          base[k] = typeof operand === 'number' ? (typeof base[k] === 'number' ? base[k] : 0) + operand : v;
+        }
+        docs[w.path] = base;
       }
-      return snapOf(String(x.path));
-    },
-    set: (ref: { path: string }, data: DocumentData) => void writes.push({ op: 'set', path: ref.path, data }),
-    update: (ref: { path: string }, data: DocumentData) => void writes.push({ op: 'update', path: ref.path, data }),
+    };
+    return { tx, commit };
   };
   const firestore = {
     collection,
-    runTransaction: async <T>(fn: (t: typeof tx) => Promise<T>) => fn(tx),
+    runTransaction: async <T>(fn: (t: ReturnType<typeof newTx>['tx']) => Promise<T>) => {
+      const { tx, commit } = newTx();
+      const result = await fn(tx);
+      commit();
+      return result;
+    },
   } as unknown as Firestore;
   return { firestore, writes, queries };
 }
@@ -329,5 +372,88 @@ describe('dispute Firestore adapter', () => {
     const open = await store.listByStatus('open', 20);
     assert.deepEqual(open.map((d) => d.id), ['dsp_1']);
     assert.deepEqual(queries.at(-1), { coll: 'disputes', filters: [['status', '==', 'open']], order: ['createdAt asc'] });
+  });
+});
+
+// ---- The real use cases through FirestoreDisputeStore over the strict fake (every read before the first write). ----
+
+describe('dispute use cases on the Firestore adapter (read before write)', () => {
+  function world() {
+    const docs: Record<string, DocumentData> = {
+      'bookings/b1': bookingToFirestore(booking),
+      'users/p1': { displayName: 'Minh Trí', avatarUrl: null },
+      'payments/pay_paid': paymentToFirestore(payment('pay_paid', { paidAt: '2026-10-10T00:00:00.000Z' })),
+    };
+    const fake = fakeFirestore(docs);
+    let n = 0;
+    const gateway = new FakePaymentGateway();
+    const deps: DisputeDeps = {
+      store: new FirestoreDisputeStore(fake.firestore),
+      gateway,
+      cipher: TEST_CIPHER,
+      names: { displayName: async (uid) => ({ c1: 'An', p1: 'Minh Trí', staff1: 'Hỗ trợ' })[uid] ?? '' },
+      clock: { now: () => NOW },
+      ids: { newId: () => `id_${(n += 1)}` },
+    };
+    return { docs, fake, deps, gateway };
+  }
+  const open = (deps: DisputeDeps) =>
+    openDispute(deps, 'c1', {
+      disputeId: 'dsp_1', subjectType: 'booking', subjectId: 'b1', eventId: null, reason: 'photos_missing',
+      description: 'Thiếu 20 ảnh so với gói đã đặt.', evidencePaths: ['disputeEvidence/c1/dsp_1/01J0.jpg'],
+    });
+
+  it('the fake refuses a read after a write, like the Admin SDK', async () => {
+    const { fake } = world();
+    await assert.rejects(
+      new FirestoreDisputeStore(fake.firestore).runTransaction(async (tx) => {
+        tx.setPayment(payment('pay_paid'));
+        await tx.getPayment('pay_paid');
+      }),
+      /read after write/,
+    );
+  });
+
+  it('openDispute freezes the payment, links the booking and writes the dispute and its thread', async () => {
+    const { docs, deps } = world();
+    const d = await open(deps);
+    assert.equal(d.status, 'open');
+    assert.equal(docs['disputes/dsp_1']?.status, 'open');
+    assert.equal(docs['payments/pay_paid']?.escrowStatus, 'disputed');
+    assert.equal(docs['payments/pay_paid']?.dispute?.disputeId, 'dsp_1');
+    assert.equal(docs['bookings/b1']?.disputeId, 'dsp_1');
+    assert.equal(docs['bookings/b1']?.escrowStatus, 'disputed');
+    assert.equal(docs['support_threads/dispute_dsp_1']?.kind, 'dispute');
+    assert.equal(Object.keys(docs).filter((k) => k.startsWith('support_threads/dispute_dsp_1/messages/')).length, 2);
+    // The same id again returns it unchanged.
+    assert.deepEqual(await open(deps), d);
+  });
+
+  it('resolveDispute split refunds and releases in one transaction, then dispatchDisputeRefund sends it once', async () => {
+    const { docs, deps, gateway } = world();
+    await open(deps);
+    const { dispute: resolved, refund } = await resolveDispute(deps, 'staff1', {
+      disputeId: 'dsp_1', outcome: 'split', refundPercent: 40, note: 'Thiếu một phần ảnh.',
+    });
+    assert.equal(resolved.status, 'resolved');
+    assert.equal(resolved.outcome?.refundAmount, 400_000);
+    assert.equal(resolved.outcome?.releaseAmount, 600_000);
+    assert.ok(refund);
+    assert.equal(docs['disputes/dsp_1']?.status, 'resolved');
+    assert.equal(docs[`refunds/${refund.id}`]?.status, 'pending');
+    assert.equal(docs['bookings/b1']?.depositRefunded, 400_000);
+    assert.equal(docs['support_threads/dispute_dsp_1']?.status, 'closed');
+    const ledger = Object.entries(docs).filter(([k]) => k.startsWith('ledger_entries/')).map(([, v]) => [v.type, v.amount]);
+    assert.deepEqual(ledger.sort(), [['escrow_released', 600_000], ['refund_issued', -400_000]]);
+
+    const payment = await deps.store.runTransaction((tx) => tx.getPayment('pay_paid'));
+    assert.ok(payment);
+    const sent = await dispatchDisputeRefund(deps, payment, refund);
+    assert.equal(sent.status, 'done');
+    assert.equal(docs[`refunds/${refund.id}`]?.status, 'done');
+    assert.ok(docs['bookings/b1']?.depositRefundedAt instanceof Timestamp);
+    // A second dispatch of the settled refund sends nothing.
+    await dispatchDisputeRefund(deps, payment, refund);
+    assert.deepEqual(gateway.refundCalls, [refund.id]);
   });
 });

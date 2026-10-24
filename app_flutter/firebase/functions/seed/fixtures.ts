@@ -82,6 +82,7 @@ import {
   type SupportMessage,
   type SupportThread,
 } from '@photobooking/domain';
+import { Timestamp } from 'firebase-admin/firestore';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
@@ -1416,8 +1417,9 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...disputeDocs);
   docs.push(...reviewDocuments(now));
   docs.push(...notificationAndBadgeDocuments(now));
-  docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
+  // After the events: the projection also counts An's paid ticket payment.
+  docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
   docs.push(...verificationDocuments(now));
   docs.push(...studioMemberDocuments(now));
@@ -1813,6 +1815,32 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
 
 
 /**
+ * The earnings row's subject of a seeded payment, as the live adapter reads it: a booking (Lan, the
+ * service, the day) or a paid ticket (the attendee, the event title, its Vietnam day); null otherwise.
+ */
+function earningSubjectOf(
+  x: Record<string, unknown>,
+  existing: readonly SeedDocument[],
+): { counterpartName: string; label: string; day: string } | null {
+  if (x.subjectType === 'event_registration') {
+    if (x.status !== 'paid' || typeof x.eventId !== 'string') return null;
+    const r = existing.find((d) => d.path === `events/${x.eventId as string}/registrations/${x.subjectId as string}`)?.data;
+    if (r === undefined) return null;
+    const ev = (r.event ?? {}) as { title?: unknown; startAt?: unknown };
+    const start = ev.startAt instanceof Timestamp ? ev.startAt.toDate() : ev.startAt instanceof Date ? ev.startAt : null;
+    return {
+      counterpartName: typeof r.userName === 'string' ? r.userName : '',
+      label: typeof ev.title === 'string' ? ev.title : '',
+      day: start === null ? '' : formatVnDate(start),
+    };
+  }
+  const booking = SEED_BOOKINGS.find((b) => b.id === x.subjectId);
+  const service = SEED_SERVICES.find((s) => s.id === booking?.serviceId);
+  if (booking === undefined || service === undefined) return null;
+  return { counterpartName: 'Lan (seed)', label: service.name, day: booking.date };
+}
+
+/**
  * An's payout account (matched, with her verified name), one paid payout with its tax line (#134),
  * and the `earnings` projection of every
  * photographer with payments, computed by the same pure functions the triggers use so the seed
@@ -1918,13 +1946,13 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     if (!/^payments\/[^/]+$/.test(d.path)) continue;
     const id = d.path.slice('payments/'.length);
     const x = d.data;
-    const booking = SEED_BOOKINGS.find((b) => b.id === x.subjectId);
-    const service = SEED_SERVICES.find((s) => s.id === booking?.serviceId);
-    if (booking === undefined || service === undefined) continue;
+    const subject = earningSubjectOf(x, existing);
+    if (subject === null) continue;
     const payment: Payment = {
       id,
-      subjectType: 'booking',
-      subjectId: booking.id,
+      subjectType: x.subjectType === 'event_registration' ? 'event_registration' : 'booking',
+      subjectId: x.subjectId as string,
+      ...(typeof x.eventId === 'string' ? { eventId: x.eventId } : {}),
       payerId: x.payerId as string,
       payeeId: x.payeeId as string,
       provider: 'fake',
@@ -1943,9 +1971,7 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
       payment,
       refunded,
       subject: {
-        counterpartName: 'Lan (seed)',
-        label: service.name,
-        day: booking.date,
+        ...subject,
         milestones: payment.milestones
           ? {
               done: payment.milestones.filter((m) => m.status === 'released' || m.status === 'paid_out').length,

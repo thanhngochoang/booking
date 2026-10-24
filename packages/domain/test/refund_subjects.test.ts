@@ -5,6 +5,11 @@ import { applyRefundEvent, bookingRefundHandler, resendPendingRefunds, type Refu
 import { transitionBooking } from '../src/transition_booking.js';
 import type { Refund } from '../src/escrow.js';
 
+const must = <T>(v: T | null | undefined): T => {
+  assert.ok(v);
+  return v;
+};
+
 describe('refund_subjects: applyRefundEvent', () => {
   it('a refund event done moves a pending refund to done and sets depositRefundedAt once', async () => {
     const world = createBookingWorld();
@@ -216,6 +221,30 @@ describe('refund_subjects: re-send', () => {
     assert.equal(refund.status, 'pending');
     return refund;
   }
+
+  it('a pending dispute refund re-sent by bookingRefundHandler only stamps depositRefundedAt, the booking keeps its status', async () => {
+    const world = createBookingWorld();
+    const draft = await newDraft(world);
+    const { paymentId } = await payDraft(world, draft.id);
+    const at = world.clock.now().toISOString();
+    // S18: a completed booking whose dispute was resolved with a refund; the first send threw.
+    await world.store.runTransaction(async (tx) => {
+      const b = await tx.getBooking(draft.id);
+      assert.ok(b);
+      await tx.setBooking({ ...b, status: 'completed', completedAt: at, disputeId: 'd1', escrowStatus: 'partially_refunded' });
+      await tx.addRefund({
+        id: 'rf_dispute', paymentId, subjectType: 'booking', amount: 400_000, percent: 40, status: 'pending', manual: false,
+        fromEscrow: true, method: 'gateway', attempts: 1, reason: 'dispute:d1', createdAt: at, updatedAt: at,
+      });
+    });
+    const before = await world.store.getBooking(draft.id);
+
+    const out = await bookingRefundHandler(world.deps).resend(must(await world.store.getRefund('rf_dispute')));
+    assert.equal(out.status, 'done');
+    const after = await world.store.getBooking(draft.id);
+    assert.ok(after?.depositRefundedAt);
+    assert.deepEqual({ ...after, depositRefundedAt: undefined, updatedAt: before?.updatedAt }, { ...before, depositRefundedAt: undefined });
+  });
 
   it('a resend re-checks pending: a done or failed refund is never sent again', async () => {
     for (const settled of ['done', 'failed'] as const) {
