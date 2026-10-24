@@ -1,6 +1,6 @@
 # Studio tuyển thợ và cộng tác viên (S27)
 
-Ngày: 2026-10-07 · Trạng thái: đã chốt với chủ dự án (các câu hỏi ở §2) · Dựa trên: `2026-10-06-studio-members-design.md` (S26: thành viên, giao thợ, đánh giá hai bên), `2026-10-06-identity-verification-design.md` (V2: chỉ thợ đã xác minh nhận việc), `2026-10-06-payments-payouts-design.md` (tiền 100% trước, giữ, nhả hai mốc), `2026-10-06-tomato-brick-reviews-design.md`. Nghiên cứu pháp lý và các nền tảng tương tự: `docs/research/2026-10-07-studio-collaborators.md`.
+Ngày: 2026-10-07 · Trạng thái: đã chốt với chủ dự án (các câu hỏi ở §2) · đã có plan [`../plans/2026-10-07-s27-studio-recruiting.md`](../plans/2026-10-07-s27-studio-recruiting.md) ([#151](https://github.com/thanhngochoang/booking/issues/151)); từng màn ở [`screens/recruit.md`](screens/recruit.md), quyết định khi làm ở sổ bàn giao `docs/superpowers/handover/ledger-s27-studio-recruiting.md` · Dựa trên: `2026-10-06-studio-members-design.md` (S26: thành viên, giao thợ, đánh giá hai bên), `2026-10-06-identity-verification-design.md` (V2: chỉ thợ đã xác minh nhận việc), `2026-10-06-payments-payouts-design.md` (tiền 100% trước, giữ, nhả hai mốc), `2026-10-06-tomato-brick-reviews-design.md`. Nghiên cứu pháp lý và các nền tảng tương tự: `docs/research/2026-10-07-studio-collaborators.md`.
 
 ## 1. Mục tiêu
 
@@ -50,6 +50,7 @@ Giới hạn: một studio có tối đa **3 tin `open`**; mỗi ngày đăng ho
 ### 3.2 Ai thấy
 
 - **Rules:** `read` khi người đọc có hồ sơ nhà cung cấp (theo vai trò tài khoản, không theo màn hình). Một tài khoản vừa là khách vừa là thợ chỉ thấy tin khi đang ở vai trò thợ. Rules-test có ca "khách không đọc được tin".
+  - **"Tài khoản nhà cung cấp" (R3, plan Decision 2)** = `users/{uid}.role == 'photographer'` **và** có tài liệu `photographers/{uid}` (mọi `providerType`, đã hay chưa xác minh). Tài khoản đang ở chế độ khách (`role = customer`) bị từ chối kể cả khi còn `photographers/{uid}` từ lần chuyển trước. Vì ai cũng tự chuyển sang vai thợ được (S09.02), R3 là "không cho khách thấy", không phải kho bí mật. App dùng cùng phép thử (`ProviderFacts.isProviderAccount`): tab "Tuyển thợ" của S06.01 chỉ có với thợ, danh sách và chi tiết không truy vấn gì khi người xem không phải nhà cung cấp, dòng "Đang tuyển · {n} tin" ở S03.01 chỉ đếm cho người xem là nhà cung cấp.
 - **Danh sách (S27.01):** lọc theo khu vực, thể loại, loại tin; sắp theo độ khớp với hồ sơ thợ (khu vực, thể loại), sau đó theo ngày đăng.
 - **Thông báo `recruit_post_new`:** chỉ gửi cho thợ khớp cả khu vực và thể loại. Mỗi thợ nhận tối đa 3 thông báo loại này mỗi ngày.
 
@@ -97,20 +98,24 @@ Giới hạn: một studio có tối đa **3 tin `open`**; mỗi ngày đăng ho
 
 ## 5. Giao việc cho CTV
 
-Phần này mở rộng S26 §5.2 (`assignBooking`). Mỗi phần tử `assignments[]` thêm các trường:
+Phần này mở rộng S26 §5.2 (`assignBooking`, thêm `assigneeKind: 'collaborator'` và `agreedFee`). Mỗi phần tử `assignments[]` thêm các trường (không có thù lao):
 
 | Trường | Ghi chú |
 |---|---|
 | `assigneeKind` | `member` \| `collaborator` |
-| `offerExpiresAt` | = giao + 6 giờ, nhưng không muộn hơn `assignDeadline` |
+| `offerExpiresAt` | = giao + 6 giờ, không muộn hơn `assignDeadline`; nếu đã quá `assignDeadline` thì không muộn hơn giờ bắt đầu. Còn dưới 15 phút thì từ chối `deadline_passed` (giao thành viên) |
 | `acceptedAt?`, `declinedAt?` | |
 
-Booking thêm `assigneeKind` và `assigneeAccepted: bool`.
+Booking thêm `assigneeKind` và `assigneeAccepted: bool`. Lúc gửi offer, booking có `assigneeId` = CTV, `assigneeAccepted: false`, `assignStatus` vẫn `unassigned`: chưa khoá lịch, chưa vào chat, khách chưa được báo, CTV chưa đọc được booking. "Thợ đã nhận" (`confirmedAssigneeId`) chỉ tính CTV khi `assigneeAccepted == true`.
 
-**Thù lao không nằm trên booking.** Khách đọc được toàn bộ document booking, nên nếu để thù lao ở đó thì khách sẽ thấy chi phí của studio. Vì vậy thù lao, trạng thái offer và bản ghi trả tiền nằm ở `collab_jobs/{bookingId}_{collaboratorId}`. Chỉ studio và CTV đó đọc được document này. Thù lao (`agreedFee`, VND) bắt buộc khi giao cho CTV, gợi ý sẵn `defaultFee`. (Sửa 2026-10-07 theo plan S27.)
+**Thù lao không nằm trên booking (plan Decision 3).** Khách đọc được toàn bộ document booking (rules không giấu được từng trường), nên nếu để thù lao ở đó thì khách sẽ thấy chi phí của studio. Vì vậy thù lao, trạng thái offer và bản ghi trả tiền nằm ở `collab_jobs/{bookingId}_{collaboratorId}`: `agreedFee`, `offerStatus` (`pending` \| `accepted` \| `declined` \| `expired` \| `replaced` \| `returned` \| `cancelled`), `offerAt`, `offerExpiresAt`, `acceptedAt?`, `declinedAt?`, `closedAt?` (booking xong hoặc huỷ), tóm tắt buổi chụp không có liên hệ khách (`shoot {day, start, end, serviceName, placeName}`, `shootEndsAt`), `payStatus` và `pay` (§5.1). Chỉ studio và CTV đó đọc được document này. Thù lao (`agreedFee`, VND số nguyên 1.000–100.000.000, bội số 1.000) bắt buộc khi giao cho CTV, gợi ý sẵn `defaultFee`. (Sửa 2026-10-07 theo plan S27; cập nhật theo bản đã làm #151.)
 
-- **Sheet S26.04 (giao thợ):** danh sách chọn gồm thành viên và CTV `active`, chia hai nhóm "Thành viên" và "Cộng tác viên". Khi chọn CTV thì có thêm ô "Thù lao" (VND).
-- **S27.07 (CTV nhận việc):** CTV mở sheet thấy tóm tắt buổi chụp (không có liên hệ khách), thù lao và hạn trả lời, rồi bấm "Nhận việc" hoặc "Từ chối".
+- **Điều kiện gửi offer:** quan hệ cộng tác `active` (không thì `not_found`), studio không bị tạm khoá (`recruit_blocked`), studio và CTV không chặn nhau, khách và CTV không chặn nhau (`orderBlocker`), CTV đang nhận đơn, ngày đó CTV chưa có lịch (`day_taken`). Gửi offer mới cho người khác khi offer cũ còn chờ thì job cũ thành `replaced`. Offer thay cho một thợ đã nhận (thành viên hoặc CTV đã nhận) trả ngày của người cũ, đưa booking về chưa giao; quá `assignDeadline` thì tính trễ như S26 (`late_reassign`); booking `upcoming` quay về `accepted`; người cũ được báo `booking_reassigned` ngay, khách được báo khi CTV mới nhận.
+- **CTV nhận:** kiểm lại lịch (ngày bận vì việc khác → `day_taken`, offer vẫn chờ), khoá ngày của CTV, booking chuyển từ `unassignedIds` sang `assignedIds` của `studio_day_load` (S26 Decision 26: CTV không thêm sức chứa trước khi nhận), `assigneeAccepted: true`, `assignStatus: assigned`, vào chat booking, khách nhận `booking_assigned` (hoặc `booking_reassigned` khi trước đó đã có thợ). Quan hệ cộng tác đã kết thúc trong lúc chờ → job `cancelled`, studio được báo "Cộng tác với {tên} đã kết thúc", CTV nhận `not_found`.
+- **CTV trả việc** ("Trả việc" của S26) chỉ với việc đã nhận: job `returned`, không có bản ghi trả tiền.
+
+- **Sheet S26.04 (giao thợ):** danh sách chọn gồm thành viên và CTV `active`, chia hai nhóm "Thành viên" và "Cộng tác viên". Khi chọn CTV thì có thêm ô "Thù lao" (VND). Hàng CTV hiện % cà chua và thù lao gợi ý, chưa có "Rảnh / Bận" như thành viên (`assignmentOptions` của máy chủ chỉ trả thành viên; ngày bận bị từ chối `day_taken`).
+- **S27.07 (CTV nhận việc):** CTV mở sheet thấy tóm tắt buổi chụp (không có liên hệ khách), thù lao và hạn trả lời, rồi bấm "Nhận việc" hoặc "Từ chối" (hỏi lại bằng sheet xác nhận nút đỏ).
   - Hết 6 giờ không trả lời coi như từ chối (job định kỳ đang có xử lý).
   - Khi CTV từ chối, studio được báo và giao người khác. Hạn 24 giờ của T6 vẫn áp dụng; nếu quá hạn thì xử lý theo S26 T8.
 - **Phía khách:** khách thấy khối "Thợ chụp cho bạn" sau khi CTV chấp nhận, với nhãn "Cộng tác với {Studio}". Quyền xin đổi thợ theo S26.05. Studio vẫn chịu trách nhiệm với khách.
@@ -118,23 +123,24 @@ Booking thêm `assigneeKind` và `assigneeAccepted: bool`.
 
 ### 5.1 Thù lao ngoài app
 
-`collab_jobs/{bookingId}_{collaboratorId}.pay`: `{amount, status: 'due' | 'paid_reported' | 'received' | 'disputed', paidAt?, method?: 'bank' | 'cash' | 'other', receivedAt?}`. Khách không đọc được.
+Trên `collab_jobs/{bookingId}_{collaboratorId}` (plan Decision 3, 15): `payStatus` (`none` \| `due` \| `paid_reported` \| `received` \| `disputed`) và `pay: {amount, dueAt?, paidOn? (yyyy-MM-dd giờ VN), method?: 'bank' | 'cash' | 'other', reportedAt?, receivedAt?, disputedAt?, overdueFlaggedAt?, disputeFlaggedAt?, checkAfter?}`. Khách không đọc được. Ứng dụng không ghi `payments`, `refunds` hay bút toán nào cho khoản này (R5).
 
-- Khi mốc 1 được nhả cho studio, trạng thái thành `due` và studio nhận nhắc: "Trả {tên} {số tiền}".
-- Studio bấm **"Đã trả"** (chọn ngày và cách trả). CTV bấm **"Đã nhận"**, hoặc **"Chưa nhận"** (`disputed`).
-- Quá 7 ngày vẫn `due`, hoặc có `disputed`, thì `studio.unpaidCollaboratorCount + 1` để staff xem. Lặp lại 3 lần trong 90 ngày thì tạm khoá quyền đăng tin và mời CTV của studio (`recruitBlockedUntil`).
+- Job định kỳ xem mốc chụp (`shoot`) của booking từ lúc buổi chụp kết thúc (`checkAfter`): mốc đã nhả cho studio thì `payStatus` thành `due`, `pay.dueAt = now`, studio nhận `collab_pay_due` "Trả {tên} {số tiền}…"; mốc còn giữ thì hỏi lại sau 6 giờ; mốc đã hoàn cho khách (không nhả) thì job không bao giờ có bản ghi trả tiền. Booking huỷ trước giờ chụp thì job `cancelled`; huỷ sau buổi chụp (hoàn qua S18) chỉ ghi `closedAt`.
+- Studio bấm **"Đã trả"** (chọn ngày ≤ hôm nay theo giờ VN và cách trả) từ `due` hoặc `disputed` → `paid_reported`, CTV nhận `collab_pay_reported`. CTV bấm **"Đã nhận"** (`received`) hoặc **"Chưa nhận"** (`disputed`, studio nhận `collab_pay_disputed`); báo lại sau khi đã khiếu nại được.
+- Quá 7 ngày vẫn `due`, hoặc có `disputed`, thì thêm một cờ vào `photographers/{studioId}/private/recruit.unpaidFlags` (mỗi job mỗi lý do một lần; cờ cũ hơn 90 ngày bị bỏ). Cờ thứ 3 trong 90 ngày đặt `recruitBlockedUntil = now + 30 ngày` (không rút ngắn khoá đang chạy): studio không đăng tin, không mời CTV, không giao việc cho CTV, không nhận ứng viên tin cộng tác (`recruit_blocked`); tin đang mở và việc đã nhận vẫn chạy. Cờ không tự xoá; staff gỡ khoá trên console tới khi có S23 (#83).
+- Khi còn job `disputed`, quan hệ cộng tác không kết thúc được (`member_busy`).
 - Khoản từ 5.000.000đ/lần trở lên: studio thấy nhắc một lần: "Khoản từ 5.000.000đ/lần có thể phải khấu trừ thuế TNCN 10%; hãy hỏi kế toán". Đây là ngưỡng mới từ 01/07/2026, chưa có xác nhận của kế toán.
 - Studio xuất được bảng kê thù lao theo tháng (CSV tạo trên máy).
 
 ## 6. Liên hệ, đánh giá, chống "đi đường vòng"
 
-- **Liên hệ (R8):** CTV chỉ đọc được booking mà mình là `assigneeId`. CTV không thấy danh sách khách hay booking khác của studio. Chat CTV–khách đi trong hội thoại của booking, có bộ lọc liên hệ. Chat studio–CTV là một hội thoại riêng, loại `collab`.
+- **Liên hệ (R8):** CTV chỉ đọc được booking mà mình là `assigneeId` **và đã nhận việc** (offer còn chờ thì không đọc được booking lẫn sự kiện của nó). CTV đọc liên hệ khách (`bookings/{id}/private/contact`) khi đã nhận và booking còn mở, hoặc trong 7 ngày sau `completedAt` / `cancel.at`; bị thay thì mất ngay vì không còn là `assigneeId` (`collaboratorContactOpen` trong domain, rules `isAssigneeContactOpen`). Chiều ngược lại không đổi theo S26 §5.7: liên hệ trên booking studio luôn mở kênh của studio, không mở kênh riêng của CTV. CTV không thấy danh sách khách hay booking khác của studio. Chat CTV–khách đi trong hội thoại của booking, có bộ lọc liên hệ. Chat studio–CTV là một hội thoại riêng, loại `collab`.
 - **Đánh giá:** như S26 §6. Khách đánh giá thợ cuối cùng (CTV) và studio thành hai bản ghi. Đánh giá CTV cộng vào % cà chua của chính CTV, kèm tag "Qua {Studio}". Studio và CTV không đánh giá nhau trong phase 1.
-- **Chống đi đường vòng:** gồm bộ lọc liên hệ, liên hệ chỉ mở theo R8, và cam kết 6 tháng ở §4. Nếu một CTV có từ 2 booking cá nhân với cùng khách mà studio đã giao, trong vòng 6 tháng, thì gắn cờ cho staff. Hệ thống chỉ ghi nhận, không tự xử lý. Khách vẫn được đặt thợ trực tiếp; app không chặn quyền chọn của khách.
+- **Chống đi đường vòng:** gồm bộ lọc liên hệ, liên hệ chỉ mở theo R8, và cam kết 6 tháng ở §4. Nếu một CTV có từ 2 booking cá nhân với cùng khách mà studio đã giao, trong vòng 6 tháng, thì gắn cờ cho staff (`staff_flags/poach_{photographerId}_{customerId}`, `kind: collab_poaching`, ghi một lần khi booking cá nhân mới được tạo, kể cả booking nháp). Hệ thống chỉ ghi nhận, không tự xử lý. Khách vẫn được đặt thợ trực tiếp; app không chặn quyền chọn của khách.
 
 ## 7. Màn hình (S27 · Studio tuyển thợ)
 
-Mock là bước đầu tiên của plan; chưa có mock.
+Mock: `docs/design/ui-mock.html` mục S27 (`#S27.01`–`#S27.07`, biến thể `#S27.02-unverified`, `#S27.06-me`, `#S26.02-collab`, `#S26.04-collab`, `#S05.02-studio-collab`). Từng màn như đã làm: [`screens/recruit.md`](screens/recruit.md).
 
 | Mã | Màn | Route | Ai |
 |---|---|---|---|
@@ -177,7 +183,9 @@ Hook: `notifyRecruitPostNew`, `notifyRecruitApplicationNew`, `notifyRecruitAppli
   - Tin tuyển chỉ đọc theo R3.
   - Ứng tuyển chỉ đọc bởi thợ ứng tuyển và studio của tin.
   - Quan hệ cộng tác chỉ đọc bởi hai bên.
-  - `bookings` cho CTV đọc khi CTV là `assigneeId`.
+  - `bookings` cho CTV đọc khi CTV là `assigneeId` và đã nhận việc; truy vấn danh sách việc của thợ phải lọc thêm `assignStatus == 'assigned'`.
+  - `collab_jobs` chỉ đọc bởi studio và CTV của job (khách không bao giờ đọc); `staff_flags` không client nào đọc.
+  - `photographers/{uid}.recruitMatchKeys` chỉ server ghi.
   - Mọi ghi đi qua callable.
 - **Job:** dùng lại job định kỳ của S26 (§5.5, mỗi 15 phút), không thêm lịch mới. Job này hết hạn ứng tuyển (7 ngày), lời mời cộng tác, offer giao việc (6 giờ) và tin tuyển (30 ngày), và bật trạng thái `due` cho nhắc trả thù lao.
 - **Chi phí:** xem `2026-10-07-google-cloud-costs.md` §14. Phần lớn là đọc danh sách tin (phân trang 20, dùng `get` chứ không dùng listener) và thông báo khớp tin (truy vấn thợ theo khu vực và thể loại khi đăng tin, tối đa 200 thợ mỗi tin). Không có API trả phí mới.

@@ -228,13 +228,13 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S26.04 | Giao thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
 | S26.05 | Xin đổi thợ (sheet) | — (sheet) | khách | spec 10-06 Studio | [#136](https://github.com/thanhngochoang/booking/issues/136) | — |
 | **S27** | **Studio tuyển thợ** | | | | | |
-| S27.01 | Tin tuyển: danh sách, lọc khu vực / thể loại / loại (tab "Tuyển thợ" trong S06.01) | `/recruit` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| S27.02 | Chi tiết tin tuyển | `/recruit/:postId` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| S27.03 | Ứng tuyển (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| S27.04 | Đăng / sửa tin (studio) | `/studio/recruit/new` | studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| S27.05 | Tin của studio và ứng viên | `/studio/recruit` | studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| S27.06 | Cộng tác (studio và thợ) | `/collab` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| S27.07 | Nhận việc cộng tác (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
+| S27.01 | Tin tuyển: danh sách, lọc khu vực / thể loại / loại (tab "Tuyển thợ" trong S06.01) | `/recruit` | thợ ảnh · studio | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
+| S27.02 | Chi tiết tin tuyển | `/recruit/:postId` | thợ ảnh · studio | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
+| S27.03 | Ứng tuyển (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
+| S27.04 | Đăng / sửa tin (studio) | `/studio/recruit/new` | studio | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
+| S27.05 | Tin của studio và ứng viên | `/studio/recruit` | studio | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
+| S27.06 | Cộng tác (studio và thợ) | `/collab` | thợ ảnh · studio | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
+| S27.07 | Nhận việc cộng tác (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | [#151](https://github.com/thanhngochoang/booking/issues/151) | — |
 | **S28** | **Studio trên web** (dashboard Phase 1.5, chỉ chủ studio) | | | | | |
 | S28.01 | Tổng quan studio: chờ giao thợ, khách xin đổi thợ, cần bàn giao, buổi chụp hôm nay | `/studio` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
 | S28.02 | Lịch tuần theo thành viên (hàng "Chưa giao thợ", cộng tác viên) | `/studio/calendar` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
@@ -836,14 +836,14 @@ Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notific
 | `job_selected` | thợ ảnh | `work` · xanh | Công việc | — | Việc đăng tuyển | Bỏ: **thay bằng `quote_accepted`**; còn trong danh mục để dòng cũ vẫn có biểu tượng, không còn hook |
 | `recruit_post_new` | thợ ảnh khớp tin | `work` · tím | Công việc | `/recruit/:id` (S27) | Việc đăng tuyển | Tối đa 3 mỗi thợ mỗi ngày (#151) |
 | `recruit_application_new` | studio | `work` · vàng | Công việc | `/studio/recruit?post=<id>` | Việc đăng tuyển | Gom theo tin (`recruit:<postId>:apps`) |
-| `recruit_application_result` | thợ ảnh | `work` · tím | Công việc | `/recruit/:id` | Việc đăng tuyển | Nhận làm cộng tác viên / thành viên, từ chối, hết hạn |
-| `collab_invite` | cộng tác viên | `store` · vàng | Công việc | `/collab` | Việc đăng tuyển | Hết hạn sau 7 ngày |
-| `collab_invite_result` | studio | `store` · tím | Công việc | `/collab` | Việc đăng tuyển | |
-| `collab_assignment_offer` | cộng tác viên | `work` · vàng | Công việc | `/collab?offer=<bookingId>` | Việc đăng tuyển | Quan trọng: lời đề nghị có hạn trả lời |
-| `collab_assignment_result` | studio | `calendar` · tím | Công việc | `/b/:id` | Việc đăng tuyển | |
+| `recruit_application_result` | thợ ảnh | `work` · theo kết quả (nhận: xanh; từ chối, hết hạn: xám) | Công việc | `/recruit/:id` | Việc đăng tuyển | Nhận làm cộng tác viên / thành viên, từ chối (cả khi studio đóng tin), hết hạn; khoá `recruit_application_result:{postId}:{outcome}` |
+| `collab_invite` | cộng tác viên | `handshake` · vàng | Công việc | `/collab` | Việc đăng tuyển | Hết hạn sau 7 ngày; khoá kèm `invitedAt` |
+| `collab_invite_result` | studio | `handshake` · theo kết quả (nhận: xanh; từ chối, hết hạn: xám) | Công việc | `/collab` | Việc đăng tuyển | |
+| `collab_assignment_offer` | cộng tác viên | `handshake` · vàng | Công việc | `/collab?offer=<bookingId>` | Việc đăng tuyển | Quan trọng: lời đề nghị có hạn trả lời (6 giờ); khoá kèm `offerAt` nên offer lần sau cho cùng người vẫn được gửi |
+| `collab_assignment_result` | studio | `handshake` · theo kết quả (nhận: xanh; từ chối, hết hạn: xám; quan hệ đã kết thúc: tím) | Công việc | `/b/:id` | Việc đăng tuyển | Kết quả `accepted`, `declined`, `expired`, `ended` ("Cộng tác với {tên} đã kết thúc" khi quan hệ kết thúc lúc offer còn chờ); từ chối, hết hạn nêu "Giao người khác trước {hạn}." |
 | `collab_pay_due` | studio | `payment` · vàng | Công việc | `/collab` | Việc đăng tuyển | Thù lao trả ngoài app, đến hạn |
-| `collab_pay_reported` | cộng tác viên | `payment` · tím | Công việc | `/collab` | Việc đăng tuyển | Bấm "Đã nhận" hoặc "Chưa nhận" |
-| `collab_pay_disputed` | studio | `payment` · đỏ | Công việc | `/collab` | Việc đăng tuyển | |
+| `collab_pay_reported` | cộng tác viên | `payment` · tím | Công việc | `/collab` | Việc đăng tuyển | Bấm "Đã nhận" hoặc "Chưa nhận"; khoá kèm `reportedAt` (báo lại sau khiếu nại vẫn gửi) |
+| `collab_pay_disputed` | studio | `payment` · đỏ | Công việc | `/collab` | Việc đăng tuyển | Phía staff chỉ là cờ `unpaidFlags` tới khi S23 có hộp thư; khoá kèm `disputedAt` |
 | `instant_assigned` | khách | `instant` · xanh | Đặt lịch | `/instant/:id` (S13.05) | Chụp ngay | |
 | `instant_missed` | thợ ảnh | `instant` · xám | Công việc | `/work/instant` (S14.01) | Chụp ngay | Bản ghi "bỏ lỡ lời mời" |
 | `instant_round_ended` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | "Chưa ai nhận. Chọn thêm người nhé." (#140); một dòng mỗi lượt; không có dòng khi mọi người của lượt đều bận lúc gửi (khách biết ngay trong câu trả lời của `inviteInstant`) |
@@ -862,7 +862,7 @@ Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notific
 | `chat_message` | cả hai | `chat` · tím | Hệ thống | `/chat/:roomId` (S07.01) | Tin nhắn | Chỉ khi app ở nền; gom theo phòng |
 | `promo` | cả hai | `info` · tím | Hệ thống | theo `target` | Khuyến mãi | Tắt mặc định (S17.02); chưa có nơi phát (cần công cụ staff) |
 
-Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = thành công, vàng = cần hành động, đỏ = bị từ chối hoặc huỷ, xám = đã qua, tím = mặc định). Loại lạ hiện biểu tượng `info` tông tím. Hàng "Đặt lịch và thanh toán" của S17.02 không tắt được kênh Trong app; dòng quan trọng luôn vào hộp thư dù kênh tắt.
+Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = thành công, vàng = cần hành động, đỏ = bị từ chối hoặc huỷ, xám = đã qua, tím = mặc định). Loại lạ hiện biểu tượng `info` tông tím. Hàng "Đặt lịch và thanh toán" của S17.02 không tắt được kênh Trong app; dòng quan trọng luôn vào hộp thư dù kênh tắt. Tông "theo kết quả" của ba loại `*_result` của S27 đọc từ `variant` (= `outcome` của nội dung) trong `notificationVisualOf`; hộp thư hiện chưa truyền `variant` nên các dòng này hiện tím cho tới khi dòng thông báo mang kết quả (#151, sổ bàn giao `ledger-s27-studio-recruiting.md`).
 
 Bảy loại `instant_*` của bảng là dòng hộp thư; chủ phát duy nhất là trigger `onInstantRequestWrite` (#140) qua bộ quyết định thuần `instantNotices(before, after)`. Lời mời (S14.02) là push riêng `offerPushMessage` ("Lời mời chụp ngay" / "{kiểu chụp} {thời lượng} · {khu} · bạn nhận {số tiền}. Còn 60 giây."), kênh `default` ưu tiên cao kể cả giờ yên lặng, không có dòng hộp thư. Một yêu cầu có thể được nhận lại sau khi thợ huỷ, nên khoá chống trùng của `instant_assigned`, `instant_arrived`, `instant_finished`, `instant_cancelled` kèm mốc nhận việc (`assignedAt` tính bằng ms), của `instant_no_match` kèm số lượt; nội dung và `target` không đổi.
 
