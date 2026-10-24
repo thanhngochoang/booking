@@ -16,7 +16,6 @@ import {
 import {
   handleCreateBooking,
   handleTransitionBooking,
-  handleOpenDispute,
 } from '../../src/callables/booking.js';
 import { handleConfirmFakePayment, handleCreatePayment } from '../../src/callables/payment.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
@@ -85,7 +84,6 @@ describe('Booking callables', () => {
 
     await assert.rejects(handleCreateBooking(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
     await assert.rejects(handleTransitionBooking(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
-    await assert.rejects(handleOpenDispute(unauthed), httpsError('unauthenticated', 'permission_denied'));
   });
 
   test('handleCreateBooking creates a draft booking for signed-in customer', async () => {

@@ -6,6 +6,7 @@ import {
 } from 'firebase-admin/firestore';
 import type {
   DisplayNames,
+  Dispute,
   SupportMessage,
   SupportSenderRole,
   SupportStore,
@@ -13,6 +14,7 @@ import type {
   SupportThreadKind,
   SupportTx,
 } from '@photobooking/domain';
+import { DISPUTES_COLLECTION, disputeFromFirestore } from './dispute_mapping.js';
 
 export const SUPPORT_THREADS_COLLECTION = 'support_threads';
 export const MESSAGES_SUBCOLLECTION = 'messages';
@@ -111,8 +113,8 @@ export function supportMessageFromFirestore(d: DocumentData | null | undefined):
 
 export class FirestoreSupportTx implements SupportTx {
   constructor(
-    private readonly firestore: Firestore,
-    private readonly tx: Transaction,
+    protected readonly firestore: Firestore,
+    protected readonly tx: Transaction,
   ) {}
 
   async getThread(id: string): Promise<SupportThread | null> {
@@ -133,9 +135,10 @@ export class FirestoreSupportTx implements SupportTx {
     return supportMessageFromFirestore(snap.data());
   }
 
-  /** Stub until #142 Task 8 maps `disputes/{id}` (FirestoreDisputeStore): dispute threads stay not_found here. */
-  async getDispute(): Promise<null> {
-    return null;
+  /** `disputes/{id}` (#142): a dispute thread's party check and its open/resolved state. */
+  async getDispute(id: string): Promise<Dispute | null> {
+    const snap = await this.tx.get(this.firestore.collection(DISPUTES_COLLECTION).doc(id));
+    return snap.exists ? disputeFromFirestore(snap.data()) : null;
   }
 
   putThread(t: SupportThread): void {
@@ -154,7 +157,7 @@ export class FirestoreSupportTx implements SupportTx {
 }
 
 export class FirestoreSupportStore implements SupportStore {
-  constructor(private readonly firestore: Firestore) {}
+  constructor(protected readonly firestore: Firestore) {}
 
   async runTransaction<T>(fn: (tx: SupportTx) => Promise<T>): Promise<T> {
     return this.firestore.runTransaction(async (fTx) => {

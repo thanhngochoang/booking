@@ -199,6 +199,17 @@ describe('Firestore mapping for events', () => {
   });
 
 
+  it('registration mapping round-trips disputeId', () => {
+    const r = registration({ status: 'paid', amount: 250000, disputeId: 'dsp_01' });
+    const doc = registrationToFirestore(r);
+    assert.equal(doc.disputeId, 'dsp_01');
+    assert.deepEqual(registrationFromFirestore('r1', doc), r);
+    // A registration without a dispute writes null and reads the field absent (so the next write keeps null).
+    const plain = registrationToFirestore(registration());
+    assert.equal(plain.disputeId, null);
+    assert.equal('disputeId' in registrationFromFirestore('r1', plain), false);
+  });
+
   it('registration reader returns the host and end time', async () => {
     const reg = registrationToFirestore(registration({ contactEligible: true }));
     const evDoc = eventToFirestore(event({ status: 'open' }));

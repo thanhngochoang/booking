@@ -40,6 +40,7 @@ import {
   type StudioBookingTx,
   type StudioDayLoad,
   type Payment,
+  type PaymentDispute,
   type PaymentStatus,
   type Refund,
   type RefundStatus,
@@ -335,6 +336,8 @@ export function bookingToFirestore(b: Booking): DocumentData {
       : null,
     completedAt: toTimestamp(b.completedAt),
     reviewedAt: toTimestamp(b.reviewedAt),
+    // S18: the dispute mirror (written by the dispute transaction) survives every booking write.
+    disputeId: b.disputeId ?? null,
     chatId: b.chatId ?? null,
     revisionsIncluded: b.revisionsIncluded ?? null,
     revisionsUsed: b.revisionsUsed ?? null,
@@ -476,6 +479,7 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     cancel: cancelObj,
     completedAt: toIsoString(d.completedAt),
     reviewedAt: toIsoString(d.reviewedAt),
+    ...(typeof d.disputeId === 'string' && d.disputeId !== '' ? { disputeId: d.disputeId } : {}),
     chatId: d.chatId ?? undefined,
     ...(typeof d.source === 'string' ? { source: d.source as BookingSource } : {}),
     ...(typeof d.spotId === 'string' ? { spotId: d.spotId } : {}),
@@ -515,6 +519,35 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
   };
 }
 
+/**
+ * `payments/{id}.dispute` (S18): `{reason, openedAt, disputeId?, milestone?, prevEscrowStatus?}`. Only the
+ * fields present are written, so a row from before S18 (`reason` + `openedAt`) reads back unchanged.
+ */
+function paymentDisputeToFirestore(x: PaymentDispute): DocumentData {
+  return {
+    reason: x.reason,
+    openedAt: toTimestamp(x.openedAt),
+    ...(x.disputeId !== undefined ? { disputeId: x.disputeId } : {}),
+    ...(x.milestone !== undefined ? { milestone: x.milestone } : {}),
+    ...(x.prevEscrowStatus !== undefined ? { prevEscrowStatus: x.prevEscrowStatus } : {}),
+  };
+}
+
+function paymentDisputeFromFirestore(v: unknown): PaymentDispute | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const d = v as Record<string, unknown>;
+  if (typeof d.reason !== 'string') return null;
+  const m = d.milestone;
+  const prev = d.prevEscrowStatus;
+  return {
+    reason: d.reason,
+    openedAt: toIsoString(d.openedAt) ?? new Date(0).toISOString(),
+    ...(typeof d.disputeId === 'string' && d.disputeId !== '' ? { disputeId: d.disputeId } : {}),
+    ...(m === null || m === 'shoot' || m === 'delivery' ? { milestone: m } : {}),
+    ...(prev === 'held' || prev === 'partially_refunded' ? { prevEscrowStatus: prev } : {}),
+  };
+}
+
 export function paymentToFirestore(p: Payment): DocumentData {
   return {
     subjectType: p.subjectType,
@@ -546,7 +579,7 @@ export function paymentToFirestore(p: Payment): DocumentData {
     paidAt: toTimestamp(p.paidAt),
     releasedAt: toTimestamp(p.releasedAt),
     releaseAfter: toTimestamp(p.releaseAfter),
-    dispute: p.dispute ? { reason: p.dispute.reason, openedAt: toTimestamp(p.dispute.openedAt) } : null,
+    dispute: p.dispute ? paymentDisputeToFirestore(p.dispute) : null,
     payoutId: p.payoutId ?? null,
     payableAmount: p.payableAmount ?? null,
     milestones: p.milestones
@@ -599,10 +632,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     paidAt: toIsoString(d.paidAt),
     releasedAt: toIsoString(d.releasedAt),
     releaseAfter: toIsoString(d.releaseAfter),
-    dispute:
-      d.dispute && typeof d.dispute === 'object' && typeof d.dispute.reason === 'string'
-        ? { reason: d.dispute.reason, openedAt: toIsoString(d.dispute.openedAt) ?? new Date(0).toISOString() }
-        : null,
+    dispute: paymentDisputeFromFirestore(d.dispute),
     payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
     ...(typeof d.payableAmount === 'number' ? { payableAmount: d.payableAmount } : {}),
     ...(Array.isArray(d.milestones)

@@ -6,8 +6,9 @@ import { handleGetContactLink } from './callables/get_contact_link.js';
 import {
   handleCreateBooking,
   handleTransitionBooking,
-  handleOpenDispute,
 } from './callables/booking.js';
+import { handleOpenDispute, handleResolveDispute } from './callables/dispute.js';
+import { liveDisputeDeps } from './infra/live_dispute.js';
 import {
   handleSubmitDelivery,
   handleApproveDelivery,
@@ -292,8 +293,12 @@ export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
 /** Booking lifecycle transition */
 export const transitionBooking = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
 
-/** Open dispute on completed/upcoming booking */
-export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request));
+/** S18.01: the customer opens a dispute on a booking or a paid ticket (freezes the held money). */
+export const openDispute = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveDisputeDeps()));
+
+/** S18 staff (claim `staffRole == 'admin'`): release / refund / split; the refund goes out on the fake rails. */
+export const resolveDispute = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleResolveDispute(request, liveDisputeDeps()));
+
 
 /** Delivery: provider submits preview round */
 export const submitDelivery = onCall(CALLABLE_OPTIONS, (request) => handleSubmitDelivery(request, liveBookingDeps()));

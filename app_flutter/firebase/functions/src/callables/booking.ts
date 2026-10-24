@@ -56,10 +56,3 @@ export async function handleTransitionBooking(request: CallableInput, deps: Book
     handleCallableError('transitionBooking', e);
   }
 }
-
-export async function handleOpenDispute(request: CallableInput): Promise<Booking> {
-  const uid = request.auth?.uid;
-  if (uid === undefined) throw new HttpsError('unauthenticated', 'permission_denied', { code: 'permission_denied' });
-  // Stub (#142 Task 7 replaced the booking-only use case): Task 8 re-points `openDispute` to the dispute use case.
-  throw new HttpsError('unimplemented', 'not_eligible', { code: 'not_eligible' });
-}

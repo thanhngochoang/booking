@@ -34,6 +34,7 @@ void main() {
       'chats/{chatId}/{uid}/{file}': ImagePurpose.chat,
       'eventCovers/{uid}/{eventId}/{file}': ImagePurpose.share,
       'businessDocs/{uid}/{file}': ImagePurpose.document,
+      'disputeEvidence/{uid}/{disputeId}/{file}': ImagePurpose.document,
     };
     for (final MapEntry(key: path, value: purpose) in table.entries) {
       expect(

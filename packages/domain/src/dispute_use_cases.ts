@@ -40,6 +40,9 @@ const PLATFORM = 'platform';
 const SYSTEM_NAME = 'Hệ thống';
 const PREVIEW_MAX = 80;
 
+/** The system line that opens every dispute thread (the seed writes the same text). */
+export const DISPUTE_OPENED_TEXT = 'Khiếu nại đã được gửi. Tiền được giữ tới khi có kết quả.';
+
 function newDisputeThread(d: Dispute, at: string): SupportThread {
   return {
     id: d.threadId,
@@ -173,7 +176,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     tx.linkSubject(subject, { disputeId: dispute.id, escrowStatus: frozen.escrowStatus });
     tx.setDispute(dispute);
     tx.putThread(thread);
-    tx.addMessage(systemMessage(dispute.threadId, deps.ids.newId(), 'Khiếu nại đã được gửi. Tiền được giữ tới khi có kết quả.', at));
+    tx.addMessage(systemMessage(dispute.threadId, deps.ids.newId(), DISPUTE_OPENED_TEXT, at));
     tx.addMessage(first);
     return dispute;
   });

@@ -204,6 +204,8 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     refundDue: r.refundDue === true,
     refundId: r.refundId ?? null,
     refundStatus: r.refundStatus ?? null,
+    // S18: the dispute mirror (written by the dispute transaction) survives every registration write.
+    disputeId: r.disputeId ?? null,
     event: {
       title: r.event.title,
       type: r.event.type,
@@ -241,6 +243,7 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     ...(d.refundDue === true ? { refundDue: true } : {}),
     ...(str(d.refundId) !== null ? { refundId: str(d.refundId) as string } : {}),
     ...((REFUND_STATUSES as readonly unknown[]).includes(d.refundStatus) ? { refundStatus: d.refundStatus as RefundStatus } : {}),
+    ...(str(d.disputeId) !== null ? { disputeId: str(d.disputeId) as string } : {}),
     event: {
       title: String(ev.title ?? ''),
       type: (str(ev.type) ?? 'other') as RegistrationDoc['event']['type'],

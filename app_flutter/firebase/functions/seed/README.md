@@ -17,7 +17,7 @@ Password for every account: `seed-password-1`
 | `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`, `approvedAwardCount: 3`), Huế; Gọi only; `+84905000001` |
 | `giang.pending@seed.test` | `seed-photographer-giang` | photographer | not verified, Cần Thơ; Gọi only; `+84976000001` (also her Auth phone); S21 verification submitted, waiting for staff (see "Verification (S21)") |
 | `hoa.ctv@seed.test` | `seed-photographer-hoa` | photographer | verified individual, TP.HCM (cưới, gia đình), in no studio; Gọi only; `+84909000001`; S27 applicant Cúc can accept (see "Studio recruiting (S27)") |
-| `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and is the `--actor` of `npm run awards` |
+| `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and `resolveDispute`, and is the `--actor` of `npm run awards` |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
 |---|---|---|---|
@@ -31,6 +31,7 @@ Password for every account: `seed-password-1`
 | `seed-booking-cancelled` | Lan ↔ An | cancelled | `contact_locked` |
 | `seed-booking-completed-recent` | Lan ↔ An | completed 3 days before seeding | unlocked |
 | `seed-booking-completed-old` | Lan ↔ An | completed 40 days before seeding | `contact_locked` |
+| `seed-booking-completed-window` | Lan ↔ An | completed 2 hours before seeding, payment still `held` (no milestones, `releaseAfter` = completion + 24 h): sign in as Lan to open S18.01 ("Báo vấn đề · còn 22 giờ") | unlocked |
 
 ### Delivery (two-layer)
 
@@ -78,8 +79,8 @@ Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data
 | `payoutAccounts/{uid}` + `accounts/seed-account-an-1` | An | VCB, `0123456789` (stored encrypted with the emulator key in `.secret.local`; the owner view shows `•••• 6789`), holder `NGUYEN VAN AN`; `nameStatus: matched`, active from the seed start (`SEED_CREATED_AT`) |
 | `users/{uid}/private/identity` | An | identity legalName (An): `Nguyễn Văn An`, `method`/`provider` `fake` (test value; the doc's full shape is #135's) |
 | Payout `seed-payout-an-1` | An | `paid`, the first payout to the account (approved by `seed-staff-admin`); 1 500 000 gross, tax 7% 105 000, net 1 395 000; its payment (`seed-payment-seed-booking-completed-old`) is `paid_out`, with `payout_paid` −1 395 000 and `tax_withheld` −105 000 ledger entries |
-| `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed`, reason "Ảnh giao thiếu so với gói" |
-| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 3 × 1 500 000, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
+| `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed` by `seed-dispute-lan-an` (see Disputes) |
+| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 4 × 1 500 000 among the legacy bookings, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
 | Payout account | Bình | none (the S06.05 add-account card) |
 
 ## Chats (S07)
@@ -219,6 +220,8 @@ npm run payouts -- approve <payoutId> --actor seed-staff-admin
 | Group chat of the walk | An, Lan | member docs (names only), a join line for Lan, An's announcement `seed-msg-announcement` pinned |
 | `seed-event-an-night-walk` | An | "Chụp phố đêm", open, free, starts **36 hours after seeding** (meeting point Nhà hát Thành phố), `soonNoticeAt` null: the next event clock run sends the S17 `event_soon` reminder; group chat with An and Lan |
 | `seed-registration-lan-night-walk` | Lan | free registration to the night walk: `paid`, ticket `VE-LANB-0000` |
+| `seed-event-an-past-workshop` | An | "Workshop chân dung ngoài trời", 250 000 VND, started 5 hours and **ended 3 hours before seeding**, `completed`; group chat with An and Lan |
+| `seed-registration-lan-past-paid` | Lan | paid ticket `VE-LANC-0000` of the past workshop, `contactEligible: true` with its `private/contact` snapshot; payment `seed-payment-ticket-lan-past` `held` until the end + 24 h: sign in as Lan to report a problem from S11.04 (21 hours left) |
 
 Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability
 (unless a seed booking already holds that day), and each registration its `ticket_codes/*` entry.
@@ -287,7 +290,7 @@ only seeded provider serving TP.HCM, so a new HCM post by Cúc notifies Hòa (up
 
 | Photographer | `startingPrice` | `stats.nextFreeDate` | `stats.completedCount` | Notes |
 |---|---|---|---|---|
-| An | 1 500 000 ₫ | computed from today & booked days | 3 | completed bookings: `recent`, `old`, `disputed` |
+| An | 1 500 000 ₫ | computed from today & booked days | 4 | completed bookings: `recent`, `old`, `disputed`, `completed-window` |
 | Bình | 1 200 000 ₫ | computed from today | 0 | unverified, `acceptingOrders: false` |
 | Cúc | 2 500 000 ₫ | computed from today and its `full` days | 0 | studio package `seed-service-studio-family` (S26) |
 | Dũng | `null` | computed from today | 0 | no services seeded |
@@ -319,6 +322,21 @@ npm run clock -- events
 # eventClock: closed=0 completed=0 consentExpired=0 refunded=0 soonEvents=1 soonSent=1
 # Lan's inbox now has "Chụp phố đêm bắt đầu ngày mai" (or "sau 2 ngày"); a second run sends nothing.
 ```
+
+## Disputes (S18, #142)
+
+| Data | Parties | Notes |
+|---|---|---|
+| `disputes/seed-dispute-lan-an` | Lan ↔ An | `open`, reason `photos_missing`, opened 1 hour after `seed-booking-disputed` completed, built with the domain's dispute rules (window, whole-payment freeze: the payment has no milestones, so `dispute.prevEscrowStatus: held`); the booking carries `disputeId`, the payment `dispute.disputeId` |
+| `support_threads/dispute_seed-dispute-lan-an` + `messages/*` | Lan, An, staff | system line, Lan's description, a staff question (`seed-staff-admin`), An's answer: `awaitingStaff: true`, so it is listed by `npm run support -- list` |
+
+To try the other side of S18.01: `seed-booking-completed-window` (booking) and `seed-registration-lan-past-paid` (ticket) are inside their windows with the money held.
+
+### Staff CLI for disputes
+
+`resolveDispute` is callable by `seed-staff-admin` (claim `staffRole: 'admin'`). The staff CLI
+`npm run disputes -- list | show <id> | resolve <id> release|refund|split [percent] "<note>" --actor seed-staff-admin`
+comes with #142 Task 9 and calls the same `resolveDispute` use case.
 
 ## Staff CLI for support
 
