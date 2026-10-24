@@ -11,13 +11,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// Whole Vietnam calendar days from [now] to [expiresAt]; 0 = it lapses
 /// today.
 int studioDaysLeft(DateTime expiresAt, DateTime now) {
-  final a = toVn(now);
-  final b = toVn(expiresAt);
-  final days = DateTime.utc(
-    b.year,
-    b.month,
-    b.day,
-  ).difference(DateTime.utc(a.year, a.month, a.day)).inDays;
+  final days = vnDaysBetween(now, expiresAt);
   return days < 0 ? 0 : days;
 }
 

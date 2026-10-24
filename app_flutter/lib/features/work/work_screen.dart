@@ -13,6 +13,7 @@ import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/data/recruit/recruit_post.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
@@ -52,6 +53,9 @@ class WorkScreen extends ConsumerStatefulWidget {
 
 class _WorkScreenState extends ConsumerState<WorkScreen> {
   WorkSegment _segment = WorkSegment.today;
+
+  /// The "Tuyển thợ" filter, kept while the segment is swapped out.
+  RecruitFilter _recruitFilter = const RecruitFilter();
 
   /// The request being accepted; every Nhận/Từ chối waits for it.
   String? _accepting;
@@ -260,7 +264,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ),
             Expanded(
               child: recruit
-                  ? const RecruitListView()
+                  ? RecruitListView(
+                      initial: _recruitFilter,
+                      onFilterChanged: (f) => _recruitFilter = f,
+                    )
                   : _today(context, dashboard, features, now),
             ),
           ],

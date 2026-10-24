@@ -42,8 +42,8 @@ String recruitFrequencyLong(RecruitFrequency f, AppLocalizations l) =>
 /// Age of a post on the Vietnam calendar: "{n} giờ trước" the same day,
 /// "hôm qua", "{n} ngày trước" within a week, then "{n} tuần trước".
 String recruitAgo(AppLocalizations l, DateTime at, DateTime now) {
-  final days = studioDaysLeft(now, at);
-  if (days == 0) return studioAgo(l, at, now);
+  final days = vnDaysBetween(at, now);
+  if (days <= 0) return studioAgo(l, at, now);
   if (days == 1) return l.recruitAgoYesterday;
   if (days < 7) return l.studioAgoDays(days);
   return l.recruitAgoWeeks(days ~/ 7);
@@ -90,7 +90,7 @@ class RecruitKindTag extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s2,
-          vertical: 3,
+          vertical: AppSpace.s1,
         ),
         child: Text(
           recruitKindLabel(kind, context.l10n),
@@ -119,12 +119,15 @@ class RecruitMatchTag extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.full),
     ),
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s2,
+        vertical: AppSpace.s1,
+      ),
       child: Text(
         context.l10n.recruitMatch,
         maxLines: 1,
         style: TextStyle(
-          fontSize: 10.5,
+          fontSize: AppText.xs,
           fontWeight: FontWeight.w600,
           color: _ink2(context),
         ),
@@ -238,7 +241,7 @@ class RecruitCard extends StatelessWidget {
                   height: 1.3,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: AppSpace.s1),
               Text.rich(
                 TextSpan(
                   children: [
@@ -247,8 +250,8 @@ class RecruitCard extends StatelessWidget {
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: ProviderMark(mark, size: 13),
+                          padding: const EdgeInsets.only(left: AppSpace.s1),
+                          child: ProviderMark(mark, size: AppText.base2),
                         ),
                       ),
                     for (final part in where) TextSpan(text: ' · $part'),
@@ -258,7 +261,7 @@ class RecruitCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: AppText.sm, color: ink2),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: AppSpace.s1),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -268,7 +271,7 @@ class RecruitCard extends StatelessWidget {
                   Text(
                     fee,
                     style: TextStyle(
-                      fontSize: AppText.base2 - 0.5,
+                      fontSize: AppText.base2,
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                       fontFeatures: const [FontFeature.tabularFigures()],

@@ -289,4 +289,35 @@ void main() {
     );
     expect(find.byType(RecruitCard), findsOneWidget);
   });
+
+  testWidgets('a post past its expiry is hidden even while still open', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      posts: [
+        makeRecruitPost(id: 'live'),
+        makeRecruitPost(
+          id: 'lapsed',
+          title: 'Tin đã quá hạn nhưng chưa quét',
+          expiresAt: recruitNow.subtract(const Duration(minutes: 1)),
+        ),
+      ],
+    );
+    expect(_key('recruit-card-live'), findsOneWidget);
+    expect(_key('recruit-card-lapsed'), findsNothing);
+    expect(find.text('Tin đã quá hạn nhưng chưa quét'), findsNothing);
+  });
+
+  testWidgets('only lapsed posts: the empty line shows', (tester) async {
+    await _open(
+      tester,
+      posts: [
+        makeRecruitPost(
+          expiresAt: recruitNow.subtract(const Duration(minutes: 1)),
+        ),
+      ],
+    );
+    expect(_key('recruit-empty'), findsOneWidget);
+  });
 }

@@ -887,6 +887,36 @@ void main() {
       expect(r.listedKeys, isEmpty);
     });
 
+    testWidgets('the recruit filter survives a switch to "Hôm nay" and back, '
+        'without a new query', (tester) async {
+      final r = recruits();
+      await pumpBookingsTab(
+        tester,
+        uid: detailPhotographerUid,
+        role: UserRole.photographer,
+        bookings: _repo(_busy()),
+        clock: TestClock(_now),
+        extraOverrides: [recruitRepositoryProvider.overrideWithValue(r)],
+      );
+      await _settle(tester);
+      await tester.tap(segment('Tuyển thợ'));
+      await _settle(tester);
+      final member = find.byKey(const Key('recruit-filter-kind-member'));
+      await tester.ensureVisible(member);
+      await tester.tap(member);
+      await _settle(tester);
+      expect(r.listedKeys, ['', 'k=member']);
+      await tester.tap(segment('Hôm nay'));
+      await _settle(tester);
+      await tester.tap(segment('Tuyển thợ'));
+      await _settle(tester);
+      final chip = tester.widget<AppChip>(
+        find.byKey(const Key('recruit-filter-kind-member')),
+      );
+      expect(chip.selected, isTrue);
+      expect(r.listedKeys, ['', 'k=member']);
+    });
+
     testWidgets('a customer never reaches WorkScreen', (tester) async {
       final r = recruits();
       await pumpBookingsTab(

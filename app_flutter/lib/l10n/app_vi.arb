@@ -4159,6 +4159,8 @@
   "recruitSend": "Gửi ứng tuyển",
   "recruitSentToast": "Đã gửi ứng tuyển",
   "recruitContactError": "Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung",
+  "recruitMessageInvalid": "Lời nhắn tối đa 400 ký tự.",
+  "recruitSamplesInvalid": "Chỉ chọn tối đa 3 bài trong portfolio của bạn.",
   "profileRecruiting": "Đang tuyển · {n} tin",
   "@profileRecruiting": {"placeholders": {"n": {"type": "int"}}}
 }

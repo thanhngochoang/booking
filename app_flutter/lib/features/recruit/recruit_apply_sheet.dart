@@ -7,8 +7,10 @@ import 'package:photobooking/data/recruit/recruit_repository.dart';
 import 'package:photobooking/features/album/my_albums_controller.dart';
 import 'package:photobooking/features/recruit/collab_terms_card.dart';
 import 'package:photobooking/features/recruit/recruit_card.dart';
+import 'package:photobooking/features/recruit/recruit_text.dart';
 
-/// Message length the server accepts (`APPLICATION_MESSAGE_MAX`).
+/// Message length the server accepts (`APPLICATION_MESSAGE_MAX`), in code
+/// points ([recruitTextLength]).
 const kRecruitMessageMax = 400;
 
 /// Own posts an application may show (`APPLICATION_SAMPLES_MAX`).
@@ -91,11 +93,15 @@ class _ApplySheetState extends ConsumerState<_ApplySheet> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      final contact = recruitErrorOf(e).isContact;
+      final err = recruitErrorOf(e);
       setState(() {
         _sending = false;
-        if (contact) {
+        if (err.isContact) {
           _messageError = l.recruitContactError;
+        } else if (err.field == 'message') {
+          _messageError = l.recruitMessageInvalid;
+        } else if (err.field == 'samplePostIds') {
+          _error = l.recruitSamplesInvalid;
         } else {
           _error = recruitApplyErrorText(e, l);
         }
@@ -168,7 +174,9 @@ class _ApplySheetState extends ConsumerState<_ApplySheet> {
                       enabled: !_sending,
                       minLines: 2,
                       maxLines: 5,
-                      maxLength: kRecruitMessageMax,
+                      inputFormatters: const [
+                        RecruitTextLimit(kRecruitMessageMax),
+                      ],
                       textInputAction: TextInputAction.newline,
                       onChanged: (_) {
                         if (_messageError != null) {
@@ -180,6 +188,10 @@ class _ApplySheetState extends ConsumerState<_ApplySheet> {
                         hintText: l.recruitMessageHint,
                         errorText: _messageError,
                         errorMaxLines: 2,
+                        counter: RecruitTextCounter(
+                          controller: _message,
+                          max: kRecruitMessageMax,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpace.s2),

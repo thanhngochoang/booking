@@ -16803,6 +16803,18 @@ abstract class AppLocalizations {
   /// **'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung'**
   String get recruitContactError;
 
+  /// No description provided for @recruitMessageInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời nhắn tối đa 400 ký tự.'**
+  String get recruitMessageInvalid;
+
+  /// No description provided for @recruitSamplesInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chọn tối đa 3 bài trong portfolio của bạn.'**
+  String get recruitSamplesInvalid;
+
   /// No description provided for @profileRecruiting.
   ///
   /// In vi, this message translates to:

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -57,8 +59,17 @@ class RecruitListController extends AsyncNotifier<RecruitListState> {
 
   static const pageSize = 20;
 
+  /// How long a filter's loaded pages outlive their last listener: going to
+  /// another S06.01 segment and back does not query again.
+  static const keepFor = Duration(minutes: 2);
+
   @override
   Future<RecruitListState> build() async {
+    final link = ref.keepAlive();
+    Timer? release;
+    ref.onCancel(() => release = Timer(keepFor, link.close));
+    ref.onResume(() => release?.cancel());
+    ref.onDispose(() => release?.cancel());
     final facts = await ref.watch(myProviderFactsProvider.future);
     if (facts == null || !facts.isProviderAccount) {
       return RecruitListState.hidden;

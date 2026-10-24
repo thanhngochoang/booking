@@ -230,4 +230,49 @@ void main() {
       'acceptTerms': true,
     });
   });
+
+  testWidgets('the 400 limit counts code points like the server: a family '
+      'emoji (5 code points) does not fit after 398 letters', (tester) async {
+    final w = await _open(tester);
+    await tester.enterText(_key('recruit-message'), '${'a' * 398}👨‍👩‍👧');
+    await tester.pump();
+    expect(find.text('398/400'), findsOneWidget);
+    await _agree(tester);
+    await _submit(tester);
+    expect(w.recruits.calls.single.$2['message'], 'a' * 398);
+  });
+
+  testWidgets('server invalid_argument on message shows the length line under '
+      'the message', (tester) async {
+    final w = await _open(tester);
+    w.recruits.failWith = const RecruitError(
+      RecruitErrorCode.invalidArgument,
+      field: 'message',
+    );
+    await tester.enterText(_key('recruit-message'), 'Em chụp cưới 2 năm.');
+    await _agree(tester);
+    await _submit(tester);
+    final error = find.text('Lời nhắn tối đa 400 ký tự.');
+    expect(
+      find.descendant(of: _key('recruit-message'), matching: error),
+      findsOneWidget,
+    );
+    expect(find.text('Chưa thực hiện được. Thử lại sau.'), findsNothing);
+  });
+
+  testWidgets('server invalid_argument on samplePostIds says which samples '
+      'are accepted', (tester) async {
+    final w = await _open(tester);
+    w.recruits.failWith = const RecruitError(
+      RecruitErrorCode.invalidArgument,
+      field: 'samplePostIds',
+    );
+    await _agree(tester);
+    await _submit(tester);
+    expect(
+      find.text('Chỉ chọn tối đa 3 bài trong portfolio của bạn.'),
+      findsOneWidget,
+    );
+    expect(find.text('Chưa thực hiện được. Thử lại sau.'), findsNothing);
+  });
 }

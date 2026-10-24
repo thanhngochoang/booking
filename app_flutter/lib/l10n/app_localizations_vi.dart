@@ -9821,6 +9821,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung';
 
   @override
+  String get recruitMessageInvalid => 'Lời nhắn tối đa 400 ký tự.';
+
+  @override
+  String get recruitSamplesInvalid =>
+      'Chỉ chọn tối đa 3 bài trong portfolio của bạn.';
+
+  @override
   String profileRecruiting(int n) {
     return 'Đang tuyển · $n tin';
   }

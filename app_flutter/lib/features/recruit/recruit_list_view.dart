@@ -18,11 +18,19 @@ import 'package:photobooking/features/recruit/recruit_list_controller.dart';
 /// segment of S06.01 (Decision 20). A non-provider account sees only the
 /// note and queries nothing (R3).
 class RecruitListView extends ConsumerStatefulWidget {
-  const RecruitListView({super.key, this.initial = const RecruitFilter()});
+  const RecruitListView({
+    super.key,
+    this.initial = const RecruitFilter(),
+    this.onFilterChanged,
+  });
 
   /// A `studioId` filter (S03.01 "Đang tuyển") hides the chips: the query
   /// takes one studio or one filter key, not both.
   final RecruitFilter initial;
+
+  /// Told each chosen filter, so a host that swaps the view out (the S06.01
+  /// segment) can bring it back with the same one.
+  final ValueChanged<RecruitFilter>? onFilterChanged;
 
   @override
   ConsumerState<RecruitListView> createState() => _RecruitListViewState();
@@ -33,7 +41,10 @@ class _RecruitListViewState extends ConsumerState<RecruitListView> {
 
   static const _gutter = EdgeInsets.symmetric(horizontal: AppSpace.s4);
 
-  void _set(RecruitFilter f) => setState(() => _filter = f);
+  void _set(RecruitFilter f) {
+    setState(() => _filter = f);
+    widget.onFilterChanged?.call(f);
+  }
 
   RecruitFilter _with({
     RecruitKind? Function()? kind,
@@ -106,7 +117,7 @@ class _RecruitListViewState extends ConsumerState<RecruitListView> {
               value: value,
               skeleton: (_) => _skeleton(),
               onRetry: () => ref.invalidate(recruitListProvider(_filter)),
-              isEmpty: (s) => s.visible && s.posts.isEmpty,
+              isEmpty: (s) => s.visible && _live(s, now).isEmpty,
               empty: (_) => ListView(
                 padding: const EdgeInsets.all(AppSpace.s4),
                 children: [
@@ -177,6 +188,13 @@ class _RecruitListViewState extends ConsumerState<RecruitListView> {
     );
   }
 
+  /// The loaded posts still open at [now]: one whose expiry passed is hidden
+  /// before the sweep marks it expired.
+  List<RecruitPost> _live(RecruitListState s, DateTime now) => [
+    for (final p in s.posts)
+      if (recruitPostIsOpen(p, now)) p,
+  ];
+
   Widget _list(BuildContext context, RecruitListState s, DateTime now) {
     final l = context.l10n;
     return ListView(
@@ -187,7 +205,7 @@ class _RecruitListViewState extends ConsumerState<RecruitListView> {
         AppSpace.s6,
       ),
       children: [
-        for (final p in s.posts) ...[
+        for (final p in _live(s, now)) ...[
           RecruitCard(
             key: Key('recruit-card-${p.id}'),
             post: p,
