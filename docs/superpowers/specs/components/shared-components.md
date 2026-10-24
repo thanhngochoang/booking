@@ -449,7 +449,7 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `CountdownPill` | S04.04 |
 | `PaymentScreen`, `QrCheckoutView`, `WalletWaitingView`, `FakeTransferSheet` (`features/payment/`) | S04.04 (mọi chủ thể thanh toán: booking, vé sự kiện, Chụp ngay, phí xác minh) |
 | `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08, S14.03 (GPS chưa chính xác, khách không có mặt) |
-| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03 |
+| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03, S27.07 (`CountdownText`: hạn trả lời offer) |
 | `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06 |
 | `SwipeDeck` | S13.02 |
 | `MatchOverlay` | S13.04 (khách; nhiếp ảnh gia trên S14.02) |
@@ -472,7 +472,6 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `RecruitCard`, `RecruitKindTag`, `RecruitMatchTag`, `RecruitNote` | S27.01, S27.02, S27.05 |
 | `CollabPayBadge`, `CollabTitleMeta` | S27.06 |
 | `StudioOfferLine` | S05.02 (studio), S06.01 (`StudioJobCard`) |
-| `CountdownText` | S27.07 (hạn trả lời offer) |
 | `SpotCard`, `SeasonTag` | S02.01, S02.03, S02.04, S29.01, S29.02 |
 | `SlotGrid` | S29.06 |
 | `ScreenCode` | mọi màn |

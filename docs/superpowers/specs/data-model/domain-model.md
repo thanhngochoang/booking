@@ -500,7 +500,7 @@ RecruitApplication: applied ─▶ accepted | declined (studio, hoặc đóng ti
 StudioCollaboration: invited ─▶ active (thợ nhận, đồng ý điều khoản) | declined | cancelled (studio huỷ) | expired (7 ngày)
                      (ứng tuyển tin collaborator được nhận) ─▶ active        active ─(một trong hai bên)─▶ ended (mời lại sau 3 ngày)
 CollabJob.offerStatus: pending ─▶ accepted (CTV, trong offerExpiresAt) | declined | expired (job) | replaced (studio giao người khác) | cancelled (booking huỷ / quan hệ đã kết thúc)
-                       accepted ─▶ returned ("Trả việc") | replaced | cancelled (booking huỷ trước giờ chụp)
+                       accepted ─▶ returned ("Trả việc") | replaced | cancelled (booking huỷ trước khi buổi chụp kết thúc, `shootEndsAt`)
 CollabJob.payStatus:   none ─(mốc chụp nhả cho studio)─▶ due ─(studio "Đã trả")─▶ paid_reported ─(CTV)─▶ received | disputed ─(studio "Đã trả")─▶ paid_reported
 ```
 

@@ -1445,7 +1445,7 @@ create index ix_recruit_applications_due on recruit_applications (status, expire
 create table studio_collaborations (
   studio_id         text not null references photographers(user_id),
   collaborator_id   text not null references photographers(user_id),
-  seq               int not null,                                               -- 0 = quan hệ mới nhất; Firestore history/{ulid} = các seq cũ
+  seq               int not null,                                               -- tăng dần theo cặp: seq lớn nhất = quan hệ mới nhất (doc Firestore chính); history/{ulid} = các seq nhỏ hơn
   status            text not null check (status in ('invited','requested','active','declined','cancelled','expired','ended')),
   initiated_by      text not null check (initiated_by in ('studio','collaborator','application')),
   application_post_id text,
@@ -1546,7 +1546,7 @@ create table staff_flags (
   photographer_id text not null references photographers(user_id),
   customer_id     text not null references users(id),
   studio_id       text references photographers(user_id),
-  job_booking_ids text[] not null default '{}',
+  job_ids         text[] not null default '{}',                                -- id của collab_jobs: '{bookingId}_{uid}'
   created_at      timestamptz not null default now()
 );
 
@@ -1604,7 +1604,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `collab_jobs/{bookingId}_{uid}` | `collab_jobs` | Id ghép thành khoá `(booking_id, collaborator_id)`; `shoot.*`→`shoot_day`, `shoot_start`, `shoot_end`, `service_name`, `place_name`; `pay.*`→`pay_*` (`pay.amount` = `agreed_fee`, không thành cột riêng); `pay.paidOn` (`yyyy-MM-dd`) → `pay_paid_on date` |
 | `photographers/{uid}/private/recruit` | `recruit_counters` | `{day, count}` của `postActions`, `collabActions`, `applyActions`, `notices` → cặp `*_day`, `*`; `notices.postIds`→`notice_post_ids`; `unpaidFlags[]`→`timestamptz[]` |
 | `photographers/{uid}.recruitMatchKeys[]` | `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
-| `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_booking_ids` |
+| `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
 | `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
