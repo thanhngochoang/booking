@@ -293,7 +293,7 @@ export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
 export const transitionBooking = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
 
 /** Open dispute on completed/upcoming booking */
-export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
+export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request));
 
 /** Delivery: provider submits preview round */
 export const submitDelivery = onCall(CALLABLE_OPTIONS, (request) => handleSubmitDelivery(request, liveBookingDeps()));

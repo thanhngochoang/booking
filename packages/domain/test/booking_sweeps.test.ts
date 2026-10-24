@@ -6,6 +6,7 @@ import { createPayment } from '../src/create_payment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
+import { freezeBookingPayment } from './support/dispute_world.js';
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
@@ -248,5 +249,31 @@ describe('Task 5: runBookingSweeps', () => {
 
     assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
     assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
+  });
+  it('a disputed payment is not released by runBookingSweeps even after releaseAfter', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const legacy = await newDraft(world);
+    const { paymentId: legacyPay } = await payDraft(world, legacy.id);
+    await transitionBooking(world.deps, { bookingId: legacy.id, action: 'accept', actorId: 'p1' });
+    const split = await newDraft(world, { day: '2026-10-16' });
+    const { paymentId: splitPay } = await payDraft(world, split.id);
+    await transitionBooking(world.deps, { bookingId: split.id, action: 'accept', actorId: 'p1' });
+
+    // Legacy: completed without milestones (releaseAfter = +24 h); split: marked shot (shoot milestone releases at +24 h).
+    world.clock.setTime(new Date('2026-10-16T09:30:00.000Z'));
+    await transitionBooking(world.deps, { bookingId: legacy.id, action: 'complete', actorId: 'p1' });
+    await transitionBooking(world.deps, { bookingId: split.id, action: 'mark_shot', actorId: 'p1' });
+    assert.ok(world.store.payments.get(legacyPay)?.releaseAfter);
+    freezeBookingPayment(world.store, legacy.id, world.clock.now());
+    freezeBookingPayment(world.store, split.id, world.clock.now());
+
+    world.clock.setTime(new Date('2026-10-18T10:00:00.000Z'));
+    const sweeps = await runBookingSweeps(world.deps);
+    assert.equal(sweeps.releasedEscrows, 0);
+    assert.equal(world.store.payments.get(legacyPay)?.escrowStatus, 'disputed');
+    const shoot = world.store.payments.get(splitPay)?.milestones?.find((m) => m.kind === 'shoot');
+    assert.equal(shoot?.status, 'disputed');
+    assert.equal(world.store.payments.get(splitPay)?.escrowStatus, 'disputed');
+    assert.equal([...world.store.ledgerEntries.values()].filter((e) => e.type === 'escrow_released').length, 0);
   });
 });

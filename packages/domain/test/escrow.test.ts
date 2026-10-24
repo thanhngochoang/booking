@@ -166,6 +166,36 @@ describe('Task 3: Escrow & ledger maths', () => {
         (err: unknown) => err instanceof DomainError && err.code === 'conflict',
       );
     });
+
+    it('an explicit amount is refunded as given, within what escrow still holds; full once escrow refunds reach the amount', () => {
+      const { payment } = createDepositPayment({
+        paymentId: 'pay_01', bookingId: 'b_01', customerId: 'cust_01', photographerId: 'photog_01', provider: 'fake',
+        amount: 1_000_000, idempotencyKey: 'idem_01', ledgerEntryId: 'led_01', now,
+      });
+      // 200 000 already left escrow earlier, plus 50 000 of an over-transfer that never entered it.
+      const partly: Payment = { ...payment, status: 'partially_refunded', escrowStatus: 'partially_refunded', refundedAmount: 250_000 };
+      const base = { refundId: 'ref_02', ledgerEntryId: 'led_02', reason: 'dispute:d1', now } as const;
+
+      const split = applyRefundToPayment({ ...base, payment: partly, percent: 40, amount: 320_000, escrowRefunded: 200_000 });
+      assert.equal(split.refund.amount, 320_000);
+      assert.equal(split.refund.percent, 40);
+      assert.equal(split.refund.fromEscrow, true);
+      assert.equal(split.ledgerEntry.amount, -320_000);
+      assert.equal(split.payment.status, 'partially_refunded');
+      assert.equal(split.payment.refundedAmount, 570_000);
+
+      const rest = applyRefundToPayment({ ...base, payment: partly, percent: 100, amount: 800_000, escrowRefunded: 200_000 });
+      assert.equal(rest.payment.status, 'refunded');
+      assert.equal(rest.payment.escrowStatus, 'refunded');
+
+      for (const amount of [0, -1, 1.5, 800_001]) {
+        assert.throws(
+          () => applyRefundToPayment({ ...base, payment: partly, percent: 100, amount, escrowRefunded: 200_000 }),
+          (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
+          String(amount),
+        );
+      }
+    });
   });
 
   describe('releaseEscrowPayment', () => {

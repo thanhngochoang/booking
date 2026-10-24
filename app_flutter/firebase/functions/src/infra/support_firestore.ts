@@ -133,6 +133,11 @@ export class FirestoreSupportTx implements SupportTx {
     return supportMessageFromFirestore(snap.data());
   }
 
+  /** Stub until #142 Task 8 maps `disputes/{id}` (FirestoreDisputeStore): dispute threads stay not_found here. */
+  async getDispute(): Promise<null> {
+    return null;
+  }
+
   putThread(t: SupportThread): void {
     const ref = this.firestore.collection(SUPPORT_THREADS_COLLECTION).doc(t.id);
     this.tx.set(ref, supportThreadToFirestore(t), { merge: true });

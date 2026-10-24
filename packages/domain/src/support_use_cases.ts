@@ -1,3 +1,4 @@
+import type { Dispute } from './dispute.js';
 import { DomainError } from './errors.js';
 import type { Clock, IdGenerator } from './ports.js';
 import { graphemeCount } from './booking_requests.js';
@@ -8,6 +9,7 @@ import {
   SUPPORT_TEXT_MAX,
   type SupportMessage,
   type SupportRateEntry,
+  type SupportSenderRole,
   type SupportThread,
 } from './support_thread.js';
 
@@ -18,6 +20,8 @@ export interface DisplayNames {
 export interface SupportTx {
   getThread(id: string): Promise<SupportThread | null>;
   getMessage(threadId: string, id: string): Promise<SupportMessage | null>;
+  /** #142: the dispute of a dispute thread (parties, status). */
+  getDispute(id: string): Promise<Dispute | null>;
   putThread(t: SupportThread): void;
   addMessage(m: SupportMessage): void;
 }
@@ -93,6 +97,7 @@ export async function sendSupportMessage(
   return deps.store.runTransaction(async (tx) => {
     let thread: SupportThread;
     let targetThreadId: string;
+    let senderRole: SupportSenderRole = 'user';
 
     if (input.threadId) {
       targetThreadId = input.threadId;
@@ -100,10 +105,20 @@ export async function sendSupportMessage(
       if (!existing) {
         throw new DomainError('not_found');
       }
-      if (existing.kind !== 'help') {
-        throw new DomainError('not_found');
-      }
-      if (!existing.participants.includes(senderId)) {
+      if (existing.kind === 'dispute') {
+        // #142 Decision 8: the parties write while the dispute is open; the provider's messages are the "giải trình".
+        const dispute = existing.disputeId ? await tx.getDispute(existing.disputeId) : null;
+        if (!dispute) {
+          throw new DomainError('not_found');
+        }
+        if (!dispute.parties.includes(senderId)) {
+          throw new DomainError('permission_denied');
+        }
+        if (dispute.status !== 'open' || existing.status !== 'open') {
+          throw new DomainError('not_eligible');
+        }
+        senderRole = senderId === dispute.customerId ? 'customer' : 'provider';
+      } else if (!existing.participants.includes(senderId)) {
         throw new DomainError('permission_denied');
       }
       thread = existing;
@@ -149,7 +164,7 @@ export async function sendSupportMessage(
       id: input.clientId,
       threadId: targetThreadId,
       senderId,
-      senderRole: 'user',
+      senderRole,
       senderName,
       body: input.text,
       createdAt: nowIso,
@@ -165,7 +180,7 @@ export async function sendSupportMessage(
       awaitingStaff: true,
       lastMessageAt: nowIso,
       lastMessagePreview: truncateGraphemes(input.text, 80),
-      lastSenderRole: 'user',
+      lastSenderRole: senderRole,
       rate: nextRate,
       updatedAt: nowIso,
     };

@@ -177,6 +177,8 @@ export interface Booking {
   readonly cancel?: BookingCancel;
   readonly completedAt?: string;
   readonly reviewedAt?: string;
+  /** The booking's latest dispute (S18), open or resolved; written only by the dispute transaction (server). */
+  readonly disputeId?: string | null;
   readonly chatId?: string;
   readonly source?: BookingSource;
   readonly spotId?: string;

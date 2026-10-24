@@ -3,7 +3,6 @@ import * as logger from 'firebase-functions/logger';
 import {
   createBookingDraft,
   transitionBooking,
-  openDispute,
   type Booking,
   type BookingDeps,
   type TransitionAction,
@@ -58,17 +57,9 @@ export async function handleTransitionBooking(request: CallableInput, deps: Book
   }
 }
 
-export async function handleOpenDispute(request: CallableInput, deps: BookingDeps): Promise<Booking> {
+export async function handleOpenDispute(request: CallableInput): Promise<Booking> {
   const uid = request.auth?.uid;
   if (uid === undefined) throw new HttpsError('unauthenticated', 'permission_denied', { code: 'permission_denied' });
-  try {
-    const data = (request.data && typeof request.data === 'object' ? request.data : {}) as Record<string, unknown>;
-    return await openDispute(deps, {
-      bookingId: String(data.bookingId ?? ''),
-      customerId: uid,
-      reason: String(data.reason ?? ''),
-    });
-  } catch (e) {
-    handleCallableError('openDispute', e);
-  }
+  // Stub (#142 Task 7 replaced the booking-only use case): Task 8 re-points `openDispute` to the dispute use case.
+  throw new HttpsError('unimplemented', 'not_eligible', { code: 'not_eligible' });
 }

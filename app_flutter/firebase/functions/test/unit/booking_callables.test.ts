@@ -85,7 +85,7 @@ describe('Booking callables', () => {
 
     await assert.rejects(handleCreateBooking(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
     await assert.rejects(handleTransitionBooking(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
-    await assert.rejects(handleOpenDispute(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
+    await assert.rejects(handleOpenDispute(unauthed), httpsError('unauthenticated', 'permission_denied'));
   });
 
   test('handleCreateBooking creates a draft booking for signed-in customer', async () => {
@@ -304,57 +304,6 @@ describe('Booking callables', () => {
     const after = store.bookings.get('b_review');
     assert.equal(after?.status, 'completed');
     assert.equal(after?.reviewedAt, undefined);
-  });
-
-  test('handleOpenDispute allows customer to dispute a completed booking', async () => {
-    const { deps, store } = createTestDeps();
-    const booking: Booking = {
-      id: 'b_completed',
-      customerId: 'c1',
-      photographerId: 'p1',
-      serviceId: 'svc1',
-      serviceSnapshot: { name: 'Chân dung', price: 1_000_000, durationMinutes: 120 },
-      day: '2026-10-15',
-      start: '09:00',
-      end: '11:00',
-      place: { name: 'Thảo Cầm Viên' },
-      status: 'completed',
-      deposit: 1_000_000,
-      remaining: 0,
-      escrowStatus: 'held',
-      completedAt: '2026-10-01T09:00:00.000Z',
-      version: 1,
-      createdAt: '2026-10-01T00:00:00.000Z',
-      updatedAt: '2026-10-01T09:00:00.000Z',
-    };
-    store.bookings.set(booking.id, booking);
-    store.payments.set('pay_1', {
-      id: 'pay_1',
-      subjectType: 'booking',
-      subjectId: 'b_completed',
-      payerId: 'c1',
-      payeeId: 'p1',
-      provider: 'fake',
-      amount: 1_000_000,
-      status: 'paid',
-      escrowStatus: 'held',
-      idempotencyKey: 'dep_b_completed_fake',
-      createdAt: '2026-10-01T00:00:00.000Z',
-      updatedAt: '2026-10-01T00:00:00.000Z',
-    });
-
-    const disputed = await handleOpenDispute(
-      {
-        auth: { uid: 'c1' },
-        data: {
-          bookingId: 'b_completed',
-          reason: 'Thợ ảnh đến muộn 2 tiếng và không chụp đủ số ảnh cam kết',
-        },
-      },
-      deps,
-    );
-
-    assert.equal(disputed.escrowStatus, 'disputed');
   });
 
   test('handleBookingClock runs sweeps without throwing', async () => {

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { sendSupportMessage, staffReply } from '../src/support_use_cases.js';
 import { createSupportWorld } from './support/support_world.js';
 import { isDomainError } from '../src/errors.js';
+import { openDispute, resolveDispute } from '../src/dispute_use_cases.js';
+import { createDisputeWorld, openInput, seedApprovedBooking } from './support/dispute_world.js';
 
 describe('support_use_cases', () => {
   it('first help message creates help_{uid} with the sender as participant and awaitingStaff true', async () => {
@@ -171,7 +173,7 @@ describe('support_use_cases', () => {
     );
   });
 
-  it('a dispute thread id → not_found (no dispute support yet)', async () => {
+  it('a dispute thread without its dispute → not_found', async () => {
     const world = createSupportWorld();
     // Simulate an existing dispute thread in the store
     world.store.threads.set('dispute_123', {
@@ -199,6 +201,47 @@ describe('support_use_cases', () => {
         });
       },
       (err: unknown) => isDomainError(err) && err.code === 'not_found',
+    );
+  });
+  it('a dispute party can write while open, its role is customer or provider', async () => {
+    const w = createDisputeWorld();
+    seedApprovedBooking(w);
+    await openDispute(w.deps, 'c1', openInput());
+    w.clock.advanceMinutes(5);
+
+    const fromProvider = await sendSupportMessage(w.supportDeps, 'p1', { threadId: 'dispute_d1', clientId: 'm_p1', text: 'Tôi đã gửi đủ ảnh' });
+    assert.deepEqual(fromProvider, { threadId: 'dispute_d1', messageId: 'm_p1' });
+    await sendSupportMessage(w.supportDeps, 'c1', { threadId: 'dispute_d1', clientId: 'm_c1', text: 'Link vẫn hỏng' });
+
+    const msgs = await w.store.listMessages('dispute_d1', 10);
+    const byId = new Map(msgs.map((m) => [m.id, m]));
+    assert.equal(byId.get('m_p1')?.senderRole, 'provider');
+    assert.equal(byId.get('m_p1')?.senderName, 'Minh Trí');
+    assert.equal(byId.get('m_c1')?.senderRole, 'customer');
+    const thread = w.store.threads.get('dispute_d1');
+    assert.equal(thread?.lastSenderRole, 'customer');
+    assert.equal(thread?.awaitingStaff, true);
+    assert.equal(thread?.kind, 'dispute');
+  });
+
+  it('a non-party → permission_denied', async () => {
+    const w = createDisputeWorld();
+    seedApprovedBooking(w);
+    await openDispute(w.deps, 'c1', openInput());
+    await assert.rejects(
+      sendSupportMessage(w.supportDeps, 'c2', { threadId: 'dispute_d1', clientId: 'm_c2', text: 'Xin chào' }),
+      (err: unknown) => isDomainError(err) && err.code === 'permission_denied',
+    );
+  });
+
+  it('after resolution → not_eligible', async () => {
+    const w = createDisputeWorld();
+    seedApprovedBooking(w);
+    await openDispute(w.deps, 'c1', openInput());
+    await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: 'Đủ ảnh theo gói' });
+    await assert.rejects(
+      sendSupportMessage(w.supportDeps, 'c1', { threadId: 'dispute_d1', clientId: 'm_late', text: 'Tôi chưa đồng ý' }),
+      (err: unknown) => isDomainError(err) && err.code === 'not_eligible',
     );
   });
 });
