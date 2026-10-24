@@ -260,7 +260,13 @@ class _CollaboratorRow extends ConsumerWidget {
         try {
           await repo.end(collaboratorId: collaboration.collaboratorId);
         } catch (e) {
-          throw CollabFailure(collabErrorText(e, l));
+          // "Còn {n} việc…" when the screen knows how many are open.
+          final busy =
+              recruitErrorOf(e).code == RecruitErrorCode.memberBusy &&
+              openJobs > 0;
+          throw CollabFailure(
+            busy ? l.collabEndBusy(openJobs) : collabErrorText(e, l),
+          );
         }
       },
     );

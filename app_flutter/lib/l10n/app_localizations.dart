@@ -17732,6 +17732,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{n}/3 tin mở'**
   String settingsRecruitMeta(int n);
+
+  /// No description provided for @collabOfferAcceptedState.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã nhận việc này.'**
+  String get collabOfferAcceptedState;
+
+  /// No description provided for @collabDeclineConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối việc này?'**
+  String get collabDeclineConfirmTitle;
+
+  /// No description provided for @collabDeclineConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.'**
+  String get collabDeclineConfirmBody;
 }
 
 class _AppLocalizationsDelegate

@@ -178,6 +178,18 @@ void main() {
     },
   );
 
+  testWidgets('member_busy for a collaborator with open jobs says how many', (
+    tester,
+  ) async {
+    final c = _studio();
+    await c.pump(tester);
+    await _menu(tester, 'dung', 'Kết thúc cộng tác');
+    c.world.collabs.failWith = const RecruitError(RecruitErrorCode.memberBusy);
+    await tester.tap(find.widgetWithText(FilledButton, 'Kết thúc cộng tác'));
+    await CollabWorld.settle(tester);
+    expect(find.text('Còn 2 việc được giao chưa xong.'), findsOneWidget);
+  });
+
   testWidgets('menu "Sửa thù lao gợi ý" saves through setDefaultFee', (
     tester,
   ) async {

@@ -261,6 +261,14 @@ Future<bool> runCollabAction(
   return ok;
 }
 
+/// Mock `b-warn`: the pale yellow of each theme with fixed dark ink (the
+/// dark theme's own foreground is near-white, unreadable on it), as the
+/// notification rows do.
+(Color, Color) collabWarnColors(bool dark) => (
+  dark ? AppColorsDark.warningSubtle : AppColors.warningSubtle,
+  AppColors.foreground,
+);
+
 /// Mock `.badge` of a pay record: "Cần trả" (warning), "Chưa nhận"
 /// (error), "Đã báo trả" (neutral), "Đã nhận" (ok).
 class CollabPayBadge extends StatelessWidget {
@@ -275,18 +283,18 @@ class CollabPayBadge extends StatelessWidget {
     final (label, color, onColor) = switch (status) {
       PayStatus.due => (
         l.collabPayDue,
-        AppColors.warningSubtle,
-        AppColors.foreground,
+        collabWarnColors(dark).$1,
+        collabWarnColors(dark).$2,
       ),
       PayStatus.disputed => (
         l.collabPayDisputed,
-        AppColors.errorSubtle,
-        AppColors.error,
+        dark ? AppColorsDark.errorSubtle : AppColors.errorSubtle,
+        dark ? AppColorsDark.error : AppColors.error,
       ),
       PayStatus.received => (
         l.collabPayReceived,
-        AppColors.successSubtle,
-        AppColors.success,
+        dark ? AppColorsDark.successSubtle : AppColors.successSubtle,
+        dark ? AppColorsDark.success : AppColors.success,
       ),
       PayStatus.paidReported || PayStatus.none => (
         l.collabPayReported,

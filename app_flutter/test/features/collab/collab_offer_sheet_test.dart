@@ -123,11 +123,23 @@ void main() {
     },
   );
 
-  testWidgets('"Từ chối" → toast "Đã từ chối, studio được báo"', (
-    tester,
-  ) async {
+  testWidgets('"Từ chối" asks first (red "Từ chối" in a confirm sheet) → '
+      'toast "Đã từ chối, studio được báo"', (tester) async {
     final w = await _open(tester, _offer());
     await tester.tap(_key('collab-offer-decline'));
+    await CollabWorld.settle(tester);
+    expect(w.collabs.calls, isEmpty);
+    expect(find.text('Từ chối việc này?'), findsOneWidget);
+    final red = find.widgetWithText(FilledButton, 'Từ chối');
+    expect(
+      tester
+          .widget<FilledButton>(red)
+          .style
+          ?.backgroundColor
+          ?.resolve(const {}),
+      AppColors.error,
+    );
+    await tester.tap(red);
     await CollabWorld.settle(tester);
     expectCall(w.collabs.calls.single, 'respondCollabOffer', {
       'bookingId': 'b2',
@@ -136,6 +148,34 @@ void main() {
     expect(find.text('Đã từ chối, studio được báo'), findsOneWidget);
     expect(_code('S27.07'), findsNothing);
   });
+
+  testWidgets('"Quay lại" in the decline confirm does nothing', (tester) async {
+    final w = await _open(tester, _offer());
+    await tester.tap(_key('collab-offer-decline'));
+    await CollabWorld.settle(tester);
+    await tester.tap(find.text('Quay lại'));
+    await CollabWorld.settle(tester);
+    expect(w.collabs.calls, isEmpty);
+    expect(_code('S27.07'), findsOneWidget);
+    expect(_key('collab-offer-accept'), findsOneWidget);
+  });
+
+  for (final (status, line) in [
+    (OfferStatus.accepted, 'Bạn đã nhận việc này.'),
+    (OfferStatus.declined, 'Việc này không còn chờ bạn nhận.'),
+    (OfferStatus.replaced, 'Việc này không còn chờ bạn nhận.'),
+  ]) {
+    testWidgets('a ${status.code} offer says "$line", no answer buttons', (
+      tester,
+    ) async {
+      final job = _offer();
+      await _open(tester, job.copyWith(offerStatus: status));
+      expect(find.text(line), findsOneWidget);
+      expect(find.text('Việc này đã hết hạn trả lời'), findsNothing);
+      expect(_key('collab-offer-accept'), findsNothing);
+      expect(_key('collab-offer-decline'), findsNothing);
+    });
+  }
 
   testWidgets('deadline_passed shows "Việc này đã hết hạn trả lời"', (
     tester,

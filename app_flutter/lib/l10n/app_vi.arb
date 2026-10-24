@@ -4360,5 +4360,8 @@
   "@settingsCollabStudioMeta": {"placeholders": {"n": {"type": "int"}}},
   "settingsRecruit": "Tin tuyển",
   "settingsRecruitMeta": "{n}/3 tin mở",
-  "@settingsRecruitMeta": {"placeholders": {"n": {"type": "int"}}}
+  "@settingsRecruitMeta": {"placeholders": {"n": {"type": "int"}}},
+  "collabOfferAcceptedState": "Bạn đã nhận việc này.",
+  "collabDeclineConfirmTitle": "Từ chối việc này?",
+  "collabDeclineConfirmBody": "Từ chối không bị tính là vi phạm. Studio được báo để giao người khác."
 }

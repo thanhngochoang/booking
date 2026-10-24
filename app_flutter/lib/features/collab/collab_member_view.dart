@@ -227,11 +227,14 @@ class _OfferCard extends ConsumerWidget {
                   CountdownText(
                     deadline: j.offerExpiresAt,
                     now: clock,
-                    builder: (context, left) => StatusBadge.custom(
-                      label: l.collabOfferLeft(collabLeftText(left, l)),
-                      color: AppColors.warningSubtle,
-                      onColor: AppColors.foreground,
-                    ),
+                    builder: (context, left) {
+                      final (color, onColor) = collabWarnColors(dark);
+                      return StatusBadge.custom(
+                        label: l.collabOfferLeft(collabLeftText(left, l)),
+                        color: color,
+                        onColor: onColor,
+                      );
+                    },
                   ),
                 ],
               ),

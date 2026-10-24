@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/collab/collab_providers.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
@@ -11,6 +13,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
+import '../../support/recruit_world.dart' show makeCollabJob;
 
 /// Shoot on Monday 12/10 15:30–19:30 Vietnam (08:30 UTC); the studio must
 /// name the photographer by Sunday 11/10 15:30 (08:30 UTC).
@@ -513,11 +516,24 @@ void main() {
       );
     }
 
+    /// Studio Cúc's job record for Lan with the agreed fee: the customer's
+    /// screen must neither read it nor show the amount.
+    late _CountingCollabs collabs;
+
     Future<void> pumpAs(
       WidgetTester tester,
       Booking b, {
       required String uid,
     }) async {
+      collabs = _CountingCollabs(uid: uid)
+        ..seedJob(
+          makeCollabJob(
+            bookingId: 'b1',
+            studioId: 'cuc',
+            collaboratorId: 'lan',
+            agreedFee: 1750000,
+          ),
+        );
       final repo = RecordingBookingRepository()..seedBooking(b);
       await pumpBookingDetail(
         tester,
@@ -526,6 +542,7 @@ void main() {
         now: _weekBefore,
         features: _chatOn,
         profiles: profiles,
+        extraOverrides: [collabRepositoryProvider.overrideWithValue(collabs)],
       );
       await _settle(tester);
     }
@@ -546,8 +563,10 @@ void main() {
       expect(find.text('Lan Phương'), findsOneWidget);
       expect(find.text('Cộng tác với Studio Mây'), findsOneWidget);
       expect(find.textContaining('thợ của Studio Mây'), findsNothing);
-      // The fee is never on the customer's screen.
-      expect(find.textContaining('800.000'), findsNothing);
+      // Decision 3: the fee lives in collab_jobs, which the customer's
+      // screen never reads, so the amount can never show.
+      expect(collabs.reads, 0);
+      expect(find.textContaining('1.750.000'), findsNothing);
     });
 
     testWidgets('studio side: pending shows "Chờ {name} nhận · còn {left}"', (
@@ -571,4 +590,32 @@ void main() {
       );
     });
   });
+}
+
+/// A [FakeCollabRepository] that counts reads of the job records.
+class _CountingCollabs extends FakeCollabRepository {
+  _CountingCollabs({super.uid});
+
+  int reads = 0;
+
+  @override
+  Stream<List<CollabJob>> watchJobsAsStudio(String studioId, {int limit = 50}) {
+    reads++;
+    return super.watchJobsAsStudio(studioId, limit: limit);
+  }
+
+  @override
+  Stream<List<CollabJob>> watchJobsAsCollaborator(
+    String uid, {
+    int limit = 50,
+  }) {
+    reads++;
+    return super.watchJobsAsCollaborator(uid, limit: limit);
+  }
+
+  @override
+  Future<List<CollabJob>> jobsDueInMonth(String studioId, int year, int month) {
+    reads++;
+    return super.jobsDueInMonth(studioId, year, month);
+  }
 }

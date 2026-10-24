@@ -11,6 +11,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/award/award_repository.dart';
+import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/collab/collab_providers.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/provider_type.dart';
@@ -81,7 +82,7 @@ Future<void> _open(
     );
   final studios = FakeStudioRepository(uid: u.uid);
   seed?.call(studios, u.uid);
-  final collabs = FakeCollabRepository(uid: u.uid);
+  final collabs = FakeCollabRepository(uid: u.uid, clock: () => recruitNow);
   final recruits = FakeRecruitRepository(uid: u.uid);
   seedCollab?.call(collabs, recruits, u.uid);
 
@@ -137,6 +138,7 @@ Future<void> _open(
         photographerIntroRepositoryProvider.overrideWithValue(intros),
         studioRepositoryProvider.overrideWithValue(studios),
         collabRepositoryProvider.overrideWithValue(collabs),
+        clockProvider.overrideWithValue(() => recruitNow),
         recruitRepositoryProvider.overrideWithValue(recruits),
         if (introLater != null)
           myIntroProvider.overrideWith((ref) => introLater.stream),
@@ -265,7 +267,7 @@ void main() {
       await _open(
         tester,
         seedCollab: (collabs, recruits, uid) {
-          final later = DateTime.now().toUtc().add(const Duration(hours: 4));
+          final later = recruitNow.add(const Duration(hours: 4));
           collabs
             ..seedCollaboration(makeCollaboration(collaboratorId: uid))
             ..seedCollaboration(

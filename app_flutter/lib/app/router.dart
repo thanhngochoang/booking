@@ -118,9 +118,13 @@ String? computeRedirect({
   bool isAccountLocked = false,
   required String location,
   String? from,
+  String? target,
 }) {
+  // Where the splash returns to: the whole URI, query included, so a
+  // cold-start deep link like `/collab?offer=…` keeps its parameters.
+  final resume = target ?? location;
   final onAuth = _authRoutes.contains(location);
-  if (authLoading) return location == _splashRoute ? null : _toSplash(location);
+  if (authLoading) return location == _splashRoute ? null : _toSplash(resume);
   if (!signedIn) {
     if (location == _splashRoute) return '/login';
     return onAuth ? null : '/login';
@@ -129,7 +133,7 @@ String? computeRedirect({
     return location == _sessionErrorRoute ? null : _sessionErrorRoute;
   }
   if (!profileLoaded) {
-    return location == _splashRoute ? null : _toSplash(location);
+    return location == _splashRoute ? null : _toSplash(resume);
   }
   if (isAccountLocked) {
     return location == _restoreAccountRoute ? null : _restoreAccountRoute;
@@ -139,7 +143,7 @@ String? computeRedirect({
   }
   if (needsRole) return location == _onboardingRoute ? null : _onboardingRoute;
   if (location == _splashRoute) {
-    return (from == null || _nonResumable.contains(from))
+    return (from == null || _nonResumable.contains(Uri.parse(from).path))
         ? AppTab.home.path
         : from;
   }
@@ -190,6 +194,7 @@ class RouterNotifier extends ChangeNotifier {
       isAccountLocked: lock.value != null,
       location: state.matchedLocation,
       from: state.uri.queryParameters['from'],
+      target: state.uri.toString(),
     );
   }
 }

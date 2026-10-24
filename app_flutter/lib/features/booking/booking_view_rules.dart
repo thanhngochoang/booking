@@ -768,12 +768,23 @@ enum StudioOfferState {
 
 /// The studio's view of [b]'s latest collaborator offer at [now], or null
 /// when there is none to tell (a member is assigned, the offer was accepted,
-/// or the S26 overdue line takes over past the deadline).
+/// the booking is closed, or the S26 overdue line takes over past the
+/// deadline).
 ({StudioOfferState state, String collaboratorId, DateTime? expiresAt})?
 studioOfferOf(Booking b, DateTime now) {
   final s = b.studio;
   final last = s?.lastAssignment;
   if (s == null || last == null || last.assigneeKind != 'collaborator') {
+    return null;
+  }
+  // A closed booking has nothing left to staff.
+  if (const {
+    BookingStatus.declined,
+    BookingStatus.expired,
+    BookingStatus.cancelled,
+    BookingStatus.completed,
+    BookingStatus.reviewed,
+  }.contains(b.status)) {
     return null;
   }
   if (s.hasPendingOffer && s.assigneeId == last.assigneeId) {

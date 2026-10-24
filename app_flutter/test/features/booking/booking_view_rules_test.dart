@@ -1161,4 +1161,70 @@ void main() {
       });
     });
   });
+
+  group('studioOfferOf (S27)', () {
+    final deadline = DateTime.utc(2026, 10, 23, 8);
+    final now = DateTime.utc(2026, 10, 21, 3);
+
+    Booking offer({required BookingStatus status, bool declined = false}) =>
+        makeTestBooking(
+          id: 'sb1',
+          photographerId: 'cuc',
+          status: status,
+          day: '2026-10-24',
+          start: '15:00',
+          end: '17:00',
+        ).copyWith(
+          studio: StudioBookingInfo(
+            assigneeId: declined ? null : 'lan',
+            assigneeKind: declined ? null : 'collaborator',
+            assignDeadline: deadline,
+            assignments: [
+              StudioAssignment(
+                assigneeId: 'lan',
+                assigneeKind: 'collaborator',
+                at: now,
+                by: 'cuc',
+                offerExpiresAt: now.add(const Duration(hours: 6)),
+                declinedAt: declined ? now : null,
+              ),
+            ],
+          ),
+        );
+
+    test('pending and declined offers of an open booking', () {
+      expect(
+        studioOfferOf(offer(status: BookingStatus.accepted), now)?.state,
+        StudioOfferState.pending,
+      );
+      expect(
+        studioOfferOf(
+          offer(status: BookingStatus.accepted, declined: true),
+          now,
+        )?.state,
+        StudioOfferState.declined,
+      );
+    });
+
+    test('a cancelled or completed booking has no offer line', () {
+      for (final status in [
+        BookingStatus.cancelled,
+        BookingStatus.completed,
+        BookingStatus.reviewed,
+        BookingStatus.declined,
+        BookingStatus.expired,
+      ]) {
+        expect(
+          studioOfferOf(offer(status: status), now),
+          isNull,
+          reason: '$status',
+        );
+        expect(
+          studioOfferOf(offer(status: status, declined: true), now),
+          isNull,
+          reason: '$status declined',
+        );
+      }
+    });
+  });
 }

@@ -211,7 +211,9 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
             onChanged: _onChanged,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: l.studioInviteSearch,
+              hintText: widget.collaborator
+                  ? l.collabInviteSearch
+                  : l.studioInviteSearch,
               prefixIcon: const AppIcon(AppIcons.search),
             ),
           ),

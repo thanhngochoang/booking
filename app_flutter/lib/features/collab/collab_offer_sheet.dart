@@ -70,6 +70,33 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
     }
   }
 
+  /// CLAUDE.md: declining goes through a confirmation with a red button.
+  Future<void> _decline() async {
+    final l = context.l10n;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(collabRepositoryProvider);
+    final declined = await showConfirmSheet(
+      context,
+      title: l.collabDeclineConfirmTitle,
+      body: l.collabDeclineConfirmBody,
+      confirmLabel: l.collabOfferDecline,
+      keepLabel: l.collabKeep,
+      onConfirm: () async {
+        try {
+          await repo.respondOffer(widget.job.bookingId, accept: false);
+        } catch (e) {
+          throw CollabFailure(collabErrorText(e, l));
+        }
+      },
+    );
+    if (!declined || !mounted) return;
+    navigator.pop();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l.collabOfferDeclinedToast)));
+  }
+
   /// "13:40 hôm nay" on the same Vietnam day, else "13:40 T7 24/10".
   String _deadlineTime(DateTime at, DateTime now) {
     final l = context.l10n;
@@ -93,10 +120,14 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
     final clock = ref.watch(clockProvider);
     final now = clock();
     final j = widget.job;
-    final expired =
-        _expired ||
-        j.offerStatus != OfferStatus.pending ||
-        !now.isBefore(j.offerExpiresAt);
+    // An offer no longer waiting says why: taken, answered or lapsed.
+    final String? closed = switch (j.offerStatus) {
+      OfferStatus.accepted => l.collabOfferAcceptedState,
+      OfferStatus.pending when _expired || !now.isBefore(j.offerExpiresAt) =>
+        l.collabOfferExpired,
+      OfferStatus.pending => null,
+      _ => l.collabOfferGone,
+    };
     final sending = _sending != null;
     final place = j.placeName.trim();
 
@@ -189,7 +220,7 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
             ),
             note: l.collabOfferFeeNote,
           ),
-          if (!expired)
+          if (closed == null)
             fact(
               icon: AppIcons.schedule,
               title: CountdownText(
@@ -208,12 +239,12 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
               note: l.collabOfferDeadlineNote,
             ),
           StudioNote(l.collabOfferLockNote),
-          if (expired)
+          if (closed != null)
             Padding(
               padding: const EdgeInsets.only(top: AppSpace.s2),
               child: Text(
-                l.collabOfferExpired,
-                key: const Key('collab-offer-expired'),
+                closed,
+                key: const Key('collab-offer-closed'),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,
                 ),
@@ -238,8 +269,7 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
                   child: AppButton.outline(
                     l.collabOfferDecline,
                     key: const Key('collab-offer-decline'),
-                    loading: _sending == false,
-                    onPressed: sending ? null : () => _answer(accept: false),
+                    onPressed: sending ? null : _decline,
                   ),
                 ),
                 const SizedBox(width: AppSpace.s2),

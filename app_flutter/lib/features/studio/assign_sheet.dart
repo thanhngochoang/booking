@@ -8,6 +8,7 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/collab/collab_controller.dart';
@@ -147,8 +148,12 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
     final theme = Theme.of(context);
     final booking = ref.watch(bookingProvider(widget.bookingId));
     final options = ref.watch(assignmentOptionsProvider(widget.bookingId));
-    // Read alongside the options, not after them (S27 collaborators).
-    final collaborations = ref.watch(studioCollaborationsProvider);
+    // Read alongside the options, not after them (S27 collaborators). A
+    // failing listener leaves the members-only sheet of S26 working.
+    final watched = ref.watch(studioCollaborationsProvider);
+    final collaborations = watched.hasError && !watched.hasValue
+        ? const AsyncValue<List<Collaboration>>.data([])
+        : watched;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.s4,
@@ -268,6 +273,12 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
       key: Key('assign-option-${c.collaboratorId}'),
       label: c.collaboratorName,
       meta: [
+        if (ref
+                .watch(photographerProfileProvider(c.collaboratorId))
+                .value
+                ?.summary
+            case final summary? when summary.hasTomatoPct)
+          MetaPart.tomato(summary.tomatoPct),
         if (c.defaultFee case final fee?)
           MetaPart.text(l.recruitFeePerShoot(formatMoney(fee))),
       ],

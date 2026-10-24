@@ -95,6 +95,24 @@ void main() {
     expect(find.text('Nhận việc cộng tác'), findsOneWidget);
   });
 
+  testWidgets('query offer=<id> of an accepted job says so (no answer)', (
+    tester,
+  ) async {
+    final c = _me();
+    await c.pump(tester);
+    await tester.tap(_key('collab-offer-b2'));
+    await CollabWorld.settle(tester);
+    await tester.tap(_key('collab-offer-accept'));
+    await CollabWorld.settle(tester);
+    expect(_key('collab-offer-b2'), findsNothing);
+    // The notification link opened later.
+    c.world.router.go('/collab?offer=b2');
+    await CollabWorld.settle(tester);
+    expect(_code('S27.07'), findsOneWidget);
+    expect(find.text('Bạn đã nhận việc này.'), findsOneWidget);
+    expect(_key('collab-offer-accept'), findsNothing);
+  });
+
   testWidgets('query offer=<id> opens S27.07 on load', (tester) async {
     await _me().pump(tester, location: '/collab?offer=b2');
     expect(_code('S27.07'), findsOneWidget);

@@ -10393,4 +10393,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String settingsRecruitMeta(int n) {
     return '$n/3 tin mở';
   }
+
+  @override
+  String get collabOfferAcceptedState => 'Bạn đã nhận việc này.';
+
+  @override
+  String get collabDeclineConfirmTitle => 'Từ chối việc này?';
+
+  @override
+  String get collabDeclineConfirmBody =>
+      'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.';
 }

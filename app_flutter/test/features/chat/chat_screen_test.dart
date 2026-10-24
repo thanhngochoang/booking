@@ -20,6 +20,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/safety/report_sheet.dart';
+import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
@@ -902,5 +903,32 @@ void main() {
     expect(find.text(bookingProfile.summary.displayName), findsNothing);
     expect(find.byKey(const Key('chat-collab-card')), findsOneWidget);
     expect(find.byType(ChatComposer), findsOneWidget);
+  });
+
+  testWidgets('an ended collab chat is read-only: the note, no composer', (
+    tester,
+  ) async {
+    // S27 Decision 16: endCollaboration sets readOnlyAt; the chat stays
+    // readable for 30 days.
+    fakeChat.currentUserId = 'p1';
+    fakeChat.seedThread(
+      ChatThread(
+        id: 'collab_p1_m1',
+        kind: ChatKind.collab,
+        customerId: 'p1',
+        photographerId: 'm1',
+        readOnlyAt: DateTime.utc(2026, 10, 1),
+      ),
+    );
+    await pumpScreen(
+      tester,
+      chatId: 'collab_p1_m1',
+      signedInUid: 'p1',
+      now: DateTime.utc(2026, 10, 5),
+    );
+
+    expect(find.text(AppLocalizationsVi().chatReadOnly), findsOneWidget);
+    expect(find.byType(ChatComposer), findsNothing);
+    expect(find.byKey(const Key('chat-collab-card')), findsOneWidget);
   });
 }

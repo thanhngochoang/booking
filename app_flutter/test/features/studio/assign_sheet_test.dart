@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/features/collab/collab_controller.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 
+import '../../support/meta_finders.dart';
 import '../../support/recruit_world.dart';
 import '../../support/screen_host.dart';
 import '../../support/studio_world.dart';
@@ -62,6 +70,7 @@ Future<_Host> _open(
   double width = 390,
   double height = 900,
   double textScale = 1.0,
+  List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
@@ -92,7 +101,7 @@ Future<_Host> _open(
   await tester.pumpWidget(
     screenRouterApp(
       router: router,
-      overrides: w.screenOverrides,
+      overrides: [...w.screenOverrides, ...extraOverrides],
       textScale: textScale,
     ),
   );
@@ -401,6 +410,57 @@ void main() {
       expect(h.world.bookings.studioCalls.single.$2, {
         'bookingId': 'sb1',
         'assigneeId': 'nhung',
+      });
+    });
+
+    testWidgets('a collaborator row shows their % next to the fee', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        collaborators: collaborators,
+        extraOverrides: [
+          photographerProfileProvider('lan').overrideWithValue(
+            const AsyncData(
+              PhotographerProfile(
+                summary: PhotographerSummary(
+                  id: 'lan',
+                  displayName: 'Lan Phương',
+                  reviewCount: 20,
+                  tomatoCount: 19,
+                  brickCount: 1,
+                  tomatoPct: 95,
+                ),
+                intro: PhotographerIntro(),
+              ),
+            ),
+          ),
+        ],
+      );
+      await _reveal(tester, 'assign-option-lan');
+      expect(findMeta('95% · 800.000₫/buổi'), findsOneWidget);
+    });
+
+    testWidgets('a failing collaborations listener keeps the members-only '
+        'sheet', (tester) async {
+      final h = await _open(
+        tester,
+        collaborators: collaborators,
+        extraOverrides: [
+          studioCollaborationsProvider.overrideWith(
+            (ref) => Stream.error(StateError('denied')),
+          ),
+        ],
+      );
+      expect(find.byType(ErrorState), findsNothing);
+      expect(_key('assign-group-collaborators'), findsNothing);
+      expect(_key('assign-option-lan'), findsNothing);
+      expect(_submit(tester).label, 'Giao cho Minh Trí');
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      expect(h.world.bookings.studioCalls.single.$2, {
+        'bookingId': 'sb1',
+        'assigneeId': 'minh',
       });
     });
 
