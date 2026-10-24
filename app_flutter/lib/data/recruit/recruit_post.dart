@@ -271,13 +271,37 @@ class RecruitApplication {
   bool operator ==(Object other) =>
       other is RecruitApplication &&
       other.id == id &&
+      other.postId == postId &&
+      other.studioId == studioId &&
+      other.applicantId == applicantId &&
+      other.kind == kind &&
+      other.postTitle == postTitle &&
+      other.applicantName == applicantName &&
+      other.applicantAvatarUrl == applicantAvatarUrl &&
       other.status == status &&
       other.message == message &&
       listEquals(other.samplePostIds, samplePostIds) &&
+      other.createdAt == createdAt &&
+      other.expiresAt == expiresAt &&
       other.respondedAt == respondedAt;
 
   @override
-  int get hashCode => Object.hash(id, status, respondedAt);
+  int get hashCode => Object.hash(
+    id,
+    postId,
+    studioId,
+    applicantId,
+    kind,
+    postTitle,
+    applicantName,
+    applicantAvatarUrl,
+    status,
+    message,
+    Object.hashAll(samplePostIds),
+    createdAt,
+    expiresAt,
+    respondedAt,
+  );
 }
 
 /// Actions counted on the Vietnam day [day] (`yyyy-MM-dd`).
@@ -450,6 +474,9 @@ String recruitFilterKey({RecruitKind? kind, String? area, String? specialty}) =>
       if (specialty != null) 's=$specialty',
     ].join('|');
 
+/// `a=<area>|s=<specialty>`.
+final _matchKeyPattern = RegExp(r'^a=(.+)\|s=(.+)$');
+
 /// 2 when an area and a specialty of [p] match the viewer, 1 when one of
 /// them does, 0 otherwise (Decision 7). [viewerMatchKeys] is the viewer's
 /// `recruitMatchKeys` (`a=<area>|s=<specialty>`).
@@ -457,7 +484,7 @@ int recruitMatchScore(RecruitPost p, List<String> viewerMatchKeys) {
   final areas = <String>{};
   final specialties = <String>{};
   for (final k in viewerMatchKeys) {
-    final m = RegExp(r'^a=(.+)\|s=(.+)$').firstMatch(k);
+    final m = _matchKeyPattern.firstMatch(k);
     if (m == null) continue;
     areas.add(m.group(1)!);
     specialties.add(m.group(2)!);

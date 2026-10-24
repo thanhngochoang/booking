@@ -5,6 +5,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:photobooking/data/backend/backend_config.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/recruit/recruit_parse.dart';
 import 'package:photobooking/data/recruit/recruit_repository.dart';
 
 // ── parsing (Task 5's recruit_mapping.ts shapes) ──
@@ -18,19 +19,8 @@ DateTime? recruitDateOf(Object? v) {
   return null;
 }
 
-String _text(Object? v) => v is String ? v : '';
-String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
-int _int(Object? v) => v is num ? v.toInt() : 0;
-List<String> _strings(Object? v) => [
-  if (v is List)
-    for (final x in v)
-      if (x is String) x,
-];
-Map<String, dynamic> _map(Object? v) =>
-    v is Map ? v.cast<String, dynamic>() : const {};
-
 FeeHint _feeOf(Object? raw) {
-  final m = _map(raw);
+  final m = mapOf(raw);
   final amount = m['amount'];
   return m['type'] == 'per_shoot' && amount is num
       ? PerShootFee(amount.toInt())
@@ -40,7 +30,7 @@ FeeHint _feeOf(Object? raw) {
 /// `recruitPosts/{id}`; null without its studio, a known kind and status, or
 /// its dates.
 RecruitPost? recruitPostFrom(String id, Map<String, dynamic> d) {
-  final studioId = _str(d['studioId']);
+  final studioId = nonEmptyOf(d['studioId']);
   final kind = RecruitKind.fromCode(d['kind']);
   final status = RecruitPostStatus.fromCode(d['status']);
   final createdAt = recruitDateOf(d['createdAt']);
@@ -52,24 +42,24 @@ RecruitPost? recruitPostFrom(String id, Map<String, dynamic> d) {
       expiresAt == null) {
     return null;
   }
-  final studio = _map(d['studio']);
+  final studio = mapOf(d['studio']);
   return RecruitPost(
     id: id,
     studioId: studioId,
-    studioName: _text(studio['name']),
-    studioAvatarUrl: _str(studio['avatarUrl']),
+    studioName: textOf(studio['name']),
+    studioAvatarUrl: nonEmptyOf(studio['avatarUrl']),
     studioBusinessVerified: studio['businessVerified'] == true,
     kind: kind,
-    title: _text(d['title']),
-    specialties: _strings(d['specialties']),
-    areas: _strings(d['areas']),
+    title: textOf(d['title']),
+    specialties: stringsOf(d['specialties']),
+    areas: stringsOf(d['areas']),
     frequency: RecruitFrequency.fromCode(d['frequency']),
     fee: _feeOf(d['feeHint']),
-    requirements: _text(d['requirements']),
+    requirements: textOf(d['requirements']),
     status: status,
     renewed: d['renewed'] == true,
-    applicationCount: _int(d['applicationCount']),
-    matchKeys: _strings(d['matchKeys']),
+    applicationCount: intOf(d['applicationCount']),
+    matchKeys: stringsOf(d['matchKeys']),
     createdAt: createdAt,
     expiresAt: expiresAt,
   );
@@ -78,9 +68,9 @@ RecruitPost? recruitPostFrom(String id, Map<String, dynamic> d) {
 /// `recruitApplications/{postId}_{uid}`; null without its parties, a known
 /// kind and status, or its dates.
 RecruitApplication? recruitApplicationFrom(String id, Map<String, dynamic> d) {
-  final postId = _str(d['postId']);
-  final studioId = _str(d['studioId']);
-  final applicantId = _str(d['applicantId']);
+  final postId = nonEmptyOf(d['postId']);
+  final studioId = nonEmptyOf(d['studioId']);
+  final applicantId = nonEmptyOf(d['applicantId']);
   final kind = RecruitKind.fromCode(d['kind']);
   final status = ApplicationStatus.fromCode(d['status']);
   final createdAt = recruitDateOf(d['createdAt']);
@@ -94,19 +84,19 @@ RecruitApplication? recruitApplicationFrom(String id, Map<String, dynamic> d) {
       expiresAt == null) {
     return null;
   }
-  final applicant = _map(d['applicant']);
+  final applicant = mapOf(d['applicant']);
   return RecruitApplication(
     id: id,
     postId: postId,
     studioId: studioId,
     applicantId: applicantId,
     kind: kind,
-    postTitle: _text(d['postTitle']),
-    applicantName: _text(applicant['name']),
-    applicantAvatarUrl: _str(applicant['avatarUrl']),
+    postTitle: textOf(d['postTitle']),
+    applicantName: textOf(applicant['name']),
+    applicantAvatarUrl: nonEmptyOf(applicant['avatarUrl']),
     status: status,
-    message: _text(d['message']),
-    samplePostIds: _strings(d['samplePostIds']),
+    message: textOf(d['message']),
+    samplePostIds: stringsOf(d['samplePostIds']),
     createdAt: createdAt,
     expiresAt: expiresAt,
     respondedAt: recruitDateOf(d['respondedAt']),
@@ -114,7 +104,7 @@ RecruitApplication? recruitApplicationFrom(String id, Map<String, dynamic> d) {
 }
 
 RecruitDaily? _dailyOf(Object? raw) {
-  final m = _map(raw);
+  final m = mapOf(raw);
   final day = m['day'];
   final count = m['count'];
   return day is String && count is num
@@ -126,12 +116,12 @@ RecruitDaily? _dailyOf(Object? raw) {
 RecruitCounters recruitCountersFrom(Map<String, dynamic>? d) {
   if (d == null) return RecruitCounters.empty;
   return RecruitCounters(
-    openPostCount: _int(d['openPostCount']),
+    openPostCount: intOf(d['openPostCount']),
     postActions: _dailyOf(d['postActions']),
-    activeCollabCount: _int(d['activeCollabCount']),
-    pendingInviteCount: _int(d['pendingInviteCount']),
+    activeCollabCount: intOf(d['activeCollabCount']),
+    pendingInviteCount: intOf(d['pendingInviteCount']),
     collabActions: _dailyOf(d['collabActions']),
-    openApplicationCount: _int(d['openApplicationCount']),
+    openApplicationCount: intOf(d['openApplicationCount']),
     applyActions: _dailyOf(d['applyActions']),
     recruitBlockedUntil: recruitDateOf(d['recruitBlockedUntil']),
   );
@@ -149,7 +139,7 @@ ProviderFacts? providerFactsFrom({
     providerType: ProviderType.fromCode(photographer['providerType']),
     acceptingOrders: photographer['acceptingOrders'] == true,
     businessVerified: photographer['businessVerified'] == true,
-    recruitMatchKeys: _strings(photographer['recruitMatchKeys']),
+    recruitMatchKeys: stringsOf(photographer['recruitMatchKeys']),
   );
 }
 
@@ -345,7 +335,7 @@ class FirestoreRecruitRepository implements RecruitRepository {
 
   @override
   Future<String> create(RecruitDraft d) async {
-    final id = _map(
+    final id = mapOf(
       await _call('createRecruitPost', recruitDraftPayload(d)),
     )['postId'];
     if (id is! String) {
@@ -365,7 +355,7 @@ class FirestoreRecruitRepository implements RecruitRepository {
   @override
   Future<DateTime> renew(String postId) async {
     final at = recruitDateOf(
-      _map(await _call('renewRecruitPost', {'postId': postId}))['expiresAt'],
+      mapOf(await _call('renewRecruitPost', {'postId': postId}))['expiresAt'],
     );
     if (at == null) throw const RecruitError(RecruitErrorCode.unknown);
     return at;

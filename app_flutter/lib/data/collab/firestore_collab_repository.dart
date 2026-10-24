@@ -6,18 +6,14 @@ import 'package:photobooking/data/backend/backend_config.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/recruit/firestore_recruit_repository.dart'
     show callRecruitFunction, recruitDateOf;
+import 'package:photobooking/data/recruit/recruit_parse.dart';
 import 'package:photobooking/data/recruit/recruit_post.dart';
-
-String _text(Object? v) => v is String ? v : '';
-String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
-Map<String, dynamic> _map(Object? v) =>
-    v is Map ? v.cast<String, dynamic>() : const {};
 
 /// `studio_collaborations/{studioId}_{uid}` (or a `history` copy); null
 /// without its parties, a known status or `createdAt`.
 Collaboration? collaborationFrom(String id, Map<String, dynamic> d) {
-  final studioId = _str(d['studioId']);
-  final collaboratorId = _str(d['collaboratorId']);
+  final studioId = nonEmptyOf(d['studioId']);
+  final collaboratorId = nonEmptyOf(d['collaboratorId']);
   final status = CollabStatus.fromCode(d['status']);
   final createdAt = recruitDateOf(d['createdAt']);
   if (studioId == null ||
@@ -26,17 +22,17 @@ Collaboration? collaborationFrom(String id, Map<String, dynamic> d) {
       createdAt == null) {
     return null;
   }
-  final studio = _map(d['studio']);
-  final collaborator = _map(d['collaborator']);
+  final studio = mapOf(d['studio']);
+  final collaborator = mapOf(d['collaborator']);
   final fee = d['defaultFee'];
   return Collaboration(
     id: id,
     studioId: studioId,
     collaboratorId: collaboratorId,
-    studioName: _text(studio['name']),
-    studioAvatarUrl: _str(studio['avatarUrl']),
-    collaboratorName: _text(collaborator['name']),
-    collaboratorAvatarUrl: _str(collaborator['avatarUrl']),
+    studioName: textOf(studio['name']),
+    studioAvatarUrl: nonEmptyOf(studio['avatarUrl']),
+    collaboratorName: textOf(collaborator['name']),
+    collaboratorAvatarUrl: nonEmptyOf(collaborator['avatarUrl']),
     status: status,
     defaultFee: fee is num ? fee.toInt() : null,
     activeAt: recruitDateOf(d['activeAt']),
@@ -48,9 +44,9 @@ Collaboration? collaborationFrom(String id, Map<String, dynamic> d) {
 /// `collab_jobs/{bookingId}_{uid}`; null without its parties, a known offer
 /// status or the offer dates. The pay record is the nested `pay` map.
 CollabJob? collabJobFrom(String id, Map<String, dynamic> d) {
-  final bookingId = _str(d['bookingId']);
-  final studioId = _str(d['studioId']);
-  final collaboratorId = _str(d['collaboratorId']);
+  final bookingId = nonEmptyOf(d['bookingId']);
+  final studioId = nonEmptyOf(d['studioId']);
+  final collaboratorId = nonEmptyOf(d['collaboratorId']);
   final offerStatus = OfferStatus.fromCode(d['offerStatus']);
   final offerAt = recruitDateOf(d['offerAt']);
   final offerExpiresAt = recruitDateOf(d['offerExpiresAt']);
@@ -62,28 +58,28 @@ CollabJob? collabJobFrom(String id, Map<String, dynamic> d) {
       offerExpiresAt == null) {
     return null;
   }
-  final shoot = _map(d['shoot']);
-  final pay = _map(d['pay']);
+  final shoot = mapOf(d['shoot']);
+  final pay = mapOf(d['pay']);
   final fee = d['agreedFee'];
   return CollabJob(
     id: id,
     bookingId: bookingId,
     studioId: studioId,
     collaboratorId: collaboratorId,
-    studioName: _text(d['studioName']),
-    collaboratorName: _text(d['collaboratorName']),
-    day: _text(shoot['day']),
-    start: _text(shoot['start']),
-    end: _text(shoot['end']),
-    serviceName: _text(shoot['serviceName']),
-    placeName: _text(shoot['placeName']),
+    studioName: textOf(d['studioName']),
+    collaboratorName: textOf(d['collaboratorName']),
+    day: textOf(shoot['day']),
+    start: textOf(shoot['start']),
+    end: textOf(shoot['end']),
+    serviceName: textOf(shoot['serviceName']),
+    placeName: textOf(shoot['placeName']),
     agreedFee: fee is num ? fee.toInt() : 0,
     offerStatus: offerStatus,
     offerExpiresAt: offerExpiresAt,
     acceptedAt: recruitDateOf(d['acceptedAt']),
     payStatus: PayStatus.fromCode(d['payStatus']),
     payDueAt: recruitDateOf(pay['dueAt']),
-    paidOn: _str(pay['paidOn']),
+    paidOn: nonEmptyOf(pay['paidOn']),
     payMethod: CollabPayMethod.fromCode(pay['method']),
     reportedAt: recruitDateOf(pay['reportedAt']),
     updatedAt: recruitDateOf(d['updatedAt']) ?? offerAt,
@@ -219,7 +215,7 @@ class FirestoreCollabRepository implements CollabRepository {
     required bool accept,
   }) async {
     final status = OfferStatus.fromCode(
-      _map(
+      mapOf(
         await _call('respondCollabOffer', {
           'bookingId': bookingId,
           'accept': accept,
@@ -249,7 +245,7 @@ class FirestoreCollabRepository implements CollabRepository {
 
   @override
   Future<String> openChat({String? studioId, String? collaboratorId}) async {
-    final id = _map(
+    final id = mapOf(
       await _call(
         'openCollabChat',
         collabPartyPayload(studioId: studioId, collaboratorId: collaboratorId),

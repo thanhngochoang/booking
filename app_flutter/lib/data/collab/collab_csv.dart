@@ -5,7 +5,9 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// S27.06 "Sao chép bảng kê tháng {m} (CSV)" (Decision 19): the header and
 /// one row per job, RFC 4180 (CRLF lines, a field with a comma, quote or
 /// line break is quoted and its quotes doubled). Amounts are plain integer
-/// VND; days are Vietnam calendar days `d/M/yyyy`.
+/// VND; days are Vietnam calendar days `d/M/yyyy`. A text cell starting
+/// with `=`, `+`, `-` or `@` (after spaces) gets a leading `'` so a
+/// spreadsheet shows it instead of running it as a formula.
 String collabCsv(List<CollabJob> jobs, AppLocalizations l) => [
   l.collabCsvHeader,
   for (final j in jobs)
@@ -20,8 +22,13 @@ String collabCsv(List<CollabJob> jobs, AppLocalizations l) => [
     ].map(_field).join(','),
 ].join('\r\n');
 
-String _field(String v) =>
-    RegExp(r'[",\r\n]').hasMatch(v) ? '"${v.replaceAll('"', '""')}"' : v;
+final _needsQuotes = RegExp(r'[",\r\n]');
+final _formulaStart = RegExp(r'^\s*[=+\-@]');
+
+String _field(String raw) {
+  final v = _formulaStart.hasMatch(raw) ? "'$raw" : raw;
+  return _needsQuotes.hasMatch(v) ? '"${v.replaceAll('"', '""')}"' : v;
+}
 
 /// `yyyy-MM-dd` → `d/M/yyyy`; '' when missing or malformed.
 String _day(String? key) {

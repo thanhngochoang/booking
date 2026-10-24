@@ -146,15 +146,33 @@ class Collaboration {
   bool operator ==(Object other) =>
       other is Collaboration &&
       other.id == id &&
+      other.studioId == studioId &&
+      other.collaboratorId == collaboratorId &&
+      other.studioName == studioName &&
+      other.studioAvatarUrl == studioAvatarUrl &&
+      other.collaboratorName == collaboratorName &&
+      other.collaboratorAvatarUrl == collaboratorAvatarUrl &&
       other.status == status &&
       other.defaultFee == defaultFee &&
       other.activeAt == activeAt &&
-      other.endedAt == endedAt &&
-      other.studioName == studioName &&
-      other.collaboratorName == collaboratorName;
+      other.expiresAt == expiresAt &&
+      other.endedAt == endedAt;
 
   @override
-  int get hashCode => Object.hash(id, status, defaultFee, activeAt, endedAt);
+  int get hashCode => Object.hash(
+    id,
+    studioId,
+    collaboratorId,
+    studioName,
+    studioAvatarUrl,
+    collaboratorName,
+    collaboratorAvatarUrl,
+    status,
+    defaultFee,
+    activeAt,
+    expiresAt,
+    endedAt,
+  );
 }
 
 /// One studio booking offered to a collaborator, with its fee and pay record.

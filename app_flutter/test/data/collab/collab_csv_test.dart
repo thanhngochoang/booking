@@ -75,4 +75,25 @@ void main() {
       'Ngày chụp,Dịch vụ,Cộng tác viên,Thù lao,Trạng thái,Ngày trả,Cách trả',
     );
   });
+
+  test('a cell starting with =, +, - or @ (after spaces) gets a leading '
+      'quote so a spreadsheet never runs it as a formula', () {
+    final row = collabCsv([
+      makeCollabJob(
+        serviceName: '=HYPERLINK("http://x","y")',
+        collaboratorName: ' +84 Dũng',
+        placeName: 'ignored',
+      ),
+      makeCollabJob(serviceName: '-1', collaboratorName: '@Hòa'),
+      makeCollabJob(serviceName: 'Gói a=b', collaboratorName: 'Dũng'),
+    ], l).split('\r\n');
+    expect(row[1].split(',').sublist(0, 3), [
+      '24/10/2026',
+      '"\'=HYPERLINK(""http://x""',
+      '""y"")"',
+    ]);
+    expect(row[1], contains("' +84 Dũng"));
+    expect(row[2].split(',').sublist(1, 3), ["'-1", "'@Hòa"]);
+    expect(row[3].split(',').sublist(1, 3), ['Gói a=b', 'Dũng']);
+  });
 }

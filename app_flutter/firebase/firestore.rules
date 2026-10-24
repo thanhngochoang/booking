@@ -495,9 +495,10 @@ service cloud.firestore {
     }
 
     // bookings: the customer, the photographer (or studio) and, for a studio booking, the member it
-    // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The assignee
-    // also reads the events and, under the photographer's unlock rule, the customer's contact (#136
-    // Decision 17); a reassigned member loses all of it with `assigneeId`. Deliveries stay the studio's.
+    // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid && assignStatus
+    // == 'assigned'`, see the S27 note below). The assignee also reads the events and, under the
+    // photographer's unlock rule, the customer's contact (#136 Decision 17); a reassigned member loses
+    // all of it with `assigneeId`. Deliveries stay the studio's.
     // S27 (#151): a collaborator whose offer is still pending (`assigneeKind == 'collaborator'`,
     // `assigneeAccepted != true`, `assignStatus == 'unassigned'`) is `assigneeId` but reads neither the
     // booking nor its events until accepting; the offer itself is in collab_jobs. S06.01 lists
