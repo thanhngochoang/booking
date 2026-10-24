@@ -4,7 +4,7 @@ import { FakeAccountNameLookup } from '../src/account_lookup.js';
 import { createPayment } from '../src/create_payment.js';
 import { dispatchDisputeRefund, openDispute, resolveDispute } from '../src/dispute_use_cases.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
-import type { Payment, Refund } from '../src/escrow.js';
+import { needsAccountChoice, type Payment, type Refund } from '../src/escrow.js';
 import { cancelRegistration, registerEvent } from '../src/event_registration.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { normalizeHolderName } from '../src/payout_account.js';
@@ -14,7 +14,6 @@ import {
   chooseRefundAccount,
   confirmDueRefundAccounts,
   lookupRefundAccount,
-  needsAccountChoice,
   pendingRefundFor,
   type RefundAccountDeps,
 } from '../src/refund_account.js';
@@ -264,6 +263,37 @@ describe('lookupRefundAccount', () => {
   });
 });
 
+describe('lookupRefundAccount cap (NAME_LOOKUPS_PER_DAY, like the payout lookup)', () => {
+  test('every attempt counts on the refund\'s Vietnam day; the 21st is limit_exceeded and never reaches the bank; the next day starts again', async () => {
+    const w = world();
+    const { refund } = await cancelled(w);
+    let asked = 0;
+    const lookup = new FakeAccountNameLookup(ECHO);
+    const deps: RefundAccountDeps = { ...w.deps, lookup: { lookup: (r) => { asked += 1; return lookup.lookup(r); } } };
+    const ask = (accountNumber: string) =>
+      lookupRefundAccount(deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'VCB', accountNumber });
+    // Refusals before the charge (bad input, another user) cost nothing.
+    await assert.rejects(ask('12'), code('invalid_argument'));
+    await assert.rejects(lookupRefundAccount(deps, { uid: 'c2' }, { refundId: refund.id, bankCode: 'VCB', accountNumber: '0011001234' }), code('permission_denied'));
+    const numbers = ['0011000404', '0011009999', '0011001234', '0011004321'];
+    for (let i = 0; i < 20; i++) {
+      await ask(numbers[i % 4] ?? '').catch((e: unknown) => {
+        if (!(e instanceof DomainError) || (e.code !== 'not_found' && e.code !== 'not_eligible')) throw e;
+      });
+    }
+    assert.equal(asked, 20);
+    assert.deepEqual((await stored(w, refund.id)).accountLookups, { day: '2026-10-10', count: 20 });
+    await assert.rejects(ask('0011001234'), code('limit_exceeded'));
+    assert.equal(asked, 20);
+    // The Vietnam day changes at 17:00 UTC.
+    w.b.clock.advanceHours(14);
+    assert.equal((await ask('0011001234')).accountLast4, '1234');
+    assert.deepEqual((await stored(w, refund.id)).accountLookups, { day: '2026-10-11', count: 1 });
+    // The choice is unaffected by the cap.
+    assert.deepEqual(await chooseRefundAccount(deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate' }), { status: 'done' });
+  });
+});
+
 describe('chooseRefundAccount', () => {
   test('chooseRefundAccount payer → pending and dispatched to the payer account', async () => {
     const w = world();
@@ -359,6 +389,39 @@ describe('confirmDueRefundAccounts (payment clock step)', () => {
     assert.deepEqual(w.b.gateway.refundCalls, [refund.id]);
     // Run again: nothing left to send.
     assert.equal(await confirmDueRefundAccounts(w.deps, w.b.clock.now(), 10), 0);
+  });
+});
+
+describe('confirmDueRefundAccounts never starves on refunds it cannot send', () => {
+  test('more than a batch of unsendable due refunds leave the queue (confirmBy cleared, or staff when the payment is gone); the sendable one goes on the next run', async () => {
+    const w = world();
+    const { refund } = await cancelled(w);
+    const old = new Date(w.b.clock.now().getTime() - HOUR).toISOString();
+    const at = w.b.clock.now().toISOString();
+    await w.b.store.runTransaction(async (tx) => {
+      await tx.setPayment({
+        id: 'pay_i', subjectType: 'instant_request', subjectId: 'ir1', payerId: 'c1', payeeId: '', provider: 'fake',
+        amount: 1_000, status: 'refunded', escrowStatus: 'refunded', idempotencyKey: 'k_i', method: 'bank_qr', createdAt: at, updatedAt: at,
+      });
+      for (let i = 0; i < 101; i++) {
+        // 100 Chụp ngay refunds (not S22.04's), 1 whose payment is gone; all due before the real one.
+        await tx.addRefund({
+          id: `rf_skip_${String(i).padStart(3, '0')}`, paymentId: i === 100 ? 'pay_gone' : 'pay_i',
+          subjectType: i === 100 ? 'booking' : 'instant_request', amount: 1_000, percent: 100, status: 'awaiting_account',
+          manual: false, fromEscrow: true, method: 'bank_transfer', destination: null, confirmBy: old, attempts: 0, createdAt: old, updatedAt: old,
+        });
+      }
+    });
+    w.b.clock.advanceHours(24);
+    assert.equal(await confirmDueRefundAccounts(w.deps, w.b.clock.now(), 100), 0);
+    assert.equal(await confirmDueRefundAccounts(w.deps, w.b.clock.now(), 100), 1);
+    assert.equal((await stored(w, refund.id)).status, 'done');
+    assert.deepEqual(w.b.gateway.refundCalls, [refund.id]);
+    const skipped = await stored(w, 'rf_skip_000');
+    assert.deepEqual([skipped.status, skipped.confirmBy], ['awaiting_account', null]);
+    const gone = await stored(w, 'rf_skip_100');
+    assert.deepEqual([gone.status, gone.manual, gone.failureReason], ['failed', true, 'payment_missing']);
+    assert.equal((await w.b.store.awaitingRefundsDue(w.b.clock.now(), 500)).length, 0);
   });
 });
 

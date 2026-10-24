@@ -8,6 +8,7 @@
 
 import { PLATFORM_PAYEE } from './payout.js';
 import {
+  canChooseRefundAccount,
   escrowRefundedTotal,
   isEscrowRefund,
   type Payment,
@@ -152,8 +153,10 @@ function heldOf(p: Payment, refunds: readonly Refund[]): number {
 
 /** Decision 3, in this order. */
 function statusOf(p: Payment, refunds: readonly Refund[], held: number): PayerRowStatus {
-  if (refunds.some((r) => r.status === 'awaiting_account')) return 'refund_account_needed';
-  if (refunds.some((r) => r.status === 'pending' || r.status === 'failed')) return 'refunding';
+  // Only a refund S22.04 can settle offers the account choice; a waiting Chụp ngay / S21-fee refund
+  // (no payer, staff work, #141 fix round 1) reads "Đang hoàn" like a failed one.
+  if (refunds.some((r) => r.status === 'awaiting_account' && canChooseRefundAccount(r))) return 'refund_account_needed';
+  if (refunds.some((r) => r.status === 'pending' || r.status === 'failed' || r.status === 'awaiting_account')) return 'refunding';
   if (p.escrowStatus === 'disputed') return 'disputed';
   // Never paid: a part-paid QR still open holds money; an expired one (or a late transfer) was given back.
   if (!everPaid(p)) return held > 0 ? 'held' : 'refunded';

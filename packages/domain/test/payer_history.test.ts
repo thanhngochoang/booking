@@ -174,6 +174,16 @@ describe('payerRowOf', () => {
     assert.equal(r.refunds.find((x) => x.refundId === 'r1')?.destinationLabel, null);
   });
 
+  it('a waiting Chụp ngay or S21-fee refund (not S22.04\'s) reads refunding, never refund_account_needed', () => {
+    for (const subjectType of ['instant_request', 'verification_fee'] as const) {
+      const waiting = refund({ status: 'awaiting_account', destination: null, attempts: 0, subjectType });
+      const r = must(rowOf(payment({ status: 'refunded', escrowStatus: 'refunded', subjectType }), [waiting]));
+      assert.equal(r.status, 'refunding', subjectType);
+      assert.equal(r.open, true);
+      assert.equal(r.refundingAmount, AMOUNT);
+    }
+  });
+
   it('a 50% cancel waiting for its refund still counts the held half', () => {
     const r = must(rowOf(
       payment({ status: 'partially_refunded', escrowStatus: 'partially_refunded' }),

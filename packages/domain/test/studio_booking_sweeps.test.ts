@@ -9,6 +9,7 @@ import type { StudioBookingTx } from '../src/booking_ports.js';
 import { studioBookingNotices } from '../src/studio_notifications.js';
 import { acceptedStudioBooking, createBookingWorld, withStudio, type BookingWorld } from './support/booking_world.js';
 import { createNotifyWorld, type NotifyWorld } from './support/notify_world.js';
+import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
 
 // 2026-10-15 14:00 VN = 07:00Z; the assign deadline is 2026-10-14T07:00Z.
 const DEADLINE_MS = Date.parse('2026-10-14T07:00:00.000Z');
@@ -224,6 +225,16 @@ describe('unassigned studio bookings at their start (#136 ruling)', () => {
       overdue: 0, reminders: 0, changesExpired: 0, cancelledAtStart: 0, notifyFailed: 0,
     });
     assert.equal((await w.store.getBooking(b.id))?.version, after.version);
+
+    // The customer confirms the paying account (S22.04): the refund is sent, the flag goes down and
+    // the booking write that stamps depositRefundedAt carries the customer's refund notice.
+    const [waiting] = [...w.store.refunds.values()].filter((r) => r.status === 'awaiting_account');
+    assert.ok(waiting);
+    assert.equal(await confirmRefundToPayer(refundAccountDepsOf({ bookings: w.deps }), waiting.id), 'done');
+    const refunded = await w.store.getBooking(b.id);
+    assert.ok(refunded);
+    assert.equal(refunded.refundAccountNeeded, false);
+    assert.deepEqual(bookingNotices(after, refunded), [{ to: 'customer', kind: 'refund' }]);
   });
 
   it('a booking the overdue sweep never marked gets the mark and the counter once, then the cancel', async () => {

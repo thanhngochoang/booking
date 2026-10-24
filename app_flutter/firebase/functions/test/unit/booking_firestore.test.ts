@@ -560,6 +560,7 @@ describe('Firestore <-> Domain booking mappers', () => {
       candidate: {
         bankCode: 'MB', bankName: 'MBBank', accountNumberEnc: 'v1:enc-candidate', accountLast4: '4321', holderName: 'TRAN VAN B',
       },
+      accountLookups: { day: '2026-10-12', count: 3 },
       attempts: 0,
       manual: false,
       fromEscrow: true,

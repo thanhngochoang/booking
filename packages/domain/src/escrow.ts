@@ -109,10 +109,24 @@ export const REFUND_STATUSES = ['awaiting_account', 'pending', 'done', 'failed']
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
 export const REFUND_METHODS = ['gateway', 'bank_transfer'] as const;
+export type RefundMethod = (typeof REFUND_METHODS)[number];
 
 /** S22.04 (#141 Decision 5): hours a waiting policy refund with a payer account gives the customer to choose. */
 export const REFUND_ACCOUNT_CONFIRM_HOURS = 24;
-export type RefundMethod = (typeof REFUND_METHODS)[number];
+
+/** A policy refund paid back by bank transfer waits for the customer's account choice (#141 Decision 5). */
+export function needsAccountChoice(r: Pick<Refund, 'fromEscrow' | 'method'>): boolean {
+  return r.fromEscrow && r.method === 'bank_transfer';
+}
+
+/**
+ * Whether S22.04 settles this waiting refund (#141): bookings and tickets, a dispute refund being one
+ * of them (a refund without a subject is a booking's, stored before the field). Chụp ngay and S21-fee
+ * refunds are not (no 24-hour window; a waiting one is staff work).
+ */
+export function canChooseRefundAccount(r: Pick<Refund, 'subjectType'>): boolean {
+  return r.subjectType === undefined || r.subjectType === 'booking' || r.subjectType === 'event_registration';
+}
 
 export function refundMethodOf(method: PaymentMethod | undefined): RefundMethod {
   return method === 'bank_qr' ? 'bank_transfer' : 'gateway';
@@ -159,6 +173,11 @@ export interface Refund {
    * `awaiting_account`. Server-only, never in a customer-readable document.
    */
   readonly candidate?: StoredBankAccount | null;
+  /**
+   * S22.04 holder-name lookups charged to this refund on one Vietnam day (`lookupRefundAccount`,
+   * capped at `NAME_LOOKUPS_PER_DAY` like the payout lookup); every attempt counts. Server-only.
+   */
+  readonly accountLookups?: { readonly day: string; readonly count: number } | null;
   readonly attempts: number;
   readonly lastAttemptAt?: string;
   readonly failureReason?: string;
@@ -323,9 +342,10 @@ export function applyRefundToPayment(params: {
   const method = refundMethodOf(payment.method);
   const destination: RefundDestination | null =
     payment.payer ? { ...payment.payer, source: 'payer' } : null;
-  const isAwaiting = method === 'bank_transfer' && (!destination || params.waitForAccount === true);
+  const waits = params.waitForAccount === true && needsAccountChoice({ fromEscrow: true, method });
+  const isAwaiting = method === 'bank_transfer' && (!destination || waits);
   const confirmBy =
-    isAwaiting && destination && params.waitForAccount === true
+    isAwaiting && destination && waits
       ? new Date(now.getTime() + REFUND_ACCOUNT_CONFIRM_HOURS * 3_600_000).toISOString()
       : null;
 

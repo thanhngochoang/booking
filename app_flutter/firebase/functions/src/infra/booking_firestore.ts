@@ -677,6 +677,8 @@ export function refundToFirestore(r: Refund): DocumentData {
     confirmBy: toTimestamp(r.confirmBy),
     // S22.04 (#141): the account the customer looked up, number encrypted; cleared once chosen.
     candidate: r.candidate ? storedBankAccountToFirestore(r.candidate) : null,
+    // S22.04 holder-name lookups charged to this refund's Vietnam day (the cap).
+    accountLookups: r.accountLookups ? { day: r.accountLookups.day, count: r.accountLookups.count } : null,
     attempts: r.attempts,
     lastAttemptAt: toTimestamp(r.lastAttemptAt),
     failureReason: r.failureReason ?? null,
@@ -738,6 +740,9 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
     ...(destination ? { destination } : {}),
     ...(toIsoString(d.confirmBy) !== undefined ? { confirmBy: toIsoString(d.confirmBy) } : {}),
     ...(candidate ? { candidate } : {}),
+    ...(typeof d.accountLookups?.day === 'string' && typeof d.accountLookups?.count === 'number'
+      ? { accountLookups: { day: d.accountLookups.day, count: d.accountLookups.count } }
+      : {}),
     attempts: typeof d.attempts === 'number' ? d.attempts : 0,
     ...(toIsoString(d.lastAttemptAt) !== undefined ? { lastAttemptAt: toIsoString(d.lastAttemptAt) } : {}),
     ...(typeof d.failureReason === 'string' ? { failureReason: d.failureReason } : {}),

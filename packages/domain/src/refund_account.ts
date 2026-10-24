@@ -24,21 +24,25 @@ import type { BookingDeps, BookingStore } from './booking_ports.js';
 import type { DisputeDeps } from './dispute_ports.js';
 import { dispatchDisputeRefund } from './dispute_use_cases.js';
 import { DomainError } from './errors.js';
-import type { Payment, Refund, RefundDestination, RefundStatus, StoredBankAccount } from './escrow.js';
+import {
+  canChooseRefundAccount,
+  type Payment,
+  type Refund,
+  type RefundDestination,
+  type RefundStatus,
+  type StoredBankAccount,
+} from './escrow.js';
 import { dispatchTicketRefund } from './event_payments.js';
 import type { EventPaymentDeps } from './event_ports.js';
 import { isId } from './ids.js';
 import { notifyRefundAccountNeeded } from './notification_hooks.js';
 import type { NotifyDeps } from './notification_ports.js';
-import { accountLast4, normalizeAccountNumber } from './payout_account.js';
+import { formatVnDate } from './booking_policy.js';
+import { accountLast4, NAME_LOOKUPS_PER_DAY, normalizeAccountNumber } from './payout_account.js';
 import type { Clock } from './ports.js';
+import { refundWithoutPayment } from './refund_subjects.js';
 import { dispatchRefund } from './refunds.js';
 import { bankByCode } from './vn_banks.js';
-
-/** A policy refund paid back by bank transfer waits for the customer (Decision 5). */
-export function needsAccountChoice(r: Pick<Refund, 'fromEscrow' | 'method'>): boolean {
-  return r.fromEscrow && r.method === 'bank_transfer';
-}
 
 /** Which waiting refund S22.04 opens for: a booking (S05.02/S05.03), a ticket (S11.04) or a dispute (S18.02). */
 export type RefundSubjectRef =
@@ -76,9 +80,9 @@ type LedgerKind = 'booking' | 'ticket' | 'dispute';
  * (null) are not S22.04's: they never get a 24-hour window and are refused here (`not_eligible`).
  */
 function kindOf(r: Pick<Refund, 'reason' | 'subjectType'>): LedgerKind | null {
+  if (!canChooseRefundAccount(r)) return null;
   if (r.reason?.startsWith('dispute:') === true) return 'dispute';
-  if (r.subjectType === 'event_registration') return 'ticket';
-  return r.subjectType === undefined || r.subjectType === 'booking' ? 'booking' : null;
+  return r.subjectType === 'event_registration' ? 'ticket' : 'booking';
 }
 
 /** The refund changed by `next`, or null to leave it (no write). */
@@ -281,6 +285,16 @@ export async function lookupRefundAccount(
   payerOnly(payment, caller);
   if (refund.status !== 'awaiting_account') throw new DomainError('conflict');
 
+  // One transaction before the bank is asked: charge this attempt to the refund's Vietnam day (found,
+  // not found and unsupported alike); the 21st is `limit_exceeded` and never reaches the bank.
+  const day = formatVnDate(deps.clock.now());
+  await ledger.update(refundId, (current) => {
+    if (current.status !== 'awaiting_account') throw new DomainError('conflict');
+    const count = current.accountLookups?.day === day ? current.accountLookups.count : 0;
+    if (count >= NAME_LOOKUPS_PER_DAY) throw new DomainError('limit_exceeded');
+    return { ...current, accountLookups: { day, count: count + 1 }, updatedAt: deps.clock.now().toISOString() };
+  });
+
   const found = await deps.lookup.lookup({ bankCode: bank.code, accountNumber });
   if (found.status === 'not_found') throw new DomainError('not_found');
   if (found.status === 'unsupported') throw new DomainError('not_eligible');
@@ -358,25 +372,52 @@ export async function confirmDueRefundAccounts(
 ): Promise<number> {
   let sent = 0;
   for (const due of await deps.bookings.store.awaitingRefundsDue(now, limit)) {
-    const kind = kindOf(due);
-    if (kind === null) continue;
     try {
-      const ledger = ledgerOf(deps, kind);
+      const kind = kindOf(due);
       const at = deps.clock.now().toISOString();
-      const moved = await ledger.update(due.id, (current) => {
-        const d = current.destination;
-        if (current.status !== 'awaiting_account' || !d || d.source !== 'payer') return null;
-        if (!current.confirmBy || Date.parse(current.confirmBy) > now.getTime()) return null;
-        return claimed(current, d, at);
-      });
-      if (moved === null) continue;
-      await ledger.dispatch(moved.refund, moved.payment);
+      const moved =
+        kind === null
+          ? null
+          : await ledgerOf(deps, kind).update(due.id, (current) => {
+              const d = current.destination;
+              if (current.status !== 'awaiting_account' || !d || d.source !== 'payer') return null;
+              if (!current.confirmBy || Date.parse(current.confirmBy) > now.getTime()) return null;
+              return claimed(current, d, at);
+            });
+      if (moved === null || kind === null) {
+        // Not sent: take it out of the due queue unless someone else just moved it, so a refund
+        // this step can never send does not head every run (the query is oldest `confirmBy` first).
+        await leaveDueQueue(deps, due.id, now);
+        continue;
+      }
+      await ledgerOf(deps, kind).dispatch(moved.refund, moved.payment);
       sent += 1;
     } catch (e) {
       onError(due.id, e);
     }
   }
   return sent;
+}
+
+/**
+ * A due refund the default cannot send leaves the queue, in the store the query read (every refund
+ * in Firestore): without its payment it goes to staff (`failed`, `manual`, `payment_missing`, as V2's
+ * re-send does); otherwise (no paying account, or not S22.04's subject) `confirmBy` is cleared and it
+ * waits for the customer or staff. A refund no longer waiting or no longer due is left as it is.
+ */
+async function leaveDueQueue(deps: RefundAccountDeps, refundId: string, now: Date): Promise<void> {
+  await deps.bookings.store.runTransaction(async (tx) => {
+    const current = await tx.getRefund(refundId);
+    if (current === null || current.status !== 'awaiting_account') return;
+    if (!current.confirmBy || Date.parse(current.confirmBy) > now.getTime()) return;
+    const payment = await tx.getPayment(current.paymentId);
+    const at = deps.clock.now().toISOString();
+    await tx.addRefund(
+      payment === null
+        ? refundWithoutPayment(current, deps.clock.now())
+        : { ...current, confirmBy: null, updatedAt: at },
+    );
+  });
 }
 
 /**
