@@ -290,7 +290,10 @@ describe('lookupRefundAccount cap (NAME_LOOKUPS_PER_DAY, like the payout lookup)
     assert.equal((await ask('0011001234')).accountLast4, '1234');
     assert.deepEqual((await stored(w, refund.id)).accountLookups, { day: '2026-10-11', count: 1 });
     // The choice is unaffected by the cap.
-    assert.deepEqual(await chooseRefundAccount(deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate' }), { status: 'done' });
+    assert.deepEqual(
+      await chooseRefundAccount(deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'VCB', accountLast4: '1234' }),
+      { status: 'done' },
+    );
   });
 });
 
@@ -315,7 +318,10 @@ describe('chooseRefundAccount', () => {
     const w = world();
     const { refund } = await cancelled(w);
     await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'MB', accountNumber: '0011004321' });
-    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate' }), { status: 'done' });
+    assert.deepEqual(
+      await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      { status: 'done' },
+    );
     const s = await stored(w, refund.id);
     assert.deepEqual(
       [s.destination?.source, s.destination?.bankCode, s.destination?.accountLast4, s.destination?.holderName, s.candidate ?? null],
@@ -331,7 +337,20 @@ describe('chooseRefundAccount', () => {
   test('candidate missing → invalid_argument; payer missing → invalid_argument; bad input → invalid_argument; another user → permission_denied', async () => {
     const w = world();
     const { refund } = await cancelled(w);
+    await assert.rejects(
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      code('invalid_argument'),
+    );
+    // A candidate choice names the account it was shown.
     await assert.rejects(chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate' }), code('invalid_argument'));
+    await assert.rejects(
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'XXX', accountLast4: '4321' }),
+      code('invalid_argument'),
+    );
+    await assert.rejects(
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '43' }),
+      code('invalid_argument'),
+    );
     await assert.rejects(chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'other' }), code('invalid_argument'));
     await assert.rejects(chooseRefundAccount(w.deps, { uid: 'c2' }, { refundId: refund.id, use: 'payer' }), code('permission_denied'));
     const none = world();
@@ -345,8 +364,78 @@ describe('chooseRefundAccount', () => {
     const w = world();
     const { refund } = await cancelled(w);
     assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'payer' }), { status: 'done' });
-    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate' }), { status: 'done' });
+    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'payer' }), { status: 'done' });
+    // Another account after the money went to the payer: refused, never reported as used.
+    await assert.rejects(
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      code('conflict'),
+    );
     assert.deepEqual(w.b.gateway.refundCalls, [refund.id]);
+  });
+
+  test('a repeated candidate choice answers its status; the same refund chosen for another account → conflict', async () => {
+    const w = world();
+    const { refund } = await cancelled(w);
+    await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'MB', accountNumber: '0011004321' });
+    const mb = { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' };
+    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, mb), { status: 'done' });
+    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, mb), { status: 'done' });
+    await assert.rejects(chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'payer' }), code('conflict'));
+    assert.deepEqual(w.b.gateway.refundCalls, [refund.id]);
+  });
+
+  test('a candidate replaced by a later lookup cannot be committed: the shown account must match the stored one', async () => {
+    const w = world();
+    const { refund } = await cancelled(w);
+    // Lookup A, then lookup B (the account now on screen); A's answer is stale.
+    await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'MB', accountNumber: '0011004321' });
+    await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'VCB', accountNumber: '0011001234' });
+    await assert.rejects(
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      code('conflict'),
+    );
+    assert.equal((await stored(w, refund.id)).status, 'awaiting_account');
+    assert.deepEqual(w.b.gateway.refundCalls, []);
+    assert.deepEqual(
+      await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'VCB', accountLast4: '1234' }),
+      { status: 'done' },
+    );
+    const s = await stored(w, refund.id);
+    assert.deepEqual([s.destination?.bankCode, s.destination?.accountLast4], ['VCB', '1234']);
+  });
+
+  test('a candidate choice that lost to the 24-hour default → conflict (the money went to the paying account)', async () => {
+    const w = world();
+    const { refund } = await cancelled(w);
+    await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'MB', accountNumber: '0011004321' });
+    w.b.clock.advanceHours(24);
+    assert.equal(await confirmDueRefundAccounts(w.deps, w.b.clock.now(), 10), 1);
+    await assert.rejects(
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      code('conflict'),
+    );
+    assert.equal((await stored(w, refund.id)).destination?.source, 'payer');
+    assert.deepEqual(w.b.gateway.refundCalls, [refund.id]);
+  });
+
+  test('a candidate choice racing the 24-hour default dispatches once; when it loses it answers conflict', async () => {
+    const w = world();
+    const { refund } = await cancelled(w);
+    await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, bankCode: 'MB', accountNumber: '0011004321' });
+    w.b.clock.advanceHours(24);
+    const [chosen, sent] = await Promise.allSettled([
+      chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: refund.id, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      confirmDueRefundAccounts(w.deps, w.b.clock.now(), 10),
+    ]);
+    assert.equal(w.b.gateway.refundCalls.length, 1);
+    const s = await stored(w, refund.id);
+    if (s.destination?.source === 'customer') {
+      assert.equal(chosen.status, 'fulfilled');
+    } else {
+      assert.equal(chosen.status, 'rejected');
+      assert.equal(chosen.status === 'rejected' && chosen.reason instanceof DomainError ? chosen.reason.code : '', 'conflict');
+    }
+    assert.equal(sent.status, 'fulfilled');
   });
 
   test('choose and the 24-hour default racing dispatch once', async () => {

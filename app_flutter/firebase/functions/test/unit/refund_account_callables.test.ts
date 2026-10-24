@@ -43,7 +43,10 @@ describe('S22.04 refund account callables (#141)', () => {
       w.deps,
     );
     assert.deepEqual(found, { holderName: 'NGUYEN THANH HA', bankName: 'Vietcombank', accountLast4: '1234' });
-    assert.deepEqual(await handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'candidate' }), w.deps), { status: 'done' });
+    assert.deepEqual(
+      await handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'candidate', bankCode: 'VCB', accountLast4: '1234' }), w.deps),
+      { status: 'done' },
+    );
     assert.equal(w.calls(), 1);
     assert.equal(await handlePendingRefund(as('c1', { bookingId: w.bookingId }), w.deps), null);
   });
@@ -75,10 +78,26 @@ describe('S22.04 refund account callables (#141)', () => {
     await rejectsWith(lookup('0011001234', 'c1', 'XXX'), 'invalid-argument', 'invalid_argument');
     await rejectsWith(lookup('0011001234', 'c2'), 'permission-denied', 'permission_denied');
     await rejectsWith(handlePendingRefund(as('c2', { bookingId: w.bookingId }), w.deps), 'permission-denied', 'permission_denied');
-    await rejectsWith(handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'candidate' }), w.deps), 'invalid-argument', 'invalid_argument');
+    await rejectsWith(
+      handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'candidate', bankCode: 'VCB', accountLast4: '1234' }), w.deps),
+      'invalid-argument',
+      'invalid_argument',
+    );
+    // A stored candidate other than the one shown, or a refund the default already sent: aborted/conflict.
+    await handleLookupRefundAccount(as('c1', { refundId: w.refundId, bankCode: 'VCB', accountNumber: '0011004321' }), w.deps);
+    await rejectsWith(
+      handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'candidate', bankCode: 'VCB', accountLast4: '1234' }), w.deps),
+      'aborted',
+      'conflict',
+    );
     await rejectsWith(handlePendingRefund(as(undefined, { bookingId: w.bookingId }), w.deps), 'unauthenticated', 'permission_denied');
     await handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'payer' }), w.deps);
     await rejectsWith(lookup('0011001234'), 'aborted', 'conflict');
+    await rejectsWith(
+      handleChooseRefundAccount(as('c1', { refundId: w.refundId, use: 'candidate', bankCode: 'VCB', accountLast4: '4321' }), w.deps),
+      'aborted',
+      'conflict',
+    );
     assert.equal(w.calls(), 1);
   });
 });
@@ -116,7 +135,10 @@ describe('S22.04 on FirestoreBookingStore (strict fake: no read after a write in
 
     await lookupRefundAccount(deps, { uid: 'c1' }, { refundId: first.refundId, bankCode: 'MB', accountNumber: '0011004321' });
     assert.equal(refundFromFirestore(first.refundId, docs[`refunds/${first.refundId}`])?.candidate?.accountLast4, '4321');
-    assert.deepEqual(await chooseRefundAccount(deps, { uid: 'c1' }, { refundId: first.refundId, use: 'candidate' }), { status: 'done' });
+    assert.deepEqual(
+      await chooseRefundAccount(deps, { uid: 'c1' }, { refundId: first.refundId, use: 'candidate', bankCode: 'MB', accountLast4: '4321' }),
+      { status: 'done' },
+    );
     assert.equal(refundFromFirestore(first.refundId, docs[`refunds/${first.refundId}`])?.destination?.source, 'customer');
     assert.equal(bookingFromFirestore(first.bookingId, docs[`bookings/${first.bookingId}`])?.refundAccountNeeded, false);
 

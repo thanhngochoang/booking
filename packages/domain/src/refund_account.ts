@@ -266,7 +266,7 @@ export async function pendingRefundFor(
 /**
  * `{refundId, bankCode, accountNumber}` → the holder name the bank returns for another account.
  * The account is stored on the refund as its encrypted `candidate` (the customer never types the
- * name; Decision 7); `chooseRefundAccount({use: 'candidate'})` commits it. Errors: bad bank or
+ * name; Decision 7); `chooseRefundAccount({use: 'candidate', bankCode, accountLast4})` commits it. Errors: bad bank or
  * number `invalid_argument`; not the payer `permission_denied`; the refund no longer waits
  * `conflict`; the bank does not know it `not_found`; the bank cannot look it up `not_eligible`.
  */
@@ -320,10 +320,36 @@ function claimed(current: Refund, destination: RefundDestination, at: string): R
   return { ...current, status: 'pending', destination, candidate: null, lastAttemptAt: at, updatedAt: at };
 }
 
+/** The account a `candidate` choice expects: the one S22.04 showed after its lookup. */
+interface ShownAccount {
+  readonly bankCode: string;
+  readonly accountLast4: string;
+}
+
+function shownAccount(r: Record<string, unknown>): ShownAccount {
+  const bank = bankByCode(r.bankCode);
+  const last4 = r.accountLast4;
+  if (bank === null || typeof last4 !== 'string' || !/^[0-9]{4}$/.test(last4)) throw new DomainError('invalid_argument');
+  return { bankCode: bank.code, accountLast4: last4 };
+}
+
+/** Whether a refund that left the wait went where this choice asked (a repeat of the same choice). */
+function wentAsChosen(r: Refund, shown: ShownAccount | null): boolean {
+  const d = r.destination;
+  if (!d) return false;
+  if (shown === null) return d.source === 'payer';
+  return d.source === 'customer' && d.bankCode === shown.bankCode && d.accountLast4 === shown.accountLast4;
+}
+
 /**
- * `{refundId, use: 'payer' | 'candidate'}`: sends the waiting refund to the paying account or to the
- * looked-up one. A refund that no longer waits returns its current status (idempotent; never a
- * second dispatch). `payer` without a paying account or `candidate` without a lookup → `invalid_argument`.
+ * `{refundId, use: 'payer'}` or `{refundId, use: 'candidate', bankCode, accountLast4}`: sends the
+ * waiting refund to the paying account or to the looked-up one. A `candidate` choice names the
+ * account the customer was shown, and the stored candidate must still be that account (a later
+ * lookup replaces it): otherwise `conflict`, nothing sent. A refund that no longer waits answers its
+ * status only when it went where this choice asks (a repeat; never a second dispatch); when it went
+ * elsewhere (the 24-hour default sent it to the paying account, or another choice won) → `conflict`,
+ * so the app never reports the chosen account as used. `payer` without a paying account or
+ * `candidate` without a lookup → `invalid_argument`.
  */
 export async function chooseRefundAccount(
   deps: RefundAccountDeps,
@@ -334,25 +360,32 @@ export async function chooseRefundAccount(
   const refundId = id(r.refundId);
   const use = r.use;
   if (use !== 'payer' && use !== 'candidate') throw new DomainError('invalid_argument');
+  const shown = use === 'candidate' ? shownAccount(r) : null;
 
   const { refund, payment, ledger } = await findRefund(deps, refundId);
   payerOnly(payment, caller);
-  if (refund.status !== 'awaiting_account') return { status: refund.status };
+  const settled = (now: Refund): { status: RefundStatus } => {
+    if (!wentAsChosen(now, shown)) throw new DomainError('conflict');
+    return { status: now.status };
+  };
+  if (refund.status !== 'awaiting_account') return settled(refund);
 
   const at = deps.clock.now().toISOString();
   const moved = await ledger.update(refundId, (current) => {
     if (current.status !== 'awaiting_account') return null;
-    if (use === 'payer') {
+    if (shown === null) {
       if (current.destination?.source !== 'payer') throw new DomainError('invalid_argument');
       return claimed(current, current.destination, at);
     }
-    if (!current.candidate) throw new DomainError('invalid_argument');
-    return claimed(current, { ...current.candidate, source: 'customer' }, at);
+    const c = current.candidate;
+    if (!c) throw new DomainError('invalid_argument');
+    if (c.bankCode !== shown.bankCode || c.accountLast4 !== shown.accountLast4) throw new DomainError('conflict');
+    return claimed(current, { ...c, source: 'customer' }, at);
   });
   if (moved === null) {
-    // Someone else (the 24-hour default) moved it first and sends it.
+    // Someone else (the 24-hour default or another choice) moved it first and sends it.
     const now = await ledger.read(refundId);
-    return { status: now?.refund.status ?? refund.status };
+    return settled(now?.refund ?? refund);
   }
   const sent = await ledger.dispatch(moved.refund, moved.payment);
   return { status: sent.status };

@@ -50,7 +50,11 @@ export async function handleLookupRefundAccount(
   return run('lookupRefundAccount', request, (uid) => lookupRefundAccount(deps, { uid }, request.data));
 }
 
-/** `{refundId, use: 'payer' | 'candidate'}` → `{status}`: sends the waiting refund there (once). */
+/**
+ * `{refundId, use: 'payer'}` | `{refundId, use: 'candidate', bankCode, accountLast4}` → `{status}`:
+ * sends the waiting refund there (once). `conflict` (aborted) when the stored candidate is not the
+ * account shown, or the refund already went elsewhere (the 24-hour default or another choice).
+ */
 export async function handleChooseRefundAccount(
   request: RefundAccountCallableInput,
   deps: RefundAccountDeps,
