@@ -8870,7 +8870,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get chooseLike => 'Chọn';
+  String get chooseLike => 'Chọn người này';
 
   @override
   String get chooseSkip => 'Bỏ qua';

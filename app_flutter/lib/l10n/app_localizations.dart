@@ -15246,7 +15246,7 @@ abstract class AppLocalizations {
   /// No description provided for @chooseLike.
   ///
   /// In vi, this message translates to:
-  /// **'Chọn'**
+  /// **'Chọn người này'**
   String get chooseLike;
 
   /// No description provided for @chooseSkip.

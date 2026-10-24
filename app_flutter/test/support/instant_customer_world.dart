@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
+import 'package:photobooking/data/instant/instant_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
@@ -33,13 +34,16 @@ class InstantCustomerWorld {
     FakeLocationRepository? location,
     this.contact = customerPhone,
     DateTime? now,
+    InstantClock? clock,
+    InstantRepository? repository,
     bool flag = true,
     this.role = UserRole.customer,
     List<Override> extra = const [],
   }) : base = InstantWorld(
          repo: repo,
          location: location,
-         clock: InstantClock(now),
+         clock: clock ?? InstantClock(now),
+         repository: repository,
          enabled: flag,
          extra: extra,
        );

@@ -3827,7 +3827,7 @@
   "chooseStamp": "CHỌN",
   "chooseEta": "đến khoảng {minutes} phút",
   "@chooseEta": {"placeholders": {"minutes": {"type": "int"}}},
-  "chooseLike": "Chọn",
+  "chooseLike": "Chọn người này",
   "chooseSkip": "Bỏ qua",
   "chooseUndo": "Hoàn tác",
   "choosePicked": "Đã chọn {n} người",

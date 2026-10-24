@@ -68,7 +68,7 @@
 
 ### Consumed (from the companion plan; checked in Task 1 Step 1)
 
-`InstantRepository` (customer methods `config`, `createRequest`, `nextCandidates`, `invite`, `checkPayment` (Task 8 only), `confirmComplete`, `myActiveRequestId`, `watchTrack`, `watchRequest`, `cancel`, `tick`), models `InstantConfig`, `InstantPackage`, `InstantGenre`, `InstantStatus`, `InstantRequest` (incl. `chatId`, `candidates`, `offers`, `roundEnded`, `invitedTotal`, `roundsWithInvites`, `payMethod`, `freeCancelUntil`, `lateDeadlineAt`, `searchDeadlineAt`, `shootEndsAt`, `finishedAt`), `InstantCandidate`, `InstantOfferRow`, `OfferOutcome`, `InstantTrack`, `InstantCancelQuote`, `InstantInviteResult` (`InstantInvited`, `InstantPriceChanged`; `InstantPaymentNeeded {instructions, amountVnd}` from the dispatch plan's Task 11, used by Task 8), `InstantError`/`instantErrorCodeOf`, `estimateEtaMinutes`; `InstantRequest.arrivedCancelPhotographerPercent`, `refundPercent`; `InstantCandidate`/`InstantOfferRow`/`InstantParty` `tomatoPct` + `reviewCount`; providers `instantRepositoryProvider`, `instantEnabledProvider`, `instantConfigProvider`, `instantRequestProvider`, `instantTrackProvider`; `ContactSubject.instantRequest`; core `MapPreview`/`MapPin`, `MatchOverlay`; l10n `instantTitle`, `instantGenre*`, `instantDuration*`, `instantPackageLabel`, `instantStatus*`, `instantError*`, `matchTitle`, `matchBodyCustomer`, `matchContinue`, `jobStepAccepted`, `jobStepArrived`, `jobShootLeft`, `mapRecenter`, `liveShutterOpenSettings`; `test/support/fake_instant_repository.dart`.
+`InstantRepository` (customer methods `config`, `createRequest`, `nextCandidates`, `invite`, `checkPayment` (Task 8 only), `confirmComplete`, `myActiveRequestId`, `watchTrack`, `watchRequest`, `cancel`, `tick`), models `InstantConfig`, `InstantPackage`, `InstantGenre`, `InstantStatus`, `InstantRequest` (incl. `chatId`, `candidates`, `offers`, `roundEnded`, `invitedTotal`, `roundsWithInvites`, `payMethod`, `freeCancelUntil`, `lateDeadlineAt`, `searchDeadlineAt`, `shootEndsAt`, `finishedAt`), `InstantCandidate`, `InstantOfferRow`, `OfferOutcome`, `InstantTrack`, `InstantCancelQuote`, `InstantInviteResult` (`InstantInvited`, `InstantPriceChanged`; `InstantPaymentNeeded {instructions, amountVnd}` from the dispatch plan's Task 11, used by Task 8), `InstantError`/`instantErrorCodeOf`, `estimateEtaMinutes`; `InstantRequest.arrivedCancelPhotographerPercent`, `refundPercent`; `InstantCandidate`/`InstantOfferRow`/`InstantParty` `tomatoPct` + `reviewCount`; providers `instantRepositoryProvider`, `instantEnabledProvider`, `instantConfigProvider`, `instantRequestProvider`, `instantTrackProvider`; `ContactSubject.instantRequest`; core `MapPreview`/`MapPin`, `MatchOverlay`; l10n `instantTitle`, `instantGenre*`, `instantDuration*`, `instantPackageLabel`, `instantStatus*`, `instantError*`, `matchTitle`, `matchContinue` (`matchBodyCustomer` was not on develop: added by Task 5, Strings below), `jobStepAccepted`, `jobStepArrived`, `jobShootLeft`, `mapRecenter`, `liveShutterOpenSettings`; `test/support/fake_instant_repository.dart`.
 Existing app code: `currentContactProvider` and the `startBooking` pattern (`features/discovery/book_entry.dart`), `/profile/phone?returnTo=`, `LocationRepository` + `locationRepositoryProvider` + `FakeLocationRepository`, #129's `PayMethod` (`lib/core/payments.dart`), `PayMethodPicker` (`lib/core/widgets/provider_picker.dart`); Task 8 only: V1's (#200) `PaySubject`/`openPayment`/`PaymentScreen`/`PaymentController` (`lib/features/payment/`), `PaymentsRepository.confirmFake`; `realPaymentsProvider`, `externalLauncherProvider`, `PhotographerContactAction`/`ContactAccess`/`ContactDialStyle`, `maybeAskForNotifications`/`CustomerInstantPrimer`, `safeTarget`, `HomeScreen` (`features/home/home_screen.dart`), `FindScreen` results header (`features/find/find_screen.dart`, the `findCount` line), `ActionTab`, `appRouter`, `clockProvider`, `formatMoney(short:)`, `photographerSessions`, #130's `MetaLine`/`MetaPart.tomato` and `formatTomatoPct` (not `formatRating`, which #130 removed), reusable l10n `fakePayTitle`, `fakePayBody`, `fakePayConfirm`, `ticketPayFailed`, `ticketPayFakeDisabled`, `ticketPayContinue`, `payMethodBankQr`, `payMethodMomo`, `payMethodZaloPay`, `payMethodLabel`.
 
 ### Produced
@@ -141,13 +141,14 @@ Routes: `/instant` → `InstantRequestScreen`; `/instant/:id` → `InstantFlowSc
 | `chooseCounter` | {index} / {total} |
 | `chooseStamp` | CHỌN |
 | `chooseEta` | đến khoảng {minutes} phút |
-| `chooseLike` | Chọn |
+| `chooseLike` | Chọn người này (mock ♥ `aria-label`; Task 7) |
 | `chooseSkip` | Bỏ qua |
 | `chooseUndo` | Hoàn tác |
 | `choosePicked` | Đã chọn {n} người |
 | `chooseDone` | Xong |
 | `chooseSummaryTitle` | Những người bạn đã chọn |
 | `chooseUnpick` | Bỏ chọn |
+| `chooseUnpickA11y` | Bỏ chọn {name} |
 | `choosePayAndInvite` (Task 8) | Thanh toán {amount} và gửi lời mời |
 | `chooseInvite` | Gửi lời mời |
 | `chooseMore` | Xem 5 người khác |
@@ -156,23 +157,27 @@ Routes: `/instant` → `InstantRequestScreen`; `/instant/:id` → `InstantFlowSc
 | `chooseEmptyTitle` | Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn |
 | `chooseEmptyBody` | Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường. |
 | `chooseEmptyRetry` | Thử lại |
-| `choosePriceChanged` | Giá vừa đổi thành {amount}. Kiểm tra lại trước khi thanh toán. |
+| `choosePriceChanged` | Giá vừa đổi thành {amount}. Kiểm tra lại trước khi thanh toán. (kept verbatim with `chooseEscrow`: mock copy, accurate from #202; Task 3 ruling) |
 | `chooseUnavailable` | {name} vừa nhận việc khác |
 | `waitingTitle` | Đang chờ trả lời |
 | `waitingSent` | Đã gửi lời mời cho {n} người |
 | `waitingBody` | Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn {time}. |
-| `waitingRowMeta` | {pct}% · khoảng {minutes} phút (built with `MetaLine`: tomato icon + `formatTomatoPct`; only with ≥ 5 reviews, cross-plan review finding 27) |
-| `waitingRowMetaNoRating` | khoảng {minutes} phút |
+| `waitingRowEta` | khoảng {minutes} phút (the ETA part of the row's `MetaLine`; the tomato part is `MetaPart.tomato` + `formatTomatoPct`, only with ≥ 5 reviews, cross-plan review finding 27; replaces `waitingRowMeta`/`waitingRowMetaNoRating`, Task 5 ruling) |
+| `waitingRowUnavailable` | vừa nhận việc khác (row meta of a person busy when the offers went out, mock `#S13.03`) |
 | `waitingViewing` | Đang xem |
 | `waitingDeclined` | Đã từ chối |
 | `waitingExpired` | Hết hạn |
 | `waitingNotCounted` | Không tính |
 | `waitingRowSemantics` | {name} đang xem lời mời |
 | `waitingNote` | Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ. |
+| `waitingNoteUnpaid` | Chưa ai nhận thì bạn chọn tiếp trong 5 người khác. (unpaid request: no money sentence, Task 5 ruling) |
+| `matchBodyCustomer` | {name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}, khoảng {minutes} phút. (added here, not by the companion plan) |
+| `matchBodyCustomerNoEta` | {name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}. |
 | `waitingCancel` | Huỷ yêu cầu |
 | `trackingSelf` | Bạn |
 | `trackingPin` | {name} · {minutes} phút |
 | `trackingEta` | đến trong khoảng {minutes} phút |
+| `trackingEtaBold` | {minutes} phút (the bold part of `trackingEta`) |
 | `trackingNote` | Đối chiếu ảnh đại diện khi gặp. Vị trí của {name} chỉ hiện trong lúc đang đến. |
 | `trackingMessage` | Nhắn tin |
 | `trackingCancelFree` | Huỷ (miễn phí thêm {time}) |
@@ -180,6 +185,7 @@ Routes: `/instant` → `InstantRequestScreen`; `/instant/:id` → `InstantFlowSc
 | `trackingCancelLate` | Huỷ (hoàn 100%) |
 | `trackingStale` | Đang chờ cập nhật vị trí |
 | `trackingLate` | {name} đến trễ. Bạn có thể huỷ và được hoàn 100%. |
+| `trackingLateUnpaid` | {name} đến trễ. Bạn có thể huỷ yêu cầu. (unpaid, Task 6 ruling) |
 | `trackingArrived` | Đã đến điểm hẹn |
 | `trackingArrivedBody` | {name} đang chờ bạn ở {place}. |
 | `shootingTitle` | Đang chụp |
@@ -193,6 +199,8 @@ Routes: `/instant` → `InstantRequestScreen`; `/instant/:id` → `InstantFlowSc
 | `doneTitle` | Buổi chụp đã hoàn thành |
 | `doneBody` | {name} sẽ giao {photos} ảnh trong 48 giờ. |
 | `doneHome` | Về trang chủ |
+| `instantNotFoundTitle` | Không tìm thấy yêu cầu |
+| `instantNotFoundBody` | Yêu cầu này không còn hoặc không thuộc tài khoản của bạn. |
 | `noMatchTitle` | Chưa tìm được nhiếp ảnh gia |
 | `noMatchBody` | Bạn đã mời {invited} người trong {rounds} lượt; gần bạn lúc này ít người đang sẵn sàng. |
 | `noMatchHeld` | {amount} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về {method}. |
