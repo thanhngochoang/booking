@@ -657,7 +657,7 @@ class _Summary extends StatelessWidget {
             children: [
               AppButton.primary(
                 pending
-                    ? l.ticketPayContinue
+                    ? l.choosePayContinue
                     : firstRound
                     ? l.choosePayAndInvite(formatMoney(amountVnd))
                     : l.chooseInvite,

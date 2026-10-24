@@ -9149,6 +9149,9 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get choosePayContinue => 'Thanh toán tiếp';
+
+  @override
   String get chooseMore => 'Xem 5 người khác';
 
   @override

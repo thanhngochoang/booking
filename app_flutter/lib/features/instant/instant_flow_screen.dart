@@ -17,6 +17,7 @@ import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant/choose_view.dart';
 import 'package:photobooking/features/instant/closed_view.dart';
 import 'package:photobooking/features/instant/done_view.dart';
+import 'package:photobooking/features/instant/instant_payment.dart';
 import 'package:photobooking/features/instant/instant_tick_scheduler.dart';
 import 'package:photobooking/features/instant/no_match_view.dart';
 import 'package:photobooking/features/instant/shooting_view.dart';
@@ -80,6 +81,31 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
     }, fireImmediately: true);
   }
 
+  /// S13.01 opens the request with `go`, so S04.04's `go(…?paid=1)` updates
+  /// this same screen instead of building a new one.
+  @override
+  void didUpdateWidget(covariant InstantFlowScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.justPaid && !oldWidget.justPaid) {
+      _maybeAskPrimer(ref.read(instantRequestProvider(_id)).value);
+    }
+  }
+
+  /// Decision 10: once S04.04 came back paid ([InstantFlowScreen.justPaid])
+  /// and the request shows the money, the S17.03 primer, once. The `?paid=1`
+  /// is consumed first (same page, state kept), so neither a rebuild nor a
+  /// later visit of this location asks again.
+  void _maybeAskPrimer(InstantRequest? r) {
+    if (!widget.justPaid || _primerAsked || r == null || !r.paid) return;
+    _primerAsked = true;
+    // After the frame: the view of the paid request is on screen.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      GoRouter.of(context).replace(instantRequestPath(_id));
+      unawaited(_askPrimer());
+    });
+  }
+
   @override
   void dispose() {
     _ticks.dispose();
@@ -95,11 +121,7 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
     }
     _ended = ended;
     _ticks.update(r);
-    if (widget.justPaid && !_primerAsked && r != null && r.paid) {
-      _primerAsked = true;
-      // After the frame: the view of the paid request is on screen.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _askPrimer());
-    }
+    _maybeAskPrimer(r);
     final match = _isMatch(_previous, r);
     _previous = r?.status;
     if (match) {

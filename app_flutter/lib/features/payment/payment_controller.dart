@@ -125,10 +125,29 @@ class PaymentController extends Notifier<PayView> {
 
   /// [InstantPay]: the request was seen waiting in `pending_payment`.
   bool _sawPending = false;
-  bool _leaving = false;
 
+  /// S04.04 has called [seed] (after its first frame), with or without
+  /// instructions.
+  bool _seedDone = false;
+
+  /// What the opener passed (S04.04 calls this once after its first frame,
+  /// also with null). For [InstantPay], null decides that nothing waits here
+  /// unless the request is `pending_payment` or paid.
   void seed(PaymentInstructions? initial) {
-    if (initial == null) return;
+    _seedDone = true;
+    if (initial == null) {
+      if (subject case InstantPay(:final requestId)) {
+        final r = ref.read(instantRequestProvider(requestId)).value;
+        if (state is PayLoading &&
+            r != null &&
+            !_sawPending &&
+            !r.paid &&
+            r.status != InstantStatus.pendingPayment) {
+          state = PayDone(instantRequestPath(requestId), paid: false);
+        }
+      }
+      return;
+    }
     _seeded = initial;
     if (state is PayLoading) {
       final who = switch (subject) {
@@ -196,28 +215,14 @@ class PaymentController extends Notifier<PayView> {
       return PayDone(instantRequestPath(requestId, justPaid: true));
     }
     // Opened from the invite before the listener shows `pending_payment`:
-    // wait on it with the instructions, which S04.04 seeds after its first
-    // frame; without any, nothing waits here.
+    // wait on it with the instructions S04.04 seeds after its first frame;
+    // seeded without any ([seed] with null), nothing waits here.
     if (!_sawPending && !r.paid) {
       final seeded = _seededView(canRenew: true);
       if (seeded != null) return seeded;
-      _leaveUnlessSeeded(requestId);
-      return const PayLoading();
+      if (!_seedDone) return const PayLoading();
     }
     return PayDone(instantRequestPath(requestId), paid: false);
-  }
-
-  /// After S04.04's first frame (when it seeds what `inviteInstant` answered):
-  /// still nothing to show and the request not waiting → back to it.
-  void _leaveUnlessSeeded(String requestId) {
-    if (_leaving) return;
-    _leaving = true;
-    Future<void>(() {
-      _leaving = false;
-      if (ref.mounted && _seeded == null && !_sawPending) {
-        state = PayDone(instantRequestPath(requestId), paid: false);
-      }
-    });
   }
 
   /// Resume without instructions: invite again with the waiting choice (the

@@ -15705,6 +15705,12 @@ abstract class AppLocalizations {
   /// **'Thanh toán {amount} và gửi lời mời'**
   String choosePayAndInvite(String amount);
 
+  /// No description provided for @choosePayContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán tiếp'**
+  String get choosePayContinue;
+
   /// No description provided for @chooseMore.
   ///
   /// In vi, this message translates to:

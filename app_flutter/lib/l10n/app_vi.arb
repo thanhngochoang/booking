@@ -3924,6 +3924,7 @@
   "chooseInvite": "Gửi lời mời",
   "choosePayAndInvite": "Thanh toán {amount} và gửi lời mời",
   "@choosePayAndInvite": {"placeholders": {"amount": {"type": "String"}}},
+  "choosePayContinue": "Thanh toán tiếp",
   "chooseMore": "Xem 5 người khác",
   "chooseEscrow": "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.",
   "chooseRoundEnded": "Chưa ai nhận. Chọn thêm người nhé.",

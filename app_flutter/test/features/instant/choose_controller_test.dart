@@ -336,8 +336,9 @@ void main() {
         world.repo.emitRequest('req1', paid());
         await settleInstant(tester);
         await tester.pump(const Duration(milliseconds: 300));
-        expect(router.state.uri.toString(), '/instant/req1?paid=1');
         expect(find.byType(PermissionPrimer), findsOneWidget);
+        // Back on the request; `?paid=1` consumed once the primer is asked.
+        expect(router.state.uri.toString(), '/instant/req1');
         expect(
           tester.widget<ScreenCode>(find.byType(ScreenCode).first).code,
           ScreenCodes.instantSearching,
@@ -348,6 +349,47 @@ void main() {
         expect(find.byType(PermissionPrimer), findsNothing);
         // More snapshots of the same request ask nothing again.
         world.repo.emitRequest('req1', paid().copyWith(invitedTotal: 2));
+        await settleInstant(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(PermissionPrimer), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'opened with go (as S13.01 does), S04.04 coming back paid asks the '
+      'primer without another request snapshot, and only once',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final world = primerWorld(await SharedPreferences.getInstance());
+        world.repo.inviteResult = InstantPaymentNeeded(
+          instructions: instantInstructionsOf(),
+          amountVnd: 690000,
+        );
+        world.repo.emitRequest('req1', customerRequestOf());
+        final router = await pumpInstantCustomer(tester, world, push: null);
+        // S13.01's submit: `context.go('/instant/$id')`.
+        router.go('/instant/req1');
+        await settleInstant(tester);
+        await choose(tester);
+        await tester.tap(invite);
+        world.repo.emitRequest('req1', pending());
+        await settleInstant(tester);
+        expect(router.state.uri.toString(), '/instant/req1/pay');
+
+        // The money arrives: S04.04 sees it and goes back; this is the last
+        // snapshot of the request.
+        world.repo.emitRequest('req1', paid());
+        await settleInstant(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(PermissionPrimer), findsOneWidget);
+        // `?paid=1` is consumed once the primer is asked.
+        expect(router.state.uri.toString(), '/instant/req1');
+
+        await tester.tap(find.text('Để sau'));
+        await settleInstant(tester);
+        expect(find.byType(PermissionPrimer), findsNothing);
+        // The same location with the flag again (a stale link) asks nothing.
+        router.go('/instant/req1?paid=1');
         await settleInstant(tester);
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(PermissionPrimer), findsNothing);
@@ -391,7 +433,11 @@ void main() {
 
         // "Chuyển đúng" = an exact transfer: the fake bank answers `paid`.
         expect(world.payments.confirms, [('pay1', FakeTransferKind.exact)]);
-        expect(router.state.uri.toString(), '/instant/req1?paid=1');
+        expect(router.state.uri.toString(), '/instant/req1');
+        expect(
+          tester.widget<ScreenCode>(find.byType(ScreenCode).last).code,
+          ScreenCodes.instantSearching,
+        );
       },
     );
   });

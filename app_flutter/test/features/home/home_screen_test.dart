@@ -510,7 +510,8 @@ void main() {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final w = DiscoveryWorld();
+      // Chụp ngay on, as shipped since #202: the S02.01 card fits too.
+      final w = DiscoveryWorld(instantEnabled: true);
       await w.init();
       await tester.pumpWidget(
         screenApp(
@@ -522,6 +523,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('instant-entry-card')), findsOneWidget);
       expect(find.byType(BackdropFilter), findsNothing);
     });
   }

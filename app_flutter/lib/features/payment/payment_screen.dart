@@ -37,11 +37,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initial != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(paymentControllerProvider(widget.subject).notifier).seed(widget.initial);
-      });
-    }
+    // Always, also without instructions: a Chụp ngay payment decides there
+    // whether anything waits here (#202).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(paymentControllerProvider(widget.subject).notifier)
+          .seed(widget.initial);
+    });
   }
 
   void _navigate(String path, {required bool paid}) {
@@ -114,9 +117,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           .renew();
       if (!mounted) return;
       final current = ref.read(paymentControllerProvider(widget.subject));
-      if (created != null &&
-          current is PayOpen &&
-          _shows(created, current.instructions)) {
+      // Nothing new (nothing to renew, or the subject moved on): the button
+      // comes back; a leaving screen does not mind.
+      if (created == null ||
+          (current is PayOpen && _shows(created, current.instructions))) {
         setState(() {
           _renewing = false;
           _created = null;

@@ -507,7 +507,7 @@ void main() {
             ),
           );
           await _openRequest(tester, d);
-              await _choose(tester, [false, true, false, false, false]);
+          await _choose(tester, [false, true, false, false, false]);
           await _accept(tester, d);
           await _tapKey(tester, 'job-arrive');
           expect(d.sim.request(d.requestId)!.status, InstantStatus.arrived);
