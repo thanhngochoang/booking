@@ -141,14 +141,21 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
     }
   }
 
-  Future<void> _noShow(InstantRequest r) async {
+  Future<void> _noShow() async {
     final l = context.l10n;
-    // Decision 9: 50/50 (#140 records zero money; the copy is the end state).
-    final fee = r.amountVnd - r.amountVnd * 50 ~/ 100;
+    // Decision 9's 50/50 as the server quotes it (#202): never app arithmetic.
+    final InstantCancelQuote quote;
+    try {
+      quote = await _controller.noShowQuote();
+    } on Object catch (e) {
+      if (mounted) _say(instantErrorText(l, e));
+      return;
+    }
+    if (!mounted) return;
     final ok = await showConfirmSheet(
       context,
       title: l.jobNoShowTitle,
-      body: l.jobNoShowBody(formatMoney(fee)),
+      body: l.jobNoShowBody(formatMoney(quote.feeVnd)),
       confirmLabel: l.jobNoShowConfirm,
       keepLabel: l.jobNoShowKeep,
     );
@@ -424,7 +431,7 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
         _NoShowButton(
           openAt: arrivedAt.add(kNoShowWait),
           now: ref.read(clockProvider),
-          onPressed: busy ? null : () => _noShow(r),
+          onPressed: busy ? null : _noShow,
         ),
       ],
     ];

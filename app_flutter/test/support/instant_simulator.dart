@@ -556,7 +556,28 @@ class InstantSimulator {
     return InstantInvited(invited: invited, unavailable: unavailable);
   }
 
-  InstantCancelQuote _cancel(String id, String uid, {required bool dryRun}) {
+  /// `updateInstantJob(no_show, dryRun: true)`: the split, nothing changed.
+  InstantCancelQuote _noShowQuote(String id, String uid) {
+    final r = _settle(id);
+    if (r.photographerId != uid) throw const InstantError('permission_denied');
+    final arrivedAt = r.arrivedAt;
+    if (r.status != InstantStatus.arrived || arrivedAt == null) {
+      throw const InstantError('conflict');
+    }
+    if (now().isBefore(arrivedAt.add(_noShowWait))) {
+      throw const InstantError('deadline_passed');
+    }
+    return r.paid
+        ? _quote(r, InstantCancelRule.noShow, 50)
+        : const InstantCancelQuote(rule: InstantCancelRule.noShow);
+  }
+
+  InstantCancelQuote _cancel(
+    String id,
+    String uid, {
+    required bool dryRun,
+    InstantCancelQuote? expected,
+  }) {
     final first = _row(id).request;
     final byCustomer = first.customerId == uid;
     if (!byCustomer && first.photographerId != uid) {
@@ -568,6 +589,11 @@ class InstantSimulator {
     }
     final q = _cancelQuote(r, byCustomer);
     if (dryRun) return q;
+    // #202: the quote the user confirmed must still hold.
+    if (expected != null &&
+        (expected.rule != q.rule || expected.refundVnd != q.refundVnd)) {
+      throw const InstantError('conflict');
+    }
     final t = now();
     final recorded = r.copyWith(
       cancelRule: q.rule,
@@ -899,8 +925,21 @@ class _SimRepository implements InstantRepository {
       sim._watch(() => sim._readable(requestId, uid));
 
   @override
-  Future<InstantCancelQuote> cancel(String requestId, {required bool dryRun}) =>
-      _call(() => sim._cancel(requestId, uid, dryRun: dryRun));
+  Future<InstantCancelQuote> cancel(
+    String requestId, {
+    required bool dryRun,
+    InstantCancelQuote? expected,
+  }) => _call(
+    () => sim._cancel(requestId, uid, dryRun: dryRun, expected: expected),
+  );
+
+  @override
+  Future<bool> checkPayment(String requestId) =>
+      _call(() => sim._row(requestId).request.paid);
+
+  @override
+  Future<InstantCancelQuote> noShowQuote(String requestId) =>
+      _call(() => sim._noShowQuote(requestId, uid));
 
   @override
   Future<void> tick(String requestId) => _call(() => sim._tick(requestId, uid));

@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 
 DateTime? _date(Object? v) => switch (v) {
   Timestamp() => v.toDate().toUtc(),
@@ -319,11 +320,18 @@ InstantCancelQuote instantCancelQuoteFromJson(Object? data) {
   );
 }
 
-/// `inviteInstant`'s answer; a kind this build does not know is an
-/// `unknown` error rather than a silent success.
+/// `inviteInstant`'s answer; a kind this build does not know (or a payment
+/// without readable instructions) is an `unknown` error rather than a silent
+/// success.
 InstantInviteResult instantInviteResultFromJson(Object? data) {
   final d = _map(data);
   return switch (d['kind']) {
+    'payment' => InstantPaymentNeeded(
+      instructions:
+          paymentInstructionsFrom(d['instructions']) ??
+          (throw const InstantError('unknown')),
+      amountVnd: _int(d['amountVnd']),
+    ),
     'invited' => InstantInvited(
       invited: _strings(d['invited']),
       unavailable: _strings(d['unavailable']),

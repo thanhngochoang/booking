@@ -9,6 +9,7 @@ import 'dart:io' show SocketException;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 
 part 'instant_models.freezed.dart';
 
@@ -388,9 +389,21 @@ abstract class InstantCancelQuote with _$InstantCancelQuote {
   }) = _InstantCancelQuote;
 }
 
-/// `inviteInstant`'s answer. #202 (Task 11) adds the payment case.
+/// `inviteInstant`'s answer: the first round pays first (#202), later rounds
+/// send at once on the held money.
 sealed class InstantInviteResult {
   const InstantInviteResult();
+}
+
+/// The first invite opened a payment (#202, Decision 5): pay it on S04.04
+/// with V1's [PaymentInstructions]; the offers go out once it is paid.
+final class InstantPaymentNeeded extends InstantInviteResult {
+  const InstantPaymentNeeded({
+    required this.instructions,
+    required this.amountVnd,
+  });
+  final PaymentInstructions instructions;
+  final int amountVnd;
 }
 
 /// The offers went out to [invited]; [unavailable] were busy, offline or gated.

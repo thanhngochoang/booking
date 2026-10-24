@@ -20,13 +20,16 @@ typedef InstantCallable = Future<Object?> Function(
   Map<String, Object?> data,
 );
 
-/// Callables that run with the server's 30 s `PAYMENT_CALLABLE_OPTIONS`
-/// (contended transactions); the others have the 10 s `CALLABLE_OPTIONS`.
+/// Callables that run 30 s on the server (`PAYMENT_CALLABLE_OPTIONS` for
+/// the money ones, #202; `CONTENDED_CALLABLE_OPTIONS` for the accept); the
+/// others have the 10 s `CALLABLE_OPTIONS`.
 const _longCallables = {
   'inviteInstant',
+  'checkInstantPayment',
   'answerInstantOffer',
   'cancelInstantRequest',
   'confirmInstantComplete',
+  'updateInstantJob',
 };
 
 /// The client waits longer than the server may run (30 s / 10 s) plus a cold
@@ -186,6 +189,12 @@ class FirestoreInstantRepository implements InstantRepository {
   }
 
   @override
+  Future<bool> checkPayment(String requestId) async {
+    final r = await _call('checkInstantPayment', {'requestId': requestId});
+    return r['paid'] == true;
+  }
+
+  @override
   Future<void> confirmComplete(String requestId) async {
     await _call('confirmInstantComplete', {'requestId': requestId});
   }
@@ -233,10 +242,16 @@ class FirestoreInstantRepository implements InstantRepository {
   Future<InstantCancelQuote> cancel(
     String requestId, {
     required bool dryRun,
+    InstantCancelQuote? expected,
   }) async {
+    final rule = expected?.rule;
     final r = await _call('cancelInstantRequest', {
       'requestId': requestId,
       'dryRun': dryRun,
+      if (!dryRun && expected != null && rule != null) ...{
+        'expectedRule': rule.code,
+        'expectedRefundVnd': expected.refundVnd,
+      },
     });
     return instantCancelQuoteFromJson(r);
   }
@@ -339,6 +354,16 @@ class FirestoreInstantRepository implements InstantRepository {
     final id = r['requestId'];
     if (id is! String || id.isEmpty) throw const InstantError('unknown');
     return id;
+  }
+
+  @override
+  Future<InstantCancelQuote> noShowQuote(String requestId) async {
+    final r = await _call('updateInstantJob', {
+      'requestId': requestId,
+      'action': InstantJobAction.noShow.code,
+      'dryRun': true,
+    });
+    return instantCancelQuoteFromJson(r);
   }
 
   @override

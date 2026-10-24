@@ -52,6 +52,7 @@ class EarningsWorld {
     String? holdReason,
     DateTime? paidOutAt,
     String subjectType = 'booking',
+    String? subjectId,
     int fee = 0,
     int tax = 0,
     int? net,
@@ -63,7 +64,7 @@ class EarningsWorld {
   }) => EarningItem(
     id: id,
     subjectType: subjectType,
-    subjectId: 'b-$id',
+    subjectId: subjectId ?? 'b-$id',
     counterpartName: name,
     subjectLabel: label,
     day: day,
@@ -130,6 +131,7 @@ class EarningsWorld {
         ),
         GoRoute(path: '/b/:id', builder: stub),
         GoRoute(path: '/bookings', builder: stub),
+        GoRoute(path: '/work/instant/:id', builder: stub),
       ],
     );
     return screenRouterApp(

@@ -1,8 +1,8 @@
 // S13.08 (customer): cancel a Chụp ngay request. Every amount on the sheet is
 // the server's dry run (Decision 8): the app shows the quote, it never
 // computes money. The policy rows highlight the quote's rule with "(bây giờ)";
-// row 3 reads the request's own arrived split. #140 moves no money: every
-// quote is `unpaid` and the sheet says so.
+// row 3 reads the request's own arrived split. The confirmed quote goes with
+// the real cancel; the server refuses (`conflict`) one that changed (#202).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -133,7 +133,12 @@ class _CustomerCancelBodyState extends ConsumerState<_CustomerCancelBody> {
       _error = null;
     });
     try {
-      await ref.read(instantRepositoryProvider).cancel(_id, dryRun: false);
+      // The quote on screen goes with the cancel: if the server's changed in
+      // between (a window ended), it answers `conflict` and nothing moves.
+      final shown = ref.read(customerCancelQuoteProvider(_id)).value;
+      await ref
+          .read(instantRepositoryProvider)
+          .cancel(_id, dryRun: false, expected: shown);
       if (!mounted) return;
       _close(_Closed.cancelled);
     } on Object catch (e) {

@@ -307,7 +307,12 @@ void main() {
     final real = w.repo
         .callsOf('cancel')
         .where((c) => c.args['dryRun'] == false);
-    expect(real.single.args, {'requestId': 'req1', 'dryRun': false});
+    // The quote on screen goes with the real cancel (the server refuses a changed one).
+    expect(real.single.args, {
+      'requestId': 'req1',
+      'dryRun': false,
+      'expected': w.repo.cancelQuote,
+    });
     expect(find.text(_title), findsNothing);
     expect(find.byType(SnackBar), findsNothing);
     await _end(tester, w);

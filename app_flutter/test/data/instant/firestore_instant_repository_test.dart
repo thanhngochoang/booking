@@ -101,8 +101,52 @@ void main() {
     });
 
     test(
-      'invite parses invited and price_changed results and sends no payMethod',
+      'invite parses payment, invited and price_changed results and sends payMethod.code',
       () async {
+        fn.answers['inviteInstant'] = {
+          'kind': 'payment',
+          'amountVnd': 690000,
+          'instructions': {
+            'paymentId': 'pay1',
+            'subjectType': 'instant_request',
+            'subjectId': 'req1',
+            'method': 'bank_qr',
+            'amount': 690000,
+            'expiresAt': '2026-10-22T08:15:00.000Z',
+            'transferCode': 'PB 7F3K2Q',
+            'qrPayload': '000201010212',
+            'bankName': 'BIDV',
+            'accountMasked': '9624 •••• 3812',
+          },
+        };
+        final paid = await repo().invite(
+          'req1',
+          photographerIds: ['ph1', 'ph2'],
+          skipped: ['ph9'],
+          expectedAmountVnd: 690000,
+          payMethod: PayMethod.bankQr,
+        );
+        expect(paid, isA<InstantPaymentNeeded>());
+        final needed = paid as InstantPaymentNeeded;
+        expect(needed.amountVnd, 690000);
+        expect(needed.instructions.paymentId, 'pay1');
+        expect(needed.instructions.method, PayMethod.bankQr);
+        expect(needed.instructions.transferCode, 'PB 7F3K2Q');
+        expect(needed.instructions.qrPayload, '000201010212');
+        expect(
+          needed.instructions.expiresAt,
+          DateTime.utc(2026, 10, 22, 8, 15),
+        );
+        expect(fn.calls.single.name, 'inviteInstant');
+        expect(fn.calls.single.data, {
+          'requestId': 'req1',
+          'photographerIds': ['ph1', 'ph2'],
+          'skipped': ['ph9'],
+          'expectedAmountVnd': 690000,
+          'payMethod': 'bank_qr',
+        });
+
+        // Later rounds (paid) send no method and get the offers at once.
         fn.answers['inviteInstant'] = {
           'kind': 'invited',
           'invited': ['ph1', 'ph2'],
@@ -111,20 +155,13 @@ void main() {
         final r = await repo().invite(
           'req1',
           photographerIds: ['ph1', 'ph2', 'ph3'],
-          skipped: ['ph9'],
-          expectedAmountVnd: 690000,
+          skipped: const [],
+          expectedAmountVnd: 0,
         );
         expect(r, isA<InstantInvited>());
         expect((r as InstantInvited).invited, ['ph1', 'ph2']);
         expect(r.unavailable, ['ph3']);
-        expect(fn.calls.single.name, 'inviteInstant');
-        expect(fn.calls.single.data, {
-          'requestId': 'req1',
-          'photographerIds': ['ph1', 'ph2', 'ph3'],
-          'skipped': ['ph9'],
-          'expectedAmountVnd': 690000,
-        });
-        expect(fn.calls.single.data.containsKey('payMethod'), isFalse);
+        expect(fn.calls.last.data.containsKey('payMethod'), isFalse);
 
         fn.answers['inviteInstant'] = {
           'kind': 'price_changed',
@@ -135,23 +172,87 @@ void main() {
           photographerIds: ['ph1'],
           skipped: const [],
           expectedAmountVnd: 690000,
+          payMethod: PayMethod.momo,
         );
         expect(changed, isA<InstantPriceChanged>());
         expect((changed as InstantPriceChanged).amountVnd, 720000);
+        expect(fn.calls.last.data['payMethod'], 'momo');
 
-        // A kind this build does not know (#202's `payment`) is not silently dropped.
-        fn.answers['inviteInstant'] = {'kind': 'payment', 'amountVnd': 1};
-        await expectLater(
-          repo().invite(
-            'req1',
-            photographerIds: ['ph1'],
-            skipped: const [],
-            expectedAmountVnd: 1,
-          ),
-          throwsA(isA<InstantError>().having((e) => e.code, 'code', 'unknown')),
-        );
+        // A payment answer without readable instructions, or a kind this
+        // build does not know, is never silently dropped.
+        for (final answer in [
+          {'kind': 'payment', 'amountVnd': 1},
+          {'kind': 'refund'},
+        ]) {
+          fn.answers['inviteInstant'] = answer;
+          await expectLater(
+            repo().invite(
+              'req1',
+              photographerIds: ['ph1'],
+              skipped: const [],
+              expectedAmountVnd: 1,
+              payMethod: PayMethod.bankQr,
+            ),
+            throwsA(
+              isA<InstantError>().having((e) => e.code, 'code', 'unknown'),
+            ),
+          );
+        }
       },
     );
+
+    test('checkPayment calls checkInstantPayment', () async {
+      fn.answers['checkInstantPayment'] = {'paid': false, 'status': 'pending_payment'};
+      expect(await repo().checkPayment('req1'), isFalse);
+      expect(fn.calls.single.name, 'checkInstantPayment');
+      expect(fn.calls.single.data, {'requestId': 'req1'});
+      fn.answers['checkInstantPayment'] = {'paid': true, 'status': 'searching'};
+      expect(await repo().checkPayment('req1'), isTrue);
+    });
+
+    test('noShowQuote is the no_show dry run of updateInstantJob', () async {
+      fn.answers['updateInstantJob'] = {
+        'rule': 'no_show',
+        'refundPercent': 50,
+        'refundVnd': 345000,
+        'feeVnd': 345000,
+        'amountVnd': 690000,
+        'status': 'arrived',
+      };
+      final q = await repo(uid: 'ph1').noShowQuote('req1');
+      expect(q.rule, InstantCancelRule.noShow);
+      expect(q.feeVnd, 345000);
+      expect(fn.calls.single.data, {
+        'requestId': 'req1',
+        'action': 'no_show',
+        'dryRun': true,
+      });
+    });
+
+    test('a real cancel sends the quote it was shown', () async {
+      fn.answers['cancelInstantRequest'] = {
+        'rule': 'en_route',
+        'refundPercent': 80,
+        'refundVnd': 552000,
+        'feeVnd': 138000,
+        'amountVnd': 690000,
+        'status': 'cancelled_by_customer',
+      };
+      const shown = InstantCancelQuote(
+        rule: InstantCancelRule.enRoute,
+        refundPercent: 80,
+        refundVnd: 552000,
+        feeVnd: 138000,
+        amountVnd: 690000,
+      );
+      await repo().cancel('req1', dryRun: false, expected: shown);
+      expect(fn.calls.last.data, {
+        'requestId': 'req1',
+        'dryRun': false,
+        'expectedRule': 'en_route',
+        'expectedRefundVnd': 552000,
+      });
+    });
 
     test('a FirebaseFunctionsException with details.code becomes InstantError(code)', () async {
       fn.error = FirebaseFunctionsException(
@@ -468,12 +569,14 @@ void main() {
   });
 
   group('error codes and timeouts', () {
-    test('contended callables wait 40 s, the others 15 s', () {
+    test('30 s callables wait 40 s, the others 15 s', () {
       for (final name in [
         'inviteInstant',
+        'checkInstantPayment',
         'answerInstantOffer',
         'cancelInstantRequest',
         'confirmInstantComplete',
+        'updateInstantJob',
       ]) {
         expect(instantCallableTimeout(name), const Duration(seconds: 40));
       }
@@ -483,7 +586,6 @@ void main() {
         'tickInstantRequest',
         'setLiveShutter',
         'saveInstantSettings',
-        'updateInstantJob',
       ]) {
         expect(instantCallableTimeout(name), const Duration(seconds: 15));
       }

@@ -204,6 +204,10 @@ class ChooseController extends Notifier<ChooseState> {
           );
       if (!ref.mounted) return result;
       switch (result) {
+        // #202: the first round pays on S04.04 first (customer plan Task 8
+        // opens it from here); nothing was sent yet.
+        case InstantPaymentNeeded():
+          state = state.copyWith(sending: false);
         case InstantPriceChanged(:final amountVnd):
           state = state.copyWith(sending: false, amountVnd: amountVnd);
         case InstantInvited(:final invited):

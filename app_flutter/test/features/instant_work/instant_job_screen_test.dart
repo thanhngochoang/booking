@@ -287,8 +287,8 @@ void main() {
 
   testWidgets(
     'arrived: "Bắt đầu chụp" calls start; "Khách không có mặt (sau 12:40)" '
-    'disabled until 15 minutes, then confirm sheet "Khách được hoàn 50%, bạn '
-    'nhận 345.000₫." calls noShow',
+    'disabled until 15 minutes, then confirm sheet with the server quote '
+    '"Khách được hoàn 50%, bạn nhận 345.001₫." calls noShow',
     (tester) async {
       final w = _world(
         request: jobRequestOf(
@@ -327,11 +327,20 @@ void main() {
       expect(find.text('Khách không có mặt'), findsOneWidget);
       expect(noShowButton().onPressed, isNotNull);
 
+      // An odd amount no client formula gives: the sheet shows the server's.
+      w.repo.noShowQuoteValue = const InstantCancelQuote(
+        rule: InstantCancelRule.noShow,
+        refundPercent: 50,
+        refundVnd: 344999,
+        feeVnd: 345001,
+        amountVnd: 690000,
+      );
       await tester.tap(noShow);
       await settleInstant(tester);
+      expect(w.repo.callsOf('noShowQuote').single.args, {'requestId': 'req1'});
       expect(find.text('Báo khách không có mặt?'), findsOneWidget);
       expect(
-        find.text('Khách được hoàn 50%, bạn nhận 345.000₫.'),
+        find.text('Khách được hoàn 50%, bạn nhận 345.001₫.'),
         findsOneWidget,
       );
       await tester.tap(find.text('Báo khách không có mặt'));

@@ -352,6 +352,24 @@ void main() {
     expect(w.events.last.$2, {'state': 'held'});
   });
 
+  testWidgets('an instant_request row opens /work/instant/{id}', (tester) async {
+    final w = await _open(
+      tester,
+      seed: (w) => w.repo.emitItems([
+        w.item(
+          'pay_i',
+          subjectType: 'instant_request',
+          subjectId: 'ir_1',
+          label: 'Chụp ngay · 1 giờ',
+        ),
+      ]),
+    );
+    await tester.tap(find.text('Lan Anh · Chụp ngay · 1 giờ'));
+    await _settle(tester);
+    expect(w.router.state.uri.path, '/work/instant/ir_1');
+    expect(find.text('stub /work/instant/ir_1'), findsOneWidget);
+  });
+
   testWidgets('a row without a customer name says Khách', (tester) async {
     await _open(tester, seed: (w) => w.repo.emitItems([w.item('a', name: '')]));
     expect(find.text('Khách · Chân dung 2h'), findsOneWidget);

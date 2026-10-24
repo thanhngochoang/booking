@@ -80,9 +80,11 @@ void main() {
       await settleInstant(tester);
       await tester.tap(_confirm);
       await settleInstant(tester);
+      // The outcome shown goes with the cancel (#202: `conflict` if it changed).
       expect(w.repo.callsOf('cancel').last.args, {
         'requestId': 'req1',
         'dryRun': false,
+        'expected': w.repo.cancelQuote,
       });
       expect(find.text(_title), findsNothing);
       expect(results, [false, true]);
