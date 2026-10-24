@@ -3,24 +3,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 
 class MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
 
 class MockHttpsCallable extends Mock implements HttpsCallable {}
 
-class MockHttpsCallableResult<T> extends Mock implements HttpsCallableResult<T> {}
+class MockHttpsCallableResult<T> extends Mock
+    implements HttpsCallableResult<T> {}
 
 void main() {
   late MockFirebaseFunctions functions;
   late MockHttpsCallable callable;
-  late FunctionsPaymentsRepository repo;
+  late FirebasePaymentsRepository repo;
 
   setUp(() {
     functions = MockFirebaseFunctions();
     callable = MockHttpsCallable();
     when(() => functions.httpsCallable(any())).thenReturn(callable);
-    repo = FunctionsPaymentsRepository(functions: functions);
+    repo = FirebasePaymentsRepository(functions: functions);
   });
 
   void answer(Map<String, dynamic> data) {
@@ -30,7 +32,14 @@ void main() {
         .thenAnswer((_) async => result);
   }
 
-  group('FunctionsPaymentsRepository', () {
+  /// The S22.04 callables are read as `Object?` (pendingRefund answers null).
+  void answerAny(Object? data) {
+    final result = MockHttpsCallableResult<Object?>();
+    when(() => result.data).thenReturn(data);
+    when(() => callable.call<Object?>(any())).thenAnswer((_) async => result);
+  }
+
+  group('FirebasePaymentsRepository', () {
     test('confirmFake sends {paymentId, kind: "wrong_content"} and returns outcome', () async {
       answer({'outcome': 'needs_review'});
 
@@ -41,10 +50,12 @@ void main() {
 
       expect(outcome, 'needs_review');
       verify(() => functions.httpsCallable('confirmFakePayment')).called(1);
-      verify(() => callable.call<Map<String, dynamic>>({
-            'paymentId': 'pay_1',
-            'kind': 'wrong_content',
-          })).called(1);
+      verify(
+        () => callable.call<Map<String, dynamic>>({
+          'paymentId': 'pay_1',
+          'kind': 'wrong_content',
+        }),
+      ).called(1);
     });
 
     test('confirmFake default kind is exact', () async {
@@ -53,10 +64,12 @@ void main() {
       final outcome = await repo.confirmFake('pay_2');
 
       expect(outcome, 'paid');
-      verify(() => callable.call<Map<String, dynamic>>({
-            'paymentId': 'pay_2',
-            'kind': 'exact',
-          })).called(1);
+      verify(
+        () => callable.call<Map<String, dynamic>>({
+          'paymentId': 'pay_2',
+          'kind': 'exact',
+        }),
+      ).called(1);
     });
 
     test('instructions sends {paymentId} and parses instructions', () async {
@@ -79,31 +92,163 @@ void main() {
       expect(ins.transferCode, 'PB 123456');
       expect(ins.expiresAt, DateTime.utc(2026, 10, 10, 3));
       verify(() => functions.httpsCallable('getPaymentInstructions')).called(1);
-      verify(() => callable.call<Map<String, dynamic>>({
-            'paymentId': 'pay_1',
-          })).called(1);
+      verify(() => callable.call<Map<String, dynamic>>({'paymentId': 'pay_1'}))
+          .called(1);
     });
 
-    test('instructions returns null when server answers null instructions', () async {
-      answer({'instructions': null});
+    test(
+      'instructions returns null when server answers null instructions',
+      () async {
+        answer({'instructions': null});
 
-      final ins = await repo.instructions('pay_1');
+        final ins = await repo.instructions('pay_1');
 
-      expect(ins, isNull);
+        expect(ins, isNull);
+      },
+    );
+
+    test(
+      'error maps FirebaseFunctionsException details to BookingException',
+      () async {
+        when(() => callable.call<Map<String, dynamic>>(any())).thenThrow(
+          FirebaseFunctionsException(
+            message: 'Not found',
+            code: 'not-found',
+            details: {'code': 'not_found'},
+          ),
+        );
+
+        expect(
+          () => repo.instructions('pay_1'),
+          throwsA(
+            isA<BookingException>().having((e) => e.code, 'code', 'not_found'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'BookingRefund and TicketRefund send their ids to pendingRefund',
+      () async {
+        answerAny(null);
+
+        expect(await repo.pendingRefund(const BookingRefund('b1')), isNull);
+        await repo.pendingRefund(const TicketRefund('e1', 'reg1'));
+
+        verify(() => functions.httpsCallable('pendingRefund')).called(2);
+        verify(() => callable.call<Object?>({'bookingId': 'b1'})).called(1);
+        verify(
+          () => callable.call<Object?>({
+            'eventId': 'e1',
+            'registrationId': 'reg1',
+          }),
+        ).called(1);
+      },
+    );
+
+    test('DisputeRefund sends {disputeId} to pendingRefund', () async {
+      answerAny(<Object?, Object?>{
+        'refundId': 'r1',
+        'amount': 500000,
+        'payer': <Object?, Object?>{
+          'bankName': 'Vietcombank',
+          'accountLast4': '6789',
+          'holderName': 'NGUYEN THANH HA',
+        },
+        'confirmBy': '2026-10-11T03:00:00.000Z',
+      });
+
+      final p = await repo.pendingRefund(const DisputeRefund('d1'));
+
+      expect(p?.refundId, 'r1');
+      expect(p?.payer?.accountLast4, '6789');
+      verify(() => functions.httpsCallable('pendingRefund')).called(1);
+      verify(() => callable.call<Object?>({'disputeId': 'd1'})).called(1);
     });
 
-    test('error maps FirebaseFunctionsException details to BookingException', () async {
-      when(() => callable.call<Map<String, dynamic>>(any())).thenThrow(
+    test('lookupRefundAccount sends {refundId, bankCode, accountNumber} and reads the masked answer', () async {
+      answerAny(<Object?, Object?>{
+        'holderName': 'TRAN VAN B',
+        'bankName': 'Techcombank',
+        'accountLast4': '4321',
+      });
+
+      final r = await repo.lookupRefundAccount(
+        refundId: 'r1',
+        bankCode: 'TCB',
+        accountNumber: '190000004321',
+      );
+
+      expect(r.holderName, 'TRAN VAN B');
+      expect(r.bankName, 'Techcombank');
+      expect(r.accountLast4, '4321');
+      verify(() => functions.httpsCallable('lookupRefundAccount')).called(1);
+      verify(
+        () => callable.call<Object?>({
+          'refundId': 'r1',
+          'bankCode': 'TCB',
+          'accountNumber': '190000004321',
+        }),
+      ).called(1);
+    });
+
+    test(
+      'chooseRefundAccount sends {refundId, use} and returns the status',
+      () async {
+        answerAny(<Object?, Object?>{'status': 'pending'});
+
+        final status = await repo.chooseRefundAccount(
+          refundId: 'r1',
+          use: RefundAccountChoice.candidate,
+        );
+
+        expect(status, 'pending');
+        verify(() => functions.httpsCallable('chooseRefundAccount')).called(1);
+        verify(
+          () => callable.call<Object?>({'refundId': 'r1', 'use': 'candidate'}),
+        ).called(1);
+      },
+    );
+
+    test('the lookup cap and an unsupported bank keep their codes', () async {
+      when(() => callable.call<Object?>(any())).thenThrow(
         FirebaseFunctionsException(
-          message: 'Not found',
-          code: 'not-found',
-          details: {'code': 'not_found'},
+          message: 'limit_exceeded',
+          code: 'resource-exhausted',
+          details: {'code': 'limit_exceeded'},
+        ),
+      );
+      await expectLater(
+        repo.lookupRefundAccount(
+          refundId: 'r1',
+          bankCode: 'TCB',
+          accountNumber: '1',
+        ),
+        throwsA(
+          isA<BookingException>().having(
+            (e) => e.code,
+            'code',
+            'limit_exceeded',
+          ),
         ),
       );
 
-      expect(
-        () => repo.instructions('pay_1'),
-        throwsA(isA<BookingException>().having((e) => e.code, 'code', 'not_found')),
+      when(() => callable.call<Object?>(any())).thenThrow(
+        FirebaseFunctionsException(
+          message: 'not_eligible',
+          code: 'failed-precondition',
+          details: {'code': 'not_eligible'},
+        ),
+      );
+      await expectLater(
+        repo.lookupRefundAccount(
+          refundId: 'r1',
+          bankCode: 'TCB',
+          accountNumber: '1',
+        ),
+        throwsA(
+          isA<BookingException>().having((e) => e.code, 'code', 'not_eligible'),
+        ),
       );
     });
   });

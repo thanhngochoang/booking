@@ -296,6 +296,29 @@ void main() {
       expect(b?.escrowStatus, EscrowStatus.disputed);
     });
 
+    test('Booking parses refundAccountNeeded (missing → false)', () {
+      final docData = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'cancelled',
+        'deposit': 1000000,
+        'remaining': 0,
+      };
+      expect(bookingFromFirestore('b', docData)?.refundAccountNeeded, isFalse);
+      expect(
+        bookingFromFirestore('b', {...docData, 'refundAccountNeeded': true})
+            ?.refundAccountNeeded,
+        isTrue,
+      );
+      expect(
+        bookingFromFirestore('b', {...docData, 'refundAccountNeeded': 'yes'})
+            ?.refundAccountNeeded,
+        isFalse,
+      );
+    });
+
     test('bookingFromFirestore reads spotId, spotScheduleId, slotOfferId, source', () {
       final docData = <String, dynamic>{
         'customerId': 'c1',

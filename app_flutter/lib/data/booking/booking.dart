@@ -185,6 +185,10 @@ abstract class Booking with _$Booking {
     /// The studio part (#136); null for an individual booking.
     StudioBookingInfo? studio,
 
+    /// A policy refund waits for the customer to choose the account it goes
+    /// to (S22.04; server mirror, #141). S05.02 shows the refund card.
+    @Default(false) bool refundAccountNeeded,
+
     /// What S04.04 pays: mirror of `bookings/{id}.checkout`, set while a draft
     /// waits for its payment. Not part of the JSON form.
     @JsonKey(includeFromJson: false, includeToJson: false)
@@ -356,6 +360,7 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       slotOfferId: data['slotOfferId'] as String?,
       source: data['source'] as String?,
       disputeId: data['disputeId'] as String?,
+      refundAccountNeeded: data['refundAccountNeeded'] == true,
       checkout: bookingCheckoutFrom(data['checkout']),
       version: (data['version'] as num?)?.toInt() ?? 1,
       createdAt: createdAt,

@@ -18,6 +18,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_repository.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 
@@ -1176,4 +1177,32 @@ class _SimPayments implements PaymentsRepository {
         final p = sim._payments[paymentId];
         return p == null || p.paid ? null : p.instructions;
       });
+
+  // S22.01 / S22.04 (#141) are not part of the Chụp ngay simulation.
+  @override
+  Stream<List<PayerPaymentRow>> watchHistory(
+    String uid, {
+    required int limit,
+  }) => Stream.value(const []);
+
+  @override
+  Stream<PaymentTotals> watchTotals(String uid) =>
+      Stream.value(const PaymentTotals());
+
+  @override
+  Future<PendingRefund?> pendingRefund(RefundSubject subject) async => null;
+
+  @override
+  Future<({String holderName, String bankName, String accountLast4})>
+  lookupRefundAccount({
+    required String refundId,
+    required String bankCode,
+    required String accountNumber,
+  }) => throw UnimplementedError('S22.04 is not simulated');
+
+  @override
+  Future<String> chooseRefundAccount({
+    required String refundId,
+    required RefundAccountChoice use,
+  }) => throw UnimplementedError('S22.04 is not simulated');
 }
