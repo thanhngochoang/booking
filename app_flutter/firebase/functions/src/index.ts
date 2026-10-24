@@ -69,6 +69,7 @@ import {
 } from './callables/payout_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handleRefundWrite } from './triggers/refund_write.js';
+import { handleBookingPayerRows } from './triggers/booking_payer_rows.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
@@ -409,6 +410,8 @@ export const onBookingWrite = onDocumentWritten(
       },
       liveDiscoveryDeps(),
     );
+    // S22.01 (#141): after the booking's own work; a cancel with no refund or a reschedule touches no payment.
+    await handleBookingPayerRows(bookingId, before, after, livePayerHistoryDeps());
   },
 );
 

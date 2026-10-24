@@ -10,6 +10,7 @@ import { db } from '../infra/admin.js';
 
 type Doc = {
   payeeId?: unknown;
+  payerId?: unknown;
   subjectType?: unknown;
   subjectId?: unknown;
   milestones?: unknown;
@@ -38,7 +39,8 @@ const milestonesKey = (v: unknown): string =>
 
 /**
  * #141 Decision 1: the payer's row changes only with `status`, `escrowStatus`, `receivedAmount`,
- * `refundedAmount` (or the milestones); a write of a payment that never had money is skipped.
+ * `refundedAmount`, the milestones or the payee (Chụp ngay accept/cancel); a write of a payment that
+ * never had money is skipped.
  */
 export function payerRowChanged(before: Doc, after: Doc): boolean {
   if (!hasMoney(before) && !hasMoney(after)) return false;
@@ -46,6 +48,8 @@ export function payerRowChanged(before: Doc, after: Doc): boolean {
   return (
     before.status !== after.status ||
     before.escrowStatus !== after.escrowStatus ||
+    // Chụp ngay: a photographer accepting (or cancelling) sets (or clears) the payee; "đang tìm thợ" follows.
+    before.payeeId !== after.payeeId ||
     (before.receivedAmount ?? 0) !== (after.receivedAmount ?? 0) ||
     (before.refundedAmount ?? 0) !== (after.refundedAmount ?? 0) ||
     milestonesKey(before.milestones) !== milestonesKey(after.milestones)
@@ -88,17 +92,21 @@ export async function handlePaymentWrite(
     await batch.commit();
   }
 
-  if (history !== undefined && payerRowChanged(before, after)) {
-    const result = await refreshPayerHistory(history, paymentId);
-    logger.info('onPaymentWritten payer row', { paymentId, result });
-  }
-
   if (formerPayee !== undefined && formerPayee !== payeeId && formerPayee !== PLATFORM_PAYEE) {
     await refreshEarnings(deps, { payeeId: formerPayee, paymentIds: [paymentId] });
   }
   // Platform-hosted event tickets: the platform keeps the money; it has no earnings page.
-  if (payeeId === undefined || payeeId === PLATFORM_PAYEE) return null;
-  await refreshEarnings(deps, { payeeId, paymentIds: [paymentId] });
-  logger.info('onPaymentWritten', { payeeId });
-  return payeeId;
+  const earningsPayee = payeeId === undefined || payeeId === PLATFORM_PAYEE ? null : payeeId;
+  if (earningsPayee !== null) {
+    await refreshEarnings(deps, { payeeId: earningsPayee, paymentIds: [paymentId] });
+    logger.info('onPaymentWritten', { payeeId: earningsPayee });
+  }
+
+  // After the earnings, so a failing payer refresh never holds back the payee's row (the retry redoes both).
+  if (history !== undefined && payerRowChanged(before, after)) {
+    const payerId = typeof before?.payerId === 'string' ? before.payerId : undefined;
+    const result = await refreshPayerHistory(history, paymentId, after === undefined && payerId !== undefined ? { payerId } : undefined);
+    logger.info('onPaymentWritten payer row', { paymentId, result });
+  }
+  return earningsPayee;
 }

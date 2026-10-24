@@ -4,10 +4,12 @@ import type { Payment, Refund } from '../src/escrow.js';
 import { MemoryPayerHistoryStore } from '../src/memory_payer_history_store.js';
 import type { PaymentMilestone } from '../src/milestones.js';
 import {
+  EMPTY_PAYER_SUBJECT,
   destinationLabel,
   payerRowOf,
   payerTotals,
   refreshPayerHistory,
+  refreshPayerHistoryOfSubject,
   type PayerPaymentRow,
   type PayerSubjectView,
 } from '../src/payer_history.js';
@@ -60,13 +62,13 @@ const refund = (over: Partial<Refund> = {}): Refund => ({
 });
 
 const subject = (over: Partial<PayerSubjectView> = {}): PayerSubjectView => ({
-  title: 'Minh Trí · Chân dung 2 giờ',
+  ...EMPTY_PAYER_SUBJECT,
+  photographerName: 'Minh Trí',
+  serviceName: 'Chân dung 2 giờ',
   day: '2026-10-12',
-  eventId: null,
-  searching: false,
-  cancelled: false,
   ...over,
 });
+const NO_BOOKING = { photographerName: null, serviceName: null };
 
 const rowOf = (p: Payment, refunds: readonly Refund[] = [], s: PayerSubjectView = subject()) => payerRowOf(p, refunds, s, NOW);
 const must = (r: PayerPaymentRow | null): PayerPaymentRow => {
@@ -91,8 +93,8 @@ describe('payerRowOf', () => {
     assert.equal(r.open, true);
     assert.deepEqual([r.refundingAmount, r.refundedAmount], [0, 0]);
     assert.deepEqual(
-      [r.paymentId, r.payerId, r.subjectType, r.subjectId, r.title, r.day, r.method, r.createdAt, r.paidAt, r.updatedAt],
-      ['pay1', 'c1', 'booking', 'b1', 'Minh Trí · Chân dung 2 giờ', '2026-10-12', 'bank_qr', T0, T0, NOW.toISOString()],
+      [r.paymentId, r.payerId, r.subjectType, r.subjectId, r.photographerName, r.serviceName, r.eventTitle, r.quantity, r.areaLabel, r.day, r.method, r.createdAt, r.paidAt, r.updatedAt],
+      ['pay1', 'c1', 'booking', 'b1', 'Minh Trí', 'Chân dung 2 giờ', null, null, null, '2026-10-12', 'bank_qr', T0, T0, NOW.toISOString()],
     );
   });
 
@@ -244,20 +246,23 @@ describe('payerRowOf', () => {
     const r = must(rowOf(
       payment({ subjectType: 'instant_request', subjectId: 'ir1', payeeId: '', method: 'momo' }),
       [],
-      subject({ title: 'Chụp ngay · Quận 1', day: null, searching: true }),
+      subject({ ...NO_BOOKING, areaLabel: 'Quận 1, TP.HCM', day: null, searching: true }),
     ));
-    assert.deepEqual([r.subjectType, r.title, r.searching, r.status, r.heldAmount, r.toPlatform], ['instant_request', 'Chụp ngay · Quận 1', true, 'held', AMOUNT, false]);
+    assert.deepEqual(
+      [r.subjectType, r.areaLabel, r.photographerName, r.searching, r.status, r.heldAmount, r.toPlatform],
+      ['instant_request', 'Quận 1, TP.HCM', null, true, 'held', AMOUNT, false],
+    );
   });
 
   it('a ticket keeps its event id; platform money reads as paid to the platform', () => {
     const ticket = must(rowOf(
       payment({ subjectType: 'event_registration', subjectId: 'reg1', eventId: 'ev1', payeeId: 'platform', escrowStatus: 'released' }),
       [],
-      subject({ title: 'Photo walk phố cổ · 2 vé', eventId: 'ev1' }),
+      subject({ ...NO_BOOKING, eventTitle: 'Photo walk phố cổ', quantity: 2, eventId: 'ev1' }),
     ));
-    assert.deepEqual([ticket.eventId, ticket.toPlatform, ticket.status], ['ev1', true, 'released']);
-    const fee = must(rowOf(payment({ subjectType: 'verification_fee', subjectId: 'p9', payerId: 'p9', payeeId: 'platform', escrowStatus: 'released' }), [], subject({ title: 'Phí xác minh', day: null })));
-    assert.deepEqual([fee.status, fee.open, fee.toPlatform], ['released', false, true]);
+    assert.deepEqual([ticket.eventId, ticket.eventTitle, ticket.quantity, ticket.toPlatform, ticket.status], ['ev1', 'Photo walk phố cổ', 2, true, 'released']);
+    const fee = must(rowOf(payment({ subjectType: 'verification_fee', subjectId: 'p9', payerId: 'p9', payeeId: 'platform', escrowStatus: 'released' }), [], EMPTY_PAYER_SUBJECT));
+    assert.deepEqual([fee.status, fee.open, fee.toPlatform, fee.photographerName, fee.eventTitle, fee.areaLabel], ['released', false, true, null, null, null]);
   });
 });
 
@@ -285,7 +290,7 @@ describe('refreshPayerHistory', () => {
     store.payments.set('pay1', payment());
     store.payments.set('pay2', payment({ id: 'pay2', subjectId: 'b2', amount: 800_000, receivedAmount: 800_000 }));
     store.subjects.set('pay1', subject());
-    store.subjects.set('pay2', subject({ title: 'Quốc Bảo · Gia đình 1 giờ' }));
+    store.subjects.set('pay2', subject({ photographerName: 'Quốc Bảo', serviceName: 'Gia đình 1 giờ' }));
 
     assert.equal(await refreshPayerHistory(deps, 'pay1'), 'written');
     assert.equal(await refreshPayerHistory(deps, 'pay2'), 'written');
@@ -308,6 +313,33 @@ describe('refreshPayerHistory', () => {
     assert.deepEqual(store.totals.get('c1'), { held: 0, refunding: 800_000, updatedAt: NOW.toISOString() });
 
     assert.equal(await refreshPayerHistory(deps, 'nope'), 'missing');
+  });
+
+  it('a deleted payment loses its row when its payer is known', async () => {
+    const { store, deps } = world();
+    store.payments.set('pay1', payment());
+    await refreshPayerHistory(deps, 'pay1');
+    store.payments.delete('pay1');
+    assert.equal(await refreshPayerHistory(deps, 'pay1'), 'missing');
+    assert.equal(store.rows.has('c1/pay1'), true);
+    assert.equal(await refreshPayerHistory(deps, 'pay1', { payerId: 'c1' }), 'deleted');
+    assert.equal(store.rows.has('c1/pay1'), false);
+    assert.deepEqual(store.totals.get('c1'), { held: 0, refunding: 0, updatedAt: NOW.toISOString() });
+  });
+
+  it('refreshPayerHistoryOfSubject refreshes every payment of a booking whose status changed', async () => {
+    const { store, deps } = world();
+    store.payments.set('pay1', payment());
+    store.payments.set('pay0', unpaid({ id: 'pay0', status: 'expired', escrowStatus: 'refunded' }));
+    store.payments.set('payX', payment({ id: 'payX', subjectId: 'b9' }));
+    store.subjects.set('pay1', subject());
+    await refreshPayerHistory(deps, 'pay1');
+    // A 0% late cancel: no refund, no payment write; only the booking changed.
+    store.subjects.set('pay1', subject({ cancelled: true }));
+    assert.equal(await refreshPayerHistoryOfSubject(deps, 'booking', 'b1'), 2);
+    assert.equal(store.rows.get('c1/pay1')?.cancelled, true);
+    assert.equal(store.rows.has('c1/pay0'), false);
+    assert.equal(store.rows.has('c1/payX'), false);
   });
 
   it('the memory store refuses a read after a write, like Firestore', async () => {

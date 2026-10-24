@@ -25,8 +25,11 @@ import {
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  EMPTY_PAYER_SUBJECT,
   payerRowOf,
   payerTotals,
+  type InstantRequest,
+  type Refund,
   type PayerPaymentRow,
   type PayerSubjectView,
   emptyVerification,
@@ -100,11 +103,12 @@ import {
   paymentFromFirestore,
   paymentToFirestore,
   refundFromFirestore,
+  refundToFirestore,
 } from '../src/infra/booking_firestore.js';
+import { instantRequestToFirestore } from '../src/infra/instant_firestore.js';
 import {
   PAYER_PAYMENTS,
   PAYMENT_TOTALS_DOC,
-  VERIFICATION_FEE_SUBJECT,
   bookingSubjectOf,
   instantSubjectOf,
   payerRowToFirestore,
@@ -1450,7 +1454,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
     if (l.full) docs.push({ path: `availability/${CUC}/days/${l.day}`, data: { state: 'full', updatedAt: now } });
   }
-  // S22.01 (#141): after every payment (bookings, tickets, the S21 fee) is in.
+  // S22.01 (#141): Lan's refunded Chụp ngay request, then the history of every payment (bookings, tickets, the S21 fee, Chụp ngay).
+  docs.push(...instantHistoryDocuments(now));
   docs.push(...payerHistoryDocuments(now, docs));
 
   // Chụp ngay server config (#140, plan Task 4): price list v1, fee 0, arrived-cancel split 50.
@@ -2027,8 +2032,72 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
   return docs;
 }
 
-/** Lan's Chụp ngay row (S22.01): a fixture row only, see `payerHistoryDocuments`. */
-export const SEED_INSTANT_FIXTURE_PAYMENT = 'seed-payment-instant-lan-fixture';
+/** Lan's Chụp ngay request that found nobody (S13, S22.01): cancelled after no match, paid by MoMo and refunded in full. */
+export const SEED_INSTANT_LAN = 'seed-instant-lan-cancelled';
+export const SEED_INSTANT_LAN_PAYMENT = 'seed-payment-instant-lan';
+const SEED_INSTANT_LAN_REFUND = 'seed-refund-instant-lan';
+
+/**
+ * A real, terminal Chụp ngay request of Lan with its payment, refund and ledger entries, so S22.01
+ * shows a Chụp ngay row backed by real documents. Terminal on purpose (cancelled by Lan after no match,
+ * no deadline): a live `searching` or `assigned` request would start the matching clock or the job
+ * timers, hold money and block S22.02. Nothing is held, so the totals and S22.02 agree.
+ */
+function instantHistoryDocuments(now: Date): SeedDocument[] {
+  const created = new Date(now.getTime() - 3 * DAY_MS);
+  const paid = new Date(created.getTime() + 2 * 60_000);
+  const ended = new Date(paid.getTime() + 15 * 60_000);
+  const pkg = SEED_INSTANT_CONFIG.packages.find((x) => x.code === 'p60');
+  if (pkg === undefined) throw new Error('seed: instant package p60 is missing');
+  const amount = pkg.priceVnd;
+  const area = SEED_INSTANT_CONFIG.areas[0];
+  if (area === undefined) throw new Error('seed: instant area is missing');
+  const request: InstantRequest = {
+    id: SEED_INSTANT_LAN, customerId: LAN, customerName: 'Lan (seed)', customerAvatarUrl: null,
+    status: 'cancelled_by_customer', active: false,
+    packageCode: pkg.code, durationMin: pkg.durationMin, photos: pkg.photos, genre: 'portrait', note: '',
+    cityId: 'hcm', meetPoint: { lat: area.lat, lng: area.lng, name: 'Nhà hát Thành phố' }, areaLabel: area.name,
+    amountVnd: amount, earningVnd: amount,
+    priceListVersion: SEED_INSTANT_CONFIG.priceListVersion, platformFeeBp: SEED_INSTANT_CONFIG.platformFeeBp,
+    arrivedCancelPhotographerPercent: SEED_INSTANT_CONFIG.instantArrivedCancelPhotographerPercent,
+    committedAt: paid,
+    payMethod: 'momo', provider: 'fake', paymentId: SEED_INSTANT_LAN_PAYMENT, paidAt: paid, paymentDeadlineAt: null,
+    refundId: SEED_INSTANT_LAN_REFUND, refundStatus: 'done',
+    round: 1, invitedTotal: 0, roundsWithInvites: 0, candidates: [], offers: [], excludedIds: [], pendingInviteIds: [], roundEnded: true,
+    photographerId: null, photographer: null, chatId: null, etaMinutes: null,
+    assignedAt: null, freeCancelUntil: null, lateDeadlineAt: null, startedRouteAt: null, arrivedAt: null, forcedArrivalAccuracyM: null,
+    startedAt: null, shootEndsAt: null, finishedAt: null, completedAt: null,
+    cancelledAt: ended, cancelledBy: 'customer', cancelRule: 'full_refund', refundPercent: 100, feeVnd: 0,
+    searchDeadlineAt: null, lastActivityAt: ended, nextDeadlineAt: null, createdAt: created, updatedAt: ended, version: 1,
+  };
+  const at = (d: Date) => d.toISOString();
+  const payment: Payment = {
+    id: SEED_INSTANT_LAN_PAYMENT, subjectType: 'instant_request', subjectId: SEED_INSTANT_LAN, payerId: LAN, payeeId: '',
+    provider: 'fake', amount, status: 'refunded', escrowStatus: 'refunded', idempotencyKey: `seed_${SEED_INSTANT_LAN}_momo`,
+    method: 'momo', receivedAmount: amount, refundedAmount: amount, feeBp: 0,
+    paidAt: at(paid), createdAt: at(created), updatedAt: at(ended),
+  };
+  const refund: Refund = {
+    id: SEED_INSTANT_LAN_REFUND, paymentId: payment.id, subjectType: 'instant_request', amount, percent: 100, status: 'done',
+    manual: false, fromEscrow: true, method: 'gateway', destination: null, attempts: 1, lastAttemptAt: at(ended),
+    reason: 'full_refund', createdAt: at(ended), updatedAt: at(ended),
+  };
+  const entry = (suffix: string, type: 'payment_received' | 'refund_issued', owner: string, value: number, when: Date) => ({
+    path: `ledger_entries/seed-ledger-${SEED_INSTANT_LAN}-${suffix}`,
+    data: ledgerEntryToFirestore({
+      id: `seed-ledger-${SEED_INSTANT_LAN}-${suffix}`, type, paymentId: payment.id,
+      ...(type === 'refund_issued' ? { refundId: refund.id } : {}),
+      subjectType: 'instant_request', subjectId: SEED_INSTANT_LAN, accountOwnerId: owner, amount: value, at: at(when),
+    }) as Record<string, unknown>,
+  });
+  return [
+    { path: `instant_requests/${SEED_INSTANT_LAN}`, data: instantRequestToFirestore(request) as Record<string, unknown> },
+    { path: `payments/${payment.id}`, data: paymentToFirestore(payment) as Record<string, unknown> },
+    { path: `refunds/${refund.id}`, data: refundToFirestore(refund) as Record<string, unknown> },
+    entry('recv', 'payment_received', 'platform_escrow', amount, paid),
+    entry('ref', 'refund_issued', LAN, -amount, ended),
+  ];
+}
 
 /** What a seeded payment's S22.01 row shows about its subject, as the live adapter reads it; null when the subject is not seeded. */
 function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unknown> | undefined): PayerSubjectView | null {
@@ -2037,7 +2106,7 @@ function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unkn
       const b = get(`bookings/${p.subjectId}`);
       if (b === undefined) return null;
       const name = get(`users/${String(b.photographerId)}`)?.displayName;
-      return bookingSubjectOf(b, typeof name === 'string' ? name : '');
+      return bookingSubjectOf(b, typeof name === 'string' ? name : null);
     }
     case 'event_registration': {
       const r = p.eventId === undefined ? undefined : get(`events/${p.eventId}/registrations/${p.subjectId}`);
@@ -2048,7 +2117,7 @@ function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unkn
       return r === undefined ? null : instantSubjectOf(r);
     }
     case 'verification_fee':
-      return VERIFICATION_FEE_SUBJECT;
+      return EMPTY_PAYER_SUBJECT;
   }
 }
 
@@ -2056,9 +2125,8 @@ function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unkn
  * S22.01 (#141): every payer's rows (`users/{uid}/payments/{paymentId}`) and totals
  * (`users/{uid}/private/paymentTotals`) from the seeded payments and refunds, computed by the same
  * pure functions the triggers use, so the seed does not depend on trigger timing. Lan gets held,
- * released, paid-out and refunded bookings plus her ticket; Giang her S21 fee.
- * Plus one Chụp ngay row for Lan (held, "đang tìm thợ"): a fixture row without a payment or request
- * behind it, because a seeded `searching` request would start the live matching clock.
+ * released, paid-out and refunded bookings, her ticket and her refunded Chụp ngay request; Giang
+ * her S21 fee.
  */
 function payerHistoryDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
   const byPath = new Map(existing.map((d) => [d.path, d.data]));
@@ -2076,18 +2144,6 @@ function payerHistoryDocuments(now: Date, existing: readonly SeedDocument[]): Se
     const row = payerRowOf(p, refunds.filter((r) => r.paymentId === p.id), subject, now);
     if (row !== null) rows.push(row);
   }
-  const instantPaidAt = new Date(now.getTime() - 20 * 60_000).toISOString();
-  const instant = payerRowOf(
-    {
-      id: SEED_INSTANT_FIXTURE_PAYMENT, subjectType: 'instant_request', subjectId: 'seed-instant-lan-fixture', payerId: LAN, payeeId: '',
-      provider: 'fake', amount: 690_000, status: 'paid', escrowStatus: 'held', idempotencyKey: 'seed-instant-lan-fixture',
-      method: 'momo', receivedAmount: 690_000, paidAt: instantPaidAt, createdAt: instantPaidAt, updatedAt: instantPaidAt,
-    },
-    [],
-    instantSubjectOf({ areaLabel: 'Quận 1, TP.HCM', status: 'searching' }),
-    now,
-  );
-  if (instant !== null) rows.push(instant);
 
   const docs: SeedDocument[] = [];
   for (const payerId of [...new Set(rows.map((r) => r.payerId))]) {

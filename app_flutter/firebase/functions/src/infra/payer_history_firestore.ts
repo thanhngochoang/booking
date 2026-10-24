@@ -1,5 +1,6 @@
 import { Timestamp, type DocumentData, type Firestore, type Transaction } from 'firebase-admin/firestore';
 import {
+  EMPTY_PAYER_SUBJECT,
   PAYER_ROW_STATUSES,
   REFUND_METHODS,
   REFUND_STATUSES,
@@ -7,6 +8,7 @@ import {
   isPaymentMethod,
   isPaymentSubject,
   type Payment,
+  type PaymentSubject,
   type PayerHistoryStore,
   type PayerHistoryTx,
   type PayerPaymentRow,
@@ -46,7 +48,11 @@ export function payerRowToFirestore(r: PayerPaymentRow): DocumentData {
     subjectType: r.subjectType,
     subjectId: r.subjectId,
     eventId: r.eventId,
-    title: r.title,
+    photographerName: r.photographerName,
+    serviceName: r.serviceName,
+    eventTitle: r.eventTitle,
+    quantity: r.quantity,
+    areaLabel: r.areaLabel,
     day: r.day,
     method: r.method,
     amount: r.amount,
@@ -95,7 +101,11 @@ export function payerRowFromFirestore(id: string, d: DocumentData | undefined): 
     subjectType: isPaymentSubject(d.subjectType) ? d.subjectType : 'booking',
     subjectId: str(d.subjectId),
     eventId: strOrNull(d.eventId),
-    title: str(d.title),
+    photographerName: strOrNull(d.photographerName),
+    serviceName: strOrNull(d.serviceName),
+    eventTitle: strOrNull(d.eventTitle),
+    quantity: typeof d.quantity === 'number' && Number.isFinite(d.quantity) ? d.quantity : null,
+    areaLabel: strOrNull(d.areaLabel),
     day: strOrNull(d.day),
     method: isPaymentMethod(d.method) ? d.method : null,
     amount: int(d.amount),
@@ -116,57 +126,64 @@ export function payerRowFromFirestore(id: string, d: DocumentData | undefined): 
 
 const BOOKING_CANCELLED = ['cancelled', 'declined', 'expired'];
 const TICKET_CANCELLED = ['cancelled', 'refunded'];
-const INSTANT_SEARCHING = ['pending_payment', 'searching'];
-const INSTANT_CANCELLED = ['no_match', 'abandoned', 'cancelled_by_customer', 'no_show_customer'];
-const NO_SUBJECT: PayerSubjectView = { title: '', day: null, eventId: null, searching: false, cancelled: false };
+// `choosing`: paid, nobody assigned yet (the first round, or again after a photographer cancelled).
+const INSTANT_SEARCHING = ['choosing', 'pending_payment', 'searching'];
+// Terminal ends (`no_match` is not one: the customer may still reopen or cancel).
+const INSTANT_CANCELLED = ['abandoned', 'cancelled_by_customer', 'no_show_customer'];
 const dateOf = (v: unknown): Date | null => (v instanceof Timestamp ? v.toDate() : v instanceof Date ? v : null);
 
-/** A booking: "Minh Trí · Chân dung 2 giờ" (photographer · service), the shoot day. */
-export function bookingSubjectOf(b: DocumentData, photographerName: string): PayerSubjectView {
+/** A booking: the photographer and the service (the app writes "Minh Trí · Chân dung 2 giờ"), the shoot day. */
+export function bookingSubjectOf(b: DocumentData, photographerName: string | null): PayerSubjectView {
   return {
-    title: [photographerName, str(b.serviceSnapshot?.name)].filter((s) => s !== '').join(' · '),
+    ...EMPTY_PAYER_SUBJECT,
+    photographerName: photographerName === '' ? null : photographerName,
+    serviceName: strOrNull(b.serviceSnapshot?.name),
     day: strOrNull(b.day),
-    eventId: null,
-    searching: false,
     cancelled: BOOKING_CANCELLED.includes(str(b.status)),
   };
 }
 
-/** A ticket (`events/{eventId}/registrations/{id}`): "Photo walk phố cổ · 2 vé", the Vietnam day the event starts. */
+/** A ticket (`events/{eventId}/registrations/{id}`): the event title and number of tickets, the Vietnam day it starts. */
 export function ticketSubjectOf(r: DocumentData, eventId: string): PayerSubjectView {
   const ev = (r.event ?? {}) as { title?: unknown; startAt?: unknown };
-  const title = str(ev.title);
-  const quantity = int(r.quantity);
   const start = dateOf(ev.startAt);
   return {
-    title: quantity > 0 ? `${title} · ${quantity} vé` : title,
+    ...EMPTY_PAYER_SUBJECT,
+    eventTitle: strOrNull(ev.title),
+    quantity: typeof r.quantity === 'number' && r.quantity > 0 ? r.quantity : null,
     day: start === null ? null : formatVnDate(start),
     eventId,
-    searching: false,
     cancelled: TICKET_CANCELLED.includes(str(r.status)),
   };
 }
 
-/** A Chụp ngay request: "Chụp ngay · Quận 1", "đang tìm thợ" until someone accepts (#140/#202). */
+/** A Chụp ngay request: its area label; searching until a photographer accepts (#140/#202). */
 export function instantSubjectOf(r: DocumentData): PayerSubjectView {
-  const area = str(r.areaLabel);
   const status = str(r.status);
   return {
-    title: area === '' ? 'Chụp ngay' : `Chụp ngay · ${area}`,
-    day: null,
-    eventId: null,
+    ...EMPTY_PAYER_SUBJECT,
+    areaLabel: strOrNull(r.areaLabel),
     searching: INSTANT_SEARCHING.includes(status),
     cancelled: INSTANT_CANCELLED.includes(status),
   };
 }
 
-/** The S21 verification fee (the app's own label is `verifyFeeTitle`). */
-export const VERIFICATION_FEE_SUBJECT: PayerSubjectView = { ...NO_SUBJECT, title: 'Phí xác minh' };
-
-/** The row as stored, for a subject whose document is gone: its title and day are kept. */
+/** The row as stored, for a subject whose document is gone: its parts and day are kept. */
 export function storedSubjectOf(id: string, d: DocumentData | undefined): PayerSubjectView | null {
   const row = payerRowFromFirestore(id, d);
-  return row === null ? null : { title: row.title, day: row.day, eventId: row.eventId, searching: false, cancelled: row.cancelled };
+  return row === null
+    ? null
+    : {
+        photographerName: row.photographerName,
+        serviceName: row.serviceName,
+        eventTitle: row.eventTitle,
+        quantity: row.quantity,
+        areaLabel: row.areaLabel,
+        day: row.day,
+        eventId: row.eventId,
+        searching: false,
+        cancelled: row.cancelled,
+      };
 }
 
 /**
@@ -187,23 +204,30 @@ export class FirestorePayerHistoryStore implements PayerHistoryStore {
     switch (p.subjectType) {
       case 'booking': {
         const b = await read(`${BOOKINGS_COLLECTION}/${p.subjectId}`);
-        if (b === undefined) return stored(NO_SUBJECT);
+        if (b === undefined) return stored(EMPTY_PAYER_SUBJECT);
         const photographerId = str(b.photographerId);
-        const name = photographerId === '' ? '' : str((await read(`users/${photographerId}`))?.displayName);
+        const name = photographerId === '' ? null : strOrNull((await read(`users/${photographerId}`))?.displayName);
         return bookingSubjectOf(b, name);
       }
       case 'event_registration': {
         const eventId = p.eventId ?? '';
         const r = eventId === '' ? undefined : await read(`events/${eventId}/registrations/${p.subjectId}`);
-        return r === undefined ? stored({ ...NO_SUBJECT, eventId: strOrNull(eventId) }) : ticketSubjectOf(r, eventId);
+        return r === undefined ? stored({ ...EMPTY_PAYER_SUBJECT, eventId: strOrNull(eventId) }) : ticketSubjectOf(r, eventId);
       }
       case 'instant_request': {
         const r = await read(`${INSTANT_REQUESTS}/${p.subjectId}`);
-        return r === undefined ? stored({ ...NO_SUBJECT, title: 'Chụp ngay' }) : instantSubjectOf(r);
+        return r === undefined ? stored(EMPTY_PAYER_SUBJECT) : instantSubjectOf(r);
       }
       case 'verification_fee':
-        return VERIFICATION_FEE_SUBJECT;
+        // The app's own title (`verifyFeeTitle`); nothing to read.
+        return EMPTY_PAYER_SUBJECT;
     }
+  }
+
+  async paymentIdsOf(subjectType: PaymentSubject, subjectId: string): Promise<readonly string[]> {
+    // One equality filter (single-field index); a booking has a few QR attempts at most.
+    const snap = await this.db.collection(PAYMENTS_COLLECTION).where('subjectId', '==', subjectId).get();
+    return snap.docs.filter((d) => d.data().subjectType === subjectType).map((d) => d.id);
   }
 
   async runTransaction<T>(fn: (tx: PayerHistoryTx) => Promise<T>): Promise<T> {

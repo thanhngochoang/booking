@@ -2,13 +2,17 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   DEFAULT_PAYOUT_POLICY,
+  EMPTY_PAYER_SUBJECT,
   MemoryBookingStore,
   MemoryEarningsStore,
   MemoryPayerHistoryStore,
   MemoryPayoutStore,
   type Payment,
 } from '@photobooking/domain';
+import { paymentToFirestore } from '../../src/infra/booking_firestore.js';
+import { FirestorePayerHistoryStore } from '../../src/infra/payer_history_firestore.js';
 import { handlePaymentWrite } from '../../src/triggers/payment_write.js';
+import { strictFirestore } from './strict_firestore_support.js';
 
 const T = '2026-10-10T08:00:00.000Z';
 const NOW = new Date('2026-10-20T10:00:00.000Z');
@@ -32,7 +36,7 @@ function world(p: Payment) {
   } as never);
   const history = new MemoryPayerHistoryStore();
   history.payments.set(p.id, p);
-  history.subjects.set(p.id, { title: 'Minh Trí · Chân dung', day: '2026-10-12', eventId: null, searching: false, cancelled: false });
+  history.subjects.set(p.id, { ...EMPTY_PAYER_SUBJECT, photographerName: 'Minh Trí', serviceName: 'Chân dung', day: '2026-10-12' });
   return {
     booking,
     earnings,
@@ -91,5 +95,51 @@ describe('onPaymentWritten → payer history', () => {
     const w = world(p);
     assert.equal(await handlePaymentWrite('pay1', undefined, doc(p), w.deps), 'p1');
     assert.equal(w.history.rows.size, 0);
+  });
+
+  it('accepting a Chụp ngay request clears searching; a photographer cancel sets it again', async () => {
+    const searching = payment({ subjectType: 'instant_request', subjectId: 'ir1', payeeId: '', method: 'momo' });
+    const docs: Record<string, Record<string, unknown>> = {
+      'payments/pay1': paymentToFirestore(searching),
+      'instant_requests/ir1': { status: 'searching', areaLabel: 'Quận 1, TP.HCM' },
+    };
+    const fake = strictFirestore(docs);
+    const history = { store: new FirestorePayerHistoryStore(fake.firestore), clock: { now: () => NOW } };
+    const w = world(searching);
+    const raw = (p: Payment) => ({ ...doc(p), subjectType: 'instant_request' });
+    await handlePaymentWrite('pay1', undefined, raw(searching), w.deps, history);
+    assert.equal(docs['users/c1/payments/pay1']?.searching, true);
+
+    // A photographer accepts: only the payee changes on the payment (escrow stays held).
+    const accepted = { ...searching, payeeId: 'p1' };
+    docs['payments/pay1'] = paymentToFirestore(accepted);
+    docs['instant_requests/ir1'] = { status: 'assigned', areaLabel: 'Quận 1, TP.HCM' };
+    await handlePaymentWrite('pay1', raw(searching), raw(accepted), w.deps, history);
+    assert.equal(docs['users/c1/payments/pay1']?.searching, false);
+
+    // The photographer cancels: the payee goes back to '' and the request to `choosing`.
+    docs['payments/pay1'] = paymentToFirestore(searching);
+    docs['instant_requests/ir1'] = { status: 'choosing', areaLabel: 'Quận 1, TP.HCM' };
+    await handlePaymentWrite('pay1', raw(accepted), raw(searching), w.deps, history);
+    assert.equal(docs['users/c1/payments/pay1']?.searching, true);
+  });
+
+  it('a deleted payment loses its payer row and leaves the totals', async () => {
+    const p = payment();
+    const w = world(p);
+    await handlePaymentWrite('pay1', undefined, doc(p), w.deps, w.historyDeps);
+    assert.equal(w.history.rows.has('c1/pay1'), true);
+    w.history.payments.delete('pay1');
+    await handlePaymentWrite('pay1', doc(p), undefined, w.deps, w.historyDeps);
+    assert.equal(w.history.rows.has('c1/pay1'), false);
+    assert.deepEqual(w.history.totals.get('c1'), { held: 0, refunding: 0, updatedAt: NOW.toISOString() });
+  });
+
+  it('the payee\'s earnings refresh before the payer row, so a failing payer refresh never holds them back', async () => {
+    const p = payment({ escrowStatus: 'released' });
+    const w = world(p);
+    const failing = { store: { runTransaction: () => Promise.reject(new Error('boom')), paymentIdsOf: async () => [] }, clock: w.historyDeps.clock };
+    await assert.rejects(handlePaymentWrite('pay1', undefined, doc(p), w.deps, failing), /boom/);
+    assert.equal(w.earnings.items.has('p1/pay1'), true);
   });
 });

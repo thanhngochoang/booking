@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { MemoryPayerHistoryStore, type Payment, type Refund } from '@photobooking/domain';
+import { EMPTY_PAYER_SUBJECT, MemoryPayerHistoryStore, type Payment, type Refund } from '@photobooking/domain';
 import { handleRefundWrite } from '../../src/triggers/refund_write.js';
 
 const T = '2026-10-10T08:00:00.000Z';
@@ -20,7 +20,7 @@ describe('onRefundWritten', () => {
   it('a refund write refreshes the payer row of its payment', async () => {
     const store = new MemoryPayerHistoryStore();
     store.payments.set('pay1', payment);
-    store.subjects.set('pay1', { title: 'Lan Anh · Chân dung 2 giờ', day: '2026-08-12', eventId: null, searching: false, cancelled: true });
+    store.subjects.set('pay1', { ...EMPTY_PAYER_SUBJECT, photographerName: 'Lan Anh', serviceName: 'Chân dung 2 giờ', day: '2026-08-12', cancelled: true });
     const deps = { store, clock: { now: () => NOW } };
 
     store.refunds.set('r1', refund('pending'));

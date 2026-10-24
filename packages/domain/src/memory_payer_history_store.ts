@@ -1,13 +1,13 @@
-import type { Payment, Refund } from './escrow.js';
-import type {
-  PayerHistoryStore,
-  PayerHistoryTx,
-  PayerPaymentRow,
-  PayerSubjectView,
-  PayerTotals,
+import type { Payment, PaymentSubject, Refund } from './escrow.js';
+import {
+  EMPTY_PAYER_SUBJECT,
+  type PayerHistoryStore,
+  type PayerHistoryTx,
+  type PayerPaymentRow,
+  type PayerSubjectView,
+  type PayerTotals,
 } from './payer_history.js';
 
-const FALLBACK_SUBJECT: PayerSubjectView = { title: '', day: null, eventId: null, searching: false, cancelled: false };
 
 /**
  * In-memory reference store for S22.01. Like Firestore, a transaction refuses a read after its
@@ -17,13 +17,17 @@ export class MemoryPayerHistoryStore implements PayerHistoryStore {
   readonly payments = new Map<string, Payment>();
   /** By refund id. */
   readonly refunds = new Map<string, Refund>();
-  /** By payment id; a payment without one reads an empty title. */
+  /** By payment id; a payment without one reads no parts. */
   readonly subjects = new Map<string, PayerSubjectView>();
   /** Key `${payerId}/${paymentId}`. */
   readonly rows = new Map<string, PayerPaymentRow>();
   readonly totals = new Map<string, PayerTotals & { readonly updatedAt: string }>();
   rowWrites = 0;
   private queue: Promise<unknown> = Promise.resolve();
+
+  async paymentIdsOf(subjectType: PaymentSubject, subjectId: string): Promise<readonly string[]> {
+    return [...this.payments.values()].filter((p) => p.subjectType === subjectType && p.subjectId === subjectId).map((p) => p.id);
+  }
 
   async runTransaction<T>(fn: (tx: PayerHistoryTx) => Promise<T>): Promise<T> {
     const run = async (): Promise<T> => {
@@ -47,7 +51,7 @@ export class MemoryPayerHistoryStore implements PayerHistoryStore {
         },
         subjectOf: async (p) => {
           read('subjectOf');
-          return this.subjects.get(p.id) ?? FALLBACK_SUBJECT;
+          return this.subjects.get(p.id) ?? EMPTY_PAYER_SUBJECT;
         },
         openRows: async (payerId) => {
           read('openRows');

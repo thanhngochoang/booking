@@ -413,12 +413,15 @@ the `onPaymentWritten` / `onRefundWritten` triggers, so they exist before any tr
 
 | Payer | Rows |
 |---|---|
-| Lan | held (`seed-booking-accepted`, `-upcoming`, `-requested-binh`, the studio bookings; `-delivered` and `-revision` hold only the delivery milestone, 750 000), disputed (`seed-booking-disputed`), released (`seed-booking-completed-recent`, `-completed-old`, `-approved`), refunded to Vietcombank •••• 3456 (`seed-booking-cancelled`), her 250 000 ticket of the past workshop (held), and **`seed-payment-instant-lan-fixture`**: "Chụp ngay · Quận 1, TP.HCM", 690 000 by MoMo, held, "đang tìm thợ" |
-| Giang | her S21 fee, "Phí xác minh", released to the platform ("Đã thanh toán") |
+| Lan | held (`seed-booking-accepted`, `-upcoming`, `-requested-binh`, the studio bookings; `-delivered` and `-revision` hold only the delivery milestone, 750 000), disputed (`seed-booking-disputed`), released (`seed-booking-completed-recent`, `-completed-old`, `-approved`), refunded to Vietcombank •••• 3456 (`seed-booking-cancelled`), her 250 000 ticket of the past workshop (held), and her Chụp ngay request `seed-instant-lan-cancelled` (Quận 1, TP.HCM; 690 000 by MoMo; no photographer found, cancelled by Lan, refunded in full: "đã huỷ", "Đã hoàn") |
+| Giang | her S21 fee, released to the platform ("Đã thanh toán") |
 
-The Chụp ngay row is a **fixture row only**: no `payments/` or `instant_requests/` document is
-behind it (a seeded `searching` request would start the live matching clock), so opening it finds
-no request. A real one appears after paying a Chụp ngay request on the emulators (S13).
+Rows hold structured parts (`photographerName`, `serviceName`, `eventTitle`, `quantity`, `areaLabel`, `day`), never a composed title: the app writes the title in its own copy.
+
+The Chụp ngay request is real (request, payment, refund and ledger entries) and **terminal** on
+purpose: a seeded `searching` or `assigned` request would start the live matching clock or the job
+timers, hold money and block S22.02. To see "đang tìm thợ" and "Đang giữ" on a Chụp ngay row, pay a
+request on the emulators (S13).
 
 ## Điểm chụp (S29)
 

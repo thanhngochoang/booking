@@ -50,9 +50,22 @@ export interface PayerRefundView {
   readonly doneAt: string | null;
 }
 
-/** What the row shows about its subject, read by the adapter (booking, ticket, Chụp ngay request, S21 fee). */
+/**
+ * What the row shows about its subject, read by the adapter. Structured parts only: the app composes
+ * the title with its own copy (`payTitleTicket`, `payTitleInstant`, `verifyFeeTitle`); a part that
+ * does not apply to the subject is null.
+ */
 export interface PayerSubjectView {
-  readonly title: string;
+  /** Booking: the photographer's display name. */
+  readonly photographerName: string | null;
+  /** Booking: the service snapshot's name. */
+  readonly serviceName: string | null;
+  /** Ticket: the event title. */
+  readonly eventTitle: string | null;
+  /** Ticket: the number of tickets. */
+  readonly quantity: number | null;
+  /** Chụp ngay: the request's area label. */
+  readonly areaLabel: string | null;
   /** Vietnam day `yyyy-MM-dd` of the shoot or event; null when the subject has none (Chụp ngay, fee). */
   readonly day: string | null;
   readonly eventId: string | null;
@@ -62,13 +75,30 @@ export interface PayerSubjectView {
   readonly cancelled: boolean;
 }
 
+/** A subject with no parts (the S21 fee, or a subject whose document is gone and was never shown). */
+export const EMPTY_PAYER_SUBJECT: PayerSubjectView = {
+  photographerName: null,
+  serviceName: null,
+  eventTitle: null,
+  quantity: null,
+  areaLabel: null,
+  day: null,
+  eventId: null,
+  searching: false,
+  cancelled: false,
+};
+
 export interface PayerPaymentRow {
   readonly paymentId: string;
   readonly payerId: string;
   readonly subjectType: PayerSubjectType;
   readonly subjectId: string;
   readonly eventId: string | null;
-  readonly title: string;
+  readonly photographerName: string | null;
+  readonly serviceName: string | null;
+  readonly eventTitle: string | null;
+  readonly quantity: number | null;
+  readonly areaLabel: string | null;
   readonly day: string | null;
   /** Null for a payment from before checkout methods existed. */
   readonly method: PaymentMethod | null;
@@ -171,7 +201,11 @@ export function payerRowOf(
     subjectType: p.subjectType,
     subjectId: p.subjectId,
     eventId: p.eventId ?? subject.eventId,
-    title: subject.title,
+    photographerName: subject.photographerName,
+    serviceName: subject.serviceName,
+    eventTitle: subject.eventTitle,
+    quantity: subject.quantity,
+    areaLabel: subject.areaLabel,
     day: subject.day,
     method: p.method ?? null,
     amount,
@@ -216,6 +250,8 @@ export interface PayerHistoryTx {
 
 export interface PayerHistoryStore {
   runTransaction<T>(fn: (tx: PayerHistoryTx) => Promise<T>): Promise<T>;
+  /** Ids of the payments of one subject (a booking's QR attempts), any status; outside a transaction. */
+  paymentIdsOf(subjectType: PaymentSubject, subjectId: string): Promise<readonly string[]>;
 }
 
 export interface PayerHistoryDeps {
@@ -225,21 +261,41 @@ export interface PayerHistoryDeps {
 
 /**
  * Rewrites the payer's row of one payment and their totals from the payment and its refunds.
- * Idempotent (a replayed trigger writes the same row); `missing` when the payment is gone.
+ * Idempotent (a replayed trigger writes the same row). When the payment is gone: with `payerId`
+ * (the deleted document's payer) its row is deleted, else `missing`.
  */
-export async function refreshPayerHistory(deps: PayerHistoryDeps, paymentId: string): Promise<'written' | 'deleted' | 'missing'> {
+export async function refreshPayerHistory(
+  deps: PayerHistoryDeps,
+  paymentId: string,
+  gone?: { readonly payerId: string },
+): Promise<'written' | 'deleted' | 'missing'> {
   return deps.store.runTransaction(async (tx) => {
     const p = await tx.payment(paymentId);
-    if (p === null) return 'missing';
-    const refunds = await tx.refundsOf(paymentId);
-    const subject = paymentHasMoney(p, refunds) ? await tx.subjectOf(p) : null;
-    const open = await tx.openRows(p.payerId);
+    const payerId = p?.payerId ?? gone?.payerId;
+    if (payerId === undefined || payerId === '') return 'missing';
+    const refunds = p === null ? [] : await tx.refundsOf(paymentId);
+    const subject = p !== null && paymentHasMoney(p, refunds) ? await tx.subjectOf(p) : null;
+    const open = await tx.openRows(payerId);
     const now = deps.clock.now();
-    const row = subject === null ? null : payerRowOf(p, refunds, subject, now);
-    const others = open.filter((r) => r.paymentId !== p.id);
-    if (row === null) tx.deleteRow(p.payerId, p.id);
+    const row = p === null || subject === null ? null : payerRowOf(p, refunds, subject, now);
+    const others = open.filter((r) => r.paymentId !== paymentId);
+    if (row === null) tx.deleteRow(payerId, paymentId);
     else tx.putRow(row);
-    tx.putTotals(p.payerId, payerTotals(row === null ? others : [...others, row]), now);
+    tx.putTotals(payerId, payerTotals(row === null ? others : [...others, row]), now);
     return row === null ? 'deleted' : 'written';
   });
+}
+
+/**
+ * The subject changed without touching its payments (a booking cancelled with no refund, or
+ * rescheduled): refreshes the row of each of its payments. Returns how many were refreshed.
+ */
+export async function refreshPayerHistoryOfSubject(
+  deps: PayerHistoryDeps,
+  subjectType: PaymentSubject,
+  subjectId: string,
+): Promise<number> {
+  const ids = await deps.store.paymentIdsOf(subjectType, subjectId);
+  for (const id of ids) await refreshPayerHistory(deps, id);
+  return ids.length;
 }
