@@ -514,10 +514,17 @@ service cloud.firestore {
               || b.get('assigneeAccepted', false) == true);
       }
 
-      allow read: if signedIn()
+      allow get: if signedIn()
         && (resource.data.customerId == request.auth.uid
             || resource.data.photographerId == request.auth.uid
             || isConfirmedAssignee(resource.data));
+      // A query is judged on its filters, where `get(field, default)` of an unfiltered field reads as
+      // the default: an assignee list must filter `assignStatus == 'assigned'` (a pending offer is
+      // 'unassigned'), or a pending collaborator could list the booking.
+      allow list: if signedIn()
+        && (resource.data.customerId == request.auth.uid
+            || resource.data.photographerId == request.auth.uid
+            || (isAssignee(resource.data) && resource.data.assignStatus == 'assigned'));
       allow write: if false; // only Cloud Functions (sub-project 4)
 
       match /private/{docId} {

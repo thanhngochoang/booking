@@ -1730,6 +1730,11 @@ test('an assignee query (where assigneeId == uid and assignStatus == assigned) i
   const none = await assertSucceeds(getDocs(query(collection(pending, 'bookings'), where('assigneeId', '==', 'aspc1'), where('assignStatus', '==', 'assigned'))));
   assert.equal(none.docs.length, 0);
   await assertFails(getDocs(query(collection(pending, 'bookings'), where('assigneeId', '==', 'aspc1'))));
+  // The single-document read stays judged on the real document.
+  await assertFails(getDoc(doc(pending, 'bookings/b_as4p')));
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_as4')));
+  // Any assignee list must carry the assignStatus filter.
+  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
   await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'), where('assignStatus', '==', 'assigned'))));
   await assertFails(getDocs(collection(db, 'bookings')));
 });
