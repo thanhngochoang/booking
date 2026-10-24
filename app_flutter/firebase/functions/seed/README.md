@@ -272,7 +272,7 @@ Written with the domain's helpers (`recruitMatchKeys`, `recruitFilterKeys`) and 
 | Document | Who | State |
 |---|---|---|
 | `recruitPosts/seed-recruit-cuc-ctv` | Cúc | open collaborator post "Tuyển CTV chụp cưới cuối tuần", Q1 + Q3 (TP.HCM), cưới + gia đình, 800 000 ₫/buổi, posted 2 days before seeding, 2 applications |
-| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-hoa` | Hòa → Cúc | `applied` (terms accepted). Hòa is verified and in no studio, so Cúc can accept her in S27.05, as a collaborator or as a member (the accept path) |
+| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-hoa` | Hòa → Cúc | `applied` (terms accepted). Hòa is verified and in no studio, so Cúc can accept her in S27.05 as a collaborator (the post's kind decides; the accept path) |
 | `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-an` | An → Cúc | `applied` (terms accepted). An is also Cúc's S26 member, so Cúc can only decline it in S27.05 (accepting is `membership_conflict`; the refusal case) |
 | `studio_collaborations/seed-photographer-cuc_seed-photographer-dung` | Cúc ↔ Dũng | `active` collaborator since 10 days, default fee 600 000 ₫ (S27.06 on both sides; Cúc can offer a studio booking to Dũng in S26.04) |
 | `photographers/{uid}/private/recruit` | Cúc, Dũng, An, Hòa | Cúc `openPostCount` 1 and `activeCollabCount` 1; Dũng `activeCollabCount` 1; An and Hòa `openApplicationCount` 1 |

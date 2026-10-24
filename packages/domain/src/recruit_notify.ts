@@ -1,6 +1,6 @@
 /**
  * `recruit_post_new` fan-out (plan #151 Decision 8): called once per created post (trigger). Providers whose
- * match keys meet the post's (at most 200, the studio itself dropped) each get #138's `notifyRecruitPostNew`
+ * match keys meet the post's (at most 200, the studio itself and anyone blocked either way dropped) each get #138's `notifyRecruitPostNew`
  * through a daily cap of 3 per VN day, checked and counted in one transaction; capped ones are skipped,
  * not queued. A replayed trigger counts and sends nothing twice (`notices.postIds` + the hook's dedupe key).
  */
@@ -24,8 +24,11 @@ export async function notifyRecruitMatches(deps: RecruitDeps, postId: string): P
   const now = deps.clock.now();
   if (!post || post.status !== 'open' || post.expiresAt <= now) return { sent: 0, capped: 0 };
 
-  const recipients = (await deps.store.matchingProviders(post.matchKeys, RECRUIT_FANOUT_MAX))
+  const matched = (await deps.store.matchingProviders(post.matchKeys, RECRUIT_FANOUT_MAX))
     .filter((uid) => uid !== post.studioId);
+  // #198: a provider who blocked the studio (or was blocked by it) is not told, and keeps their daily slot.
+  const blocked = await Promise.all(matched.map((uid) => deps.blocks.isBlockedEitherWay(post.studioId, uid)));
+  const recipients = matched.filter((_, i) => blocked[i] !== true);
   let sent = 0;
   let capped = 0;
   for (const uid of recipients) {

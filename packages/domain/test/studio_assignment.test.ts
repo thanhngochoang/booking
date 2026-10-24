@@ -880,6 +880,30 @@ describe('collaborator offers (S27, plan #151 Decisions 13, 14, 26)', () => {
     assert.equal(rows(w, 'm1', 'booking_reassigned').length, 1, 'the member is not told twice');
   });
 
+  it('a member replaced by an offer that is declined and then put back is told again (dated key); the customer hears nothing', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    const withMember = await assign(w.bw, b.id, 'm1');
+    await notifyStudioBookingChange(w.deps.notify, b, withMember);
+    assert.equal(rows(w, 'm1', 'booking_assigned').length, 1);
+    w.bw.clock.advanceHours(1);
+    const pending = await offer(w, b.id, 'p1');
+    await notifyStudioBookingChange(w.deps.notify, withMember, pending);
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, false);
+    const declined = await w.bw.store.getBooking(b.id);
+    assert.ok(declined);
+    w.bw.clock.advanceHours(1);
+    const back = await assign(w.bw, b.id, 'm1');
+    assert.deepEqual(studioBookingNotices(declined, back), ['assigned']);
+    const customerBefore = rows(w, 'c1').length;
+    await notifyStudioBookingChange(w.deps.notify, declined, back);
+    await notifyStudioBookingChange(w.deps.notify, declined, back); // a retry is the same key
+    assert.equal(rows(w, 'm1', 'booking_assigned').length, 2, 'the member is told they are back');
+    assert.equal(rows(w, 'c1').length, customerBefore, 'the customer never heard of the offer');
+  });
+
   it('a late offer over a confirmed member gives the customer the late_reassign right with the reassignment notice', async () => {
     const w = createCollabWorld();
     seedCollab(w, 'p1');

@@ -210,6 +210,17 @@ describe('applyToRecruitPost', () => {
     await apply(w, 'p2', postId); // a member of another studio may apply (R6)
   });
 
+  it('a provider blocked either way with the studio gets blocked, nothing written', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    w.blocks.block('p1', 's1');
+    w.blocks.block('s1', 'p2');
+    assert.equal(await code(apply(w, 'p1', postId)), 'blocked');
+    assert.equal(await code(apply(w, 'p2', postId)), 'blocked');
+    assert.equal(w.store.posts.get(postId)?.applicationCount, 0);
+    assert.equal(counters(w, 'p1').openApplicationCount, 0);
+  });
+
   it('collaborator kind without acceptTerms is invalid_argument', async () => {
     const w = createRecruitWorld();
     const postId = await openPost(w, 's1');

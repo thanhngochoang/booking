@@ -449,10 +449,23 @@ export async function notifyStudioInviteExpiring(
   });
 }
 
-/** To the customer and the assignee, each with their own copy; the studio is the actor. */
+/**
+ * To the customer and the assignee, each with their own copy (or only `recipients`); the studio is the actor.
+ * `assignedAt` (S27) dates the key when the same assignee is put back after a collaborator offer had replaced
+ * them, so that second notice is not taken for a retry of the first.
+ */
 export async function notifyBookingAssigned(
   deps: NotifyDeps,
-  e: { bookingId: string; customerId: string; studioId: string; assigneeId: string; day: string; start: string },
+  e: {
+    bookingId: string;
+    customerId: string;
+    studioId: string;
+    assigneeId: string;
+    day: string;
+    start: string;
+    assignedAt?: string;
+    recipients?: readonly ('customer' | 'assignee')[];
+  },
 ): Promise<NotifyResult[]> {
   const s = await actorOf(deps, e.studioId, STUDIO);
   const a = await actorOf(deps, e.assigneeId, PHOTOGRAPHER);
@@ -460,10 +473,12 @@ export async function notifyBookingAssigned(
     userId,
     content: { type: 'booking_assigned', to, studio: s.name, assignee: a.name, day: e.day, start: e.start },
     target: `/b/${e.bookingId}`,
-    dedupeKey: `booking_assigned_${e.bookingId}_${e.assigneeId}_${to}`,
+    dedupeKey: `booking_assigned_${e.bookingId}_${e.assigneeId}${e.assignedAt ? `_${e.assignedAt}` : ''}_${to}`,
     ...from(s),
   });
-  return notifyAll(deps, [req(e.customerId, 'customer'), req(e.assigneeId, 'assignee')]);
+  const userOf = { customer: e.customerId, assignee: e.assigneeId } as const;
+  const to = e.recipients ?? (['customer', 'assignee'] as const);
+  return notifyAll(deps, to.map((t) => req(userOf[t], t)));
 }
 
 /**

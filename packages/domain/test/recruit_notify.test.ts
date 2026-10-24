@@ -35,6 +35,20 @@ describe('notifyRecruitMatches', () => {
     assert.deepEqual(w.store.countersOf('p1').notices, { day: '2026-10-10', count: 1, postIds: [postId] });
   });
 
+  it('skips a provider blocked either way, without using their daily slot (#198)', async () => {
+    const w = createRecruitWorld();
+    for (const uid of ['p1', 'p2', 'p3']) w.store.seedMatchKeys(uid, HCM_WEDDING);
+    w.blocks.block('p1', 's1'); // the provider blocked the studio
+    w.blocks.block('s1', 'p2'); // the studio blocked the provider
+    const postId = await openPost(w, 's1');
+    assert.deepEqual(await notifyRecruitMatches(w.deps, postId), { sent: 1, capped: 0 });
+    assert.equal(postNewRows(w, 'p1').length, 0);
+    assert.equal(postNewRows(w, 'p2').length, 0);
+    assert.equal(postNewRows(w, 'p3').length, 1);
+    assert.equal(w.store.countersOf('p1').notices ?? null, null);
+    assert.equal(w.store.countersOf('p2').notices ?? null, null);
+  });
+
   it('a provider gets at most 3 recruit_post_new per VN day', async () => {
     const w = createRecruitWorld();
     w.store.seedMatchKeys('p1', HCM_WEDDING);

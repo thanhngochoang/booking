@@ -214,6 +214,7 @@ describe('shootMilestoneState', () => {
     assert.equal(shootMilestoneState([pay('refunded'), pay('paid_out')]), 'released');
     assert.equal(shootMilestoneState([pay('refunded')]), 'refunded');
     assert.equal(shootMilestoneState([pay('refunded'), pay('held')]), 'waiting');
+    assert.equal(shootMilestoneState([pay('refunded'), pay(null)]), 'waiting', 'a payment not split yet may still release');
     assert.equal(shootMilestoneState([pay('held')]), 'waiting');
     assert.equal(shootMilestoneState([pay('disputed')]), 'waiting');
     assert.equal(shootMilestoneState([pay(null)]), 'waiting');

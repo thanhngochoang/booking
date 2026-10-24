@@ -245,13 +245,15 @@ export type ShootMilestoneState = 'released' | 'waiting' | 'refunded';
 
 /**
  * The booking's shoot milestone from its payments (payments V1 #200), what the `milestones.shootMilestone`
- * adapter reads: `released` once a `shoot` milestone is `released` or `paid_out`; `refunded` when every shoot
- * milestone went back to the customer; otherwise `waiting` (not split yet, held or disputed).
+ * adapter reads: `released` once a `shoot` milestone is `released` or `paid_out`; `refunded` when every payment
+ * is split and every shoot milestone went back to the customer; otherwise `waiting` (not split yet, held or disputed).
  */
 export function shootMilestoneState(payments: readonly Pick<Payment, 'milestones'>[]): ShootMilestoneState {
   const shoot = payments.flatMap((p) => p.milestones ?? []).filter((m) => m.kind === 'shoot');
   if (shoot.some((m) => m.status === 'released' || m.status === 'paid_out')) return 'released';
-  if (shoot.length > 0 && shoot.every((m) => m.status === 'refunded')) return 'refunded';
+  // A payment not split yet may still release a shoot milestone: refunded only once every payment is split.
+  const allSplit = payments.every((p) => (p.milestones?.length ?? 0) > 0);
+  if (allSplit && shoot.length > 0 && shoot.every((m) => m.status === 'refunded')) return 'refunded';
   return 'waiting';
 }
 

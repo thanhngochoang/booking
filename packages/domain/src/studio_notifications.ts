@@ -30,21 +30,34 @@ export type StudioNotice =
 
 const LIVE_AFTER_DRAFT: ReadonlySet<Booking['status']> = new Set(['requested', 'accepted', 'upcoming']);
 
-/**
- * The confirmed assignee the customer last knew before `current` (S27): the latest earlier entry of the log that
- * was confirmed (a member, or a collaborator who accepted), unless it is `current` itself; else null.
- */
-export function replacedAssigneeOf(b: Booking, current: string): string | null {
+/** The latest confirmed entry of the log before the latest entry of `current` (a member, or a collaborator who accepted). */
+function confirmedBefore(b: Booking, current: string): string | null {
   const log = b.assignments ?? [];
   let i = log.length - 1;
   while (i >= 0 && log[i]?.assigneeId !== current) i -= 1;
   for (i -= 1; i >= 0; i -= 1) {
     const e = log[i];
-    if (e !== undefined && (e.assigneeKind !== 'collaborator' || e.acceptedAt !== undefined)) {
-      return e.assigneeId === current ? null : e.assigneeId;
-    }
+    if (e !== undefined && (e.assigneeKind !== 'collaborator' || e.acceptedAt !== undefined)) return e.assigneeId;
   }
   return null;
+}
+
+/**
+ * The confirmed assignee the customer last knew before `current` (S27): the latest earlier entry of the log that
+ * was confirmed (a member, or a collaborator who accepted), unless it is `current` itself; else null.
+ */
+export function replacedAssigneeOf(b: Booking, current: string): string | null {
+  const prev = confirmedBefore(b, current);
+  return prev === current ? null : prev;
+}
+
+/**
+ * S27: `current` was already the confirmed assignee before its latest entry (a collaborator offer replaced them,
+ * the offer was declined or lapsed, and they were put back): they were told of the replacement, so they are told
+ * again; the customer never heard of the offer.
+ */
+export function putBackAfterOffer(b: Booking, current: string): boolean {
+  return confirmedBefore(b, current) === current;
 }
 
 /** A collaborator offer waiting on the booking. */
@@ -102,7 +115,18 @@ export async function notifyStudioBookingChange(
   const change = after.changeRequest ?? null;
   const jobs: Promise<unknown>[] = [];
   for (const n of notices) {
-    if (n === 'assigned' && assignee) {
+    if (n === 'assigned' && assignee && oldAssignee === null && putBackAfterOffer(after, assignee)) {
+      const at = after.assignedAt ?? after.assignments?.[after.assignments.length - 1]?.at;
+      jobs.push(
+        notifyBookingAssigned(deps, {
+          ...common,
+          ...slot,
+          assigneeId: assignee,
+          ...(at ? { assignedAt: at } : {}),
+          recipients: ['assignee'],
+        }),
+      );
+    } else if (n === 'assigned' && assignee) {
       jobs.push(notifyBookingAssigned(deps, { ...common, ...slot, assigneeId: assignee }));
     } else if (n === 'reassigned' && oldAssignee && assignee) {
       jobs.push(

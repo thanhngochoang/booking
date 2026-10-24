@@ -218,12 +218,15 @@ export async function applyToRecruitPost(
   if (!(await deps.orders.acceptsOrders(uid))) fail('not_accepting_orders');
   if (!(await deps.posts.ownedBy(uid, input.samplePostIds))) fail('invalid_argument', 'samplePostIds');
   const now = deps.clock.now();
+  // The block read stays outside the transaction (like accept): a post's studio never changes.
+  const pre = await deps.store.runTransaction((tx) => tx.getPost(input.postId));
+  if (!pre) fail('not_found');
+  if (await deps.blocks.isBlockedEitherWay(pre.studioId, uid)) fail('blocked');
   const post = await deps.store.runTransaction(async (tx) => {
     const p = await tx.getPost(input.postId);
     if (!p) return fail('not_found');
     if (p.status !== 'open' || p.expiresAt <= now) fail('deadline_passed');
     if (p.kind === 'collaborator' && !input.acceptTerms) fail('invalid_argument', 'acceptTerms');
-    if (await deps.blocks.isBlockedEitherWay(p.studioId, uid)) fail('blocked');
     if ((await tx.activeMembershipStudioOf(uid)) === p.studioId) fail('membership_conflict');
     if (await tx.getApplication(p.id, uid)) fail('conflict');
     const c = await tx.getCounters(uid);
