@@ -1723,8 +1723,13 @@ test('an assignee query (where assigneeId == uid and assignStatus == assigned) i
   const db = env.authenticatedContext('asm3').firestore();
   const snap = await assertSucceeds(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'), where('assignStatus', '==', 'assigned'))));
   assert.ok(snap.docs.some((d) => d.id === 'b_as4'));
-  // S27 (#151): without the assignStatus filter the rule cannot rule out a pending collaborator offer.
-  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
+  // S27 (#151): a collaborator with a pending offer never reads that booking through a query. Their
+  // S06.01 query (with assignStatus) is allowed and returns nothing; without the filter it is refused.
+  await seedDoc('bookings/b_as4p', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'aspc1', assigneeKind: 'collaborator', assigneeAccepted: false, assignStatus: 'unassigned', status: 'accepted' });
+  const pending = env.authenticatedContext('aspc1').firestore();
+  const none = await assertSucceeds(getDocs(query(collection(pending, 'bookings'), where('assigneeId', '==', 'aspc1'), where('assignStatus', '==', 'assigned'))));
+  assert.equal(none.docs.length, 0);
+  await assertFails(getDocs(query(collection(pending, 'bookings'), where('assigneeId', '==', 'aspc1'))));
   await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'), where('assignStatus', '==', 'assigned'))));
   await assertFails(getDocs(collection(db, 'bookings')));
 });
