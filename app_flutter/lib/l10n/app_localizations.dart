@@ -12730,6 +12730,210 @@ abstract class AppLocalizations {
   /// **'Khoản đã trả, đang giữ, đang hoàn'**
   String get settingsPaymentHistoryBody;
 
+  /// No description provided for @paymentsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử thanh toán'**
+  String get paymentsTitle;
+
+  /// No description provided for @paymentsHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get paymentsHeld;
+
+  /// No description provided for @paymentsRefunding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoàn'**
+  String get paymentsRefunding;
+
+  /// No description provided for @paymentsHeldNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền bạn trả được trung gian thanh toán giữ, chỉ chuyển cho thợ theo 2 mốc.'**
+  String get paymentsHeldNote;
+
+  /// No description provided for @paymentsItems.
+  ///
+  /// In vi, this message translates to:
+  /// **'Các khoản'**
+  String get paymentsItems;
+
+  /// No description provided for @paymentsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get paymentsMore;
+
+  /// No description provided for @paymentsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có khoản thanh toán nào'**
+  String get paymentsEmptyTitle;
+
+  /// No description provided for @paymentsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi bạn đặt lịch hay mua vé, các khoản sẽ hiện ở đây.'**
+  String get paymentsEmptyBody;
+
+  /// No description provided for @paymentsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được lịch sử thanh toán'**
+  String get paymentsLoadError;
+
+  /// No description provided for @payStatusHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get payStatusHeld;
+
+  /// No description provided for @payStatusDisputed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang khiếu nại'**
+  String get payStatusDisputed;
+
+  /// No description provided for @payStatusReleasedBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển cho thợ'**
+  String get payStatusReleasedBooking;
+
+  /// No description provided for @payStatusReleasedTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển cho chủ sự kiện'**
+  String get payStatusReleasedTicket;
+
+  /// S22.01: money paid to the platform (S21 fee, platform events); also a closed row whose status this app does not know yet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thanh toán'**
+  String get payStatusReleasedPlatform;
+
+  /// No description provided for @payStatusRefunding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoàn'**
+  String get payStatusRefunding;
+
+  /// No description provided for @payStatusNeedsAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần tài khoản'**
+  String get payStatusNeedsAccount;
+
+  /// No description provided for @payStatusRefunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn'**
+  String get payStatusRefunded;
+
+  /// No description provided for @payStatusPartlyRefunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn một phần'**
+  String get payStatusPartlyRefunded;
+
+  /// S22.01 row meta for a payment made today without a shoot day (Chụp ngay, S21 fee).
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay {time}'**
+  String payMetaToday(String time);
+
+  /// No description provided for @payMetaSearching.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang tìm thợ'**
+  String get payMetaSearching;
+
+  /// No description provided for @payMetaCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã huỷ'**
+  String get payMetaCancelled;
+
+  /// No description provided for @payTitleBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'{photographer} · {service}'**
+  String payTitleBooking(String photographer, String service);
+
+  /// No description provided for @payTitleTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'{title} · {n} vé'**
+  String payTitleTicket(String title, int n);
+
+  /// No description provided for @payTitleInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay · {area}'**
+  String payTitleInstant(String area);
+
+  /// No description provided for @payDetailPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả'**
+  String get payDetailPaid;
+
+  /// No description provided for @payDetailRefundTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn về {destination}'**
+  String payDetailRefundTo(String destination);
+
+  /// S22.01: a refund line whose destination is not known yet (waiting for the customer's account).
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tiền'**
+  String get payDetailRefund;
+
+  /// No description provided for @payDetailWallet.
+  ///
+  /// In vi, this message translates to:
+  /// **'ví {wallet}'**
+  String payDetailWallet(String wallet);
+
+  /// No description provided for @payDetailRefundPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang xử lý'**
+  String get payDetailRefundPending;
+
+  /// No description provided for @payDetailRefundDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã về'**
+  String get payDetailRefundDone;
+
+  /// No description provided for @payDetailWillGetBack.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sẽ nhận lại'**
+  String get payDetailWillGetBack;
+
+  /// No description provided for @payDetailOpenBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem buổi chụp'**
+  String get payDetailOpenBooking;
+
+  /// No description provided for @payDetailOpenTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem vé'**
+  String get payDetailOpenTicket;
+
+  /// No description provided for @payDetailOpenInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem yêu cầu Chụp ngay'**
+  String get payDetailOpenInstant;
+
   /// No description provided for @settingsPrivacy.
   ///
   /// In vi, this message translates to:

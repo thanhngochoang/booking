@@ -7320,6 +7320,122 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsPaymentHistoryBody => 'Khoản đã trả, đang giữ, đang hoàn';
 
   @override
+  String get paymentsTitle => 'Lịch sử thanh toán';
+
+  @override
+  String get paymentsHeld => 'Đang giữ';
+
+  @override
+  String get paymentsRefunding => 'Đang hoàn';
+
+  @override
+  String get paymentsHeldNote =>
+      'Tiền bạn trả được trung gian thanh toán giữ, chỉ chuyển cho thợ theo 2 mốc.';
+
+  @override
+  String get paymentsItems => 'Các khoản';
+
+  @override
+  String get paymentsMore => 'Xem thêm';
+
+  @override
+  String get paymentsEmptyTitle => 'Chưa có khoản thanh toán nào';
+
+  @override
+  String get paymentsEmptyBody =>
+      'Khi bạn đặt lịch hay mua vé, các khoản sẽ hiện ở đây.';
+
+  @override
+  String get paymentsLoadError => 'Không tải được lịch sử thanh toán';
+
+  @override
+  String get payStatusHeld => 'Đang giữ';
+
+  @override
+  String get payStatusDisputed => 'Đang khiếu nại';
+
+  @override
+  String get payStatusReleasedBooking => 'Đã chuyển cho thợ';
+
+  @override
+  String get payStatusReleasedTicket => 'Đã chuyển cho chủ sự kiện';
+
+  @override
+  String get payStatusReleasedPlatform => 'Đã thanh toán';
+
+  @override
+  String get payStatusRefunding => 'Đang hoàn';
+
+  @override
+  String get payStatusNeedsAccount => 'Cần tài khoản';
+
+  @override
+  String get payStatusRefunded => 'Đã hoàn';
+
+  @override
+  String get payStatusPartlyRefunded => 'Đã hoàn một phần';
+
+  @override
+  String payMetaToday(String time) {
+    return 'Hôm nay $time';
+  }
+
+  @override
+  String get payMetaSearching => 'đang tìm thợ';
+
+  @override
+  String get payMetaCancelled => 'đã huỷ';
+
+  @override
+  String payTitleBooking(String photographer, String service) {
+    return '$photographer · $service';
+  }
+
+  @override
+  String payTitleTicket(String title, int n) {
+    return '$title · $n vé';
+  }
+
+  @override
+  String payTitleInstant(String area) {
+    return 'Chụp ngay · $area';
+  }
+
+  @override
+  String get payDetailPaid => 'Đã trả';
+
+  @override
+  String payDetailRefundTo(String destination) {
+    return 'Hoàn về $destination';
+  }
+
+  @override
+  String get payDetailRefund => 'Hoàn tiền';
+
+  @override
+  String payDetailWallet(String wallet) {
+    return 'ví $wallet';
+  }
+
+  @override
+  String get payDetailRefundPending => 'đang xử lý';
+
+  @override
+  String get payDetailRefundDone => 'đã về';
+
+  @override
+  String get payDetailWillGetBack => 'Sẽ nhận lại';
+
+  @override
+  String get payDetailOpenBooking => 'Xem buổi chụp';
+
+  @override
+  String get payDetailOpenTicket => 'Xem vé';
+
+  @override
+  String get payDetailOpenInstant => 'Xem yêu cầu Chụp ngay';
+
+  @override
   String get settingsPrivacy => 'Quyền riêng tư & dữ liệu';
 
   @override

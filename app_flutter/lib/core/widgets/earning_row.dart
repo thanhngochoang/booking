@@ -30,6 +30,10 @@ class EarningBreakdownLine {
 /// With a [breakdown] the row can expand (the caller owns [expanded] and flips
 /// it from [onTap]) to show one line per figure; screen readers hear the
 /// expanded state and, once open, the lines.
+///
+/// S22.01 adds two optional controls that stay their own buttons for screen
+/// readers: [action] under the meta line (a small outline button) and
+/// [footer] under the open breakdown (a text link).
 class EarningRow extends StatelessWidget {
   const EarningRow({
     super.key,
@@ -43,6 +47,9 @@ class EarningRow extends StatelessWidget {
     this.onTap,
     this.breakdown,
     this.expanded = false,
+    this.statusLabel,
+    this.action,
+    this.footer,
   });
 
   static Widget skeleton({Key? key}) => _EarningRowSkeleton(key: key);
@@ -64,6 +71,15 @@ class EarningRow extends StatelessWidget {
   final List<EarningBreakdownLine>? breakdown;
   final bool expanded;
 
+  /// The badge's text, read with the row (the badge itself is decorative).
+  final String? statusLabel;
+
+  /// Shown under [meta] (S22.01 "Chọn tài khoản nhận hoàn").
+  final Widget? action;
+
+  /// Shown under the open [breakdown] (S22.01 "Xem buổi chụp").
+  final Widget? footer;
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -75,6 +91,13 @@ class EarningRow extends StatelessWidget {
     final n = note;
     final lines = breakdown;
     final open = lines != null && expanded;
+    final act = action;
+    final foot = open ? footer : null;
+    // Without controls the whole card is one node; with them only the texts
+    // are hidden, so the controls stay buttons of their own.
+    final controls = action != null || footer != null;
+    Widget text(Widget child) =>
+        controls ? ExcludeSemantics(child: child) : child;
     return Semantics(
       container: true,
       button: onTap != null,
@@ -84,11 +107,13 @@ class EarningRow extends StatelessWidget {
         title,
         meta,
         amountLabel,
+        ?statusLabel,
         ?n,
         if (open)
           for (final l in lines) '${l.label}, ${l.value}',
       ].join(', '),
       child: ExcludeSemantics(
+        excluding: !controls,
         child: Material(
           color: dark ? AppColorsDark.glass : AppColors.glass,
           shape: RoundedRectangleBorder(
@@ -118,79 +143,94 @@ class EarningRow extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: AppText.base2,
-                                  fontWeight: FontWeight.w700,
-                                  color: fg,
+                              text(
+                                Text(
+                                  title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: AppText.base2,
+                                    fontWeight: FontWeight.w700,
+                                    color: fg,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: AppSpace.s1),
-                              Text(
-                                meta,
-                                style: TextStyle(
-                                  fontSize: AppText.xs2,
-                                  color: fgSec,
+                              text(
+                                Text(
+                                  meta,
+                                  style: TextStyle(
+                                    fontSize: AppText.xs2,
+                                    color: fgSec,
+                                  ),
                                 ),
                               ),
+                              if (act != null) ...[
+                                const SizedBox(height: AppSpace.s2),
+                                act,
+                              ],
                             ],
                           ),
                         ),
                         const SizedBox(width: AppSpace.s3),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              amount,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: fg,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
+                        text(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                amount,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: fg,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: AppSpace.s1),
-                            badge,
-                          ],
+                              const SizedBox(height: AppSpace.s1),
+                              badge,
+                            ],
+                          ),
                         ),
                       ],
                     ),
                     if (n != null) ...[
                       const SizedBox(height: AppSpace.s2),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (noteIcon != null) ...[
-                            AppIcon(noteIcon!, size: 16, color: fgSec),
-                            const SizedBox(width: AppSpace.s1),
-                          ],
-                          Expanded(
-                            child: Text(
-                              n,
-                              style: TextStyle(
-                                fontSize: AppText.xs2,
-                                color: fgSec,
+                      text(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (noteIcon != null) ...[
+                              AppIcon(noteIcon!, size: 16, color: fgSec),
+                              const SizedBox(width: AppSpace.s1),
+                            ],
+                            Expanded(
+                              child: Text(
+                                n,
+                                style: TextStyle(
+                                  fontSize: AppText.xs2,
+                                  color: fgSec,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                     if (lines != null)
-                      AnimatedSize(
-                        duration: MediaQuery.disableAnimationsOf(context)
-                            ? Duration.zero
-                            : const Duration(milliseconds: 180),
-                        alignment: Alignment.topCenter,
-                        child: open
-                            ? _Breakdown(lines: lines, fg: fg, fgSec: fgSec)
-                            : const SizedBox(width: double.infinity),
+                      text(
+                        AnimatedSize(
+                          duration: MediaQuery.disableAnimationsOf(context)
+                              ? Duration.zero
+                              : const Duration(milliseconds: 180),
+                          alignment: Alignment.topCenter,
+                          child: open
+                              ? _Breakdown(lines: lines, fg: fg, fgSec: fgSec)
+                              : const SizedBox(width: double.infinity),
+                        ),
                       ),
+                    ?foot,
                   ],
                 ),
               ),

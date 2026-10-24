@@ -197,4 +197,67 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('action and footer stay buttons of their own; the status is '
+      'read with the row', (tester) async {
+    final handle = tester.ensureSemantics();
+    var acted = 0;
+    var linked = 0;
+    await tester.pumpWidget(
+      hostWidget(
+        EarningRow(
+          title: 'Quốc Bảo · Gia đình 1 giờ',
+          meta: 'T2 28/09',
+          amount: '1,2M',
+          amountLabel: '1.200.000₫',
+          badge: const Text('Cần tài khoản'),
+          statusLabel: 'Cần tài khoản',
+          onTap: () {},
+          breakdown: const [
+            EarningBreakdownLine(label: 'Đã trả', value: '1.200.000₫'),
+          ],
+          expanded: true,
+          action: TextButton(
+            onPressed: () => acted++,
+            child: const Text('Chọn tài khoản nhận hoàn'),
+          ),
+          footer: TextButton(
+            onPressed: () => linked++,
+            child: const Text('Xem buổi chụp'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.bySemanticsLabel(
+        'Quốc Bảo · Gia đình 1 giờ, T2 28/09, 1.200.000₫, Cần tài khoản, '
+        'Đã trả, 1.200.000₫',
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Chọn tài khoản nhận hoàn'), findsOneWidget);
+    expect(find.bySemanticsLabel('Xem buổi chụp'), findsOneWidget);
+    await tester.tap(find.text('Chọn tài khoản nhận hoàn'));
+    await tester.tap(find.text('Xem buổi chụp'));
+    expect((acted, linked), (1, 1));
+    handle.dispose();
+  });
+
+  testWidgets('the footer shows only while the row is open', (tester) async {
+    Widget row(bool open) => EarningRow(
+      title: 'A',
+      meta: 'B',
+      amount: '1K',
+      amountLabel: '1.000₫',
+      badge: const SizedBox(),
+      breakdown: const [EarningBreakdownLine(label: 'Đã trả', value: '1.000₫')],
+      expanded: open,
+      footer: const Text('Xem vé'),
+    );
+    await tester.pumpWidget(hostWidget(row(false)));
+    expect(find.text('Xem vé'), findsNothing);
+    await tester.pumpWidget(hostWidget(row(true)));
+    expect(find.text('Xem vé'), findsOneWidget);
+  });
 }
