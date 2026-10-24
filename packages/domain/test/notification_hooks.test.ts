@@ -289,6 +289,14 @@ const CASES: readonly HookCase[] = [
     ],
   },
   {
+    name: 'notifyBookingReassigned (old assignee only, S27 offer)',
+    run: (d) =>
+      notifyBookingReassigned(d, {
+        bookingId: 'b1', customerId: 'c1', studioId: 's1', oldAssigneeId: 'a1', newAssigneeId: 'a2', day: DAY, start: '15:30', reassignedAt: AT, recipients: ['old'],
+      }),
+    rows: [row('a1', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a1_a2_2026-10-10T10_00_00.000Z_old', 'Buổi T2 12/10 · 15:30 đã giao cho người khác')],
+  },
+  {
     name: 'notifyAssignReminder',
     run: (d) => notifyAssignReminder(d, { bookingId: 'b1', studioId: 's1', hours: 48, day: DAY, start: '15:30' }),
     rows: [row('s1', 'assign_reminder', '/b/b1', 'n_assign_reminder_b1_48', 'Còn 48 giờ để giao thợ')],
@@ -415,17 +423,17 @@ const CASES: readonly HookCase[] = [
     name: 'notifyCollabAssignmentOffer',
     run: (d) =>
       notifyCollabAssignmentOffer(d, {
-        collaboratorId: 'p1', studioId: 's1', bookingId: 'b1', service: 'Cưới', day: DAY, start: '08:00', fee: 1_500_000, deadline: '14:00 11/10',
+        collaboratorId: 'p1', studioId: 's1', bookingId: 'b1', offerAt: AT, service: 'Cưới', day: DAY, start: '08:00', fee: 1_500_000, deadline: '14:00 11/10',
       }),
-    rows: [row('p1', 'collab_assignment_offer', '/collab?offer=b1', 'n_collab_assignment_offer_b1_p1', 'Việc cộng tác mới')],
+    rows: [row('p1', 'collab_assignment_offer', '/collab?offer=b1', 'n_collab_assignment_offer_b1_p1_2026-10-10T10_00_00.000Z', 'Việc cộng tác mới')],
   },
   {
     name: 'notifyCollabAssignmentResult',
     run: (d) =>
       notifyCollabAssignmentResult(d, {
-        studioId: 's1', collaboratorId: 'p1', bookingId: 'b1', outcome: 'declined', service: 'Cưới', day: DAY, start: '08:00', deadline: '14:00 11/10',
+        studioId: 's1', collaboratorId: 'p1', bookingId: 'b1', offerAt: AT, outcome: 'declined', service: 'Cưới', day: DAY, start: '08:00', deadline: '14:00 11/10',
       }),
-    rows: [row('s1', 'collab_assignment_result', '/b/b1', 'n_collab_assignment_result_b1_p1_declined', 'Minh Trí từ chối việc')],
+    rows: [row('s1', 'collab_assignment_result', '/b/b1', 'n_collab_assignment_result_b1_p1_2026-10-10T10_00_00.000Z_declined', 'Minh Trí từ chối việc')],
   },
   {
     name: 'notifyCollabPayDue',
@@ -434,13 +442,13 @@ const CASES: readonly HookCase[] = [
   },
   {
     name: 'notifyCollabPayReported',
-    run: (d) => notifyCollabPayReported(d, { collaboratorId: 'p1', studioId: 's1', bookingId: 'b1', amount: 1_500_000, method: 'cash' }),
-    rows: [row('p1', 'collab_pay_reported', '/collab', 'n_collab_pay_reported_b1_p1', 'Studio báo đã trả thù lao')],
+    run: (d) => notifyCollabPayReported(d, { collaboratorId: 'p1', studioId: 's1', bookingId: 'b1', reportedAt: AT, amount: 1_500_000, method: 'cash' }),
+    rows: [row('p1', 'collab_pay_reported', '/collab', 'n_collab_pay_reported_b1_p1_2026-10-10T10_00_00.000Z', 'Studio báo đã trả thù lao')],
   },
   {
     name: 'notifyCollabPayDisputed',
-    run: (d) => notifyCollabPayDisputed(d, { studioId: 's1', collaboratorId: 'p1', bookingId: 'b1', amount: 1_500_000, service: 'Cưới', day: DAY }),
-    rows: [row('s1', 'collab_pay_disputed', '/collab', 'n_collab_pay_disputed_b1_p1', 'Cộng tác viên chưa nhận thù lao')],
+    run: (d) => notifyCollabPayDisputed(d, { studioId: 's1', collaboratorId: 'p1', bookingId: 'b1', disputedAt: AT, amount: 1_500_000, service: 'Cưới', day: DAY }),
+    rows: [row('s1', 'collab_pay_disputed', '/collab', 'n_collab_pay_disputed_b1_p1_2026-10-10T10_00_00.000Z', 'Cộng tác viên chưa nhận thù lao')],
   },
   {
     name: 'notifyPayoutReleased',

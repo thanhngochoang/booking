@@ -6,7 +6,7 @@ import {
   collaboratorContactOpen,
   confirmCollabPay,
   confirmedAssigneeId,
-  isShootMilestoneReleased,
+  shootMilestoneState,
   offerExpiry,
   poachingSignal,
   reportCollabPaid,
@@ -62,6 +62,7 @@ function job(over: Partial<CollabJob> = {}): CollabJob {
       disputedAt: null,
       overdueFlaggedAt: null,
       disputeFlaggedAt: null,
+      checkAfter: null,
     },
     createdAt: at,
     updatedAt: at,
@@ -163,6 +164,16 @@ describe('syncCollabJobOnBooking', () => {
     ...over,
   });
 
+  it('a booking cancelled after the shoot ended (an S18 refund) only closes the job: the pay record goes on', () => {
+    const next = syncCollabJobOnBooking(job({ payStatus: 'due' }), booking({
+      status: 'cancelled',
+      cancel: { by: 'system', at: '2026-10-16T08:00:00.000Z', refundPercent: 100 },
+    }));
+    assert.equal(next?.offerStatus, 'accepted');
+    assert.equal(next?.payStatus, 'due');
+    assert.deepEqual(next?.closedAt, new Date('2026-10-16T08:00:00.000Z'));
+  });
+
   it('a cancelled booking cancels a pending or accepted job, with no pay record', () => {
     for (const offerStatus of ['pending', 'accepted'] as const) {
       const next = syncCollabJobOnBooking(job({ offerStatus }), booking({
@@ -192,19 +203,21 @@ describe('syncCollabJobOnBooking', () => {
   });
 });
 
-describe('isShootMilestoneReleased', () => {
+describe('shootMilestoneState', () => {
   const pay = (status: string | null): Payment =>
     ({
       id: 'pay1',
       ...(status === null ? {} : { milestones: [{ kind: 'shoot', amount: 1, status, releaseAfter: null, releasedAt: null, payoutId: null }] }),
     }) as unknown as Payment;
-  it('released or paid out → true; held, refunded or no milestones → false', () => {
-    assert.equal(isShootMilestoneReleased([pay('released')]), true);
-    assert.equal(isShootMilestoneReleased([pay('held'), pay('paid_out')]), true);
-    assert.equal(isShootMilestoneReleased([pay('held')]), false);
-    assert.equal(isShootMilestoneReleased([pay('refunded')]), false);
-    assert.equal(isShootMilestoneReleased([pay(null)]), false);
-    assert.equal(isShootMilestoneReleased([]), false);
+  it('released or paid out → released; every shoot milestone refunded → refunded; held, disputed or not split yet → waiting', () => {
+    assert.equal(shootMilestoneState([pay('released')]), 'released');
+    assert.equal(shootMilestoneState([pay('refunded'), pay('paid_out')]), 'released');
+    assert.equal(shootMilestoneState([pay('refunded')]), 'refunded');
+    assert.equal(shootMilestoneState([pay('refunded'), pay('held')]), 'waiting');
+    assert.equal(shootMilestoneState([pay('held')]), 'waiting');
+    assert.equal(shootMilestoneState([pay('disputed')]), 'waiting');
+    assert.equal(shootMilestoneState([pay(null)]), 'waiting');
+    assert.equal(shootMilestoneState([]), 'waiting');
   });
 });
 
@@ -214,23 +227,29 @@ describe('poachingSignal (Decision 18)', () => {
 
   it('two personal bookings with the same customer within 183 d of an accepted job → the jobs', () => {
     const since: Date[] = [];
-    const got = poachingSignal({ jobs: [accepted], personalBookingsSince: (d) => { since.push(d); return 2; }, now });
+    const got = poachingSignal({ customerId: 'c1', jobs: [accepted], personalBookingsSince: (d) => { since.push(d); return 2; }, now });
     assert.deepEqual(got, [accepted]);
     assert.deepEqual(since, [accepted.acceptedAt]);
   });
 
   it('one booking → null', () => {
-    assert.equal(poachingSignal({ jobs: [accepted], personalBookingsSince: () => 1, now }), null);
+    assert.equal(poachingSignal({ customerId: 'c1', jobs: [accepted], personalBookingsSince: () => 1, now }), null);
   });
 
   it('a job older than 183 d → null', () => {
     const old = job({ acceptedAt: new Date(now.getTime() - 184 * DAY) });
-    assert.equal(poachingSignal({ jobs: [old], personalBookingsSince: () => 5, now }), null);
+    assert.equal(poachingSignal({ customerId: 'c1', jobs: [old], personalBookingsSince: () => 5, now }), null);
+  });
+
+  it("another customer's jobs are ignored", () => {
+    assert.equal(poachingSignal({ customerId: 'c2', jobs: [accepted], personalBookingsSince: () => 5, now }), null);
+    const mine = job({ id: 'b2_p1', bookingId: 'b2', customerId: 'c2', acceptedAt: accepted.acceptedAt });
+    assert.deepEqual(poachingSignal({ customerId: 'c2', jobs: [accepted, mine], personalBookingsSince: () => 2, now }), [mine]);
   });
 
   it('only accepted jobs count (declined, replaced, returned offers do not)', () => {
     for (const offerStatus of ['declined', 'replaced', 'returned', 'pending'] as const) {
-      assert.equal(poachingSignal({ jobs: [job({ offerStatus, acceptedAt: offerStatus === 'returned' ? accepted.acceptedAt : null })], personalBookingsSince: () => 5, now }), null, offerStatus);
+      assert.equal(poachingSignal({ customerId: 'c1', jobs: [job({ offerStatus, acceptedAt: offerStatus === 'returned' ? accepted.acceptedAt : null })], personalBookingsSince: () => 5, now }), null, offerStatus);
     }
   });
 });
@@ -269,12 +288,13 @@ describe('off-app pay record (Decision 15)', () => {
     assert.equal(stored(w)?.payStatus, 'due');
   });
 
-  it('by the collaborator or another studio → permission_denied; an unknown job → not_found', async () => {
+  it('by the collaborator, another studio or for an unknown job → permission_denied (an outsider learns nothing)', async () => {
     const w = createCollabWorld();
     dueJob(w);
     assert.equal((await code(report(w, 'p1'))).code, 'permission_denied');
     assert.equal((await code(report(w, 's2'))).code, 'permission_denied');
-    assert.equal((await code(report(w, 's1', { collaboratorId: 'p2' }))).code, 'not_found');
+    assert.equal((await code(report(w, 's2', { collaboratorId: 'p2' }))).code, 'permission_denied');
+    assert.equal((await code(report(w, 's1', { collaboratorId: 'p2' }))).code, 'permission_denied');
   });
 
   it('on a none, already reported or received job → conflict', async () => {
@@ -315,7 +335,7 @@ describe('off-app pay record (Decision 15)', () => {
     assert.equal((await code(confirmCollabPay(w.deps, 'p1', { bookingId: 'b1', received: 'yes' }))).code, 'invalid_argument');
   });
 
-  it('a disputed job can be reported paid again (back to paid_reported)', async () => {
+  it('a disputed job can be reported paid again (back to paid_reported); each report and each dispute is pushed again', async () => {
     const w = createCollabWorld();
     dueJob(w);
     await report(w, 's1');
@@ -325,6 +345,10 @@ describe('off-app pay record (Decision 15)', () => {
     assert.equal(stored(w)?.payStatus, 'paid_reported');
     assert.equal(stored(w)?.pay.method, 'other');
     assert.deepEqual(stored(w)?.pay.reportedAt, w.bw.clock.now());
+    assert.equal(w.rowsOf('p1').filter((r) => r.type === 'collab_pay_reported').length, 2);
+    w.bw.clock.advanceHours(1);
+    await confirmCollabPay(w.deps, 'p1', { bookingId: 'b1', received: false });
+    assert.equal(w.rowsOf('s1').filter((r) => r.type === 'collab_pay_disputed').length, 2);
   });
 
   it('no payment, refund or ledger write anywhere (R5)', async () => {

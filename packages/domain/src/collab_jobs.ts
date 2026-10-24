@@ -23,7 +23,9 @@ export const OFFER_HOURS = 6,
   RECRUIT_BLOCK_DAYS = 30,
   CONTACT_CLOSE_DAYS = 7,
   POACH_WINDOW_DAYS = 183,
-  POACH_THRESHOLD = 2;
+  POACH_THRESHOLD = 2,
+  /** How long the pay sweep waits before asking again about a shoot milestone not released yet. */
+  PAY_CHECK_HOURS = 6;
 
 export const OFFER_STATUSES = ['pending', 'accepted', 'declined', 'expired', 'replaced', 'returned', 'cancelled'] as const;
 export type OfferStatus = (typeof OFFER_STATUSES)[number];
@@ -55,6 +57,12 @@ export interface CollabPay {
   /** Each reason adds one unpaid flag to the studio, once per job (Decision 15). */
   readonly overdueFlaggedAt: Date | null;
   readonly disputeFlaggedAt: Date | null;
+  /**
+   * When the pay sweep next asks about the shoot milestone (the sweep's cursor: starts at the shoot's end,
+   * pushed 6 hours on while not released). Null once due, or when the milestone was refunded without being
+   * released (the job then never gets a pay record).
+   */
+  readonly checkAfter: Date | null;
 }
 
 /** `collab_jobs/{bookingId}_{collaboratorId}`. */
@@ -161,6 +169,7 @@ export function newCollabJob(input: {
       disputedAt: null,
       overdueFlaggedAt: null,
       disputeFlaggedAt: null,
+      checkAfter: input.shootEndsAt,
     },
     createdAt: now,
     updatedAt: now,
@@ -209,8 +218,9 @@ export function addUnpaidFlag(c: RecruitCounters, now: Date): RecruitCounters {
 }
 
 /**
- * The job after a booking write (pure; the booking trigger calls it): a cancelled booking cancels a pending or
- * accepted job (no pay record), a completed or reviewed one closes it. Null when nothing changes.
+ * The job after a booking write (pure; the booking trigger calls it): a booking cancelled before the shoot
+ * ended cancels a pending or accepted job (no pay record, Decision 15); a later cancel (an S18 refund after the
+ * shoot), a completion or a review only closes it, the pay record going on. Null when nothing changes.
  */
 export function syncCollabJobOnBooking(
   job: CollabJob,
@@ -219,7 +229,9 @@ export function syncCollabJobOnBooking(
   if (!isLiveOffer(job) || job.closedAt !== null) return null;
   if (booking.status === 'cancelled') {
     const at = new Date(booking.cancel?.at ?? booking.updatedAt);
-    return { ...job, offerStatus: 'cancelled', closedAt: at, updatedAt: at };
+    return at.getTime() < job.shootEndsAt.getTime()
+      ? { ...job, offerStatus: 'cancelled', closedAt: at, updatedAt: at }
+      : { ...job, closedAt: at, updatedAt: at };
   }
   if (booking.status === 'completed' || booking.status === 'reviewed') {
     const at = new Date(booking.completedAt ?? booking.updatedAt);
@@ -228,26 +240,35 @@ export function syncCollabJobOnBooking(
   return null;
 }
 
+/** Where the booking's first (shoot) milestone stands for the pay record (Decision 15). */
+export type ShootMilestoneState = 'released' | 'waiting' | 'refunded';
+
 /**
- * Whether the booking's first milestone went to the studio (Decision 15, payments V1 #200): a payment whose
- * `shoot` milestone is `released` or `paid_out`. What the `milestones.shotReleased` adapter reads.
+ * The booking's shoot milestone from its payments (payments V1 #200), what the `milestones.shootMilestone`
+ * adapter reads: `released` once a `shoot` milestone is `released` or `paid_out`; `refunded` when every shoot
+ * milestone went back to the customer; otherwise `waiting` (not split yet, held or disputed).
  */
-export function isShootMilestoneReleased(payments: readonly Pick<Payment, 'milestones'>[]): boolean {
-  return payments.some((p) =>
-    (p.milestones ?? []).some((m) => m.kind === 'shoot' && (m.status === 'released' || m.status === 'paid_out')));
+export function shootMilestoneState(payments: readonly Pick<Payment, 'milestones'>[]): ShootMilestoneState {
+  const shoot = payments.flatMap((p) => p.milestones ?? []).filter((m) => m.kind === 'shoot');
+  if (shoot.some((m) => m.status === 'released' || m.status === 'paid_out')) return 'released';
+  if (shoot.length > 0 && shoot.every((m) => m.status === 'refunded')) return 'refunded';
+  return 'waiting';
 }
 
 /**
  * Decision 18, record only: the photographer's accepted jobs with this customer from the last 183 days, when
  * the photographer has at least 2 personal bookings with the customer since the earliest of them; else null.
+ * Jobs of another customer are ignored, whatever the caller passed.
  */
 export function poachingSignal(input: {
+  readonly customerId: string;
   readonly jobs: readonly CollabJob[];
   readonly personalBookingsSince: (since: Date) => number;
   readonly now: Date;
 }): CollabJob[] | null {
   const recent = input.jobs.filter(
     (j): j is CollabJob & { acceptedAt: Date } =>
+      j.customerId === input.customerId &&
       j.offerStatus === 'accepted' &&
       j.acceptedAt !== null &&
       input.now.getTime() - j.acceptedAt.getTime() <= POACH_WINDOW_DAYS * DAY_MS,
@@ -279,7 +300,8 @@ function methodOf(v: unknown): CollabPayMethod {
 
 /**
  * Studio "Đã trả" (`{bookingId, collaboratorId, paidOn, method}`): a `due` job, or one the collaborator
- * disputed, becomes `paid_reported`; the collaborator is asked to confirm.
+ * disputed, becomes `paid_reported`; the collaborator is asked to confirm. Anyone but the job's studio gets
+ * `permission_denied`, whether or not the job exists.
  */
 export async function reportCollabPaid(deps: RecruitDeps, studioId: string, raw: unknown): Promise<void> {
   const r = objectOf(raw);
@@ -290,8 +312,7 @@ export async function reportCollabPaid(deps: RecruitDeps, studioId: string, raw:
   const method = methodOf(r.method);
   const job = await deps.store.runTransaction(async (tx) => {
     const j = await tx.getCollabJob(bookingId, collaboratorId);
-    if (j === null) return fail('not_found');
-    if (j.studioId !== studioId) fail('permission_denied');
+    if (j === null || j.studioId !== studioId) return fail('permission_denied');
     if (j.payStatus !== 'due' && j.payStatus !== 'disputed') fail('conflict');
     const next: CollabJob = {
       ...j,
@@ -306,6 +327,7 @@ export async function reportCollabPaid(deps: RecruitDeps, studioId: string, raw:
     collaboratorId: job.collaboratorId,
     studioId: job.studioId,
     bookingId: job.bookingId,
+    reportedAt: now.toISOString(),
     amount: job.pay.amount,
     method,
   }));
@@ -340,6 +362,7 @@ export async function confirmCollabPay(
       studioId: job.studioId,
       collaboratorId: job.collaboratorId,
       bookingId: job.bookingId,
+      disputedAt: now.toISOString(),
       amount: job.pay.amount,
       service: job.shoot.serviceName,
       day: job.shoot.day,

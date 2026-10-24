@@ -467,9 +467,10 @@ export async function notifyBookingAssigned(
 }
 
 /**
- * To the customer, the old and the new assignee. The key holds the old → new pair, so a retry of the
- * same pair is a duplicate; `reassignedAt` (the reassignment instant, when the emitter passes it) tells
- * a later A → B after B → A apart from a retry.
+ * To the customer, the old and the new assignee (or only `recipients`: S27 tells the old assignee when a
+ * collaborator offer replaces them, and the customer and the collaborator once the offer is accepted). The
+ * key holds the old → new pair, so a retry of the same pair is a duplicate; `reassignedAt` (the reassignment
+ * instant, when the emitter passes it) tells a later A → B after B → A apart from a retry.
  */
 export async function notifyBookingReassigned(
   deps: NotifyDeps,
@@ -482,6 +483,7 @@ export async function notifyBookingReassigned(
     day: string;
     start: string;
     reassignedAt?: string;
+    recipients?: readonly ('customer' | 'old' | 'new')[];
   },
 ): Promise<NotifyResult[]> {
   const s = await actorOf(deps, e.studioId, STUDIO);
@@ -493,7 +495,9 @@ export async function notifyBookingReassigned(
     dedupeKey: `booking_reassigned_${e.bookingId}_${e.oldAssigneeId}_${e.newAssigneeId}${e.reassignedAt ? `_${e.reassignedAt}` : ''}_${to}`,
     ...from(s),
   });
-  return notifyAll(deps, [req(e.customerId, 'customer'), req(e.oldAssigneeId, 'old'), req(e.newAssigneeId, 'new')]);
+  const userOf = { customer: e.customerId, old: e.oldAssigneeId, new: e.newAssigneeId } as const;
+  const to = e.recipients ?? (['customer', 'old', 'new'] as const);
+  return notifyAll(deps, to.map((t) => req(userOf[t], t)));
 }
 
 export async function notifyAssignReminder(
@@ -830,13 +834,14 @@ export async function notifyCollabInviteResult(
   });
 }
 
-/** Critical: the offer is time-boxed. */
+/** Critical: the offer is time-boxed. `offerAt` (ISO) keys each offer, so a new offer after a decline is sent again. */
 export async function notifyCollabAssignmentOffer(
   deps: NotifyDeps,
   e: {
     collaboratorId: string;
     studioId: string;
     bookingId: string;
+    offerAt: string;
     service: string;
     day: string;
     start: string;
@@ -857,18 +862,20 @@ export async function notifyCollabAssignmentOffer(
       deadline: e.deadline,
     },
     target: `/collab?offer=${e.bookingId}`,
-    dedupeKey: `collab_assignment_offer:${e.bookingId}_${e.collaboratorId}`,
+    dedupeKey: `collab_assignment_offer:${e.bookingId}_${e.collaboratorId}_${e.offerAt}`,
     ...from(s),
   });
 }
 
+/** `offerAt` (ISO) of the answered offer keys the result; `ended`: the collaboration ended while the offer waited. */
 export async function notifyCollabAssignmentResult(
   deps: NotifyDeps,
   e: {
     studioId: string;
     collaboratorId: string;
     bookingId: string;
-    outcome: 'accepted' | 'declined' | 'expired';
+    offerAt: string;
+    outcome: 'accepted' | 'declined' | 'expired' | 'ended';
     service: string;
     day: string;
     start: string;
@@ -888,7 +895,7 @@ export async function notifyCollabAssignmentResult(
       deadline: e.deadline,
     },
     target: `/b/${e.bookingId}`,
-    dedupeKey: `collab_assignment_result:${e.bookingId}_${e.collaboratorId}:${e.outcome}`,
+    dedupeKey: `collab_assignment_result:${e.bookingId}_${e.collaboratorId}_${e.offerAt}:${e.outcome}`,
     ...from(c),
   });
 }
@@ -907,30 +914,32 @@ export async function notifyCollabPayDue(
   });
 }
 
+/** `reportedAt` (ISO) keys each report, so a report after a dispute is sent again. */
 export async function notifyCollabPayReported(
   deps: NotifyDeps,
-  e: { collaboratorId: string; studioId: string; bookingId: string; amount: number; method: 'bank' | 'cash' | 'other' },
+  e: { collaboratorId: string; studioId: string; bookingId: string; reportedAt: string; amount: number; method: 'bank' | 'cash' | 'other' },
 ): Promise<NotifyResult> {
   const s = await actorOf(deps, e.studioId, STUDIO);
   return notify(deps, {
     userId: e.collaboratorId,
     content: { type: 'collab_pay_reported', studio: s.name, amount: e.amount, method: e.method },
     target: '/collab',
-    dedupeKey: `collab_pay_reported:${e.bookingId}_${e.collaboratorId}`,
+    dedupeKey: `collab_pay_reported:${e.bookingId}_${e.collaboratorId}_${e.reportedAt}`,
     ...from(s),
   });
 }
 
+/** `disputedAt` (ISO) keys each dispute, so a second "Chưa nhận" after a new report is sent again. */
 export async function notifyCollabPayDisputed(
   deps: NotifyDeps,
-  e: { studioId: string; collaboratorId: string; bookingId: string; amount: number; service: string; day: string },
+  e: { studioId: string; collaboratorId: string; bookingId: string; disputedAt: string; amount: number; service: string; day: string },
 ): Promise<NotifyResult> {
   const c = await actorOf(deps, e.collaboratorId, PHOTOGRAPHER);
   return notify(deps, {
     userId: e.studioId,
     content: { type: 'collab_pay_disputed', name: c.name, amount: e.amount, service: e.service, day: e.day },
     target: '/collab',
-    dedupeKey: `collab_pay_disputed:${e.bookingId}_${e.collaboratorId}`,
+    dedupeKey: `collab_pay_disputed:${e.bookingId}_${e.collaboratorId}_${e.disputedAt}`,
     ...from(c),
   });
 }

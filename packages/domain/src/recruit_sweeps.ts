@@ -6,13 +6,14 @@
  * A failing item never stops the batch (the next run finds it again). No money moves (R5).
  */
 
-import { addUnpaidFlag, PAY_OVERDUE_DAYS, type CollabJob } from './collab_jobs.js';
+import { addUnpaidFlag, PAY_CHECK_HOURS, PAY_OVERDUE_DAYS, type CollabJob } from './collab_jobs.js';
 import { expireCollabInvite } from './collab_use_cases.js';
 import { notifyCollabPayDue } from './notification_hooks.js';
 import type { RecruitDeps } from './recruit_ports.js';
 import { safely } from './recruit_shared.js';
 import { expireRecruitApplication, expireRecruitPost } from './recruit_use_cases.js';
-import { expireCollabOffer, type StudioBookingDeps } from './studio_assignment.js';
+import { expireCollabOffer } from './collab_offers.js';
+import type { StudioBookingDeps } from './studio_assignment.js';
 
 /** Items handled per step and run. */
 export const RECRUIT_SWEEP_LIMIT = 200;
@@ -34,19 +35,29 @@ export interface RecruitSweepResults {
 
 export type RecruitSweepDeps = RecruitDeps & { readonly assign: StudioBookingDeps };
 
+const HOUR_MS = 60 * 60 * 1000;
+
 /**
- * Accepted job whose booking's shoot milestone went to the studio: `due` from now, the studio reminded
- * ("Trả {tên} {số tiền}"). False when not due yet or no longer qualifying.
+ * An accepted job past its `checkAfter`: once the booking's shoot milestone went to the studio it is `due`
+ * from now and the studio is reminded ("Trả {tên} {số tiền}"); a milestone refunded without release ends the
+ * check with no pay record; otherwise the next check is 6 hours on (so jobs stuck behind a held milestone
+ * never block newer ones). True only when it became due.
  */
-async function markPayDue(deps: RecruitDeps, due: CollabJob): Promise<boolean> {
-  if (!(await deps.milestones.shotReleased(due.bookingId))) return false;
+async function markPayDue(deps: RecruitDeps, item: CollabJob): Promise<boolean> {
+  const state = await deps.milestones.shootMilestone(item.bookingId);
   const now = deps.clock.now();
   const job = await deps.store.runTransaction(async (tx) => {
-    const j = await tx.getCollabJob(due.bookingId, due.collaboratorId);
-    if (!j || j.offerStatus !== 'accepted' || j.payStatus !== 'none') return null;
-    const next: CollabJob = { ...j, payStatus: 'due', pay: { ...j.pay, dueAt: now }, updatedAt: now };
-    tx.putCollabJob(next);
-    return next;
+    const j = await tx.getCollabJob(item.bookingId, item.collaboratorId);
+    const checkAfter = j?.pay.checkAfter ?? null;
+    if (!j || j.offerStatus !== 'accepted' || j.payStatus !== 'none' || checkAfter === null || checkAfter > now) return null;
+    if (state === 'released') {
+      const next: CollabJob = { ...j, payStatus: 'due', pay: { ...j.pay, dueAt: now, checkAfter: null }, updatedAt: now };
+      tx.putCollabJob(next);
+      return next;
+    }
+    const later = state === 'refunded' ? null : new Date(now.getTime() + PAY_CHECK_HOURS * HOUR_MS);
+    tx.putCollabJob({ ...j, pay: { ...j.pay, checkAfter: later }, updatedAt: now });
+    return null;
   });
   if (job === null) return false;
   await safely(deps, job.studioId, () => notifyCollabPayDue(deps.notify, {

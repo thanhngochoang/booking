@@ -16,20 +16,56 @@ import {
 } from './notification_hooks.js';
 import type { NotifyDeps } from './notification_ports.js';
 
-export type StudioNotice = 'assigned' | 'reassigned' | 'change_requested' | 'change_answered' | 'assignment_returned';
+/**
+ * `offer_replaced` (S27): a collaborator offer took the booking from its confirmed assignee, who is told at
+ * once; the customer hears `reassigned` when the collaborator accepts (or S26's overdue notice if nobody does).
+ */
+export type StudioNotice =
+  | 'assigned'
+  | 'reassigned'
+  | 'offer_replaced'
+  | 'change_requested'
+  | 'change_answered'
+  | 'assignment_returned';
 
 const LIVE_AFTER_DRAFT: ReadonlySet<Booking['status']> = new Set(['requested', 'accepted', 'upcoming']);
 
 /**
+ * The confirmed assignee the customer last knew before `current` (S27): the latest earlier entry of the log that
+ * was confirmed (a member, or a collaborator who accepted), unless it is `current` itself; else null.
+ */
+export function replacedAssigneeOf(b: Booking, current: string): string | null {
+  const log = b.assignments ?? [];
+  let i = log.length - 1;
+  while (i >= 0 && log[i]?.assigneeId !== current) i -= 1;
+  for (i -= 1; i >= 0; i -= 1) {
+    const e = log[i];
+    if (e !== undefined && (e.assigneeKind !== 'collaborator' || e.acceptedAt !== undefined)) {
+      return e.assigneeId === current ? null : e.assigneeId;
+    }
+  }
+  return null;
+}
+
+/** A collaborator offer waiting on the booking. */
+const pendingOfferOf = (b: Booking): string | null =>
+  b.assigneeKind === 'collaborator' && b.assigneeAccepted !== true ? (b.assigneeId ?? null) : null;
+
+/**
  * Creation and deletion send nothing; neither does an individual booking. The assignee is the confirmed one
- * (S27): a collaborator's offer is announced to the customer only once accepted.
+ * (S27): a collaborator's offer is announced to the customer only once accepted, as a reassignment when it
+ * replaced someone the customer knew.
  */
 export function studioBookingNotices(before: Booking | null, after: Booking | null): StudioNotice[] {
   if (!before || !after || after.isStudio !== true) return [];
   const out: StudioNotice[] = [];
   const was = confirmedAssigneeId(before);
   const now = confirmedAssigneeId(after);
-  if (now !== null && now !== was) out.push(was === null ? 'assigned' : 'reassigned');
+  if (now !== null && now !== was) {
+    out.push(was !== null || replacedAssigneeOf(after, now) !== null ? 'reassigned' : 'assigned');
+  } else if (was !== null && now === null && pendingOfferOf(after) !== null) {
+    out.push('offer_replaced');
+  }
   // A studio spot booking is created already assigned (#194 Decision 7): the member is told when the paid
   // booking leaves the draft (a draft is only a hold), through the same hook and dedupe key.
   else if (now !== null && now === was && before.status === 'draft' && LIVE_AFTER_DRAFT.has(after.status)) {
@@ -78,6 +114,36 @@ export async function notifyStudioBookingChange(
           ...(after.assignedAt ? { reassignedAt: after.assignedAt } : {}),
         }),
       );
+    } else if (n === 'reassigned' && assignee) {
+      // S27: a collaborator accepted an offer that had replaced a confirmed assignee, already told then.
+      const replaced = replacedAssigneeOf(after, assignee);
+      if (replaced) {
+        jobs.push(
+          notifyBookingReassigned(deps, {
+            ...common,
+            ...slot,
+            oldAssigneeId: replaced,
+            newAssigneeId: assignee,
+            ...(after.assignedAt ? { reassignedAt: after.assignedAt } : {}),
+            recipients: ['customer', 'new'],
+          }),
+        );
+      }
+    } else if (n === 'offer_replaced' && oldAssignee) {
+      const offeredTo = pendingOfferOf(after);
+      const entry = [...(after.assignments ?? [])].reverse().find((e) => e.assigneeId === offeredTo);
+      if (offeredTo) {
+        jobs.push(
+          notifyBookingReassigned(deps, {
+            ...common,
+            ...slot,
+            oldAssigneeId: oldAssignee,
+            newAssigneeId: offeredTo,
+            ...(entry ? { reassignedAt: entry.at } : {}),
+            recipients: ['old'],
+          }),
+        );
+      }
     } else if (n === 'change_requested' && change) {
       jobs.push(notifyChangeRequested(deps, { ...common, day: after.day, respondBy: vnHourDay(change.respondBy) }));
     } else if (n === 'change_answered' && (change?.status === 'declined' || change?.status === 'expired')) {

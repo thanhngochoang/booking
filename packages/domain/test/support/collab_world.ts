@@ -2,7 +2,8 @@ import type { Booking } from '../../src/booking.js';
 import { MemoryRecruitStore } from '../../src/memory_recruit_store.js';
 import type { NotificationRow, NotifyDeps } from '../../src/notification_ports.js';
 import type { ProviderFacts, RecruitDeps } from '../../src/recruit_ports.js';
-import { assignBooking, respondCollabOffer, type StudioBookingDeps } from '../../src/studio_assignment.js';
+import { respondCollabOffer } from '../../src/collab_offers.js';
+import { assignBooking, type StudioBookingDeps } from '../../src/studio_assignment.js';
 import { collaborationId, type Collaboration } from '../../src/studio_collaboration.js';
 import { acceptedStudioBooking, createBookingWorld, SequentialIdGen, withStudio, type BookingWorld } from './booking_world.js';
 import { createNotifyWorld, type NotifyWorld } from './notify_world.js';
@@ -25,8 +26,9 @@ export interface CollabWorld {
   readonly assignDeps: StudioBookingDeps;
   readonly notify: NotifyWorld;
   readonly people: Map<string, ProviderFacts>;
-  /** Bookings whose shoot milestone was released (`milestones.shotReleased`). */
+  /** Bookings whose shoot milestone was released, or refunded without release (`milestones.shootMilestone`). */
   readonly released: Set<string>;
+  readonly refunded: Set<string>;
   rowsOf(uid: string): NotificationRow[];
 }
 
@@ -67,13 +69,16 @@ export function createCollabWorld(): CollabWorld {
     });
   }
   const released = new Set<string>();
+  const refunded = new Set<string>();
   const deps: RecruitDeps = {
     store: recruit,
     people: { provider: async (uid) => people.get(uid) ?? null },
     orders: bw.deps.providers,
     blocks: bw.blocks,
     posts: { ownedBy: async () => true },
-    milestones: { shotReleased: async (bookingId) => released.has(bookingId) },
+    milestones: {
+      shootMilestone: async (bookingId) => (released.has(bookingId) ? 'released' : refunded.has(bookingId) ? 'refunded' : 'waiting'),
+    },
     notify,
     clock: bw.clock,
     ids: new SequentialIdGen('rc'),
@@ -87,6 +92,7 @@ export function createCollabWorld(): CollabWorld {
     notify: notifyWorld,
     people,
     released,
+    refunded,
     rowsOf: (uid) => notifyWorld.store.rowsOf(uid),
   };
 }

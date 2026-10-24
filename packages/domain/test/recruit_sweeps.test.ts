@@ -150,17 +150,71 @@ describe('runRecruitSweeps', () => {
     w.bw.clock.setTime(AFTER_SHOOT);
     assert.equal((await sweep(w)).payDue, 0, 'not released yet');
     assert.equal(jobOf(w, bookingId)?.payStatus, 'none');
+    assert.deepEqual(jobOf(w, bookingId)?.pay.checkAfter, new Date(AFTER_SHOOT.getTime() + 6 * HOUR), 'asked again in 6 h');
     w.released.add(bookingId);
+    w.bw.clock.advanceHours(6);
     const r = await sweep(w);
     assert.equal(r.payDue, 1);
     const job = jobOf(w, bookingId);
     assert.equal(job?.payStatus, 'due');
-    assert.deepEqual(job?.pay.dueAt, AFTER_SHOOT);
+    assert.deepEqual(job?.pay.dueAt, w.bw.clock.now());
+    assert.equal(job?.pay.checkAfter, null);
     const due = rows(w, 's1', 'collab_pay_due');
     assert.equal(due.length, 1);
     assert.match(due[0]?.body ?? '', /^Trả Minh Trí 800\.000/);
     assert.equal(w.bw.store.payments.size > 0, true, 'the booking payment exists');
     assert.equal(w.bw.store.refunds.size, 0, 'no money moves (R5)');
+  });
+
+  it('a job whose shoot milestone was refunded without release leaves the pay check with no pay record', async () => {
+    const w = createCollabWorld();
+    const bookingId = await acceptedJob(w);
+    w.bw.clock.setTime(AFTER_SHOOT);
+    w.refunded.add(bookingId);
+    assert.equal((await sweep(w)).payDue, 0);
+    const job = jobOf(w, bookingId);
+    assert.equal(job?.payStatus, 'none');
+    assert.equal(job?.pay.checkAfter, null);
+    assert.deepEqual(await w.recruit.payPending(new Date('2027-01-01T00:00:00.000Z'), 10), []);
+    assert.equal(rows(w, 's1', 'collab_pay_due').length, 0);
+  });
+
+  it('jobs stuck behind a held milestone never block newer ones (more than 200 stuck)', async () => {
+    const w = createCollabWorld();
+    const bookingId = await acceptedJob(w);
+    const template = jobOf(w, bookingId) as CollabJob;
+    for (let i = 0; i < 250; i++) {
+      const id = `stuck${String(i).padStart(3, '0')}`;
+      w.recruit.seedCollabJob({
+        ...template,
+        id: `${id}_p1`,
+        bookingId: id,
+        pay: { ...template.pay, checkAfter: new Date(template.shootEndsAt.getTime() - (i + 1) * HOUR) },
+      });
+    }
+    w.bw.clock.setTime(AFTER_SHOOT);
+    w.released.add(bookingId);
+    const first = await sweep(w);
+    assert.equal(first.payDue, 0, 'the first page holds 200 older stuck jobs');
+    const second = await sweep(w);
+    assert.equal(second.payDue, 1, 'the stuck ones were pushed 6 h on, the released job is reached');
+    assert.equal(jobOf(w, bookingId)?.payStatus, 'due');
+    const stuck = w.recruit.collabJobs.get('stuck000_p1');
+    assert.deepEqual(stuck?.pay.checkAfter, new Date(AFTER_SHOOT.getTime() + 6 * HOUR));
+    assert.equal(stuck?.payStatus, 'none');
+    assert.equal((await sweep(w)).payDue, 0, 'nothing to check again before 6 h');
+  });
+
+  it('an offer that lapses after its collaboration ended tells the studio of the end', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    await offer(w, b.id, 'p1');
+    seedCollab(w, 'p1', { status: 'ended', endedAt: w.bw.clock.now(), endedBy: 'collaborator' });
+    w.bw.clock.advanceHours(6);
+    assert.equal((await sweep(w)).offersExpired, 1);
+    assert.equal(rows(w, 's1', 'collab_assignment_result')[0]?.title, 'Cộng tác với Minh Trí đã kết thúc');
+    assert.equal((await w.bw.store.getBooking(b.id))?.assigneeId, null);
   });
 
   it('a returned or declined job never becomes due', async () => {

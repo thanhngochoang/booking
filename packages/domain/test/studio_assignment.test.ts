@@ -8,9 +8,7 @@ import {
   assignDeadlineFor,
   assignmentOptions,
   declineAssigneeChange,
-  expireCollabOffer,
   requestAssigneeChange,
-  respondCollabOffer,
   returnAssignment,
   studioDraftFields,
   studioFaultOf,
@@ -18,7 +16,9 @@ import {
   type MemberDayReader,
 } from '../src/studio_assignment.js';
 import { syncBookingChat } from '../src/booking_chat_sync.js';
+import { expireCollabOffer, respondCollabOffer } from '../src/collab_offers.js';
 import { chatIdFor } from '../src/chat.js';
+import { runStudioBookingSweeps } from '../src/studio_booking_sweeps.js';
 import { notifyStudioBookingChange, studioBookingNotices } from '../src/studio_notifications.js';
 import { createChatWorld } from './support/chat_world.js';
 import {
@@ -802,9 +802,13 @@ describe('collaborator offers (S27, plan #151 Decisions 13, 14, 26)', () => {
     assert.equal(results[0]?.title, 'Minh Trí từ chối việc');
     assert.equal(results[0]?.body, 'Giao người khác trước 14:00 14/10.');
     await rejectsWith(answer(w, 'p1', pending.id, true), 'permission_denied');
-    // the studio can offer it again
+    // the studio can offer it again, and the collaborator is told again (a new offer, a new key)
     await offer(w, pending.id, 'p1');
     assert.equal(jobOf(w, pending.id, 'p1')?.offerStatus, 'pending');
+    assert.equal(rows(w, 'p1', 'collab_assignment_offer').length, 2);
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', pending.id, false);
+    assert.equal(rows(w, 's1', 'collab_assignment_result').length, 2, 'the second decline is told too');
   });
 
   it('a declined or expired offer does not count as a violation (S26 counters unchanged)', async () => {
@@ -822,7 +826,7 @@ describe('collaborator offers (S27, plan #151 Decisions 13, 14, 26)', () => {
     assert.equal(await expireCollabOffer(w.assignDeps, after.id, 'p1'), false, 'already expired');
   });
 
-  it('an offer on a collaboration that ended meanwhile is closed on accept (not_found) and cannot be made', async () => {
+  it('an offer on a collaboration that ended meanwhile is closed on accept (not_found), the studio told of the end, and cannot be made', async () => {
     const w = createCollabWorld();
     const { after } = await offered(w);
     seedCollab(w, 'p1', { status: 'ended', endedAt: w.bw.clock.now(), endedBy: 'collaborator' });
@@ -830,8 +834,92 @@ describe('collaborator offers (S27, plan #151 Decisions 13, 14, 26)', () => {
     assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'cancelled');
     const b = await w.bw.store.getBooking(after.id);
     assert.equal(b?.assigneeId, null);
-    assert.equal(rows(w, 's1', 'collab_assignment_result').length, 1);
+    const results = rows(w, 's1', 'collab_assignment_result');
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.title, 'Cộng tác với Minh Trí đã kết thúc');
     await rejectsWith(offer(w, after.id, 'p1'), 'not_found');
+  });
+
+  it('a decline on a collaboration that ended meanwhile closes the offer quietly', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    seedCollab(w, 'p1', { status: 'ended', endedAt: w.bw.clock.now(), endedBy: 'studio' });
+    assert.deepEqual(await answer(w, 'p1', after.id, false), { offerStatus: 'declined' });
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'cancelled');
+    assert.equal((await w.bw.store.getBooking(after.id))?.assigneeId, null);
+    assert.equal(rows(w, 's1', 'collab_assignment_result')[0]?.title, 'Cộng tác với Minh Trí đã kết thúc');
+  });
+
+  it('an offer over a confirmed member tells the member at once; the customer hears booking_reassigned (not assigned) when the collaborator accepts', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    const withMember = await assign(w.bw, b.id, 'm1');
+    w.bw.clock.advanceHours(1);
+    const pending = await offer(w, b.id, 'p1');
+    assert.deepEqual(studioBookingNotices(withMember, pending), ['offer_replaced']);
+    await notifyStudioBookingChange(w.deps.notify, withMember, pending);
+    const told = rows(w, 'm1', 'booking_reassigned');
+    assert.equal(told.length, 1);
+    assert.match(told[0]?.title ?? '', /đã giao cho người khác/);
+    assert.equal(rows(w, 'c1').length, 0, 'the customer hears nothing while the offer waits');
+    assert.equal(rows(w, 'p1', 'booking_reassigned').length, 0);
+
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, true);
+    const accepted = await w.bw.store.getBooking(b.id);
+    assert.ok(accepted);
+    assert.deepEqual(studioBookingNotices(pending, accepted), ['reassigned']);
+    await notifyStudioBookingChange(w.deps.notify, pending, accepted);
+    const customer = rows(w, 'c1', 'booking_reassigned');
+    assert.equal(customer.length, 1);
+    assert.equal(customer[0]?.title, 'Studio Mây đã đổi thợ chụp');
+    assert.match(customer[0]?.body ?? '', /^Minh Trí sẽ chụp/);
+    assert.equal(rows(w, 'c1', 'booking_assigned').length, 0);
+    assert.equal(rows(w, 'p1', 'booking_reassigned').length, 1);
+    assert.equal(rows(w, 'm1', 'booking_reassigned').length, 1, 'the member is not told twice');
+  });
+
+  it('a late offer over a confirmed member gives the customer the late_reassign right with the reassignment notice', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    await assign(w.bw, b.id, 'm1');
+    w.bw.clock.setTime(new Date('2026-10-14T09:00:00.000Z'));
+    const pending = await offer(w, b.id, 'p1');
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, true);
+    const accepted = await w.bw.store.getBooking(b.id);
+    assert.ok(accepted);
+    await notifyStudioBookingChange(w.deps.notify, pending, accepted);
+    assert.equal(rows(w, 'c1', 'booking_reassigned').length, 1);
+    assert.equal(studioFaultOf(accepted, w.bw.clock.now()), 'late_reassign');
+    assert.equal(w.bw.store.counterOf('s1', 'lateReassignCount'), 1);
+  });
+
+  it('an offer over a confirmed member that is declined and the deadline then passes: S26 overdue notice to the customer; a later collaborator is announced as a reassignment', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    seedCollab(w, 'p2');
+    const b = await studioBooking(w);
+    await assign(w.bw, b.id, 'm1');
+    w.bw.clock.setTime(new Date(COLLAB_START.getTime() - 26 * 60 * 60 * 1000)); // 2 h before the deadline
+    await offer(w, b.id, 'p1');
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, false);
+    w.bw.clock.advanceHours(2); // past the deadline, still unassigned
+    await runStudioBookingSweeps(w.assignDeps, w.deps.notify);
+    assert.equal(rows(w, 'c1', 'assign_overdue').length, 1);
+    const unassigned = await w.bw.store.getBooking(b.id);
+    assert.ok(unassigned);
+    const pending = await offer(w, b.id, 'p2');
+    assert.deepEqual(studioBookingNotices(unassigned, pending), [], 'nobody confirmed to tell');
+    await answer(w, 'p2', b.id, true);
+    const accepted = await w.bw.store.getBooking(b.id);
+    assert.ok(accepted);
+    assert.deepEqual(studioBookingNotices(pending, accepted), ['reassigned']);
+    await notifyStudioBookingChange(w.deps.notify, pending, accepted);
+    assert.equal(rows(w, 'c1', 'booking_reassigned').length, 1);
   });
 
   it('offering over an assigned member frees the member and moves the booking back to unassigned until the collaborator accepts', async () => {

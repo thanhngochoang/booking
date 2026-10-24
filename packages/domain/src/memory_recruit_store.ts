@@ -257,7 +257,9 @@ export class MemoryRecruitStore implements RecruitStore {
 
   async payPending(now: Date, limit: number): Promise<CollabJob[]> {
     return [...this.collabJobs.values()]
-      .filter((j) => j.offerStatus === 'accepted' && j.payStatus === 'none' && j.shootEndsAt.getTime() <= now.getTime())
+      .filter((j) => j.offerStatus === 'accepted' && j.payStatus === 'none' && j.pay.checkAfter !== null
+        && j.pay.checkAfter.getTime() <= now.getTime())
+      .sort((a, b) => (a.pay.checkAfter?.getTime() ?? 0) - (b.pay.checkAfter?.getTime() ?? 0))
       .slice(0, limit);
   }
 

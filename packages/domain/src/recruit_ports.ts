@@ -6,7 +6,7 @@
 
 import type { BlockGate } from './block_ports.js';
 import type { ProviderOrderGate } from './booking_ports.js';
-import type { CollabJob } from './collab_jobs.js';
+import type { CollabJob, ShootMilestoneState } from './collab_jobs.js';
 import type { NotifyDeps } from './notification_ports.js';
 import type { Clock, IdGenerator } from './ports.js';
 import type { ProviderType } from './provider_type.js';
@@ -84,7 +84,10 @@ export interface RecruitStore {
   openJobCount(studioId: string, uid: string): Promise<number>;
   /** Jobs still `pending` with `offerExpiresAt <= now`, soonest first. */
   dueOffers(now: Date, limit: number): Promise<CollabJob[]>;
-  /** Jobs `accepted` with `payStatus` `none` and `shootEndsAt <= now` (the sweep then asks `milestones`). */
+  /**
+   * Jobs `accepted` with `payStatus` `none` and `pay.checkAfter <= now`, soonest `checkAfter` first (the sweep
+   * then asks `milestones` and pushes a waiting job's `checkAfter` on, so newer jobs are reached).
+   */
   payPending(now: Date, limit: number): Promise<CollabJob[]>;
   /** Jobs `due` with `pay.dueAt <= cutoff` and `pay.overdueFlaggedAt` null. */
   overduePay(cutoff: Date, limit: number): Promise<CollabJob[]>;
@@ -103,10 +106,10 @@ export interface RecruitDeps {
   /** Whether every id is a portfolio post of `uid` (an empty list is true). */
   readonly posts: { ownedBy(uid: string, postIds: readonly string[]): Promise<boolean> };
   /**
-   * Whether the booking's first (shoot) milestone was released to the studio (Decision 15): the adapter reads
-   * the booking's payments with `isShootMilestoneReleased`.
+   * Where the booking's first (shoot) milestone stands (Decision 15): the adapter reads the booking's payments
+   * with `shootMilestoneState`.
    */
-  readonly milestones: { shotReleased(bookingId: string): Promise<boolean> };
+  readonly milestones: { shootMilestone(bookingId: string): Promise<ShootMilestoneState> };
   readonly notify: NotifyDeps;
   readonly clock: Clock;
   readonly ids: IdGenerator;

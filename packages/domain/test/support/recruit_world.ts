@@ -90,7 +90,7 @@ export function createRecruitWorld(): RecruitWorld {
     orders: new FakeOrderGate(people),
     blocks,
     posts: { ownedBy: async (uid, ids) => ids.every((id) => ownedPosts.has(`${uid}/${id}`)) },
-    milestones: { shotReleased: async () => false },
+    milestones: { shootMilestone: async () => 'waiting' },
     notify: notifyWorld.deps,
     clock,
     ids: new SequentialIdGen('rp'),

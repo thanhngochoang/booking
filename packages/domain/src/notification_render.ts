@@ -85,7 +85,7 @@ export type NotificationContent =
   | { type: 'collab_assignment_offer'; studio: string; service: string; day: string; start: string; fee: number; deadline: string }
   | {
       type: 'collab_assignment_result';
-      outcome: 'accepted' | 'declined' | 'expired';
+      outcome: 'accepted' | 'declined' | 'expired' | 'ended';
       name: string;
       service: string;
       day: string;
@@ -459,7 +459,12 @@ export function renderNotification(c: NotificationContent): { title: string; bod
         return { title: `${c.name} đã nhận việc`, body: `${c.service}, ${formatDayShortVi(c.day)} · ${c.start}.` };
       }
       return {
-        title: c.outcome === 'declined' ? `${c.name} từ chối việc` : `${c.name} chưa trả lời`,
+        title:
+          c.outcome === 'declined'
+            ? `${c.name} từ chối việc`
+            : c.outcome === 'ended'
+              ? `Cộng tác với ${c.name} đã kết thúc`
+              : `${c.name} chưa trả lời`,
         body: `Giao người khác trước ${c.deadline}.`,
       };
     case 'collab_pay_due':
