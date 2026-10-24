@@ -414,6 +414,44 @@ void main() {
     await _end(tester, w);
   });
 
+  testWidgets('while the quote is being asked again the red button is off; '
+      'the new quote goes with the cancel', (tester) async {
+    final w = InstantCustomerWorld();
+    w.repo.cancelQuote = const InstantCancelQuote(
+      rule: InstantCancelRule.freeWindow,
+      refundPercent: 100,
+      refundVnd: 690000,
+      amountVnd: 690000,
+    );
+    final r = _request(status: InstantStatus.assigned);
+    await _open(tester, w, r);
+    final gate = w.repo.gate = Completer<void>();
+    w.repo.cancelQuote = const InstantCancelQuote(
+      rule: InstantCancelRule.enRoute,
+      refundPercent: 80,
+      refundVnd: 552000,
+      feeVnd: 138000,
+      amountVnd: 690000,
+    );
+    w.repo.emitRequest('req1', r.copyWith(status: InstantStatus.enRoute));
+    await tester.pump(const Duration(milliseconds: 100));
+    final off = find.descendant(of: _confirm, matching: find.byType(FilledButton));
+    if (off.evaluate().isNotEmpty) {
+      expect(tester.widget<FilledButton>(off).onPressed, isNull);
+    }
+    await tester.tap(_confirm, warnIfMissed: false);
+    await tester.pump();
+    expect(w.repo.callsOf('cancel').where((c) => c.args['dryRun'] == false), isEmpty);
+    gate.complete();
+    w.repo.gate = null;
+    await settleInstant(tester);
+    await tester.tap(_confirm);
+    await settleInstant(tester);
+    final real = w.repo.callsOf('cancel').where((c) => c.args['dryRun'] == false);
+    expect(real.single.args['expected'], w.repo.cancelQuote);
+    await _end(tester, w);
+  });
+
   testWidgets('fits 320dp at 1.3× text', (tester) async {
     for (final brightness in Brightness.values) {
       final w = InstantCustomerWorld();

@@ -54,9 +54,22 @@ export const mirrorRefund = (r: InstantRequest, refund: Refund): InstantRequest 
   ...r, refundId: refund.id, refundStatus: refund.status,
 });
 
-/** Sends the refunds a transaction wrote, one gateway call each under the refund's id; never throws. */
-export async function sendInstantRefunds(deps: InstantDeps, sends: readonly InstantRefundSend[]): Promise<void> {
-  for (const { refund, payment } of sends) await dispatchInstantRefund(deps, refund, payment);
+/**
+ * Sends the refunds a transaction wrote, one gateway call each under the refund's id. Never throws:
+ * the transaction that wrote them has committed, so the caller's answer stands. A refund whose
+ * outcome could not be stored stays `pending` and V2's re-send sends it again under the same id
+ * (the gateway treats a repeated id as the same refund). Returns how many failed (for logs).
+ */
+export async function sendInstantRefunds(deps: InstantDeps, sends: readonly InstantRefundSend[]): Promise<{ failed: number }> {
+  let failed = 0;
+  for (const { refund, payment } of sends) {
+    try {
+      await dispatchInstantRefund(deps, refund, payment);
+    } catch {
+      failed += 1;
+    }
+  }
+  return { failed };
 }
 
 /** V2: one gateway call under the refund's id (`sendRefundOnce`), then the outcome stored and mirrored. */
@@ -131,12 +144,14 @@ export class InstantPaymentSettler implements SubjectSettler {
       const p = await tx.getPayment(paymentId);
       return p === null ? null : tx.getRequest(p.subjectId);
     });
-    const waiting = pre !== null && pre.status === 'pending_payment' && pre.pendingInviteIds.length > 0;
     // A missing or switched-off config never loses a payment: it is recorded, and no offer goes out
     // (the request is back in `choosing` with the money held; the customer may cancel for 100%).
-    const cfg = waiting ? await deps.config.get().catch(() => null) : null;
+    const cfg = pre === null ? null : await deps.config.get().catch(() => null);
     const live = cfg !== null && cfg.enabled;
-    const checks = waiting && live ? await instantOfferChecks(deps, pre.customerId, pre.pendingInviteIds, deps.clock.now()) : NO_CHECKS;
+    const checkedIds = pre !== null && pre.status === 'pending_payment' && live ? pre.pendingInviteIds : [];
+    const checks = checkedIds.length > 0 && pre !== null
+      ? await instantOfferChecks(deps, pre.customerId, checkedIds, deps.clock.now())
+      : NO_CHECKS;
     let sends: InstantRefundSend[] = [];
     let offers: InstantOffer[] = [];
 
@@ -186,8 +201,15 @@ export class InstantPaymentSettler implements SubjectSettler {
       if (r !== null && r.status === 'pending_payment' && r.paymentId === p.id) {
         w.setPayment(paid);
         const ids = live ? r.pendingInviteIds : [];
-        const version = cfg?.priceListVersion ?? r.priceListVersion;
-        const out = await sendInstantOffers(w, deps, { ...r, paidAt: now, pendingInviteIds: [] }, ids, { priceListVersion: version }, checks);
+        // The choice changed since the plain reads (a second tap): check the people chosen now, so
+        // nobody is marked unavailable for want of a check.
+        const sameChoice = ids.length === checkedIds.length && ids.every((id, i) => id === checkedIds[i]);
+        const fresh = sameChoice ? checks : await instantOfferChecks(deps, r.customerId, ids, now);
+        // The price list the customer paid for (the request's snapshot, also its `earningVnd`): a
+        // photographer is offered exactly what was paid, even if the config moved since.
+        const out = await sendInstantOffers(
+          w, deps, { ...r, paidAt: now, pendingInviteIds: [] }, ids, { priceListVersion: r.priceListVersion }, fresh,
+        );
         offers = out.offers;
         const final = applied.excess > 0 ? 'paid_with_refund' : 'paid';
         w.putTransferRecord(transferRecordOf(transfer, final, p.id));

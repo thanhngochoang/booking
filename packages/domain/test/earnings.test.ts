@@ -260,4 +260,17 @@ describe('instant payments (#202)', () => {
       ['instant_request', 690_000, 69_000, 621_000, 1_000],
     );
   });
+
+  it("a paid-out instant row reads its item's fee and the rate of that fee, not the payout's", () => {
+    const po = payout({
+      amount: 690_000,
+      items: [{ paymentId: 'pay1', amount: 690_000, fee: 69_000, tax: 0, net: 621_000 }],
+      platformFee: 69_000, taxWithheld: 0, amountNet: 621_000, feeRateBp: 0, taxRateBp: 0, status: 'paid',
+    });
+    const row = item(payment({ subjectType: 'instant_request', amount: 690_000, feeBp: 1_000, escrowStatus: 'paid_out', payoutId: 'po1' }), 0, po, 'studio');
+    assert.deepEqual([row?.state, row?.platformFee, row?.feeRateBp, row?.estimated], ['paid_out', 69_000, 1_000, false]);
+    // A booking keeps the payout's rate.
+    const booking = item(payment({ escrowStatus: 'paid_out', payoutId: 'po1', amount: 690_000 }), 0, { ...po, feeRateBp: 500 }, 'studio');
+    assert.equal(booking?.feeRateBp, 500);
+  });
 });

@@ -423,16 +423,12 @@ class _Rows extends ConsumerWidget {
       noteIcon: reason == null ? null : AppIcons.warning,
       breakdown: _breakdown(l, item),
       expanded: expanded.contains(item.id),
-      // A Chụp ngay job (#202) opens its S14.03 screen; booking rows expand.
-      onTap: item.subjectType == _instantSubject
-          ? () => context.push('/work/instant/${item.subjectId}')
-          : () => onToggle(item),
+      // Every row expands to its breakdown, a Chụp ngay job (#202) too (mock
+      // S06.05 wins over the plan's "opens /work/instant").
+      onTap: () => onToggle(item),
     );
   }
 }
-
-/// The payment subject of a Chụp ngay request (domain `PAYMENT_SUBJECTS`).
-const _instantSubject = 'instant_request';
 
 /// "T3 01/10 · đủ 2 mốc": the day, then the milestones when the booking has
 /// them.

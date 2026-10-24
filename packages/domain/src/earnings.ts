@@ -177,7 +177,8 @@ function breakdownOf(
       platformFee: item.fee,
       taxWithheld: item.tax,
       netAmount: item.net,
-      feeRateBp: payout.feeRateBp,
+      // The rate of this item's own fee: an instant payment's snapshot, else the payout's policy rate.
+      feeRateBp: payment.feeBp ?? payout.feeRateBp,
       taxRateBp: payout.taxRateBp,
       estimated: false,
     };

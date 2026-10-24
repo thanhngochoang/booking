@@ -187,6 +187,15 @@ describe('Chụp ngay on the emulators', () => {
     const p = (await db.doc(`payments/${paymentId}`).get()).data() ?? {};
     assert.equal(p.escrowStatus, 'partially_refunded');
     assert.equal((await db.doc(`instant_requests/${requestId}`).get()).get('refundStatus'), 'done');
+
+    // The photographer's 20% waits 24 h: the clock an hour before keeps it, a minute after releases it.
+    const releaseAfter = (p.releaseAfter as { toMillis(): number }).toMillis();
+    await runBookingSweeps(sweepDeps(new Date(releaseAfter - 3_600_000)));
+    assert.equal((await db.doc(`payments/${paymentId}`).get()).get('escrowStatus'), 'partially_refunded');
+    await runBookingSweeps(sweepDeps(new Date(releaseAfter + 60_000)));
+    assert.equal((await db.doc(`payments/${paymentId}`).get()).get('escrowStatus'), 'released');
+    const released = await db.collection('ledger_entries').where('paymentId', '==', paymentId).where('type', '==', 'escrow_released').get();
+    assert.deepEqual(released.docs.map((d) => [d.get('amount'), d.get('accountOwnerId')]), [[res.feeVnd, 'it-inst-p2']]);
   });
 
   test('five parallel accepts, one winner', async () => {

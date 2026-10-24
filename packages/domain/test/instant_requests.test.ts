@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import { DomainError } from '../src/errors.js';
 import type { Payment } from '../src/escrow.js';
 import { fakeTransferFor } from '../src/fake_payment_gateway.js';
-import { instantRefundHandler } from '../src/instant_payments.js';
+import { InstantPaymentSettler, instantRefundHandler } from '../src/instant_payments.js';
 import { settleTransfer, transferRecordId } from '../src/payment_settlement.js';
 import { answerInstantOffer, updateInstantJob } from '../src/instant_jobs.js';
 import { offerPushMessage } from '../src/instant_notices.js';
@@ -810,6 +810,68 @@ describe('money (#202)', () => {
     assert.equal(w.store.offers.size, 0);
     const sum = ledgerOf(w, refund?.paymentId ?? '').reduce((s, e) => s + e.amount, 0);
     assert.equal(sum, 0);
+  });
+
+  test('offers after payment carry the price list the customer paid for, even if the config moved', async () => {
+    const w = createInstantWorld();
+    const id = await unpaid(w);
+    // A new price list went live while Lan was paying; nobody accepted it yet.
+    w.config = aConfig({ priceListVersion: 2, cities: aConfig().cities.map((c) => ({ ...c, surgeBp: 12_000 })) });
+    await w.pay(req(w, id).paymentId ?? '');
+    const r = req(w, id);
+    assert.equal(r.status, 'searching');
+    assertRows(w, id, ['p1'], []);
+    const offer = w.store.offer('p1', offerOf(w, 'p1', id));
+    assert.deepEqual([offer?.earningVnd, r.amountVnd, r.priceListVersion], [690_000, 690_000, 1]);
+  });
+
+  test('a choice changed after the plain reads is checked again, never marked unavailable for it', async () => {
+    const w = createInstantWorld();
+    const id = await unpaid(w); // p1 chosen
+    const payment = paymentOf(w, id);
+    // The settler's first (plain) read sees p1; before its transaction a second tap chose p2.
+    let calls = 0;
+    const store = w.deps.store;
+    const racing = {
+      ...w.deps,
+      store: {
+        findDue: store.findDue.bind(store),
+        runTransaction: <T>(fn: Parameters<typeof store.runTransaction<T>>[0]) => {
+          calls += 1;
+          if (calls === 2) w.store.requests.set(id, { ...req(w, id), pendingInviteIds: ['p2'] });
+          return store.runTransaction(fn);
+        },
+      },
+    };
+    assert.equal(await new InstantPaymentSettler(racing).settle(payment.id, transfer(payment, 'exact', T0)), 'paid');
+    assertRows(w, id, ['p2'], []);
+    assert.equal(w.store.offersOf('p2').length, 1);
+    assert.equal(w.store.offersOf('p1').length, 0);
+  });
+
+  test('a refund whose outcome cannot be stored after the commit leaves the cancel done and the refund pending', async () => {
+    const w = createInstantWorld();
+    const id = await lanInvites(w, ['p1']);
+    let calls = 0;
+    const store = w.deps.store;
+    const flaky = {
+      ...w.deps,
+      store: {
+        findDue: store.findDue.bind(store),
+        runTransaction: <T>(fn: Parameters<typeof store.runTransaction<T>>[0]) => {
+          calls += 1;
+          // 1: the cancel; 2: storing the refund's outcome.
+          if (calls === 2) return Promise.reject(new Error('firestore unavailable'));
+          return store.runTransaction(fn);
+        },
+      },
+    };
+    const res = await cancelInstantRequest(flaky, LAN, { requestId: id, dryRun: false });
+    assert.equal(res.status, 'cancelled_by_customer');
+    const refund = [...w.store.refunds.values()][0];
+    assert.equal(refund?.status, 'pending');
+    assert.equal(w.gateway.refundCalls.length, 1);
+    assert.equal(req(w, id).refundStatus, 'pending');
   });
 
   test('the same transaction id applies once', async () => {

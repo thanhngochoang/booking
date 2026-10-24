@@ -131,7 +131,6 @@ class EarningsWorld {
         ),
         GoRoute(path: '/b/:id', builder: stub),
         GoRoute(path: '/bookings', builder: stub),
-        GoRoute(path: '/work/instant/:id', builder: stub),
       ],
     );
     return screenRouterApp(

@@ -126,7 +126,9 @@ class _CustomerCancelBodyState extends ConsumerState<_CustomerCancelBody> {
   }
 
   Future<void> _confirm() async {
-    if (_running || _closing) return;
+    // The red button is enabled only with a fresh quote; without one, no cancel.
+    final shown = ref.read(customerCancelQuoteProvider(_id)).value;
+    if (_running || _closing || shown == null) return;
     final l = context.l10n;
     setState(() {
       _running = true;
@@ -135,7 +137,6 @@ class _CustomerCancelBodyState extends ConsumerState<_CustomerCancelBody> {
     try {
       // The quote on screen goes with the cancel: if the server's changed in
       // between (a window ended), it answers `conflict` and nothing moves.
-      final shown = ref.read(customerCancelQuoteProvider(_id)).value;
       await ref
           .read(instantRepositoryProvider)
           .cancel(_id, dryRun: false, expected: shown);

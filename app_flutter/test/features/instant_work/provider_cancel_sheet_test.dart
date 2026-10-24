@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
@@ -106,6 +108,22 @@ void main() {
     expect(find.text('Chưa thực hiện được. Thử lại nhé.'), findsOneWidget);
     expect(results, isEmpty);
     expect(tester.widget<AppButton>(_confirm).onPressed, isNotNull);
+    await _end(tester, w.repo);
+  });
+
+  testWidgets('no red button until the quote has loaded', (tester) async {
+    final w = InstantWorld();
+    final gate = w.repo.gate = Completer<void>();
+    await _open(tester, w);
+    expect(find.text(_title), findsOneWidget);
+    expect(_confirm, findsNothing);
+    gate.complete();
+    w.repo.gate = null;
+    await settleInstant(tester);
+    expect(_confirm, findsOneWidget);
+    await tester.tap(_confirm);
+    await settleInstant(tester);
+    expect(w.repo.callsOf('cancel').last.args['expected'], w.repo.cancelQuote);
     await _end(tester, w.repo);
   });
 

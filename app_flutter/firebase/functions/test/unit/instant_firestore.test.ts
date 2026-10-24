@@ -5,14 +5,17 @@ import {
   InstantPaymentSettler,
   answerInstantOffer,
   cancelInstantRequest,
+  confirmInstantComplete,
   createInstantRequest,
   fakeTransferFor,
+  instantRefundHandler,
   inviteInstant,
+  updateInstantJob,
   type InstantDeps,
   type InstantOffer,
   type Payment,
 } from '@photobooking/domain';
-import { paymentFromFirestore, paymentToFirestore } from '../../src/infra/booking_firestore.js';
+import { paymentFromFirestore, paymentToFirestore, refundFromFirestore } from '../../src/infra/booking_firestore.js';
 import {
   FirestoreInstantStore,
   FirestoreInstantTx,
@@ -357,6 +360,75 @@ describe('instant money over the Firestore adapter (#202; strict: every read bef
     assert.equal(db.docs.get(instantRequestPath(requestId))?.refundStatus, 'done');
     // Every transaction read before it wrote (the fake throws otherwise) and some did both.
     assert.ok(db.txLog.some((t) => t.reads.length > 0 && t.writes.length > 0));
+  });
+
+  /** Lan's request through the adapter: paid with a fake transfer, p1 assigned (unless `assign` is false). */
+  async function paidRequest(assign = true) {
+    const m = moneyWorld();
+    const { requestId } = await createInstantRequest(m.deps, LAN, { packageCode: 'p60', genre: 'portrait', meetPoint: MEET });
+    const res = await inviteInstant(m.deps, LAN, {
+      requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000, payMethod: 'bank_qr',
+    });
+    assert.equal(res.kind, 'payment');
+    const paymentId = res.kind === 'payment' ? res.instructions.paymentId : '';
+    if (assign) {
+      const created = m.paymentDoc(paymentId);
+      await new InstantPaymentSettler(m.deps).settle(paymentId, fakeTransferFor(created as Payment & { transferCode: string }, 'exact', m.w.clock.now()));
+      const offerPath = [...m.db.docs.keys()].find((k) => k.startsWith('instant_offers/p1/offers/'));
+      assert.ok(offerPath !== undefined);
+      await answerInstantOffer(m.deps, { uid: 'p1' }, { offerId: offerPath.split('/').pop(), action: 'accept' });
+    }
+    return { ...m, requestId, paymentId };
+  }
+  const HERE = { lat: MEET.lat, lng: MEET.lng, accuracyM: 10 };
+  const refundDocs = (db: FakeFirestore) =>
+    [...db.docs.entries()].filter(([k]) => k.startsWith('refunds/')).map(([k, d]) => refundFromFirestore(k.split('/')[1] ?? '', d));
+
+  it('no-show (dry run and real), photographer cancel and confirm read before they write', async () => {
+    const noShow = await paidRequest();
+    for (const action of ['start_route', 'arrive']) {
+      await updateInstantJob(noShow.deps, { uid: 'p1' }, { requestId: noShow.requestId, action, location: HERE });
+    }
+    noShow.w.clock.advance(15 * 60_000);
+    const quote = await updateInstantJob(noShow.deps, { uid: 'p1' }, { requestId: noShow.requestId, action: 'no_show', dryRun: true });
+    assert.equal((quote as { feeVnd?: number }).feeVnd, 345_000);
+    await updateInstantJob(noShow.deps, { uid: 'p1' }, { requestId: noShow.requestId, action: 'no_show' });
+    assert.deepEqual(refundDocs(noShow.db).map((r) => [r?.amount, r?.reason, r?.status]), [[345_000, 'no_show', 'done']]);
+    assert.ok(noShow.paymentDoc(noShow.paymentId).releaseAfter !== undefined);
+
+    const dropped = await paidRequest();
+    await cancelInstantRequest(dropped.deps, { uid: 'p1' }, { requestId: dropped.requestId, dryRun: false });
+    const held = dropped.paymentDoc(dropped.paymentId);
+    assert.deepEqual([held.payeeId, held.escrowStatus], ['', 'held']);
+    assert.equal(dropped.db.docs.has(`instant_requests/${dropped.requestId}/private/contact`), false);
+
+    const done = await paidRequest();
+    for (const action of ['start_route', 'arrive', 'start']) {
+      await updateInstantJob(done.deps, { uid: 'p1' }, { requestId: done.requestId, action, location: HERE });
+    }
+    await confirmInstantComplete(done.deps, LAN, { requestId: done.requestId });
+    const kept = done.paymentDoc(done.paymentId);
+    assert.deepEqual([kept.status, kept.payeeId], ['paid', 'p1']);
+    assert.equal(kept.releaseAfter, new Date(done.w.clock.now().getTime() + 24 * 3_600_000).toISOString());
+  });
+
+  it("expire and V2's record/resend read before they write", async () => {
+    const open = await paidRequest(false);
+    open.w.clock.advance(16 * 60_000);
+    assert.equal(await new InstantPaymentSettler(open.deps).expire(open.paymentId, open.w.clock.now()), 'expired');
+    assert.equal(open.paymentDoc(open.paymentId).status, 'expired');
+
+    const m = await paidRequest();
+    m.w.gateway.refundThrowCount = 1;
+    m.w.clock.advance(5 * 60_000);
+    await cancelInstantRequest(m.deps, LAN, { requestId: m.requestId, dryRun: false });
+    const [pending] = refundDocs(m.db);
+    assert.ok(pending);
+    assert.equal(pending.status, 'pending');
+    const resent = await instantRefundHandler(m.deps).resend(pending);
+    assert.equal(resent.status, 'done');
+    assert.equal(refundDocs(m.db)[0]?.status, 'done');
+    assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'done');
   });
 
   it('paymentsOfRequest is a transactional equality query on subjectType and subjectId', async () => {
