@@ -25,6 +25,9 @@ import {
 } from '@photobooking/domain';
 import { assertLocalEmulators } from '../seed/local_guard.js';
 
+/** Exit code of `resolve` when the decision is committed but sending its refund failed. */
+export const SEND_FAILED_EXIT = 2;
+
 export const USAGE =
   'usage: disputes list [open|resolved] | show <id> | resolve <id> release|refund "<note>" --actor <uid> | resolve <id> split <percent> "<note>" --actor <uid>';
 
@@ -34,7 +37,9 @@ export const HELP = `${USAGE}
                          amount held, status
   show <id>              the dispute, its evidence paths (private Storage files) and the last 30 thread messages
   resolve <id> ...       release (0% back), refund (100% back) or split <1-99>% back to the customer, of the
-                         amount the dispute holds; the note (5-500 characters) goes to both parties
+                         amount the dispute holds; the note (5-500 characters) goes to both parties.
+                         The same command again after a lost answer prints the stored outcome. Exit 0 done,
+                         1 refused, 2 decision saved but the refund send failed (it stays pending for re-send)
 
 Environment:
   GOOGLE_APPLICATION_CREDENTIALS  path to a service account key (real project)
@@ -215,14 +220,21 @@ async function resolve(
   );
   if (refund === null) return 0;
   // The decision is committed; the send follows the callable's rule (a throw stays pending for V2's re-send).
-  const payment = await deps.store.runTransaction((tx) => tx.getPayment(dispute.paymentId));
-  if (payment === null) {
-    io.print(`refund ${refund.id}: payment ${dispute.paymentId} not found, not sent`);
-    return 1;
+  try {
+    const payment = await deps.store.runTransaction((tx) => tx.getPayment(dispute.paymentId));
+    if (payment === null) {
+      io.print(`refund ${refund.id}: payment ${dispute.paymentId} not found, not sent`);
+      return 1;
+    }
+    const sent = await dispatchDisputeRefund(deps, payment, refund);
+    io.print(`refund ${sent.id}: ${sent.status}`);
+    return 0;
+  } catch (e) {
+    // Never "refused": the decision stands; only the send failed (the callable logs the same case).
+    const code = isDomainError(e) ? e.code : e instanceof Error ? e.message : String(e);
+    io.print(`refund ${refund.id}: decision saved; refund left pending for re-send (${code})`);
+    return SEND_FAILED_EXIT;
   }
-  const sent = await dispatchDisputeRefund(deps, payment, refund);
-  io.print(`refund ${sent.id}: ${sent.status}`);
-  return 0;
 }
 
 async function main(): Promise<void> {

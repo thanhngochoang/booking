@@ -136,6 +136,21 @@ describe('dispute callables', () => {
     assert.equal(store.refunds.get(refundId)?.status, 'done');
     assert.equal(store.disputes.get(DISPUTE_ID)?.outcome?.decidedBy, 'staff1');
 
+    // The same admin retrying the same decision (lost response) gets the same answer; nothing is sent again.
+    const retried = await handleResolveDispute(
+      { auth: { uid: 'staff1', token: { staffRole: 'admin' } }, data: { disputeId: DISPUTE_ID, outcome: 'split', refundPercent: 40, note: 'Thiếu một phần ảnh.' } },
+      deps(),
+    );
+    assert.deepEqual(retried, res);
+    assert.deepEqual(gateway.refundCalls, [refundId]);
+    await assert.rejects(
+      handleResolveDispute(
+        { auth: { uid: 'staff2', token: { staffRole: 'admin' } }, data: { disputeId: DISPUTE_ID, outcome: 'split', refundPercent: 40, note: 'Thiếu một phần ảnh.' } },
+        deps(),
+      ),
+      httpsError('aborted', 'conflict'),
+    );
+
     // A release has no refund to send.
     const other = '01JDISPUTE0000000000000003';
     store.putSubject(bookingView({ id: 'b2', disputeId: null }));

@@ -1,7 +1,7 @@
 import type { EscrowStatus } from './booking.js';
 import type { PaymentGateway } from './booking_ports.js';
 import type { Dispute, DisputeSnapshot, DisputeStatus, DisputeSubjectType } from './dispute.js';
-import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import { isSettledPayment, type LedgerEntry, type Payment, type Refund } from './escrow.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator } from './ports.js';
 import type { DisplayNames } from './support_use_cases.js';
@@ -32,6 +32,17 @@ export interface DisputeSubjectView {
   readonly snapshot: DisputeSnapshot;
 }
 
+/**
+ * The payment a booking dispute freezes, out of the booking's payments: a settled one (a stray
+ * `created` or expired payment never counts), the one still holding money first. Every store's
+ * `findSubjectPayment` uses it, so the memory and Firestore stores pick the same payment.
+ */
+export function pickSubjectPayment(payments: readonly Payment[]): Payment | null {
+  const settled = payments.filter(isSettledPayment);
+  const holding = (p: Payment) => p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'disputed';
+  return settled.find(holding) ?? settled[0] ?? null;
+}
+
 /** One transaction: every read before the first write (memory stores refuse a read after a write). */
 export interface DisputeTx {
   getSubject(type: DisputeSubjectType, id: string, eventId: string | null): Promise<DisputeSubjectView | null>;
@@ -40,8 +51,8 @@ export interface DisputeTx {
   getRefund(id: string): Promise<Refund | null>;
   getThread(id: string): Promise<SupportThread | null>;
   /**
-   * Booking: the paid payment whose subjectId is the booking id (`isSettledPayment`; a `created` QR
-   * payment never counts); ticket: the registration's `paymentId`. The use case checks what it holds.
+   * Booking: `pickSubjectPayment` of the payments whose subjectId is the booking id (a `created` QR
+   * payment never counts, a holding one first); ticket: the registration's `paymentId`. The use case checks what it holds.
    */
   findSubjectPayment(subject: DisputeSubjectView): Promise<Payment | null>;
   setDispute(d: Dispute): void;

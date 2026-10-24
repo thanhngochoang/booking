@@ -16,7 +16,7 @@ import {
   formatVnDate,
   formatVnTime,
   isEscrowRefund,
-  isSettledPayment,
+  pickSubjectPayment,
   ticketPayeeOf,
   type Booking,
   type Dispute,
@@ -115,13 +115,6 @@ export function ticketDisputeView(reg: RegistrationDoc, ev: EventRecord): Disput
       thumbUrl: ev.coverUrl ?? reg.event.coverUrl,
     },
   };
-}
-
-/** The payment a booking dispute freezes: a settled one (a stray `created` or expired payment never counts), held money first. */
-export function pickSubjectPayment(payments: readonly Payment[]): Payment | null {
-  const settled = payments.filter(isSettledPayment);
-  const holding = (p: Payment) => p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'disputed';
-  return settled.find(holding) ?? settled[0] ?? null;
 }
 
 /** What a refund read in this transaction mirrors on its subject when its status changes. */

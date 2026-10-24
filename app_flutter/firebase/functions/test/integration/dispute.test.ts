@@ -125,7 +125,9 @@ describe('disputes on the emulators', () => {
     assert.equal(b.depositRefunded, 600_000);
     assert.ok(b.depositRefundedAt);
     assert.equal((await data(`support_threads/dispute_${disputeId}`)).status, 'closed');
-    // A second decision is refused.
+    // The same decision again (a lost response) answers the stored outcome; another decision is refused.
+    const retried = await call('resolveDispute', ADMIN, { disputeId, outcome: 'split', refundPercent: 40, note: 'Một phần ảnh không đúng thoả thuận.' });
+    assert.deepEqual(retried.result, { disputeId, refundAmount: 600_000, releaseAmount: 900_000 }, retried.text);
     const twice = await call('resolveDispute', ADMIN, { disputeId, outcome: 'release', note: 'Đổi ý.' });
     assert.equal((twice.error?.details as { code?: string } | undefined)?.code, 'conflict', twice.text);
   });

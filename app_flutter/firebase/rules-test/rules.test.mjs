@@ -2334,6 +2334,17 @@ test('dispute evidence: PNG or a JPEG over 3 MiB is refused (jpegUpTo)', async (
   await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e2/a.pdf'), photo(), { contentType: 'application/pdf' }));
 });
 
+test('dispute evidence: only <id>.jpg file names (letters, digits, _ and -, at most 64) are accepted', async () => {
+  const st = env.authenticatedContext('dc1').storage();
+  await assertSucceeds(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/01JEVIDENCE_8-a.jpg'), photo(), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, `disputeEvidence/dc1/dsp-e7/${'a'.repeat(64)}.jpg`), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, `disputeEvidence/dc1/dsp-e7/${'a'.repeat(65)}.jpg`), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/no-extension'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/two.dots.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/upper.JPG'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/.jpg'), photo(), jpeg));
+});
+
 test('dispute evidence: overwrite refused', async () => {
   const own = ref(env.authenticatedContext('dc1').storage(), 'disputeEvidence/dc1/dsp-e3/fixed.jpg');
   await assertSucceeds(uploadBytes(own, photo(), jpeg));

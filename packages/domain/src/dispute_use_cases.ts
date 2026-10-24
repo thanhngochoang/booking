@@ -13,6 +13,7 @@ import {
   parseResolveDisputeInput,
   type Dispute,
   type DisputeOutcomeKind,
+  type ResolveDisputeInput,
 } from './dispute.js';
 import { formatVnDate, formatVnTime } from './booking_policy.js';
 import type { DisputeDeps, DisputeSubjectView } from './dispute_ports.js';
@@ -211,6 +212,16 @@ function frozenMilestone(p: Payment): MilestoneKind | null {
   return disputed[0].kind;
 }
 
+/** The stored outcome is this staff member's same decision (kind, split percent, note): a retry. */
+function isSameDecision(o: NonNullable<Dispute['outcome']>, staffId: string, input: ResolveDisputeInput): boolean {
+  return (
+    o.decidedBy === staffId &&
+    o.kind === input.kind &&
+    (input.kind !== 'split' || o.refundPercent === input.refundPercent) &&
+    o.note === input.note
+  );
+}
+
 /**
  * Staff decide (Decisions 7 and 10; the adapter has already checked the `admin` role). In one
  * transaction: the frozen milestone (or the whole payment) back to its previous status, then #129's
@@ -218,6 +229,8 @@ function frozenMilestone(p: Payment): MilestoneKind | null {
  * `releaseMilestone` (or `releaseEscrowPayment` without milestones) for the release share. A split
  * shrinks the frozen milestone to its release share before releasing it, so payouts and earnings
  * see only what the provider keeps. The refund is sent after the commit (`dispatchDisputeRefund`).
+ * The same staff member sending the same decision again (a lost response) gets the stored outcome and
+ * its refund back unchanged; any other decision on a resolved dispute is `conflict`.
  */
 export async function resolveDispute(
   deps: DisputeDeps,
@@ -234,6 +247,11 @@ export async function resolveDispute(
 
   return deps.store.runTransaction(async (tx) => {
     const d = await tx.getDispute(input.disputeId);
+    // A retry after a lost response (same staff, same decision) gets the stored outcome, not conflict.
+    if (d?.status === 'resolved' && d.outcome && isSameDecision(d.outcome, staffId, input)) {
+      const stored = d.outcome.refundId ? await tx.getRefund(d.outcome.refundId) : null;
+      return { dispute: d, refund: stored };
+    }
     const p = d ? await tx.getPayment(d.paymentId) : null;
     const subject: DisputeSubjectView | null = d ? await tx.getSubject(d.subjectType, d.subjectId, d.eventId) : null;
     const thread = d ? await tx.getThread(d.threadId) : null;

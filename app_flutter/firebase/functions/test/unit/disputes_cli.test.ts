@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { openDispute, type SupportMessage } from '@photobooking/domain';
-import { HELP, guardEnv, parseArgs, runCli, type DisputesCliIo } from '../../tools/disputes.js';
+import { HELP, SEND_FAILED_EXIT, guardEnv, parseArgs, runCli, type DisputesCliIo } from '../../tools/disputes.js';
 import {
   createDisputeWorld,
   hoursFrom,
@@ -241,6 +241,40 @@ describe('disputes CLI', () => {
     assert.equal(await runCli(['resolve', 'd1', 'release', 'Ảnh đã giao đủ', '--actor', 'staff1'], LOCAL, t.io), 0);
     assert.deepEqual(t.out, ['d1 -> resolved release: refund 0₫, release 500.000₫']);
     assert.deepEqual(w.gateway.refundCalls, []);
+  });
+
+  it('a send error after the decision commit prints "decision saved", exits 2 and keeps the decision', async () => {
+    const w = await openedWorld();
+    // resolveDispute runs two transactions and the CLI reads the payment in a third; the send's first read fails.
+    const run = w.store.runTransaction.bind(w.store);
+    let calls = 0;
+    w.store.runTransaction = (fn) => {
+      calls += 1;
+      return calls >= 4 ? Promise.reject(new Error('unavailable')) : run(fn);
+    };
+    const t = cli(w);
+    assert.equal(await runCli(['resolve', 'd1', 'refund', 'Thợ không giao ảnh', '--actor', 'staff1'], LOCAL, t.io), SEND_FAILED_EXIT);
+    const d = w.store.disputes.get('d1');
+    assert.equal(d?.status, 'resolved');
+    const refundId = d?.outcome?.refundId ?? '';
+    assert.equal(w.store.refunds.get(refundId)?.status, 'pending');
+    assert.deepEqual(w.gateway.refundCalls, []);
+    assert.deepEqual(t.out, [
+      'd1 -> resolved refund: refund 500.000₫, release 0₫',
+      `refund ${refundId}: decision saved; refund left pending for re-send (unavailable)`,
+    ]);
+  });
+
+  it('the same resolve again after a lost answer prints the stored outcome and sends nothing new', async () => {
+    const w = await openedWorld();
+    const first = cli(w);
+    const argv = ['resolve', 'd1', 'split', '40', 'Thiếu một phần ảnh', '--actor', 'staff1'];
+    assert.equal(await runCli(argv, LOCAL, first.io), 0);
+    const again = cli(w);
+    assert.equal(await runCli(argv, LOCAL, again.io), 0);
+    const refundId = w.store.disputes.get('d1')?.outcome?.refundId ?? '';
+    assert.deepEqual(again.out, ['d1 -> resolved split: refund 200.000₫, release 300.000₫', `refund ${refundId}: done`]);
+    assert.deepEqual(w.gateway.refundCalls, [refundId]);
   });
 
   it('a refund the gateway cannot take now stays pending and the CLI says so', async () => {

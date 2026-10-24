@@ -9,6 +9,7 @@ import {
   hoursFrom,
   NOW,
   openInput,
+  paidPayment,
   seedApprovedBooking,
   seedLegacyBooking,
   seedShotBooking,
@@ -133,6 +134,18 @@ describe('openDispute', () => {
     assert.deepEqual(w.store.mirrors.get('booking::b1'), { disputeId: 'd3', escrowStatus: 'disputed' });
     // While d3 is open, another one → conflict.
     await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd4', evidencePaths: [] })), 'conflict');
+  });
+
+  it('a booking with a stray settled payment freezes the one still holding money (pickSubjectPayment, like Firestore)', async () => {
+    const w = createDisputeWorld();
+    // Settled (paid) but holding nothing: before pickSubjectPayment the memory store took the first settled one.
+    const stray = paidPayment({ id: 'pay_b1_old', escrowStatus: 'released', idempotencyKey: 'key_b1_old' });
+    w.store.payments.set(stray.id, stray);
+    seedApprovedBooking(w);
+    const d = await openDispute(w.deps, 'c1', openInput());
+    assert.equal(d.paymentId, 'pay_b1');
+    assert.equal(payment(w).escrowStatus, 'disputed');
+    assert.equal(payment(w, 'pay_b1_old').escrowStatus, 'released');
   });
 
   it('another customer → permission_denied', async () => {
@@ -351,13 +364,32 @@ describe('resolveDispute', () => {
     assert.equal(refundsOf(none).length, 0);
   });
 
-  it('resolving twice → conflict', async () => {
+  it('resolving twice with another decision → conflict', async () => {
     const w = createDisputeWorld();
     seedApprovedBooking(w);
     await openDispute(w.deps, 'c1', openInput());
     await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: NOTE });
     await rejectsWith(resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'refund', note: NOTE }), 'conflict');
+    await rejectsWith(resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: 'Đổi ý lần nữa' }), 'conflict');
+    await rejectsWith(resolveDispute(w.deps, 'staff2', { disputeId: 'd1', outcome: 'release', note: NOTE }), 'conflict');
     await rejectsWith(resolveDispute(w.deps, 'staff1', { disputeId: 'nope', outcome: 'refund', note: NOTE }), 'not_found');
+  });
+
+  it('the same staff retrying the same decision (lost response) gets the stored outcome and refund, nothing written twice', async () => {
+    const w = createDisputeWorld();
+    seedApprovedBooking(w);
+    await openDispute(w.deps, 'c1', openInput());
+    const first = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'split', refundPercent: 40, note: NOTE });
+    const ledgerBefore = ledgerOf(w).length;
+    const messagesBefore = (await w.store.listMessages('dispute_d1', 10)).length;
+    w.clock.advanceMinutes(1);
+    const again = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'split', refundPercent: 40, note: NOTE });
+    assert.deepEqual(again, first);
+    assert.equal(refundsOf(w).length, 1);
+    assert.equal(ledgerOf(w).length, ledgerBefore);
+    assert.equal((await w.store.listMessages('dispute_d1', 10)).length, messagesBefore);
+    // Another split percent is another decision.
+    await rejectsWith(resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'split', refundPercent: 50, note: NOTE }), 'conflict');
   });
 
   it('note under 5 characters → invalid_argument', async () => {
