@@ -381,6 +381,10 @@ abstract class InstantCancelQuote with _$InstantCancelQuote {
   const factory InstantCancelQuote({
     InstantCancelRule? rule,
 
+    /// The rule code as the server sent it, also one this build has no
+    /// [rule] for: a real cancel sends it back as `expectedRule`.
+    String? ruleCode,
+
     /// 0..100: the customer's share.
     @Default(0) int refundPercent,
     @Default(0) int refundVnd,

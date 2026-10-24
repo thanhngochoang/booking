@@ -15993,6 +15993,12 @@ abstract class AppLocalizations {
   /// **'Giữ yêu cầu'**
   String get cancelInstantKeep;
 
+  /// No description provided for @cancelInstantQuoteChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền hoàn vừa đổi, xem lại trước khi huỷ.'**
+  String get cancelInstantQuoteChanged;
+
   /// No description provided for @cancelledTitle.
   ///
   /// In vi, this message translates to:

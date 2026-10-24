@@ -312,8 +312,10 @@ InstantTrack? instantTrackFromFirestore(Map<String, dynamic>? d) {
 /// `cancelInstantRequest`'s `{rule, refundPercent, refundVnd, feeVnd, amountVnd, status}`.
 InstantCancelQuote instantCancelQuoteFromJson(Object? data) {
   final d = _map(data);
+  final rule = _code(d['rule']);
   return InstantCancelQuote(
-    rule: InstantCancelRule.fromCode(_code(d['rule'])),
+    rule: InstantCancelRule.fromCode(rule),
+    ruleCode: rule,
     refundPercent: _int(d['refundPercent']),
     refundVnd: _int(d['refundVnd']),
     feeVnd: _int(d['feeVnd']),

@@ -244,12 +244,14 @@ class FirestoreInstantRepository implements InstantRepository {
     required bool dryRun,
     InstantCancelQuote? expected,
   }) async {
-    final rule = expected?.rule;
+    // A rule this build does not know still goes back as the server sent it,
+    // so the server can refuse (`conflict`) a quote that changed.
+    final rule = expected?.rule?.code ?? expected?.ruleCode;
     final r = await _call('cancelInstantRequest', {
       'requestId': requestId,
       'dryRun': dryRun,
       if (!dryRun && expected != null && rule != null) ...{
-        'expectedRule': rule.code,
+        'expectedRule': rule,
         'expectedRefundVnd': expected.refundVnd,
       },
     });

@@ -3,7 +3,8 @@
 // its timers once per deadline and on app resume (Decision 6), shows the
 // match moment (S13.04) over S13.05 when a photographer accepts (Decision 5),
 // and, #202, asks for the payment's status on resume while it is open and
-// the notification primer once S04.04 came back paid (Decision 10).
+// the notification primer once the payment is in (Decision 10): S04.04 came
+// back paid, or this screen saw pending_payment turn paid (bank-app return).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -60,8 +61,12 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
   /// S13.04 is up over S13.05.
   bool _matching = false;
 
-  /// The S17.03 primer was asked on this screen ([InstantFlowScreen.justPaid]).
+  /// The S17.03 primer was asked on this screen.
   bool _primerAsked = false;
+
+  /// The `?paid=1` of [InstantFlowScreen.justPaid] was seen and is being
+  /// removed from the location.
+  bool _paidConsumed = false;
 
   String get _id => widget.requestId;
 
@@ -91,19 +96,42 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
     }
   }
 
-  /// Decision 10: once S04.04 came back paid ([InstantFlowScreen.justPaid])
-  /// and the request shows the money, the S17.03 primer, once. The `?paid=1`
-  /// is consumed first (same page, state kept), so neither a rebuild nor a
-  /// later visit of this location asks again.
-  void _maybeAskPrimer(InstantRequest? r) {
-    if (!widget.justPaid || _primerAsked || r == null || !r.paid) return;
+  /// Decision 10: once the request shows the money, the S17.03 primer, once.
+  /// Either S04.04 came back paid ([InstantFlowScreen.justPaid]) or
+  /// [sawPayment]: this screen, on top, saw pending_payment turn paid (back
+  /// from the bank app without S04.04). The `?paid=1` is consumed (same page,
+  /// state kept), so neither a rebuild nor a later visit of this location
+  /// asks again.
+  void _maybeAskPrimer(InstantRequest? r, {bool sawPayment = false}) {
+    if (r == null || !r.paid) return;
+    final fromPay = widget.justPaid && !_paidConsumed;
+    if (!fromPay && !sawPayment) return;
+    if (fromPay) _paidConsumed = true;
+    final ask = !_primerAsked;
     _primerAsked = true;
     // After the frame: the view of the paid request is on screen.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      GoRouter.of(context).replace(instantRequestPath(_id));
-      unawaited(_askPrimer());
+      if (fromPay) GoRouter.of(context).replace(instantRequestPath(_id));
+      if (ask) unawaited(_askPrimer());
     });
+  }
+
+  /// pending_payment → paid seen while this screen is the top route. Under
+  /// S04.04 it is S04.04's `?paid=1` that asks.
+  bool _sawPayment(InstantRequest? r) =>
+      _previous == InstantStatus.pendingPayment &&
+      r != null &&
+      r.paid &&
+      (_route?.isCurrent ?? true);
+
+  /// This screen's route, to tell whether S04.04 is on top of it.
+  ModalRoute<Object?>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _route = ModalRoute.of(context);
   }
 
   @override
@@ -121,7 +149,7 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
     }
     _ended = ended;
     _ticks.update(r);
-    _maybeAskPrimer(r);
+    _maybeAskPrimer(r, sawPayment: _sawPayment(r));
     final match = _isMatch(_previous, r);
     _previous = r?.status;
     if (match) {

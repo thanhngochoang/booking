@@ -3994,6 +3994,7 @@
   "@cancelInstantConfirm": {"placeholders": {"refund": {"type": "String"}}},
   "cancelInstantConfirmUnpaid": "Huỷ yêu cầu",
   "cancelInstantKeep": "Giữ yêu cầu",
+  "cancelInstantQuoteChanged": "Số tiền hoàn vừa đổi, xem lại trước khi huỷ.",
   "cancelledTitle": "Đã huỷ yêu cầu",
   "cancelledRefund": "Hoàn {amount} về {method}. Tiền thường về trong vài phút.",
   "@cancelledRefund": {"description": "method is refundToBankQr / refundToMomo / refundToZaloPay", "placeholders": {"amount": {"type": "String"}, "method": {"type": "String"}}},

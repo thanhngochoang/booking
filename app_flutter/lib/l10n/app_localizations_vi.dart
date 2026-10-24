@@ -9340,6 +9340,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cancelInstantKeep => 'Giữ yêu cầu';
 
   @override
+  String get cancelInstantQuoteChanged =>
+      'Số tiền hoàn vừa đổi, xem lại trước khi huỷ.';
+
+  @override
   String get cancelledTitle => 'Đã huỷ yêu cầu';
 
   @override

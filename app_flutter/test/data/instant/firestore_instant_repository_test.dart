@@ -254,6 +254,27 @@ void main() {
       });
     });
 
+    test('a quote with a rule this build does not know sends its raw code', () async {
+      fn.answers['cancelInstantRequest'] = {
+        'rule': 'storm_day',
+        'refundPercent': 100,
+        'refundVnd': 690000,
+        'feeVnd': 0,
+        'amountVnd': 690000,
+        'status': 'en_route',
+      };
+      final shown = await repo().cancel('req1', dryRun: true);
+      expect(shown.rule, isNull);
+      expect(shown.ruleCode, 'storm_day');
+      await repo().cancel('req1', dryRun: false, expected: shown);
+      expect(fn.calls.last.data, {
+        'requestId': 'req1',
+        'dryRun': false,
+        'expectedRule': 'storm_day',
+        'expectedRefundVnd': 690000,
+      });
+    });
+
     test('a FirebaseFunctionsException with details.code becomes InstantError(code)', () async {
       fn.error = FirebaseFunctionsException(
         code: 'failed-precondition',

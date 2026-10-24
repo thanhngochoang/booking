@@ -35,8 +35,10 @@ enum _Closed { kept, cancelled, refused }
 
 /// Opens S13.08 over the request's view. Closes on "Giữ yêu cầu", back or a
 /// tap outside, and after the cancel went through (the request's listener
-/// then shows the closed view). A `conflict` from the server (the request
-/// moved on, e.g. the shoot started) closes it with the generic error.
+/// then shows the closed view). A cancel refused with `conflict` (the quote
+/// changed, e.g. a window ended) re-quotes in place with "Số tiền hoàn vừa
+/// đổi…"; a dry run answering `conflict` (the request moved on, e.g. the
+/// shoot started) closes it with the generic error.
 Future<void> showCustomerCancelSheet(
   BuildContext context,
   WidgetRef ref, {
@@ -145,7 +147,13 @@ class _CustomerCancelBodyState extends ConsumerState<_CustomerCancelBody> {
     } on Object catch (e) {
       if (!mounted) return;
       if (_isConflict(e)) {
-        _close(_Closed.refused);
+        // The quote changed under the tap: ask again and say so; the dry
+        // run closes the sheet if the request cannot be cancelled any more.
+        setState(() {
+          _running = false;
+          _error = l.cancelInstantQuoteChanged;
+        });
+        ref.invalidate(customerCancelQuoteProvider(_id));
         return;
       }
       // The request is still open: the sheet stays with the reason.

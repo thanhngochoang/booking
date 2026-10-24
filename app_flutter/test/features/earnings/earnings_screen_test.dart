@@ -353,7 +353,7 @@ void main() {
   });
 
   testWidgets(
-    'an instant_request row expands to Phí / Thuế khấu trừ / Thực nhận like a booking row',
+    'an instant_request row expands to Hoa hồng / Thuế khấu trừ / Thực nhận like a booking row',
     (tester) async {
       final w = await _open(
         tester,

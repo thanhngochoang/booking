@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -349,6 +351,48 @@ void main() {
         w.repo.callsOf('updateJob').last.args['action'],
         InstantJobAction.noShow,
       );
+      await _end(tester, w.repo);
+    },
+  );
+
+  testWidgets(
+    'a double tap on "Khách không có mặt" while the quote loads asks once and '
+    'opens one sheet',
+    (tester) async {
+      final w = _world(
+        request: jobRequestOf(
+          'req1',
+          status: InstantStatus.arrived,
+          arrivedAt: instantNow.subtract(const Duration(minutes: 16)),
+        ),
+      );
+      await pumpJobScreen(tester, w);
+      final noShow = find.byKey(const Key('job-no-show'));
+      AppButton noShowButton() => tester.widget<AppButton>(
+        find.descendant(of: noShow, matching: find.byType(AppButton)),
+      );
+      expect(noShowButton().loading, isFalse);
+
+      final gate = w.repo.gate = Completer<void>();
+      await tester.tap(noShow);
+      await tester.pump();
+      // Loading while the server quotes; the second tap does nothing.
+      expect(noShowButton().loading, isTrue);
+      await tester.tap(noShow, warnIfMissed: false);
+      await tester.pump();
+      expect(w.repo.callsOf('noShowQuote'), hasLength(1));
+
+      gate.complete();
+      w.repo.gate = null;
+      await settleInstant(tester);
+      expect(find.text('Báo khách không có mặt?'), findsOneWidget);
+      expect(w.repo.callsOf('noShowQuote'), hasLength(1));
+
+      await tester.tap(find.text('Chờ thêm').last);
+      await settleInstant(tester);
+      expect(find.text('Báo khách không có mặt?'), findsNothing);
+      expect(noShowButton().loading, isFalse);
+      expect(w.repo.callsOf('updateJob'), isEmpty);
       await _end(tester, w.repo);
     },
   );

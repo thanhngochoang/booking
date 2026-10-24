@@ -53,6 +53,10 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
     with WidgetsBindingObserver {
   bool _leaving = false;
 
+  /// "Khách không đến" is asking the server's quote or its sheet is open:
+  /// a second tap does nothing.
+  bool _noShowOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -142,24 +146,30 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
   }
 
   Future<void> _noShow() async {
+    if (_noShowOpen) return;
     final l = context.l10n;
-    // Decision 9's 50/50 as the server quotes it (#202): never app arithmetic.
-    final InstantCancelQuote quote;
+    setState(() => _noShowOpen = true);
     try {
-      quote = await _controller.noShowQuote();
-    } on Object catch (e) {
-      if (mounted) _say(instantErrorText(l, e));
-      return;
+      // Decision 9's 50/50 as the server quotes it (#202): never app arithmetic.
+      final InstantCancelQuote quote;
+      try {
+        quote = await _controller.noShowQuote();
+      } on Object catch (e) {
+        if (mounted) _say(instantErrorText(l, e));
+        return;
+      }
+      if (!mounted) return;
+      final ok = await showConfirmSheet(
+        context,
+        title: l.jobNoShowTitle,
+        body: l.jobNoShowBody(formatMoney(quote.feeVnd)),
+        confirmLabel: l.jobNoShowConfirm,
+        keepLabel: l.jobNoShowKeep,
+      );
+      if (ok && mounted) await _call(_controller.noShow);
+    } finally {
+      if (mounted) setState(() => _noShowOpen = false);
     }
-    if (!mounted) return;
-    final ok = await showConfirmSheet(
-      context,
-      title: l.jobNoShowTitle,
-      body: l.jobNoShowBody(formatMoney(quote.feeVnd)),
-      confirmLabel: l.jobNoShowConfirm,
-      keepLabel: l.jobNoShowKeep,
-    );
-    if (ok && mounted) await _call(_controller.noShow);
   }
 
   Future<void> _cancel() async {
@@ -431,6 +441,7 @@ class _InstantJobScreenState extends ConsumerState<InstantJobScreen>
         _NoShowButton(
           openAt: arrivedAt.add(kNoShowWait),
           now: ref.read(clockProvider),
+          loading: _noShowOpen || ui.busy == InstantJobAction.noShow,
           onPressed: busy ? null : _noShow,
         ),
       ],
@@ -710,10 +721,16 @@ class _Note extends StatelessWidget {
 
 /// Mock `.btn.txt` in `--bad`: "Huỷ việc", "Khách không có mặt".
 class _RedText extends StatelessWidget {
-  const _RedText(this.label, {super.key, required this.onPressed});
+  const _RedText(
+    this.label, {
+    super.key,
+    required this.onPressed,
+    this.loading = false,
+  });
 
   final String label;
   final VoidCallback? onPressed;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -726,6 +743,7 @@ class _RedText extends StatelessWidget {
           dark ? AppColorsDark.destructive : AppColors.destructive,
         ),
       ),
+      loading: loading,
       onPressed: onPressed,
     );
   }
@@ -768,11 +786,15 @@ class _NoShowButton extends StatefulWidget {
     required this.openAt,
     required this.now,
     required this.onPressed,
+    this.loading = false,
   });
 
   final DateTime openAt;
   final DateTime Function() now;
   final VoidCallback? onPressed;
+
+  /// The quote is being asked, its sheet is open or the no-show runs.
+  final bool loading;
 
   @override
   State<_NoShowButton> createState() => _NoShowButtonState();
@@ -832,6 +854,7 @@ class _NoShowButtonState extends State<_NoShowButton> {
     return _RedText(
       l.jobNoShow,
       key: const Key('job-no-show'),
+      loading: widget.loading,
       onPressed: widget.onPressed,
     );
   }

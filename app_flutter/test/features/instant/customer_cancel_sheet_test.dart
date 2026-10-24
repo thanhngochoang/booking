@@ -328,14 +328,49 @@ void main() {
     await _end(tester, w);
   });
 
-  testWidgets('conflict closes with the generic error', (tester) async {
+  testWidgets('a cancel refused with conflict (quote changed) re-quotes in '
+      'place and says so', (tester) async {
     final w = InstantCustomerWorld();
-    await _open(tester, w, _request(paid: false));
+    w.repo.cancelQuote = const InstantCancelQuote(
+      rule: InstantCancelRule.freeWindow,
+      refundPercent: 100,
+      refundVnd: 690000,
+      amountVnd: 690000,
+    );
+    await _open(tester, w, _request(status: InstantStatus.assigned));
+    expect(find.text('Huỷ và hoàn 690.000₫'), findsOneWidget);
+    // The free window ended between the dry run and the tap.
     w.repo.failNext('cancel', 'conflict');
+    w.repo.cancelQuote = const InstantCancelQuote(
+      rule: InstantCancelRule.enRoute,
+      refundPercent: 80,
+      refundVnd: 552000,
+      feeVnd: 138000,
+      amountVnd: 690000,
+    );
     await tester.tap(_confirm);
     await settleInstant(tester);
+
+    expect(find.text(_title), findsOneWidget);
+    expect(find.text(_generic), findsNothing);
+    expect(
+      find.text('Số tiền hoàn vừa đổi, xem lại trước khi huỷ.'),
+      findsOneWidget,
+    );
+    expect(
+      w.repo.callsOf('cancel').map((c) => c.args['dryRun']),
+      [true, false, true],
+    );
+    expect(_active(tester), 1);
+    expect(find.text('Huỷ và hoàn 552.000₫'), findsOneWidget);
+    expect(tester.widget<AppButton>(_confirm).onPressed, isNotNull);
+
+    // Confirmed again: the new quote goes with the cancel.
+    await tester.tap(_confirm);
+    await settleInstant(tester);
+    final real = w.repo.callsOf('cancel').where((c) => c.args['dryRun'] == false);
+    expect(real.last.args['expected'], w.repo.cancelQuote);
     expect(find.text(_title), findsNothing);
-    expect(find.text(_generic), findsOneWidget);
     await _end(tester, w);
   });
 
@@ -435,10 +470,8 @@ void main() {
     );
     w.repo.emitRequest('req1', r.copyWith(status: InstantStatus.enRoute));
     await tester.pump(const Duration(milliseconds: 100));
-    final off = find.descendant(of: _confirm, matching: find.byType(FilledButton));
-    if (off.evaluate().isNotEmpty) {
-      expect(tester.widget<FilledButton>(off).onPressed, isNull);
-    }
+    expect(_confirm, findsOneWidget);
+    expect(tester.widget<AppButton>(_confirm).onPressed, isNull);
     await tester.tap(_confirm, warnIfMissed: false);
     await tester.pump();
     expect(w.repo.callsOf('cancel').where((c) => c.args['dryRun'] == false), isEmpty);

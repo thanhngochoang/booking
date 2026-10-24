@@ -3058,7 +3058,9 @@ as String?,
 /// @nodoc
 mixin _$InstantCancelQuote {
 
- InstantCancelRule? get rule;/// 0..100: the customer's share.
+ InstantCancelRule? get rule;/// The rule code as the server sent it, also one this build has no
+/// [rule] for: a real cancel sends it back as `expectedRule`.
+ String? get ruleCode;/// 0..100: the customer's share.
  int get refundPercent; int get refundVnd;/// What the photographer keeps.
  int get feeVnd;/// The money collected (0 while unpaid, every #140 request).
  int get amountVnd;
@@ -3073,20 +3075,20 @@ $InstantCancelQuoteCopyWith<InstantCancelQuote> get copyWith => _$InstantCancelQ
 @override
 bool operator ==(Object other) {
   final _this = this as InstantCancelQuote;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InstantCancelQuote&&(identical(other.rule, _this.rule) || other.rule == _this.rule)&&(identical(other.refundPercent, _this.refundPercent) || other.refundPercent == _this.refundPercent)&&(identical(other.refundVnd, _this.refundVnd) || other.refundVnd == _this.refundVnd)&&(identical(other.feeVnd, _this.feeVnd) || other.feeVnd == _this.feeVnd)&&(identical(other.amountVnd, _this.amountVnd) || other.amountVnd == _this.amountVnd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InstantCancelQuote&&(identical(other.rule, _this.rule) || other.rule == _this.rule)&&(identical(other.ruleCode, _this.ruleCode) || other.ruleCode == _this.ruleCode)&&(identical(other.refundPercent, _this.refundPercent) || other.refundPercent == _this.refundPercent)&&(identical(other.refundVnd, _this.refundVnd) || other.refundVnd == _this.refundVnd)&&(identical(other.feeVnd, _this.feeVnd) || other.feeVnd == _this.feeVnd)&&(identical(other.amountVnd, _this.amountVnd) || other.amountVnd == _this.amountVnd));
 }
 
 
 @override
 int get hashCode {
   final _this = this as InstantCancelQuote;
-  return Object.hash(runtimeType,_this.rule,_this.refundPercent,_this.refundVnd,_this.feeVnd,_this.amountVnd);
+  return Object.hash(runtimeType,_this.rule,_this.ruleCode,_this.refundPercent,_this.refundVnd,_this.feeVnd,_this.amountVnd);
 }
 
 @override
 String toString() {
   final _this = this as InstantCancelQuote;
-  return 'InstantCancelQuote(rule: ${_this.rule}, refundPercent: ${_this.refundPercent}, refundVnd: ${_this.refundVnd}, feeVnd: ${_this.feeVnd}, amountVnd: ${_this.amountVnd})';
+  return 'InstantCancelQuote(rule: ${_this.rule}, ruleCode: ${_this.ruleCode}, refundPercent: ${_this.refundPercent}, refundVnd: ${_this.refundVnd}, feeVnd: ${_this.feeVnd}, amountVnd: ${_this.amountVnd})';
 }
 
 
@@ -3097,7 +3099,7 @@ abstract mixin class $InstantCancelQuoteCopyWith<$Res>  {
   factory $InstantCancelQuoteCopyWith(InstantCancelQuote value, $Res Function(InstantCancelQuote) _then) = _$InstantCancelQuoteCopyWithImpl;
 @useResult
 $Res call({
- InstantCancelRule? rule, int refundPercent, int refundVnd, int feeVnd, int amountVnd
+ InstantCancelRule? rule, String? ruleCode, int refundPercent, int refundVnd, int feeVnd, int amountVnd
 });
 
 
@@ -3114,10 +3116,11 @@ class _$InstantCancelQuoteCopyWithImpl<$Res>
 
 /// Create a copy of InstantCancelQuote
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? rule = freezed,Object? refundPercent = null,Object? refundVnd = null,Object? feeVnd = null,Object? amountVnd = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? rule = freezed,Object? ruleCode = freezed,Object? refundPercent = null,Object? refundVnd = null,Object? feeVnd = null,Object? amountVnd = null,}) {
   return _then(InstantCancelQuote(
 rule: freezed == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
-as InstantCancelRule?,refundPercent: null == refundPercent ? _self.refundPercent : refundPercent // ignore: cast_nullable_to_non_nullable
+as InstantCancelRule?,ruleCode: freezed == ruleCode ? _self.ruleCode : ruleCode // ignore: cast_nullable_to_non_nullable
+as String?,refundPercent: null == refundPercent ? _self.refundPercent : refundPercent // ignore: cast_nullable_to_non_nullable
 as int,refundVnd: null == refundVnd ? _self.refundVnd : refundVnd // ignore: cast_nullable_to_non_nullable
 as int,feeVnd: null == feeVnd ? _self.feeVnd : feeVnd // ignore: cast_nullable_to_non_nullable
 as int,amountVnd: null == amountVnd ? _self.amountVnd : amountVnd // ignore: cast_nullable_to_non_nullable
@@ -3206,10 +3209,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( InstantCancelRule? rule,  int refundPercent,  int refundVnd,  int feeVnd,  int amountVnd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( InstantCancelRule? rule,  String? ruleCode,  int refundPercent,  int refundVnd,  int feeVnd,  int amountVnd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InstantCancelQuote() when $default != null:
-return $default(_that.rule,_that.refundPercent,_that.refundVnd,_that.feeVnd,_that.amountVnd);case _:
+return $default(_that.rule,_that.ruleCode,_that.refundPercent,_that.refundVnd,_that.feeVnd,_that.amountVnd);case _:
   return orElse();
 
 }
@@ -3227,10 +3230,10 @@ return $default(_that.rule,_that.refundPercent,_that.refundVnd,_that.feeVnd,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( InstantCancelRule? rule,  int refundPercent,  int refundVnd,  int feeVnd,  int amountVnd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( InstantCancelRule? rule,  String? ruleCode,  int refundPercent,  int refundVnd,  int feeVnd,  int amountVnd)  $default,) {final _that = this;
 switch (_that) {
 case _InstantCancelQuote():
-return $default(_that.rule,_that.refundPercent,_that.refundVnd,_that.feeVnd,_that.amountVnd);case _:
+return $default(_that.rule,_that.ruleCode,_that.refundPercent,_that.refundVnd,_that.feeVnd,_that.amountVnd);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3247,10 +3250,10 @@ return $default(_that.rule,_that.refundPercent,_that.refundVnd,_that.feeVnd,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( InstantCancelRule? rule,  int refundPercent,  int refundVnd,  int feeVnd,  int amountVnd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( InstantCancelRule? rule,  String? ruleCode,  int refundPercent,  int refundVnd,  int feeVnd,  int amountVnd)?  $default,) {final _that = this;
 switch (_that) {
 case _InstantCancelQuote() when $default != null:
-return $default(_that.rule,_that.refundPercent,_that.refundVnd,_that.feeVnd,_that.amountVnd);case _:
+return $default(_that.rule,_that.ruleCode,_that.refundPercent,_that.refundVnd,_that.feeVnd,_that.amountVnd);case _:
   return null;
 
 }
@@ -3262,10 +3265,13 @@ return $default(_that.rule,_that.refundPercent,_that.refundVnd,_that.feeVnd,_tha
 
 
 class _InstantCancelQuote implements InstantCancelQuote {
-  const _InstantCancelQuote({this.rule, this.refundPercent = 0, this.refundVnd = 0, this.feeVnd = 0, this.amountVnd = 0});
+  const _InstantCancelQuote({this.rule, this.ruleCode, this.refundPercent = 0, this.refundVnd = 0, this.feeVnd = 0, this.amountVnd = 0});
   
 
 @override final  InstantCancelRule? rule;
+/// The rule code as the server sent it, also one this build has no
+/// [rule] for: a real cancel sends it back as `expectedRule`.
+@override final  String? ruleCode;
 /// 0..100: the customer's share.
 @override@JsonKey() final  int refundPercent;
 @override@JsonKey() final  int refundVnd;
@@ -3284,18 +3290,18 @@ _$InstantCancelQuoteCopyWith<_InstantCancelQuote> get copyWith => __$InstantCanc
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InstantCancelQuote&&(identical(other.rule, rule) || other.rule == rule)&&(identical(other.refundPercent, refundPercent) || other.refundPercent == refundPercent)&&(identical(other.refundVnd, refundVnd) || other.refundVnd == refundVnd)&&(identical(other.feeVnd, feeVnd) || other.feeVnd == feeVnd)&&(identical(other.amountVnd, amountVnd) || other.amountVnd == amountVnd));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InstantCancelQuote&&(identical(other.rule, rule) || other.rule == rule)&&(identical(other.ruleCode, ruleCode) || other.ruleCode == ruleCode)&&(identical(other.refundPercent, refundPercent) || other.refundPercent == refundPercent)&&(identical(other.refundVnd, refundVnd) || other.refundVnd == refundVnd)&&(identical(other.feeVnd, feeVnd) || other.feeVnd == feeVnd)&&(identical(other.amountVnd, amountVnd) || other.amountVnd == amountVnd));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,rule,refundPercent,refundVnd,feeVnd,amountVnd);
+    return Object.hash(runtimeType,rule,ruleCode,refundPercent,refundVnd,feeVnd,amountVnd);
 }
 
 @override
 String toString() {
-    return 'InstantCancelQuote(rule: $rule, refundPercent: $refundPercent, refundVnd: $refundVnd, feeVnd: $feeVnd, amountVnd: $amountVnd)';
+    return 'InstantCancelQuote(rule: $rule, ruleCode: $ruleCode, refundPercent: $refundPercent, refundVnd: $refundVnd, feeVnd: $feeVnd, amountVnd: $amountVnd)';
 }
 
 
@@ -3306,7 +3312,7 @@ abstract mixin class _$InstantCancelQuoteCopyWith<$Res> implements $InstantCance
   factory _$InstantCancelQuoteCopyWith(_InstantCancelQuote value, $Res Function(_InstantCancelQuote) _then) = __$InstantCancelQuoteCopyWithImpl;
 @override @useResult
 $Res call({
- InstantCancelRule? rule, int refundPercent, int refundVnd, int feeVnd, int amountVnd
+ InstantCancelRule? rule, String? ruleCode, int refundPercent, int refundVnd, int feeVnd, int amountVnd
 });
 
 
@@ -3323,10 +3329,11 @@ class __$InstantCancelQuoteCopyWithImpl<$Res>
 
 /// Create a copy of InstantCancelQuote
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? rule = freezed,Object? refundPercent = null,Object? refundVnd = null,Object? feeVnd = null,Object? amountVnd = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? rule = freezed,Object? ruleCode = freezed,Object? refundPercent = null,Object? refundVnd = null,Object? feeVnd = null,Object? amountVnd = null,}) {
   return _then(_InstantCancelQuote(
 rule: freezed == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
-as InstantCancelRule?,refundPercent: null == refundPercent ? _self.refundPercent : refundPercent // ignore: cast_nullable_to_non_nullable
+as InstantCancelRule?,ruleCode: freezed == ruleCode ? _self.ruleCode : ruleCode // ignore: cast_nullable_to_non_nullable
+as String?,refundPercent: null == refundPercent ? _self.refundPercent : refundPercent // ignore: cast_nullable_to_non_nullable
 as int,refundVnd: null == refundVnd ? _self.refundVnd : refundVnd // ignore: cast_nullable_to_non_nullable
 as int,feeVnd: null == feeVnd ? _self.feeVnd : feeVnd // ignore: cast_nullable_to_non_nullable
 as int,amountVnd: null == amountVnd ? _self.amountVnd : amountVnd // ignore: cast_nullable_to_non_nullable

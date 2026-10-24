@@ -216,6 +216,53 @@ void main() {
   );
 
   testWidgets(
+    'pending_payment turning paid on this screen (bank-app return, no '
+    'S04.04) asks the primer once',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final world = InstantCustomerWorld(
+        extra: [
+          notificationPermissionProvider.overrideWithValue(
+            FakeNotificationPermission(),
+          ),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+      );
+      final router = await pumpInstantFlow(
+        tester,
+        world,
+        request: customerRequestOf(
+          status: InstantStatus.pendingPayment,
+          pendingInviteIds: ['p1'],
+          payMethod: PayMethod.momo,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PermissionPrimer), findsNothing);
+
+      final paid = customerRequestOf(
+        status: InstantStatus.searching,
+        committed: true,
+        paid: true,
+      );
+      world.repo.emitRequest('req1', paid);
+      await settleInstant(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PermissionPrimer), findsOneWidget);
+      expect(router.state.uri.toString(), '/instant/req1');
+
+      await tester.tap(find.text('Để sau'));
+      await settleInstant(tester);
+      // More snapshots of the paid request ask nothing again.
+      world.repo.emitRequest('req1', paid.copyWith(invitedTotal: 2));
+      await settleInstant(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PermissionPrimer), findsNothing);
+    },
+  );
+
+  testWidgets(
     'pending_payment resumes with Thanh toán tiếp and reuses the payment',
     (tester) async {
       final world = InstantCustomerWorld();

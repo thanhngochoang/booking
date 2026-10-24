@@ -506,6 +506,7 @@ void main() {
         'status': 'en_route',
       });
       expect(q.rule, InstantCancelRule.enRoute);
+      expect(q.ruleCode, 'en_route');
       expect(q.refundPercent, 80);
       expect(q.refundVnd, 552000);
       expect(q.feeVnd, 138000);
