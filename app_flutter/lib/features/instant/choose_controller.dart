@@ -1,11 +1,15 @@
-// S13.02: who the customer likes or skips in the current round, and "Gửi
-// lời mời". The request listener is the truth: a new round (after "Xem 5
-// người khác") starts a fresh choice, and a successful invite moves the
-// request to `searching` (S13.03).
+// S13.02: who the customer likes or skips in the current round, the payment
+// method of the first round, and "Thanh toán {giá} và gửi lời mời" / "Gửi lời
+// mời" / "Thanh toán tiếp". The request listener is the truth: a new round
+// (after "Xem 5 người khác") starts a fresh choice, the first round's invite
+// waits in `pending_payment` until S04.04 has the money (#202), and the offers
+// move the request to `searching` (S13.03).
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/features/instant/instant_payment.dart';
 
 /// At most this many cards per round (spec §2.1: five suggestions).
 const kInstantRoundSize = 5;
@@ -20,6 +24,7 @@ class ChooseState {
     this.sending = false,
     this.fetching = false,
     this.amountVnd,
+    this.method,
     this.error,
   });
 
@@ -46,6 +51,10 @@ class ChooseState {
   /// request's own.
   final int? amountVnd;
 
+  /// The payment method picked on the summary (#202); null = not touched
+  /// (see [ChooseController.methodOf]).
+  final PayMethod? method;
+
   /// The last failed call, for the toast.
   final Object? error;
 
@@ -58,6 +67,7 @@ class ChooseState {
     bool? sending,
     bool? fetching,
     int? amountVnd,
+    PayMethod? method,
     Object? error,
     bool clearError = false,
   }) => ChooseState(
@@ -69,6 +79,7 @@ class ChooseState {
     sending: sending ?? this.sending,
     fetching: fetching ?? this.fetching,
     amountVnd: amountVnd ?? this.amountVnd,
+    method: method ?? this.method,
     error: clearError ? null : (error ?? this.error),
   );
 }
@@ -84,7 +95,6 @@ class ChooseController extends Notifier<ChooseState> {
 
   /// Undo history: who was answered, and whether they were liked.
   final _history = <({String id, bool liked})>[];
-  bool _primerAsked = false;
 
   @override
   ChooseState build() {
@@ -94,7 +104,7 @@ class ChooseController extends Notifier<ChooseState> {
       (previous, next) {
         if (previous != null && next != null && previous != next) {
           _history.clear();
-          state = ChooseState(amountVnd: state.amountVnd);
+          state = ChooseState(amountVnd: state.amountVnd, method: state.method);
         }
       },
     );
@@ -176,50 +186,53 @@ class ChooseController extends Notifier<ChooseState> {
     }
   }
 
-  /// "Gửi lời mời" (#140: no payment, Decision 1): `inviteInstant` with the
-  /// liked people. Null while a call is in flight (a double tap sends one
-  /// invite), with nobody liked, or when the call failed ([ChooseState.error]).
-  /// [askPrimer] runs once after the request's first successful invite
-  /// (Decision 10): one that reached somebody. When every chosen person was
-  /// unavailable the server ends the round without inviting anyone (it still
-  /// marks the request committed, so `invitedTotal` tells a first invite).
-  Future<InstantInviteResult?> send({
-    Future<void> Function()? askPrimer,
-  }) async {
+  /// The payment method on the summary (Decision 2).
+  void setMethod(PayMethod m) => state = state.copyWith(method: m);
+
+  /// The method the first round pays with for [r]: the picked one, else the
+  /// one [r] waits on, else Chuyển khoản QR.
+  PayMethod methodOf(InstantRequest r) => instantPayMethodOf(r, state.method);
+
+  /// The summary's primary (Decision 1, #202). The first round ("Thanh toán
+  /// {giá} và gửi lời mời", the request not committed) sends the liked people
+  /// with the payment method and gets [InstantPaymentNeeded]: the view opens
+  /// S04.04 and the offers go out once the money is in. In `pending_payment`
+  /// ("Thanh toán tiếp") the waiting choice is sent again (the server reuses
+  /// the open payment). Later rounds ("Gửi lời mời") use the held money and
+  /// get [InstantInvited]. Null while a call is in flight (a double tap sends
+  /// one invite), with nobody chosen, or when the call failed
+  /// ([ChooseState.error]). The notification primer is asked after the
+  /// payment (Decision 10), not here.
+  Future<InstantInviteResult?> send() async {
     final r = _request;
-    if (r == null || state.sending || state.fetching || state.liked.isEmpty) {
+    if (r == null || state.sending || state.fetching) return null;
+    final pending = r.status == InstantStatus.pendingPayment;
+    if (pending ? r.pendingInviteIds.isEmpty : state.liked.isEmpty) {
       return null;
     }
-    final firstInvite = r.invitedTotal == 0;
     state = state.copyWith(sending: true, clearError: true);
     final alive = ref.keepAlive();
     try {
-      final result = await ref
-          .read(instantRepositoryProvider)
-          .invite(
-            requestId,
-            photographerIds: state.liked,
-            skipped: state.skipped,
-            expectedAmountVnd: state.amountVnd ?? r.amountVnd,
-          );
+      final repo = ref.read(instantRepositoryProvider);
+      final result = pending
+          ? await inviteInstantAgain(repo, r, method: state.method)
+          : await repo.invite(
+              requestId,
+              photographerIds: state.liked,
+              skipped: state.skipped,
+              expectedAmountVnd: state.amountVnd ?? r.amountVnd,
+              payMethod: r.committed ? null : methodOf(r),
+            );
       if (!ref.mounted) return result;
-      switch (result) {
-        // #202: the first round pays on S04.04 first (customer plan Task 8
-        // opens it from here); nothing was sent yet.
-        case InstantPaymentNeeded():
-          state = state.copyWith(sending: false);
-        case InstantPriceChanged(:final amountVnd):
-          state = state.copyWith(sending: false, amountVnd: amountVnd);
-        case InstantInvited(:final invited):
-          state = state.copyWith(sending: false);
-          if (invited.isNotEmpty &&
-              firstInvite &&
-              !_primerAsked &&
-              askPrimer != null) {
-            _primerAsked = true;
-            await askPrimer();
-          }
-      }
+      state = switch (result) {
+        InstantPriceChanged(:final amountVnd) => state.copyWith(
+          sending: false,
+          amountVnd: amountVnd,
+        ),
+        // S04.04 (the view opens it) or S13.03 (the listener moves on).
+        InstantPaymentNeeded() ||
+        InstantInvited() => state.copyWith(sending: false),
+      };
       return result;
     } on Object catch (e) {
       if (ref.mounted) state = state.copyWith(sending: false, error: e);

@@ -287,6 +287,20 @@ void main() {
         expect(r.refundPercent, isNull);
         expect(r.assignedAt, isNull);
         expect(r.searchDeadlineAt, isNull);
+        expect(r.pendingInviteIds, isEmpty);
+      },
+    );
+
+    test(
+      'pending_payment reads the waiting choice (pendingInviteIds, #202)',
+      () {
+        final r = instantRequestFromFirestore('req1', {
+          ...fullRequestDoc(),
+          'status': 'pending_payment',
+          'pendingInviteIds': ['ph1', 'ph2', 7],
+        })!;
+        expect(r.status, InstantStatus.pendingPayment);
+        expect(r.pendingInviteIds, ['ph1', 'ph2']);
       },
     );
   });

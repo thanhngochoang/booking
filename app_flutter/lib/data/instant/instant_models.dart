@@ -287,6 +287,10 @@ abstract class InstantRequest with _$InstantRequest {
     @Default(0) int roundsWithInvites,
     @Default(<InstantCandidate>[]) List<InstantCandidate> candidates,
     @Default(<InstantOfferRow>[]) List<InstantOfferRow> offers,
+
+    /// `pending_payment` (#202): who the first round's invites go to once the
+    /// payment is in ("Thanh toán tiếp" sends them again).
+    @Default(<String>[]) List<String> pendingInviteIds,
     @Default(false) bool roundEnded,
     String? photographerId,
     InstantParty? photographer,

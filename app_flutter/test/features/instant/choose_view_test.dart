@@ -272,39 +272,121 @@ void main() {
     },
   );
 
-  for (final committed in [false, true]) {
-    testWidgets(
-      'summary primary is "Gửi lời mời" with no method picker in every round (#140), committed: $committed',
-      (tester) async {
-        final world = InstantCustomerWorld();
-        await pumpInstantFlow(
-          tester,
-          world,
-          request: customerRequestOf(
-            committed: committed,
-            round: committed ? 2 : 1,
-          ),
-        );
-        await _swipe(tester, [true]);
-        await _tap(tester, _done);
-        expect(
-          find.descendant(of: _invite, matching: find.text('Gửi lời mời')),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Thanh toán'), findsNothing);
-        expect(find.text('Chuyển khoản QR'), findsNothing);
-        expect(find.byType(PayMethodSelector), findsNothing);
-        expect(find.byType(PayMethodPicker), findsNothing);
-        // One gradient button on the view.
-        expect(find.byType(CtaSurface), findsOneWidget);
-
-        await _tap(tester, _invite);
-        final call = world.repo.callsOf('invite').single;
-        expect(call.args['photographerIds'], ['p1']);
-        expect(call.args['payMethod'], isNull);
-      },
+  testWidgets('first round: method picker (Chuyển khoản QR selected) and '
+      '"Thanh toán 690.000₫ và gửi lời mời"', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final world = InstantCustomerWorld();
+    await pumpInstantFlow(tester, world);
+    await _swipe(tester, [true]);
+    await _tap(tester, _done);
+    expect(
+      find.descendant(
+        of: _invite,
+        matching: find.text('Thanh toán 690.000₫ và gửi lời mời'),
+      ),
+      findsOneWidget,
     );
-  }
+    expect(find.text('Phương thức thanh toán'), findsOneWidget);
+    expect(find.byType(PayMethodPicker), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byKey(const Key('pay-method-bankQr'))),
+      isSemantics(
+        label: 'Chuyển khoản QR',
+        isSelected: true,
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byKey(const Key('pay-method-momo'))),
+      isSemantics(
+        label: 'MoMo',
+        isSelected: false,
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      find.text('Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.'),
+      findsOneWidget,
+    );
+    // One gradient button on the view.
+    expect(find.byType(CtaSurface), findsOneWidget);
+
+    await _tap(tester, find.byKey(const Key('pay-method-zaloPay')));
+    await _tap(tester, _invite);
+    final call = world.repo.callsOf('invite').single;
+    expect(call.args['photographerIds'], ['p1']);
+    expect(call.args['payMethod'], PayMethod.zaloPay);
+    semantics.dispose();
+  });
+
+  testWidgets('later round (paid): no picker, "Gửi lời mời"', (tester) async {
+    final world = InstantCustomerWorld();
+    await pumpInstantFlow(
+      tester,
+      world,
+      request: customerRequestOf(committed: true, paid: true, round: 2),
+    );
+    await _swipe(tester, [true]);
+    await _tap(tester, _done);
+    expect(
+      find.descendant(of: _invite, matching: find.text('Gửi lời mời')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Thanh toán'), findsNothing);
+    expect(find.byType(PayMethodPicker), findsNothing);
+    expect(find.byType(CtaSurface), findsOneWidget);
+
+    await _tap(tester, _invite);
+    final call = world.repo.callsOf('invite').single;
+    expect(call.args['photographerIds'], ['p1']);
+    expect(call.args['payMethod'], isNull);
+  });
+
+  testWidgets(
+    'pending_payment: "Thanh toán tiếp" calls invite with the pending ids',
+    (tester) async {
+      final world = InstantCustomerWorld();
+      world.repo.inviteResult = InstantPaymentNeeded(
+        instructions: instantInstructionsOf(),
+        amountVnd: 690000,
+      );
+      final router = await pumpInstantFlow(
+        tester,
+        world,
+        request: customerRequestOf(
+          status: InstantStatus.pendingPayment,
+          pendingInviteIds: ['p1', 'p2'],
+          payMethod: PayMethod.bankQr,
+        ),
+      );
+      // Straight to who was chosen; the deck and "Xem 5 người khác" are not
+      // offered while the payment is open.
+      expect(_code(tester).label, 'summary');
+      expect(find.text(_summaryTitle), findsOneWidget);
+      expect(find.text('Minh Trí'), findsOneWidget);
+      expect(find.text('Hồng Nhung'), findsOneWidget);
+      expect(find.byKey(_like), findsNothing);
+      expect(_more, findsNothing);
+      expect(find.byKey(const Key('choose-cancel')), findsOneWidget);
+      expect(
+        find.descendant(of: _invite, matching: find.text('Thanh toán tiếp')),
+        findsOneWidget,
+      );
+      expect(find.byType(CtaSurface), findsOneWidget);
+
+      await _tap(tester, _invite);
+      expect(world.repo.callsOf('invite').single.args, {
+        'requestId': 'req1',
+        'photographerIds': ['p1', 'p2'],
+        'skipped': <String>[],
+        'expectedAmountVnd': 690000,
+        'payMethod': PayMethod.bankQr,
+      });
+      expect(router.state.uri.toString(), '/instant/req1/pay');
+    },
+  );
 
   testWidgets('cards show the tomato meta, never a star', (tester) async {
     await pumpInstantFlow(tester, InstantCustomerWorld());

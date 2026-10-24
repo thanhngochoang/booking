@@ -1,7 +1,11 @@
 // `/instant/:id`: the customer's Chụp ngay request, one route whose view
 // follows the request's status (Decision 4). Also asks the server to settle
-// its timers once per deadline and on app resume (Decision 6), and shows the
-// match moment (S13.04) over S13.05 when a photographer accepts (Decision 5).
+// its timers once per deadline and on app resume (Decision 6), shows the
+// match moment (S13.04) over S13.05 when a photographer accepts (Decision 5),
+// and, #202, asks for the payment's status on resume while it is open and
+// the notification primer once S04.04 came back paid (Decision 10).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,9 +26,17 @@ import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 
 class InstantFlowScreen extends ConsumerStatefulWidget {
-  const InstantFlowScreen({super.key, required this.requestId});
+  const InstantFlowScreen({
+    super.key,
+    required this.requestId,
+    this.justPaid = false,
+  });
 
   final String requestId;
+
+  /// S04.04 brought the customer here because the payment is in (`?paid=1`):
+  /// ask the notification primer once (Decision 10).
+  final bool justPaid;
 
   @override
   ConsumerState<InstantFlowScreen> createState() => _InstantFlowScreenState();
@@ -46,6 +58,9 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
 
   /// S13.04 is up over S13.05.
   bool _matching = false;
+
+  /// The S17.03 primer was asked on this screen ([InstantFlowScreen.justPaid]).
+  bool _primerAsked = false;
 
   String get _id => widget.requestId;
 
@@ -80,6 +95,11 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
     }
     _ended = ended;
     _ticks.update(r);
+    if (widget.justPaid && !_primerAsked && r != null && r.paid) {
+      _primerAsked = true;
+      // After the frame: the view of the paid request is on screen.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _askPrimer());
+    }
     final match = _isMatch(_previous, r);
     _previous = r?.status;
     if (match) {
@@ -113,7 +133,23 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _ticks.onResume();
+    if (state != AppLifecycleState.resumed) return;
+    _ticks.onResume();
+    // Back from the bank or wallet app: the gateway may already have the
+    // money (`checkInstantPayment`); the listener shows what it changed.
+    if (_previous == InstantStatus.pendingPayment) {
+      unawaited(
+        ref
+            .read(instantRepositoryProvider)
+            .checkPayment(_id)
+            .then<void>(
+              (_) {},
+              onError: (Object e) => debugPrint(
+                'instant payment check failed: ${instantErrorCodeOf(e)}',
+              ),
+            ),
+      );
+    }
   }
 
   Future<void> _askPrimer() async {
@@ -148,12 +184,9 @@ class _InstantFlowScreenState extends ConsumerState<InstantFlowScreen>
           );
         }
         return switch (r.status) {
-          // pending_payment is reached only from #202 (Task 8 adds its
-          // "Thanh toán tiếp" mode).
-          InstantStatus.choosing || InstantStatus.pendingPayment => ChooseView(
-            request: r,
-            askPrimer: _askPrimer,
-          ),
+          // pending_payment: who was chosen and "Thanh toán tiếp" (#202).
+          InstantStatus.choosing ||
+          InstantStatus.pendingPayment => ChooseView(request: r),
           InstantStatus.searching => WaitingView(request: r),
           InstantStatus.assigned ||
           InstantStatus.enRoute ||

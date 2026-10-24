@@ -9,12 +9,15 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
+import 'package:photobooking/data/instant/instant_models.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/instant/instant_payment.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
 
 typedef PayWho = ({String name, String detail});
@@ -120,6 +123,10 @@ class PaymentController extends Notifier<PayView> {
   Booking? _lastKnownBooking;
   bool _creating = false;
 
+  /// [InstantPay]: the request was seen waiting in `pending_payment`.
+  bool _sawPending = false;
+  bool _leaving = false;
+
   void seed(PaymentInstructions? initial) {
     if (initial == null) return;
     _seeded = initial;
@@ -128,11 +135,15 @@ class PaymentController extends Notifier<PayView> {
         BookingPay() => (name: '', detail: ''),
         TicketPay() => (name: '', detail: ''),
         VerificationFeePay() => (name: '', detail: ''),
+        InstantPay() => (name: '', detail: ''),
       };
       state = PayOpen(
         instructions: initial,
         who: who,
-        canRenew: subject is BookingPay || subject is VerificationFeePay,
+        canRenew:
+            subject is BookingPay ||
+            subject is VerificationFeePay ||
+            subject is InstantPay,
       );
     }
   }
@@ -146,8 +157,106 @@ class PaymentController extends Notifier<PayView> {
         registrationId,
       ),
       VerificationFeePay() => _buildFee(),
+      InstantPay(:final requestId) => _buildInstant(requestId),
     };
   }
+
+  /// A Chụp ngay request's first-round payment (#202): open while the request
+  /// waits in `pending_payment`; once it leaves (the payment is in, or its
+  /// window closed and it is back to choosing) S04.04 returns to
+  /// `/instant/{id}`, with `?paid=1` when it was paid here. The instructions
+  /// come from `inviteInstant` (seeded); a resume without them invites again
+  /// with the waiting choice, which reuses the open payment.
+  PayView _buildInstant(String requestId) {
+    final async = ref.watch(instantRequestProvider(requestId));
+    if (async.isLoading && !async.isRefreshing) {
+      return _seededView(canRenew: true) ?? const PayLoading();
+    }
+    if (async.hasError) {
+      return _seededView(canRenew: true) ??
+          const PayFailed(BookingErrorCode.network);
+    }
+    final r = async.requireValue;
+    if (r == null) return PayDone(instantRequestPath(requestId), paid: false);
+    if (r.status == InstantStatus.pendingPayment) {
+      _sawPending = true;
+      final seeded = _seeded;
+      if (seeded != null) {
+        return PayOpen(
+          instructions: seeded,
+          who: (name: '', detail: ''),
+          canRenew: true,
+        );
+      }
+      _resumeInstant(r);
+      return const PayLoading();
+    }
+    final justPaid = r.paid && (_sawPending || _seeded != null);
+    if (justPaid) {
+      return PayDone(instantRequestPath(requestId, justPaid: true));
+    }
+    // Opened from the invite before the listener shows `pending_payment`:
+    // wait on it with the instructions, which S04.04 seeds after its first
+    // frame; without any, nothing waits here.
+    if (!_sawPending && !r.paid) {
+      final seeded = _seededView(canRenew: true);
+      if (seeded != null) return seeded;
+      _leaveUnlessSeeded(requestId);
+      return const PayLoading();
+    }
+    return PayDone(instantRequestPath(requestId), paid: false);
+  }
+
+  /// After S04.04's first frame (when it seeds what `inviteInstant` answered):
+  /// still nothing to show and the request not waiting → back to it.
+  void _leaveUnlessSeeded(String requestId) {
+    if (_leaving) return;
+    _leaving = true;
+    Future<void>(() {
+      _leaving = false;
+      if (ref.mounted && _seeded == null && !_sawPending) {
+        state = PayDone(instantRequestPath(requestId), paid: false);
+      }
+    });
+  }
+
+  /// Resume without instructions: invite again with the waiting choice (the
+  /// server answers the open payment's instructions).
+  void _resumeInstant(InstantRequest r) {
+    if (_creating) return;
+    _creating = true;
+    scheduleMicrotask(() async {
+      try {
+        if (_seeded != null) return;
+        final result = await inviteInstantAgain(
+          ref.read(instantRepositoryProvider),
+          r,
+        );
+        if (!ref.mounted) return;
+        if (result case InstantPaymentNeeded(:final instructions)) {
+          _seeded = instructions;
+          state = PayOpen(
+            instructions: instructions,
+            who: (name: '', detail: ''),
+            canRenew: true,
+          );
+        } else {
+          state = PayDone(instantRequestPath(r.id), paid: false);
+        }
+      } catch (e) {
+        if (ref.mounted && _seeded == null) {
+          state = PayFailed(_instantFailure(e));
+        }
+      } finally {
+        _creating = false;
+      }
+    });
+  }
+
+  static BookingErrorCode _instantFailure(Object e) =>
+      instantErrorCodeOf(e) == 'network'
+      ? BookingErrorCode.network
+      : BookingErrorCode.unknown;
 
   /// The verification fee (#203): paid once `myVerificationProvider` shows
   /// the fee step done (the server records it in the settlement), then back
@@ -390,6 +499,29 @@ class PaymentController extends Notifier<PayView> {
       state = PayOpen(instructions: inst, who: current.who, canRenew: true);
       return inst;
     }
+    if (s is InstantPay) {
+      // "Tạo QR mới": invite again with the same people; the server renews
+      // the payment (or reuses it while it is still open).
+      final r = ref.read(instantRequestProvider(s.requestId)).value;
+      if (r == null || r.status != InstantStatus.pendingPayment) return null;
+      final result = await inviteInstantAgain(
+        ref.read(instantRepositoryProvider),
+        r,
+        method: current.instructions.method,
+      );
+      if (result is! InstantPaymentNeeded) {
+        // The price moved or the request moved on: back to the request.
+        state = PayDone(instantRequestPath(s.requestId), paid: false);
+        return null;
+      }
+      _seeded = result.instructions;
+      state = PayOpen(
+        instructions: result.instructions,
+        who: current.who,
+        canRenew: true,
+      );
+      return result.instructions;
+    }
     if (s is! BookingPay) return null;
 
     final checkout = await ref
@@ -417,6 +549,8 @@ class PaymentController extends Notifier<PayView> {
             .paid,
       VerificationFeePay() =>
         (await ref.read(verificationRepositoryProvider).checkFee()).paid,
+      InstantPay(:final requestId) =>
+        await ref.read(instantRepositoryProvider).checkPayment(requestId),
     };
   }
 

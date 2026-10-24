@@ -25,7 +25,11 @@ enum _Side { customer, photographer }
 class _Duo {
   _Duo({this.photographerId = 'p2', InstantConfig? config}) {
     sim = InstantSimulator(now: () => clock.now, config: config);
-    customer = InstantCustomerWorld(clock: clock, repository: sim.customer);
+    customer = InstantCustomerWorld(
+      clock: clock,
+      repository: sim.customer,
+      paymentsRepository: sim.payments,
+    );
     photographer = InstantWorld(
       clock: clock,
       repository: sim.photographer(photographerId),
@@ -163,9 +167,15 @@ Future<void> _openRequest(WidgetTester tester, _Duo d) async {
   await settleInstant(tester);
 }
 
-/// S13.02: ♥ (true) or ✕ (false) per card, then "Gửi lời mời" on the
-/// summary (the last card opens it when someone was liked).
-Future<void> _choose(WidgetTester tester, List<bool> likes) async {
+/// S13.02: ♥ (true) or ✕ (false) per card, then the summary's primary (the
+/// last card opens it when someone was liked): in the first round
+/// "Thanh toán 690.000₫ và gửi lời mời" opens S04.04, where the customer pays
+/// with the fake bank unless [pay] is false; later rounds "Gửi lời mời".
+Future<void> _choose(
+  WidgetTester tester,
+  List<bool> likes, {
+  bool pay = true,
+}) async {
   for (final like in likes) {
     await tester.tap(find.byKey(Key(like ? 'swipe-like' : 'swipe-skip')));
     await tester.pump();
@@ -176,6 +186,16 @@ Future<void> _choose(WidgetTester tester, List<bool> likes) async {
   }
   expect(_code(tester), 'S13.02/summary');
   await _tapKey(tester, 'choose-invite');
+  if (_code(tester) == 'S04.04/instant' && pay) await _payExact(tester);
+}
+
+/// S04.04: "Giả lập chuyển khoản" → "Chuyển đúng"; back on the request once
+/// the server has the money.
+Future<void> _payExact(WidgetTester tester) async {
+  await _tap(tester, find.text('Giả lập chuyển khoản'));
+  await _tap(tester, find.text('Chuyển đúng'));
+  await tester.pump(const Duration(milliseconds: 300));
+  await settleInstant(tester);
 }
 
 /// The photographer opens their offer (S14.02), takes it and goes on to
@@ -271,6 +291,41 @@ void main() {
   );
 
   testWidgets(
+    'the first invite pays once on S04.04 and only then are the offers sent',
+    (tester) async {
+      final d = await _pump(tester, _Duo());
+      await _openRequest(tester, d);
+      await _choose(tester, [true, true, false, false, false], pay: false);
+      expect(_code(tester), 'S04.04/instant');
+      var r = d.sim.request(d.requestId)!;
+      expect(r.status, InstantStatus.pendingPayment);
+      expect(r.pendingInviteIds, ['p1', 'p2']);
+      expect(r.paid, isFalse);
+      // No offer before the money is in.
+      expect(r.offers, isEmpty);
+      expect(d.sim.offersTo('p1'), isEmpty);
+
+      // Back and "Thanh toán tiếp": the same payment, not a second one.
+      await _tap(tester, find.byTooltip('Quay lại'));
+      expect(_code(tester), 'S13.02/summary');
+      await _tapKey(tester, 'choose-invite');
+      expect(_code(tester), 'S04.04/instant');
+      expect(d.sim.paymentsOf(d.requestId), hasLength(1));
+
+      await _payExact(tester);
+      expect(_code(tester), 'S13.03');
+      expect(_text('Đã gửi lời mời cho 2 người'), findsOneWidget);
+      r = d.sim.request(d.requestId)!;
+      expect(r.paid, isTrue);
+      expect(r.status, InstantStatus.searching);
+      expect(r.offers.map((o) => o.photographerId), ['p1', 'p2']);
+      expect(d.sim.offersTo('p1'), hasLength(1));
+      expect(d.sim.paymentsOf(d.requestId), hasLength(1));
+      await _end(tester, d);
+    },
+  );
+
+  testWidgets(
     'nobody accepts in round 1 (all expire): customer sees "Chưa ai nhận …", '
     'picks again without paying, round 2 matches',
     (tester) async {
@@ -297,7 +352,9 @@ void main() {
       await _choose(tester, [true, false, false]);
       expect(_code(tester), 'S13.03');
       final r = d.sim.request(d.requestId)!;
-      expect(r.paid, isFalse); // #140: no payment in any round
+      // Round 2 used the held money: one payment for the request.
+      expect(r.paid, isTrue);
+      expect(d.sim.paymentsOf(d.requestId), hasLength(1));
       expect(r.invitedTotal, 4);
       expect(r.roundsWithInvites, 2);
 
@@ -314,7 +371,6 @@ void main() {
     (tester) async {
       final d = await _pump(tester, _Duo());
       await _openRequest(tester, d);
-      d.sim.markPaid(d.requestId);
       await _choose(tester, [false, true, false, false, false]);
       await _accept(tester, d);
 
@@ -341,12 +397,15 @@ void main() {
   );
 
   group('customer cancels at each milestone', () {
-    testWidgets('choosing, unpaid: no money', (tester) async {
+    testWidgets('pending_payment, unpaid: no money', (tester) async {
       final d = await _pump(tester, _Duo());
       await _openRequest(tester, d);
-      await _choose(tester, [true, false, false, false, false]);
-      await d.wait(tester, const Duration(seconds: 62));
-      expect(_code(tester), 'S13.02/round');
+      // S04.04 opens; the customer leaves without paying.
+      await _choose(tester, [true, false, false, false, false], pay: false);
+      expect(_code(tester), 'S04.04/instant');
+      await _tap(tester, find.byTooltip('Quay lại'));
+      expect(_code(tester), 'S13.02/summary');
+      expect(find.text('Thanh toán tiếp'), findsOneWidget);
 
       await _tapKey(tester, 'choose-cancel');
       expect(_code(tester), 'S13.08');
@@ -362,13 +421,14 @@ void main() {
         d.sim.request(d.requestId)!.cancelRule,
         InstantCancelRule.unpaid,
       );
+      // Nobody was offered anything.
+      expect(d.sim.request(d.requestId)!.offers, isEmpty);
       await _end(tester, d);
     });
 
     testWidgets('searching: 100%', (tester) async {
       final d = await _pump(tester, _Duo());
       await _openRequest(tester, d);
-      d.sim.markPaid(d.requestId);
       await _choose(tester, [true, true, false, false, false]);
       expect(_code(tester), 'S13.03');
 
@@ -397,7 +457,6 @@ void main() {
     ) async {
       final d = await _pump(tester, _Duo());
       await _openRequest(tester, d);
-      d.sim.markPaid(d.requestId);
       await _choose(tester, [false, true, false, false, false]);
       await _accept(tester, d);
       await _pastMatch(tester, d);
@@ -448,8 +507,7 @@ void main() {
             ),
           );
           await _openRequest(tester, d);
-          d.sim.markPaid(d.requestId);
-          await _choose(tester, [false, true, false, false, false]);
+              await _choose(tester, [false, true, false, false, false]);
           await _accept(tester, d);
           await _tapKey(tester, 'job-arrive');
           expect(d.sim.request(d.requestId)!.status, InstantStatus.arrived);
@@ -479,7 +537,6 @@ void main() {
     (tester) async {
       final d = await _pump(tester, _Duo());
       await _openRequest(tester, d);
-      d.sim.markPaid(d.requestId);
       await _choose(tester, [true]);
       await d.wait(tester, const Duration(seconds: 62));
       expect(_code(tester), 'S13.02/round');

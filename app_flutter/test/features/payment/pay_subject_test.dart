@@ -34,4 +34,15 @@ void main() {
     expect(a.hashCode, const VerificationFeePay().hashCode);
     expect(a == const BookingPay('b1'), isFalse);
   });
+
+  test('a Chụp ngay request pays at /instant/{id}/pay (#202)', () {
+    expect(payPathOf(const InstantPay('req1')), '/instant/req1/pay');
+    expect(const InstantPay('req1'), const InstantPay('req1'));
+    expect(
+      const InstantPay('req1').hashCode,
+      const InstantPay('req1').hashCode,
+    );
+    expect(const InstantPay('req1') == const InstantPay('req2'), isFalse);
+    expect(const InstantPay('req1') == const BookingPay('req1'), isFalse);
+  });
 }

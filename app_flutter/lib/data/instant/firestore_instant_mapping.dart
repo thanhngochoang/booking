@@ -124,6 +124,7 @@ InstantRequest? instantRequestFromFirestore(
     roundsWithInvites: _int(d['roundsWithInvites']),
     candidates: _list(d['candidates']).map(_candidate).toList(),
     offers: _list(d['offers']).map(_offerRow).toList(),
+    pendingInviteIds: _strings(d['pendingInviteIds']),
     roundEnded: _bool(d['roundEnded']),
     photographerId: _strOrNull(d['photographerId']),
     photographer: _party(d['photographer']),

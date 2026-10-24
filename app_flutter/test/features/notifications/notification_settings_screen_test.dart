@@ -109,23 +109,37 @@ void main() {
     expect(find.text('Trong app'), findsOneWidget);
   });
 
-  testWidgets('jobs and instant rows are hidden while their flags are off', (
+  testWidgets(
+    'the jobs row is hidden while its flag is off; the Chụp ngay row is shown '
+    '(#202 turned it on)',
+    (tester) async {
+      await _open(tester, role: UserRole.photographer);
+      expect(kJobsEnabled, isFalse);
+      expect(kInstantEnabled, isTrue);
+      expect(find.text('Việc đăng tuyển'), findsNothing);
+      expect(find.text('Chụp ngay'), findsOneWidget);
+      // A photographer has both channels for Chụp ngay offers.
+      expect(_switch('instant', 'push'), findsOneWidget);
+      expect(_switch('instant', 'inApp'), findsOneWidget);
+      for (final label in [
+        'Đặt lịch và thanh toán',
+        'Sự kiện',
+        'Tin nhắn',
+        'Huy hiệu và đánh giá',
+        'Khuyến mãi',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+    },
+  );
+
+  testWidgets('a customer gets only the Push switch for Chụp ngay', (
     tester,
   ) async {
-    await _open(tester, role: UserRole.photographer);
-    expect(kJobsEnabled, isFalse);
-    expect(kInstantEnabled, isFalse);
-    expect(find.text('Việc đăng tuyển'), findsNothing);
-    expect(find.text('Chụp ngay'), findsNothing);
-    for (final label in [
-      'Đặt lịch và thanh toán',
-      'Sự kiện',
-      'Tin nhắn',
-      'Huy hiệu và đánh giá',
-      'Khuyến mãi',
-    ]) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
+    await _open(tester);
+    expect(find.text('Chụp ngay'), findsOneWidget);
+    expect(_switch('instant', 'push'), findsOneWidget);
+    expect(_switch('instant', 'inApp'), findsNothing);
   });
 
   testWidgets("booking Trong app is on, disabled and reads 'luôn bật'", (

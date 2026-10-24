@@ -1,11 +1,24 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
+import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/features/instant/choose_controller.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:photobooking/features/payment/fake_transfer_sheet.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
+import 'package:photobooking/features/payment/qr_checkout_view.dart';
+import 'package:photobooking/features/payment/wallet_waiting_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/fake_push.dart';
 import '../../support/instant_customer_world.dart';
 
 /// A container with `req1` in the listener and the controller held alive.
@@ -68,94 +81,90 @@ void main() {
     expect(w.repo.callsOf('invite'), hasLength(1));
   });
 
-  test('invite sends no payMethod', () async {
+  test('invite sends payMethod.code', () async {
     final w = InstantCustomerWorld();
-    final (_, controller) = await _setUp(w);
+    final (c, controller) = await _setUp(w);
     controller
       ..like(instantCandidates[0])
       ..skip(instantCandidates[1])
       ..like(instantCandidates[2])
       ..done();
+    // Chuyển khoản QR is preselected.
+    expect(_state(c).method, isNull);
+    expect(controller.methodOf(customerRequestOf()), PayMethod.bankQr);
     await controller.send();
-    final call = w.repo.callsOf('invite').single;
-    expect(call.args, {
+    expect(w.repo.callsOf('invite').single.args, {
       'requestId': 'req1',
       'photographerIds': ['p1', 'p3'],
       'skipped': ['p2'],
       'expectedAmountVnd': 690000,
-      'payMethod': null,
+      'payMethod': PayMethod.bankQr,
     });
+
+    controller.setMethod(PayMethod.momo);
+    expect(_state(c).method, PayMethod.momo);
+    await controller.send();
+    final momo = w.repo.callsOf('invite').last.args['payMethod']! as PayMethod;
+    expect(momo, PayMethod.momo);
+    expect(momo.code, 'momo');
   });
 
-  test('an invited result asks the primer once', () async {
-    final w = InstantCustomerWorld();
-    final (_, controller) = await _setUp(w);
-    var asked = 0;
-    Future<void> primer() async => asked++;
-    controller
-      ..like(instantCandidates[0])
-      ..done();
-    w.repo.inviteResult = const InstantInvited(
-      invited: ['p1'],
-      unavailable: [],
-    );
-
-    // A refusal is not a success: no primer.
-    w.repo.failNext('invite', 'network');
-    await controller.send(askPrimer: primer);
-    expect(asked, 0);
-
-    await controller.send(askPrimer: primer);
-    expect(asked, 1);
-    await controller.send(askPrimer: primer);
-    expect(asked, 1);
-  });
-
-  test('every chosen person unavailable is not a success: no primer', () async {
-    final w = InstantCustomerWorld();
-    final (c, controller) = await _setUp(w);
-    var asked = 0;
-    Future<void> primer() async => asked++;
-    controller
-      ..like(instantCandidates[0])
-      ..like(instantCandidates[1])
-      ..done();
-    w.repo.inviteResult = const InstantInvited(
-      invited: [],
-      unavailable: ['p1', 'p2'],
-    );
-    expect(await controller.send(askPrimer: primer), isA<InstantInvited>());
-    expect(asked, 0);
-    expect(_state(c).sending, isFalse);
-
-    // The server marked the request committed, but nobody was invited yet:
-    // the next real invite is the first one.
-    w.repo.emitRequest('req1', customerRequestOf(committed: true));
-    await pumpEventQueue();
-    w.repo.inviteResult = const InstantInvited(
-      invited: ['p1'],
-      unavailable: [],
-    );
-    await controller.send(askPrimer: primer);
-    expect(asked, 1);
-  });
-
-  test('a request with invites sent before asks no primer', () async {
+  test('a later round (paid, committed) sends no payMethod', () async {
     final w = InstantCustomerWorld();
     final (_, controller) = await _setUp(
       w,
-      request: customerRequestOf(
-        committed: true,
-        round: 2,
-      ).copyWith(invitedTotal: 3, roundsWithInvites: 1),
+      request: customerRequestOf(committed: true, paid: true, round: 2),
     );
-    var asked = 0;
     controller
       ..like(instantCandidates[0])
       ..done();
-    await controller.send(askPrimer: () async => asked++);
-    expect(asked, 0);
+    await controller.send();
+    expect(w.repo.callsOf('invite').single.args['payMethod'], isNull);
   });
+
+  test(
+    'pending_payment: send invites the waiting choice with its method',
+    () async {
+      final w = InstantCustomerWorld();
+      final (_, controller) = await _setUp(
+        w,
+        request: customerRequestOf(
+          status: InstantStatus.pendingPayment,
+          pendingInviteIds: ['p2', 'p4'],
+          payMethod: PayMethod.zaloPay,
+        ),
+      );
+      // Nothing liked on this device (the app was reopened).
+      await controller.send();
+      expect(w.repo.callsOf('invite').single.args, {
+        'requestId': 'req1',
+        'photographerIds': ['p2', 'p4'],
+        'skipped': <String>[],
+        'expectedAmountVnd': 690000,
+        'payMethod': PayMethod.zaloPay,
+      });
+    },
+  );
+
+  test(
+    'a payment result is not a send: no primer from the controller',
+    () async {
+      final w = InstantCustomerWorld();
+      final (c, controller) = await _setUp(w);
+      controller
+        ..like(instantCandidates[0])
+        ..done();
+      w.repo.inviteResult = InstantPaymentNeeded(
+        instructions: instantInstructionsOf(),
+        amountVnd: 690000,
+      );
+      final result = await controller.send();
+      expect(result, isA<InstantPaymentNeeded>());
+      expect(_state(c).sending, isFalse);
+      // The choice stays until the request moves on.
+      expect(_state(c).liked, ['p1']);
+    },
+  );
 
   test('price changed: the new amount is kept and sent next', () async {
     final w = InstantCustomerWorld();
@@ -225,5 +234,165 @@ void main() {
     final (_, controller) = await _setUp(w);
     expect(await controller.send(), isNull);
     expect(w.repo.callsOf('invite'), isEmpty);
+  });
+
+  group('S04.04 for InstantPay (#202)', () {
+    setUp(resetNotificationPrimerState);
+    tearDown(resetNotificationPrimerState);
+
+    final invite = find.byKey(const Key('choose-invite'));
+
+    /// ♥ on Minh Trí, "Xong", then [method] on the summary.
+    Future<void> choose(WidgetTester tester, {PayMethod? method}) async {
+      await tester.tap(find.byKey(const Key('swipe-like')));
+      await settleInstant(tester);
+      await tester.tap(find.byKey(const Key('choose-done')));
+      await settleInstant(tester);
+      if (method != null) {
+        final picker = find.byKey(Key('pay-method-${method.name}'));
+        await tester.ensureVisible(picker);
+        await tester.tap(picker);
+        await settleInstant(tester);
+      }
+    }
+
+    /// The server's request once `inviteInstant` opened the payment.
+    InstantRequest pending({PayMethod method = PayMethod.bankQr}) =>
+        customerRequestOf(
+          status: InstantStatus.pendingPayment,
+          pendingInviteIds: ['p1'],
+          payMethod: method,
+        );
+
+    /// The payment arrived: offers out, money held.
+    InstantRequest paid() => customerRequestOf(
+      status: InstantStatus.searching,
+      committed: true,
+      paid: true,
+      payMethod: PayMethod.bankQr,
+    ).copyWith(invitedTotal: 1, roundsWithInvites: 1);
+
+    InstantCustomerWorld primerWorld(SharedPreferences prefs) =>
+        InstantCustomerWorld(
+          extra: [
+            notificationPermissionProvider.overrideWithValue(
+              FakeNotificationPermission(),
+            ),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+        );
+
+    testWidgets(
+      'a payment result opens /instant/{id}/pay (S04.04) with the instructions',
+      (tester) async {
+        final world = InstantCustomerWorld();
+        world.repo.inviteResult = InstantPaymentNeeded(
+          instructions: instantInstructionsOf(),
+          amountVnd: 690000,
+        );
+        final router = await pumpInstantFlow(tester, world);
+        await choose(tester);
+        await tester.tap(invite);
+        world.repo.emitRequest('req1', pending());
+        await settleInstant(tester);
+
+        expect(router.state.uri.toString(), '/instant/req1/pay');
+        final screen = tester.widget<PaymentScreen>(find.byType(PaymentScreen));
+        expect(screen.subject, const InstantPay('req1'));
+        expect(screen.initial, instantInstructionsOf());
+        final code = tester.widget<ScreenCode>(find.byType(ScreenCode).last);
+        expect(code.code, ScreenCodes.awaitingPayment);
+        expect(code.label, 'instant');
+        expect(find.byType(QrCheckoutView), findsOneWidget);
+        expect(find.text('PB 7K2M9Q'), findsOneWidget);
+        expect(world.repo.callsOf('invite'), hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'S04.04 for InstantPay returns to /instant/{id} when the request leaves '
+      'pending_payment and asks the primer once',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final world = primerWorld(await SharedPreferences.getInstance());
+        world.repo.inviteResult = InstantPaymentNeeded(
+          instructions: instantInstructionsOf(),
+          amountVnd: 690000,
+        );
+        final router = await pumpInstantFlow(tester, world);
+        await choose(tester);
+        await tester.tap(invite);
+        await settleInstant(tester);
+        // Before the request shows pending_payment: S04.04 waits on it.
+        expect(router.state.uri.toString(), '/instant/req1/pay');
+        // Sending the invite asks nothing: the payment is the meaningful step.
+        expect(find.byType(PermissionPrimer), findsNothing);
+
+        world.repo.emitRequest('req1', pending());
+        await settleInstant(tester);
+        expect(router.state.uri.toString(), '/instant/req1/pay');
+        expect(find.byType(PermissionPrimer), findsNothing);
+
+        world.repo.emitRequest('req1', paid());
+        await settleInstant(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(router.state.uri.toString(), '/instant/req1?paid=1');
+        expect(find.byType(PermissionPrimer), findsOneWidget);
+        expect(
+          tester.widget<ScreenCode>(find.byType(ScreenCode).first).code,
+          ScreenCodes.instantSearching,
+        );
+
+        await tester.tap(find.text('Để sau'));
+        await settleInstant(tester);
+        expect(find.byType(PermissionPrimer), findsNothing);
+        // More snapshots of the same request ask nothing again.
+        world.repo.emitRequest('req1', paid().copyWith(invitedTotal: 2));
+        await settleInstant(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(PermissionPrimer), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "a wallet in fake mode confirms through S04.04's FakeTransferSheet → "
+      'PaymentsRepository.confirmFake (outcome paid)',
+      (tester) async {
+        final world = InstantCustomerWorld();
+        final inst = instantInstructionsOf(method: PayMethod.momo);
+        world.repo.inviteResult = InstantPaymentNeeded(
+          instructions: inst,
+          amountVnd: 690000,
+        );
+        world.payments.onConfirm = (paymentId, kind) async {
+          world.repo.emitRequest('req1', paid());
+        };
+        final router = await pumpInstantFlow(tester, world);
+        await choose(tester, method: PayMethod.momo);
+        await tester.tap(invite);
+        world.repo.emitRequest('req1', pending(method: PayMethod.momo));
+        await settleInstant(tester);
+
+        expect(
+          world.repo.callsOf('invite').single.args['payMethod'],
+          PayMethod.momo,
+        );
+        expect(router.state.uri.toString(), '/instant/req1/pay');
+        expect(find.byType(WalletWaitingView), findsOneWidget);
+        // Fake mode: the wallet link is not launched.
+        expect(world.base.launcher.opened, isEmpty);
+
+        await tester.tap(find.text('Giả lập chuyển khoản'));
+        await settleInstant(tester);
+        expect(find.byType(FakeTransferSheet), findsOneWidget);
+        await tester.tap(find.text('Chuyển đúng'));
+        await settleInstant(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // "Chuyển đúng" = an exact transfer: the fake bank answers `paid`.
+        expect(world.payments.confirms, [('pay1', FakeTransferKind.exact)]);
+        expect(router.state.uri.toString(), '/instant/req1?paid=1');
+      },
+    );
   });
 }

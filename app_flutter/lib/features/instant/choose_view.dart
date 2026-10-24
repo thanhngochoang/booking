@@ -1,6 +1,8 @@
 // S13.02 (`#S13.02`, `-summary`, `-round`, `-empty`): swipe through the
-// round's five suggestions, review who was chosen, "Gửi lời mời" (#140: no
-// payment in any round, Decision 1); a round that ended without anyone,
+// round's five suggestions, review who was chosen, then in the first round
+// pick the payment method and "Thanh toán {giá} và gửi lời mời" (S04.04 opens,
+// #202 Decisions 1–2), "Thanh toán tiếp" while that payment is open, "Gửi lời
+// mời" in later rounds (the money is held); a round that ended without anyone,
 // and a first round with nobody around.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ import 'package:photobooking/features/instant/choose_controller.dart';
 import 'package:photobooking/features/instant/customer_cancel_sheet.dart';
 import 'package:photobooking/features/instant/instant_icon_disc.dart';
 import 'package:photobooking/features/instant/instant_meta.dart';
+import 'package:photobooking/features/instant/instant_payment.dart';
 import 'package:photobooking/features/instant_work/instant_copy.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -34,17 +37,14 @@ List<MetaPart> candidateMeta(
   MetaPart.text(l.chooseEta(c.etaMinutes)),
 ];
 
-enum _Mode { deck, summary, round, empty }
+/// `pending`: the first round's payment is open (`pending_payment`): who was
+/// chosen and "Thanh toán tiếp", nothing else to choose.
+enum _Mode { deck, summary, pending, round, empty }
 
 class ChooseView extends ConsumerWidget {
-  const ChooseView({super.key, required this.request, this.askPrimer});
+  const ChooseView({super.key, required this.request});
 
   final InstantRequest request;
-
-  /// Shown once after the request's first successful invite (Decision 10).
-  /// The flow screen passes it: this view leaves as soon as the request is
-  /// `searching`, so the primer needs a context that stays.
-  final Future<void> Function()? askPrimer;
 
   String get _id => request.id;
 
@@ -59,7 +59,9 @@ class ChooseView extends ConsumerWidget {
     });
 
     final cards = roundCandidates(request);
-    final mode = cards.isEmpty
+    final mode = request.status == InstantStatus.pendingPayment
+        ? _Mode.pending
+        : cards.isEmpty
         ? (request.roundEnded || request.committed ? _Mode.round : _Mode.empty)
         : (s.summary ? _Mode.summary : _Mode.deck);
     final amount = s.amountVnd ?? request.amountVnd;
@@ -89,7 +91,7 @@ class ChooseView extends ConsumerWidget {
       ScreenCodes.instantChoose,
       label: switch (mode) {
         _Mode.deck => null,
-        _Mode.summary => 'summary',
+        _Mode.summary || _Mode.pending => 'summary',
         _Mode.round => 'round',
         _Mode.empty => 'empty',
       },
@@ -170,11 +172,16 @@ class ChooseView extends ConsumerWidget {
                   if (ref.read(provider).liked.isNotEmpty) controller.done();
                 },
               ),
-              _Mode.summary => _Summary(
+              _Mode.summary || _Mode.pending => _Summary(
+                request: request,
                 cards: cards,
                 state: s,
+                pending: mode == _Mode.pending,
+                method: controller.methodOf(request),
+                amountVnd: amount,
+                onMethod: controller.setMethod,
                 onUnpick: controller.unpick,
-                onSend: () => _send(context, controller),
+                onSend: () => _send(context, ref, controller),
                 onMore: controller.more,
               ),
               _Mode.round => _RoundEnded(
@@ -212,7 +219,11 @@ class ChooseView extends ConsumerWidget {
     return [for (final o in rows) o.name];
   }
 
-  Future<void> _send(BuildContext context, ChooseController controller) async {
+  Future<void> _send(
+    BuildContext context,
+    WidgetRef ref,
+    ChooseController controller,
+  ) async {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.maybeOf(context);
     final names = {
@@ -221,8 +232,12 @@ class ChooseView extends ConsumerWidget {
     void say(String text) => messenger
       ?..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(text)));
-    final result = await controller.send(askPrimer: askPrimer);
+    final result = await controller.send();
     switch (result) {
+      // The first round: pay on S04.04; it comes back here once the request
+      // has left `pending_payment`.
+      case InstantPaymentNeeded() when context.mounted:
+        await openInstantPayment(context, ref, request.id, result);
       case InstantPriceChanged(:final amountVnd):
         say(l.choosePriceChanged(formatMoney(amountVnd)));
       // Nobody invited: the round ends here (the view stays). Some invited:
@@ -539,19 +554,33 @@ class _PickedRow extends StatelessWidget {
   }
 }
 
-/// `#S13.02-summary` in #140: who was chosen, "Bỏ chọn", "Gửi lời mời" and
-/// "Xem 5 người khác"; no payment method (Task 8, #202, adds it).
+/// `#S13.02-summary`: who was chosen ("Bỏ chọn"), then in the first round
+/// the payment method (Chuyển khoản QR preselected, MoMo, ZaloPay) and
+/// "Thanh toán {giá} và gửi lời mời"; later rounds "Gửi lời mời" without the
+/// picker; "Xem 5 người khác". [pending] (`pending_payment`): the people the
+/// payment waits for, the picker and "Thanh toán tiếp"; no "Bỏ chọn" and no
+/// new round while the payment is open (the server refuses one).
 class _Summary extends StatelessWidget {
   const _Summary({
+    required this.request,
     required this.cards,
     required this.state,
+    required this.pending,
+    required this.method,
+    required this.amountVnd,
+    required this.onMethod,
     required this.onUnpick,
     required this.onSend,
     required this.onMore,
   });
 
+  final InstantRequest request;
   final List<InstantCandidate> cards;
   final ChooseState state;
+  final bool pending;
+  final PayMethod method;
+  final int amountVnd;
+  final ValueChanged<PayMethod> onMethod;
   final ValueChanged<String> onUnpick;
   final VoidCallback onSend;
   final VoidCallback onMore;
@@ -560,11 +589,17 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final ids = pending ? request.pendingInviteIds : state.liked;
     final liked = [
-      for (final id in state.liked)
+      for (final id in ids)
         ?cards.where((c) => c.photographerId == id).firstOrNull,
     ];
     final busy = state.sending || state.fetching;
+    // Not committed: no offer has gone out on paid money yet (#202).
+    final firstRound = !request.committed;
+    final heading = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
     return Column(
       children: [
         Expanded(
@@ -576,12 +611,7 @@ class _Summary extends StatelessWidget {
               AppSpace.s6,
             ),
             children: [
-              Text(
-                l.chooseSummaryTitle,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(l.chooseSummaryTitle, style: heading),
               const SizedBox(height: AppSpace.s2),
               if (liked.isNotEmpty)
                 GlassCard(
@@ -596,13 +626,25 @@ class _Summary extends StatelessWidget {
                           if (i > 0) const Divider(height: 1),
                           _PickedPerson(
                             candidate: c,
-                            onUnpick: () => onUnpick(c.photographerId),
+                            onUnpick: pending
+                                ? null
+                                : () => onUnpick(c.photographerId),
                           ),
                         ],
                       ],
                     ),
                   ),
                 ),
+              if (firstRound) ...[
+                const SizedBox(height: AppSpace.s4),
+                Text(l.payMethodLabel, style: heading),
+                const SizedBox(height: AppSpace.s2),
+                PayMethodPicker(
+                  value: method,
+                  enabled: !busy,
+                  onChanged: onMethod,
+                ),
+              ],
               const SizedBox(height: AppSpace.s3),
               EscrowNotice(text: l.chooseEscrow, maxLines: null),
             ],
@@ -614,17 +656,22 @@ class _Summary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AppButton.primary(
-                l.chooseInvite,
+                pending
+                    ? l.ticketPayContinue
+                    : firstRound
+                    ? l.choosePayAndInvite(formatMoney(amountVnd))
+                    : l.chooseInvite,
                 key: const Key('choose-invite'),
                 loading: state.sending,
                 onPressed: liked.isEmpty || busy ? null : onSend,
               ),
-              AppButton.text(
-                l.chooseMore,
-                key: const Key('choose-more'),
-                loading: state.fetching,
-                onPressed: busy ? null : onMore,
-              ),
+              if (!pending)
+                AppButton.text(
+                  l.chooseMore,
+                  key: const Key('choose-more'),
+                  loading: state.fetching,
+                  onPressed: busy ? null : onMore,
+                ),
             ],
           ),
         ),
@@ -638,7 +685,9 @@ class _PickedPerson extends StatelessWidget {
   const _PickedPerson({required this.candidate, required this.onUnpick});
 
   final InstantCandidate candidate;
-  final VoidCallback onUnpick;
+
+  /// Null: no "Bỏ chọn" (the payment waits on this choice).
+  final VoidCallback? onUnpick;
 
   @override
   Widget build(BuildContext context) {
@@ -673,20 +722,21 @@ class _PickedPerson extends StatelessWidget {
             ),
           ),
           // "Bỏ chọn Minh Trí" for a screen reader.
-          Semantics(
-            key: Key('choose-unpick-${c.photographerId}'),
-            container: true,
-            button: true,
-            label: l.chooseUnpickA11y(c.name),
-            onTap: onUnpick,
-            excludeSemantics: true,
-            child: AppButton.text(
-              l.chooseUnpick,
-              size: AppButtonSize.xsmall,
-              style: TextButton.styleFrom(foregroundColor: secondary),
-              onPressed: onUnpick,
+          if (onUnpick case final unpick?)
+            Semantics(
+              key: Key('choose-unpick-${c.photographerId}'),
+              container: true,
+              button: true,
+              label: l.chooseUnpickA11y(c.name),
+              onTap: unpick,
+              excludeSemantics: true,
+              child: AppButton.text(
+                l.chooseUnpick,
+                size: AppButtonSize.xsmall,
+                style: TextButton.styleFrom(foregroundColor: secondary),
+                onPressed: unpick,
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -3922,6 +3922,8 @@
   "chooseUnavailable": "{name} vừa nhận việc khác",
   "@chooseUnavailable": {"placeholders": {"name": {"type": "String"}}},
   "chooseInvite": "Gửi lời mời",
+  "choosePayAndInvite": "Thanh toán {amount} và gửi lời mời",
+  "@choosePayAndInvite": {"placeholders": {"amount": {"type": "String"}}},
   "chooseMore": "Xem 5 người khác",
   "chooseEscrow": "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.",
   "chooseRoundEnded": "Chưa ai nhận. Chọn thêm người nhé.",

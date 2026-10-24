@@ -45,6 +45,7 @@ import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/instant/instant_flow_screen.dart';
+import 'package:photobooking/features/instant/instant_payment.dart';
 import 'package:photobooking/features/instant/instant_request_screen.dart';
 import 'package:photobooking/features/instant_work/instant_job_screen.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
@@ -339,8 +340,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/instant/:id',
         redirect: (_, _) => instantCustomersOnly(),
-        builder: (_, state) =>
-            InstantFlowScreen(requestId: state.pathParameters['id']!),
+        builder: (_, state) => InstantFlowScreen(
+          requestId: state.pathParameters['id']!,
+          justPaid: state.uri.queryParameters[kInstantPaidQuery] == '1',
+        ),
+      ),
+      // #202: the first round's payment on V1's shared S04.04.
+      GoRoute(
+        path: '/instant/:id/pay',
+        redirect: (_, _) => instantCustomersOnly(),
+        builder: (_, state) => PaymentScreen(
+          subject: InstantPay(state.pathParameters['id']!),
+          initial: state.extra as PaymentInstructions?,
+        ),
       ),
       GoRoute(
         path: '/work/instant',

@@ -9144,6 +9144,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get chooseInvite => 'Gửi lời mời';
 
   @override
+  String choosePayAndInvite(String amount) {
+    return 'Thanh toán $amount và gửi lời mời';
+  }
+
+  @override
   String get chooseMore => 'Xem 5 người khác';
 
   @override
