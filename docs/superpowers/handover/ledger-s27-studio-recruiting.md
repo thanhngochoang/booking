@@ -86,7 +86,7 @@
 - **Task 7:** tạo `SegmentedTabs` "Hôm nay" + "Tuyển thợ" ở S06.01 (Decision 20; #139 chèn hai đoạn giữa → xung đột dự kiến ở `work_screen.dart` khi gộp). `ProviderFacts.acceptingOrders` là "đã xác minh" (cổng máy chủ `acceptsOrders = verified && onboardingComplete`; thợ đã xác minh mà chưa xong hồ sơ được đưa tới `/verify/start`). Thêm `ProviderFacts.studioId`. 8 khoá arb ngoài bảng plan. Lỗi ứng tuyển hiện trong sheet. `AppChip.trailing` và `PostPickerGrid.crossAxisCount` là thêm tham số. Lọc theo một studio thì ẩn chip. Ứng tuyển đã rút/hết hạn đọc "Bạn đã ứng tuyển tin này." (một ứng tuyển mỗi tin).
 - **Task 8:** từ chối ứng viên = sheet xác nhận nút đỏ "Từ chối", không có ô lý do (callable không mang lý do). Thêm `AppChip.enabled`. 14 khoá arb ngoài bảng plan (trạng thái riêng). Router chỉ kiểm vai trò; `StudioRecruitGate` đưa người không phải studio đi trước mọi lần đọc (chỉ còn tiêu đề trên loader). Ô số tiền S27.04 xếp dưới hàng chọn (320dp × 1,3). Danh sách tuyển ở S06.01 giữ 2 phút cho mỗi bộ lọc.
 - **Task 8 (vòng sửa 1):** `ProviderMark` giữ cỡ mặc định 14 (`AppIconSize.sm` 20 quá to cạnh chữ 12–13,5).
-- **Task 9:** "Từ chối" ở S27.07 qua sheet xác nhận nút đỏ (quy tắc CLAUDE.md; chú thích mock không nói từ chối ngay). "Từ chối" lời mời ở S27.06-me và "Huỷ" lời mời phía studio vẫn ngay (chú thích mock + tiền lệ S26). Hàng CTV ở S26.04 không có rảnh/bận (`assignmentOptions` chỉ trả thành viên; máy chủ từ chối `day_taken`) — hiện % cà chua + thù lao. "Việc đang giao" đếm ở máy; kết thúc dựa vào `member_busy` của máy chủ. `assign(…, {collaborator, agreedFee})` + `assignBookingPayload`. `CollabRepository.pairsOf` cho hàng "Mời lại được từ". Badge chữ in hoa. Chip ngày ở sheet "Đã trả". Sửa lỗi có sẵn: liên kết sâu lúc mở app nguội mất query trong `router.dart` (`from = state.uri`).
+- **Task 9:** "Từ chối" ở S27.07 qua sheet xác nhận nút đỏ (quy tắc CLAUDE.md; chú thích mock không nói từ chối ngay). "Từ chối" lời mời ở S27.06-me và "Huỷ" lời mời phía studio vẫn ngay (chú thích mock + tiền lệ S26). Hàng CTV ở S26.04 không có rảnh/bận (`assignmentOptions` chỉ trả thành viên; máy chủ từ chối `day_taken`) — hiện % cà chua + thù lao. "Việc đang giao" đếm ở máy; kết thúc dựa vào `member_busy` của máy chủ. `assign(…, {collaborator, agreedFee})` + `assignBookingPayload`. `CollabRepository.pairsOf` cho hàng "Mời lại được từ". Badge chữ in hoa. Chip ngày ở sheet "Đã trả". Sửa lỗi có sẵn: liên kết sâu lúc mở app nguội mất query trong `router.dart` (`from = state.uri`); `from` vẫn chỉ là location go_router trong app.
 - **Task 10:** ô trạng thái S27 ở spec chính §2 chỉ là link [#151](https://github.com/thanhngochoang/booking/issues/151) (quy tắc chủ dự án "Issue status = links" thắng chữ plan "✅ đã làm (#151) · khớp mock"). Biểu tượng của `collab_invite*` và `collab_assignment_*` ở §3h.2 sửa theo bản làm (`handshake`, tông theo kết quả). Không có analytics riêng cho S27 (mục "Phân tích" của màn ghi "—"). `screens/README.md` thêm dòng mục lục cho `recruit.md`.
 
 ## Ghi chú chuyển giữa các task (đã xử lý)
@@ -111,11 +111,14 @@
 
 ## Ứng viên cho đợt sửa cuối (final wave)
 
-- (Task 4) Thành viên được giao lại sau khi một offer đã thay họ nhận `assigned` với khoá không có ngày (bị chống trùng) → không được báo booking lại là của mình.
-- (Task 4) `shootMilestone` `refunded` tính trên mọi khoản thanh toán (một khoản hoàn + một khoản sau chưa chia thì kết thúc kiểm tra trả tiền).
-- (Task 4) Bộ đọc mốc ném lỗi liên tục thì không đẩy `checkAfter` (hơn 200 job như vậy chặn trang).
-- (Task 4) Job chờ mốc mãi được kiểm lại mỗi 6 giờ không giới hạn.
-- (Task 9) Đưa CTV kèm trạng thái ngày vào `assignmentOptions` của máy chủ (mock S26.04-collab "Rảnh · 95%").
+- (Task 4) Thành viên được giao lại sau khi một offer đã thay họ nhận `assigned` với khoá không có ngày (bị chống trùng) → không được báo booking lại là của mình. **Đã sửa** ở đợt sửa cuối (S1, 682253ea).
+- (Task 4) `shootMilestone` `refunded` tính trên mọi khoản thanh toán (một khoản hoàn + một khoản sau chưa chia thì kết thúc kiểm tra trả tiền). **Đã sửa** (S3, 682253ea).
+- (Task 4) Bộ đọc mốc ném lỗi liên tục thì không đẩy `checkAfter` (hơn 200 job như vậy chặn trang). Giữ hoãn.
+- (Task 4) Job chờ mốc mãi được kiểm lại mỗi 6 giờ không giới hạn. Giữ hoãn.
+- (Task 9) Đưa CTV kèm trạng thái ngày vào `assignmentOptions` của máy chủ (mock S26.04-collab "Rảnh · 95%"). Giữ hoãn.
+- (Task 9) `router.dart` `Uri.parse(from)` ném lỗi với `from` hỏng (ví dụ `/splash?from=::`) ngay trong redirect cấp cao → `Uri.tryParse`. **Đã sửa** (A2, df401f41: `from` hỏng về trang chủ).
+- (Task 9) Thứ tự import của `assign_sheet_test.dart`. **Đã sửa** (A6, df401f41).
+- (Task 9) Các token `*Subtle` của `AppColorsDark` là bí danh của giá trị sáng (nền badge không đổi ở chế độ tối). Giữ hoãn (sửa ở mức token, ngoài phạm vi S27).
 
 ## Minor hoãn (chưa sửa)
 
@@ -166,8 +169,24 @@ Mọi khoá trong `screens/recruit.md` đã so với `app_vi.arb` (254 cặp kho
 
 ## Kết quả review cuối (controller điền)
 
-- Review lại Task 9 (chỉ đọc, chạy song song với Task 10): _<chờ controller điền: kết quả, số Critical/Important, commit sửa nếu có>_
-- Review Task 10: _<chờ controller điền>_
-- Review cuối toàn nhánh: _<chờ controller điền: phán quyết, phát hiện, commit sửa>_
-- Đợt sửa cuối (final wave) đã làm: _<chờ controller điền: mục nào trong "Ứng viên cho đợt sửa cuối" đã sửa, commit>_
-- PR: _<chờ controller điền: số PR, CI, gộp>_
+- **Review từng task:** Task 2, 3, 5, 6, 7 Approved ngay (0 Critical/Important; Minor chuyển sang commit đầu của task sau, xem "Minor chuyển task sau"). Task 4 Needs fixes (2 Important) → 1 vòng sửa (c3cefe8e) → sạch. Task 8 Needs fixes (1 Important: S27.05 còn ứng viên trả lời được dưới tin đã đóng/hết hạn) → 1 vòng sửa (989f0374) → sạch.
+- **Review lại Task 9** (chỉ đọc, song song với Task 10): lần đầu Needs fixes (1 Important: "Từ chối" ở S27.07 từ chối ngay) → 1 vòng sửa (1 Important + 10 Minor, 2ebf2fad..8922f693) → sạch, 0 Critical/Important. Ba Minor để đợt sửa cuối (router `Uri.tryParse`, thứ tự import test, bí danh `*Subtle` tối).
+- **Review Task 10** (81aa75ba, chỉ tài liệu): gộp vào phần tài liệu của review cuối (D1–D6 bên dưới).
+- **Review cuối toàn nhánh:** 3 reviewer song song (máy chủ, app, tài liệu; diff ~1,5 MB chia theo vùng), cả ba "With fixes", 0 Critical. Important: S1 thành viên được giao lại sau offer không được báo (`assigned` bị chống trùng); S2 fan-out `recruit_post_new` bỏ qua chặn; A1 lỗi offer CTV ở S26.04 chỉ hiện "Chưa thực hiện được. Thử lại."; D1 ledger thiếu ba mục FINAL WAVE của Task 9. Minor: S3–S5, A2–A6, D2–D6.
+- **Đợt sửa cuối (final wave), một implementer:**
+  - 682253ea `fix(domain)`: S1 (`booking_assigned` cho người được giao lại, khoá có `assignedAt`, chỉ người được giao), S2 (bỏ thợ chặn hoặc bị chặn trước khi tốn lượt trong ngày), S3 (`refunded` chỉ khi mọi khoản đã chia mốc), S4 (kiểm chặn trước giao dịch khi ứng tuyển), S5 (README seed: Hòa chỉ nhận làm CTV). Test domain và Functions.
+  - df401f41 `fix(collab)`: A1 (`assignOfferErrorText`: `deadline_passed`, `recruit_blocked` kèm ngày, `blocked`, `not_found`; studio bị khoá tuyển thấy nhóm "Cộng tác viên" mờ kèm dòng khoá), A2 (`from` hỏng về trang chủ), A3 (S27.05 đọc lại ứng viên khi `applicationCount` đổi), A4 ("Đã mời làm thành viên" thay cho "Mời" khi có lời mời S26 đang chờ), A5 (`AppIconSize.sm`), A6 (thứ tự import). 4 khoá ARB mới.
+  - 04b49e3d `docs(s27)`: D2 (mốc huỷ là `shootEndsAt`), D3 (plan S27 Decision 26), D4 (gộp dòng `CountdownText`), D5 (`seq` tăng dần, lớn nhất là mới nhất), D6 (cột `job_ids`), và ghi các thay đổi hành vi của đợt này vào spec thiết kế và `screens/recruit.md`.
+  - Commit này `docs(s27)`: D1 (ba mục Task 9 ở "Ứng viên cho đợt sửa cuối", ghi chú `from` ở quyết định Task 9, phần kết quả này).
+- **Giữ hoãn sau review cuối (có lý do):**
+  - `endCollaboration` đếm `openJobCount` ngoài giao dịch: cửa sổ vài mili giây; job và trả tiền của việc lọt vẫn chạy.
+  - Offer đang chờ bị thay bằng offer khác: CTV cũ không được báo (offer biến mất khỏi S27.06/S27.07).
+  - S27.01 vẫn hiện tin của studio mà người xem đã chặn: chỉ hiển thị; ứng tuyển bị máy chủ từ chối `blocked`.
+  - Bộ đọc mốc ném lỗi liên tục, job chờ mốc kiểm lại mỗi 6 giờ không giới hạn: chưa gặp ở khối lượng phase 1.
+  - CTV chưa có trong `assignmentOptions` (không có "Rảnh/Bận"): thay đổi domain + Functions riêng; máy chủ từ chối `day_taken`.
+  - Fan-out chạy lại vào ngày VN khác tốn một suất; khoá khớp cũ sau lối tắt "đầu vào không đổi"; ứng tuyển sót sau đóng tin dở dang kết thúc `expired`: như "Minor hoãn".
+  - CTV trả việc vẫn giữ booking và liên hệ tới khi được giao người khác: theo tiền lệ thành viên S26.
+  - Booking huỷ vẫn mở liên hệ cho CTV 7 ngày: câu hỏi cho chủ dự án (mục 5).
+  - "Thù lao cần trả" lấy 50 job theo `updatedAt` có thể sót job `due`/`disputed` cũ: đủ cho phase 1; sau này truy vấn theo `payStatus`.
+  - `_selected` ghi trong `build`; tông `*_result` cần `variant`; bí danh `*Subtle` của `AppColorsDark` (mức token).
+- PR: (điền khi mở)
