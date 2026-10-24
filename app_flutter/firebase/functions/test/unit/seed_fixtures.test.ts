@@ -64,6 +64,7 @@ import {
 } from '../../seed/fixtures.js';
 import { bookingFromFirestore } from '../../src/infra/booking_firestore.js';
 import { relationFromFirestore } from '../../src/infra/studio_firestore.js';
+import { payerRowFromFirestore } from '../../src/infra/payer_history_firestore.js';
 import {
   applicationFromDoc,
   collaborationFromDoc,
@@ -1181,5 +1182,38 @@ describe('seed disputes (S18, #142)', () => {
     // A paid ticket has its private contact snapshot (O3), never on the public registration.
     assert.equal(get(`events/${SEED_EVENT_PAST}/registrations/${SEED_REGISTRATION_LAN_PAST}/private/contact`)?.phone, '+84903000001');
     assert.equal(JSON.stringify(reg).includes('+849'), false);
+  });
+});
+
+describe('seed payment history (S22.01, #141)', () => {
+  const docs = seedDocuments(NOW);
+  const rows = (uid: string) =>
+    docs
+      .filter((d) => d.path.startsWith(`users/${uid}/payments/`))
+      .map((d) => payerRowFromFirestore(d.path.split('/').pop() ?? '', d.data))
+      .filter((r) => r !== null);
+
+  test('Lan has held, refunded and released rows, her ticket and the Chụp ngay fixture; totals match the open rows', () => {
+    const lan = rows('seed-customer-lan');
+    const status = (id: string) => lan.find((r) => r.paymentId === id)?.status;
+    assert.equal(status('seed-payment-seed-booking-accepted'), 'held');
+    assert.equal(status('seed-payment-seed-booking-cancelled'), 'refunded');
+    assert.equal(status('seed-payment-seed-booking-completed-old'), 'released');
+    assert.equal(status('seed-payment-seed-booking-disputed'), 'disputed');
+    assert.equal(status('seed-payment-ticket-lan-past'), 'held');
+    const instant = lan.find((r) => r.subjectType === 'instant_request');
+    assert.deepEqual([instant?.paymentId, instant?.searching, instant?.status, instant?.method], ['seed-payment-instant-lan-fixture', true, 'held', 'momo']);
+    const totals = docs.find((d) => d.path === 'users/seed-customer-lan/private/paymentTotals')?.data;
+    assert.equal(totals?.held, lan.filter((r) => r.open).reduce((s, r) => s + r.heldAmount, 0));
+    assert.equal(totals?.refunding, 0);
+  });
+
+  test('Giang\'s S21 fee is a paid platform row; no row carries an account number or provider ref', () => {
+    const fee = rows('seed-photographer-giang');
+    assert.deepEqual(fee.map((r) => [r.title, r.status, r.toPlatform, r.open]), [['Phí xác minh', 'released', true, false]]);
+    const json = JSON.stringify(docs.filter((d) => /^users\/[^/]+\/(payments\/|private\/paymentTotals)/.test(d.path)));
+    for (const secret of ['accountNumberEnc', 'holderName', 'payer"', 'providerRef', 'instructions', 'v1:']) {
+      assert.equal(json.includes(secret), false, secret);
+    }
   });
 });

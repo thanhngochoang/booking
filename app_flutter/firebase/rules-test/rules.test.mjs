@@ -2,7 +2,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where, or } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where, or, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
@@ -3177,5 +3177,46 @@ describe('S27 studio recruiting', () => {
     await collabBooking('rcb_cancel_new', { assigneeAccepted: true, status: 'cancelled', cancel: { by: 'customer', at: at(Date.now() - DAY), refundPercent: 100 } });
     await contactOf('rcb_cancel_new');
     await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_cancel_new/private/contact')));
+  });
+});
+
+// ---- S22.01 payment history (#141): users/{uid}/payments rows and private/paymentTotals ----
+
+describe('S22.01 payment history', () => {
+  const seedRow = (uid, id) =>
+    env.withSecurityRulesDisabled(async (c) =>
+      setDoc(doc(c.firestore(), `users/${uid}/payments/${id}`), {
+        payerId: uid, subjectType: 'booking', subjectId: 'b1', eventId: null, title: 'Minh Trí · Chân dung', day: '2026-10-12',
+        method: 'bank_qr', amount: 1500000, status: 'held', open: true, toPlatform: false, heldAmount: 1500000,
+        refundingAmount: 0, refundedAmount: 0, searching: false, cancelled: false, refunds: [],
+        createdAt: Timestamp.now(), paidAt: Timestamp.now(), updatedAt: Timestamp.now(),
+      }));
+
+  test('owner reads users/{uid}/payments/*', async () => {
+    await seedRow('pay_u1', 'pay_a');
+    const db = env.authenticatedContext('pay_u1').firestore();
+    await assertSucceeds(getDoc(doc(db, 'users/pay_u1/payments/pay_a')));
+    // The S22.01 list: newest first, 20 at a time.
+    await assertSucceeds(getDocs(query(collection(db, 'users/pay_u1/payments'), orderBy('createdAt', 'desc'), limit(20))));
+    await env.withSecurityRulesDisabled(async (c) =>
+      setDoc(doc(c.firestore(), 'users/pay_u1/private/paymentTotals'), { held: 1500000, refunding: 0, updatedAt: Timestamp.now() }));
+    await assertSucceeds(getDoc(doc(db, 'users/pay_u1/private/paymentTotals')));
+  });
+
+  test('another user cannot', async () => {
+    await seedRow('pay_u1', 'pay_b');
+    await assertFails(getDoc(doc(env.authenticatedContext('pay_u2').firestore(), 'users/pay_u1/payments/pay_b')));
+    await assertFails(getDocs(collection(env.authenticatedContext('pay_u2').firestore(), 'users/pay_u1/payments')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'users/pay_u1/payments/pay_b')));
+    await assertFails(getDoc(doc(env.authenticatedContext('pay_u2').firestore(), 'users/pay_u1/private/paymentTotals')));
+  });
+
+  test('no client writes', async () => {
+    await seedRow('pay_u1', 'pay_c');
+    const db = env.authenticatedContext('pay_u1').firestore();
+    await assertFails(setDoc(doc(db, 'users/pay_u1/payments/pay_new'), { status: 'refunded', amount: 1 }));
+    await assertFails(updateDoc(doc(db, 'users/pay_u1/payments/pay_c'), { status: 'refunded' }));
+    await assertFails(deleteDoc(doc(db, 'users/pay_u1/payments/pay_c')));
+    await assertFails(setDoc(doc(db, 'users/pay_u1/private/paymentTotals'), { held: 0, refunding: 0 }));
   });
 });

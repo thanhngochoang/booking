@@ -25,6 +25,10 @@ import {
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  payerRowOf,
+  payerTotals,
+  type PayerPaymentRow,
+  type PayerSubjectView,
   emptyVerification,
   fakeIdNumberOf,
   feeFor,
@@ -90,7 +94,22 @@ import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
 import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
 import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
-import { bookingFromFirestore, ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
+import {
+  bookingFromFirestore,
+  ledgerEntryToFirestore,
+  paymentFromFirestore,
+  paymentToFirestore,
+  refundFromFirestore,
+} from '../src/infra/booking_firestore.js';
+import {
+  PAYER_PAYMENTS,
+  PAYMENT_TOTALS_DOC,
+  VERIFICATION_FEE_SUBJECT,
+  bookingSubjectOf,
+  instantSubjectOf,
+  payerRowToFirestore,
+  ticketSubjectOf,
+} from '../src/infra/payer_history_firestore.js';
 import { bookingDisputeView, disputeToFirestore } from '../src/infra/dispute_firestore.js';
 import { supportMessageToFirestore, supportThreadToFirestore } from '../src/infra/support_firestore.js';
 import { relationToFirestore } from '../src/infra/studio_firestore.js';
@@ -1431,6 +1450,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
     if (l.full) docs.push({ path: `availability/${CUC}/days/${l.day}`, data: { state: 'full', updatedAt: now } });
   }
+  // S22.01 (#141): after every payment (bookings, tickets, the S21 fee) is in.
+  docs.push(...payerHistoryDocuments(now, docs));
 
   // Chụp ngay server config (#140, plan Task 4): price list v1, fee 0, arrived-cancel split 50.
   docs.push({ path: 'instant_config/current', data: { ...SEED_INSTANT_CONFIG, updatedAt: at } });
@@ -2002,6 +2023,78 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     for (const i of items) {
       docs.push({ path: `earnings/${payeeId}/items/${i.id}`, data: earningItemToFirestore({ ...i, updatedAt: now.toISOString() }) });
     }
+  }
+  return docs;
+}
+
+/** Lan's Chụp ngay row (S22.01): a fixture row only, see `payerHistoryDocuments`. */
+export const SEED_INSTANT_FIXTURE_PAYMENT = 'seed-payment-instant-lan-fixture';
+
+/** What a seeded payment's S22.01 row shows about its subject, as the live adapter reads it; null when the subject is not seeded. */
+function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unknown> | undefined): PayerSubjectView | null {
+  switch (p.subjectType) {
+    case 'booking': {
+      const b = get(`bookings/${p.subjectId}`);
+      if (b === undefined) return null;
+      const name = get(`users/${String(b.photographerId)}`)?.displayName;
+      return bookingSubjectOf(b, typeof name === 'string' ? name : '');
+    }
+    case 'event_registration': {
+      const r = p.eventId === undefined ? undefined : get(`events/${p.eventId}/registrations/${p.subjectId}`);
+      return r === undefined || p.eventId === undefined ? null : ticketSubjectOf(r, p.eventId);
+    }
+    case 'instant_request': {
+      const r = get(`instant_requests/${p.subjectId}`);
+      return r === undefined ? null : instantSubjectOf(r);
+    }
+    case 'verification_fee':
+      return VERIFICATION_FEE_SUBJECT;
+  }
+}
+
+/**
+ * S22.01 (#141): every payer's rows (`users/{uid}/payments/{paymentId}`) and totals
+ * (`users/{uid}/private/paymentTotals`) from the seeded payments and refunds, computed by the same
+ * pure functions the triggers use, so the seed does not depend on trigger timing. Lan gets held,
+ * released, paid-out and refunded bookings plus her ticket; Giang her S21 fee.
+ * Plus one Chụp ngay row for Lan (held, "đang tìm thợ"): a fixture row without a payment or request
+ * behind it, because a seeded `searching` request would start the live matching clock.
+ */
+function payerHistoryDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
+  const byPath = new Map(existing.map((d) => [d.path, d.data]));
+  const get = (path: string) => byPath.get(path);
+  const refunds = existing
+    .filter((d) => /^refunds\/[^/]+$/.test(d.path))
+    .flatMap((d) => refundFromFirestore(d.path.slice('refunds/'.length), d.data) ?? []);
+  const rows: PayerPaymentRow[] = [];
+  for (const d of existing) {
+    if (!/^payments\/[^/]+$/.test(d.path)) continue;
+    const p = paymentFromFirestore(d.path.slice('payments/'.length), d.data);
+    if (p === null || typeof p.payerId !== 'string' || p.payerId === '') continue;
+    const subject = seedPayerSubject(p, get);
+    if (subject === null) continue;
+    const row = payerRowOf(p, refunds.filter((r) => r.paymentId === p.id), subject, now);
+    if (row !== null) rows.push(row);
+  }
+  const instantPaidAt = new Date(now.getTime() - 20 * 60_000).toISOString();
+  const instant = payerRowOf(
+    {
+      id: SEED_INSTANT_FIXTURE_PAYMENT, subjectType: 'instant_request', subjectId: 'seed-instant-lan-fixture', payerId: LAN, payeeId: '',
+      provider: 'fake', amount: 690_000, status: 'paid', escrowStatus: 'held', idempotencyKey: 'seed-instant-lan-fixture',
+      method: 'momo', receivedAmount: 690_000, paidAt: instantPaidAt, createdAt: instantPaidAt, updatedAt: instantPaidAt,
+    },
+    [],
+    instantSubjectOf({ areaLabel: 'Quận 1, TP.HCM', status: 'searching' }),
+    now,
+  );
+  if (instant !== null) rows.push(instant);
+
+  const docs: SeedDocument[] = [];
+  for (const payerId of [...new Set(rows.map((r) => r.payerId))]) {
+    const mine = rows.filter((r) => r.payerId === payerId);
+    const totals = payerTotals(mine);
+    docs.push({ path: `users/${payerId}/private/${PAYMENT_TOTALS_DOC}`, data: { held: totals.held, refunding: totals.refunding, updatedAt: now } });
+    for (const r of mine) docs.push({ path: `users/${payerId}/${PAYER_PAYMENTS}/${r.paymentId}`, data: payerRowToFirestore(r) });
   }
   return docs;
 }

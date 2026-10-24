@@ -6,6 +6,7 @@ import {
   type BookingDeps,
   type EventPaymentDeps,
   type InstantDeps,
+  type PayerHistoryDeps,
   type SettlementDeps,
   type VerificationDeps,
 } from '@photobooking/domain';
@@ -14,6 +15,7 @@ import { getSharedFakeGateway, liveBookingDeps } from './live_booking.js';
 import { liveEventPaymentDeps } from './live_event.js';
 import { liveInstantDeps } from './live_instant.js';
 import { liveVerificationDeps } from './live_verification.js';
+import { FirestorePayerHistoryStore } from './payer_history_firestore.js';
 import { FirestorePaymentLookup } from './payment_firestore.js';
 
 /** The deps of each payment subject; a subject left out gets no settler. */
@@ -50,4 +52,9 @@ export function liveSettlementDeps(): SettlementDeps {
       instant: liveInstantDeps(),
     }),
   };
+}
+
+/** S22.01 payer rows and totals (#141): refreshed by the payment and refund triggers. */
+export function livePayerHistoryDeps(): PayerHistoryDeps {
+  return { store: new FirestorePayerHistoryStore(db()), clock: { now: () => new Date() } };
 }

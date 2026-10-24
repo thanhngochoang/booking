@@ -19,7 +19,7 @@ import {
 import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment, handleGetPaymentInstructions } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
-import { liveSettlementDeps } from './infra/live_payments.js';
+import { livePayerHistoryDeps, liveSettlementDeps } from './infra/live_payments.js';
 import { handleCreatePayouts } from './scheduled/create_payouts.js';
 import {
   handleOpenInquiry,
@@ -68,6 +68,7 @@ import {
   handleSavePayoutAccount,
 } from './callables/payout_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
+import { handleRefundWrite } from './triggers/refund_write.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
@@ -908,13 +909,24 @@ export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_
   handleSavePayoutAccount(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
 );
 
-/** A payment write refreshes the payee's earnings rows and totals. */
+/** A payment write refreshes the payee's earnings rows and totals and the payer's S22.01 row (#141). */
 export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payments/{paymentId}' }, async (event) => {
   await handlePaymentWrite(
     event.params.paymentId,
     event.data?.before.exists ? event.data.before.data() : undefined,
     event.data?.after.exists ? event.data.after.data() : undefined,
     liveEarningsDeps(),
+    livePayerHistoryDeps(),
+  );
+});
+
+/** S22.01 (#141): every refund write refreshes the payer's row of its payment and their totals. */
+export const onRefundWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'refunds/{refundId}' }, async (event) => {
+  await handleRefundWrite(
+    event.params.refundId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    livePayerHistoryDeps(),
   );
 });
 

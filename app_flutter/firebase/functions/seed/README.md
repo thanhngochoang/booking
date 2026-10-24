@@ -405,6 +405,21 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
   The `onAccountDeletionUpdated` trigger will purge the account and tombstone `users/{uid}`.
 - To test data export: call `requestDataExport` to generate an export JSON under `exports/{uid}/{exportId}.json` in Storage.
 
+## Payment history (S22.01 · #141)
+
+`users/{uid}/payments/{paymentId}` (one row per payment that received money) and
+`users/{uid}/private/paymentTotals` (`held`, `refunding`), computed with the same pure functions as
+the `onPaymentWritten` / `onRefundWritten` triggers, so they exist before any trigger runs:
+
+| Payer | Rows |
+|---|---|
+| Lan | held (`seed-booking-accepted`, `-upcoming`, `-requested-binh`, the studio bookings; `-delivered` and `-revision` hold only the delivery milestone, 750 000), disputed (`seed-booking-disputed`), released (`seed-booking-completed-recent`, `-completed-old`, `-approved`), refunded to Vietcombank •••• 3456 (`seed-booking-cancelled`), her 250 000 ticket of the past workshop (held), and **`seed-payment-instant-lan-fixture`**: "Chụp ngay · Quận 1, TP.HCM", 690 000 by MoMo, held, "đang tìm thợ" |
+| Giang | her S21 fee, "Phí xác minh", released to the platform ("Đã thanh toán") |
+
+The Chụp ngay row is a **fixture row only**: no `payments/` or `instant_requests/` document is
+behind it (a seeded `searching` request would start the live matching clock), so opening it finds
+no request. A real one appears after paying a Chụp ngay request on the emulators (S13).
+
 ## Điểm chụp (S29)
 
 | Điểm chụp | Khu vực | Mùa đẹp | Thợ nhận chụp | Gói chia suất |

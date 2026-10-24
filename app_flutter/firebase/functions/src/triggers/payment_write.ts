@@ -1,13 +1,60 @@
 import * as logger from 'firebase-functions/logger';
-import { PLATFORM_PAYEE, refreshEarnings, type EarningsDeps } from '@photobooking/domain';
+import {
+  PLATFORM_PAYEE,
+  refreshEarnings,
+  refreshPayerHistory,
+  type EarningsDeps,
+  type PayerHistoryDeps,
+} from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 
-type Doc = { payeeId?: unknown; subjectType?: unknown; subjectId?: unknown; milestones?: unknown } | undefined;
+type Doc = {
+  payeeId?: unknown;
+  subjectType?: unknown;
+  subjectId?: unknown;
+  milestones?: unknown;
+  status?: unknown;
+  escrowStatus?: unknown;
+  receivedAmount?: unknown;
+  refundedAmount?: unknown;
+  paidAt?: unknown;
+} | undefined;
 
 const payeeOf = (d: Doc): string | undefined => (typeof d?.payeeId === 'string' && d.payeeId !== '' ? d.payeeId : undefined);
 
+const positive = (v: unknown): boolean => typeof v === 'number' && v > 0;
+
+/** The document shows money arrived (S22.01 rows exist only then; #141 Decision 2). */
+const hasMoney = (d: Doc): boolean =>
+  d !== undefined &&
+  (d.status === 'paid' || d.status === 'partially_refunded' || d.status === 'refunded' ||
+    positive(d.receivedAmount) || positive(d.refundedAmount) || (d.paidAt !== undefined && d.paidAt !== null));
+
+/** Milestone kind, amount and status: a released milestone lowers what is held without changing `escrowStatus`. */
+const milestonesKey = (v: unknown): string =>
+  Array.isArray(v)
+    ? v.map((m: { kind?: unknown; amount?: unknown; status?: unknown } | null) => `${String(m?.kind)}:${String(m?.amount)}:${String(m?.status)}`).join(',')
+    : '';
+
 /**
- * A payment write refreshes the payee's earnings row and totals, and syncs milestone subcollection.
+ * #141 Decision 1: the payer's row changes only with `status`, `escrowStatus`, `receivedAmount`,
+ * `refundedAmount` (or the milestones); a write of a payment that never had money is skipped.
+ */
+export function payerRowChanged(before: Doc, after: Doc): boolean {
+  if (!hasMoney(before) && !hasMoney(after)) return false;
+  if (before === undefined || after === undefined) return true;
+  return (
+    before.status !== after.status ||
+    before.escrowStatus !== after.escrowStatus ||
+    (before.receivedAmount ?? 0) !== (after.receivedAmount ?? 0) ||
+    (before.refundedAmount ?? 0) !== (after.refundedAmount ?? 0) ||
+    milestonesKey(before.milestones) !== milestonesKey(after.milestones)
+  );
+}
+
+/**
+ * A payment write refreshes the payee's earnings row and totals, the payer's S22.01 row and totals
+ * (when `history` is given and a field it shows changed, #141), and syncs milestone subcollection.
  * When the payee changed (#202: an instant photographer cancelled, `payeeId` back to `''`, then another
  * accepted), the old payee is refreshed too so their row goes. Idempotent; safe to retry.
  */
@@ -16,6 +63,7 @@ export async function handlePaymentWrite(
   before: Doc,
   after: Doc,
   deps: EarningsDeps,
+  history?: PayerHistoryDeps,
 ): Promise<string | null> {
   const payeeId = payeeOf(after) ?? payeeOf(before);
   const formerPayee = payeeOf(before);
@@ -38,6 +86,11 @@ export async function handlePaymentWrite(
       }
     }
     await batch.commit();
+  }
+
+  if (history !== undefined && payerRowChanged(before, after)) {
+    const result = await refreshPayerHistory(history, paymentId);
+    logger.info('onPaymentWritten payer row', { paymentId, result });
   }
 
   if (formerPayee !== undefined && formerPayee !== payeeId && formerPayee !== PLATFORM_PAYEE) {

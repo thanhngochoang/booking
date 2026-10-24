@@ -108,6 +108,8 @@ export * from './earnings.js';
 export * from './earnings_ports.js';
 export * from './refresh_earnings.js';
 export * from './memory_earnings_store.js';
+export * from './payer_history.js';
+export * from './memory_payer_history_store.js';
 export * from './payout_use_cases.js';
 export * from './daily_payouts.js';
 export * from './fake_payout_gateway.js';
