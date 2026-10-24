@@ -285,14 +285,13 @@ class _TicketTile extends ConsumerWidget {
     final r = registration;
     final starts = toVn(r.event.startsAt);
     final ends = toVn(r.event.endsAt);
-    String hm(DateTime t) =>
-        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
     final id = await showOpenDisputeSheet(
       context,
       subject: DisputeSubject.ticket(eventId: r.eventId, registrationId: r.id),
       summary: DisputeSubjectSummary(
         title: r.event.title,
-        subtitle: '${formatDay(starts)} · ${hm(starts)}–${hm(ends)}',
+        subtitle:
+            '${formatDay(starts)} · ${formatHm(starts)}–${formatHm(ends)}',
       ),
       closesAt: closesAt,
       origin: DisputeOrigin.ticket,

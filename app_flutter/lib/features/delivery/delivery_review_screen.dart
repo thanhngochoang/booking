@@ -17,6 +17,7 @@ import 'package:photobooking/features/delivery/revision_sheet.dart';
 import 'package:photobooking/features/delivery/widgets/check_window_card.dart';
 import 'package:photobooking/features/delivery/widgets/originals_card.dart';
 import 'package:photobooking/features/delivery/widgets/sample_grid.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 
 class DeliveryReviewScreen extends ConsumerStatefulWidget {
   const DeliveryReviewScreen({super.key, required this.bookingId});
@@ -90,6 +91,12 @@ class _DeliveryReviewScreenState extends ConsumerState<DeliveryReviewScreen> {
       providerName: providerName,
       extra: extra,
     );
+  }
+
+  /// The same window rule as S05.02 and S18.01 (`bookingDisputeClosesAt`).
+  bool _canReport(Booking booking, DateTime now) {
+    final closesAt = bookingDisputeClosesAt(booking);
+    return closesAt != null && disputeHoursLeft(closesAt, now) != null;
   }
 
   /// "Báo vấn đề với ảnh gốc" → S18.01 over S05.02 with the delivery reasons
@@ -302,7 +309,7 @@ class _DeliveryReviewScreenState extends ConsumerState<DeliveryReviewScreen> {
                 CheckWindowCard(
                   checkUntil: checkUntil,
                   now: now,
-                  onReport: now.isBefore(checkUntil) && booking.disputeId == null
+                  onReport: _canReport(booking, now)
                       ? () => _report(booking)
                       : null,
                 ),

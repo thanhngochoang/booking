@@ -109,6 +109,20 @@ describe('openDispute', () => {
     await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd2', evidencePaths: [] })), 'conflict');
   });
 
+  it('a resolved dispute still blocks a second one on the same booking (one dispute per subject) → conflict', async () => {
+    const w = createDisputeWorld();
+    seedShotBooking(w);
+    await openDispute(w.deps, 'c1', openInput({ reason: 'no_show' }));
+    await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: NOTE });
+    // The photographer delivers and the customer approves: the delivery milestone is held and its window open.
+    const view = w.store.subjects.get('booking::b1');
+    assert.ok(view);
+    w.store.putSubject({ ...view, state: 'approved', checkUntil: hoursFrom(24) });
+    assert.equal(milestone(w, 'delivery')?.status, 'held');
+    await rejectsWith(openDispute(w.deps, 'c1', openInput({ disputeId: 'd2', evidencePaths: [] })), 'conflict');
+    assert.equal(w.store.disputes.size, 1);
+  });
+
   it('another customer → permission_denied', async () => {
     const w = createDisputeWorld();
     seedApprovedBooking(w);

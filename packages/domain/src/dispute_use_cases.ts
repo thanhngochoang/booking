@@ -72,8 +72,8 @@ function sameOpen(existing: Dispute, callerId: string): Dispute {
 }
 
 /**
- * Customer opens a dispute (Decisions 2–5): only the paying customer, inside the window, one open
- * dispute per subject. Freezes the window's milestone (#152's `disputeMilestone`), or a payment
+ * Customer opens a dispute (Decisions 2–5): only the paying customer, inside the window, one
+ * dispute per subject (a resolved one still counts). Freezes the window's milestone (#152's `disputeMilestone`), or a payment
  * without milestones whole (`escrowStatus: disputed`, `prevEscrowStatus` kept), mirrors the subject,
  * and opens the three-party thread with a system message and the description as the first message.
  */
@@ -102,10 +102,8 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     if (subject.customerId !== callerId) throw new DomainError('permission_denied');
     const payment = await tx.findSubjectPayment(subject);
     const window = disputeWindow(subject, now, payment?.milestones !== undefined);
-    if (subject.disputeId) {
-      const current = await tx.getDispute(subject.disputeId);
-      if (current?.status === 'open') throw new DomainError('conflict');
-    }
+    // One dispute per subject, ever (open or resolved): the outcome is final (Review Focus 4).
+    if (subject.disputeId) throw new DomainError('conflict');
     if (!payment || !isSettledPayment(payment)) throw new DomainError('not_eligible');
     // The refunds read above belong to another payment: let the caller retry.
     if (!payment.milestones && payment.id !== pre.paymentId) throw new DomainError('conflict');

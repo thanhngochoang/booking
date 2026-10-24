@@ -12,9 +12,21 @@ class EscrowNotice extends StatelessWidget {
     required this.text,
     this.maxLines = 2,
     this.icon = AppIcons.lock,
+    this.title,
+    this.trailing,
+    this.onTap,
   });
 
   final String text;
+
+  /// A bold first line above [text] (S05.02's dispute banner).
+  final String? title;
+
+  /// A widget at the end of the row, e.g. the "Xem khiếu nại" link.
+  final Widget? trailing;
+
+  /// Makes the whole notice tappable (ink on the notice's own background).
+  final VoidCallback? onTap;
 
   /// The leading icon: the lock of held money, or e.g. the clock of S18.01's
   /// dispute window.
@@ -34,42 +46,66 @@ class EscrowNotice extends StatelessWidget {
         : AppColors.foregroundMuted;
     final textColor = dark ? AppColorsDark.foreground : AppColors.foreground;
 
-    return Semantics(
-      container: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 52),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 1.0),
-                  child: AppIcon(icon, size: 16, color: iconColor),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    text,
-                    maxLines: maxLines,
-                    overflow: maxLines == null ? null : TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: AppText.chip,
-                      height: 1.35,
-                      color: textColor,
-                    ),
-                  ),
-                ),
-              ],
+    final radius = BorderRadius.circular(AppRadius.md);
+    final body = Text(
+      text,
+      maxLines: maxLines,
+      overflow: maxLines == null ? null : TextOverflow.ellipsis,
+      style: TextStyle(fontSize: AppText.chip, height: 1.35, color: textColor),
+    );
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 1.0),
+              child: AppIcon(icon, size: 16, color: iconColor),
             ),
-          ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: title == null
+                  ? body
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title!,
+                          style: TextStyle(
+                            fontSize: AppText.chip,
+                            fontWeight: FontWeight.w700,
+                            height: 1.35,
+                            color: textColor,
+                          ),
+                        ),
+                        if (text.isNotEmpty) body,
+                      ],
+                    ),
+            ),
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+          ],
         ),
       ),
+    );
+
+    return Semantics(
+      container: true,
+      child: onTap == null
+          ? DecoratedBox(
+              decoration: BoxDecoration(color: bg, borderRadius: radius),
+              child: content,
+            )
+          : Material(
+              color: bg,
+              borderRadius: radius,
+              child: InkWell(
+                borderRadius: radius,
+                onTap: onTap,
+                child: content,
+              ),
+            ),
     );
   }
 }

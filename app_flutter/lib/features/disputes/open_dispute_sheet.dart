@@ -205,8 +205,8 @@ class _OpenDisputeSheetState extends ConsumerState<OpenDisputeSheet> {
                           : null,
                       style: ReasonPickerStyle.chips,
                       // The description below is the explanation: no extra
-                      // "other" field (no reason label is empty).
-                      otherLabel: '',
+                      // "other" field.
+                      otherField: false,
                       onSelected: s.submitting
                           ? (_) {}
                           : (i) => _ctl.setReason(reasons[i]),

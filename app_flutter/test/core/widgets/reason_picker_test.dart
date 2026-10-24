@@ -146,4 +146,24 @@ void main() {
       expect(tester.takeException(), isNull);
     }
   });
+
+  testWidgets('otherField false keeps "Lý do khác" without the extra field', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        ReasonPicker(
+          reasons: reasons,
+          selected: 2,
+          onSelected: (_) {},
+          otherField: false,
+        ),
+      ),
+    );
+    expect(find.text('Lý do khác'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('reason_picker_other_field')),
+      findsNothing,
+    );
+  });
 }

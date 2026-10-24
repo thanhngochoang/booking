@@ -5,7 +5,6 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/disputes/dispute.dart';
 import 'package:photobooking/data/disputes/dispute_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
-import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/disputes/dispute_entry.dart';
 
@@ -260,8 +259,10 @@ void main() {
     expect(_key('dispute-add-photo'), findsNothing);
   });
 
-  testWidgets('evidence uploads pass purpose ImagePurpose.document to the '
-      'uploader', (tester) async {
+  // The document purpose is pinned by the repository test (dispute_mapping_test
+  // "evidence goes to disputeEvidence/uid/disputeId as a document image").
+  testWidgets('each picked photo uploads under disputeEvidence/uid, at most '
+      'two at a time', (tester) async {
     final w = await _open(
       tester,
       picks: [
@@ -270,7 +271,6 @@ void main() {
     );
     await _addPhotos(tester);
     expect(w.uploader.uploaded, hasLength(3));
-    expect(w.uploader.purposes.values.toSet(), {ImagePurpose.document});
     for (final p in w.uploader.uploaded) {
       expect(p, startsWith('disputeEvidence/c1/'));
     }

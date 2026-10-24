@@ -157,79 +157,27 @@ class DisputeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
-    final iconColor = dark
-        ? AppColorsDark.foregroundMuted
-        : AppColors.foregroundMuted;
-    final fg = dark ? AppColorsDark.foreground : AppColors.foreground;
     final link = dark ? AppColorsDark.primary : AppColors.primary;
-    final radius = BorderRadius.circular(AppRadius.md);
     final title = open ? l.disputeBannerOpen : l.disputeBannerResolved;
     return Semantics(
       button: true,
       label: open ? '$title. ${l.disputeBannerOpenBody}' : title,
       hint: l.disputeBannerView,
       excludeSemantics: true,
-      child: Material(
-        color: bg,
-        borderRadius: radius,
-        child: InkWell(
-          key: const Key('dispute-banner'),
-          borderRadius: radius,
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: AppSpace.s12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.s3,
-                vertical: AppSpace.s2h,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: AppIcon(AppIcons.flag, size: 16, color: iconColor),
-                  ),
-                  const SizedBox(width: AppSpace.s2),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: AppText.chip,
-                            fontWeight: FontWeight.w700,
-                            height: 1.35,
-                            color: fg,
-                          ),
-                        ),
-                        if (open)
-                          Text(
-                            l.disputeBannerOpenBody,
-                            style: TextStyle(
-                              fontSize: AppText.chip,
-                              height: 1.35,
-                              color: fg,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpace.s2),
-                  Text(
-                    l.disputeBannerView,
-                    style: TextStyle(
-                      fontSize: AppText.chip,
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
-                      color: link,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      child: EscrowNotice(
+        key: const Key('dispute-banner'),
+        icon: AppIcons.flag,
+        title: title,
+        text: open ? l.disputeBannerOpenBody : '',
+        maxLines: null,
+        onTap: onTap,
+        trailing: Text(
+          l.disputeBannerView,
+          style: TextStyle(
+            fontSize: AppText.chip,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+            color: link,
           ),
         ),
       ),
