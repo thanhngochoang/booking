@@ -1198,11 +1198,11 @@ class _SimPayments implements PaymentsRepository {
     required String refundId,
     required String bankCode,
     required String accountNumber,
-  }) => throw UnimplementedError('S22.04 is not simulated');
+  }) => Future.error(UnimplementedError('S22.04 is not simulated'));
 
   @override
   Future<String> chooseRefundAccount({
     required String refundId,
     required RefundAccountChoice use,
-  }) => throw UnimplementedError('S22.04 is not simulated');
+  }) => Future.error(UnimplementedError('S22.04 is not simulated'));
 }

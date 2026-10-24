@@ -11,16 +11,20 @@ enum PayerRowStatus {
   refundAccountNeeded('refund_account_needed'),
   refunding('refunding'),
   refunded('refunded'),
-  partiallyRefunded('partially_refunded');
+  partiallyRefunded('partially_refunded'),
+
+  /// A code this app does not know yet (the server is newer): the row stays
+  /// and renders neutrally from its amount, date and `open`.
+  unknown('unknown');
 
   const PayerRowStatus(this.code);
 
   /// Wire code written by the server.
   final String code;
 
-  /// Null for a missing or unknown code (the row is skipped).
-  static PayerRowStatus? fromCode(Object? code) =>
-      values.where((s) => s.code == code).firstOrNull;
+  /// [unknown] for a missing or unknown code (the row is kept).
+  static PayerRowStatus fromCode(Object? code) =>
+      values.where((s) => s.code == code).firstOrNull ?? unknown;
 }
 
 /// What a payment paid for (`PaymentSubject` on the server).
@@ -30,15 +34,18 @@ enum PayerSubjectType {
   instantRequest('instant_request'),
 
   /// The S21 identity verification fee, paid to the platform.
-  verificationFee('verification_fee');
+  verificationFee('verification_fee'),
+
+  /// A subject this app does not know yet: a generic row, no detail link.
+  unknown('unknown');
 
   const PayerSubjectType(this.code);
 
   final String code;
 
-  /// Null for a missing or unknown code (the row is skipped).
-  static PayerSubjectType? fromCode(Object? code) =>
-      values.where((s) => s.code == code).firstOrNull;
+  /// [unknown] for a missing or unknown code (the row is kept).
+  static PayerSubjectType fromCode(Object? code) =>
+      values.where((s) => s.code == code).firstOrNull ?? unknown;
 }
 
 /// One refund of a row: the amount, where it goes and whether it arrived.
@@ -189,14 +196,20 @@ PayerRefundView? _refundFrom(Object? raw) {
   );
 }
 
-/// Parses a `users/{uid}/payments/{id}` row; null for a missing document, an
-/// unknown status or subject, or no `createdAt` (the row is skipped).
+/// Parses a `users/{uid}/payments/{id}` row; null only for a missing
+/// document. An unknown status or subject keeps the row ([PayerRowStatus.unknown],
+/// [PayerSubjectType.unknown]): installed apps lag behind the server, and a
+/// dropped row would hide money and take a slot of the page's limit.
 PayerPaymentRow? payerRowFrom(String id, Map<String, dynamic>? data) {
   if (data == null) return null;
   final status = PayerRowStatus.fromCode(data['status']);
   final subjectType = PayerSubjectType.fromCode(data['subjectType']);
-  final createdAt = _time(data['createdAt']);
-  if (status == null || subjectType == null || createdAt == null) return null;
+  // The query orders by `createdAt`, so it is always there; a malformed value
+  // falls back to `paidAt`, then to the epoch (oldest group) to keep the row.
+  final createdAt =
+      _time(data['createdAt']) ??
+      _time(data['paidAt']) ??
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   final refunds = data['refunds'];
   final quantity = data['quantity'];
   return PayerPaymentRow(

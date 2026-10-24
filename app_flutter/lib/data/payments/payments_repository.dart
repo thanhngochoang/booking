@@ -42,7 +42,7 @@ abstract class PaymentsRepository {
   Future<PaymentInstructions?> instructions(String paymentId);
 
   /// The payer's S22.01 rows, newest first, at most [limit]; rows with an
-  /// unknown status or subject are skipped.
+  /// unknown status or subject are kept as generic rows.
   Stream<List<PayerPaymentRow>> watchHistory(String uid, {required int limit});
 
   /// What is held and being refunded for [uid]; zero while none.
@@ -73,21 +73,21 @@ abstract class PaymentsRepository {
 
 bool _validId(String id) => id.isNotEmpty && !id.contains('/');
 
-/// The stable code of a callable failure: `details.code`, else the transport
-/// code; `network` when the server could not be reached.
-String _codeOf(Object error) {
-  if (error is SocketException) return 'network';
-  if (error is FirebaseFunctionsException) {
-    final details = error.details;
-    if (details is Map && details['code'] is String) {
-      return details['code'] as String;
-    }
-    if (error.code == 'unavailable' || error.code == 'deadline-exceeded') {
-      return 'network';
-    }
-    return error.code;
+/// The stable code of a callable refusal: `details.code`, else the transport
+/// code in snake_case (as `firestore_earnings_repository.dart`); `network`
+/// when the server could not be reached.
+String _codeOf(FirebaseFunctionsException error) {
+  final details = error.details;
+  if (details is Map && details['code'] is String) {
+    return details['code'] as String;
   }
-  return 'unknown';
+  return switch (error.code) {
+    'unavailable' || 'deadline-exceeded' => 'network',
+    'unauthenticated' || 'permission-denied' => 'permission_denied',
+    'resource-exhausted' => 'limit_exceeded',
+    'aborted' => 'conflict',
+    final code => code.replaceAll('-', '_'),
+  };
 }
 
 /// Payments on Firebase: the callables of V1 and S22.04, and the owner-only
@@ -106,13 +106,17 @@ class FirebasePaymentsRepository implements PaymentsRepository {
       FirebaseFunctions.instanceFor(region: functionsRegion);
   FirebaseFirestore get _db => _firestoreOverride ?? FirebaseFirestore.instance;
 
-  /// Calls [name]; a failure leaves as a [BookingException] with its code only.
+  /// Calls [name]; a refusal or a network failure leaves as a
+  /// [BookingException] with its code only. Anything else (a bug) is rethrown
+  /// with its stack trace.
   Future<T> _call<T>(String name, Map<String, Object> payload) async {
     try {
       final res = await _functions.httpsCallable(name).call<T>(payload);
       return res.data;
-    } catch (e) {
+    } on FirebaseFunctionsException catch (e) {
       throw BookingException(_codeOf(e));
+    } on SocketException {
+      throw const BookingException('network');
     }
   }
 

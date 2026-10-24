@@ -1,3 +1,5 @@
+import 'dart:io' show SocketException;
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -209,6 +211,92 @@ void main() {
         ).called(1);
       },
     );
+
+    Matcher code(String c) =>
+        throwsA(isA<BookingException>().having((e) => e.code, 'code', c));
+
+    test('network failures read "network"', () async {
+      when(
+        () => callable.call<Object?>(any()),
+      ).thenThrow(const SocketException('no route'));
+      await expectLater(
+        repo.pendingRefund(const BookingRefund('b1')),
+        code('network'),
+      );
+
+      for (final transport in ['unavailable', 'deadline-exceeded']) {
+        when(() => callable.call<Object?>(any())).thenThrow(
+          FirebaseFunctionsException(message: transport, code: transport),
+        );
+        await expectLater(
+          repo.pendingRefund(const BookingRefund('b1')),
+          code('network'),
+        );
+      }
+    });
+
+    test('a refusal without details.code reads its transport code in snake_case', () async {
+      const cases = {
+        'not-found': 'not_found',
+        'permission-denied': 'permission_denied',
+        'unauthenticated': 'permission_denied',
+        'invalid-argument': 'invalid_argument',
+        'resource-exhausted': 'limit_exceeded',
+        'aborted': 'conflict',
+        'failed-precondition': 'failed_precondition',
+      };
+      for (final e in cases.entries) {
+        when(() => callable.call<Object?>(any())).thenThrow(
+          FirebaseFunctionsException(message: 'refused', code: e.key),
+        );
+        await expectLater(
+          repo.chooseRefundAccount(
+            refundId: 'r1',
+            use: RefundAccountChoice.payer,
+          ),
+          code(e.value),
+          reason: e.key,
+        );
+      }
+    });
+
+    test('any other failure is rethrown as it is, with its stack trace', () async {
+      final boom = StateError('bug');
+      when(() => callable.call<Object?>(any())).thenThrow(boom);
+      await expectLater(
+        repo.pendingRefund(const DisputeRefund('d1')),
+        throwsA(same(boom)),
+      );
+    });
+
+    test('a malformed lookup or choose answer reads "unknown"', () async {
+      answerAny(<Object?, Object?>{'holderName': 'TRAN VAN B'});
+      await expectLater(
+        repo.lookupRefundAccount(
+          refundId: 'r1',
+          bankCode: 'TCB',
+          accountNumber: '190000004321',
+        ),
+        code('unknown'),
+      );
+
+      answerAny(null);
+      await expectLater(
+        repo.chooseRefundAccount(
+          refundId: 'r1',
+          use: RefundAccountChoice.payer,
+        ),
+        code('unknown'),
+      );
+      answerAny(<Object?, Object?>{'status': 3});
+      await expectLater(
+        repo.chooseRefundAccount(
+          refundId: 'r1',
+          use: RefundAccountChoice.payer,
+        ),
+        code('unknown'),
+      );
+    });
 
     test('the lookup cap and an unsupported bank keep their codes', () async {
       when(() => callable.call<Object?>(any())).thenThrow(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,9 +127,22 @@ void main() {
       expect(wallet.doneAt, DateTime.utc(2026, 10, 10, 6));
     });
 
-    test('an unknown status → null (row skipped)', () {
-      expect(payerRowFrom('p1', _row(status: 'paid_out')), isNull);
-      expect(payerRowFrom('p1', _row(subjectType: 'gift_card')), isNull);
+    test('an unknown status/subject renders as a generic row', () {
+      // Installed apps lag behind the server: a newer code keeps its row (its
+      // money and its place in the page), only a missing document is skipped.
+      final status = payerRowFrom('p1', _row(status: 'paid_out'))!;
+      expect(status.status, PayerRowStatus.unknown);
+      expect(status.subjectType, PayerSubjectType.booking);
+      expect(status.amount, 1500000);
+      expect(status.open, isTrue);
+
+      final subject = payerRowFrom('p1', _row(subjectType: 'gift_card'))!;
+      expect(subject.subjectType, PayerSubjectType.unknown);
+      expect(subject.status, PayerRowStatus.held);
+
+      final noStatus = payerRowFrom('p1', {..._row(), 'status': null})!;
+      expect(noStatus.status, PayerRowStatus.unknown);
+
       expect(payerRowFrom('p1', null), isNull);
     });
 
@@ -224,7 +239,7 @@ void main() {
       repo = FirebasePaymentsRepository(firestore: db);
     });
 
-    test('watchHistory reads the owner rows newest first, limited, skipping unknown ones', () async {
+    test('watchHistory reads the owner rows newest first, limited, keeping unknown ones', () async {
       final rows = db.collection('users').doc('lan').collection('payments');
       await rows.doc('old').set(_row(createdDay: 1));
       await rows.doc('new').set(_row(createdDay: 9));
@@ -238,10 +253,11 @@ void main() {
           .set(_row(createdDay: 20));
 
       final firstThree = await repo.watchHistory('lan', limit: 3).first;
-      expect(firstThree.map((r) => r.paymentId), ['new', 'mid']);
+      expect(firstThree.map((r) => r.paymentId), ['new', 'odd', 'mid']);
+      expect(firstThree[1].status, PayerRowStatus.unknown);
 
       final all = await repo.watchHistory('lan', limit: 20).first;
-      expect(all.map((r) => r.paymentId), ['new', 'mid', 'old']);
+      expect(all.map((r) => r.paymentId), ['new', 'odd', 'mid', 'old']);
     });
 
     test(
@@ -265,13 +281,15 @@ void main() {
     test('paymentHistoryProvider and paymentTotalsProvider follow the signed-in uid', () async {
       final fake = FakePaymentsRepository()
         ..emitHistory('lan', [payerRowFrom('p1', _row())!])
-        ..emitTotals('lan', const PaymentTotals(held: 750000));
+        ..emitTotals('lan', const PaymentTotals(held: 750000))
+        ..emitHistory('giang', [payerRowFrom('p9', _row(createdDay: 2))!])
+        ..emitTotals('giang', const PaymentTotals(refunding: 200000));
+      final auth = StreamController<AuthUser?>();
+      addTearDown(auth.close);
       final container = ProviderContainer(
         overrides: [
           paymentsRepositoryProvider.overrideWithValue(fake),
-          authStateProvider.overrideWith(
-            (ref) => Stream.value(const AuthUser(uid: 'lan')),
-          ),
+          authStateProvider.overrideWith((ref) => auth.stream),
         ],
       );
       addTearDown(container.dispose);
@@ -280,12 +298,22 @@ void main() {
       final totalsSub = container.listen(paymentTotalsProvider, (_, _) {});
       addTearDown(sub.close);
       addTearDown(totalsSub.close);
+      auth.add(const AuthUser(uid: 'lan'));
       await container.read(authStateProvider.future);
       final rows = await container.read(paymentHistoryProvider(20).future);
       expect(rows.single.paymentId, 'p1');
       expect(fake.historyLimits, [20]);
       final totals = await container.read(paymentTotalsProvider.future);
       expect(totals.held, 750000);
+
+      // Another account signs in on the same device: its own rows only.
+      auth.add(const AuthUser(uid: 'giang'));
+      await pumpEventQueue();
+      final next = await container.read(paymentHistoryProvider(20).future);
+      expect(next.single.paymentId, 'p9');
+      final nextTotals = await container.read(paymentTotalsProvider.future);
+      expect(nextTotals.held, 0);
+      expect(nextTotals.refunding, 200000);
     });
 
     test('signed out → no rows and zero totals', () async {
