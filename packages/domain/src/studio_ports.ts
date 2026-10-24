@@ -41,11 +41,14 @@ export interface StudioStore {
   dueRelations(now: Date, limit: number): Promise<StudioRelation[]>;
 }
 
-/** S27 (#151) adds 'collaborator'. */
-export type AssigneeKind = 'member';
+/** `member` (S26) or `collaborator` (S27 #151: an active collaboration, offer accepted within 6 hours). */
+export type AssigneeKind = 'member' | 'collaborator';
 
 export interface StudioRoster {
-  /** How `uid` may work for `studioId` today; null = may not be assigned. S27 returns 'collaborator' from its own collection. */
+  /**
+   * How `uid` may work for `studioId` today; null = may not be assigned. `assignBooking` uses it for members only:
+   * a collaborator offer names its kind and is checked against the collaboration inside the transaction.
+   */
   relationOf(studioId: string, uid: string): Promise<AssigneeKind | null>;
   person(uid: string): Promise<{ name: string; avatarUrl: string | null } | null>;
 }

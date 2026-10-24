@@ -5,11 +5,14 @@
 import type { AddonCatalog } from './addon_ports.js';
 import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
+import type { CollabJob } from './collab_jobs.js';
 import type { DeliveryRound, DeliverySample, PrivateDelivery } from './delivery.js';
 import type { Payment, PaymentMethod, PaymentSubject, Refund, RefundMethod, LedgerEntry } from './escrow.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 import type { ProviderType } from './provider_type.js';
+import type { RecruitCounters } from './recruit.js';
+import type { Collaboration } from './studio_collaboration.js';
 import type { StudioDayFacts } from './studio_capacity.js';
 import type { Spot } from './spot.js';
 import type { SpotSchedule } from './spot_schedule.js';
@@ -185,6 +188,14 @@ export interface StudioBookingTx extends BookingTx {
   getMemberDays(studioId: string, day: string): Promise<StudioDayFacts['memberDays']>;
   /** `photographers/{uid}.studioId`: the studio the photographer is an active member of (the membership lock). */
   getMemberStudio(uid: string): Promise<string | null>;
+  // ── S27 (#151): collaborator offers run in the assignment transaction ──
+  /** The main `studio_collaborations/{studioId}_{uid}` document, or null. */
+  getCollaboration(studioId: string, uid: string): Promise<Collaboration | null>;
+  /** `collab_jobs/{bookingId}_{uid}`, or null. */
+  getCollabJob(bookingId: string, uid: string): Promise<CollabJob | null>;
+  /** `photographers/{uid}/private/recruit` (EMPTY_COUNTERS when missing): `recruitBlockedUntil` for offers. */
+  getRecruitCounters(uid: string): Promise<RecruitCounters>;
+  putCollabJob(j: CollabJob): void;
 }
 
 export interface BookingStore {

@@ -182,3 +182,5 @@ export * from './recruit_notify.js';
 export * from './studio_collaboration.js';
 export * from './collab_use_cases.js';
 export * from './open_collab_chat.js';
+export * from './collab_jobs.js';
+export * from './recruit_sweeps.js';

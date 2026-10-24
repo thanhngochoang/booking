@@ -1,3 +1,4 @@
+import { collabJobId, isOpenCollabJob, type CollabJob } from './collab_jobs.js';
 import { RetryableConflict } from './event_ports.js';
 import { EMPTY_COUNTERS, type RecruitApplication, type RecruitCounters, type RecruitPost } from './recruit.js';
 import type { RecruitMemberState, RecruitStore, RecruitTx } from './recruit_ports.js';
@@ -24,8 +25,8 @@ export class MemoryRecruitStore implements RecruitStore {
   readonly collaborations = new Map<string, Collaboration>();
   /** `studio_collaborations/{id}/history/{historyId}` copies, keyed by the main id, oldest first. */
   readonly collabHistory = new Map<string, Array<{ readonly historyId: string; readonly collaboration: Collaboration }>>();
-  /** Seed: open collab jobs (pending | accepted, not closed), keyed `${studioId}_${uid}` (Task 4 writes real jobs). */
-  readonly openJobs = new Map<string, number>();
+  /** `collab_jobs`, keyed `${bookingId}_${collaboratorId}`. */
+  readonly collabJobs = new Map<string, CollabJob>();
   /** S26 `photographers/{uid}.studioCooldownUntil`. */
   readonly cooldowns = new Map<string, string>();
   /** S26 studio facts: `photographers/{studioId}.memberCount` and `businessVerified`. */
@@ -77,8 +78,19 @@ export class MemoryRecruitStore implements RecruitStore {
     this.bump(`collab:${c.id}`);
   }
 
-  seedOpenJobs(studioId: string, uid: string, n: number): void {
-    this.openJobs.set(collaborationId(studioId, uid), n);
+  seedCollabJob(j: CollabJob): void {
+    this.collabJobs.set(j.id, j);
+    this.bump(`job:${j.id}`);
+  }
+
+  /**
+   * A collab job written by another store's transaction (the booking store's assignment transaction: on
+   * Firestore both are one transaction). Counts as a committed write for this store's concurrency checks.
+   */
+  writeCollabJob(j: CollabJob): void {
+    this.collabJobs.set(j.id, j);
+    this.bump(`job:${j.id}`);
+    this.writes += 1;
   }
 
   /** S26 facts of a studio (defaults: 0 members, not business-verified). */
@@ -174,6 +186,11 @@ export class MemoryRecruitStore implements RecruitStore {
           pairOpen: this.openPairs.has(pair),
         };
       },
+      getCollabJob: async (bookingId, uid) => {
+        const id = collabJobId(bookingId, uid);
+        read('getCollabJob', `job:${id}`);
+        return this.collabJobs.get(id) ?? null;
+      },
       putPost: (p) => write(() => { this.posts.set(p.id, p); }, `post:${p.id}`),
       putApplication: (a) => write(() => { this.applications.set(a.id, a); }, `app:${a.id}`),
       putCollaboration: (c) => write(() => { this.collaborations.set(c.id, c); }, `collab:${c.id}`),
@@ -191,6 +208,7 @@ export class MemoryRecruitStore implements RecruitStore {
         }, `studio:${studioId}`);
         write(() => { this.studioQuotas.set(studioId, m.quota); }, `quota:${studioId}`);
       },
+      putCollabJob: (j) => write(() => { this.collabJobs.set(j.id, j); }, `job:${j.id}`),
     };
 
     const result = await fn(tx);
@@ -226,7 +244,34 @@ export class MemoryRecruitStore implements RecruitStore {
   }
 
   async openJobCount(studioId: string, uid: string): Promise<number> {
-    return this.openJobs.get(collaborationId(studioId, uid)) ?? 0;
+    return [...this.collabJobs.values()]
+      .filter((j) => j.studioId === studioId && j.collaboratorId === uid && isOpenCollabJob(j)).length;
+  }
+
+  async dueOffers(now: Date, limit: number): Promise<CollabJob[]> {
+    return [...this.collabJobs.values()]
+      .filter((j) => j.offerStatus === 'pending' && j.offerExpiresAt.getTime() <= now.getTime())
+      .sort((a, b) => a.offerExpiresAt.getTime() - b.offerExpiresAt.getTime())
+      .slice(0, limit);
+  }
+
+  async payPending(now: Date, limit: number): Promise<CollabJob[]> {
+    return [...this.collabJobs.values()]
+      .filter((j) => j.offerStatus === 'accepted' && j.payStatus === 'none' && j.shootEndsAt.getTime() <= now.getTime())
+      .slice(0, limit);
+  }
+
+  async overduePay(cutoff: Date, limit: number): Promise<CollabJob[]> {
+    return [...this.collabJobs.values()]
+      .filter((j) => j.payStatus === 'due' && j.pay.dueAt !== null && j.pay.dueAt.getTime() <= cutoff.getTime()
+        && j.pay.overdueFlaggedAt === null)
+      .slice(0, limit);
+  }
+
+  async unflaggedDisputes(limit: number): Promise<CollabJob[]> {
+    return [...this.collabJobs.values()]
+      .filter((j) => j.payStatus === 'disputed' && j.pay.disputeFlaggedAt === null)
+      .slice(0, limit);
   }
 
   async matchingProviders(matchKeys: readonly string[], limit: number): Promise<string[]> {

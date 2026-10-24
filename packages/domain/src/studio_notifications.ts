@@ -6,6 +6,7 @@
 
 import type { Booking } from './booking.js';
 import { formatVnDate, formatVnTime } from './booking_policy.js';
+import { confirmedAssigneeId } from './collab_jobs.js';
 import {
   notifyAssignmentReturned,
   notifyBookingAssigned,
@@ -19,12 +20,15 @@ export type StudioNotice = 'assigned' | 'reassigned' | 'change_requested' | 'cha
 
 const LIVE_AFTER_DRAFT: ReadonlySet<Booking['status']> = new Set(['requested', 'accepted', 'upcoming']);
 
-/** Creation and deletion send nothing; neither does an individual booking. */
+/**
+ * Creation and deletion send nothing; neither does an individual booking. The assignee is the confirmed one
+ * (S27): a collaborator's offer is announced to the customer only once accepted.
+ */
 export function studioBookingNotices(before: Booking | null, after: Booking | null): StudioNotice[] {
   if (!before || !after || after.isStudio !== true) return [];
   const out: StudioNotice[] = [];
-  const was = before.assigneeId ?? null;
-  const now = after.assigneeId ?? null;
+  const was = confirmedAssigneeId(before);
+  const now = confirmedAssigneeId(after);
   if (now !== null && now !== was) out.push(was === null ? 'assigned' : 'reassigned');
   // A studio spot booking is created already assigned (#194 Decision 7): the member is told when the paid
   // booking leaves the draft (a draft is only a hold), through the same hook and dedupe key.
@@ -57,8 +61,8 @@ export async function notifyStudioBookingChange(
   if (notices.length === 0 || !before || !after) return;
   const common = { bookingId: after.id, customerId: after.customerId, studioId: after.photographerId };
   const slot = { day: after.day, start: after.start };
-  const oldAssignee = before.assigneeId ?? null;
-  const assignee = after.assigneeId ?? null;
+  const oldAssignee = confirmedAssigneeId(before);
+  const assignee = confirmedAssigneeId(after);
   const change = after.changeRequest ?? null;
   const jobs: Promise<unknown>[] = [];
   for (const n of notices) {

@@ -20,6 +20,7 @@ import {
   isAddonUnit,
   isPaymentMethod,
   isPaymentSubject,
+  EMPTY_COUNTERS,
   parseVnDateTime,
   waitsForAssignee,
   type AddonLine,
@@ -803,6 +804,15 @@ export class FirestoreBookingStore implements StudioBookingStore {
           return typeof studioId === 'string' && studioId !== '' ? studioId : null;
         },
         getMemberDays: (studioId, day) => readStudioMemberDays(this.firestore, fTx, studioId, day),
+        // S27 (#151) collaborator offers: stubs until Task 5 adds the collaboration, collab job and recruit
+        // counter mappings. No collaboration is found, so a collaborator offer is refused (not_found) before
+        // any collab job would be written; member flows never reach these.
+        getCollaboration: async () => null,
+        getCollabJob: async () => null,
+        getRecruitCounters: async () => EMPTY_COUNTERS,
+        putCollabJob: () => {
+          throw new Error('collab_jobs are not wired yet (#151 Task 5)');
+        },
         getBooking: async (id) => {
           const snap = await fTx.get(this.firestore.collection(BOOKINGS_COLLECTION).doc(id));
           return bookingFromFirestore(snap.id, snap.data());

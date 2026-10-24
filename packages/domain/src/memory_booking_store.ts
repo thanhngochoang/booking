@@ -12,8 +12,12 @@ import type {
   TransferRecord,
 } from './booking_ports.js';
 import { parseVnDateTime } from './booking_policy.js';
+import { collabJobId } from './collab_jobs.js';
 import type { DeliveryRound, DeliverySample, PrivateDelivery } from './delivery.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { MemoryRecruitStore } from './memory_recruit_store.js';
+import { EMPTY_COUNTERS } from './recruit.js';
+import { collaborationId } from './studio_collaboration.js';
 import type { Spot } from './spot.js';
 import type { SpotSchedule } from './spot_schedule.js';
 import type { SlotOffer } from './spot_slots.js';
@@ -39,6 +43,11 @@ export class MemoryBookingStore implements StudioBookingStore {
   readonly studioCounters = new Map<string, Partial<Record<StudioCounterField, number>>>();
   /** Whether a member may be assigned (verified and onboarded); a test world wires it to its provider gate. */
   memberVerified: (uid: string) => boolean = () => true;
+  /**
+   * S27: the recruit store holding collaborations, collab jobs and recruit counters (one database on Firestore).
+   * Unlinked → no collaboration exists and writing a collab job throws.
+   */
+  recruit: MemoryRecruitStore | null = null;
 
   counterOf(studioId: string, field: StudioCounterField): number {
     return this.studioCounters.get(studioId)?.[field] ?? 0;
@@ -78,6 +87,13 @@ export class MemoryBookingStore implements StudioBookingStore {
         getMemberStudio: async (uid) => {
           for (const [studioId, members] of this.studioMembers) if (members.includes(uid)) return studioId;
           return null;
+        },
+        getCollaboration: async (studioId, uid) => this.recruit?.collaborations.get(collaborationId(studioId, uid)) ?? null,
+        getCollabJob: async (bookingId, uid) => this.recruit?.collabJobs.get(collabJobId(bookingId, uid)) ?? null,
+        getRecruitCounters: async (uid) => this.recruit?.countersOf(uid) ?? EMPTY_COUNTERS,
+        putCollabJob: (j) => {
+          if (!this.recruit) throw new Error('MemoryBookingStore: no recruit store linked for collab jobs');
+          this.recruit.writeCollabJob(j);
         },
         getMemberDays: async (studioId, day) =>
           (this.studioMembers.get(studioId) ?? []).map((uid) => ({

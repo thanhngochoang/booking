@@ -1,11 +1,12 @@
 /**
  * Ports of the S27 recruit use cases (plan #151 Contract): posts, applications and counters (Task 2),
- * collaborations and member-kind acceptance (Task 3). Task 4 adds the collab-job members and the
- * `milestones` reader.
+ * collaborations and member-kind acceptance (Task 3), collab jobs, their sweep queries and the
+ * `milestones` reader (Task 4).
  */
 
 import type { BlockGate } from './block_ports.js';
 import type { ProviderOrderGate } from './booking_ports.js';
+import type { CollabJob } from './collab_jobs.js';
 import type { NotifyDeps } from './notification_ports.js';
 import type { Clock, IdGenerator } from './ports.js';
 import type { ProviderType } from './provider_type.js';
@@ -52,6 +53,8 @@ export interface RecruitTx {
    * S26 relation.
    */
   getMemberState(studioId: string, uid: string): Promise<RecruitMemberState>;
+  /** `collab_jobs/{bookingId}_{uid}`, or null. */
+  getCollabJob(bookingId: string, uid: string): Promise<CollabJob | null>;
   putPost(p: RecruitPost): void;
   putApplication(a: RecruitApplication): void;
   /** Writes the main collaboration document. */
@@ -61,6 +64,7 @@ export interface RecruitTx {
   putCounters(uid: string, c: RecruitCounters): void;
   /** S26's join writes (see `MemberActivation`): relation, member lock, studio memberCount +1, studio quota. */
   putMember(m: MemberActivation): void;
+  putCollabJob(j: CollabJob): void;
 }
 
 export interface RecruitStore {
@@ -73,8 +77,19 @@ export interface RecruitStore {
   dueApplications(now: Date, limit: number): Promise<RecruitApplication[]>;
   /** Collaborations still `invited` with `expiresAt <= now`. */
   dueInvites(now: Date, limit: number): Promise<Collaboration[]>;
-  /** The studio's collab jobs of `uid` still `pending` or `accepted` with `closedAt` null (Task 4 writes them). */
+  /**
+   * The pair's collab jobs that keep the collaboration from ending (`isOpenCollabJob`): `pending` or `accepted`
+   * with `closedAt` null, or `payStatus` `disputed` ("đang khiếu nại", spec §4).
+   */
   openJobCount(studioId: string, uid: string): Promise<number>;
+  /** Jobs still `pending` with `offerExpiresAt <= now`, soonest first. */
+  dueOffers(now: Date, limit: number): Promise<CollabJob[]>;
+  /** Jobs `accepted` with `payStatus` `none` and `shootEndsAt <= now` (the sweep then asks `milestones`). */
+  payPending(now: Date, limit: number): Promise<CollabJob[]>;
+  /** Jobs `due` with `pay.dueAt <= cutoff` and `pay.overdueFlaggedAt` null. */
+  overduePay(cutoff: Date, limit: number): Promise<CollabJob[]>;
+  /** Jobs `disputed` with `pay.disputeFlaggedAt` null. */
+  unflaggedDisputes(limit: number): Promise<CollabJob[]>;
   /** Provider uids whose `recruitMatchKeys` contain any of `matchKeys` (≤ 20 values), at most `limit`. */
   matchingProviders(matchKeys: readonly string[], limit: number): Promise<string[]>;
 }
@@ -87,6 +102,11 @@ export interface RecruitDeps {
   readonly blocks: BlockGate;
   /** Whether every id is a portfolio post of `uid` (an empty list is true). */
   readonly posts: { ownedBy(uid: string, postIds: readonly string[]): Promise<boolean> };
+  /**
+   * Whether the booking's first (shoot) milestone was released to the studio (Decision 15): the adapter reads
+   * the booking's payments with `isShootMilestoneReleased`.
+   */
+  readonly milestones: { shotReleased(bookingId: string): Promise<boolean> };
   readonly notify: NotifyDeps;
   readonly clock: Clock;
   readonly ids: IdGenerator;

@@ -8,6 +8,7 @@ import {
   respondCollabInvite,
   setCollabDefaultFee,
 } from '../src/collab_use_cases.js';
+import { newCollabJob, type CollabJob } from '../src/collab_jobs.js';
 import { DomainError } from '../src/errors.js';
 import { applyToRecruitPost, respondRecruitApplication } from '../src/recruit_use_cases.js';
 import { createRecruitWorld, openPost, seedCollaboration, type RecruitWorld } from './support/recruit_world.js';
@@ -35,6 +36,25 @@ const respond = (w: RecruitWorld, uid: string, studioId: string, accept: boolean
 const counters = (w: RecruitWorld, uid: string) => w.store.countersOf(uid);
 const collab = (w: RecruitWorld, studioId: string, uid: string) => w.store.collaborations.get(`${studioId}_${uid}`);
 const rowsOfType = (w: RecruitWorld, uid: string, type: string) => w.rowsOf(uid).filter((r) => r.type === type);
+
+/** A collab job of s1 and p1 on booking b1 (pending unless `over` says otherwise). */
+function collabJob(w: RecruitWorld, over: Partial<CollabJob> = {}): CollabJob {
+  const now = w.clock.now();
+  const job = newCollabJob({
+    booking: {
+      id: 'b1', photographerId: 's1', customerId: 'c1', day: '2026-10-15', start: '14:00', end: '16:00',
+      serviceSnapshot: { name: 'Gói Studio', price: 1_000_000, durationMinutes: 120 }, place: { name: 'Nhà thờ Lớn' },
+    },
+    collaboratorId: 'p1',
+    studioName: 'Studio Mây',
+    collaboratorName: 'Minh Trí',
+    shootEndsAt: new Date('2026-10-15T09:00:00.000Z'),
+    agreedFee: 800_000,
+    offerExpiresAt: new Date(now.getTime() + 6 * 60 * 60 * 1000),
+    now,
+  });
+  return { ...job, ...over };
+}
 
 describe('inviteCollaborator', () => {
   it('a verified studio invites a verified individual: status invited, expiresAt +7 d, pendingInviteCount 1, one studio action, collab_invite sent', async () => {
@@ -361,10 +381,33 @@ describe('endCollaboration', () => {
   it('end with an open job → member_busy', async () => {
     const w = createRecruitWorld();
     seedCollaboration(w, 's1', 'p1');
-    w.store.seedOpenJobs('s1', 'p1', 1);
+    w.store.seedCollabJob(collabJob(w, { offerStatus: 'pending' }));
     assert.equal(await code(endCollaboration(w.deps, 's1', { collaboratorId: 'p1' })), 'member_busy');
     assert.equal(await code(endCollaboration(w.deps, 'p1', { studioId: 's1' })), 'member_busy');
     assert.equal(collab(w, 's1', 'p1')?.status, 'active');
+  });
+
+  it('open jobs are computed from the collab jobs: live and not closed, or a disputed pay record ("đang khiếu nại")', async () => {
+    const cases: Array<[string, Partial<CollabJob>, number]> = [
+      ['pending offer', { offerStatus: 'pending' }, 1],
+      ['accepted, booking not finished', { offerStatus: 'accepted' }, 1],
+      ['accepted, booking completed', { offerStatus: 'accepted', closedAt: new Date() }, 0],
+      ['accepted, completed, pay due', { offerStatus: 'accepted', closedAt: new Date(), payStatus: 'due' }, 0],
+      ['accepted, completed, pay disputed', { offerStatus: 'accepted', closedAt: new Date(), payStatus: 'disputed' }, 1],
+      ['declined', { offerStatus: 'declined' }, 0],
+      ['replaced', { offerStatus: 'replaced' }, 0],
+      ['returned', { offerStatus: 'returned' }, 0],
+      ['cancelled with the booking', { offerStatus: 'cancelled', closedAt: new Date() }, 0],
+    ];
+    for (const [name, over, n] of cases) {
+      const w = createRecruitWorld();
+      seedCollaboration(w, 's1', 'p1');
+      w.store.seedCollabJob(collabJob(w, over));
+      w.store.seedCollabJob(collabJob(w, { id: 'b9_p2', bookingId: 'b9', collaboratorId: 'p2' }));
+      assert.equal(await w.store.openJobCount('s1', 'p1'), n, name);
+      if (n === 0) await endCollaboration(w.deps, 's1', { collaboratorId: 'p1' });
+      else assert.equal(await code(endCollaboration(w.deps, 'p1', { studioId: 's1' })), 'member_busy', name);
+    }
   });
 
   it('the sixth end of the day by a collaborator → rate_limited', async () => {
