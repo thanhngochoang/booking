@@ -190,3 +190,4 @@ Mọi khoá trong `screens/recruit.md` đã so với `app_vi.arb` (254 cặp kho
   - "Thù lao cần trả" lấy 50 job theo `updatedAt` có thể sót job `due`/`disputed` cũ: đủ cho phase 1; sau này truy vấn theo `payStatus`.
   - `_selected` ghi trong `build`; tông `*_result` cần `variant`; bí danh `*Subtle` của `AppColorsDark` (mức token).
 - PR: (điền khi mở)
+- Re-review đợt sửa cuối: mọi Important đã sửa; D5 (dòng ánh xạ `seq`) sửa trong commit này. Để sau: `recruit_blocked` khi luồng bộ đếm chưa kịp cập nhật `recruitBlockedUntil` rơi về dòng chung "Thử lại" (tạm thời, vài giây); `_send` của S26.04 chép thân `runStudioAction` thay vì thêm tham số `errorText`.
