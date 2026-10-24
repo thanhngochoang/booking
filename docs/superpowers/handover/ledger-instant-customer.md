@@ -14,8 +14,8 @@
 | 4 S13.08 khách, màn đã đóng | 82f63d4b | `showCustomerCancelSheet` (bản tính thử của server, hỏi lại ở mốc), `ClosedView`, chữ đỏ "Huỷ" ở S13.02 đã gửi lời mời, `PolicyTable.whenMaxLines`; đích push `/instant/{id}` đã có trong danh sách của #138. |
 | 5 S13.03, S13.04, S13.07 | f6b4736a, 1d276988, c34a3903 | `WaitingView`, lớp phủ S13.04 trong `InstantFlowScreen`, `NoMatchView`, `InstantTickScheduler`, `InstantIconDisc`. Một vòng sửa. |
 | 6 S13.05, S13.06 | ab9d92c6, 0932bd3e | `TrackingView` (bản đồ sơ đồ, ETA theo từng điểm, chờ cập nhật, trễ, huỷ miễn phí đếm ngược), `ShootingView` (đang chụp, chờ xác nhận), `DoneView`, `InstantBoldPart`, `InstantStatusBadge`, `instant_meta.dart`; core `MapPreview.center`, `MetaPart.text(bold:)`, `CountdownText.interval`, `AppIcons.taskAlt`. Một vòng sửa. |
-| 7 Test hai bên, tài liệu | _(commit của Task 7)_ | `test/support/instant_simulator.dart` (một backend trong bộ nhớ, hai mặt khách/thợ, theo luật `packages/domain`), `instant_two_party_test.dart` (9 test); `InstantWorld`/`InstantCustomerWorld` nhận `repository` và đồng hồ chung; mock (S13.02, S13.03, S13.08-done), `chooseLike` "Chọn người này", `screens/instant.md` mục "S13 khách", bảng mã spec chính, spec §8, `shared-components.md`, bảng chữ của plan, dòng "Superseded" ở plan I5 cũ, sổ này. |
-| Rà soát cuối | _(controller điền)_ | _(controller điền kết quả rà soát cuối và đợt sửa)_ |
+| 7 Test hai bên, tài liệu | 9fe39e56 | `test/support/instant_simulator.dart` (một backend trong bộ nhớ, hai mặt khách/thợ, theo luật `packages/domain`), `instant_two_party_test.dart` (10 test); `InstantWorld`/`InstantCustomerWorld` nhận `repository` và đồng hồ chung; mock (S13.02, S13.03, S13.08-done), `chooseLike` "Chọn người này", `screens/instant.md` mục "S13 khách", bảng mã spec chính, spec §8, `shared-components.md`, bảng chữ của plan, dòng "Superseded" ở plan I5 cũ, sổ này. |
+| Rà soát cuối | — | Approved (0 Critical, 0 Important; toàn nhánh `eac953ce..9fe39e56` đã kiểm tra). |
 
 ## Quyết định (Decisions 1–14 của plan khách, mỗi dòng một ý)
 
@@ -86,4 +86,4 @@ Từ các task (nhỏ, hoãn):
 
 ## Rà soát cuối
 
-_(Controller điền: kết quả rà soát cuối của PR 2, các phát hiện, đợt sửa và commit, và các mục giữ hoãn.)_
+- Rà soát cuối toàn nhánh (`eac953ce..9fe39e56`, Tasks 1–7): **Approved** (0 Critical, 0 Important). Các mục nhỏ hoãn đã ghi ở mục "Hoãn" phía trên.
