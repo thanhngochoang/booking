@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { DomainError } from '../src/errors.js';
+import { RetryableConflict } from '../src/event_ports.js';
 import { recruitFilterKeys } from '../src/recruit.js';
 import {
   applyToRecruitPost,
@@ -627,5 +628,61 @@ describe('respondRecruitApplication (accept)', () => {
     w.store.seedMembership('p3', 's1');
     assert.equal(await code(accept(w, 's1', postId, 'p3')), 'membership_conflict');
     assert.equal(w.store.collaborations.size, 0);
+  });
+});
+
+describe('Task 3 review follow-ups (accept)', () => {
+  const accept = (w: RecruitWorld, studioId: string, postId: string, applicantId: string) =>
+    respondRecruitApplication(w.deps, studioId, { postId, applicantId, accept: true });
+
+  it('member accept re-checks both parties: unverified applicant or studio → not_accepting_orders; applicant no longer an individual → invalid_argument', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1', { kind: 'member' });
+    for (const uid of ['p1', 'p2']) await apply(w, uid, postId, { acceptTerms: false });
+    const p1 = w.people.get('p1') ?? assert.fail();
+    w.people.set('p1', { ...p1, acceptsOrders: false });
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'not_accepting_orders');
+    w.people.set('p1', { ...p1, providerType: 'studio' });
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'invalid_argument');
+    w.people.set('p1', { ...p1, role: 'customer' });
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'invalid_argument');
+    const s1 = w.people.get('s1') ?? assert.fail();
+    w.people.set('s1', { ...s1, acceptsOrders: false });
+    assert.equal(await code(accept(w, 's1', postId, 'p2')), 'not_accepting_orders');
+    assert.equal(w.store.members.size, 0);
+    for (const uid of ['p1', 'p2']) assert.equal(w.store.applications.get(`${postId}_${uid}`)?.status, 'applied', uid);
+  });
+
+  it('accept reads the people and order gates once, outside the transaction, even when the transaction retries', async () => {
+    for (const kind of ['collaborator', 'member'] as const) {
+      const w = createRecruitWorld();
+      const postId = await openPost(w, 's1', { kind });
+      await apply(w, 'p1', postId, { acceptTerms: kind === 'collaborator' });
+      let reads = 0;
+      const people = w.deps.people;
+      const orders = w.deps.orders;
+      const deps = {
+        ...w.deps,
+        people: { provider: (uid: string) => { reads += 1; return people.provider(uid); } },
+        orders: {
+          acceptsOrders: (uid: string) => { reads += 1; return orders.acceptsOrders(uid); },
+          orderProfile: (uid: string) => orders.orderProfile(uid),
+        },
+      };
+      let first = true;
+      const original = w.store.runTransaction.bind(w.store);
+      w.store.runTransaction = <T>(fn: Parameters<typeof original<T>>[0]) => original<T>(async (tx) => {
+        const result = await fn(tx);
+        if (first) {
+          first = false;
+          throw new RetryableConflict();
+        }
+        return result;
+      });
+      await respondRecruitApplication(deps, 's1', { postId, applicantId: 'p1', accept: true });
+      assert.equal(w.store.retries, 1, kind);
+      assert.equal(reads, 4, `${kind}: two providers and two order gates, once`);
+      assert.equal(w.store.applications.get(`${postId}_p1`)?.status, 'accepted', kind);
+    }
   });
 });

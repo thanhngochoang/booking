@@ -5,7 +5,6 @@
  * with answering applications), the collaborator's end (≤ 5); answering an invite is free.
  */
 
-import { DomainError, type ErrorCode } from './errors.js';
 import { isId } from './ids.js';
 import { notifyCollabInvite, notifyCollabInviteResult } from './notification_hooks.js';
 import { collabChatId } from './open_collab_chat.js';
@@ -19,6 +18,7 @@ import {
   type RecruitCounters,
 } from './recruit.js';
 import type { ProviderFacts, RecruitDeps, RecruitTx } from './recruit_ports.js';
+import { decrement, fail, objectOf, safely } from './recruit_shared.js';
 import {
   COLLAB_INVITE_TTL_DAYS,
   COLLABORATOR_DAILY_ACTIONS,
@@ -36,31 +36,11 @@ import {
   type Collaboration,
 } from './studio_collaboration.js';
 
-function fail(code: ErrorCode, field?: string): never {
-  throw new DomainError(code, field);
-}
-
-const decrement = (n: number): number => Math.max(0, n - 1);
-
-function objectOf(raw: unknown): Record<string, unknown> {
-  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail('invalid_argument');
-  return raw as Record<string, unknown>;
-}
-
 /** `defaultFee`: absent or null = none; otherwise 1.000–100.000.000 in steps of 1.000. */
 function defaultFeeOf(r: Record<string, unknown>): number | null {
   const v = r.defaultFee;
   if (v === undefined || v === null) return null;
   return isValidRecruitFee(v) ? v : fail('invalid_argument', 'defaultFee');
-}
-
-/** Runs a post-commit notification; a failure is reported, never thrown (the write already happened). */
-async function safely(deps: RecruitDeps, uid: string, send: () => Promise<unknown>): Promise<void> {
-  try {
-    await send();
-  } catch (e) {
-    deps.notify.onPushError?.(uid, e);
-  }
 }
 
 const invitedAtOf = (c: Collaboration): string => c.createdAt.toISOString();

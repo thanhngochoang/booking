@@ -4,7 +4,6 @@
  */
 
 import { activateCollaboration } from './collab_use_cases.js';
-import { DomainError, type ErrorCode } from './errors.js';
 import { isId } from './ids.js';
 import {
   notifyRecruitApplicationNew,
@@ -37,37 +36,13 @@ import {
   type RecruitStudioSnapshot,
 } from './recruit.js';
 import type { ProviderFacts, RecruitDeps } from './recruit_ports.js';
+import { decrement, fail, idOf, objectOf, safely } from './recruit_shared.js';
 import { isCollabStudio, isCollaboratorAccount } from './studio_collaboration.js';
 import { checkMemberActivation, memberActivation } from './studio_membership.js';
 
 /** Applications settled per page when a post closes or expires (Decision 9). */
 const CASCADE_PAGE = 200;
 const CASCADE_MAX_PAGES = 50;
-
-function fail(code: ErrorCode, field?: string): never {
-  throw new DomainError(code, field);
-}
-
-const decrement = (n: number): number => Math.max(0, n - 1);
-
-function objectOf(raw: unknown): Record<string, unknown> {
-  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail('invalid_argument');
-  return raw as Record<string, unknown>;
-}
-
-function idOf(r: Record<string, unknown>, field: string): string {
-  const v = r[field];
-  return isId(v) ? v : fail('invalid_argument', field);
-}
-
-/** Runs a post-commit notification; a failure is reported, never thrown (the write already happened). */
-async function safely(deps: RecruitDeps, uid: string, send: () => Promise<unknown>): Promise<void> {
-  try {
-    await send();
-  } catch (e) {
-    deps.notify.onPushError?.(uid, e);
-  }
-}
 
 const snapshotOf = (p: ProviderFacts): RecruitStudioSnapshot =>
   ({ name: p.name, avatarUrl: p.avatarUrl, businessVerified: p.businessVerified });
@@ -346,17 +321,19 @@ async function acceptApplication(deps: RecruitDeps, uid: string, postId: string,
   const now = deps.clock.now();
   const leave = (c: RecruitCounters): RecruitCounters =>
     ({ ...c, openApplicationCount: decrement(c.openApplicationCount) });
+  // External reads come before the transaction, so a retried attempt never repeats them.
+  const studio = await deps.people.provider(uid);
+  const applicant = await deps.people.provider(applicantId);
+  if (studio === null || applicant === null) fail('not_found');
+  const bothTakeOrders = (await deps.orders.acceptsOrders(uid)) && (await deps.orders.acceptsOrders(applicantId));
   const done = await deps.store.runTransaction(async (tx): Promise<Accepted> => {
     const a = answerableApplication(await tx.getApplication(postId, applicantId), uid, now);
-    const studio = await deps.people.provider(uid);
-    const applicant = await deps.people.provider(applicantId);
-    if (studio === null || applicant === null) return fail('not_found');
+    // Either kind: a studio and an individual or artist (S26 canJoinAsMember), both still taking orders
+    // (verified, profile finished).
+    if (!isCollabStudio(studio) || !isCollaboratorAccount(applicant)) fail('invalid_argument');
+    if (!bothTakeOrders) fail('not_accepting_orders');
 
     if (a.kind === 'collaborator') {
-      if (!isCollabStudio(studio) || !isCollaboratorAccount(applicant)) fail('invalid_argument');
-      if (!(await deps.orders.acceptsOrders(uid)) || !(await deps.orders.acceptsOrders(applicantId))) {
-        fail('not_accepting_orders');
-      }
       const sc = await tx.getCounters(uid);
       if (isRecruitBlocked(sc, now)) fail('recruit_blocked');
       const collabActions = takeRecruitDaily(sc.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);

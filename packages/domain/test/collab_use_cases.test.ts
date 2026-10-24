@@ -429,4 +429,66 @@ describe('limits under concurrency', () => {
     assert.equal([...w.store.collaborations.values()].filter((c) => c.status === 'active').length, 1);
     assert.ok(w.store.retries > 0);
   });
+
+  it('two concurrent invites of the same pair make one record (the other gets conflict)', async () => {
+    const w = createRecruitWorld();
+    const results = await Promise.allSettled([invite(w, 's1', 'p1'), invite(w, 's1', 'p1', { defaultFee: 500_000 })]);
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    assert.ok(rejected?.status === 'rejected' && rejected.reason instanceof DomainError);
+    assert.equal(rejected.reason.code, 'conflict');
+    assert.equal(collab(w, 's1', 'p1')?.status, 'invited');
+    assert.equal(w.store.collabHistory.get('s1_p1'), undefined);
+    assert.equal(counters(w, 's1').pendingInviteCount, 1);
+    assert.deepEqual(counters(w, 's1').collabActions, { day: '2026-10-10', count: 1 });
+    assert.equal(rowsOfType(w, 'p1', 'collab_invite').length, 1);
+    assert.ok(w.store.retries > 0);
+  });
+
+  it('two collaborators accepting in parallel at the studio limit 5: one becomes active, the other gets collab_full', async () => {
+    const w = createRecruitWorld();
+    // s2 is not business-verified: 5 collaborators at most; 4 are active.
+    for (const uid of ['p1', 'p2']) seedCollaboration(w, 's2', uid, { status: 'invited', activeAt: null, termsAcceptedAt: null });
+    w.store.seedCounters('s2', { activeCollabCount: 4, pendingInviteCount: 2 });
+    const results = await Promise.allSettled([respond(w, 'p1', 's2', true), respond(w, 'p2', 's2', true)]);
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    assert.ok(rejected?.status === 'rejected' && rejected.reason instanceof DomainError);
+    assert.equal(rejected.reason.code, 'collab_full');
+    assert.equal(counters(w, 's2').activeCollabCount, 5);
+    assert.equal(counters(w, 's2').pendingInviteCount, 1, 'the refused invite still waits');
+    assert.equal(['p1', 'p2'].filter((uid) => collab(w, 's2', uid)?.status === 'active').length, 1);
+    assert.ok(w.store.retries > 0);
+  });
+
+  it('a member-kind accept racing a collaborator accept of the same pair: one wins, the other gets membership_conflict', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1', { kind: 'member' });
+    await applyToRecruitPost(w.deps, 'p1', { postId, message: '', samplePostIds: [], acceptTerms: false });
+    seedCollaboration(w, 's1', 'p1', { status: 'invited', activeAt: null, termsAcceptedAt: null });
+    w.store.seedCounters('s1', { pendingInviteCount: 1 });
+    // Both transactions start before either commits (the accept does more reads before its transaction).
+    let entered = 0;
+    let release: () => void = () => {};
+    const bothIn = new Promise<void>((resolve) => { release = resolve; });
+    const original = w.store.runTransaction.bind(w.store);
+    w.store.runTransaction = <T>(fn: Parameters<typeof original<T>>[0]) => original<T>(async (tx) => {
+      entered += 1;
+      if (entered === 2) release();
+      await bothIn;
+      return fn(tx);
+    });
+    const results = await Promise.allSettled([
+      respondRecruitApplication(w.deps, 's1', { postId, applicantId: 'p1', accept: true }),
+      respond(w, 'p1', 's1', true),
+    ]);
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    assert.ok(rejected?.status === 'rejected' && rejected.reason instanceof DomainError);
+    assert.equal(rejected.reason.code, 'membership_conflict');
+    const member = w.store.memberships.get('p1') === 's1';
+    const collaborator = collab(w, 's1', 'p1')?.status === 'active';
+    assert.ok(member !== collaborator, 'exactly one relationship');
+    assert.ok(w.store.retries > 0);
+  });
 });
