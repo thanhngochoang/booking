@@ -4,6 +4,7 @@ import { MemoryRecruitStore } from '../../src/memory_recruit_store.js';
 import type { NotificationRow } from '../../src/notification_ports.js';
 import type { ProviderFacts, RecruitDeps } from '../../src/recruit_ports.js';
 import { createRecruitPost } from '../../src/recruit_use_cases.js';
+import { collaborationId, type Collaboration } from '../../src/studio_collaboration.js';
 import { SequentialIdGen, type ControllableClock } from './booking_world.js';
 import { createNotifyWorld, type NotifyWorld } from './notify_world.js';
 
@@ -109,4 +110,36 @@ export function createRecruitWorld(): RecruitWorld {
 export async function openPost(w: RecruitWorld, studioId: string, over: Record<string, unknown> = {}): Promise<string> {
   const { postId } = await createRecruitPost(w.deps, studioId, { ...VALID_POST, ...over });
   return postId;
+}
+
+/** Seeds the main collaboration document of the pair (active by default, created and activated now). */
+export function seedCollaboration(
+  w: RecruitWorld,
+  studioId: string,
+  collaboratorId: string,
+  over: Partial<Collaboration> = {},
+): Collaboration {
+  const now = w.clock.now();
+  const party = (uid: string) => ({ name: w.people.get(uid)?.name ?? uid, avatarUrl: w.people.get(uid)?.avatarUrl ?? null });
+  const c: Collaboration = {
+    id: collaborationId(studioId, collaboratorId),
+    studioId,
+    collaboratorId,
+    studio: party(studioId),
+    collaborator: party(collaboratorId),
+    status: 'active',
+    initiatedBy: 'studio',
+    applicationId: null,
+    defaultFee: null,
+    termsAcceptedAt: now,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+    activeAt: now,
+    endedAt: null,
+    endedBy: null,
+    updatedAt: now,
+    ...over,
+  };
+  w.store.seedCollaboration(c);
+  return c;
 }

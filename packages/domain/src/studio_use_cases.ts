@@ -2,6 +2,7 @@ import { formatVnDate } from './booking_policy.js';
 import { DomainError } from './errors.js';
 import {
   canJoinAsMember,
+  checkMemberActivation,
   cooldownUntil,
   inCooldown,
   inviteExpiresAt,
@@ -317,9 +318,9 @@ export async function respondJoinRequest(deps: StudioDeps, studioId: string, raw
       tx.putRelation(after);
       return { outcome: 'ok', change: { before: rel, after } };
     }
-    assertFreeToJoin(member, now);
-    if (studio.memberCount + openInvites >= maxMembers(studio)) throw new DomainError('studio_full');
-    assertQuota(quota, 'studio', now);
+    // S26's own flows do not read collaborations (no StudioTx reader); S27's recruit accept passes the real flag.
+    const refusal = checkMemberActivation({ member, studio, openInvites, quota, activeCollabWithStudio: false }, now);
+    if (refusal !== null) throw new DomainError(refusal);
     const change = join(tx, rel, nowIso);
     tx.putQuota(studioId, spendQuota(quota, 'studio', now));
     return { outcome: 'ok', change };

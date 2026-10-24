@@ -1,6 +1,8 @@
 import { RetryableConflict } from './event_ports.js';
 import { EMPTY_COUNTERS, type RecruitApplication, type RecruitCounters, type RecruitPost } from './recruit.js';
-import type { RecruitStore, RecruitTx } from './recruit_ports.js';
+import type { RecruitMemberState, RecruitStore, RecruitTx } from './recruit_ports.js';
+import { collaborationId, type Collaboration } from './studio_collaboration.js';
+import type { DailyQuota, StudioRelation } from './studio_membership.js';
 
 /** Like the Firestore adapter: a transaction that lost a race is run again a few times. */
 const MAX_TX_ATTEMPTS = 5;
@@ -18,6 +20,24 @@ export class MemoryRecruitStore implements RecruitStore {
   readonly memberships = new Map<string, string>();
   /** uid → `photographers/{uid}.recruitMatchKeys`, in insertion order. */
   readonly matchKeys = new Map<string, readonly string[]>();
+  /** Main `studio_collaborations` documents, keyed `${studioId}_${uid}`. */
+  readonly collaborations = new Map<string, Collaboration>();
+  /** `studio_collaborations/{id}/history/{historyId}` copies, keyed by the main id, oldest first. */
+  readonly collabHistory = new Map<string, Array<{ readonly historyId: string; readonly collaboration: Collaboration }>>();
+  /** Seed: open collab jobs (pending | accepted, not closed), keyed `${studioId}_${uid}` (Task 4 writes real jobs). */
+  readonly openJobs = new Map<string, number>();
+  /** S26 `photographers/{uid}.studioCooldownUntil`. */
+  readonly cooldowns = new Map<string, string>();
+  /** S26 studio facts: `photographers/{studioId}.memberCount` and `businessVerified`. */
+  readonly studios = new Map<string, { readonly memberCount: number; readonly businessVerified: boolean }>();
+  /** Seed: the studio's S26 invites still open. */
+  readonly openInvites = new Map<string, number>();
+  /** S26 `studio_quota/{uid}`. */
+  readonly studioQuotas = new Map<string, DailyQuota>();
+  /** Seed: pairs `${studioId}_${uid}` with an invited or requested S26 relation. */
+  readonly openPairs = new Set<string>();
+  /** `studio_members` written through `putMember`, by relation id. */
+  readonly members = new Map<string, StudioRelation & { readonly applicationId: string | null }>();
   /** Committed write count. */
   writes = 0;
   /** Number of transaction attempts that were retried. */
@@ -50,6 +70,44 @@ export class MemoryRecruitStore implements RecruitStore {
 
   seedMatchKeys(uid: string, keys: readonly string[]): void {
     this.matchKeys.set(uid, keys);
+  }
+
+  seedCollaboration(c: Collaboration): void {
+    this.collaborations.set(c.id, c);
+    this.bump(`collab:${c.id}`);
+  }
+
+  seedOpenJobs(studioId: string, uid: string, n: number): void {
+    this.openJobs.set(collaborationId(studioId, uid), n);
+  }
+
+  /** S26 facts of a studio (defaults: 0 members, not business-verified). */
+  seedStudio(studioId: string, patch: { memberCount?: number; businessVerified?: boolean; openInvites?: number }): void {
+    const cur = this.studioOf(studioId);
+    this.studios.set(studioId, {
+      memberCount: patch.memberCount ?? cur.memberCount,
+      businessVerified: patch.businessVerified ?? cur.businessVerified,
+    });
+    if (patch.openInvites !== undefined) this.openInvites.set(studioId, patch.openInvites);
+    this.bump(`studio:${studioId}`);
+  }
+
+  seedCooldown(uid: string, until: string): void {
+    this.cooldowns.set(uid, until);
+    this.bump(`member:${uid}`);
+  }
+
+  seedStudioQuota(uid: string, q: DailyQuota): void {
+    this.studioQuotas.set(uid, q);
+    this.bump(`quota:${uid}`);
+  }
+
+  seedOpenPair(studioId: string, uid: string): void {
+    this.openPairs.add(collaborationId(studioId, uid));
+  }
+
+  private studioOf(studioId: string): { memberCount: number; businessVerified: boolean } {
+    return this.studios.get(studioId) ?? { memberCount: 0, businessVerified: false };
   }
 
   async runTransaction<T>(fn: (tx: RecruitTx) => Promise<T>): Promise<T> {
@@ -97,9 +155,42 @@ export class MemoryRecruitStore implements RecruitStore {
         read('activeMembershipStudioOf', `member:${uid}`);
         return this.memberships.get(uid) ?? null;
       },
+      getCollaboration: async (studioId, uid) => {
+        const id = collaborationId(studioId, uid);
+        read('getCollaboration', `collab:${id}`);
+        return this.collaborations.get(id) ?? null;
+      },
+      getMemberState: async (studioId, uid): Promise<RecruitMemberState> => {
+        const pair = collaborationId(studioId, uid);
+        for (const key of [`member:${uid}`, `studio:${studioId}`, `quota:${studioId}`, `collab:${pair}`]) {
+          read('getMemberState', key);
+        }
+        return {
+          member: { studioId: this.memberships.get(uid) ?? null, studioCooldownUntil: this.cooldowns.get(uid) ?? null },
+          studio: this.studioOf(studioId),
+          openInvites: this.openInvites.get(studioId) ?? 0,
+          quota: this.studioQuotas.get(studioId) ?? null,
+          activeCollabWithStudio: this.collaborations.get(pair)?.status === 'active',
+          pairOpen: this.openPairs.has(pair),
+        };
+      },
       putPost: (p) => write(() => { this.posts.set(p.id, p); }, `post:${p.id}`),
       putApplication: (a) => write(() => { this.applications.set(a.id, a); }, `app:${a.id}`),
+      putCollaboration: (c) => write(() => { this.collaborations.set(c.id, c); }, `collab:${c.id}`),
+      archiveCollaboration: (previous, historyId) => write(() => {
+        this.collabHistory.set(previous.id, [...(this.collabHistory.get(previous.id) ?? []), { historyId, collaboration: previous }]);
+      }, `collabHistory:${previous.id}/${historyId}`),
       putCounters: (uid, c) => write(() => { this.counters.set(uid, c); }, `counters:${uid}`),
+      putMember: (m) => {
+        const { studioId, memberId } = m.relation;
+        write(() => { this.members.set(m.relation.id, { ...m.relation, applicationId: m.applicationId }); }, `relation:${m.relation.id}`);
+        write(() => { this.memberships.set(memberId, studioId); }, `member:${memberId}`);
+        write(() => {
+          const cur = this.studioOf(studioId);
+          this.studios.set(studioId, { ...cur, memberCount: cur.memberCount + 1 });
+        }, `studio:${studioId}`);
+        write(() => { this.studioQuotas.set(studioId, m.quota); }, `quota:${studioId}`);
+      },
     };
 
     const result = await fn(tx);
@@ -126,6 +217,16 @@ export class MemoryRecruitStore implements RecruitStore {
     return [...this.applications.values()]
       .filter((a) => a.status === 'applied' && a.expiresAt.getTime() <= now.getTime())
       .slice(0, limit);
+  }
+
+  async dueInvites(now: Date, limit: number): Promise<Collaboration[]> {
+    return [...this.collaborations.values()]
+      .filter((c) => c.status === 'invited' && c.expiresAt.getTime() <= now.getTime())
+      .slice(0, limit);
+  }
+
+  async openJobCount(studioId: string, uid: string): Promise<number> {
+    return this.openJobs.get(collaborationId(studioId, uid)) ?? 0;
   }
 
   async matchingProviders(matchKeys: readonly string[], limit: number): Promise<string[]> {

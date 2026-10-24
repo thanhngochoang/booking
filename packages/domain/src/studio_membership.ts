@@ -1,3 +1,4 @@
+import type { ErrorCode } from './errors.js';
 import { foldVietnamese } from './event_hashtag.js';
 import type { ProviderType } from './provider_type.js';
 import { vnDayKey } from './verification.js';
@@ -155,4 +156,81 @@ export function inviteCandidateState(
     return 'invited';
   }
   return 'invitable';
+}
+
+/**
+ * What approving a join needs to know (S26 `respondJoinRequest`; S27 accepting a member-kind application,
+ * plan #151 Decision 21), read inside the caller's transaction.
+ */
+export interface MemberActivationState {
+  /** The photographer's `photographers/{uid}` lock and cooldown. */
+  readonly member: Pick<StudioProfile, 'studioId' | 'studioCooldownUntil'>;
+  readonly studio: Pick<StudioProfile, 'memberCount' | 'businessVerified'>;
+  /** The studio's invites still open (each holds a seat). */
+  readonly openInvites: number;
+  /** The studio's `studio_quota/{uid}`. */
+  readonly quota: DailyQuota | null;
+  /** S27 Decision 12: the photographer is an active collaborator of this studio (end it first). */
+  readonly activeCollabWithStudio: boolean;
+}
+
+/**
+ * Why the photographer cannot become an active member of the studio now, or null: `membership_conflict`
+ * (in a studio, or this studio's active collaborator), `cooldown` (7 days after leaving), `studio_full`
+ * (members + open invites at the cap), `rate_limited` (the studio's daily actions).
+ */
+export function checkMemberActivation(s: MemberActivationState, now: Date): ErrorCode | null {
+  if (s.member.studioId !== null || s.activeCollabWithStudio) return 'membership_conflict';
+  if (inCooldown(s.member, now)) return 'cooldown';
+  if (s.studio.memberCount + s.openInvites >= maxMembers(s.studio)) return 'studio_full';
+  if (quotaLeft(s.quota, 'studio', now) <= 0) return 'rate_limited';
+  return null;
+}
+
+/**
+ * The writes of one approved join outside S26's own use cases (S27 member-kind application): the adapter
+ * stores `relation` (+ `applicationId`) at `studio_members/{relation.id}`, sets the member's lock
+ * (`studioId`, `studioJoinedAt = relation.joinedAt`), adds 1 to the studio's `memberCount` and stores `quota`
+ * as the studio's `studio_quota`, exactly as S26's join does.
+ */
+export interface MemberActivation {
+  readonly relation: StudioRelation;
+  /** S27: the recruit application that led to it (extra field on the `studio_members` doc). */
+  readonly applicationId: string | null;
+  /** The studio's quota after this approval. */
+  readonly quota: DailyQuota;
+}
+
+/** An `active` relation started by the member (S26 mapping) and the studio's spent quota. */
+export function memberActivation(input: {
+  readonly studio: { readonly uid: string; readonly name: string; readonly avatarUrl: string | null };
+  readonly member: { readonly uid: string; readonly name: string; readonly avatarUrl: string | null };
+  readonly applicationId: string | null;
+  readonly quota: DailyQuota | null;
+  readonly now: Date;
+}): MemberActivation {
+  const nowIso = input.now.toISOString();
+  return {
+    relation: {
+      id: relationId(input.studio.uid, input.member.uid, input.now),
+      studioId: input.studio.uid,
+      memberId: input.member.uid,
+      status: 'active',
+      initiatedBy: 'member',
+      createdAt: nowIso,
+      expiresAt: inviteExpiresAt(input.now),
+      respondedAt: nowIso,
+      joinedAt: nowIso,
+      endedAt: null,
+      endedBy: null,
+      expiringNotifiedAt: null,
+      studioName: input.studio.name,
+      studioAvatarUrl: input.studio.avatarUrl,
+      memberName: input.member.name,
+      memberAvatarUrl: input.member.avatarUrl,
+      version: 1,
+    },
+    applicationId: input.applicationId,
+    quota: spendQuota(input.quota, 'studio', input.now),
+  };
 }

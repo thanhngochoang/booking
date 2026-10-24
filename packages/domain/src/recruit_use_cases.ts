@@ -1,12 +1,16 @@
 /**
- * S27 recruit posts and applications (plan #151 Task 2). Each use case reads everything first, then writes,
- * in one `RecruitTx`; notifications go through #138's hooks after the commit and never fail the use case.
- * Accepting an application (both kinds) is Task 3.
+ * S27 recruit posts and applications (plan #151 Tasks 2–3). Each use case reads everything first, then
+ * writes, in one `RecruitTx`; notifications go through #138's hooks after the commit and never fail the use case.
  */
 
+import { activateCollaboration } from './collab_use_cases.js';
 import { DomainError, type ErrorCode } from './errors.js';
 import { isId } from './ids.js';
-import { notifyRecruitApplicationNew, notifyRecruitApplicationResult } from './notification_hooks.js';
+import {
+  notifyRecruitApplicationNew,
+  notifyRecruitApplicationResult,
+  notifyStudioJoinApproved,
+} from './notification_hooks.js';
 import {
   APPLICATION_MESSAGE_MAX,
   APPLICATION_SAMPLES_MAX,
@@ -26,12 +30,15 @@ import {
   takeRecruitDaily,
   validateRecruitPostInput,
   type RecruitApplication,
+  type RecruitCounters,
   type RecruitKind,
   type RecruitPost,
   type RecruitPostFields,
   type RecruitStudioSnapshot,
 } from './recruit.js';
 import type { ProviderFacts, RecruitDeps } from './recruit_ports.js';
+import { isCollabStudio, isCollaboratorAccount } from './studio_collaboration.js';
+import { checkMemberActivation, memberActivation } from './studio_membership.js';
 
 /** Applications settled per page when a post closes or expires (Decision 9). */
 const CASCADE_PAGE = 200;
@@ -61,13 +68,6 @@ async function safely(deps: RecruitDeps, uid: string, send: () => Promise<unknow
     deps.notify.onPushError?.(uid, e);
   }
 }
-
-const isStudioAccount = (p: ProviderFacts | null): p is ProviderFacts =>
-  p !== null && p.role === 'photographer' && p.providerType === 'studio';
-
-/** Individual or artist in photographer mode (the only ones who apply or collaborate, Decision 12). */
-const isApplicantAccount = (p: ProviderFacts | null): p is ProviderFacts =>
-  p !== null && p.role === 'photographer' && (p.providerType === 'individual' || p.providerType === 'artist');
 
 const snapshotOf = (p: ProviderFacts): RecruitStudioSnapshot =>
   ({ name: p.name, avatarUrl: p.avatarUrl, businessVerified: p.businessVerified });
@@ -102,7 +102,7 @@ export async function createRecruitPost(deps: RecruitDeps, uid: string, raw: unk
   const fields = validateRecruitPostInput(raw, 'create');
   const kind = fields.kind ?? fail('invalid_argument', 'kind');
   const me = await deps.people.provider(uid);
-  if (!isStudioAccount(me)) fail('invalid_argument');
+  if (!isCollabStudio(me)) fail('invalid_argument');
   if (!(await deps.orders.acceptsOrders(uid))) fail('not_accepting_orders');
   const now = deps.clock.now();
   const postId = deps.ids.newId();
@@ -239,7 +239,7 @@ export async function applyToRecruitPost(
   const input = parseApplyInput(raw);
   assertNoContact(input.message, 'message'); // 'zalo' included
   const me = await deps.people.provider(uid);
-  if (!isApplicantAccount(me)) fail('invalid_argument');
+  if (!isCollaboratorAccount(me)) fail('invalid_argument');
   if (!(await deps.orders.acceptsOrders(uid))) fail('not_accepting_orders');
   if (!(await deps.posts.ownedBy(uid, input.samplePostIds))) fail('invalid_argument', 'samplePostIds');
   const now = deps.clock.now();
@@ -295,8 +295,10 @@ export async function withdrawRecruitApplication(deps: RecruitDeps, uid: string,
 }
 
 /**
- * S27.05: the posting studio answers an `applied` application. A decline is one studio collaboration
- * action (Decision 5) and tells the applicant. Accepting is Task 3.
+ * S27.05: the posting studio answers an `applied` application; either answer is one studio collaboration
+ * action (Decision 5) and tells the applicant. Accepting a collaborator application makes the pair active
+ * (`activateCollaboration`); accepting a member application approves a join exactly as S26 does
+ * (`checkMemberActivation`, Decision 21).
  */
 export async function respondRecruitApplication(
   deps: RecruitDeps,
@@ -307,24 +309,98 @@ export async function respondRecruitApplication(
   const postId = idOf(r, 'postId');
   const applicantId = idOf(r, 'applicantId');
   if (typeof r.accept !== 'boolean') fail('invalid_argument', 'accept');
+  if (r.accept) {
+    await acceptApplication(deps, uid, postId, applicantId);
+    return { status: 'accepted' };
+  }
   const now = deps.clock.now();
   const app = await deps.store.runTransaction(async (tx) => {
     const a = await tx.getApplication(postId, applicantId);
-    if (!a) return fail('not_found');
-    if (a.studioId !== uid) fail('permission_denied');
-    if (a.status !== 'applied' || a.expiresAt <= now) fail('deadline_passed');
-    if (r.accept === true) fail('not_eligible'); // Task 3: collaborator and member branches
+    const answerable = answerableApplication(a, uid, now);
     const studio = await tx.getCounters(uid);
     const applicant = await tx.getCounters(applicantId);
     const collabActions = takeRecruitDaily(studio.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);
     // ---- writes ----
-    tx.putApplication({ ...a, status: 'declined', respondedAt: now });
+    tx.putApplication({ ...answerable, status: 'declined', respondedAt: now });
     tx.putCounters(uid, { ...studio, collabActions });
     tx.putCounters(applicantId, { ...applicant, openApplicationCount: decrement(applicant.openApplicationCount) });
-    return a;
+    return answerable;
   });
   await notifyResult(deps, app, 'declined');
   return { status: 'declined' };
+}
+
+/** An application of `studioId` still `applied` and not past `expiresAt`. */
+function answerableApplication(a: RecruitApplication | null, studioId: string, now: Date): RecruitApplication {
+  if (!a) return fail('not_found');
+  if (a.studioId !== studioId) fail('permission_denied');
+  if (a.status !== 'applied' || a.expiresAt <= now) fail('deadline_passed');
+  return a;
+}
+
+type Accepted =
+  | { readonly app: RecruitApplication; readonly outcome: 'collaborator' }
+  | { readonly app: RecruitApplication; readonly outcome: 'member'; readonly relationId: string };
+
+async function acceptApplication(deps: RecruitDeps, uid: string, postId: string, applicantId: string): Promise<void> {
+  const now = deps.clock.now();
+  const leave = (c: RecruitCounters): RecruitCounters =>
+    ({ ...c, openApplicationCount: decrement(c.openApplicationCount) });
+  const done = await deps.store.runTransaction(async (tx): Promise<Accepted> => {
+    const a = answerableApplication(await tx.getApplication(postId, applicantId), uid, now);
+    const studio = await deps.people.provider(uid);
+    const applicant = await deps.people.provider(applicantId);
+    if (studio === null || applicant === null) return fail('not_found');
+
+    if (a.kind === 'collaborator') {
+      if (!isCollabStudio(studio) || !isCollaboratorAccount(applicant)) fail('invalid_argument');
+      if (!(await deps.orders.acceptsOrders(uid)) || !(await deps.orders.acceptsOrders(applicantId))) {
+        fail('not_accepting_orders');
+      }
+      const sc = await tx.getCounters(uid);
+      if (isRecruitBlocked(sc, now)) fail('recruit_blocked');
+      const collabActions = takeRecruitDaily(sc.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);
+      await activateCollaboration(tx, {
+        studio,
+        collaborator: applicant,
+        initiatedBy: 'application',
+        applicationId: a.id,
+        termsAcceptedAt: a.termsAcceptedAt ?? now,
+        now,
+        ids: deps.ids,
+        adjust: { studio: (c) => ({ ...c, collabActions }), collaborator: leave },
+      });
+      tx.putApplication({ ...a, status: 'accepted', respondedAt: now });
+      return { app: a, outcome: 'collaborator' };
+    }
+
+    // Member kind: S26's join approval, inside this transaction (Decision 21).
+    const state = await tx.getMemberState(uid, applicantId);
+    const sc = await tx.getCounters(uid);
+    const ac = await tx.getCounters(applicantId);
+    // ---- all reads above ----
+    const refusal = checkMemberActivation(state, now);
+    if (refusal !== null) fail(refusal);
+    if (state.pairOpen) fail('conflict'); // S26 keeps one open relation per pair
+    const collabActions = takeRecruitDaily(sc.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);
+    const m = memberActivation({
+      studio: { uid, name: studio.name, avatarUrl: studio.avatarUrl },
+      member: { uid: applicantId, name: applicant.name, avatarUrl: applicant.avatarUrl },
+      applicationId: a.id,
+      quota: state.quota,
+      now,
+    });
+    tx.putMember(m);
+    tx.putApplication({ ...a, status: 'accepted', respondedAt: now });
+    tx.putCounters(uid, { ...sc, collabActions });
+    tx.putCounters(applicantId, leave(ac));
+    return { app: a, outcome: 'member', relationId: m.relation.id };
+  });
+  if (done.outcome === 'member') {
+    await safely(deps, applicantId, () => notifyStudioJoinApproved(deps.notify,
+      { photographerId: applicantId, studioId: uid, requestId: done.relationId }));
+  }
+  await notifyResult(deps, done.app, done.outcome);
 }
 
 /** Sweep step (Task 4 calls it): an `applied` application past `expiresAt` expires. False when not due. */
@@ -334,7 +410,11 @@ export async function expireRecruitApplication(deps: RecruitDeps, postId: string
 
 // ── shared exits ──────────────────────────────────────────────────────────────────────────────
 
-function notifyResult(deps: RecruitDeps, a: RecruitApplication, outcome: 'declined' | 'expired'): Promise<void> {
+function notifyResult(
+  deps: RecruitDeps,
+  a: RecruitApplication,
+  outcome: 'collaborator' | 'member' | 'declined' | 'expired',
+): Promise<void> {
   return safely(deps, a.applicantId, () => notifyRecruitApplicationResult(deps.notify,
     { applicantId: a.applicantId, studioId: a.studioId, postId: a.postId, title: a.postTitle, outcome }));
 }

@@ -13,7 +13,7 @@ import {
   updateRecruitPost,
   withdrawRecruitApplication,
 } from '../src/recruit_use_cases.js';
-import { createRecruitWorld, openPost, VALID_POST, type RecruitWorld } from './support/recruit_world.js';
+import { createRecruitWorld, openPost, seedCollaboration, VALID_POST, type RecruitWorld } from './support/recruit_world.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -481,5 +481,151 @@ describe('Task 2 review follow-ups', () => {
     await renewRecruitPost(w.deps, 's1', { postId });
     assert.deepEqual(w.store.posts.get(postId)?.studio,
       { name: 'Studio Mây 2026', avatarUrl: 'https://img/s1.jpg', businessVerified: false });
+  });
+});
+
+describe('respondRecruitApplication (accept)', () => {
+  const accept = (w: RecruitWorld, studioId: string, postId: string, applicantId: string) =>
+    respondRecruitApplication(w.deps, studioId, { postId, applicantId, accept: true });
+
+  it('accepting a collaborator application creates an active collaboration with initiatedBy application and applicationId, marks the application accepted, sends recruit_application_result collaborator', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    await apply(w, 'p1', postId);
+    const appliedAt = w.clock.now();
+    w.clock.advanceHours(3);
+    assert.deepEqual(await accept(w, 's1', postId, 'p1'), { status: 'accepted' });
+    const app = w.store.applications.get(`${postId}_p1`);
+    assert.equal(app?.status, 'accepted');
+    assert.deepEqual(app?.respondedAt, w.clock.now());
+    const c = w.store.collaborations.get('s1_p1');
+    assert.equal(c?.status, 'active');
+    assert.equal(c?.initiatedBy, 'application');
+    assert.equal(c?.applicationId, `${postId}_p1`);
+    assert.deepEqual(c?.termsAcceptedAt, appliedAt, 'the terms were accepted when applying');
+    assert.deepEqual(c?.activeAt, w.clock.now());
+    assert.deepEqual(c?.studio, { name: 'Studio Mây', avatarUrl: 'https://img/s1.jpg' });
+    assert.equal(counters(w, 'p1').openApplicationCount, 0);
+    assert.equal(counters(w, 'p1').activeCollabCount, 1);
+    assert.equal(counters(w, 's1').activeCollabCount, 1);
+    assert.deepEqual(counters(w, 's1').collabActions, { day: '2026-10-10', count: 1 });
+    const rows = w.rowsOf('p1').filter((r) => r.type === 'recruit_application_result');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.body, 'Studio Mây nhận bạn làm cộng tác viên.');
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'deadline_passed', 'answered already');
+  });
+
+  it("accepting a member application writes an active studio_members record through putMember, counts S26's counters, sends studio_join_approved and recruit_application_result member", async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1', { kind: 'member' });
+    await apply(w, 'p1', postId, { acceptTerms: false });
+    w.clock.advanceHours(1);
+    assert.deepEqual(await accept(w, 's1', postId, 'p1'), { status: 'accepted' });
+    assert.equal(w.store.applications.get(`${postId}_p1`)?.status, 'accepted');
+    const members = [...w.store.members.values()];
+    assert.equal(members.length, 1);
+    const m = members[0];
+    assert.equal(m?.studioId, 's1');
+    assert.equal(m?.memberId, 'p1');
+    assert.equal(m?.status, 'active');
+    assert.equal(m?.initiatedBy, 'member');
+    assert.equal(m?.applicationId, `${postId}_p1`);
+    assert.equal(m?.joinedAt, w.clock.now().toISOString());
+    assert.equal(m?.studioName, 'Studio Mây');
+    assert.equal(m?.memberName, 'Minh Trí');
+    assert.equal(w.store.memberships.get('p1'), 's1', 'the member lock');
+    assert.equal(w.store.studios.get('s1')?.memberCount, 1);
+    assert.deepEqual(w.store.studioQuotas.get('s1'), { dayKey: '2026-10-10', studioActions: 1, memberActions: 0 });
+    assert.equal(counters(w, 'p1').openApplicationCount, 0);
+    assert.equal(counters(w, 'p1').activeCollabCount, 0);
+    assert.equal(w.store.collaborations.size, 0);
+    assert.deepEqual(counters(w, 's1').collabActions, { day: '2026-10-10', count: 1 });
+    assert.equal(w.rowsOf('p1').filter((r) => r.type === 'studio_join_approved').length, 1);
+    const rows = w.rowsOf('p1').filter((r) => r.type === 'recruit_application_result');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.body, 'Studio Mây nhận bạn vào studio.');
+  });
+
+  it("member accept reports S26's errors unchanged", async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1', { kind: 'member' });
+    for (const uid of ['p1', 'p2', 'p3']) await apply(w, uid, postId, { acceptTerms: false });
+
+    w.store.seedMembership('p1', 's2');
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'membership_conflict');
+    w.store.seedCooldown('p2', new Date(w.clock.now().getTime() + DAY_MS).toISOString());
+    assert.equal(await code(accept(w, 's1', postId, 'p2')), 'cooldown');
+    w.store.seedStudio('s1', { memberCount: 2, openInvites: 1 });
+    assert.equal(await code(accept(w, 's1', postId, 'p3')), 'studio_full');
+    w.store.seedStudio('s1', { openInvites: 0 });
+    w.store.seedStudioQuota('s1', { dayKey: '2026-10-10', studioActions: 5, memberActions: 0 });
+    assert.equal(await code(accept(w, 's1', postId, 'p3')), 'rate_limited');
+
+    for (const uid of ['p1', 'p2', 'p3']) {
+      assert.equal(w.store.applications.get(`${postId}_${uid}`)?.status, 'applied', uid);
+      assert.equal(counters(w, uid).openApplicationCount, 1, uid);
+    }
+    assert.equal(w.store.members.size, 0);
+    assert.equal(counters(w, 's1').collabActions, null, 'a refused accept is not counted');
+  });
+
+  it('member accept when the applicant is an active collaborator of this studio → membership_conflict', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1', { kind: 'member' });
+    await apply(w, 'p1', postId, { acceptTerms: false });
+    seedCollaboration(w, 's1', 'p1');
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'membership_conflict');
+    seedCollaboration(w, 's2', 'p1'); // collaborating with another studio is fine (R6)
+    seedCollaboration(w, 's1', 'p1', { status: 'ended', endedAt: w.clock.now(), endedBy: 'collaborator' });
+    await accept(w, 's1', postId, 'p1');
+    assert.equal(w.store.memberships.get('p1'), 's1');
+  });
+
+  it('member accept when the pair already has an S26 invite or join request → conflict', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1', { kind: 'member' });
+    await apply(w, 'p1', postId, { acceptTerms: false });
+    w.store.seedOpenPair('s1', 'p1');
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'conflict');
+  });
+
+  it('accepting a collaborator application when already active with this studio → conflict', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    await apply(w, 'p1', postId);
+    seedCollaboration(w, 's1', 'p1');
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'conflict');
+    assert.equal(w.store.applications.get(`${postId}_p1`)?.status, 'applied');
+  });
+
+  it('accepting a collaborator application consumes a pending invite of the pair', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    await apply(w, 'p1', postId);
+    seedCollaboration(w, 's1', 'p1', { status: 'invited', activeAt: null, termsAcceptedAt: null, defaultFee: 650_000 });
+    w.store.seedCounters('s1', { pendingInviteCount: 1 });
+    await accept(w, 's1', postId, 'p1');
+    const c = w.store.collaborations.get('s1_p1');
+    assert.equal(c?.status, 'active');
+    assert.equal(c?.initiatedBy, 'application');
+    assert.equal(c?.defaultFee, 650_000);
+    assert.equal(counters(w, 's1').pendingInviteCount, 0);
+    assert.equal(w.store.collabHistory.get('s1_p1'), undefined);
+  });
+
+  it('collaborator accept: recruit_blocked studio, unverified applicant, collab_full, member of this studio', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    for (const uid of ['p1', 'p2', 'p3']) await apply(w, uid, postId);
+    w.store.seedCounters('s1', { recruitBlockedUntil: new Date(w.clock.now().getTime() + DAY_MS) });
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'recruit_blocked');
+    w.store.seedCounters('s1', { recruitBlockedUntil: null });
+    w.people.set('p1', { ...(w.people.get('p1') ?? assert.fail()), acceptsOrders: false });
+    assert.equal(await code(accept(w, 's1', postId, 'p1')), 'not_accepting_orders');
+    w.store.seedCounters('p2', { activeCollabCount: 5 });
+    assert.equal(await code(accept(w, 's1', postId, 'p2')), 'collab_full');
+    w.store.seedMembership('p3', 's1');
+    assert.equal(await code(accept(w, 's1', postId, 'p3')), 'membership_conflict');
+    assert.equal(w.store.collaborations.size, 0);
   });
 });
