@@ -129,8 +129,15 @@ export async function commitTransition(
       }
     } else if (nextStatus === 'completed') {
       const payments = await deps.store.getPaymentsForBooking(current.id);
+      // A milestone payment whose shoot milestone is disputed (aggregate `disputed`) still gets its held
+      // delivery milestone released; the disputed milestone is never touched (S18 Decision 1).
       const payment = payments.find(
-        (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'released'),
+        (p) =>
+          isSettledPayment(p) &&
+          (p.escrowStatus === 'held' ||
+            p.escrowStatus === 'partially_refunded' ||
+            p.escrowStatus === 'released' ||
+            (p.milestones !== undefined && p.escrowStatus === 'disputed')),
       );
       if (payment) {
         if (payment.milestones) {

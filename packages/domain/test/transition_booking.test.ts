@@ -12,6 +12,8 @@ import type { Booking } from '../src/booking.js';
 import { assignBooking, declineAssigneeChange, requestAssigneeChange } from '../src/studio_assignment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
+import { commitTransition } from '../src/commit_transition.js';
+import { freezeBookingPayment } from './support/dispute_world.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
 import { DomainError } from '../src/errors.js';
 
@@ -90,6 +92,38 @@ describe('Task 5: transitionBooking', () => {
     const payment = payments[0];
     assert.ok(payment);
     assert.equal(verifyPaymentLedgerInvariant(payment, refunds, entries), true);
+  });
+});
+
+describe('completion while a milestone is disputed (#142)', () => {
+  it('completion releases the held delivery milestone while the shoot milestone is disputed, never the disputed one', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await createBookingDraft(world.deps, {
+      customerId: 'c1', photographerId: 'p1', serviceId: 'srv_01', day: '2026-10-15', start: '14:00', place: { name: 'Nhà thờ Lớn' },
+    });
+    const { paymentId } = await payDraft(world, draft.id);
+    await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
+    world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    await transitionBooking(world.deps, { bookingId: draft.id, action: 'mark_shot', actorId: 'p1' });
+    freezeBookingPayment(world.store, draft.id, world.clock.now(), 'shoot');
+    const approved = await world.store.getBooking(draft.id);
+    assert.ok(approved);
+    world.store.bookings.set(draft.id, { ...approved, status: 'approved', checkUntil: '2026-10-17T09:30:00.000Z' });
+    world.clock.setTime(new Date('2026-10-17T10:00:00.000Z'));
+
+    const before = await world.store.getBooking(draft.id);
+    assert.ok(before);
+    const done = await commitTransition(world.deps, before, { nextStatus: 'completed', refundPercent: 0 });
+
+    const p = world.store.payments.get(paymentId);
+    const status = (k: string) => p?.milestones?.find((m) => m.kind === k)?.status;
+    assert.equal(status('shoot'), 'disputed');
+    assert.equal(status('delivery'), 'released');
+    assert.equal(p?.escrowStatus, 'disputed');
+    assert.equal(done.status, 'completed');
+    assert.equal(done.escrowStatus, 'disputed');
+    const released = (await world.store.getLedgerEntriesForPayment(paymentId)).filter((e) => e.type === 'escrow_released');
+    assert.deepEqual(released.map((e) => e.amount), [PAID / 2]);
   });
 });
 

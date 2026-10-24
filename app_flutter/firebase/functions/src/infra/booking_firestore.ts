@@ -1287,16 +1287,24 @@ export class FirestoreBookingStore implements StudioBookingStore {
   }
 
   async findReleasableEscrows(cutoff: Date, limit = 100): Promise<readonly Payment[]> {
-    const snap = await this.firestore
-      .collection(PAYMENTS_COLLECTION)
-      .where('escrowStatus', 'in', ['held', 'partially_refunded'])
-      .where('releaseAfter', '<=', Timestamp.fromDate(cutoff))
-      .limit(limit)
-      .get();
+    // Held money, then disputed milestone payments (another milestone may be due; S18 Decision 1). Two
+    // queries on the same (escrowStatus, releaseAfter) index, so frozen payments never starve the others.
+    const query = (statuses: readonly string[]) =>
+      this.firestore
+        .collection(PAYMENTS_COLLECTION)
+        .where('escrowStatus', 'in', statuses)
+        .where('releaseAfter', '<=', Timestamp.fromDate(cutoff))
+        .limit(limit)
+        .get();
     const res: Payment[] = [];
-    for (const doc of snap.docs) {
+    for (const doc of (await query(['held', 'partially_refunded'])).docs) {
       const p = paymentFromFirestore(doc.id, doc.data());
       if (p) res.push(p);
+    }
+    if (res.length >= limit) return res;
+    for (const doc of (await query(['disputed'])).docs) {
+      const p = paymentFromFirestore(doc.id, doc.data());
+      if (p?.milestones && res.length < limit) res.push(p);
     }
     return res;
   }

@@ -741,6 +741,49 @@ describe('FirestoreBookingStore sweep queries', () => {
     assert.deepEqual(found.map((b) => [b.id, b.payableUntil]), [['b_9', '2026-10-10T08:30:00.000Z']]);
   });
 
+  it('findReleasableEscrows also returns disputed milestone payments (another milestone may be due), never a disputed payment without milestones', async () => {
+    const base: Payment = {
+      id: 'pay_h', subjectType: 'booking', subjectId: 'b_h', payerId: 'c1', payeeId: 'p1', provider: 'fake', amount: 1_000_000,
+      status: 'paid', escrowStatus: 'held', idempotencyKey: 'k', releaseAfter: '2026-10-10T08:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const milestone = (kind: 'shoot' | 'delivery', status: 'held' | 'disputed', releaseAfter: string | null) =>
+      ({ kind, amount: 500_000, status, releaseAfter, releasedAt: null, payoutId: null });
+    const byStatus: Record<string, Payment[]> = {
+      'held,partially_refunded': [base],
+      disputed: [
+        { ...base, id: 'pay_legacy', escrowStatus: 'disputed' },
+        {
+          ...base, id: 'pay_ms', escrowStatus: 'disputed',
+          milestones: [milestone('shoot', 'held', '2026-10-10T08:00:00.000Z'), milestone('delivery', 'disputed', null)],
+        },
+      ],
+    };
+    const wheres: unknown[][] = [];
+    let statuses = '';
+    const query = {
+      where: (field: string, op: string, value: unknown) => {
+        wheres.push([field, op, value instanceof Timestamp ? value.toDate().toISOString() : value]);
+        if (field === 'escrowStatus') statuses = String(value);
+        return query;
+      },
+      limit: () => query,
+      get: async () => {
+        const docs = (byStatus[statuses] ?? []).map((p) => ({ id: p.id, data: () => paymentToFirestore(p) }));
+        return { empty: docs.length === 0, size: docs.length, docs };
+      },
+    };
+    const firestore = { collection: () => query } as unknown as Firestore;
+    const found = await new FirestoreBookingStore(firestore).findReleasableEscrows(CUTOFF);
+    assert.deepEqual(found.map((p) => p.id), ['pay_h', 'pay_ms']);
+    assert.deepEqual(wheres, [
+      ['escrowStatus', 'in', ['held', 'partially_refunded']],
+      ['releaseAfter', '<=', CUTOFF.toISOString()],
+      ['escrowStatus', 'in', ['disputed']],
+      ['releaseAfter', '<=', CUTOFF.toISOString()],
+    ]);
+  });
+
   it('findPaymentsByTransferCode filters by the code only (any status)', async () => {
     const { firestore, calls } = recordingFirestore();
     await new FirestoreBookingStore(firestore).findPaymentsByTransferCode('PB 7F3K2Q');

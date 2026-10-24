@@ -140,7 +140,10 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
   for (const payment of releasable) {
     await deps.store.runTransaction(async (tx) => {
       const p = await tx.getPayment(payment.id);
-      if (p && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded')) {
+      // A disputed milestone payment still releases its other held, due milestones (S18 Decision 1);
+      // `releaseDueMilestones` never touches the disputed one. A payment without milestones stays frozen whole.
+      const disputedMilestones = p?.milestones !== undefined && p.escrowStatus === 'disputed';
+      if (p && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || disputedMilestones)) {
         if (p.milestones) {
           const { payment: updatedP, ledgerEntries } = releaseDueMilestones(p, now, () => deps.ids.newId());
           if (ledgerEntries.length > 0) {

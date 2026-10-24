@@ -255,12 +255,13 @@ export function applyRefundToPayment(params: {
   readonly payment: Payment;
   readonly refundId: string;
   readonly percent: number;
-  readonly amount?: number;
-  readonly escrowRefunded?: number;
   readonly ledgerEntryId: string;
   readonly reason?: string;
   readonly now: Date;
-}): {
+} & (
+  | { readonly amount?: undefined; readonly escrowRefunded?: undefined }
+  | { readonly amount: number; readonly escrowRefunded: number }
+)): {
   readonly payment: Payment;
   readonly refund: Refund;
   readonly ledgerEntry: LedgerEntry;
@@ -278,9 +279,9 @@ export function applyRefundToPayment(params: {
     refundAmount = computeRefund(payment.amount, percent);
     isFullRefund = percent === 100 || refundAmount === payment.amount;
   } else {
-    const before = params.escrowRefunded ?? 0;
+    const before = params.escrowRefunded;
     const held = payment.amount - before;
-    if (!Number.isSafeInteger(params.amount) || params.amount < 1 || params.amount > held) {
+    if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(params.amount) || params.amount < 1 || params.amount > held) {
       throw new DomainError('invalid_argument');
     }
     refundAmount = params.amount;

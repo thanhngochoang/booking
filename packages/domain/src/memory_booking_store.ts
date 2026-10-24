@@ -421,8 +421,13 @@ export class MemoryBookingStore implements StudioBookingStore {
   async findReleasableEscrows(cutoff: Date, limit = 100): Promise<readonly Payment[]> {
     const res: Payment[] = [];
     for (const p of this.payments.values()) {
+      // A disputed milestone payment may still have another milestone due (its releaseAfter is that one's).
+      const releasable =
+        p.escrowStatus === 'held' ||
+        p.escrowStatus === 'partially_refunded' ||
+        (p.escrowStatus === 'disputed' && p.milestones !== undefined);
       if (
-        (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded') &&
+        releasable &&
         p.releaseAfter &&
         new Date(p.releaseAfter).getTime() <= cutoff.getTime()
       ) {

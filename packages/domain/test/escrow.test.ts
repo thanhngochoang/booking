@@ -188,6 +188,13 @@ describe('Task 3: Escrow & ledger maths', () => {
       assert.equal(rest.payment.status, 'refunded');
       assert.equal(rest.payment.escrowStatus, 'refunded');
 
+      // `escrowRefunded` is required with `amount` (no silent 0); a caller that skips it does not compile.
+      assert.throws(
+        // @ts-expect-error amount without escrowRefunded
+        () => applyRefundToPayment({ ...base, payment: partly, percent: 100, amount: 1 }),
+        (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
+      );
+
       for (const amount of [0, -1, 1.5, 800_001]) {
         assert.throws(
           () => applyRefundToPayment({ ...base, payment: partly, percent: 100, amount, escrowRefunded: 200_000 }),

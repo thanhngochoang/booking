@@ -4,7 +4,7 @@ import { disputeEscrowPayment, isSettledPayment, type LedgerEntry, type Payment,
 import { FakePaymentGateway } from '../../src/fake_payment_gateway.js';
 import type { MemoryBookingStore } from '../../src/memory_booking_store.js';
 import { MemoryDisputeStore } from '../../src/memory_dispute_store.js';
-import { disputeMilestone, releaseMilestone, splitMilestones, withMilestones } from '../../src/milestones.js';
+import { disputeMilestone, releaseMilestone, splitMilestones, withMilestones, type MilestoneKind } from '../../src/milestones.js';
 import type { DisplayNames, SupportDeps } from '../../src/support_use_cases.js';
 import { ControllableClock, SequentialIdGen } from './booking_world.js';
 import { TEST_CIPHER } from './test_cipher.js';
@@ -199,11 +199,16 @@ export function openInput(over: Record<string, unknown> = {}): Record<string, un
  * Booking world (MemoryBookingStore): freezes the booking's paid payment the way openDispute does,
  * for tests of sweeps, payouts and earnings that only need a disputed payment.
  */
-export function freezeBookingPayment(store: MemoryBookingStore, bookingId: string, now: Date): Payment {
+export function freezeBookingPayment(
+  store: MemoryBookingStore,
+  bookingId: string,
+  now: Date,
+  kind: MilestoneKind = 'shoot',
+): Payment {
   const p = [...store.payments.values()].find((x) => x.subjectId === bookingId && isSettledPayment(x));
   if (!p) throw new Error(`no paid payment for ${bookingId}`);
   const frozen: Payment = p.milestones
-    ? { ...disputeMilestone(p, 'shoot', now), dispute: { reason: 'other', openedAt: now.toISOString(), disputeId: 'd_test', milestone: 'shoot' } }
+    ? { ...disputeMilestone(p, kind, now), dispute: { reason: 'other', openedAt: now.toISOString(), disputeId: 'd_test', milestone: kind } }
     : {
         ...disputeEscrowPayment(p, now),
         dispute: {

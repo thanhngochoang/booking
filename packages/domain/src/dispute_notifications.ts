@@ -1,9 +1,6 @@
-import type { Dispute } from './dispute.js';
+import { disputeProviderName, type Dispute } from './dispute.js';
 import { notifyDisputeOpened, notifyDisputeResolved } from './notification_hooks.js';
 import type { NotifyDeps } from './notification_ports.js';
-
-/** S18.02 `disputePlatformName`: who receives a platform event's money. */
-const PLATFORM_NAME = 'ứng dụng';
 
 /**
  * Decides the notifications of a dispute write (the `onDisputeWrite` trigger; Decision 11), through
@@ -31,7 +28,7 @@ export async function notifyDisputeChange(deps: NotifyDeps, before: Dispute | nu
       recipientIds: after.parties,
       subject: after.snapshot.title,
       kind: after.outcome.kind,
-      providerName: after.providerId === 'platform' ? PLATFORM_NAME : (after.snapshot.providerName ?? PLATFORM_NAME),
+      providerName: disputeProviderName(after),
       refund: after.outcome.refundAmount,
       release: after.outcome.releaseAmount,
     });

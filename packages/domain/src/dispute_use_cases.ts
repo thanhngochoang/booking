@@ -5,6 +5,7 @@
  */
 
 import {
+  disputeProviderName,
   disputeThreadId,
   disputeWindow,
   outcomeAmounts,
@@ -24,14 +25,18 @@ import {
   type Payment,
   type Refund,
 } from './escrow.js';
-import { disputeMilestone, releaseMilestone, withMilestones, type PaymentMilestone } from './milestones.js';
+import {
+  disputeMilestone,
+  releaseMilestone,
+  withMilestones,
+  type MilestoneKind,
+  type PaymentMilestone,
+} from './milestones.js';
 import { formatVnd, truncateGraphemes } from './notification_render.js';
 import { mergeRefundOutcome, sendRefundOnce } from './refunds.js';
 import type { SupportMessage, SupportThread } from './support_thread.js';
 
 const PLATFORM = 'platform';
-/** Display name of the platform as a payee (S18.02 `disputePlatformName`). */
-const PLATFORM_NAME = 'ứng dụng';
 const SYSTEM_NAME = 'Hệ thống';
 const PREVIEW_MAX = 80;
 
@@ -181,6 +186,20 @@ function outcomeLine(kind: DisputeOutcomeKind, refund: number, release: number, 
 }
 
 /**
+ * The milestone a dispute froze: `payment.dispute.milestone`; for a milestone payment whose record
+ * lacks it, the single `disputed` milestone. Null only for a payment without milestones.
+ * Throws conflict when a milestone payment has no single disputed milestone to resolve.
+ */
+function frozenMilestone(p: Payment): MilestoneKind | null {
+  if (!p.milestones) return null;
+  const recorded = p.dispute?.milestone;
+  if (recorded) return recorded;
+  const disputed = p.milestones.filter((m) => m.status === 'disputed');
+  if (disputed.length !== 1 || !disputed[0]) throw new DomainError('conflict');
+  return disputed[0].kind;
+}
+
+/**
  * Staff decide (Decisions 7 and 10; the adapter has already checked the `admin` role). In one
  * transaction: the frozen milestone (or the whole payment) back to its previous status, then #129's
  * `applyRefundToPayment` with the exact refund share (`fromEscrow: true`), then #152's
@@ -208,7 +227,7 @@ export async function resolveDispute(
     const thread = d ? await tx.getThread(d.threadId) : null;
     if (!d || !p || !subject) throw new DomainError('not_found');
 
-    const kind = p.dispute?.milestone ?? null;
+    const kind = frozenMilestone(p);
     const ms = kind ? p.milestones?.find((m) => m.kind === kind) : undefined;
     if (d.status !== 'open' || (p.dispute?.disputeId !== undefined && p.dispute.disputeId !== d.id)) {
       throw new DomainError('conflict');
@@ -254,6 +273,15 @@ export async function resolveDispute(
         pay = r.payment;
         tx.addLedgerEntry(r.ledgerEntry);
       }
+      // A booking that completed while its shoot milestone was disputed: completion releases the
+      // delivery milestone, but data from before that rule may still hold it; release it now.
+      const delivery = pay.milestones?.find((m) => m.kind === 'delivery');
+      const done = subject.type === 'booking' && (subject.state === 'completed' || subject.state === 'reviewed');
+      if (kind !== 'delivery' && done && delivery?.status === 'held') {
+        const r = releaseMilestone(pay, 'delivery', deps.ids.newId(), now);
+        pay = r.payment;
+        tx.addLedgerEntry(r.ledgerEntry);
+      }
     } else if (a.releaseAmount > 0) {
       const r = releaseEscrowPayment({
         payment: pay,
@@ -282,7 +310,7 @@ export async function resolveDispute(
       updatedAt: at,
       version: d.version + 1,
     };
-    const provider = d.providerId === PLATFORM ? PLATFORM_NAME : (d.snapshot.providerName ?? PLATFORM_NAME);
+    const provider = disputeProviderName(d);
     const body = `Khiếu nại đã có kết quả: ${outcomeLine(input.kind, a.refundAmount, a.releaseAmount, provider)}. Ghi chú của hỗ trợ: ${input.note}`;
     const closed: SupportThread = {
       ...(thread ?? newDisputeThread(d, at)),
@@ -304,13 +332,17 @@ export async function resolveDispute(
 }
 
 /**
- * Sends a dispute refund after the resolve commit, with V2's rule (#201): one gateway call under the
- * refund id (`sendRefundOnce`: a throw keeps it `pending` for V2's re-send, a refusal is `failed` +
- * `manual`, an `awaiting_account` refund is not sent), then the outcome stored with
- * `mergeRefundOutcome`, which never overwrites a refund that has left `pending` meanwhile.
+ * Sends a dispute refund after the resolve commit, with V2's rule (#201): the stored refund is read
+ * again first and sent only while still `pending` (like V2's `bookingRefundHandler.resend`: a refund
+ * settled meanwhile is never sent twice); one gateway call under the refund id (`sendRefundOnce`: a
+ * throw keeps it `pending` for V2's re-send, a refusal is `failed` + `manual`, an `awaiting_account`
+ * refund is not sent), then the outcome stored with `mergeRefundOutcome`, which never overwrites a
+ * refund that has left `pending` meanwhile.
  */
 export async function dispatchDisputeRefund(deps: DisputeDeps, payment: Payment, refund: Refund): Promise<Refund> {
-  const next = await sendRefundOnce(deps, refund, payment);
+  const current = await deps.store.runTransaction((tx) => tx.getRefund(refund.id));
+  if (!current || current.status !== 'pending') return current ?? refund;
+  const next = await sendRefundOnce(deps, current, payment);
   return deps.store.runTransaction(async (tx) => {
     const stored = await tx.getRefund(refund.id);
     const merged = stored ? mergeRefundOutcome(stored, next) : null;

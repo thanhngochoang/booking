@@ -106,6 +106,13 @@ export interface ResolveDisputeInput {
   readonly note: string;
 }
 
+/** S18.02 `disputePlatformName`: who receives the money of a platform-hosted event. */
+export const DISPUTE_PLATFORM_NAME = 'ứng dụng';
+
+/** The payee's name as disputes show it: the snapshot's provider, or the platform's name. */
+export const disputeProviderName = (d: Pick<Dispute, 'providerId' | 'snapshot'>): string =>
+  d.providerId === 'platform' ? DISPUTE_PLATFORM_NAME : (d.snapshot.providerName ?? DISPUTE_PLATFORM_NAME);
+
 export const disputeThreadId = (disputeId: string): string => `dispute_${disputeId}`;
 export const helpThreadId = (uid: string): string => `help_${uid}`;
 

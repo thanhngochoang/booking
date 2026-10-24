@@ -3,8 +3,10 @@ import { describe, it } from 'node:test';
 import { dispatchDisputeRefund, openDispute, resolveDispute } from '../src/dispute_use_cases.js';
 import { DomainError } from '../src/errors.js';
 import { verifyPaymentLedgerInvariant, type Payment, type Refund } from '../src/escrow.js';
+import { releaseMilestone } from '../src/milestones.js';
 import {
   createDisputeWorld,
+  hoursFrom,
   NOW,
   openInput,
   seedApprovedBooking,
@@ -260,6 +262,69 @@ describe('resolveDispute', () => {
     assert.equal(payment(t, 'pay_r1').escrowStatus, 'refunded');
   });
 
+  describe('shoot dispute open → booking completes → resolve', () => {
+    /** b1's shoot milestone is disputed, then the booking completes; `deliveryReleased`: completion released delivery (today's rule), else the older order where it is still held. */
+    async function completedWhileDisputed(w: DisputeWorld, deliveryReleased: boolean): Promise<void> {
+      seedShotBooking(w);
+      await openDispute(w.deps, 'c1', openInput({ reason: 'no_show' }));
+      if (deliveryReleased) {
+        const r = releaseMilestone(payment(w), 'delivery', 'le_rel_delivery', hoursFrom(1));
+        w.store.payments.set('pay_b1', r.payment);
+        w.store.ledger.push(r.ledgerEntry);
+      }
+      const view = w.store.subjects.get('booking::b1');
+      assert.ok(view);
+      w.store.putSubject({ ...view, state: 'completed', windowStart: hoursFrom(1) });
+      w.clock.setTime(hoursFrom(2));
+    }
+
+    for (const deliveryReleased of [true, false]) {
+      for (const o of [{ outcome: 'release' }, { outcome: 'refund' }, { outcome: 'split', refundPercent: 40 }] as const) {
+        it(`${o.outcome} with delivery ${deliveryReleased ? 'released at completion' : 'still held'}: delivery ends released once, ledger balances`, async () => {
+          const w = createDisputeWorld();
+          await completedWhileDisputed(w, deliveryReleased);
+          const { dispute } = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', note: NOTE, ...o });
+          assert.equal(milestone(w, 'delivery')?.status, 'released');
+          const shoot = milestone(w, 'shoot');
+          assert.equal(shoot?.status, o.outcome === 'refund' ? 'refunded' : 'released');
+          const released = ledgerOf(w).filter((e) => e.type === 'escrow_released').map((e) => e.amount).sort();
+          const shootRelease = dispute.outcome?.releaseAmount ?? 0;
+          assert.deepEqual(released, (shootRelease > 0 ? [shootRelease, 500_000] : [500_000]).sort());
+          assert.equal(payment(w).escrowStatus, 'released');
+          assert.equal(invariantHolds(w), true);
+          const refunded = refundsOf(w).reduce((sum, r) => sum + r.amount, 0);
+          assert.equal(refunded + released.reduce((a, b) => a + b, 0), 1_000_000);
+        });
+      }
+    }
+  });
+
+  it('a milestone payment without dispute.milestone resolves its single disputed milestone, and conflicts when there is none', async () => {
+    const w = createDisputeWorld();
+    seedApprovedBooking(w);
+    await openDispute(w.deps, 'c1', openInput());
+    const p = payment(w);
+    w.store.payments.set('pay_b1', { ...p, dispute: { reason: 'link_broken', openedAt: NOW.toISOString(), disputeId: 'd1' } });
+    const { refund } = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'refund', note: NOTE });
+    assert.equal(refund?.amount, 500_000);
+    assert.equal(milestone(w, 'shoot')?.status, 'released');
+    assert.equal(milestone(w, 'delivery')?.status, 'refunded');
+    assert.equal(invariantHolds(w), true);
+
+    const none = createDisputeWorld();
+    seedApprovedBooking(none);
+    await openDispute(none.deps, 'c1', openInput());
+    const q = payment(none);
+    none.store.payments.set('pay_b1', {
+      ...q,
+      milestones: q.milestones?.map((m) => ({ ...m, status: m.kind === 'delivery' ? 'held' : m.status })),
+      escrowStatus: 'disputed',
+      dispute: { reason: 'link_broken', openedAt: NOW.toISOString(), disputeId: 'd1' },
+    });
+    await rejectsWith(resolveDispute(none.deps, 'staff1', { disputeId: 'd1', outcome: 'refund', note: NOTE }), 'conflict');
+    assert.equal(refundsOf(none).length, 0);
+  });
+
   it('resolving twice → conflict', async () => {
     const w = createDisputeWorld();
     seedApprovedBooking(w);
@@ -319,13 +384,29 @@ describe('dispatchDisputeRefund marks the refund done, failed+manual when the ga
     assert.equal(stored?.attempts, 1);
   });
 
+  it('a refund settled before the send is not sent again', async () => {
+    const w = createDisputeWorld();
+    const { payment: p, refund } = await refunded(w);
+    const done: Refund = { ...refund, status: 'done', manual: false, providerRef: 'by_event' };
+    w.store.refunds.set(refund.id, done);
+    const out = await dispatchDisputeRefund(w.deps, p, refund);
+    assert.deepEqual(out, done);
+    assert.deepEqual(w.gateway.refundCalls, []);
+  });
+
   it('never overwrites a refund that is no longer pending', async () => {
     const w = createDisputeWorld();
     const { payment: p, refund } = await refunded(w);
     const done: Refund = { ...refund, status: 'done', manual: false, providerRef: 'by_staff' };
-    w.store.refunds.set(refund.id, done);
+    // Settled (a refund event, or staff) while the gateway call is in flight; the gateway then refuses.
+    const issue = w.gateway.issueRefund.bind(w.gateway);
+    w.gateway.issueRefund = async (params) => {
+      w.store.refunds.set(refund.id, done);
+      return issue(params);
+    };
     w.gateway.refundFailureId = refund.id;
     await dispatchDisputeRefund(w.deps, p, refund);
+    assert.deepEqual(w.gateway.refundCalls, [refund.id]);
     assert.deepEqual(w.store.refunds.get(refund.id), done);
   });
 
