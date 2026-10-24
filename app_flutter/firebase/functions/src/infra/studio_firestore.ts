@@ -39,6 +39,8 @@ import { SPOT_SCHEDULES_COLLECTION, scheduleFromFirestore } from './spot_firesto
 
 export const STUDIO_MEMBERS_COLLECTION = 'studio_members';
 export const STUDIO_QUOTA_COLLECTION = 'studio_quota';
+/** S27 (#151): `studio_collaborations/{studioId}_{uid}`, the latest relationship of the pair. */
+export const STUDIO_COLLABORATIONS_COLLECTION = 'studio_collaborations';
 const PHOTOGRAPHERS = 'photographers';
 const USERS = 'users';
 
@@ -212,6 +214,11 @@ export class FirestoreStudioStore implements StudioStore {
         getQuota: async (uid) => {
           const snap = await fTx.get(this.firestore.collection(STUDIO_QUOTA_COLLECTION).doc(uid));
           return snap.exists ? quotaFromFirestore(snap.data()) : null;
+        },
+        activeCollaborationOf: async (studioId, uid) => {
+          // Read in the transaction: an activation of the collaboration racing this join retries one side.
+          const snap = await fTx.get(this.firestore.collection(STUDIO_COLLABORATIONS_COLLECTION).doc(`${studioId}_${uid}`));
+          return snap.exists && snap.data()?.status === 'active';
         },
         putRelation: (r) => {
           fTx.set(this.relations().doc(r.id), relationToFirestore(r));

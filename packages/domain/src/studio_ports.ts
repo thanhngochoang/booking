@@ -21,6 +21,11 @@ export interface StudioTx {
    */
   countOpenSpotSchedules(studioId: string, memberId: string, today: string): Promise<number>;
   getQuota(uid: string): Promise<DailyQuota | null>;
+  /**
+   * S27 (#151 Decision 12): whether `uid` is an `active` collaborator of `studioId`
+   * (`studio_collaborations/{studioId}_{uid}`); such a photographer cannot become a member of that studio.
+   */
+  activeCollaborationOf(studioId: string, uid: string): Promise<boolean>;
   putRelation(r: StudioRelation): void;
   /** `studioCooldownUntil` left out keeps the stored value. */
   setMemberStudio(
