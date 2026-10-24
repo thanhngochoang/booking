@@ -82,7 +82,16 @@ Khiếu nại → mốc liên quan `disputed`, chi trả `on_hold` (§3g.2 giữ
 - Gửi lệnh hoàn tiền qua `sendRefundOnce` với cơ chế retry tối đa 6 lần (`REFUND_MAX_ATTEMPTS`) qua cronjob `paymentClock` (`resend` mỗi 10 phút, `REFUND_RESEND_AFTER_MINUTES`), thay thế bước `refund_resend` của `eventClock` (Decisions 5, 7, 8).
 - Nhận kết quả hoàn tiền qua webhook `paymentWebhook?provider=...` với định dạng sự kiện `{type: 'refund', refundId, status, providerRef?, failureReason?}` và hợp nhất kết quả an toàn bằng `mergeRefundOutcome` (Decisions 6, 9).
 
-Hook: `notifyRefundAccountNeeded` trong `packages/domain/src/notification_hooks.ts` (#138) ("Chọn tài khoản nhận hoàn"), mục tiêu `/me/payments`; #141 là chỗ gọi duy nhất.
+**Đã làm ở #141 (S22.04 Tài khoản nhận hoàn, cửa sổ 24 giờ)**:
+- Hoàn **theo chính sách** (`fromEscrow`) của khoản `bank_qr` (khách huỷ, thợ huỷ, bị từ chối, yêu cầu hết hạn, huỷ do lỗi studio, huỷ vé, sự kiện huỷ, kết quả khiếu nại `refund`/`split`) bắt đầu ở `awaiting_account` (`applyRefundToPayment({waitForAccount: true})`) và không gửi ngay:
+  - **Có tài khoản người chuyển**: đích hoàn điền sẵn (`destination.source = payer`), `confirmBy = createdAt + 24 giờ` (`REFUND_ACCOUNT_CONFIRM_HOURS`). Khách không chọn thì bước `confirmDueRefundAccounts` của `paymentClock` (5 phút một lần, bước cuối, try/catch riêng) gửi về tài khoản đã chuyển.
+  - **Không có tài khoản người chuyển**: không có `confirmBy`, lệnh hoàn chờ tới khi khách khai tài khoản ở S22.04; không bao giờ tự gửi. Dòng S22.01 hiện "Cần tài khoản" kèm nút "Chọn tài khoản nhận hoàn".
+- Không chờ: hoàn về ví (MoMo/ZaloPay); hoàn thừa/trễ (`overpaid_excess`, `late_transfer`, `extra_transfer`, `underpaid_expired`, §3.3 "hoàn tự động") và hoàn của `booking_payment_paths` (`late_payment_draft_expired`, `provider_not_accepting`) giữ cách của #201: gửi ngay về tài khoản người chuyển, thiếu thì chờ (không có `confirmBy`). Chụp ngay và phí S21 không có lối chọn: lệnh chờ của hai chủ thể này là việc của staff (S23.03).
+- Callable: `pendingRefund({bookingId} | {eventId, registrationId} | {disputeId})` trả lệnh hoàn đang chờ (số tiền, ngân hàng · 4 số cuối · tên người chuyển, `confirmBy`) hoặc null; `lookupRefundAccount({refundId, bankCode, accountNumber})` tra tên chủ tài khoản (cổng giả `FakeAccountNameLookup` của #134; bản thật của tổ chức trung gian để sau), lưu tài khoản mã hoá ở `Refund.candidate`, tối đa 20 lần mỗi lệnh hoàn mỗi ngày giờ Việt Nam (lần 21 `limit_exceeded`, tính cả khi không tìm thấy); `chooseRefundAccount({refundId, use: "payer"})` hoặc `({refundId, use: "candidate", bankCode, accountLast4})`. Khách không gõ tên; không cần trùng tên với người chuyển (câu hỏi chủ 2, mặc định).
+- **Một lần gửi**: chọn và mặc định 24 giờ cùng đọc lại lệnh hoàn trong một giao dịch; chỉ bên đưa được `awaiting_account → pending` gửi lệnh (`sendRefundOnce` theo id). Chọn `candidate` phải trùng ngân hàng và 4 số cuối của tài khoản app đã hiện, không thì `conflict` (một lần tra sau ghi đè `candidate`). Lệnh đã rời trạng thái chờ: chọn lại đúng đích trả trạng thái hiện tại; khác đích (vd chọn tài khoản khác nhưng mặc định 24 giờ đã gửi về tài khoản người chuyển) trả `conflict`, app đọc lại và báo tiền đã về đâu.
+- Bản sao cho app: `bookings/{id}.refundAccountNeeded` (thẻ "Bạn được hoàn …" ở S05.02, tắt cùng giao dịch khi lệnh hoàn rời trạng thái chờ); vé giữ `refundStatus` (`awaiting_account` đọc "Đang hoàn"); khiếu nại không có cờ, S18.02 gọi `pendingRefund({disputeId})`.
+- Thông báo: `notifyRefundAccountNeeded` trong `packages/domain/src/notification_hooks.ts` (#138) ("Chọn tài khoản nhận hoàn"), mục tiêu `/me/payments`. Chỗ gọi duy nhất là trigger `onRefundWritten` (`announceRefundAccountNeeded`, khi lệnh hoàn booking/vé/khiếu nại vừa vào `awaiting_account`; #138 chống trùng theo id lệnh hoàn).
+- Lệnh quá hạn mà mặc định không gửi được (mất khoản thanh toán; hoặc không có tài khoản người chuyển, hoặc là Chụp ngay / phí S21) rời hàng đợi: mất khoản → `failed` + `manual`; còn lại xoá `confirmBy`, chờ khách hoặc staff.
 
 ## 6. Chi trả
 
@@ -167,8 +176,8 @@ Bản cài đặt: `Fake*Gateway` (emulator, dev, test; mô phỏng webhook và 
 | S04.03 | đổi tên "Đặt lịch 4/4 · Xem lại & thanh toán"; bảng tiền 100%, chọn phương thức, nút "Thanh toán {giá}" |
 | S04.04 | màn VietQR / chờ ví (§3.2) |
 | S06.05, S06.06 | §6.2, §6.3 |
-| S22.01 | lịch sử thanh toán: bỏ chữ "cọc", thêm phương thức, hoàn tiền đang xử lý |
-| **S22.04** | **Tài khoản nhận hoàn** (sheet, mới) |
+| S22.01 | lịch sử thanh toán: bỏ chữ "cọc", thêm phương thức, hoàn tiền đang xử lý (đã làm ở #141) |
+| **S22.04** | **Tài khoản nhận hoàn** (sheet, mới; đã làm ở #141, §5) |
 | S23.02 | duyệt lần chi đầu, khoản `needs_review`, đối soát ngày, xuất báo cáo thuế |
 | S23.03 | hoàn tiền thủ công (giữ) |
 

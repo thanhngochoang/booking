@@ -95,6 +95,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 
 - **Chuỗi**: `s09_title` "Buổi chụp #{code}", `s09_contact` "Liên hệ", `s09_reschedule` "Đổi lịch", `s09_cancel` "Huỷ yêu cầu · hoàn {pct}%", `s09_directions` "Chỉ đường"; chi tiết bàn giao: `detailMarkShot` "Đã chụp xong", `detailDeliver` "Nộp bàn giao", `detailDeliverRound` "Nộp vòng {round}", `detailViewDelivery` "Xem bàn giao", `detailRevisionCard` "Khách muốn chỉnh sửa vòng {round}", `detailWaitingApproval` "Đã gửi vòng {round} · chờ khách duyệt", `detailApprovedProvider` "Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra", `detailExtraRoundTitle` "{name} xin thêm 1 vòng sửa", `detailExtraGrant` "Cho thêm 1 vòng", `detailExtraDecline` "Không thêm".
 - **Khiếu nại (S18, #142)**: khách còn trong cửa sổ khiếu nại thấy nút chữ đỏ "Báo vấn đề · còn {h} giờ" (→ S18.01); booking có `disputeId` hiện dải "Đang khiếu nại" / "Khiếu nại đã có kết quả" dưới thẻ booking (→ S18.02); chi tiết ở [disputes-help.md](disputes-help.md).
+- **Hoàn tiền chờ tài khoản (S22.04, #141; mock `#S05.02-refund`)**: chỉ khách, khi `refundAccountNeeded` (máy chủ bật khi lệnh hoàn của khoản QR đang `awaiting_account`): thẻ dưới thẻ booking "Bạn được hoàn {depositRefunded}" (không có số thì bỏ tiêu đề), "Chọn tài khoản để nhận tiền hoàn.", nút viền nhỏ "Chọn tài khoản nhận hoàn" → sheet S22.04 (`BookingRefund(id)`); thẻ ẩn khi máy chủ tắt cờ (khách chọn hoặc hết 24 giờ). Thợ không thấy thẻ ([account.md](account.md#s2204--tài-khoản-nhận-hoàn-sheet)).
 - **Phân tích**: `booking_open{status}`, `contact_tapped{channel, source:"S05.02"}`, `booking_action{action}`.
 - **Chấp nhận**: timeline đúng thứ tự và thời điểm (thêm bước Bàn giao & duyệt ảnh); số hoàn trên nút huỷ khớp bảng chính sách theo giờ hiện tại; trạng thái đổi theo thời gian thực không cần tải lại; hiển thị đúng các nút hành động bàn giao theo vai trò và trạng thái.
 
@@ -138,7 +139,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 
 - **Thông tin**: sheet mở trên S05.02 · khách · spec 10-05 §4.1.5, spec 10-06 §4 · Chưa có (kế hoạch `2026-10-18-s05-late-delivery-cancel.md`, #207).
 - **Mục đích**: khi thợ quá `deliveryDays` sau buổi chụp mà chưa nộp vòng bàn giao nào, khách kết thúc booking: mốc 2 hoàn 100%, thợ giữ mốc 1, booking `shot → completed`.
-- **Điểm vào → ra**: nút chữ đỏ "Huỷ phần bàn giao" trên S05.02 (chỉ hiện khi `status = shot` và quá hạn; mock `#S05.02-late`). Xác nhận → S05.02 ở trạng thái `completed` kèm toast; hoàn tiền chuyển khoản chưa có tài khoản nhận thì chờ "Đang hoàn" kèm thông báo `refund_account_needed` (S22.04 mở được khi #141 làm xong).
+- **Điểm vào → ra**: nút chữ đỏ "Huỷ phần bàn giao" trên S05.02 (chỉ hiện khi `status = shot` và quá hạn; mock `#S05.02-late`). Xác nhận → S05.02 ở trạng thái `completed` kèm toast; hoàn tiền chuyển khoản chưa có tài khoản nhận thì chờ "Đang hoàn" kèm thông báo `refund_account_needed`; khách chọn tài khoản ở S22.04 (S22.01, #141).
 - **Bố cục**: tiêu đề "Huỷ phần bàn giao?"; hai dòng tiền: "Hoàn mốc 2 cho bạn · {số tiền}" (nổi bật) và "{thợ} giữ mốc 1 (buổi chụp) · {số tiền}" (đọc từ `bookings/{id}/milestones/*`; thiếu thì chia 50/50 trên số đã trả trừ đã hoàn, server là nguồn đúng); ghi chú hậu quả; nút viền "Chờ thêm" và nút đỏ "Huỷ phần bàn giao".
 - **Dữ liệu**: callable `cancelLateDelivery({bookingId})` → `{status: 'completed', refundedAmount}`; booking ghi `completedAt`, `deliveryCancel {at, dueAt, refundedAmount}`, `depositRefunded`; milestone `delivery` của payment → `refunded`, một dòng `refunds`.
 - **Trạng thái**: đang gọi → nút đỏ khoá; `not_eligible` (thợ vừa nộp, hoặc chưa quá hạn) → "{thợ} vừa nộp bàn giao. Xem bàn giao trước khi quyết định." / "Chưa quá hạn bàn giao." và đóng sheet; `conflict` (đang khiếu nại) → "Booking đang khiếu nại, không huỷ được.".
@@ -155,7 +156,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 - **Mục đích**: huỷ có hiểu rõ hệ quả tiền.
 - **Bố cục**: tiêu đề "Huỷ buổi chụp?"; bảng hoàn tiền 3 dòng tính trên số đã trả (≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%) với **dòng đang áp dụng được tô**; "Bạn sẽ nhận lại {số tiền}"; chip lý do (Đổi kế hoạch, Tìm được thợ khác, Lý do khác); hai nút: "Giữ lịch" (viền, bên trái) và "Huỷ buổi chụp" (đỏ, bên phải).
 - **Dữ liệu**: tính hoàn từ `start` và giờ máy chủ; gọi `transitionBooking(cancelled)`.
-- **Trạng thái**: đang gọi → nút loading; lỗi → SnackBar, giữ sheet; huỷ thành công → đóng, S05.02 hiện `cancelled`, toast "Đã huỷ. Hoàn {số tiền} trong 3–5 ngày".
+- **Trạng thái**: đang gọi → nút loading; lỗi → SnackBar, giữ sheet; huỷ thành công → đóng, S05.02 hiện `cancelled`, toast "Đã huỷ. Hoàn {số tiền} trong 3–5 ngày"; khoản trả bằng chuyển khoản QR (`checkout.method == bankQr`) có hoàn > 0 thì sau toast mở sheet S22.04 Tài khoản nhận hoàn (#141; huỷ do lỗi studio cũng vậy); trả bằng ví thì không.
 - **Chuỗi**: `s10_title` "Huỷ buổi chụp?", `s10_refund` "Bạn sẽ nhận lại {amount}", `s10_keep` "Giữ lịch", `s10_confirm` "Huỷ buổi chụp".
 - **Chấp nhận**: nút đỏ chỉ có trong sheet này; hoàn đúng theo thời điểm; chạm ngoài sheet không huỷ.
 
