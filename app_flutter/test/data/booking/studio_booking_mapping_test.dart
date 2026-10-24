@@ -34,6 +34,46 @@ Timestamp _ts(DateTime d) => Timestamp.fromDate(d);
 
 void main() {
   group('bookingFromFirestore studio fields', () {
+    test('a collaborator offer maps assigneeAccepted and the entry offer '
+        'fields (S27)', () {
+      final b = bookingFromFirestore('b1', {
+        ..._base(),
+        'isStudio': true,
+        'assignDeadline': _ts(_utc(23, 8)),
+        'assigneeId': 'lan',
+        'assigneeKind': 'collaborator',
+        'assigneeAccepted': false,
+        'assignStatus': 'unassigned',
+        'assignments': [
+          {
+            'assigneeId': 'lan',
+            'assigneeKind': 'collaborator',
+            'at': _ts(_utc(21, 3)),
+            'by': 'studio1',
+            'offerExpiresAt': _ts(_utc(21, 9)),
+          },
+        ],
+      })!;
+      final s = b.studio!;
+      expect(s.assigneeAccepted, isFalse);
+      expect(s.hasPendingOffer, isTrue);
+      expect(s.confirmedAssigneeId, isNull);
+      expect(s.lastAssignment!.offerExpiresAt, _utc(21, 9));
+      expect(s.lastAssignment!.acceptedAt, isNull);
+
+      final accepted = bookingFromFirestore('b1', {
+        ..._base(),
+        'isStudio': true,
+        'assignDeadline': _ts(_utc(23, 8)),
+        'assigneeId': 'lan',
+        'assigneeKind': 'collaborator',
+        'assigneeAccepted': true,
+        'assignStatus': 'assigned',
+      })!;
+      expect(accepted.studio!.hasPendingOffer, isFalse);
+      expect(accepted.studio!.confirmedAssigneeId, 'lan');
+    });
+
     test(
       'studio booking info maps assignee, deadline, change request, fault, returned',
       () {
@@ -236,6 +276,17 @@ void main() {
       expect(calledName(), 'assignBooking');
       expect(sent, {'bookingId': 'b1', 'assigneeId': 'an'});
       expect(b.studio!.assigneeId, 'an');
+    });
+
+    test('a collaborator offer adds assigneeKind and agreedFee (S27)', () async {
+      await repo.assign('b1', 'lan', collaborator: true, agreedFee: 800000);
+      expect(calledName(), 'assignBooking');
+      expect(sent, {
+        'bookingId': 'b1',
+        'assigneeId': 'lan',
+        'assigneeKind': 'collaborator',
+        'agreedFee': 800000,
+      });
     });
 
     test('requestChange sends the note only when given', () async {

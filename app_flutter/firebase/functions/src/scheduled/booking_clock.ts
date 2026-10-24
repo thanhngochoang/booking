@@ -9,11 +9,14 @@ import {
   runMembershipSweeps,
   runUnassignedStartSweep,
   runInstantSweep,
+  runRecruitSweeps,
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
   type InstantDeps,
   type NotifyDeps,
+  type RecruitSweepDeps,
+  type RecruitSweepResults,
   type StudioBookingDeps,
   type StudioDeps,
   type VerificationDeps,
@@ -23,6 +26,7 @@ import { FirestoreBookingStore } from '../infra/booking_firestore.js';
 import { liveBookingDeps } from '../infra/live_booking.js';
 import { liveInstantDeps } from '../infra/live_instant.js';
 import { liveNotifyDeps } from '../infra/live_notification.js';
+import { liveRecruitSweepDeps } from '../infra/live_recruit.js';
 import { purgeDeliverySamples, type PurgeDeliverySamplesDeps } from './purge_delivery_samples.js';
 
 export const REMINDER_PAGE = 200;
@@ -54,6 +58,12 @@ export interface BookingClockExtras {
    * passes its own BookingDeps and no `instant` skips the step, so it never reaches Firestore.
    */
   readonly instant?: InstantDeps;
+  /**
+   * S27 (#151; no new scheduler job): expire recruit posts, applications, collaboration invites and collaborator
+   * offers, mark pay records due and add unpaid flags. Runs before the studio steps, so an offer that lapsed
+   * leaves its booking unassigned for S26's overdue mark in the same tick.
+   */
+  readonly recruit?: RecruitSweepDeps;
 }
 
 export async function remindAutoApprovals(deps: BookingDeps, notify: NotifyDeps, limit = 50): Promise<number> {
@@ -143,6 +153,9 @@ export async function handleBookingClock(
     }
   }
 
+  // S27 recruit sweeps, its own try, before the studio steps (see BookingClockExtras.recruit).
+  if (extras.recruit) await handleRecruitSweeps(extras.recruit);
+
   // Studio steps, last, each in its own try: a failure is logged and the next tick runs it again.
   if (extras.studio) await runStudioSteps(extras.studio);
 
@@ -199,6 +212,22 @@ export async function runStudioSteps(studio: NonNullable<BookingClockExtras['stu
     }
   } catch (e) {
     logger.error('bookingClock studioMembershipSweeps failed', { error: String(e) });
+  }
+}
+
+/**
+ * The `recruitSweeps` step (#151): each due list is read in pages of 200 and each item settles in its own
+ * transaction; a failing item is counted and retried next tick, a failing step is logged, never thrown.
+ */
+export async function handleRecruitSweeps(deps: RecruitSweepDeps = liveRecruitSweepDeps()): Promise<RecruitSweepResults | null> {
+  try {
+    const r = await runRecruitSweeps(deps);
+    logger.info('bookingClock recruitSweeps completed', r);
+    if (r.failed > 0) logger.error('bookingClock recruitSweeps items failed; retried next tick', { failed: r.failed });
+    return r;
+  } catch (e) {
+    logger.error('bookingClock recruitSweeps failed', { error: String(e) });
+    return null;
   }
 }
 

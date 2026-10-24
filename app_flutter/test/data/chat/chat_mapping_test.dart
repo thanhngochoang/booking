@@ -85,6 +85,25 @@ void main() {
       expect(thread.createdAt, DateTime.parse('2026-10-01T08:00:00.000Z'));
     });
 
+    test('kind collab parses to ChatKind.collab', () async {
+      // S27 (#151 Decision 16): the studio is in the customerId slot.
+      final doc = await makeDoc('chats/collab_cuc_dung', {
+        'kind': 'collab',
+        'customerId': 'cuc',
+        'photographerId': 'dung',
+        'readOnlyAt': '2026-10-20T03:00:00.000Z',
+      });
+      final thread = ChatThread.fromFirestore(doc);
+      expect(thread.kind, ChatKind.collab);
+      expect(thread.customerId, 'cuc');
+      expect(thread.photographerId, 'dung');
+      expect(thread.readOnlyAt, DateTime.parse('2026-10-20T03:00:00.000Z'));
+      // An unknown kind still reads as inquiry.
+      final odd = await makeDoc('chats/odd', {'kind': 'something_new'});
+      expect(ChatThread.fromFirestore(odd).kind, ChatKind.inquiry);
+      expect(oneToOneChatKinds, contains('collab'));
+    });
+
     test('handles empty or missing data gracefully with defaults', () async {
       final doc = await makeDoc('chats/empty_1', null);
       final thread = ChatThread.fromFirestore(doc);
@@ -567,7 +586,7 @@ void main() {
       // With a one-row page, a client-side filter alone would return nothing.
       final items = await repo.watchMyChats(limit: 1).first;
       expect(items.map((i) => i.thread.id), ['c1']);
-      expect(oneToOneChatKinds, ['inquiry', 'booking']);
+      expect(oneToOneChatKinds, ['inquiry', 'booking', 'collab']);
     });
   });
 

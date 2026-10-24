@@ -4,6 +4,7 @@ import {
   acceptingOrdersPatch,
   foldNameKey,
   providerTypeOf,
+  recruitMatchKeysOf,
   scorePhotographerSkills,
   refreshNextFreeDate,
   type ScoreSkillsDeps,
@@ -52,6 +53,76 @@ export async function syncAcceptingOrders(
   if (patch === null) return 'unchanged';
   await writer.set(input.uid, patch.acceptingOrders);
   return 'written';
+}
+
+/** `users/{uid}.role` and the server-only `photographers/{uid}.recruitMatchKeys` (S27 Decision 7). */
+export interface RecruitMatchKeyWriter {
+  role(uid: string): Promise<string | null>;
+  set(uid: string, keys: string[]): Promise<void>;
+}
+
+function storedKeys(d: DocumentData): string[] {
+  return Array.isArray(d.recruitMatchKeys) ? d.recruitMatchKeys.filter((k): k is string => typeof k === 'string') : [];
+}
+
+/** A key-order independent JSON form, to compare a field of two snapshots. */
+function stableJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(',')}]`;
+  if (v !== null && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v) ?? 'undefined';
+}
+
+/** The inputs of the keys did not change and the keys were written before: nothing to recompute. */
+function matchInputsUnchanged(before: DocumentData | undefined, after: DocumentData): boolean {
+  if (before === undefined || !Array.isArray(after.recruitMatchKeys)) return false;
+  return (['providerType', 'serviceArea', 'specialties'] as const).every((f) => stableJson(before[f]) === stableJson(after[f]));
+}
+
+/**
+ * Keeps `recruitMatchKeys` = every `a=<area>|s=<specialty>` of the provider (empty for a studio and for an account in
+ * customer mode), so `onRecruitPostCreated` finds matching providers with one query. Reads the role once (not for a
+ * studio), and not at all when `providerType`, `serviceArea` and `specialties` are unchanged and the keys exist (a
+ * role switch is re-synced by `refreshRecruitMatchKeys`); writes only when the sorted list differs, so the re-fire
+ * of its own write changes nothing. A missing field counts as an empty list.
+ */
+export async function syncRecruitMatchKeys(
+  input: PhotographerWriteInput,
+  writer: RecruitMatchKeyWriter,
+): Promise<'written' | 'unchanged' | 'deleted'> {
+  const after = input.after;
+  if (after === undefined) return 'deleted';
+  if (matchInputsUnchanged(input.before, after)) return 'unchanged';
+  const isStudio = providerTypeOf(after.providerType) === 'studio';
+  const role = isStudio ? null : await writer.role(input.uid);
+  const specialties = Array.isArray(after.specialties) ? after.specialties.filter((x): x is string => typeof x === 'string') : [];
+  const keys = [...new Set(recruitMatchKeysOf({ role, providerType: after.providerType, serviceArea: after.serviceArea, specialties }))].sort();
+  const stored = [...storedKeys(after)].sort();
+  if (keys.length === stored.length && keys.every((k, i) => k === stored[i])) return 'unchanged';
+  await writer.set(input.uid, keys);
+  return 'written';
+}
+
+/** The photographer document a role switch re-syncs (`FirestoreRecruitMatchKeys`). */
+export interface RecruitMatchKeyStore extends RecruitMatchKeyWriter {
+  photographer(uid: string): Promise<DocumentData | undefined>;
+}
+
+/**
+ * `users/{uid}.role` switched (S09.02 "Chế độ"): the photographer document is not written, so its match keys are
+ * re-synced here (customer mode receives no recruit notices). Other user writes read nothing.
+ */
+export async function refreshRecruitMatchKeys(
+  input: { readonly uid: string; readonly before: DocumentData | undefined; readonly after: DocumentData | undefined },
+  store: RecruitMatchKeyStore,
+): Promise<'written' | 'unchanged' | 'deleted'> {
+  if (input.after === undefined || input.before?.role === input.after.role) return 'unchanged';
+  const doc = await store.photographer(input.uid);
+  if (doc === undefined) return 'deleted';
+  // `before: undefined`: the role changed, so the unchanged-inputs shortcut must not apply.
+  return syncRecruitMatchKeys({ uid: input.uid, before: undefined, after: doc }, store);
 }
 
 /** Events older than this are dropped instead of retried (deployed with `retry: true`). */

@@ -50,10 +50,10 @@ final Map<String, _Visual> _contract = {
   'recruit_post_new': (AppIcons.work, NotificationTone.neutral),
   'recruit_application_new': (AppIcons.work, NotificationTone.action),
   'recruit_application_result': (AppIcons.work, NotificationTone.neutral),
-  'collab_invite': (AppIcons.store, NotificationTone.action),
-  'collab_invite_result': (AppIcons.store, NotificationTone.neutral),
-  'collab_assignment_offer': (AppIcons.work, NotificationTone.action),
-  'collab_assignment_result': (AppIcons.calendar, NotificationTone.neutral),
+  'collab_invite': (AppIcons.handshake, NotificationTone.action),
+  'collab_invite_result': (AppIcons.handshake, NotificationTone.neutral),
+  'collab_assignment_offer': (AppIcons.handshake, NotificationTone.action),
+  'collab_assignment_result': (AppIcons.handshake, NotificationTone.neutral),
   'collab_pay_due': (AppIcons.payment, NotificationTone.action),
   'collab_pay_reported': (AppIcons.payment, NotificationTone.neutral),
   'collab_pay_disputed': (AppIcons.payment, NotificationTone.danger),
@@ -202,6 +202,67 @@ void main() {
         reason: '$type falls back to the info row',
       );
     }
+  });
+
+  test('recruit_* and collab_* types get work/handshake icons with tones', () {
+    // S27 (#151 Task 6): recruit notices are work, the collaboration is a
+    // handshake, the off-app pay record keeps the payment glyph.
+    for (final t in [
+      'recruit_post_new',
+      'recruit_application_new',
+      'recruit_application_result',
+    ]) {
+      expect(notificationVisualOf(t).icon, AppIcons.work, reason: t);
+    }
+    for (final t in [
+      'collab_invite',
+      'collab_invite_result',
+      'collab_assignment_offer',
+      'collab_assignment_result',
+    ]) {
+      expect(notificationVisualOf(t).icon, AppIcons.handshake, reason: t);
+    }
+    expect(
+      notificationVisualOf('collab_assignment_offer').tone,
+      NotificationTone.action,
+    );
+    // The outcome variant of the *_result types (renderNotification outcomes).
+    for (final t in [
+      'recruit_application_result',
+      'collab_invite_result',
+      'collab_assignment_result',
+    ]) {
+      for (final declined in ['declined', 'expired']) {
+        expect(
+          notificationVisualOf(t, variant: declined).tone,
+          NotificationTone.muted,
+          reason: '$t $declined',
+        );
+      }
+      expect(notificationVisualOf(t).tone, NotificationTone.neutral, reason: t);
+    }
+    for (final (t, accepted) in [
+      ('recruit_application_result', 'collaborator'),
+      ('recruit_application_result', 'member'),
+      ('collab_invite_result', 'accepted'),
+      ('collab_assignment_result', 'accepted'),
+    ]) {
+      expect(
+        notificationVisualOf(t, variant: accepted).tone,
+        NotificationTone.success,
+        reason: '$t $accepted',
+      );
+    }
+    expect(
+      notificationVisualOf('collab_assignment_result', variant: 'ended').tone,
+      NotificationTone.neutral,
+    );
+    expect(
+      notificationVisualOf('collab_pay_disputed').tone,
+      NotificationTone.danger,
+    );
+    expect(notificationVisualOf('collab_pay_due').tone, NotificationTone.action);
+    expect(notificationVisualOf('collab_pay_due').icon, AppIcons.payment);
   });
 
   test('mock S17.01 rows: grouped quote, event, refund, declined', () {

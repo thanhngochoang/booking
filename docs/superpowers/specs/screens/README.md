@@ -1,6 +1,6 @@
 # Đặc tả từng màn hình
 
-Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S29`, `S30` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
+Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S27`, `S29`, `S30` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
 
 ## Mục lục
 
@@ -17,6 +17,7 @@ Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S29`, `S30` của spec `..
 | [saved-following.md](saved-following.md) | S19.01 Đã lưu (bài đăng & nhiếp ảnh gia) · S19.02 Đang theo dõi · S19.03 Người theo dõi |
 | [disputes-help.md](disputes-help.md) | S18.01 Mở khiếu nại · S18.02 Chi tiết khiếu nại · S18.03 Trợ giúp & chat hỗ trợ |
 | [report-block.md](report-block.md) | S20.01 Báo cáo (sheet) · S20.02 Danh sách đã chặn · Menu "…" (S20.01-menu) · Chặn từ tin nhắn (S20.01-message) · Màn hình bị chặn (S03.01-blocked, S07.01-blocked) (spec 10-07 #144) |
+| [recruit.md](recruit.md) | S27.01 Tin tuyển · S27.02 Chi tiết tin · S27.03 Ứng tuyển · S27.04 Đăng / sửa tin · S27.05 Tin của studio và ứng viên · S27.06 Cộng tác (studio, thợ) · S27.07 Nhận việc cộng tác · thay đổi ở S03.01, S05.02, S06.01, S07.01, S07.02, S09.02, S26.02, S26.04 (spec 10-07 tuyển thợ, #151) |
 | [organizer.md](organizer.md) | S30.01–S30.07 Chủ sự kiện & vé vào cửa · thay đổi ở S04.03, S05.02, S06.01, S09.02, S11.02, S11.04, S12.01, S12.03, S29.02 (spec 10-12) |
 | [account.md](account.md) | S05.05 Đánh giá & chia sẻ · S01.03 Đăng nhập · S01.05 Chọn vai trò · S09.01 Hồ sơ cá nhân · S09.02 Cài đặt · S03.02 Huy hiệu · S01.04 Đăng ký · S09.03 Sửa hồ sơ · S17.01 Thông báo · S17.02 Cài đặt thông báo · S17.03 Xin quyền thông báo |
 | Dashboard web (Phase 1.5) | Khung S23.08–S23.11 và quy ước web: [`../2026-10-08-dashboard-web-design.md`](../2026-10-08-dashboard-web-design.md). Màn của từng ticket: `staff-money.md` (#163), `staff-verification-awards.md` (#164), `staff-disputes-support.md` (#165), `staff-moderation.md` (#166), `studio-web-operations.md` (#167), `staff-config-content.md` (#168), `studio-web-business.md` (#169). Quy ước chung bên dưới chỉ áp dụng cho app Flutter; dashboard theo §8 của spec dashboard. |

@@ -26,6 +26,8 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
+import 'package:photobooking/data/recruit/recruit_repository.dart';
 import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
@@ -92,6 +94,10 @@ class ProfileWorld {
 
   /// The signed-in user's own `photographers/{uid}` intro (owner listener).
   final intros = FakePhotographerIntroRepository();
+
+  /// Recruit posts (S03.01-studio "Đang tuyển"); the viewer's provider facts
+  /// are unset (not a provider) unless a test sets them.
+  final recruits = FakeRecruitRepository();
   late GoRouter router;
 
   String get uid => discovery.uid;
@@ -99,6 +105,7 @@ class ProfileWorld {
 
   Future<void> init() async {
     await discovery.init();
+    recruits.uid = uid;
     for (final p in _photographers) {
       profiles.add(
         PhotographerProfile(
@@ -145,6 +152,7 @@ class ProfileWorld {
     badgeRepositoryProvider.overrideWithValue(badges),
     verificationRepositoryProvider.overrideWithValue(verifications),
     photographerIntroRepositoryProvider.overrideWithValue(intros),
+    recruitRepositoryProvider.overrideWithValue(recruits),
   ];
 
   Widget app(
@@ -191,6 +199,7 @@ class ProfileWorld {
           '/me/albums',
           '/verify/start',
           '/me/addons',
+          '/recruit',
         ])
           GoRoute(path: p, builder: stub),
       ],

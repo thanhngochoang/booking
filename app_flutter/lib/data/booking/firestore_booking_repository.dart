@@ -72,9 +72,13 @@ class FirestoreBookingRepository implements BookingRepository {
 
   @override
   Stream<List<Booking>> watchAssignedBookings(String uid) {
-    // Single-field equality: the automatic index serves it.
+    // Equality filters only: the automatic indexes serve it. `assignStatus`
+    // leaves out a collaborator's pending S27 offer (`assigneeId` set,
+    // `assignStatus` unassigned until accepted; it lives in S27.06/S27.07),
+    // and the rules can only allow the query with it.
     return _bookingsCol
         .where('assigneeId', isEqualTo: uid)
+        .where('assignStatus', isEqualTo: 'assigned')
         .snapshots()
         .map(
           (qs) => qs.docs
@@ -273,9 +277,19 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<Booking> assign(String bookingId, String assigneeId) => _call(
+  Future<Booking> assign(
+    String bookingId,
+    String assigneeId, {
+    bool collaborator = false,
+    int? agreedFee,
+  }) => _call(
     'assignBooking',
-    {'bookingId': bookingId, 'assigneeId': assigneeId},
+    assignBookingPayload(
+      bookingId,
+      assigneeId,
+      collaborator: collaborator,
+      agreedFee: agreedFee,
+    ),
     _bookingOf,
   );
 

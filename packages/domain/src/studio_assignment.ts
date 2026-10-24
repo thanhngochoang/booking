@@ -1,31 +1,48 @@
 /**
  * Studio bookings (#136, spec §5): the studio fields every order path gets through the booking-draft builder,
  * assignment of a member, the customer's one change request, "Trả việc" and the studio-fault refund right (the
- * clock sweeps are in studio_booking_sweeps.ts). Every transaction reads everything before its first write.
+ * clock sweeps are in studio_booking_sweeps.ts). S27 (#151): `assignBooking` routes an offer to a collaborator
+ * to `collab_offers.ts`; a member assignment replaces a collaborator's pending or accepted job. Every
+ * transaction reads everything before its first write.
  */
 
 import type { Booking, StudioAssignment, StudioFaultKind } from './booking.js';
 import { parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps, StudioBookingStore } from './booking_ports.js';
+import { confirmedAssigneeId } from './collab_jobs.js';
+import { offerToCollaborator } from './collab_offers.js';
 import { DomainError } from './errors.js';
+import type { NotifyDeps } from './notification_ports.js';
 import { orderBlocker } from './order_gate.js';
 import type { ProviderType } from './provider_type.js';
+import { isValidRecruitFee } from './recruit.js';
+import {
+  HOUR_MS,
+  isOpenForAssignment,
+  liveJobOf,
+  STUDIO_ASSIGN_LEAD_HOURS,
+  startOf,
+  statusOnceAssigned,
+  studioBooking,
+} from './studio_booking_window.js';
 import { studioDayLoadWith } from './studio_capacity.js';
 import { fields, idField, optionalText, requiredText } from './studio_input.js';
 import type { StudioRoster } from './studio_ports.js';
 
-export const STUDIO_ASSIGN_LEAD_HOURS = 24,
-  STUDIO_LATE_BOOKING_GRACE_HOURS = 2,
+export { isOpenForAssignment, STUDIO_ASSIGN_LEAD_HOURS } from './studio_booking_window.js';
+export const STUDIO_LATE_BOOKING_GRACE_HOURS = 2,
   CHANGE_RESPOND_HOURS = 6,
   ASSIGN_REMINDER_HOURS = [48, 26] as const;
 export { STUDIO_NOTE_MAX_LENGTH } from './studio_input.js';
 
-const HOUR_MS = 60 * 60 * 1000;
-const ASSIGNABLE_STATUSES: readonly string[] = ['accepted', 'upcoming'];
-
 export interface StudioBookingDeps extends BookingDeps {
   readonly store: StudioBookingStore;
   readonly roster: StudioRoster;
+  /**
+   * S27: the collaborator-offer notices (`collab_assignment_offer`, `collab_assignment_result`) go out after the
+   * commit through #138's hooks. Absent → they are not sent (member flows notify from the booking trigger).
+   */
+  readonly notify?: NotifyDeps;
 }
 
 /** max(startAt − 24 h, now + 2 h), never after startAt (Decision 8; a booking made less than a day ahead gives the studio two hours). */
@@ -74,10 +91,12 @@ export function studioFaultOf(b: Booking, now: Date): StudioFaultKind | null {
 
 /**
  * A studio booking with nobody assigned: it never reaches `upcoming` (Decision 11), cannot be marked shot or
- * completed, and the clock cancels it at its start.
+ * completed, and the clock cancels it at its start. A collaborator whose offer still waits is nobody yet (S27).
  */
-export function waitsForAssignee(booking: Pick<Booking, 'isStudio' | 'assigneeId'>): boolean {
-  return booking.isStudio === true && !booking.assigneeId;
+export function waitsForAssignee(
+  booking: Pick<Booking, 'isStudio' | 'assigneeId'> & Partial<Pick<Booking, 'assigneeKind' | 'assigneeAccepted'>>,
+): boolean {
+  return booking.isStudio === true && confirmedAssigneeId(booking) === null;
 }
 
 /**
@@ -92,32 +111,28 @@ export function isUnassignedStartCancel(b: Booking): boolean {
   );
 }
 
-/** The booking of a studio, or not_found (an individual booking has nothing to assign). */
-async function studioBooking(deps: Pick<BookingDeps, 'store'>, bookingId: string): Promise<Booking> {
-  const b = await deps.store.getBooking(bookingId);
-  if (!b || b.isStudio !== true) throw new DomainError('not_found');
-  return b;
-}
-
-function startOf(b: Booking): Date {
-  return parseVnDateTime(b.day, b.start);
-}
-
-/** accepted or upcoming, before the start: the window for assigning, changing and returning. */
-export function isOpenForAssignment(b: Booking, now: Date): boolean {
-  return ASSIGNABLE_STATUSES.includes(b.status) && now.getTime() < startOf(b).getTime();
-}
-
 // ── assignment ──
 
+/** The offer part of an `assignBooking` input: null for a member; the agreed fee for a collaborator (Decision 13). */
+function collaboratorOfferOf(r: Record<string, unknown>): { readonly agreedFee: number } | null {
+  const kind = r.assigneeKind ?? 'member';
+  if (kind !== 'member' && kind !== 'collaborator') throw new DomainError('invalid_argument', 'assigneeKind');
+  if (kind === 'member') return null;
+  if (!isValidRecruitFee(r.agreedFee)) throw new DomainError('invalid_argument', 'agreedFee');
+  return { agreedFee: r.agreedFee };
+}
+
 /**
- * The studio owner assigns (or reassigns) a member (Decision 10). The studio must still take orders, the
- * assignee passes #198's gate (verified, not blocked with the customer) and must be free that day.
+ * The studio owner assigns (or reassigns) a member (Decision 10), or offers the booking to an active
+ * collaborator with `{assigneeKind: 'collaborator', agreedFee}` (S27 Decision 13). The studio must still take
+ * orders, the assignee passes #198's gate (verified, not blocked with the customer) and must be free that day.
+ * A new assignment replaces a pending or accepted collaborator's job (`replaced`).
  */
 export async function assignBooking(deps: StudioBookingDeps, callerId: string, raw: unknown): Promise<Booking> {
   const r = fields(raw);
   const bookingId = idField(r, 'bookingId');
   const assigneeId = idField(r, 'assigneeId');
+  const offer = collaboratorOfferOf(r);
   const now = deps.clock.now();
   const nowIso = now.toISOString();
 
@@ -125,8 +140,9 @@ export async function assignBooking(deps: StudioBookingDeps, callerId: string, r
   if (booking.photographerId !== callerId) throw new DomainError('permission_denied');
   // #194 Decision 7: a spot booking keeps the schedule's member (cancel and book again to change it).
   if (booking.spotScheduleId !== undefined) throw new DomainError('not_eligible');
+  if (offer !== null) return offerToCollaborator(deps, booking, assigneeId, offer.agreedFee);
   const kind = await deps.roster.relationOf(booking.photographerId, assigneeId);
-  if (kind === null) throw new DomainError('permission_denied');
+  if (kind !== 'member') throw new DomainError('permission_denied');
   if (!(await deps.providers.acceptsOrders(booking.photographerId))) throw new DomainError('not_accepting_orders');
   const blocker = await orderBlocker(deps, { customerId: booking.customerId, providerId: assigneeId });
   if (blocker !== null) throw new DomainError(blocker);
@@ -134,33 +150,34 @@ export async function assignBooking(deps: StudioBookingDeps, callerId: string, r
   return deps.store.runTransaction(async (tx) => {
     const b = await tx.getBooking(booking.id);
     if (!b || b.version !== booking.version) throw new DomainError('conflict');
-    const startsAt = startOf(b);
     if (!isOpenForAssignment(b, now)) throw new DomainError('not_eligible');
     if (b.assigneeId === assigneeId) throw new DomainError('conflict');
     // The member may have been removed since the roster check: the member document is the membership lock.
-    if (kind === 'member' && (await tx.getMemberStudio(assigneeId)) !== b.photographerId) {
+    if ((await tx.getMemberStudio(assigneeId)) !== b.photographerId) {
       throw new DomainError('permission_denied');
     }
     const day = await tx.getAvailabilityDay(assigneeId, b.day);
     if (day && day.bookingId !== b.id) throw new DomainError('day_taken');
-    const oldDay = b.assigneeId ? await tx.getAvailabilityDay(b.assigneeId, b.day) : null;
+    // A collaborator whose offer still waits was never the assignee: no day, no late reassignment.
+    const previous = confirmedAssigneeId(b);
+    const oldDay = previous ? await tx.getAvailabilityDay(previous, b.day) : null;
     const load = await tx.getStudioDayLoad(b.photographerId, b.day);
+    const oldJob = await liveJobOf(tx, b);
     // ---- writes ----
-    const late = !!b.assigneeId && !!b.assignDeadline && now.getTime() >= Date.parse(b.assignDeadline);
+    const late = !!previous && !!b.assignDeadline && now.getTime() >= Date.parse(b.assignDeadline);
     await tx.setAvailabilityDay(assigneeId, b.day, { state: 'booked', bookingId: b.id });
-    if (b.assigneeId && oldDay?.bookingId === b.id) await tx.deleteAvailabilityDay(b.assigneeId, b.day);
+    if (previous && oldDay?.bookingId === b.id) await tx.deleteAvailabilityDay(previous, b.day);
     await tx.setStudioDayLoad(studioDayLoadWith(load, { studioId: b.photographerId, day: b.day }, b.id, 'assigned', nowIso));
     if (late) tx.incrementStudioCounter(b.photographerId, 'lateReassignCount');
+    if (oldJob) tx.putCollabJob({ ...oldJob, offerStatus: 'replaced', updatedAt: now });
 
-    const entry: StudioAssignment = { assigneeId, assigneeKind: kind, at: nowIso, by: callerId, reason: null, late };
-    const status =
-      b.status === 'accepted' && startsAt.getTime() - now.getTime() <= STUDIO_ASSIGN_LEAD_HOURS * HOUR_MS
-        ? 'upcoming'
-        : b.status;
+    const entry: StudioAssignment = { assigneeId, assigneeKind: 'member', at: nowIso, by: callerId, reason: null, late };
+    const status = statusOnceAssigned(b, now);
     const next: Booking = {
       ...b,
       assigneeId,
-      assigneeKind: kind,
+      assigneeKind: 'member',
+      assigneeAccepted: true,
       assignStatus: 'assigned',
       assignedAt: nowIso,
       assignments: [...(b.assignments ?? []), entry],
@@ -266,7 +283,8 @@ export async function requestAssigneeChange(deps: StudioBookingDeps, customerId:
     const b = await tx.getBooking(bookingId);
     if (!b) throw new DomainError('not_found');
     if (b.changeRequest) throw new DomainError('conflict');
-    if (!isOpenForAssignment(b, now) || !b.assigneeId) throw new DomainError('not_eligible');
+    // The customer sees no assignee while a collaborator's offer waits.
+    if (!isOpenForAssignment(b, now) || !confirmedAssigneeId(b)) throw new DomainError('not_eligible');
     const respondBy = Math.min(now.getTime() + CHANGE_RESPOND_HOURS * HOUR_MS, startOf(b).getTime());
     const next: Booking = {
       ...b,
@@ -320,7 +338,11 @@ export async function declineAssigneeChange(deps: StudioBookingDeps, studioId: s
 
 // ── "Trả việc" ──
 
-/** The assignee hands the job back (Decision 14): the studio is told; `assigneeId` stays until it reassigns. */
+/**
+ * The assignee hands the job back (Decision 14): the studio is told; `assigneeId` stays until it reassigns. A
+ * collaborator returns only an accepted job (a pending offer is declined instead): its collab job becomes
+ * `returned`, with no pay record (S27 Decision 14).
+ */
 export async function returnAssignment(deps: StudioBookingDeps, assigneeId: string, raw: unknown): Promise<Booking> {
   const r = fields(raw);
   const bookingId = idField(r, 'bookingId');
@@ -329,16 +351,19 @@ export async function returnAssignment(deps: StudioBookingDeps, assigneeId: stri
   const nowIso = now.toISOString();
 
   const pre = await studioBooking(deps, bookingId);
-  if (!pre.assigneeId || pre.assigneeId !== assigneeId) throw new DomainError('permission_denied');
+  if (confirmedAssigneeId(pre) !== assigneeId) throw new DomainError('permission_denied');
   // #194 Decision 7: a spot booking keeps the schedule's member (cancel and book again to change it).
   if (pre.spotScheduleId !== undefined) throw new DomainError('not_eligible');
 
   return deps.store.runTransaction(async (tx) => {
     const b = await tx.getBooking(bookingId);
     if (!b) throw new DomainError('not_found');
-    if (b.assigneeId !== assigneeId) throw new DomainError('permission_denied');
+    if (confirmedAssigneeId(b) !== assigneeId) throw new DomainError('permission_denied');
     if (!isOpenForAssignment(b, now)) throw new DomainError('not_eligible');
     if (b.assignmentReturned) throw new DomainError('conflict');
+    const job = await liveJobOf(tx, b);
+    // ---- writes ----
+    if (job) tx.putCollabJob({ ...job, offerStatus: 'returned', updatedAt: now });
     const next: Booking = {
       ...b,
       assignmentReturned: { at: nowIso, reason },

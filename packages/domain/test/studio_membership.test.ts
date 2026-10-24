@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   canJoinAsMember,
+  checkMemberActivation,
   foldNameKey,
   inCooldown,
   inviteCandidateState,
@@ -95,5 +96,41 @@ describe('studio membership rules', () => {
     // An invite past expiresAt (not swept yet) no longer counts.
     assert.equal(inviteCandidateState('s1', free, { ...open, expiresAt: '2026-10-10T10:00:00.000Z' }, now), 'invitable');
     assert.equal(inviteCandidateState('s1', free, null, now), 'invitable');
+  });
+
+  it('checkMemberActivation: membership_conflict, cooldown, studio_full, rate_limited, in that order', () => {
+    const now = new Date('2026-10-10T10:00:00.000Z');
+    const free = {
+      member: { studioId: null, studioCooldownUntil: null },
+      studio: { memberCount: 1, businessVerified: false },
+      openInvites: 1,
+      quota: null,
+      activeCollabWithStudio: false,
+    };
+    assert.equal(checkMemberActivation(free, now), null);
+    assert.equal(checkMemberActivation({ ...free, member: { studioId: 's2', studioCooldownUntil: null } }, now), 'membership_conflict');
+    assert.equal(
+      checkMemberActivation({ ...free, member: { studioId: null, studioCooldownUntil: '2026-10-11T00:00:00.000Z' } }, now),
+      'cooldown',
+    );
+    assert.equal(checkMemberActivation({ ...free, openInvites: 2 }, now), 'studio_full');
+    assert.equal(checkMemberActivation({ ...free, openInvites: 2, studio: { memberCount: 1, businessVerified: true } }, now), null);
+    assert.equal(
+      checkMemberActivation({ ...free, quota: { dayKey: '2026-10-10', studioActions: 5, memberActions: 0 } }, now),
+      'rate_limited',
+    );
+  });
+
+  it('an active collaboration with the same studio blocks activation with membership_conflict', () => {
+    const now = new Date('2026-10-10T10:00:00.000Z');
+    const state = {
+      member: { studioId: null, studioCooldownUntil: null },
+      studio: { memberCount: 0, businessVerified: false },
+      openInvites: 0,
+      quota: null,
+      activeCollabWithStudio: true,
+    };
+    assert.equal(checkMemberActivation(state, now), 'membership_conflict');
+    assert.equal(checkMemberActivation({ ...state, activeCollabWithStudio: false }, now), null);
   });
 });

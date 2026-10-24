@@ -45,7 +45,12 @@ import {
   afterMessage,
   chatIdFor,
   chatPreview,
+  EMPTY_COUNTERS,
+  recruitFilterKeys,
+  recruitMatchKeys,
+  recruitMatchKeysOf,
   type Chat,
+  type RecruitCounters,
   type EarningItem,
   type Message,
   type EventRecord,
@@ -74,6 +79,12 @@ import { identityToFirestore, verificationToFirestore } from '../src/infra/verif
 import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
 import { relationToFirestore } from '../src/infra/studio_firestore.js';
 import {
+  applicationToDoc,
+  collaborationToDoc,
+  countersToDoc,
+  recruitPostToDoc,
+} from '../src/infra/recruit_mapping.js';
+import {
   spotToFirestore,
   scheduleToFirestore,
   offerToFirestore,
@@ -95,6 +106,8 @@ export const CUC = 'seed-photographer-cuc';
 export const DUNG = 'seed-photographer-dung';
 /** Unverified photographer whose S21 verification waits for staff (`npm run verifications -- approve`). */
 export const GIANG = 'seed-photographer-giang';
+/** Verified individual in TP.HCM, in no studio: the S27 applicant Cúc can accept (#151). */
+export const HOA = 'seed-photographer-hoa';
 /** Staff account with the custom claim `staffRole: 'admin'` (reviews awards; see `applySeed`). */
 export const ADMIN = 'seed-staff-admin';
 
@@ -117,6 +130,7 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: CUC, email: 'cuc.studio@seed.test', displayName: 'Cúc Studio (seed)', role: 'photographer' },
   { uid: DUNG, email: 'dung.artist@seed.test', displayName: 'Dũng (seed, nghệ sĩ)', role: 'photographer' },
   { uid: GIANG, email: 'giang.pending@seed.test', displayName: 'Giang (seed, chờ duyệt)', role: 'photographer', phoneNumber: '+84976000001' },
+  { uid: HOA, email: 'hoa.ctv@seed.test', displayName: 'Hòa (seed, CTV)', role: 'photographer' },
   { uid: ADMIN, email: 'admin.staff@seed.test', displayName: 'Admin (seed, nhân viên)', role: 'customer', staffRole: 'admin' },
 ];
 
@@ -191,6 +205,16 @@ export const SEED_PHOTOGRAPHERS: readonly SeedPhotographer[] = [
     specialties: ['portrait'],
     channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
     numbers: { phone: '+84976000001' },
+  },
+  {
+    uid: HOA,
+    verified: true,
+    bio: 'Chụp cưới và gia đình, nhận làm cộng tác viên.',
+    city: 'TP.HCM',
+    radiusKm: 20,
+    specialties: ['wedding', 'family'],
+    channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    numbers: { phone: '+84909000001' },
   },
 ];
 
@@ -369,6 +393,121 @@ function studioMemberDocuments(now: Date): SeedDocument[] {
     rel(AN, anInvited, { status: 'active', respondedAt: joinedAt.toISOString(), joinedAt: joinedAt.toISOString(), version: 2 }),
     rel(BINH, new Date(now.getTime() - 2 * DAY_MS), {}),
     rel(DUNG, new Date(now.getTime() - DAY_MS), { status: 'requested', initiatedBy: 'member' }),
+  ];
+}
+
+// ---- S27 studio recruiting (#151) ----
+
+export const SEED_RECRUIT_POST_CUC = 'seed-recruit-cuc-ctv';
+export const SEED_COLLAB_DEFAULT_FEE = 600_000;
+
+/**
+ * Cúc's open collaborator post (TP.HCM Q1/Q3, cưới and gia đình; keys computed by the domain), two applied
+ * applications to it: Hòa's (a verified individual in no studio: Cúc can accept it, the S27.05 accept path) and
+ * An's (An is also Cúc's S26 member, so Cúc can only decline it: accepting is membership_conflict), the active
+ * collaboration Cúc–Dũng (default fee 600.000₫) and the counters these imply.
+ */
+function recruitDocuments(now: Date): SeedDocument[] {
+  const createdAt = new Date(now.getTime() - 2 * DAY_MS);
+  const cuc = SEED_USERS.find((u) => u.uid === CUC)?.displayName ?? '';
+  const dung = SEED_USERS.find((u) => u.uid === DUNG)?.displayName ?? '';
+  const an = SEED_USERS.find((u) => u.uid === AN)?.displayName ?? '';
+  const hoa = SEED_USERS.find((u) => u.uid === HOA)?.displayName ?? '';
+  const areas = ['hcm-q1', 'hcm-q3'];
+  const specialties = ['wedding', 'family'];
+  const title = 'Tuyển CTV chụp cưới cuối tuần';
+  const appliedAt = new Date(now.getTime() - DAY_MS);
+  const hoaAppliedAt = new Date(now.getTime() - 3 * HOUR_MS);
+  const activeAt = new Date(now.getTime() - 10 * DAY_MS);
+  const counters = (patch: Partial<RecruitCounters>): Record<string, unknown> => countersToDoc({ ...EMPTY_COUNTERS, ...patch });
+  return [
+    {
+      path: `recruitPosts/${SEED_RECRUIT_POST_CUC}`,
+      data: recruitPostToDoc({
+        id: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        studio: { name: cuc, avatarUrl: null, businessVerified: false },
+        kind: 'collaborator',
+        title,
+        specialties,
+        areas,
+        frequency: 'weekly',
+        feeHint: { type: 'per_shoot', amount: 800_000 },
+        requirements: 'Có máy full-frame, đã chụp cưới ít nhất một năm.',
+        status: 'open',
+        renewed: false,
+        applicationCount: 2,
+        matchKeys: recruitMatchKeys(areas, specialties),
+        filterKeys: recruitFilterKeys({ kind: 'collaborator', areas, specialties }),
+        createdAt,
+        updatedAt: hoaAppliedAt,
+        expiresAt: new Date(createdAt.getTime() + 30 * DAY_MS),
+        closedAt: null,
+      }),
+    },
+    {
+      path: `recruitApplications/${SEED_RECRUIT_POST_CUC}_${AN}`,
+      data: applicationToDoc({
+        id: `${SEED_RECRUIT_POST_CUC}_${AN}`,
+        postId: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        applicantId: AN,
+        kind: 'collaborator',
+        postTitle: title,
+        applicant: { name: an, avatarUrl: null },
+        status: 'applied',
+        message: 'Em chụp cưới 3 năm, rảnh cuối tuần.',
+        samplePostIds: [],
+        termsAcceptedAt: appliedAt,
+        createdAt: appliedAt,
+        expiresAt: new Date(appliedAt.getTime() + 7 * DAY_MS),
+        respondedAt: null,
+      }),
+    },
+    {
+      path: `recruitApplications/${SEED_RECRUIT_POST_CUC}_${HOA}`,
+      data: applicationToDoc({
+        id: `${SEED_RECRUIT_POST_CUC}_${HOA}`,
+        postId: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        applicantId: HOA,
+        kind: 'collaborator',
+        postTitle: title,
+        applicant: { name: hoa, avatarUrl: null },
+        status: 'applied',
+        message: 'Em ở Quận 3, chụp cưới 2 năm, nhận được các buổi cuối tuần.',
+        samplePostIds: [],
+        termsAcceptedAt: hoaAppliedAt,
+        createdAt: hoaAppliedAt,
+        expiresAt: new Date(hoaAppliedAt.getTime() + 7 * DAY_MS),
+        respondedAt: null,
+      }),
+    },
+    {
+      path: `studio_collaborations/${CUC}_${DUNG}`,
+      data: collaborationToDoc({
+        id: `${CUC}_${DUNG}`,
+        studioId: CUC,
+        collaboratorId: DUNG,
+        studio: { name: cuc, avatarUrl: null },
+        collaborator: { name: dung, avatarUrl: null },
+        status: 'active',
+        initiatedBy: 'studio',
+        applicationId: null,
+        defaultFee: SEED_COLLAB_DEFAULT_FEE,
+        termsAcceptedAt: activeAt,
+        createdAt: new Date(activeAt.getTime() - DAY_MS),
+        expiresAt: new Date(activeAt.getTime() + 6 * DAY_MS),
+        activeAt,
+        endedAt: null,
+        endedBy: null,
+        updatedAt: activeAt,
+      }),
+    },
+    { path: `photographers/${CUC}/private/recruit`, data: counters({ openPostCount: 1, activeCollabCount: 1 }) },
+    { path: `photographers/${DUNG}/private/recruit`, data: counters({ activeCollabCount: 1 }) },
+    { path: `photographers/${AN}/private/recruit`, data: counters({ openApplicationCount: 1 }) },
+    { path: `photographers/${HOA}/private/recruit`, data: counters({ openApplicationCount: 1 }) },
   ];
 }
 
@@ -766,6 +905,13 @@ export function seedDocuments(now: Date): SeedDocument[] {
         // S26: the invite-search key, Cúc's member counts (An is verified) and An's membership (#136).
         nameKey: foldNameKey(SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? ''),
         ...(p.uid === CUC ? { memberCount: 1, assignableMembers: 1 } : {}),
+        // S27 (#151 Decision 7): what onPhotographerWrite keeps (Cúc, a studio, matches nothing).
+        recruitMatchKeys: [...recruitMatchKeysOf({
+          role: SEED_USERS.find((u) => u.uid === p.uid)?.role,
+          providerType: p.providerType,
+          serviceArea: { city: p.city, radiusKm: p.radiusKm },
+          specialties: p.specialties,
+        })].sort(),
         ...(p.uid === AN
           ? { studioId: CUC, studioJoinedAt: new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS) }
           : {}),
@@ -1141,6 +1287,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...directChatDocuments(now, docs));
   docs.push(...verificationDocuments(now));
   docs.push(...studioMemberDocuments(now));
+  docs.push(...recruitDocuments(now));
   for (const l of studioLoads(now)) {
     docs.push({
       path: `studio_day_load/${CUC}_${l.day}`,
@@ -1270,7 +1417,7 @@ function verificationDocuments(now: Date): SeedDocument[] {
   };
 
   // Approved: mirrors `verified: true` on photographers/{uid}. An's identity doc is the payout seed's.
-  for (const [uid, name] of [[AN, SEED_AN_LEGAL_NAME.toUpperCase()], [CUC, SEED_CUC_LEGAL_NAME], [DUNG, 'LÊ VĂN DŨNG']] as const) {
+  for (const [uid, name] of [[AN, SEED_AN_LEGAL_NAME.toUpperCase()], [CUC, SEED_CUC_LEGAL_NAME], [DUNG, 'LÊ VĂN DŨNG'], [HOA, 'PHẠM THỊ HÒA']] as const) {
     docs.push({ path: `verifications/${uid}`, data: verificationToFirestore(done(uid, name, at, 'approved')) });
   }
   identity(CUC, SEED_CUC_LEGAL_NAME, '1988-03-08', 'female', at);

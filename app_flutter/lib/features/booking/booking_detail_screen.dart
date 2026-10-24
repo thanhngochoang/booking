@@ -26,6 +26,7 @@ import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
 import 'package:photobooking/features/booking/widgets/studio_assignee_block.dart';
+import 'package:photobooking/features/booking/widgets/studio_offer_line.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/delivery/delivery_review_screen.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
@@ -389,9 +390,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         _ => true,
       };
 
-  /// The assigned member's name for the timeline; '' while unknown.
+  /// The assigned member's name for the timeline; '' while unknown (and for
+  /// a collaborator who has not accepted yet, S27).
   String _assigneeName(Booking b) {
-    final id = b.studio?.assigneeId;
+    final id = b.studio?.confirmedAssigneeId;
     if (id == null) return '';
     return ref
             .watch(photographerProfileProvider(id))
@@ -459,6 +461,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
           const SizedBox(height: AppSpace.s4),
+          // S27 studio side: a collaborator offer waiting or declined.
+          if (!customer && !assignee && b.studio != null) ...[
+            StudioOfferLine(booking: b),
+            const SizedBox(height: AppSpace.s2),
+          ],
           if (customer && _showsStudioBlock(b)) ...[
             StudioAssigneeBlock(
               booking: b,

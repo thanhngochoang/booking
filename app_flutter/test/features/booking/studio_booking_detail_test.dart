@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/collab/collab_providers.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
@@ -11,6 +13,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
+import '../../support/recruit_world.dart' show makeCollabJob;
 
 /// Shoot on Monday 12/10 15:30–19:30 Vietnam (08:30 UTC); the studio must
 /// name the photographer by Sunday 11/10 15:30 (08:30 UTC).
@@ -466,4 +469,153 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  group('S27 collaborator (S05.02-studio-collab)', () {
+    const lan = PhotographerProfile(
+      summary: PhotographerSummary(
+        id: 'lan',
+        displayName: 'Lan Phương',
+        verified: true,
+        acceptingOrders: true,
+        reviewCount: 20,
+        tomatoCount: 19,
+        brickCount: 1,
+        tomatoPct: 95,
+        completedCount: 42,
+      ),
+      intro: PhotographerIntro(onboardingComplete: true),
+    );
+    const profiles = {'cuc': _studio, 'minh': _member, 'lan': lan};
+
+    /// An offer to Lan Phương made at [_weekBefore] (6 h to answer), then
+    /// accepted ([accepted]) or declined ([declined]).
+    Booking collab({bool accepted = false, bool declined = false}) {
+      final b = _booking();
+      final offerAt = _weekBefore.subtract(const Duration(minutes: 1));
+      return b.copyWith(
+        studio: b.studio!.copyWith(
+          assigneeId: declined ? null : 'lan',
+          assigneeKind: declined ? null : 'collaborator',
+          assigneeAccepted: accepted,
+          assignStatus: accepted
+              ? StudioAssignStatus.assigned
+              : StudioAssignStatus.unassigned,
+          assignedAt: accepted ? DateTime.utc(2026, 10, 8, 3) : null,
+          assignments: [
+            StudioAssignment(
+              assigneeId: 'lan',
+              assigneeKind: 'collaborator',
+              at: offerAt,
+              by: 'cuc',
+              offerExpiresAt: offerAt.add(const Duration(hours: 6)),
+              acceptedAt: accepted ? _weekBefore : null,
+              declinedAt: declined ? _weekBefore : null,
+            ),
+          ],
+        ),
+      );
+    }
+
+    /// Studio Cúc's job record for Lan with the agreed fee: the customer's
+    /// screen must neither read it nor show the amount.
+    late _CountingCollabs collabs;
+
+    Future<void> pumpAs(
+      WidgetTester tester,
+      Booking b, {
+      required String uid,
+    }) async {
+      collabs = _CountingCollabs(uid: uid)
+        ..seedJob(
+          makeCollabJob(
+            bookingId: 'b1',
+            studioId: 'cuc',
+            collaboratorId: 'lan',
+            agreedFee: 1750000,
+          ),
+        );
+      final repo = RecordingBookingRepository()..seedBooking(b);
+      await pumpBookingDetail(
+        tester,
+        uid: uid,
+        bookings: repo,
+        now: _weekBefore,
+        features: _chatOn,
+        profiles: profiles,
+        extraOverrides: [collabRepositoryProvider.overrideWithValue(collabs)],
+      );
+      await _settle(tester);
+    }
+
+    testWidgets('pending collaborator offer still shows the S26 "chưa giao" '
+        'state, not the collaborator', (tester) async {
+      await pumpAs(tester, collab(), uid: detailCustomerUid);
+      expect(find.byKey(const Key('assignee-waiting')), findsOneWidget);
+      expect(find.byType(AssigneeCard), findsNothing);
+      expect(find.textContaining('Lan Phương'), findsNothing);
+      expect(find.byKey(const Key('studio-offer-line')), findsNothing);
+    });
+
+    testWidgets('accepted collaborator shows the block with "Cộng tác với '
+        '{Studio}"', (tester) async {
+      await pumpAs(tester, collab(accepted: true), uid: detailCustomerUid);
+      expect(find.byType(AssigneeCard), findsOneWidget);
+      expect(find.text('Lan Phương'), findsOneWidget);
+      expect(find.text('Cộng tác với Studio Mây'), findsOneWidget);
+      expect(find.textContaining('thợ của Studio Mây'), findsNothing);
+      // Decision 3: the fee lives in collab_jobs, which the customer's
+      // screen never reads, so the amount can never show.
+      expect(collabs.reads, 0);
+      expect(find.textContaining('1.750.000'), findsNothing);
+    });
+
+    testWidgets('studio side: pending shows "Chờ {name} nhận · còn {left}"', (
+      tester,
+    ) async {
+      await pumpAs(tester, collab(), uid: 'cuc');
+      expect(
+        find.text('Chờ Lan Phương nhận · còn 5 giờ 59 phút'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('studio side: declined shows "{name} đã từ chối. Giao người '
+        'khác trước {deadline}."', (tester) async {
+      await pumpAs(tester, collab(declined: true), uid: 'cuc');
+      expect(
+        find.text(
+          'Lan Phương đã từ chối. Giao người khác trước 15:30 CN 11/10.',
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+}
+
+/// A [FakeCollabRepository] that counts reads of the job records.
+class _CountingCollabs extends FakeCollabRepository {
+  _CountingCollabs({super.uid});
+
+  int reads = 0;
+
+  @override
+  Stream<List<CollabJob>> watchJobsAsStudio(String studioId, {int limit = 50}) {
+    reads++;
+    return super.watchJobsAsStudio(studioId, limit: limit);
+  }
+
+  @override
+  Stream<List<CollabJob>> watchJobsAsCollaborator(
+    String uid, {
+    int limit = 50,
+  }) {
+    reads++;
+    return super.watchJobsAsCollaborator(uid, limit: limit);
+  }
+
+  @override
+  Future<List<CollabJob>> jobsDueInMonth(String studioId, int year, int month) {
+    reads++;
+    return super.jobsDueInMonth(studioId, year, month);
+  }
 }

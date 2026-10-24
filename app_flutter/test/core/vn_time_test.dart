@@ -58,4 +58,20 @@ void main() {
     expect(dayKeyOf(DateTime(2026, 1, 5, 23, 59)), '2026-01-05');
     expect(dayKeyOf(DateTime.utc(999, 3, 4)), '0999-03-04');
   });
+
+  test('vnDaysBetween counts Vietnam calendar days, signed', () {
+    // 23:30 and 00:30 the next day in Vietnam are one day apart.
+    final late = DateTime.utc(2026, 10, 20, 16, 30);
+    final early = DateTime.utc(2026, 10, 20, 17, 30);
+    expect(vnDaysBetween(late, early), 1);
+    expect(vnDaysBetween(early, late), -1);
+    expect(vnDaysBetween(early, early.add(const Duration(hours: 20))), 0);
+    expect(
+      vnDaysBetween(
+        DateTime.utc(2026, 10, 1, 3),
+        DateTime.utc(2026, 10, 15, 3),
+      ),
+      14,
+    );
+  });
 }

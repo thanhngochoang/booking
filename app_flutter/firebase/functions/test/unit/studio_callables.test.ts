@@ -333,6 +333,8 @@ describe('studio booking callables', () => {
       assert.ok(deps.blocks instanceof FirestoreBlockGate);
       assert.equal(typeof deps.roster.relationOf, 'function');
       assert.equal(typeof deps.store.findUnassignedStudioBookingsDue, 'function');
+      // S27 (#151): collaborator-offer notices are sent from these deps
+      assert.ok(deps.notify, 'notify wired');
     }
   });
 });

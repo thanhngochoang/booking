@@ -40,6 +40,7 @@ class PostPickerGrid extends StatelessWidget {
     required this.selected,
     required this.onToggle,
     this.maxSelected,
+    this.crossAxisCount = columns,
   });
 
   final List<PostPickItem> items;
@@ -48,6 +49,9 @@ class PostPickerGrid extends StatelessWidget {
   final List<String> selected;
   final ValueChanged<String> onToggle;
   final int? maxSelected;
+
+  /// Tiles per row; S27.03 shows five small ones.
+  final int crossAxisCount;
 
   static const int columns = 3;
 
@@ -58,8 +62,8 @@ class PostPickerGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         mainAxisSpacing: AppSpace.s1,
         crossAxisSpacing: AppSpace.s1,
       ),

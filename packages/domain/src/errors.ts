@@ -66,6 +66,10 @@ export const ERROR_CODES = [
   'already_assigned',
   /** Chụp ngay (#140): the point is outside every open city. */
   'outside_service_area',
+  /** S27 (#151): a studio or collaborator reached its collaboration cap (5/50 collaborators, 5 per collaborator, 5 pending invites). */
+  'collab_full',
+  /** S27 (#151): the studio is temporarily blocked from recruiting after unpaid-fee flags (no new posts, invites or collaborator jobs). */
+  'recruit_blocked',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

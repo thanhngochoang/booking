@@ -19,6 +19,8 @@ export class MemoryStudioStore implements StudioStore {
   readonly openAssignments = new Map<string, number>();
   /** Seed (#194): the days of each open spot schedule naming a member, key `${studioId}/${memberId}`. */
   readonly openSpotScheduleDays = new Map<string, string[][]>();
+  /** Seed (S27): pairs `${studioId}_${uid}` with an active collaboration. */
+  readonly activeCollaborations = new Set<string>();
   /** Committed write count. */
   writes = 0;
   /** Transactions opened (committed or not). */
@@ -28,6 +30,10 @@ export class MemoryStudioStore implements StudioStore {
 
   seedProfile(p: StudioProfile): void {
     this.profiles.set(p.uid, p);
+  }
+
+  seedActiveCollaboration(studioId: string, uid: string): void {
+    this.activeCollaborations.add(`${studioId}_${uid}`);
   }
 
   setOpenAssignments(studioId: string, memberId: string, n: number): void {
@@ -110,6 +116,10 @@ export class MemoryStudioStore implements StudioStore {
       getQuota: async (uid) => {
         guardRead('getQuota');
         return this.quotas.get(uid) ?? null;
+      },
+      activeCollaborationOf: async (studioId, uid) => {
+        guardRead('activeCollaborationOf');
+        return this.activeCollaborations.has(`${studioId}_${uid}`);
       },
       putRelation: (r) => write(() => this.relations.set(r.id, r)),
       setMemberStudio: (memberId, patch) =>

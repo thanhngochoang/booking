@@ -64,6 +64,11 @@ import 'package:photobooking/features/saved/followers_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
+import 'package:photobooking/features/collab/collab_screen.dart';
+import 'package:photobooking/features/recruit/recruit_detail_screen.dart';
+import 'package:photobooking/features/recruit/recruit_edit_screen.dart';
+import 'package:photobooking/features/recruit/recruit_list_screen.dart';
+import 'package:photobooking/features/recruit/studio_recruit_screen.dart';
 import 'package:photobooking/features/safety/blocked_users_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
@@ -113,9 +118,13 @@ String? computeRedirect({
   bool isAccountLocked = false,
   required String location,
   String? from,
+  String? target,
 }) {
+  // Where the splash returns to: the whole URI, query included, so a
+  // cold-start deep link like `/collab?offer=…` keeps its parameters.
+  final resume = target ?? location;
   final onAuth = _authRoutes.contains(location);
-  if (authLoading) return location == _splashRoute ? null : _toSplash(location);
+  if (authLoading) return location == _splashRoute ? null : _toSplash(resume);
   if (!signedIn) {
     if (location == _splashRoute) return '/login';
     return onAuth ? null : '/login';
@@ -124,7 +133,7 @@ String? computeRedirect({
     return location == _sessionErrorRoute ? null : _sessionErrorRoute;
   }
   if (!profileLoaded) {
-    return location == _splashRoute ? null : _toSplash(location);
+    return location == _splashRoute ? null : _toSplash(resume);
   }
   if (isAccountLocked) {
     return location == _restoreAccountRoute ? null : _restoreAccountRoute;
@@ -134,7 +143,10 @@ String? computeRedirect({
   }
   if (needsRole) return location == _onboardingRoute ? null : _onboardingRoute;
   if (location == _splashRoute) {
-    return (from == null || _nonResumable.contains(from))
+    // A malformed `from` (hand-typed `/splash?from=::`) goes home; parsing
+    // must not throw inside the top-level redirect.
+    final fromPath = from == null ? null : Uri.tryParse(from)?.path;
+    return (fromPath == null || _nonResumable.contains(fromPath))
         ? AppTab.home.path
         : from;
   }
@@ -145,6 +157,12 @@ String? computeRedirect({
 /// S06.04 and S08.01 are for photographers only (spec screens/README.md "Vai trò").
 String? photographerOnlyRedirect(UserRole? role) =>
     role == UserRole.photographer ? null : AppTab.home.path;
+
+/// S27.04 and S27.05 belong to a studio: anyone not in photographer mode
+/// goes to S27.01 (which shows them only the R3 note); the screens send a
+/// photographer who is not a studio there too once its facts load.
+String? studioRecruitRedirect(UserRole? role) =>
+    role == UserRole.photographer ? null : '/recruit';
 
 /// S13 Chụp ngay is for customers, and only while it is on (Decision 9, 14).
 /// A role not known yet (profile loading) does not redirect: a cold-start
@@ -179,6 +197,7 @@ class RouterNotifier extends ChangeNotifier {
       isAccountLocked: lock.value != null,
       location: state.matchedLocation,
       from: state.uri.queryParameters['from'],
+      target: state.uri.toString(),
     );
   }
 }
@@ -571,6 +590,52 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.queryParameters['tab'],
           ),
         ),
+      ),
+      // S27.01 / S27.02: provider accounts only; the screens query nothing
+      // for anyone else (R3).
+      GoRoute(
+        path: '/recruit',
+        builder: (_, state) =>
+            RecruitListScreen(studioId: state.uri.queryParameters['studioId']),
+      ),
+      GoRoute(
+        path: '/recruit/:postId',
+        builder: (_, state) =>
+            RecruitDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      // S27.05 (query `post`), S27.04 new and edit: studios only.
+      GoRoute(
+        path: '/studio/recruit',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            StudioRecruitScreen(postId: state.uri.queryParameters['post']),
+      ),
+      GoRoute(
+        path: '/studio/recruit/new',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, _) => const RecruitEditScreen(),
+      ),
+      GoRoute(
+        path: '/studio/recruit/:postId/edit',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            RecruitEditScreen(postId: state.pathParameters['postId']),
+      ),
+      // S27.06 (query `offer` opens S27.07): providers only; the screen
+      // picks the studio or the photographer view from the account's facts.
+      GoRoute(
+        path: '/collab',
+        redirect: (_, _) => photographerOnlyRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            CollabScreen(offerBookingId: state.uri.queryParameters['offer']),
       ),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
       GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),

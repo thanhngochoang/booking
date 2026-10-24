@@ -20,6 +20,13 @@
 
 **Branch:** `plan/151-s27-studio-recruiting` from `origin/develop` after #136 is merged; PR into `develop` titled `feat(recruit): S27 studio recruiting and per-job collaborators [#151]`.
 
+**Corrections after execution (2026-10-24; detail in `docs/superpowers/handover/ledger-s27-studio-recruiting.md`):**
+- Task 1 (mock frames, `ScreenCodes` S27.01–S27.07, spec §2 rows) was delivered by PR #187 (`9d1b7f43`); this unit ran Tasks 2–10.
+- The milestone port `shotReleased(bookingId): boolean` is `shootMilestone(bookingId): 'released' | 'waiting' | 'refunded'` (pure `shootMilestoneState(payments)`); `refunded` ends the pay check with no pay record.
+- `payPending` is keyed on `pay.checkAfter` (accepted, `payStatus none`, `checkAfter <= now`, pushed 6 h while the milestone waits), not `shootEndsAt`; its index is `(offerStatus, payStatus, pay.checkAfter)`.
+- `takeDaily` / `isValidFee` / `Daily` / `NoticeDaily` are exported as `takeRecruitDaily` / `isValidRecruitFee` / `RecruitDaily` / `RecruitNoticeDaily`.
+- `AppIcons.eventRepeat` was not added: `AppIcons.calendarRepeat` is the same glyph (`event_repeat`), and `app_icons_test` forbids two names for one glyph.
+
 ## Contract with existing code
 
 Checked 2026-10-07 on `develop` (94bda85). Task 2 Step 1 (domain/Functions/rules) and the first step of Tasks 6–9 (app) re-check; adapt and ledger any difference. If a member named here does not exist, stop and report instead of guessing.

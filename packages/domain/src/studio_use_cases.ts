@@ -2,6 +2,7 @@ import { formatVnDate } from './booking_policy.js';
 import { DomainError } from './errors.js';
 import {
   canJoinAsMember,
+  checkMemberActivation,
   cooldownUntil,
   inCooldown,
   inviteExpiresAt,
@@ -150,7 +151,10 @@ async function readNewPair(
   const member = requireJoinable(await tx.getProfile(memberId));
   const open = await tx.openRelationOf(studioId, memberId);
   const sameId = await tx.getRelation(relationId(studioId, memberId, now));
+  const collaborating = await tx.activeCollaborationOf(studioId, memberId);
   if (open !== null || sameId !== null) throw new DomainError('conflict');
+  // S27 Decision 12: end the collaboration before joining the same studio as a member.
+  if (collaborating) throw new DomainError('membership_conflict');
   return { studio, member };
 }
 
@@ -257,6 +261,7 @@ export async function respondInvite(deps: StudioDeps, memberId: string, raw: unk
     if (rel.status !== 'invited') throw new DomainError('conflict');
     const member = await tx.getProfile(memberId);
     const studio = await tx.getProfile(rel.studioId);
+    const collaborating = await tx.activeCollaborationOf(rel.studioId, memberId);
     // ---- all reads above ----
     if (member === null || studio === null) throw new DomainError('not_found');
     if (isExpired(rel, now)) {
@@ -276,6 +281,7 @@ export async function respondInvite(deps: StudioDeps, memberId: string, raw: unk
       return { outcome: 'ok', change: { before: rel, after } };
     }
     assertFreeToJoin(member, now);
+    if (collaborating) throw new DomainError('membership_conflict');
     // The invite already holds its seat, so only the members count.
     if (studio.memberCount >= maxMembers(studio)) throw new DomainError('studio_full');
     return { outcome: 'ok', change: join(tx, rel, nowIso) };
@@ -299,6 +305,7 @@ export async function respondJoinRequest(deps: StudioDeps, studioId: string, raw
     const studio = await tx.getProfile(studioId);
     const openInvites = await tx.countOpenInvites(studioId, now);
     const quota = await tx.getQuota(studioId);
+    const activeCollabWithStudio = await tx.activeCollaborationOf(studioId, rel.memberId);
     // ---- all reads above ----
     if (member === null || studio === null) throw new DomainError('not_found');
     if (isExpired(rel, now)) {
@@ -317,9 +324,8 @@ export async function respondJoinRequest(deps: StudioDeps, studioId: string, raw
       tx.putRelation(after);
       return { outcome: 'ok', change: { before: rel, after } };
     }
-    assertFreeToJoin(member, now);
-    if (studio.memberCount + openInvites >= maxMembers(studio)) throw new DomainError('studio_full');
-    assertQuota(quota, 'studio', now);
+    const refusal = checkMemberActivation({ member, studio, openInvites, quota, activeCollabWithStudio }, now);
+    if (refusal !== null) throw new DomainError(refusal);
     const change = join(tx, rel, nowIso);
     tx.putQuota(studioId, spendQuota(quota, 'studio', now));
     return { outcome: 'ok', change };

@@ -1369,6 +1369,201 @@ alter table reviews
 -- khoá (booking_id, subject_type) đã có ở bảng reviews; booking studio có hai dòng: 'photographer' (thợ) và 'studio'
 ```
 
+### 2.13 Studio tuyển thợ và cộng tác viên (S27, #151)
+
+Theo `domain-model.md` mục 2.14. Chỉ là chuẩn đích: migration và route của máy chủ riêng cho S27 để Phase 2 (#90). Thù lao chỉ nằm ở `collab_jobs`, không có cột nào trên `bookings` hay `booking_assignments`.
+
+```sql
+create table recruit_posts (
+  id                       text primary key,                                   -- ULID
+  studio_id                text not null references photographers(user_id),
+  studio_name              text not null default '',                           -- ảnh chụp lúc tạo, sửa, gia hạn
+  studio_avatar_url        text,
+  studio_business_verified boolean not null default false,
+  kind                     text not null check (kind in ('collaborator','member')),
+  title                    text not null check (char_length(title) between 8 and 80),
+  frequency                text not null check (frequency in ('occasional','weekly','seasonal')),
+  fee_type                 text not null check (fee_type in ('per_shoot','negotiable')),
+  fee_amount               bigint check (fee_amount between 1000 and 100000000 and fee_amount % 1000 = 0),
+  currency                 char(3) not null default 'VND',
+  requirements             text not null default '' check (char_length(requirements) <= 600),
+  status                   text not null check (status in ('open','closed','expired')),
+  renewed                  boolean not null default false,
+  application_count        int not null default 0,
+  created_at               timestamptz not null default now(),
+  updated_at               timestamptz not null default now(),
+  expires_at               timestamptz not null,
+  closed_at                timestamptz,
+  check ((fee_type = 'per_shoot') = (fee_amount is not null))
+);
+create table recruit_post_specialties (   -- 1–4 mỗi tin
+  post_id    text not null references recruit_posts(id) on delete cascade,
+  specialty  text not null references taxonomy_items(id),
+  position   smallint not null,
+  primary key (post_id, specialty)
+);
+create table recruit_post_areas (         -- 1–5 mỗi tin, mã builtInAreas
+  post_id  text not null references recruit_posts(id) on delete cascade,
+  area_id  text not null,
+  position smallint not null,
+  primary key (post_id, area_id)
+);
+create index ix_recruit_posts_status_created on recruit_posts (status, created_at desc);
+create index ix_recruit_posts_studio on recruit_posts (studio_id, status, created_at desc);
+create index ix_recruit_posts_due on recruit_posts (status, expires_at) where status = 'open';
+-- matchKeys/filterKeys của Firestore không thành cột: lọc bằng join recruit_post_specialties/areas
+
+create table recruit_applications (
+  post_id           text not null references recruit_posts(id),
+  applicant_id      text not null references photographers(user_id),
+  studio_id         text not null references photographers(user_id),
+  kind              text not null check (kind in ('collaborator','member')),
+  post_title        text not null,
+  applicant_name    text not null default '',
+  applicant_avatar_url text,
+  status            text not null check (status in ('applied','accepted','declined','withdrawn','expired')),
+  message           text not null default '',                                 -- ≤ 400 điểm mã, kiểm ở use case
+  terms_accepted_at timestamptz,
+  created_at        timestamptz not null default now(),
+  expires_at        timestamptz not null,
+  responded_at      timestamptz,
+  primary key (post_id, applicant_id),                                          -- một ứng tuyển mỗi tin, mãi mãi
+  check (kind = 'member' or terms_accepted_at is not null)
+);
+create table recruit_application_samples (  -- 0–3 bài của chính người ứng tuyển
+  post_id      text not null,
+  applicant_id text not null,
+  sample_post_id text not null references posts(id),
+  position     smallint not null,
+  primary key (post_id, applicant_id, sample_post_id),
+  foreign key (post_id, applicant_id) references recruit_applications(post_id, applicant_id) on delete cascade
+);
+create index ix_recruit_applications_studio on recruit_applications (studio_id, post_id, status, created_at desc);
+create index ix_recruit_applications_applicant on recruit_applications (applicant_id, created_at desc);
+create index ix_recruit_applications_due on recruit_applications (status, expires_at) where status = 'applied';
+
+create table studio_collaborations (
+  studio_id         text not null references photographers(user_id),
+  collaborator_id   text not null references photographers(user_id),
+  seq               int not null,                                               -- tăng dần theo cặp: seq lớn nhất = quan hệ mới nhất (doc Firestore chính); history/{ulid} = các seq nhỏ hơn
+  status            text not null check (status in ('invited','requested','active','declined','cancelled','expired','ended')),
+  initiated_by      text not null check (initiated_by in ('studio','collaborator','application')),
+  application_post_id text,
+  default_fee       bigint check (default_fee between 1000 and 100000000 and default_fee % 1000 = 0),
+  terms_accepted_at timestamptz,
+  studio_name       text not null default '',
+  studio_avatar_url text,
+  collaborator_name text not null default '',
+  collaborator_avatar_url text,
+  created_at        timestamptz not null default now(),
+  expires_at        timestamptz not null,
+  active_at         timestamptz,
+  ended_at          timestamptz,
+  ended_by          text check (ended_by in ('studio','collaborator','system')),
+  updated_at        timestamptz not null default now(),
+  primary key (studio_id, collaborator_id, seq),
+  check (studio_id <> collaborator_id)
+);
+create unique index ux_studio_collaborations_open_pair on studio_collaborations (studio_id, collaborator_id) where status in ('invited','requested','active');
+create index ix_studio_collaborations_studio on studio_collaborations (studio_id, status, updated_at desc);
+create index ix_studio_collaborations_collaborator on studio_collaborations (collaborator_id, status, updated_at desc);
+create index ix_studio_collaborations_due on studio_collaborations (status, expires_at) where status = 'invited';
+
+create table collab_jobs (
+  booking_id         text not null references bookings(id),
+  collaborator_id    text not null references photographers(user_id),
+  studio_id          text not null references photographers(user_id),
+  customer_id        text not null references users(id),
+  studio_name        text not null default '',
+  collaborator_name  text not null default '',
+  shoot_day          date not null,
+  shoot_start        time not null,
+  shoot_end          time not null,
+  service_name       text not null default '',
+  place_name         text not null default '',
+  shoot_ends_at      timestamptz not null,
+  agreed_fee         bigint not null check (agreed_fee between 1000 and 100000000 and agreed_fee % 1000 = 0),
+  currency           char(3) not null default 'VND',
+  offer_status       text not null check (offer_status in ('pending','accepted','declined','expired','replaced','returned','cancelled')),
+  offer_at           timestamptz not null,
+  offer_expires_at   timestamptz not null,
+  accepted_at        timestamptz,
+  declined_at        timestamptz,
+  closed_at          timestamptz,                                               -- booking xong hoặc huỷ
+  pay_status         text not null default 'none' check (pay_status in ('none','due','paid_reported','received','disputed')),
+  pay_due_at         timestamptz,
+  pay_paid_on        date,                                                      -- ngày studio báo đã trả (giờ VN)
+  pay_method         text check (pay_method in ('bank','cash','other')),
+  pay_reported_at    timestamptz,
+  pay_received_at    timestamptz,
+  pay_disputed_at    timestamptz,
+  pay_overdue_flagged_at timestamptz,
+  pay_dispute_flagged_at timestamptz,
+  pay_check_after    timestamptz,                                               -- con trỏ của job: lần tới hỏi mốc chụp
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  primary key (booking_id, collaborator_id)
+);
+create index ix_collab_jobs_studio on collab_jobs (studio_id, updated_at desc);
+create index ix_collab_jobs_collaborator on collab_jobs (collaborator_id, updated_at desc);
+create index ix_collab_jobs_pair on collab_jobs (studio_id, collaborator_id, offer_status);
+create index ix_collab_jobs_offer_due on collab_jobs (offer_status, offer_expires_at) where offer_status = 'pending';
+create index ix_collab_jobs_pay_check on collab_jobs (offer_status, pay_status, pay_check_after) where pay_check_after is not null;
+create index ix_collab_jobs_pay_due on collab_jobs (pay_status, pay_overdue_flagged_at, pay_due_at);
+create index ix_collab_jobs_studio_month on collab_jobs (studio_id, pay_due_at);
+create index ix_collab_jobs_poaching on collab_jobs (collaborator_id, customer_id, accepted_at desc);
+
+create table recruit_counters (            -- photographers/{uid}/private/recruit, chỉ server
+  user_id                 text primary key references users(id) on delete cascade,
+  open_post_count         int not null default 0,
+  post_actions_day        date,
+  post_actions            smallint not null default 0,
+  active_collab_count     int not null default 0,
+  pending_invite_count    int not null default 0,
+  collab_actions_day      date,
+  collab_actions          smallint not null default 0,
+  open_application_count  int not null default 0,
+  apply_actions_day       date,
+  apply_actions           smallint not null default 0,
+  notices_day             date,
+  notices                 smallint not null default 0,
+  notice_post_ids         text[] not null default '{}',
+  unpaid_flags            timestamptz[] not null default '{}',                  -- cờ trong 90 ngày gần nhất
+  recruit_blocked_until   timestamptz
+);
+
+create table photographer_recruit_match_keys (   -- photographers/{uid}.recruitMatchKeys, chỉ server
+  photographer_id text not null references photographers(user_id) on delete cascade,
+  area_id         text not null,
+  specialty       text not null,
+  primary key (photographer_id, area_id, specialty)
+);
+create index ix_recruit_match_keys on photographer_recruit_match_keys (area_id, specialty);
+
+create table staff_flags (
+  id              text primary key,                                             -- 'poach_{photographerId}_{customerId}'
+  kind            text not null check (kind in ('collab_poaching')),
+  photographer_id text not null references photographers(user_id),
+  customer_id     text not null references users(id),
+  studio_id       text references photographers(user_id),
+  job_ids         text[] not null default '{}',                                -- id của collab_jobs: '{bookingId}_{uid}'
+  created_at      timestamptz not null default now()
+);
+
+-- Booking studio: thêm loại 'collaborator' và trạng thái nhận việc (S26 để chỗ ở mục 2.12)
+alter table bookings
+  drop constraint if exists bookings_assignee_kind_check,
+  add constraint ck_bookings_assignee_kind check (assignee_kind in ('member','collaborator')),
+  add column assignee_accepted boolean not null default true;                  -- false chỉ khi offer CTV đang chờ
+alter table booking_assignments
+  drop constraint if exists booking_assignments_assignee_kind_check,
+  add constraint ck_booking_assignments_assignee_kind check (assignee_kind in ('member','collaborator')),
+  add column offer_expires_at timestamptz,
+  add column accepted_at      timestamptz,
+  add column declined_at      timestamptz;
+-- Chat studio–CTV: chats.kind thêm 'collab' (id 'collab_{studioId}_{collaboratorId}'; studio ở customer_id, CTV ở photographer_id)
+```
+
 ## 3. Ánh xạ Firestore → bảng
 
 Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` → `timestamptz`; `GeoPoint` → `lat`+`lng`; mảng → bảng liên kết; tài liệu con (`map`) → cột phẳng có tiền tố; số đếm ghi bởi Functions → cột dẫn xuất.
@@ -1403,6 +1598,15 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `studio_quota/{uid}` | `studio_quotas` | `dayKey`→`day`; `studioActions`, `memberActions`→`studio_actions`, `member_actions` |
 | `studio_day_load/{id}` | `studio_day_load_bookings` | Chỉ server; id = studio + ngày; `unassignedIds[]`/`assignedIds[]`→ một dòng mỗi booking, `assigned` phân biệt hai mảng |
 | `bookings/{id}.assignments[]` | `booking_assignments` | `seq` = vị trí trong mảng; `changeRequest`, `studioFault`, `assignmentReturned`→`jsonb` |
+| `recruitPosts/{postId}` | `recruit_posts` + `recruit_post_specialties` + `recruit_post_areas` | `studio.*`→`studio_*`; `feeHint.{type,amount}`→`fee_type`, `fee_amount`; `specialties[]`/`areas[]`→bảng con (giữ thứ tự ở `position`); `matchKeys[]`, `filterKeys[]` không thành cột (khoá truy vấn của Firestore, dựng lại từ hai bảng con) |
+| `recruitApplications/{postId}_{uid}` | `recruit_applications` + `recruit_application_samples` | Id ghép thành khoá `(post_id, applicant_id)`; `applicant.*`→`applicant_*`; `samplePostIds[]`→`recruit_application_samples` |
+| `studio_collaborations/{studioId}_{uid}` + `history/{ulid}` | `studio_collaborations` | Mỗi bản trong `history` → một dòng (theo `createdAt`, `seq` tăng dần); tài liệu chính → dòng có `seq` lớn nhất; `studio.*`, `collaborator.*`→cột phẳng; `applicationId` (`{postId}_{uid}`) → `application_post_id` |
+| `collab_jobs/{bookingId}_{uid}` | `collab_jobs` | Id ghép thành khoá `(booking_id, collaborator_id)`; `shoot.*`→`shoot_day`, `shoot_start`, `shoot_end`, `service_name`, `place_name`; `pay.*`→`pay_*` (`pay.amount` = `agreed_fee`, không thành cột riêng); `pay.paidOn` (`yyyy-MM-dd`) → `pay_paid_on date` |
+| `photographers/{uid}/private/recruit` | `recruit_counters` | `{day, count}` của `postActions`, `collabActions`, `applyActions`, `notices` → cặp `*_day`, `*`; `notices.postIds`→`notice_post_ids`; `unpaidFlags[]`→`timestamptz[]` |
+| `photographers/{uid}.recruitMatchKeys[]` | `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
+| `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
+| `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
+| `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột; `chats.bookingStatus`→không có cột, suy ra từ `bookings.status` qua `chats.booking_id` (join; trường Firestore chỉ là read model cho danh sách S07.02) |
 | `support_threads/{id}` + `support_threads/{id}/messages/{id}` | `support_threads`, `support_thread_participants`, `support_messages` | `participants[]`→`support_thread_participants`; `lastMessage`→jsonb cột `last_message` |
@@ -1454,10 +1658,12 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `events.registered_count`, `held_count` | `event_registrations` | `register_event` trong giao dịch; đối soát khi `release_expired_holds` |
 | `chats.last_message_*`, `chat_members.unread_count` | `messages` | Trigger tin mới |
 | Số dư treo/chờ chi trả | `ledger_entries` | Truy vấn tổng; không lưu cột số dư riêng |
+| `recruit_posts.application_count`, `recruit_counters.*_count` | `recruit_applications`, `recruit_posts`, `studio_collaborations` | Use case S27 cập nhật trong cùng giao dịch với đổi trạng thái (kể cả job); đếm lại được bằng truy vấn |
+| `photographer_recruit_match_keys` | `photographers.service_*`, `photographer_specialties`, `users.role` | `onPhotographerWrite`, `onUserWrite` (đổi vai trò); studio và tài khoản ở vai khách không có dòng |
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `studio_members`, `bookings`(+con, `booking_assignments`) → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

@@ -1718,12 +1718,24 @@ test('a stranger cannot read a booking assigned to someone else', async () => {
   await seedDoc('bookings/b_as3', { customerId: 'asc1', photographerId: 'asstudio1', status: 'upcoming' });
   await assertFails(getDoc(doc(env.authenticatedContext('asm2').firestore(), 'bookings/b_as3')));
 });
-test('an assignee query (where assigneeId == uid) is allowed; an unfiltered one is not', async () => {
-  await seedDoc('bookings/b_as4', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm3', status: 'upcoming' });
+test('an assignee query (where assigneeId == uid and assignStatus == assigned) is allowed; an unfiltered one is not', async () => {
+  await seedDoc('bookings/b_as4', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm3', assignStatus: 'assigned', status: 'upcoming' });
   const db = env.authenticatedContext('asm3').firestore();
-  const snap = await assertSucceeds(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
+  const snap = await assertSucceeds(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'), where('assignStatus', '==', 'assigned'))));
   assert.ok(snap.docs.some((d) => d.id === 'b_as4'));
-  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'))));
+  // S27 (#151): a collaborator with a pending offer never reads that booking through a query. Their
+  // S06.01 query (with assignStatus) is allowed and returns nothing; without the filter it is refused.
+  await seedDoc('bookings/b_as4p', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'aspc1', assigneeKind: 'collaborator', assigneeAccepted: false, assignStatus: 'unassigned', status: 'accepted' });
+  const pending = env.authenticatedContext('aspc1').firestore();
+  const none = await assertSucceeds(getDocs(query(collection(pending, 'bookings'), where('assigneeId', '==', 'aspc1'), where('assignStatus', '==', 'assigned'))));
+  assert.equal(none.docs.length, 0);
+  await assertFails(getDocs(query(collection(pending, 'bookings'), where('assigneeId', '==', 'aspc1'))));
+  // The single-document read stays judged on the real document.
+  await assertFails(getDoc(doc(pending, 'bookings/b_as4p')));
+  await assertSucceeds(getDoc(doc(db, 'bookings/b_as4')));
+  // Any assignee list must carry the assignStatus filter.
+  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
+  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'), where('assignStatus', '==', 'assigned'))));
   await assertFails(getDocs(collection(db, 'bookings')));
 });
 test('nobody reads or writes otp_challenges', async () => {
@@ -2825,5 +2837,211 @@ describe('instant', () => {
     await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_c'), point({ at: Timestamp.now() })));
     await assertFails(setDoc(doc(as('ic_ph'), 'instant_tracks/it_new'), track()));
     await assertFails(deleteDoc(doc(as('ic_ph'), 'instant_tracks/it_c')));
+  });
+});
+
+// ---- S27 #151: recruit posts (R3), applications, collaborations, collab jobs (fee private), contact R8 ----
+describe('S27 studio recruiting', () => {
+  const as = (uid) => env.authenticatedContext(uid).firestore();
+  const DAY = 86_400_000;
+  const at = (ms) => Timestamp.fromDate(new Date(ms));
+  const recruitPost = (studioId) => ({
+    studioId, studio: { name: 'Cúc Studio', avatarUrl: null, businessVerified: true }, kind: 'collaborator',
+    title: 'Tuyển CTV chụp cưới cuối tuần', specialties: ['wedding'], areas: ['hcm-q1'], frequency: 'weekly',
+    feeHint: { type: 'negotiable' }, requirements: '', status: 'open', renewed: false, applicationCount: 0,
+    matchKeys: ['a=hcm-q1|s=wedding'], filterKeys: ['k=collaborator'], createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(), expiresAt: at(Date.now() + 30 * DAY), closedAt: null,
+  });
+  // users/{uid}.role + photographers/{uid} (or no photographer doc).
+  const seedAccount = async (uid, role, photographer) => {
+    await seedDoc(`users/${uid}`, { displayName: uid, role });
+    if (photographer) await seedDoc(`photographers/${uid}`, { onboardingComplete: true, ...photographer });
+  };
+  const posts = (uid) => getDocs(query(collection(as(uid), 'recruitPosts'), where('status', '==', 'open')));
+
+  before(async () => {
+    await seedAccount('rc_studio', 'photographer', { providerType: 'studio', verified: true });
+    await seedAccount('rc_ind', 'photographer', { providerType: 'individual', verified: false });
+    await seedAccount('rc_cust', 'customer', null);
+    await seedAccount('rc_switched', 'customer', { providerType: 'individual', verified: true });
+    await seedAccount('rc_other', 'photographer', { providerType: 'individual', verified: true });
+    await seedDoc('recruitPosts/rp1', recruitPost('rc_studio'));
+  });
+
+  test('provider (individual, unverified) can get and list recruitPosts', async () => {
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'recruitPosts/rp1')));
+    await assertSucceeds(posts('rc_ind'));
+  });
+
+  test('studio can list recruitPosts', async () => {
+    await assertSucceeds(posts('rc_studio'));
+    await assertSucceeds(getDocs(query(collection(as('rc_studio'), 'recruitPosts'), where('studioId', '==', 'rc_studio'))));
+  });
+
+  test('customer cannot get or list recruitPosts', async () => {
+    await assertFails(getDoc(doc(as('rc_cust'), 'recruitPosts/rp1')));
+    await assertFails(posts('rc_cust'));
+  });
+
+  test('customer-mode account with a photographers doc cannot read recruitPosts', async () => {
+    await assertFails(getDoc(doc(as('rc_switched'), 'recruitPosts/rp1')));
+    await assertFails(posts('rc_switched'));
+  });
+
+  test('signed-out cannot list recruitPosts', async () => {
+    await assertFails(getDocs(query(collection(env.unauthenticatedContext().firestore(), 'recruitPosts'), where('status', '==', 'open'))));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'recruitPosts/rp1')));
+  });
+
+  test('nobody writes recruitPosts, recruitApplications, studio_collaborations, collab_jobs, staff_flags', async () => {
+    for (const uid of ['rc_studio', 'rc_ind', 'rc_cust']) {
+      const db = as(uid);
+      await assertFails(setDoc(doc(db, 'recruitPosts/rp_new'), recruitPost('rc_studio')));
+      await assertFails(updateDoc(doc(db, 'recruitPosts/rp1'), { title: 'Tuyển CTV chụp cưới tháng sau' }));
+      await assertFails(deleteDoc(doc(db, 'recruitPosts/rp1')));
+      await assertFails(setDoc(doc(db, 'recruitApplications/rp1_rc_ind'), { postId: 'rp1', studioId: 'rc_studio', applicantId: 'rc_ind', status: 'applied' }));
+      await assertFails(setDoc(doc(db, 'studio_collaborations/rc_studio_rc_ind'), { studioId: 'rc_studio', collaboratorId: 'rc_ind', status: 'active' }));
+      await assertFails(setDoc(doc(db, 'studio_collaborations/rc_studio_rc_ind/history/h1'), { studioId: 'rc_studio', collaboratorId: 'rc_ind' }));
+      await assertFails(setDoc(doc(db, 'collab_jobs/b1_rc_ind'), { studioId: 'rc_studio', collaboratorId: 'rc_ind', agreedFee: 1000 }));
+      await assertFails(setDoc(doc(db, 'staff_flags/poach_rc_ind_rc_cust'), { kind: 'collab_poaching' }));
+    }
+    await seedDoc('staff_flags/poach_rc_ind_rc_cust', { kind: 'collab_poaching', photographerId: 'rc_ind', customerId: 'rc_cust' });
+    await assertFails(getDoc(doc(as('rc_ind'), 'staff_flags/poach_rc_ind_rc_cust')));
+    await assertFails(getDoc(doc(as('rc_cust'), 'staff_flags/poach_rc_ind_rc_cust')));
+  });
+
+  test('applicant and studio read an application, another provider cannot', async () => {
+    await seedDoc('recruitApplications/rp1_rc_ind', { postId: 'rp1', studioId: 'rc_studio', applicantId: 'rc_ind', status: 'applied', createdAt: Timestamp.now() });
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'recruitApplications/rp1_rc_ind')));
+    await assertSucceeds(getDoc(doc(as('rc_studio'), 'recruitApplications/rp1_rc_ind')));
+    await assertFails(getDoc(doc(as('rc_other'), 'recruitApplications/rp1_rc_ind')));
+    await assertSucceeds(getDocs(query(collection(as('rc_ind'), 'recruitApplications'), where('applicantId', '==', 'rc_ind'))));
+    await assertSucceeds(getDocs(query(collection(as('rc_studio'), 'recruitApplications'), where('studioId', '==', 'rc_studio'), where('postId', '==', 'rp1'))));
+    await assertFails(getDocs(query(collection(as('rc_other'), 'recruitApplications'), where('postId', '==', 'rp1'))));
+  });
+
+  test('the two parties read a collaboration and its history, a third cannot', async () => {
+    await seedDoc('studio_collaborations/rc_studio_rc_ind', { studioId: 'rc_studio', collaboratorId: 'rc_ind', status: 'active', updatedAt: Timestamp.now() });
+    await seedDoc('studio_collaborations/rc_studio_rc_ind/history/h1', { studioId: 'rc_studio', collaboratorId: 'rc_ind', status: 'ended' });
+    for (const uid of ['rc_studio', 'rc_ind']) {
+      await assertSucceeds(getDoc(doc(as(uid), 'studio_collaborations/rc_studio_rc_ind')));
+      await assertSucceeds(getDoc(doc(as(uid), 'studio_collaborations/rc_studio_rc_ind/history/h1')));
+    }
+    await assertSucceeds(getDocs(query(collection(as('rc_studio'), 'studio_collaborations'), where('studioId', '==', 'rc_studio'))));
+    await assertSucceeds(getDocs(query(collection(as('rc_ind'), 'studio_collaborations'), where('collaboratorId', '==', 'rc_ind'))));
+    await assertFails(getDoc(doc(as('rc_other'), 'studio_collaborations/rc_studio_rc_ind')));
+    await assertFails(getDoc(doc(as('rc_other'), 'studio_collaborations/rc_studio_rc_ind/history/h1')));
+    await assertFails(getDocs(query(collection(as('rc_other'), 'studio_collaborations'), where('studioId', '==', 'rc_studio'))));
+  });
+
+  // Review Focus 2: the agreed fee and the pay record stay with the studio and that collaborator.
+  test('customer cannot read collab_jobs', async () => {
+    await seedDoc('collab_jobs/rcb1_rc_ind', { bookingId: 'rcb1', studioId: 'rc_studio', collaboratorId: 'rc_ind', customerId: 'rc_cust', agreedFee: 600000, offerStatus: 'accepted', payStatus: 'due', updatedAt: Timestamp.now() });
+    await assertFails(getDoc(doc(as('rc_cust'), 'collab_jobs/rcb1_rc_ind')));
+    await assertFails(getDocs(query(collection(as('rc_cust'), 'collab_jobs'), where('customerId', '==', 'rc_cust'))));
+    await assertSucceeds(getDoc(doc(as('rc_studio'), 'collab_jobs/rcb1_rc_ind')));
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'collab_jobs/rcb1_rc_ind')));
+    await assertSucceeds(getDocs(query(collection(as('rc_studio'), 'collab_jobs'), where('studioId', '==', 'rc_studio'))));
+    await assertSucceeds(getDocs(query(collection(as('rc_ind'), 'collab_jobs'), where('collaboratorId', '==', 'rc_ind'))));
+  });
+
+  test('another photographer cannot read collab_jobs', async () => {
+    await seedDoc('collab_jobs/rcb2_rc_ind', { bookingId: 'rcb2', studioId: 'rc_studio', collaboratorId: 'rc_ind', customerId: 'rc_cust', agreedFee: 600000 });
+    await assertFails(getDoc(doc(as('rc_other'), 'collab_jobs/rcb2_rc_ind')));
+    await assertFails(getDocs(query(collection(as('rc_other'), 'collab_jobs'), where('studioId', '==', 'rc_studio'))));
+  });
+
+  test('owner cannot write photographers/{uid}.recruitMatchKeys', async () => {
+    await seedDoc('photographers/rc_other', { onboardingComplete: true, verified: true, providerType: 'individual', bio: 'x' });
+    const db = as('rc_other');
+    await assertFails(updateDoc(doc(db, 'photographers/rc_other'), { recruitMatchKeys: ['a=hcm-q1|s=wedding'] }));
+    await assertSucceeds(updateDoc(doc(db, 'photographers/rc_other'), { bio: 'y' }));
+    // A server-written value stays when the owner saves other fields.
+    await seedDoc('photographers/rc_other', { onboardingComplete: true, verified: true, providerType: 'individual', bio: 'y', recruitMatchKeys: ['a=hue|s=portrait'] });
+    await assertSucceeds(updateDoc(doc(db, 'photographers/rc_other'), { bio: 'z' }));
+    await assertFails(updateDoc(doc(db, 'photographers/rc_other'), { recruitMatchKeys: [] }));
+  });
+
+  test('owner reads photographers/{uid}/private/recruit, cannot write it', async () => {
+    await seedDoc('photographers/rc_studio/private/recruit', { openPostCount: 1, unpaidFlags: [], recruitBlockedUntil: null });
+    await assertSucceeds(getDoc(doc(as('rc_studio'), 'photographers/rc_studio/private/recruit')));
+    await assertFails(getDoc(doc(as('rc_ind'), 'photographers/rc_studio/private/recruit')));
+    await assertFails(setDoc(doc(as('rc_studio'), 'photographers/rc_studio/private/recruit'), { openPostCount: 0 }));
+    await assertFails(updateDoc(doc(as('rc_studio'), 'photographers/rc_studio/private/recruit'), { recruitBlockedUntil: null }));
+  });
+
+  // Review Focus 3 (R8): the customer contact opens to a collaborator only once the offer is accepted.
+  const collabBooking = (id, over) => seedDoc(`bookings/${id}`, {
+    customerId: 'rc_cust', photographerId: 'rc_studio', isStudio: true, status: 'accepted',
+    assigneeId: 'rc_ind', assigneeKind: 'collaborator', assigneeAccepted: false, ...over,
+  });
+  const contactOf = async (id) => seedDoc(`bookings/${id}/private/contact`, { name: 'Lan', phone: '+84903000001' });
+
+  test('pending collaborator cannot read the customer contact', async () => {
+    await collabBooking('rcb_pending', {});
+    await contactOf('rcb_pending');
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_pending/private/contact')));
+    // The studio still does; the customer reads their own.
+    await assertSucceeds(getDoc(doc(as('rc_studio'), 'bookings/rcb_pending/private/contact')));
+    await assertSucceeds(getDoc(doc(as('rc_cust'), 'bookings/rcb_pending/private/contact')));
+  });
+
+  test('accepted collaborator can', async () => {
+    await collabBooking('rcb_accepted', { assigneeAccepted: true, status: 'upcoming' });
+    await contactOf('rcb_accepted');
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_accepted/private/contact')));
+  });
+
+  test('replaced collaborator cannot', async () => {
+    await collabBooking('rcb_replaced', { assigneeId: 'rc_other', assigneeAccepted: false });
+    await contactOf('rcb_replaced');
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_replaced/private/contact')));
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_replaced')));
+    // A member assigned in its place reads it under S26's rule.
+    await collabBooking('rcb_member', { assigneeId: 'rc_other', assigneeKind: 'member', assigneeAccepted: true });
+    await contactOf('rcb_member');
+    await assertSucceeds(getDoc(doc(as('rc_other'), 'bookings/rcb_member/private/contact')));
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_member/private/contact')));
+  });
+
+  test('pending collaborator cannot get the booking or its events', async () => {
+    await collabBooking('rcb_pend_doc', { assignStatus: 'unassigned' });
+    await seedDoc('bookings/rcb_pend_doc/events/e1', { status: 'accepted', at: Timestamp.now() });
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_pend_doc')));
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_pend_doc/events/e1')));
+    await assertFails(getDocs(collection(as('rc_ind'), 'bookings/rcb_pend_doc/events')));
+    // The studio and the customer still read both.
+    await assertSucceeds(getDoc(doc(as('rc_studio'), 'bookings/rcb_pend_doc')));
+    await assertSucceeds(getDoc(doc(as('rc_cust'), 'bookings/rcb_pend_doc/events/e1')));
+  });
+
+  test('accepted collaborator can get the booking and its events', async () => {
+    await collabBooking('rcb_acc_doc', { assigneeAccepted: true, assignStatus: 'assigned', status: 'upcoming' });
+    await seedDoc('bookings/rcb_acc_doc/events/e1', { status: 'upcoming', at: Timestamp.now() });
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_acc_doc')));
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_acc_doc/events/e1')));
+  });
+
+  test('the S06.01 query lists an accepted collaborator job, never a pending offer', async () => {
+    await collabBooking('rcb_q_pending', { assigneeId: 'rc_q', assignStatus: 'unassigned' });
+    await collabBooking('rcb_q_accepted', { assigneeId: 'rc_q', assigneeAccepted: true, assignStatus: 'assigned', status: 'upcoming' });
+    const snap = await assertSucceeds(getDocs(query(collection(as('rc_q'), 'bookings'), where('assigneeId', '==', 'rc_q'), where('assignStatus', '==', 'assigned'))));
+    assert.deepEqual(snap.docs.map((d) => d.id), ['rcb_q_accepted']);
+  });
+
+  test('accepted collaborator cannot read it 7 days after completedAt', async () => {
+    await collabBooking('rcb_done_old', { assigneeAccepted: true, status: 'completed', completedAt: at(Date.now() - 8 * DAY) });
+    await contactOf('rcb_done_old');
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_done_old/private/contact')));
+    await collabBooking('rcb_done_new', { assigneeAccepted: true, status: 'completed', completedAt: at(Date.now() - 2 * DAY) });
+    await contactOf('rcb_done_new');
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_done_new/private/contact')));
+    // Cancelled: the same 7 days from cancel.at.
+    await collabBooking('rcb_cancel_old', { assigneeAccepted: true, status: 'cancelled', cancel: { by: 'customer', at: at(Date.now() - 8 * DAY), refundPercent: 100 } });
+    await contactOf('rcb_cancel_old');
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_cancel_old/private/contact')));
+    await collabBooking('rcb_cancel_new', { assigneeAccepted: true, status: 'cancelled', cancel: { by: 'customer', at: at(Date.now() - DAY), refundPercent: 100 } });
+    await contactOf('rcb_cancel_new');
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_cancel_new/private/contact')));
   });
 });

@@ -11,7 +11,8 @@ import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 /// The 1-1 chat kinds S07.02 lists (`chats.kind`); event groups (`event_group`) are excluded.
-const oneToOneChatKinds = ['inquiry', 'booking'];
+/// `collab` is the S27 studio–collaborator chat (Decision 16).
+const oneToOneChatKinds = ['inquiry', 'booking', 'collab'];
 
 class FirestoreChatRepository implements ChatRepository {
   /// [currentUid] defaults to the signed-in Firebase user ([auth] or

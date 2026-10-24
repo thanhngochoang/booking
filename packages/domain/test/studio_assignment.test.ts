@@ -12,8 +12,25 @@ import {
   returnAssignment,
   studioDraftFields,
   studioFaultOf,
+  waitsForAssignee,
   type MemberDayReader,
 } from '../src/studio_assignment.js';
+import { syncBookingChat } from '../src/booking_chat_sync.js';
+import { expireCollabOffer, respondCollabOffer } from '../src/collab_offers.js';
+import { chatIdFor } from '../src/chat.js';
+import { runStudioBookingSweeps } from '../src/studio_booking_sweeps.js';
+import { notifyStudioBookingChange, studioBookingNotices } from '../src/studio_notifications.js';
+import { createChatWorld } from './support/chat_world.js';
+import {
+  answer,
+  COLLAB_DAY,
+  COLLAB_START,
+  createCollabWorld,
+  offer,
+  seedCollab,
+  studioBooking,
+  type CollabWorld,
+} from './support/collab_world.js';
 import { EMPTY_SPOT_STATS, type Spot } from '../src/spot.js';
 import type { SpotSchedule } from '../src/spot_schedule.js';
 import { transitionBooking } from '../src/transition_booking.js';
@@ -520,5 +537,466 @@ describe('spot bookings of a studio (#194 Decision 7)', () => {
     assert.equal((await w.store.getSpotDay(schedule.id, DAY))?.taken.length, 0);
     assert.equal((await w.store.getAvailabilityDay('m1', DAY))?.state, 'spot');
     assert.equal(w.store.getStudioDayLoad('s1', DAY), null);
+  });
+});
+
+describe('collaborator offers (S27, plan #151 Decisions 13, 14, 26)', () => {
+  const T0 = new Date('2026-10-10T10:00:00.000Z');
+  const rows = (w: CollabWorld, uid: string, type?: string) => w.rowsOf(uid).filter((r) => type === undefined || r.type === type);
+  const jobOf = (w: CollabWorld, bookingId: string, uid: string) => w.recruit.collabJobs.get(`${bookingId}_${uid}`);
+
+  async function offered(w: CollabWorld, uid = 'p1', fee = 800_000): Promise<{ before: Booking; after: Booking }> {
+    seedCollab(w, uid);
+    const before = await studioBooking(w);
+    const after = await offer(w, before.id, uid, fee);
+    return { before, after };
+  }
+
+  it('assigning to an active collaborator creates a pending collab_job with the fee and offerExpiresAt, sets assigneeId, assigneeKind collaborator, assigneeAccepted false, and sends collab_assignment_offer', async () => {
+    const w = createCollabWorld();
+    const { before, after } = await offered(w);
+    assert.equal(after.assigneeId, 'p1');
+    assert.equal(after.assigneeKind, 'collaborator');
+    assert.equal(after.assigneeAccepted, false);
+    assert.equal(after.assignStatus, 'unassigned', 'a pending offer leaves the booking unassigned (Decision 26)');
+    assert.equal(after.assignDeadline, before.assignDeadline);
+    assert.equal(after.version, before.version + 1);
+    assert.deepEqual(after.assignments, [
+      { assigneeId: 'p1', assigneeKind: 'collaborator', at: T0.toISOString(), by: 's1', reason: null, late: false, offerExpiresAt: '2026-10-10T16:00:00.000Z' },
+    ]);
+    assert.deepEqual(await w.bw.store.getBooking(before.id), after);
+    const job = jobOf(w, before.id, 'p1');
+    assert.equal(job?.id, `${before.id}_p1`);
+    assert.equal(job?.offerStatus, 'pending');
+    assert.equal(job?.agreedFee, 800_000);
+    assert.deepEqual(job?.offerAt, T0);
+    assert.deepEqual(job?.offerExpiresAt, new Date('2026-10-10T16:00:00.000Z'));
+    assert.equal(job?.studioId, 's1');
+    assert.equal(job?.customerId, 'c1');
+    assert.equal(job?.studioName, 'Studio Mây');
+    assert.equal(job?.collaboratorName, 'Minh Trí');
+    assert.deepEqual(job?.shoot, { day: COLLAB_DAY, start: '14:00', end: '16:00', serviceName: 'Gói Studio', placeName: 'Nhà thờ Lớn' });
+    assert.deepEqual(job?.shootEndsAt, new Date('2026-10-15T09:00:00.000Z'));
+    assert.equal(job?.payStatus, 'none');
+    assert.equal(job?.pay.amount, 800_000);
+    const offers = rows(w, 'p1', 'collab_assignment_offer');
+    assert.equal(offers.length, 1);
+    assert.equal(offers[0]?.target, `/collab?offer=${before.id}`);
+    assert.match(offers[0]?.body ?? '', /Thù lao 800\.000.*Trả lời trước 23:00 10\/10/);
+  });
+
+  it('assigning to a collaborator writes no fee on the booking (Review Focus 2)', async () => {
+    const w = createCollabWorld();
+    const { before, after } = await offered(w, 'p1', 1_250_000);
+    const added = Object.keys(after).filter((k) => !(k in before));
+    assert.deepEqual(added.filter((k) => /fee|pay/i.test(k)), []);
+    for (const entry of after.assignments ?? []) assert.deepEqual(Object.keys(entry).filter((k) => /fee|pay/i.test(k)), []);
+    assert.ok(!JSON.stringify(after).includes('1250000'));
+    assert.equal(jobOf(w, after.id, 'p1')?.agreedFee, 1_250_000, 'the fee lives in the collab job');
+  });
+
+  it('no calendar block, no chat member, no booking_assigned to the customer at offer time', async () => {
+    const w = createCollabWorld();
+    const { before, after } = await offered(w);
+    assert.equal(await w.bw.store.getAvailabilityDay('p1', COLLAB_DAY), null);
+    assert.deepEqual(w.bw.store.getStudioDayLoad('s1', COLLAB_DAY)?.unassignedIds, [before.id]);
+    assert.deepEqual(w.bw.store.getStudioDayLoad('s1', COLLAB_DAY)?.assignedIds, []);
+    assert.deepEqual(studioBookingNotices(before, after), []);
+    const { deps: chatDeps, chats } = createChatWorld();
+    await syncBookingChat(chatDeps, { before: null, after: { ...before, status: 'requested' } });
+    await syncBookingChat(chatDeps, { before: { ...before, status: 'requested' }, after: before });
+    await syncBookingChat(chatDeps, { before, after });
+    assert.equal(chats.chats.get(chatIdFor('c1', 's1'))?.assigneeId, null);
+    assert.equal(waitsForAssignee(after), true, 'the booking still waits for a confirmed assignee');
+    assert.equal(rows(w, 'c1').length, 0);
+  });
+
+  it('refused: no active collaboration (not_found), fee missing or off-step (invalid_argument), collaborator not accepting orders (not_accepting_orders), studio blocked (recruit_blocked), less than 15 minutes left (deadline_passed), collaborator busy that day (day_taken)', async () => {
+    const w = createCollabWorld();
+    const b = await studioBooking(w);
+    await rejectsWith(offer(w, b.id, 'p1'), 'not_found');
+    seedCollab(w, 'p2', { status: 'ended', endedAt: T0, endedBy: 'studio' });
+    await rejectsWith(offer(w, b.id, 'p2'), 'not_found');
+    seedCollab(w, 'p1');
+    const badFee = (e: unknown) => e instanceof DomainError && e.code === 'invalid_argument' && e.field === 'agreedFee';
+    await assert.rejects(assignBooking(w.assignDeps, 's1', { bookingId: b.id, assigneeId: 'p1', assigneeKind: 'collaborator' }), badFee);
+    for (const fee of [null, 999, 1_500, 100_001_000, '800000', 800_000.5]) {
+      await assert.rejects(offer(w, b.id, 'p1', fee), badFee, String(fee));
+    }
+    await assert.rejects(
+      assignBooking(w.assignDeps, 's1', { bookingId: b.id, assigneeId: 'p1', assigneeKind: 'employee', agreedFee: 800_000 }),
+      (e: unknown) => e instanceof DomainError && e.code === 'invalid_argument' && e.field === 'assigneeKind',
+    );
+    seedCollab(w, 'u1');
+    await rejectsWith(offer(w, b.id, 'u1'), 'not_accepting_orders');
+    w.bw.blocks.block('s1', 'p1');
+    await rejectsWith(offer(w, b.id, 'p1'), 'blocked');
+    w.bw.blocks.unblock('s1', 'p1');
+    w.bw.blocks.block('p1', 'c1');
+    await rejectsWith(offer(w, b.id, 'p1'), 'blocked');
+    w.bw.blocks.unblock('p1', 'c1');
+    w.recruit.seedCounters('s1', { recruitBlockedUntil: new Date(T0.getTime() + 24 * 60 * 60 * 1000) });
+    await rejectsWith(offer(w, b.id, 'p1'), 'recruit_blocked');
+    w.recruit.seedCounters('s1', { recruitBlockedUntil: null });
+    w.bw.clock.setTime(new Date('2026-10-14T06:50:00.000Z'));
+    await rejectsWith(offer(w, b.id, 'p1'), 'deadline_passed');
+    w.bw.clock.setTime(T0);
+    w.bw.store.availability.set(`p1_${COLLAB_DAY}`, { state: 'booked', bookingId: 'other' });
+    await rejectsWith(offer(w, b.id, 'p1'), 'day_taken');
+    w.bw.store.availability.set(`p1_${COLLAB_DAY}`, { state: 'off' });
+    await rejectsWith(offer(w, b.id, 'p1'), 'day_taken');
+    assert.deepEqual(await w.bw.store.getBooking(b.id), b, 'nothing written');
+    assert.equal(w.recruit.collabJobs.size, 0);
+    assert.equal(rows(w, 'p1').length, 0);
+  });
+
+  it('an offer made after the deadline expires at the start at the latest', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    w.bw.clock.setTime(new Date('2026-10-15T03:00:00.000Z'));
+    const after = await offer(w, b.id, 'p1');
+    assert.equal(after.assignments?.[0]?.offerExpiresAt, COLLAB_START.toISOString());
+    assert.deepEqual(jobOf(w, b.id, 'p1')?.offerExpiresAt, COLLAB_START);
+  });
+
+  it('re-assign while an offer is pending marks the old job replaced and notifies nobody but the new assignee', async () => {
+    const w = createCollabWorld();
+    const { after: first } = await offered(w, 'p1');
+    seedCollab(w, 'p2');
+    w.bw.clock.advanceHours(1);
+    const before = { p1: rows(w, 'p1').length, c1: rows(w, 'c1').length, s1: rows(w, 's1').length };
+    const second = await offer(w, first.id, 'p2', 900_000);
+    assert.equal(second.assigneeId, 'p2');
+    assert.equal(jobOf(w, first.id, 'p1')?.offerStatus, 'replaced');
+    assert.equal(jobOf(w, first.id, 'p2')?.offerStatus, 'pending');
+    assert.equal(second.assignments?.[1]?.late, false);
+    assert.deepEqual(studioBookingNotices(first, second), []);
+    assert.equal(rows(w, 'p1').length, before.p1);
+    assert.equal(rows(w, 'c1').length, before.c1);
+    assert.equal(rows(w, 's1').length, before.s1);
+    assert.equal(rows(w, 'p2', 'collab_assignment_offer').length, 1);
+    await rejectsWith(answer(w, 'p1', first.id, true), 'permission_denied');
+    // a member assigned over a pending offer replaces it too
+    const member = await assign(w.bw, first.id, 'm1');
+    assert.equal(member.assigneeKind, 'member');
+    assert.equal(member.assigneeAccepted, true);
+    assert.equal(jobOf(w, first.id, 'p2')?.offerStatus, 'replaced');
+    assert.deepEqual(studioBookingNotices(second, member), ['assigned']);
+    assert.equal(member.assignments?.[2]?.late, false, 'a pending offer was never the assignee');
+  });
+
+  it('the same collaborator again while the offer is pending is conflict', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    await rejectsWith(offer(w, after.id, 'p1'), 'conflict');
+  });
+
+  it('accept: offerStatus accepted, acceptedAt, booking assigneeAccepted true, calendar blocked, chat member added, booking_assigned to the customer, collab_assignment_result accepted to the studio', async () => {
+    const w = createCollabWorld();
+    const { before, after: pending } = await offered(w);
+    w.bw.clock.advanceHours(2);
+    const now = w.bw.clock.now();
+    assert.deepEqual(await answer(w, 'p1', pending.id, true), { offerStatus: 'accepted' });
+    const job = jobOf(w, pending.id, 'p1');
+    assert.equal(job?.offerStatus, 'accepted');
+    assert.deepEqual(job?.acceptedAt, now);
+    const b = await w.bw.store.getBooking(pending.id);
+    assert.ok(b);
+    assert.equal(b.assigneeId, 'p1');
+    assert.equal(b.assigneeAccepted, true);
+    assert.equal(b.assignStatus, 'assigned');
+    assert.equal(b.assignedAt, now.toISOString());
+    assert.equal(b.assignments?.[0]?.acceptedAt, now.toISOString());
+    assert.equal(b.version, pending.version + 1);
+    assert.deepEqual(await w.bw.store.getAvailabilityDay('p1', COLLAB_DAY), { state: 'booked', bookingId: b.id });
+    assert.deepEqual(w.bw.store.getStudioDayLoad('s1', COLLAB_DAY)?.assignedIds, [b.id]);
+    assert.deepEqual(w.bw.store.getStudioDayLoad('s1', COLLAB_DAY)?.unassignedIds, []);
+    assert.deepEqual(studioBookingNotices(pending, b), ['assigned']);
+    await notifyStudioBookingChange({ ...w.deps.notify }, pending, b);
+    assert.equal(rows(w, 'c1', 'booking_assigned').length, 1);
+    const { deps: chatDeps, chats } = createChatWorld();
+    await syncBookingChat(chatDeps, { before: null, after: { ...before, status: 'requested' } });
+    await syncBookingChat(chatDeps, { before: { ...before, status: 'requested' }, after: pending });
+    await syncBookingChat(chatDeps, { before: pending, after: b });
+    assert.equal(chats.chats.get(chatIdFor('c1', 's1'))?.assigneeId, 'p1');
+    const results = rows(w, 's1', 'collab_assignment_result');
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.title, 'Minh Trí đã nhận việc');
+    assert.equal(waitsForAssignee(b), false);
+  });
+
+  it('accept inside 24 h of the start makes the booking upcoming and clears assign_overdue', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    w.bw.clock.setTime(new Date('2026-10-14T08:00:00.000Z'));
+    w.bw.store.bookings.set(b.id, { ...b, assignOverdue: true, studioFault: { kind: 'assign_overdue', at: 'x' } });
+    const pending = await offer(w, b.id, 'p1');
+    assert.deepEqual(pending.studioFault, { kind: 'assign_overdue', at: 'x' }, 'still unassigned while the offer waits');
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, true);
+    const after = await w.bw.store.getBooking(b.id);
+    assert.equal(after?.status, 'upcoming');
+    assert.equal(after?.studioFault, null);
+    assert.equal(after?.assignOverdue, true);
+    assert.ok(w.bw.store.events.some((e) => e.bookingId === b.id && e.status === 'upcoming' && e.actorId === 'p1'));
+  });
+
+  it('accept after offerExpiresAt → deadline_passed', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    w.bw.clock.advanceHours(6);
+    await rejectsWith(answer(w, 'p1', after.id, true), 'deadline_passed');
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'pending');
+  });
+
+  it('accept by someone else → permission_denied', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    for (const uid of ['p2', 's1', 'c1', 'm1']) await rejectsWith(answer(w, uid, after.id, true), 'permission_denied');
+    await rejectsWith(answer(w, 'p1', 'nope', true), 'not_found');
+    await rejectsWith(respondCollabOffer(w.assignDeps, 'p1', { bookingId: after.id }), 'invalid_argument');
+  });
+
+  it('accept when the day was taken meanwhile → day_taken and the offer stays pending', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    w.bw.store.availability.set(`p1_${COLLAB_DAY}`, { state: 'booked', bookingId: 'personal' });
+    await rejectsWith(answer(w, 'p1', after.id, true), 'day_taken');
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'pending');
+    assert.deepEqual(await w.bw.store.getBooking(after.id), after);
+    // an "off" mark does not stop the collaborator from taking the job they are answering
+    w.bw.store.availability.set(`p1_${COLLAB_DAY}`, { state: 'off' });
+    await answer(w, 'p1', after.id, true);
+    assert.deepEqual(await w.bw.store.getAvailabilityDay('p1', COLLAB_DAY), { state: 'booked', bookingId: after.id });
+  });
+
+  it('accept after the collaborator stopped taking orders → not_accepting_orders, the offer stays pending', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    w.bw.providers.set('p1', { verified: false, onboardingComplete: true });
+    await rejectsWith(answer(w, 'p1', after.id, true), 'not_accepting_orders');
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'pending');
+  });
+
+  it('decline clears assigneeId and assigneeKind, keeps assignDeadline, notifies the studio with the deadline', async () => {
+    const w = createCollabWorld();
+    const { before, after: pending } = await offered(w);
+    w.bw.clock.advanceHours(1);
+    assert.deepEqual(await answer(w, 'p1', pending.id, false), { offerStatus: 'declined' });
+    const b = await w.bw.store.getBooking(pending.id);
+    assert.ok(b);
+    assert.equal(b.assigneeId, null);
+    assert.equal(b.assigneeKind, null);
+    assert.equal(b.assigneeAccepted, false);
+    assert.equal(b.assignStatus, 'unassigned');
+    assert.equal(b.assignDeadline, before.assignDeadline);
+    assert.equal(b.assignments?.[0]?.declinedAt, w.bw.clock.now().toISOString());
+    const job = jobOf(w, pending.id, 'p1');
+    assert.equal(job?.offerStatus, 'declined');
+    assert.deepEqual(job?.declinedAt, w.bw.clock.now());
+    assert.equal(await w.bw.store.getAvailabilityDay('p1', COLLAB_DAY), null);
+    const results = rows(w, 's1', 'collab_assignment_result');
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.title, 'Minh Trí từ chối việc');
+    assert.equal(results[0]?.body, 'Giao người khác trước 14:00 14/10.');
+    await rejectsWith(answer(w, 'p1', pending.id, true), 'permission_denied');
+    // the studio can offer it again, and the collaborator is told again (a new offer, a new key)
+    await offer(w, pending.id, 'p1');
+    assert.equal(jobOf(w, pending.id, 'p1')?.offerStatus, 'pending');
+    assert.equal(rows(w, 'p1', 'collab_assignment_offer').length, 2);
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', pending.id, false);
+    assert.equal(rows(w, 's1', 'collab_assignment_result').length, 2, 'the second decline is told too');
+  });
+
+  it('a declined or expired offer does not count as a violation (S26 counters unchanged)', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    await answer(w, 'p1', after.id, false);
+    await offer(w, after.id, 'p1');
+    w.bw.clock.advanceHours(7);
+    assert.equal(await expireCollabOffer(w.assignDeps, after.id, 'p1'), true);
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'expired');
+    for (const field of ['lateAssignCount', 'changeDeclinedCount', 'lateReassignCount', 'lateDeliveryCount'] as const) {
+      assert.equal(w.bw.store.counterOf('s1', field), 0, field);
+    }
+    assert.equal((await w.bw.store.getBooking(after.id))?.studioFault ?? null, null);
+    assert.equal(await expireCollabOffer(w.assignDeps, after.id, 'p1'), false, 'already expired');
+  });
+
+  it('an offer on a collaboration that ended meanwhile is closed on accept (not_found), the studio told of the end, and cannot be made', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    seedCollab(w, 'p1', { status: 'ended', endedAt: w.bw.clock.now(), endedBy: 'collaborator' });
+    await rejectsWith(answer(w, 'p1', after.id, true), 'not_found');
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'cancelled');
+    const b = await w.bw.store.getBooking(after.id);
+    assert.equal(b?.assigneeId, null);
+    const results = rows(w, 's1', 'collab_assignment_result');
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.title, 'Cộng tác với Minh Trí đã kết thúc');
+    await rejectsWith(offer(w, after.id, 'p1'), 'not_found');
+  });
+
+  it('a decline on a collaboration that ended meanwhile closes the offer quietly', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    seedCollab(w, 'p1', { status: 'ended', endedAt: w.bw.clock.now(), endedBy: 'studio' });
+    assert.deepEqual(await answer(w, 'p1', after.id, false), { offerStatus: 'declined' });
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'cancelled');
+    assert.equal((await w.bw.store.getBooking(after.id))?.assigneeId, null);
+    assert.equal(rows(w, 's1', 'collab_assignment_result')[0]?.title, 'Cộng tác với Minh Trí đã kết thúc');
+  });
+
+  it('an offer over a confirmed member tells the member at once; the customer hears booking_reassigned (not assigned) when the collaborator accepts', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    const withMember = await assign(w.bw, b.id, 'm1');
+    w.bw.clock.advanceHours(1);
+    const pending = await offer(w, b.id, 'p1');
+    assert.deepEqual(studioBookingNotices(withMember, pending), ['offer_replaced']);
+    await notifyStudioBookingChange(w.deps.notify, withMember, pending);
+    const told = rows(w, 'm1', 'booking_reassigned');
+    assert.equal(told.length, 1);
+    assert.match(told[0]?.title ?? '', /đã giao cho người khác/);
+    assert.equal(rows(w, 'c1').length, 0, 'the customer hears nothing while the offer waits');
+    assert.equal(rows(w, 'p1', 'booking_reassigned').length, 0);
+
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, true);
+    const accepted = await w.bw.store.getBooking(b.id);
+    assert.ok(accepted);
+    assert.deepEqual(studioBookingNotices(pending, accepted), ['reassigned']);
+    await notifyStudioBookingChange(w.deps.notify, pending, accepted);
+    const customer = rows(w, 'c1', 'booking_reassigned');
+    assert.equal(customer.length, 1);
+    assert.equal(customer[0]?.title, 'Studio Mây đã đổi thợ chụp');
+    assert.match(customer[0]?.body ?? '', /^Minh Trí sẽ chụp/);
+    assert.equal(rows(w, 'c1', 'booking_assigned').length, 0);
+    assert.equal(rows(w, 'p1', 'booking_reassigned').length, 1);
+    assert.equal(rows(w, 'm1', 'booking_reassigned').length, 1, 'the member is not told twice');
+  });
+
+  it('a member replaced by an offer that is declined and then put back is told again (dated key); the customer hears nothing', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    const withMember = await assign(w.bw, b.id, 'm1');
+    await notifyStudioBookingChange(w.deps.notify, b, withMember);
+    assert.equal(rows(w, 'm1', 'booking_assigned').length, 1);
+    w.bw.clock.advanceHours(1);
+    const pending = await offer(w, b.id, 'p1');
+    await notifyStudioBookingChange(w.deps.notify, withMember, pending);
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, false);
+    const declined = await w.bw.store.getBooking(b.id);
+    assert.ok(declined);
+    w.bw.clock.advanceHours(1);
+    const back = await assign(w.bw, b.id, 'm1');
+    assert.deepEqual(studioBookingNotices(declined, back), ['assigned']);
+    const customerBefore = rows(w, 'c1').length;
+    await notifyStudioBookingChange(w.deps.notify, declined, back);
+    await notifyStudioBookingChange(w.deps.notify, declined, back); // a retry is the same key
+    assert.equal(rows(w, 'm1', 'booking_assigned').length, 2, 'the member is told they are back');
+    assert.equal(rows(w, 'c1').length, customerBefore, 'the customer never heard of the offer');
+  });
+
+  it('a late offer over a confirmed member gives the customer the late_reassign right with the reassignment notice', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    await assign(w.bw, b.id, 'm1');
+    w.bw.clock.setTime(new Date('2026-10-14T09:00:00.000Z'));
+    const pending = await offer(w, b.id, 'p1');
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, true);
+    const accepted = await w.bw.store.getBooking(b.id);
+    assert.ok(accepted);
+    await notifyStudioBookingChange(w.deps.notify, pending, accepted);
+    assert.equal(rows(w, 'c1', 'booking_reassigned').length, 1);
+    assert.equal(studioFaultOf(accepted, w.bw.clock.now()), 'late_reassign');
+    assert.equal(w.bw.store.counterOf('s1', 'lateReassignCount'), 1);
+  });
+
+  it('an offer over a confirmed member that is declined and the deadline then passes: S26 overdue notice to the customer; a later collaborator is announced as a reassignment', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    seedCollab(w, 'p2');
+    const b = await studioBooking(w);
+    await assign(w.bw, b.id, 'm1');
+    w.bw.clock.setTime(new Date(COLLAB_START.getTime() - 26 * 60 * 60 * 1000)); // 2 h before the deadline
+    await offer(w, b.id, 'p1');
+    w.bw.clock.advanceHours(1);
+    await answer(w, 'p1', b.id, false);
+    w.bw.clock.advanceHours(2); // past the deadline, still unassigned
+    await runStudioBookingSweeps(w.assignDeps, w.deps.notify);
+    assert.equal(rows(w, 'c1', 'assign_overdue').length, 1);
+    const unassigned = await w.bw.store.getBooking(b.id);
+    assert.ok(unassigned);
+    const pending = await offer(w, b.id, 'p2');
+    assert.deepEqual(studioBookingNotices(unassigned, pending), [], 'nobody confirmed to tell');
+    await answer(w, 'p2', b.id, true);
+    const accepted = await w.bw.store.getBooking(b.id);
+    assert.ok(accepted);
+    assert.deepEqual(studioBookingNotices(pending, accepted), ['reassigned']);
+    await notifyStudioBookingChange(w.deps.notify, pending, accepted);
+    assert.equal(rows(w, 'c1', 'booking_reassigned').length, 1);
+  });
+
+  it('offering over an assigned member frees the member and moves the booking back to unassigned until the collaborator accepts', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    await assign(w.bw, b.id, 'm1');
+    const pending = await offer(w, b.id, 'p1');
+    assert.equal(await w.bw.store.getAvailabilityDay('m1', COLLAB_DAY), null);
+    assert.equal(pending.assignStatus, 'unassigned');
+    assert.deepEqual(w.bw.store.getStudioDayLoad('s1', COLLAB_DAY)?.unassignedIds, [b.id]);
+    assert.equal(waitsForAssignee(pending), true);
+  });
+
+  it('offering over the assignee of an upcoming booking returns it to accepted until the collaborator accepts', async () => {
+    const w = createCollabWorld();
+    seedCollab(w, 'p1');
+    const b = await studioBooking(w);
+    w.bw.clock.setTime(new Date('2026-10-14T09:00:00.000Z'));
+    const withMember = await assign(w.bw, b.id, 'm1');
+    assert.equal(withMember.status, 'upcoming');
+    await returnAssignment(w.bw.studioDeps, 'm1', { bookingId: b.id, reason: 'Ốm' });
+    const pending = await offer(w, b.id, 'p1');
+    assert.equal(pending.status, 'accepted');
+    assert.equal(pending.assignments?.[1]?.late, true, 'the confirmed member was replaced after the deadline');
+    assert.deepEqual(pending.studioFault, { kind: 'late_reassign', at: '2026-10-14T09:00:00.000Z' });
+    await answer(w, 'p1', b.id, true);
+    assert.equal((await w.bw.store.getBooking(b.id))?.status, 'upcoming');
+  });
+
+  it('"Trả việc" by an accepted collaborator marks the job returned and creates no pay record', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    await rejectsWith(returnAssignment(w.bw.studioDeps, 'p1', { bookingId: after.id }), 'permission_denied');
+    await answer(w, 'p1', after.id, true);
+    const returned = await returnAssignment(w.bw.studioDeps, 'p1', { bookingId: after.id, reason: 'Ốm' });
+    assert.deepEqual(returned.assignmentReturned, { at: T0.toISOString(), reason: 'Ốm' });
+    assert.equal(returned.assigneeId, 'p1');
+    const job = jobOf(w, after.id, 'p1');
+    assert.equal(job?.offerStatus, 'returned');
+    assert.equal(job?.payStatus, 'none');
+    assert.equal(job?.pay.dueAt, null);
+    // the studio reassigns: the collaborator's day is freed, the returned job stays returned
+    await assign(w.bw, after.id, 'm1');
+    assert.equal(await w.bw.store.getAvailabilityDay('p1', COLLAB_DAY), null);
+    assert.equal(jobOf(w, after.id, 'p1')?.offerStatus, 'returned');
+  });
+
+  it('a pending collaborator cannot act on the booking or be the subject of a change request', async () => {
+    const w = createCollabWorld();
+    const { after } = await offered(w);
+    await rejectsWith(requestAssigneeChange(w.bw.studioDeps, 'c1', { bookingId: after.id }), 'not_eligible');
+    w.bw.clock.setTime(new Date('2026-10-16T10:00:00.000Z'));
+    await rejectsWith(transitionBooking(w.bw.deps, { bookingId: after.id, action: 'mark_shot', actorId: 'p1' }), 'permission_denied');
   });
 });

@@ -160,7 +160,12 @@ void main() {
   });
 
   group('watchAssignedBookings', () {
-    Map<String, dynamic> doc(String status, {String? assigneeId}) => {
+    Map<String, dynamic> doc(
+      String status, {
+      String? assigneeId,
+      String? assignStatus = 'assigned',
+      Map<String, dynamic> extra = const {},
+    }) => {
       'customerId': 'c1',
       'photographerId': 'studio1',
       'serviceId': 's1',
@@ -173,6 +178,8 @@ void main() {
       'deposit': 1000000,
       'remaining': 0,
       'assigneeId': ?assigneeId,
+      'assignStatus': ?assignStatus,
+      ...extra,
     };
 
     test(
@@ -189,6 +196,35 @@ void main() {
         expect([for (final b in list) b.id], ['a1']);
       },
     );
+
+    test('a pending collaborator offer is not an assigned job (S27)', () async {
+      final db = FakeFirebaseFirestore();
+      final repo = FirestoreBookingRepository(firestore: db);
+      final col = db.collection('bookings');
+      const collab = {'assigneeKind': 'collaborator'};
+      await col
+          .doc('pending')
+          .set(
+            doc(
+              'accepted',
+              assigneeId: 'p1',
+              assignStatus: 'unassigned',
+              extra: {...collab, 'assigneeAccepted': false},
+            ),
+          );
+      await col
+          .doc('accepted')
+          .set(
+            doc(
+              'upcoming',
+              assigneeId: 'p1',
+              extra: {...collab, 'assigneeAccepted': true},
+            ),
+          );
+      await col.doc('member').set(doc('accepted', assigneeId: 'p1'));
+      final list = await repo.watchAssignedBookings('p1').first;
+      expect([for (final b in list) b.id]..sort(), ['accepted', 'member']);
+    });
 
     test('the fake emits assigned lists and errors', () async {
       final repo = FakeBookingRepository();

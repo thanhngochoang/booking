@@ -272,3 +272,44 @@ describe('getContactLink: instant_request (#140 Decision 22)', () => {
     assert.equal(logs.length, 0);
   });
 });
+
+/**
+ * S27 R8 on getContactLink. #136 built no assignee branch here (S26 spec §5.7: the customer opens the
+ * studio's channels; the assignee's own channels are "chưa làm", the mock has no button). So a collaborator,
+ * pending, accepted or replaced, is never the subject of a booking's contact link; the collaborator → customer
+ * direction (reading `bookings/{id}/private/contact`) is the rules' job, with `collaboratorContactOpen`.
+ */
+describe('getContactLink: studio bookings with a collaborator (S27 R8)', () => {
+  const studioBooking = (over: Record<string, unknown>): BookingRecord =>
+    ({ ...booking({ photographerId: 's1' }), isStudio: true, assigneeId: 'p1', assigneeKind: 'collaborator', ...over }) as BookingRecord;
+
+  function readsOf(record: BookingRecord) {
+    const { deps } = harness({ bookings: [record] });
+    const read: string[] = [];
+    const photographers = deps.photographers;
+    return {
+      read,
+      deps: { ...deps, photographers: { read: (id: string) => { read.push(id); return photographers.read(id); } } },
+    };
+  }
+
+  test("the customer cannot open a pending collaborator's channels: the booking's link opens the studio", async () => {
+    const { deps, read } = readsOf(studioBooking({ assigneeAccepted: false }));
+    assert.deepEqual(await getContactLink('c1', { bookingId: 'b1', channel: 'call' }, deps), { url: 'tel:+84912000001' });
+    assert.deepEqual(read, ['s1']);
+  });
+
+  test("after acceptance the link still opens the studio, never the collaborator's own channels (S26 §5.7)", async () => {
+    const { deps, read } = readsOf(studioBooking({ assigneeAccepted: true }));
+    await getContactLink('c1', { bookingId: 'b1', channel: 'zalo' }, deps);
+    assert.deepEqual(read, ['s1']);
+  });
+
+  test('a pending, accepted or replaced collaborator is not the subject and cannot ask for the link (permission_denied)', async () => {
+    for (const over of [{ assigneeAccepted: false }, { assigneeAccepted: true }, { assigneeId: 'p2', assigneeAccepted: true }]) {
+      const { deps, read } = readsOf(studioBooking(over));
+      await assert.rejects(getContactLink('p1', { bookingId: 'b1', channel: 'call' }, deps), isCode('permission_denied'));
+      assert.deepEqual(read, []);
+    }
+  });
+});

@@ -1,6 +1,7 @@
 import { DomainError } from './errors.js';
 
-export const CHAT_KINDS = ['inquiry', 'booking'] as const;
+/** `collab`: studio ↔ collaborator (S27 #151 Decision 16), studio in `customerId`, collaborator in `photographerId`. */
+export const CHAT_KINDS = ['inquiry', 'booking', 'collab'] as const;
 export type ChatKind = (typeof CHAT_KINDS)[number];
 
 export const MESSAGE_TYPES = ['text', 'image', 'location', 'system'] as const;

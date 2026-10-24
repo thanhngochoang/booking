@@ -42,7 +42,9 @@ class AssigneeSummary {
 ///
 /// The person is read as one label (name, tick, percent, shoots, studio);
 /// each button keeps its own name and a 48dp target. An empty [studioName]
-/// leaves "thợ của …" out.
+/// leaves "thợ của …" out. A [collaborator] (S27, mock
+/// `#S05.02-studio-collab`) reads "{n} buổi" with the line "Cộng tác với
+/// {studioName}" under it instead.
 class AssigneeCard extends StatelessWidget {
   const AssigneeCard({
     super.key,
@@ -51,10 +53,14 @@ class AssigneeCard extends StatelessWidget {
     required this.onViewProfile,
     this.changeLabel,
     this.onChange,
+    this.collaborator = false,
   });
 
   final AssigneeSummary summary;
   final String studioName;
+
+  /// Shoots for the studio as a collaborator, not as its member.
+  final bool collaborator;
   final VoidCallback onViewProfile;
   final String? changeLabel;
   final VoidCallback? onChange;
@@ -85,12 +91,18 @@ class AssigneeCard extends StatelessWidget {
     return [
       if (summary.tomatoPct case final pct?) MetaPart.tomato(pct),
       MetaPart.text(
-        studioName.isEmpty
+        studioName.isEmpty || collaborator
             ? l.photographerSessions(summary.shoots)
             : l.assigneeMeta(summary.shoots, studioName),
       ),
     ];
   }
+
+  /// "Cộng tác với {studio}" under the meta of a collaborator.
+  String? _collabLine(BuildContext context) =>
+      collaborator && studioName.isNotEmpty
+      ? context.l10n.assigneeCollabLabel(studioName)
+      : null;
 
   @override
   Widget build(BuildContext context) {
@@ -98,12 +110,14 @@ class AssigneeCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final fg = dark ? AppColorsDark.foreground : AppColors.foreground;
     final meta = _meta(context);
+    final collabLine = _collabLine(context);
     final person = Semantics(
       container: true,
       label: [
         summary.name,
         if (summary.verified) l.verifiedLabel,
         metaPartsSemantics(meta, l),
+        ?collabLine,
       ].join(', '),
       excludeSemantics: true,
       child: Row(
@@ -142,6 +156,19 @@ class AssigneeCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpace.s1),
                 MetaLine(meta, maxLines: 2),
+                if (collabLine != null)
+                  Text(
+                    collabLine,
+                    key: const Key('assignee-collab-label'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppText.xs2,
+                      color: dark
+                          ? AppColorsDark.foregroundSecondary
+                          : AppColors.foregroundSecondary,
+                    ),
+                  ),
               ],
             ),
           ),

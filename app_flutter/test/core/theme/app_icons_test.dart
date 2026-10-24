@@ -75,6 +75,8 @@ const _entries = <String, IconData>{
   'verified': AppIcons.verified,
   'work': AppIcons.work,
   'store': AppIcons.store,
+  'handshake': AppIcons.handshake,
+  'campaign': AppIcons.campaign,
   'people': AppIcons.people,
   'celebration': AppIcons.celebration,
   'trendingUp': AppIcons.trendingUp,

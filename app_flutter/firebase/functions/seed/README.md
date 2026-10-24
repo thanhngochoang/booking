@@ -16,6 +16,7 @@ Password for every account: `seed-password-1`
 | `cuc.studio@seed.test` | `seed-photographer-cuc` | photographer | studio (`providerType: studio`), TP.HCM; private studio address, public district Quận 1; Gọi only; `+84938000001` |
 | `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`, `approvedAwardCount: 3`), Huế; Gọi only; `+84905000001` |
 | `giang.pending@seed.test` | `seed-photographer-giang` | photographer | not verified, Cần Thơ; Gọi only; `+84976000001` (also her Auth phone); S21 verification submitted, waiting for staff (see "Verification (S21)") |
+| `hoa.ctv@seed.test` | `seed-photographer-hoa` | photographer | verified individual, TP.HCM (cưới, gia đình), in no studio; Gọi only; `+84909000001`; S27 applicant Cúc can accept (see "Studio recruiting (S27)") |
 | `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and is the `--actor` of `npm run awards` |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
@@ -176,7 +177,7 @@ hash and ciphertext of that number (`identity_hashes/{hash}` guards duplicates).
 |---|---|---|
 | Giang (`seed-photographer-giang`) | `verifications/{uid}` `submitted` 26 h before seeding (phone, fee paid by bank QR 30 min before that: `payments/seed-payment-vfee-giang`, 99 000 ₫, `released`, with `payment_received` and `fee_charged` ledger entries; fake identity `NGUYỄN T** G**`, rules done); `verified: false`, `acceptingOrders: false` | `list` shows her with `!` (over 24 h); `approve` → verified, accepting orders, push `verification_approved`; or `reject <uid> fake_avatar` → S21.02 rejected with one free resubmit |
 | Bình (`seed-photographer-binh`) | no verification record, no `fake_identities` override | sign in and walk S21.01 → fee (pay with the fake confirmation) → S21.03 → rules → submit; then `approve` with the CLI |
-| An, Cúc, Dũng | `approved` records from before the fee (match `verified: true`, `steps.fee` null) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
+| An, Cúc, Dũng, Hòa | `approved` records from before the fee (match `verified: true`, `steps.fee` null) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
 | Minh (`seed-customer-minh`) | `fake_identities` override `{dob: '2010-05-01'}` | the underage example (`underage`) if Minh switches to a photographer role |
 | Staff CLI (`tools/verifications.ts`, actor `seed-staff-admin`) | `scripts/verifications-local.sh list` · `show <uid>` · `approve <uid>` · `reject <uid> <reason> ["note"]` · `revoke <uid> "note"` · `business-approve <uid>` · `business-reject <uid> <reason> ["note"]`, each decision with `--actor seed-staff-admin` | decisions go through the same `reviewVerification` use case and notifications as the callable; reasons: `fake_avatar`, `stolen_portfolio`, `identity_mismatch`, `duplicate_account`, `underage`, `other` (business: `inactive`, `representative_mismatch`, `doc_unreadable`, `other`); `other` and `revoke` need a 5-500 character note |
 
@@ -257,12 +258,30 @@ photographer carries `nameKey` (the S26.02 search key).
 |---|---|---|
 | `studio_members/seed-photographer-cuc_seed-photographer-an_…` | Cúc ↔ An | `active`, joined 30 days before seeding; `photographers/seed-photographer-an.studioId` is Cúc |
 | `studio_members/seed-photographer-cuc_seed-photographer-binh_…` | Cúc → Bình | `invited`, expires 5 days after seeding (sign in as Bình to answer in S26.03) |
-| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to approve in S26.01) |
+| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to answer in S26.01: approving is refused `membership_conflict` while Dũng is Cúc's active collaborator (S27), declining works) |
 | `seed-booking-studio-assigned` | Lan ↔ Cúc | accepted, assigned to An, 3 days ahead (the next day An is free); An's day is `booked`; Cúc's day is `full` (its one member is taken) |
 | `seed-booking-studio-unassigned` | Lan ↔ Cúc | accepted, unassigned, starts about 20 h after seeding: its assign deadline has passed, so the first `npm run clock -- bookings` marks it overdue (`assign_overdue`, Lan may cancel with 100% back) |
 
 `studio_day_load/seed-photographer-cuc_{day}` holds both bookings' days (server only). Studio bookings never write
 the studio's own day as `booked`/`pending`; Cúc's `availability/{day}` only shows the derived `full`.
+
+## Studio recruiting (S27)
+
+Written with the domain's helpers (`recruitMatchKeys`, `recruitFilterKeys`) and the Functions mapping.
+
+| Document | Who | State |
+|---|---|---|
+| `recruitPosts/seed-recruit-cuc-ctv` | Cúc | open collaborator post "Tuyển CTV chụp cưới cuối tuần", Q1 + Q3 (TP.HCM), cưới + gia đình, 800 000 ₫/buổi, posted 2 days before seeding, 2 applications |
+| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-hoa` | Hòa → Cúc | `applied` (terms accepted). Hòa is verified and in no studio, so Cúc can accept her in S27.05 as a collaborator (the post's kind decides; the accept path) |
+| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-an` | An → Cúc | `applied` (terms accepted). An is also Cúc's S26 member, so Cúc can only decline it in S27.05 (accepting is `membership_conflict`; the refusal case) |
+| `studio_collaborations/seed-photographer-cuc_seed-photographer-dung` | Cúc ↔ Dũng | `active` collaborator since 10 days, default fee 600 000 ₫ (S27.06 on both sides; Cúc can offer a studio booking to Dũng in S26.04) |
+| `photographers/{uid}/private/recruit` | Cúc, Dũng, An, Hòa | Cúc `openPostCount` 1 and `activeCollabCount` 1; Dũng `activeCollabCount` 1; An and Hòa `openApplicationCount` 1 |
+| `photographers/{uid}.recruitMatchKeys` | every photographer | what `onPhotographerWrite` keeps: An (Hà Nội), Bình (Đà Nẵng), Dũng (Huế), Hòa (every TP.HCM area), Giang (Cần Thơ, no area → none); Cúc (studio) none |
+
+Who sees what: Lan and Minh (customers) see no "Tuyển thợ" tab and no "Đang tuyển" line on Cúc's profile (the rules
+refuse them `recruitPosts`); Bình (unverified) sees the post and "Xác minh để ứng tuyển" instead of "Ứng tuyển"; An and Hòa see
+the post with "Đã ứng tuyển"; Cúc sees it in "Tin tuyển của studio" (S27.05) with Hòa and An as applicants. Hòa is the
+only seeded provider serving TP.HCM, so a new HCM post by Cúc notifies Hòa (up to 3 notices per VN day).
 
 ## Discovery stats (S02)
 
@@ -272,6 +291,7 @@ the studio's own day as `booked`/`pending`; Cúc's `availability/{day}` only sho
 | Bình | 1 200 000 ₫ | computed from today | 0 | unverified, `acceptingOrders: false` |
 | Cúc | 2 500 000 ₫ | computed from today and its `full` days | 0 | studio package `seed-service-studio-family` (S26) |
 | Dũng | `null` | computed from today | 0 | no services seeded |
+| Hòa | `null` | computed from today | 0 | no services seeded |
 
 | Item | Key / Path | Value | Notes |
 |---|---|---|---|

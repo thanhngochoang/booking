@@ -6,10 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/badges/badge_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
@@ -23,7 +26,8 @@ import 'package:photobooking/features/photographer_profile/widgets/studio_member
 /// dashed "Chưa nhận đơn" tag under the name and a note after the stats.
 /// A studio (S03.01-studio) counts members and years active instead of the
 /// response time and lists its members after the stats; a studio member
-/// (S03.01-member) carries "Thành viên của {Studio}" under the name.
+/// (S03.01-member) carries "Thành viên của {Studio}" under the name; a
+/// provider viewer of a studio also sees "Đang tuyển · {n} tin" (S27).
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.profile, required this.owner});
 
@@ -213,6 +217,7 @@ class ProfileHeader extends ConsumerWidget {
               if (owner && !s.verified) const OwnerVerifyCard(),
               if (closed) _OrdersClosedNote(name: s.displayName),
               if (studio) StudioMembersSection(studio: s),
+              if (studio) _RecruitingLine(studioId: s.id),
               if (artist)
                 AwardsStrip(photographerId: s.id, reserveWhileLoading: true),
               if (profile.intro.bio.isNotEmpty) ...[
@@ -347,6 +352,82 @@ class OwnerVerifyCard extends ConsumerWidget {
                 onPressed: () => context.push('/verify/start'),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S03.01-studio "Đang tuyển · {n} tin" (`campaign`), opening S27.01 for
+/// this studio. Only a provider viewer counts (R3, Review Focus 1): the role
+/// first, then the provider facts; a customer never runs the query. Nothing
+/// while loading, on error, or with no open post.
+class _RecruitingLine extends ConsumerWidget {
+  const _RecruitingLine({required this.studioId});
+
+  final String studioId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(currentProfileProvider).value?.role;
+    if (role != UserRole.photographer) return const SizedBox.shrink();
+    final facts = ref.watch(myProviderFactsProvider).value;
+    if (facts == null || !facts.isProviderAccount) {
+      return const SizedBox.shrink();
+    }
+    return AsyncView<int>(
+      value: ref.watch(studioOpenRecruitCountProvider(studioId)),
+      skeleton: (_) => const SizedBox.shrink(),
+      error: (_, _, _) => const SizedBox.shrink(),
+      isEmpty: (n) => n <= 0,
+      empty: (_) => const SizedBox.shrink(),
+      data: (context, n) => _line(context, n),
+    );
+  }
+
+  Widget _line(BuildContext context, int n) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s3),
+      child: Semantics(
+        link: true,
+        child: InkWell(
+          key: const Key('profile-recruiting'),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: () => context.push(
+            Uri(
+              path: '/recruit',
+              queryParameters: {'studioId': studioId},
+            ).toString(),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSpace.s12),
+            child: Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondary,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: const SizedBox.square(
+                    dimension: AppSpace.s8,
+                    child: Center(
+                      child: ExcludeSemantics(
+                        child: AppIcon(AppIcons.campaign, size: AppIconSize.sm),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s2h),
+                Expanded(
+                  child: Text(
+                    context.l10n.profileRecruiting(n),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

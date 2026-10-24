@@ -14,6 +14,8 @@ import {
   MAX_MEMBERS_VERIFIED,
   PAYMENT_METHODS,
   acceptsOrders,
+  collabJobId,
+  collaborationId,
   escrowRefundedTotal,
   formatVnDate,
   isAddonKind,
@@ -23,6 +25,7 @@ import {
   parseVnDateTime,
   waitsForAssignee,
   type AddonLine,
+  type AssigneeKind,
   type Booking,
   type BookingPickup,
   type BookingCheckout,
@@ -33,6 +36,7 @@ import {
   type PaymentProvider,
   type AvailabilityDayRecord,
   type StudioBookingStore,
+  type StudioAssignment,
   type StudioBookingTx,
   type StudioDayLoad,
   type Payment,
@@ -65,6 +69,15 @@ import {
   spotDayFromFirestore,
   spotDayToFirestore,
 } from './spot_firestore.js';
+import {
+  COLLAB_JOBS_COLLECTION,
+  RECRUIT_COUNTERS_DOC,
+  STUDIO_COLLABORATIONS_COLLECTION,
+  collabJobFromDoc,
+  collabJobToDoc,
+  collaborationFromDoc,
+  countersFromDoc,
+} from './recruit_mapping.js';
 
 export const BOOKINGS_COLLECTION = 'bookings';
 export const AVAILABILITY_COLLECTION = 'availability';
@@ -150,6 +163,8 @@ function studioFieldsToFirestore(b: Booking): DocumentData {
     isStudio: true,
     assigneeId: b.assigneeId ?? null,
     assigneeKind: b.assigneeKind ?? null,
+    // S27: false while a collaborator's offer waits (rules keep the customer contact closed until true).
+    ...(b.assigneeAccepted !== undefined ? { assigneeAccepted: b.assigneeAccepted } : {}),
     assignStatus: b.assignStatus ?? 'unassigned',
     assignDeadline: toTimestamp(b.assignDeadline),
     assignOverdue: b.assignOverdue ?? false,
@@ -161,6 +176,10 @@ function studioFieldsToFirestore(b: Booking): DocumentData {
       by: a.by,
       reason: a.reason,
       late: a.late,
+      // S27 collaborator offers only; the agreed fee is never on the booking (#151 Decision 3).
+      ...(a.offerExpiresAt !== undefined ? { offerExpiresAt: toTimestamp(a.offerExpiresAt) } : {}),
+      ...(a.acceptedAt !== undefined ? { acceptedAt: toTimestamp(a.acceptedAt) } : {}),
+      ...(a.declinedAt !== undefined ? { declinedAt: toTimestamp(a.declinedAt) } : {}),
     })),
     assignRemindersSent: [...(b.assignRemindersSent ?? [])],
     changeRequest: cr
@@ -180,6 +199,11 @@ function studioFieldsToFirestore(b: Booking): DocumentData {
   };
 }
 
+/** A stored assignee kind; anything else is null (an entry without one predates S27 and is a member). */
+function assigneeKindOf(v: unknown): AssigneeKind | null {
+  return v === 'member' || v === 'collaborator' ? v : null;
+}
+
 function studioFieldsFromFirestore(d: DocumentData): Partial<Booking> {
   if (d.isStudio !== true) return {};
   const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
@@ -192,20 +216,29 @@ function studioFieldsFromFirestore(d: DocumentData): Partial<Booking> {
   return {
     isStudio: true,
     assigneeId: str(d.assigneeId),
-    assigneeKind: d.assigneeKind === 'member' ? 'member' : null,
+    assigneeKind: assigneeKindOf(d.assigneeKind),
+    ...(typeof d.assigneeAccepted === 'boolean' ? { assigneeAccepted: d.assigneeAccepted } : {}),
     assignStatus: d.assignStatus === 'assigned' ? 'assigned' : 'unassigned',
     ...(toIsoString(d.assignDeadline) !== undefined ? { assignDeadline: toIsoString(d.assignDeadline) } : {}),
     assignOverdue: d.assignOverdue === true,
     assignedAt: toIsoString(d.assignedAt) ?? null,
     assignments: Array.isArray(d.assignments)
-      ? d.assignments.map((raw: Record<string, unknown>) => ({
-          assigneeId: String(raw?.assigneeId ?? ''),
-          assigneeKind: 'member' as const,
-          at: toIsoString(raw?.at) ?? '',
-          by: String(raw?.by ?? ''),
-          reason: str(raw?.reason),
-          late: raw?.late === true,
-        }))
+      ? d.assignments.map((raw: Record<string, unknown>): StudioAssignment => {
+          const offerExpiresAt = toIsoString(raw?.offerExpiresAt);
+          const acceptedAt = toIsoString(raw?.acceptedAt);
+          const declinedAt = toIsoString(raw?.declinedAt);
+          return {
+            assigneeId: String(raw?.assigneeId ?? ''),
+            assigneeKind: assigneeKindOf(raw?.assigneeKind) ?? 'member',
+            at: toIsoString(raw?.at) ?? '',
+            by: String(raw?.by ?? ''),
+            reason: str(raw?.reason),
+            late: raw?.late === true,
+            ...(offerExpiresAt !== undefined ? { offerExpiresAt } : {}),
+            ...(acceptedAt !== undefined ? { acceptedAt } : {}),
+            ...(declinedAt !== undefined ? { declinedAt } : {}),
+          };
+        })
       : [],
     assignRemindersSent: Array.isArray(d.assignRemindersSent)
       ? d.assignRemindersSent.filter((r: unknown): r is 'h48' | 'h26' => r === 'h48' || r === 'h26')
@@ -803,6 +836,25 @@ export class FirestoreBookingStore implements StudioBookingStore {
           return typeof studioId === 'string' && studioId !== '' ? studioId : null;
         },
         getMemberDays: (studioId, day) => readStudioMemberDays(this.firestore, fTx, studioId, day),
+        // S27 (#151) collaborator offers run in this transaction: the collaboration, the collab job (fee and
+        // offer, never on the booking) and the studio's recruit counters (recruitBlockedUntil).
+        getCollaboration: async (studioId, uid) => {
+          const snap = await fTx.get(this.firestore.collection(STUDIO_COLLABORATIONS_COLLECTION).doc(collaborationId(studioId, uid)));
+          return snap.exists ? collaborationFromDoc(snap.id, snap.data()) : null;
+        },
+        getCollabJob: async (bookingId, uid) => {
+          const snap = await fTx.get(this.firestore.collection(COLLAB_JOBS_COLLECTION).doc(collabJobId(bookingId, uid)));
+          return snap.exists ? collabJobFromDoc(snap.id, snap.data()) : null;
+        },
+        getRecruitCounters: async (uid) => {
+          const snap = await fTx.get(
+            this.firestore.collection('photographers').doc(uid).collection('private').doc(RECRUIT_COUNTERS_DOC),
+          );
+          return countersFromDoc(snap.exists ? snap.data() : undefined);
+        },
+        putCollabJob: (j) => {
+          fTx.set(this.firestore.collection(COLLAB_JOBS_COLLECTION).doc(j.id), collabJobToDoc(j));
+        },
         getBooking: async (id) => {
           const snap = await fTx.get(this.firestore.collection(BOOKINGS_COLLECTION).doc(id));
           return bookingFromFirestore(snap.id, snap.data());

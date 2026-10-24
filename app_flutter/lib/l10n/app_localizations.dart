@@ -16304,6 +16304,1476 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bản đồ: {pins}'**
   String mapSemantics(String pins);
+
+  /// No description provided for @chatKindCollab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác'**
+  String get chatKindCollab;
+
+  /// No description provided for @recruitErrorGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại sau.'**
+  String get recruitErrorGeneric;
+
+  /// No description provided for @recruitErrorRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã dùng hết lượt hôm nay. Thử lại ngày mai.'**
+  String get recruitErrorRateLimited;
+
+  /// No description provided for @recruitErrorApplyLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có 10 ứng tuyển chờ trả lời. Chờ studio trả lời hoặc rút bớt.'**
+  String get recruitErrorApplyLimit;
+
+  /// No description provided for @recruitErrorPostLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã có 3 tin mở.'**
+  String get recruitErrorPostLimit;
+
+  /// No description provided for @recruitErrorClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin đã đóng hoặc hết hạn.'**
+  String get recruitErrorClosed;
+
+  /// No description provided for @recruitErrorDuplicate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã ứng tuyển tin này.'**
+  String get recruitErrorDuplicate;
+
+  /// No description provided for @collabErrorFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ số cộng tác cho phép.'**
+  String get collabErrorFull;
+
+  /// No description provided for @collabErrorCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa mời lại được, chờ đủ 3 ngày.'**
+  String get collabErrorCooldown;
+
+  /// No description provided for @collabErrorBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn việc được giao chưa xong.'**
+  String get collabErrorBusy;
+
+  /// No description provided for @collabErrorConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đang là thành viên của studio bạn.'**
+  String get collabErrorConflict;
+
+  /// No description provided for @collabErrorDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có lịch trong ngày này.'**
+  String get collabErrorDayTaken;
+
+  /// No description provided for @collabPayDue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần trả'**
+  String get collabPayDue;
+
+  /// No description provided for @collabPayDisputed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận'**
+  String get collabPayDisputed;
+
+  /// No description provided for @collabPayReported.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã báo trả'**
+  String get collabPayReported;
+
+  /// No description provided for @collabPayReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get collabPayReceived;
+
+  /// No description provided for @collabMethodBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản'**
+  String get collabMethodBank;
+
+  /// No description provided for @collabMethodCash.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền mặt'**
+  String get collabMethodCash;
+
+  /// No description provided for @collabMethodOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get collabMethodOther;
+
+  /// S27.06 CSV header (Decision 19): the seven columns, comma-separated, no commas inside a name.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp,Dịch vụ,Cộng tác viên,Thù lao,Trạng thái,Ngày trả,Cách trả'**
+  String get collabCsvHeader;
+
+  /// No description provided for @recruitTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuyển thợ'**
+  String get recruitTab;
+
+  /// No description provided for @recruitTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuyển thợ'**
+  String get recruitTitle;
+
+  /// No description provided for @recruitStudioPostsTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin tuyển của studio'**
+  String get recruitStudioPostsTooltip;
+
+  /// No description provided for @recruitFilterArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực'**
+  String get recruitFilterArea;
+
+  /// No description provided for @recruitFilterSpecialty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thể loại'**
+  String get recruitFilterSpecialty;
+
+  /// No description provided for @recruitFilterAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get recruitFilterAll;
+
+  /// No description provided for @recruitKindCollaborator.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác theo việc'**
+  String get recruitKindCollaborator;
+
+  /// No description provided for @recruitKindMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào studio'**
+  String get recruitKindMember;
+
+  /// No description provided for @recruitMatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hợp với bạn'**
+  String get recruitMatch;
+
+  /// No description provided for @recruitFeePerShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'{amount}/buổi'**
+  String recruitFeePerShoot(String amount);
+
+  /// No description provided for @recruitFeeNegotiable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thoả thuận'**
+  String get recruitFeeNegotiable;
+
+  /// No description provided for @recruitFrequencyOccasional.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vài buổi/tháng'**
+  String get recruitFrequencyOccasional;
+
+  /// No description provided for @recruitFrequencyWeekly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hằng tuần'**
+  String get recruitFrequencyWeekly;
+
+  /// No description provided for @recruitFrequencySeasonal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo mùa'**
+  String get recruitFrequencySeasonal;
+
+  /// No description provided for @recruitFrequencyOccasionalLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vài buổi mỗi tháng'**
+  String get recruitFrequencyOccasionalLong;
+
+  /// No description provided for @recruitFrequencyWeeklyLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hằng tuần'**
+  String get recruitFrequencyWeeklyLong;
+
+  /// No description provided for @recruitFrequencySeasonalLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo mùa (cưới, Tết…)'**
+  String get recruitFrequencySeasonalLong;
+
+  /// No description provided for @recruitCardFooter.
+  ///
+  /// In vi, this message translates to:
+  /// **'{frequency} · {ago}'**
+  String recruitCardFooter(String frequency, String ago);
+
+  /// No description provided for @recruitAgoYesterday.
+  ///
+  /// In vi, this message translates to:
+  /// **'hôm qua'**
+  String get recruitAgoYesterday;
+
+  /// No description provided for @recruitAgoWeeks.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} tuần trước'**
+  String recruitAgoWeeks(int n);
+
+  /// No description provided for @recruitOnlyProvidersNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ thợ ảnh và studio thấy mục này.'**
+  String get recruitOnlyProvidersNote;
+
+  /// No description provided for @recruitEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tin tuyển nào hợp bộ lọc.'**
+  String get recruitEmpty;
+
+  /// No description provided for @recruitLoadMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get recruitLoadMore;
+
+  /// No description provided for @recruitSpecialtiesLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thể loại'**
+  String get recruitSpecialtiesLabel;
+
+  /// No description provided for @recruitAreasLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực làm việc'**
+  String get recruitAreasLabel;
+
+  /// No description provided for @recruitFrequencyLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tần suất'**
+  String get recruitFrequencyLabel;
+
+  /// No description provided for @recruitFeeLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao tham khảo · studio trả trực tiếp cho bạn, ngoài ứng dụng'**
+  String get recruitFeeLabel;
+
+  /// No description provided for @recruitRequirements.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu'**
+  String get recruitRequirements;
+
+  /// No description provided for @recruitStats.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} người đã ứng tuyển · còn {days} ngày'**
+  String recruitStats(int count, int days);
+
+  /// No description provided for @recruitStudioShoots.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} buổi chụp'**
+  String recruitStudioShoots(int n);
+
+  /// No description provided for @recruitViewStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem studio'**
+  String get recruitViewStudio;
+
+  /// No description provided for @recruitApply.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ứng tuyển'**
+  String get recruitApply;
+
+  /// No description provided for @recruitVerifyToApply.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh để ứng tuyển'**
+  String get recruitVerifyToApply;
+
+  /// No description provided for @recruitVerifyNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần xác minh danh tính trước khi ứng tuyển.'**
+  String get recruitVerifyNote;
+
+  /// No description provided for @recruitApplied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ứng tuyển · chờ studio'**
+  String get recruitApplied;
+
+  /// No description provided for @recruitWithdraw.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rút ứng tuyển'**
+  String get recruitWithdraw;
+
+  /// No description provided for @recruitWithdrawConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rút ứng tuyển?'**
+  String get recruitWithdrawConfirmTitle;
+
+  /// No description provided for @recruitWithdrawConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mỗi tin chỉ ứng tuyển một lần, rút rồi không gửi lại được.'**
+  String get recruitWithdrawConfirmBody;
+
+  /// No description provided for @recruitWithdrawKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get recruitWithdrawKeep;
+
+  /// No description provided for @recruitAlreadyMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang là thành viên của {studio}.'**
+  String recruitAlreadyMember(String studio);
+
+  /// No description provided for @recruitStudioViewerNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio xem được tin nhưng không ứng tuyển.'**
+  String get recruitStudioViewerNote;
+
+  /// No description provided for @recruitClosedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin đã đóng hoặc hết hạn.'**
+  String get recruitClosedNote;
+
+  /// No description provided for @recruitResultAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã nhận bạn'**
+  String get recruitResultAccepted;
+
+  /// No description provided for @recruitResultDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chưa nhận ứng tuyển này'**
+  String get recruitResultDeclined;
+
+  /// No description provided for @recruitApplyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ứng tuyển'**
+  String get recruitApplyTitle;
+
+  /// No description provided for @recruitApplySubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{title} · {studio}'**
+  String recruitApplySubtitle(String title, String studio);
+
+  /// No description provided for @recruitSheetClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get recruitSheetClose;
+
+  /// No description provided for @recruitMessageLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời nhắn cho studio'**
+  String get recruitMessageLabel;
+
+  /// No description provided for @recruitMessageHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu ngắn về kinh nghiệm và thiết bị của bạn'**
+  String get recruitMessageHint;
+
+  /// No description provided for @recruitSamplesLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh tiêu biểu'**
+  String get recruitSamplesLabel;
+
+  /// No description provided for @recruitSamplesHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tối đa 3 bài từ portfolio'**
+  String get recruitSamplesHint;
+
+  /// No description provided for @recruitSamplesCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/3'**
+  String recruitSamplesCount(int n);
+
+  /// No description provided for @recruitSamplesEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có bài nào trong portfolio.'**
+  String get recruitSamplesEmpty;
+
+  /// No description provided for @collabTermsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều khoản cộng tác'**
+  String get collabTermsTitle;
+
+  /// No description provided for @collabTerm1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hợp đồng dịch vụ theo từng buổi chụp: bạn tự quyết cách làm, không có giờ làm cố định, không độc quyền.'**
+  String get collabTerm1;
+
+  /// No description provided for @collabTerm2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao do hai bên thoả thuận từng việc. Studio trả trực tiếp cho bạn ngoài ứng dụng; ứng dụng không bảo lãnh khoản này.'**
+  String get collabTerm2;
+
+  /// No description provided for @collabTerm3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không chào trực tiếp khách mà studio giao cho bạn trong 6 tháng.'**
+  String get collabTerm3;
+
+  /// No description provided for @collabTermsAgree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đồng ý điều khoản cộng tác'**
+  String get collabTermsAgree;
+
+  /// No description provided for @recruitNoContactNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không ghi số điện thoại, Zalo hay link trong lời nhắn.'**
+  String get recruitNoContactNote;
+
+  /// No description provided for @recruitMemberNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được nhận thì bạn vào {studio} như thành viên (mỗi thợ ở một studio).'**
+  String recruitMemberNote(String studio);
+
+  /// No description provided for @recruitSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi ứng tuyển'**
+  String get recruitSend;
+
+  /// No description provided for @recruitSentToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi ứng tuyển'**
+  String get recruitSentToast;
+
+  /// No description provided for @recruitContactError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung'**
+  String get recruitContactError;
+
+  /// No description provided for @recruitMessageInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời nhắn tối đa 400 ký tự.'**
+  String get recruitMessageInvalid;
+
+  /// No description provided for @recruitSamplesInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chọn tối đa 3 bài trong portfolio của bạn.'**
+  String get recruitSamplesInvalid;
+
+  /// No description provided for @recruitNewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng tin tuyển'**
+  String get recruitNewTitle;
+
+  /// No description provided for @recruitEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa tin tuyển'**
+  String get recruitEditTitle;
+
+  /// No description provided for @recruitOpenSlots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {left}/3 tin mở'**
+  String recruitOpenSlots(int left);
+
+  /// No description provided for @recruitKindLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại tin'**
+  String get recruitKindLabel;
+
+  /// No description provided for @recruitKindCollaboratorHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ làm từng buổi, không vào studio'**
+  String get recruitKindCollaboratorHint;
+
+  /// No description provided for @recruitKindMemberLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên studio'**
+  String get recruitKindMemberLabel;
+
+  /// No description provided for @recruitKindMemberHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ vào studio của bạn'**
+  String get recruitKindMemberHint;
+
+  /// No description provided for @recruitTitleLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề'**
+  String get recruitTitleLabel;
+
+  /// No description provided for @recruitSpecialtiesPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thể loại (tối đa 4)'**
+  String get recruitSpecialtiesPick;
+
+  /// No description provided for @recruitAreasPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực (tối đa 5)'**
+  String get recruitAreasPick;
+
+  /// No description provided for @recruitFeePick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao tham khảo'**
+  String get recruitFeePick;
+
+  /// No description provided for @recruitFeeKindPerShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo buổi'**
+  String get recruitFeeKindPerShoot;
+
+  /// No description provided for @recruitFeeKindNegotiable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thoả thuận'**
+  String get recruitFeeKindNegotiable;
+
+  /// No description provided for @recruitFeeAmountHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền mỗi buổi'**
+  String get recruitFeeAmountHint;
+
+  /// No description provided for @recruitFeeAmountSuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'₫ / buổi'**
+  String get recruitFeeAmountSuffix;
+
+  /// No description provided for @recruitRequirementsHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị, kinh nghiệm, cách làm việc'**
+  String get recruitRequirementsHint;
+
+  /// No description provided for @recruitFormNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không ghi số điện thoại, Zalo hay link. Tin hiện 30 ngày, chỉ thợ ảnh và studio thấy.'**
+  String get recruitFormNote;
+
+  /// No description provided for @recruitPublish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng tin'**
+  String get recruitPublish;
+
+  /// No description provided for @recruitSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get recruitSave;
+
+  /// No description provided for @recruitPostedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng tin'**
+  String get recruitPostedToast;
+
+  /// No description provided for @recruitSavedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thay đổi'**
+  String get recruitSavedToast;
+
+  /// No description provided for @recruitTitleError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề 8–80 ký tự'**
+  String get recruitTitleError;
+
+  /// No description provided for @recruitSpecialtiesError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn 1–4 thể loại'**
+  String get recruitSpecialtiesError;
+
+  /// No description provided for @recruitAreasError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn 1–5 khu vực'**
+  String get recruitAreasError;
+
+  /// No description provided for @recruitFeeError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số tiền mỗi buổi'**
+  String get recruitFeeError;
+
+  /// No description provided for @recruitRequirementsError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu tối đa 600 ký tự'**
+  String get recruitRequirementsError;
+
+  /// No description provided for @recruitVerifyToPostNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio cần xác minh trước khi đăng tin.'**
+  String get recruitVerifyToPostNote;
+
+  /// No description provided for @recruitStudioTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin tuyển của studio'**
+  String get recruitStudioTitle;
+
+  /// No description provided for @recruitStudioMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{open}/3 tin mở · còn {left} lượt đăng/đóng hôm nay'**
+  String recruitStudioMeta(int open, int left);
+
+  /// No description provided for @recruitStatusOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang mở'**
+  String get recruitStatusOpen;
+
+  /// No description provided for @recruitStatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng'**
+  String get recruitStatusClosed;
+
+  /// No description provided for @recruitStatusExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get recruitStatusExpired;
+
+  /// No description provided for @recruitPostMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ứng viên · còn {days} ngày'**
+  String recruitPostMeta(int count, int days);
+
+  /// No description provided for @recruitPostMetaEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ứng viên'**
+  String recruitPostMetaEnded(int count);
+
+  /// No description provided for @recruitEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get recruitEdit;
+
+  /// No description provided for @recruitRenew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia hạn 30 ngày'**
+  String get recruitRenew;
+
+  /// No description provided for @recruitRenewedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gia hạn tới {date}'**
+  String recruitRenewedToast(String date);
+
+  /// No description provided for @recruitClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng tin'**
+  String get recruitClose;
+
+  /// No description provided for @recruitCloseConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng tin này?'**
+  String get recruitCloseConfirmTitle;
+
+  /// No description provided for @recruitCloseConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ứng viên đang chờ được báo là chưa được nhận.'**
+  String get recruitCloseConfirmBody;
+
+  /// No description provided for @recruitCloseKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ tin'**
+  String get recruitCloseKeep;
+
+  /// No description provided for @recruitApplicantsHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ứng viên · {title}'**
+  String recruitApplicantsHeader(String title);
+
+  /// No description provided for @recruitApplicantsPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} chờ trả lời'**
+  String recruitApplicantsPending(int n);
+
+  /// No description provided for @recruitAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get recruitAccept;
+
+  /// No description provided for @recruitDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get recruitDecline;
+
+  /// No description provided for @recruitAcceptedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận {name}'**
+  String recruitAcceptedToast(String name);
+
+  /// No description provided for @recruitDeclineConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối {name}?'**
+  String recruitDeclineConfirmTitle(String name);
+
+  /// No description provided for @recruitDeclineConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} được báo là studio chưa nhận ứng tuyển này.'**
+  String recruitDeclineConfirmBody(String name);
+
+  /// No description provided for @recruitDeclineKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get recruitDeclineKeep;
+
+  /// No description provided for @recruitNewPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng tin mới'**
+  String get recruitNewPost;
+
+  /// No description provided for @recruitFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ 3 tin mở'**
+  String get recruitFull;
+
+  /// No description provided for @recruitVerifyToPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh để đăng tin'**
+  String get recruitVerifyToPost;
+
+  /// No description provided for @recruitBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn tạm không đăng tin và mời cộng tác viên tới {date} vì chưa trả thù lao cho cộng tác viên.'**
+  String recruitBlocked(String date);
+
+  /// No description provided for @recruitNoApplicants.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ai ứng tuyển.'**
+  String get recruitNoApplicants;
+
+  /// No description provided for @recruitNoPosts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tin tuyển. Đăng tin để thợ ảnh khu vực của bạn thấy.'**
+  String get recruitNoPosts;
+
+  /// No description provided for @recruitAcceptConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang ở studio khác hoặc đang cộng tác với studio bạn.'**
+  String recruitAcceptConflict(String name);
+
+  /// No description provided for @recruitAcceptCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} mới rời studio, chưa vào được studio mới.'**
+  String recruitAcceptCooldown(String name);
+
+  /// No description provided for @recruitAcceptStudioFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã đủ thành viên.'**
+  String get recruitAcceptStudioFull;
+
+  /// No description provided for @recruitAcceptCollabFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ số cộng tác viên.'**
+  String get recruitAcceptCollabFull;
+
+  /// No description provided for @recruitAcceptNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} hiện chưa nhận đơn được.'**
+  String recruitAcceptNotAccepting(String name);
+
+  /// No description provided for @profileRecruiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tuyển · {n} tin'**
+  String profileRecruiting(int n);
+
+  /// No description provided for @collabTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác'**
+  String get collabTitle;
+
+  /// No description provided for @collabStudioMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{active}/{max} cộng tác viên · còn {left} thao tác hôm nay'**
+  String collabStudioMeta(int active, int max, int left);
+
+  /// No description provided for @collabRowMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{jobs} việc đang giao · gợi ý {fee}/buổi'**
+  String collabRowMeta(int jobs, String fee);
+
+  /// No description provided for @collabRowMetaNoFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'{jobs} việc đang giao'**
+  String collabRowMetaNoFee(int jobs);
+
+  /// No description provided for @collabRowOptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuỳ chọn cho {name}'**
+  String collabRowOptions(String name);
+
+  /// No description provided for @collabMenuMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin'**
+  String get collabMenuMessage;
+
+  /// No description provided for @collabMenuFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa thù lao gợi ý'**
+  String get collabMenuFee;
+
+  /// No description provided for @collabMenuEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc cộng tác'**
+  String get collabMenuEnd;
+
+  /// No description provided for @collabEndConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc cộng tác với {name}?'**
+  String collabEndConfirmTitle(String name);
+
+  /// No description provided for @collabEndConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời lại được sau 3 ngày.'**
+  String get collabEndConfirmBody;
+
+  /// No description provided for @collabEndBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} việc được giao chưa xong.'**
+  String collabEndBusy(int n);
+
+  /// No description provided for @collabKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get collabKeep;
+
+  /// No description provided for @collabPayDueHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao cần trả'**
+  String get collabPayDueHeader;
+
+  /// No description provided for @collabMarkPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả'**
+  String get collabMarkPaid;
+
+  /// No description provided for @collabPendingHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ'**
+  String get collabPendingHeader;
+
+  /// No description provided for @collabInviteSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã gửi · hết hạn sau {days} ngày'**
+  String collabInviteSent(int days);
+
+  /// No description provided for @collabCancelInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get collabCancelInvite;
+
+  /// No description provided for @collabTaxNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản từ 5.000.000đ/lần có thể phải khấu trừ thuế TNCN 10%; hãy hỏi kế toán.'**
+  String get collabTaxNote;
+
+  /// No description provided for @collabTaxDismiss.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn lưu ý thuế'**
+  String get collabTaxDismiss;
+
+  /// No description provided for @collabExportCsv.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép bảng kê tháng {month} (CSV)'**
+  String collabExportCsv(int month);
+
+  /// No description provided for @collabExportDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép bảng kê tháng {month}. Dán vào bảng tính để xem.'**
+  String collabExportDone(int month);
+
+  /// No description provided for @collabExportEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month} chưa có khoản thù lao nào.'**
+  String collabExportEmpty(int month);
+
+  /// No description provided for @collabInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời cộng tác viên'**
+  String get collabInvite;
+
+  /// No description provided for @collabStudioEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có cộng tác viên. Mời thợ hoặc đăng tin tuyển ở Tin tuyển.'**
+  String get collabStudioEmpty;
+
+  /// No description provided for @collabPaidSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả thù lao'**
+  String get collabPaidSheetTitle;
+
+  /// No description provided for @collabPaidDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày trả'**
+  String get collabPaidDate;
+
+  /// No description provided for @collabPaidToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get collabPaidToday;
+
+  /// No description provided for @collabPaidYesterday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm qua'**
+  String get collabPaidYesterday;
+
+  /// No description provided for @collabPaidOtherDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày khác'**
+  String get collabPaidOtherDay;
+
+  /// No description provided for @collabPaidMethod.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cách trả'**
+  String get collabPaidMethod;
+
+  /// No description provided for @collabPaidConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đã trả'**
+  String get collabPaidConfirm;
+
+  /// No description provided for @collabFeeSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao gợi ý'**
+  String get collabFeeSheetTitle;
+
+  /// No description provided for @collabFeeHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gợi ý sẵn khi giao việc cho {name}'**
+  String collabFeeHint(String name);
+
+  /// No description provided for @collabFeeInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ 1.000₫ tới 100.000.000₫, bội số của 1.000₫'**
+  String get collabFeeInvalid;
+
+  /// No description provided for @collabFeeSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get collabFeeSave;
+
+  /// No description provided for @collabFeeSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thù lao gợi ý'**
+  String get collabFeeSaved;
+
+  /// No description provided for @collabInviteSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm thợ theo tên'**
+  String get collabInviteSearch;
+
+  /// No description provided for @collabInviteRowMember.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên của studio bạn'**
+  String get collabInviteRowMember;
+
+  /// S26.02-collab: the studio already sent this photographer an S26 member invite that is still pending, so no collaborator invite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời làm thành viên'**
+  String get collabInviteRowMemberInvited;
+
+  /// No description provided for @collabInviteRowActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang cộng tác'**
+  String get collabInviteRowActive;
+
+  /// No description provided for @collabInviteRowUnverified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác minh'**
+  String get collabInviteRowUnverified;
+
+  /// No description provided for @collabInviteRowCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời lại được từ {date}'**
+  String collabInviteRowCooldown(String date);
+
+  /// No description provided for @collabInviteFooter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ'**
+  String get collabInviteFooter;
+
+  /// No description provided for @collabInviteAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời'**
+  String get collabInviteAction;
+
+  /// No description provided for @collabOffersHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc chờ nhận'**
+  String get collabOffersHeader;
+
+  /// No description provided for @collabOfferLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {time}'**
+  String collabOfferLeft(String time);
+
+  /// No description provided for @collabLeftHoursMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{h} giờ {m} phút'**
+  String collabLeftHoursMinutes(int h, int m);
+
+  /// No description provided for @collabStudiosHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio cộng tác'**
+  String get collabStudiosHeader;
+
+  /// No description provided for @collabStudiosCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / tối đa 5'**
+  String collabStudiosCount(int n);
+
+  /// No description provided for @collabStudioRowMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ {month} · {jobs} việc đang giao'**
+  String collabStudioRowMeta(String month, int jobs);
+
+  /// No description provided for @collabInvitesHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời'**
+  String get collabInvitesHeader;
+
+  /// No description provided for @collabInviteRowMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời cộng tác · hết hạn sau {days} ngày'**
+  String collabInviteRowMeta(int days);
+
+  /// No description provided for @collabAcceptInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem & nhận'**
+  String get collabAcceptInvite;
+
+  /// No description provided for @collabDeclineInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get collabDeclineInvite;
+
+  /// No description provided for @collabAcceptSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác với {studio}'**
+  String collabAcceptSheetTitle(String studio);
+
+  /// No description provided for @collabAcceptSheetConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận lời cộng tác'**
+  String get collabAcceptSheetConfirm;
+
+  /// No description provided for @collabAcceptedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận lời cộng tác với {studio}'**
+  String collabAcceptedToast(String studio);
+
+  /// No description provided for @collabInviteDeclinedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối lời mời của {studio}'**
+  String collabInviteDeclinedToast(String studio);
+
+  /// No description provided for @collabPayHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao'**
+  String get collabPayHeader;
+
+  /// No description provided for @collabPayReportedMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio báo đã trả {date} ({method})'**
+  String collabPayReportedMeta(String date, String method);
+
+  /// No description provided for @collabConfirmReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get collabConfirmReceived;
+
+  /// No description provided for @collabReportNotReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận'**
+  String get collabReportNotReceived;
+
+  /// No description provided for @collabNotReceivedConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo chưa nhận thù lao?'**
+  String get collabNotReceivedConfirmTitle;
+
+  /// No description provided for @collabNotReceivedConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio và bộ phận hỗ trợ được báo. Ứng dụng không bảo lãnh khoản này.'**
+  String get collabNotReceivedConfirmBody;
+
+  /// No description provided for @collabEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có studio cộng tác. Xem tin ở Công việc → Tuyển thợ.'**
+  String get collabEmpty;
+
+  /// No description provided for @collabOfferTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận việc cộng tác'**
+  String get collabOfferTitle;
+
+  /// No description provided for @collabOfferStudioNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio chịu trách nhiệm với khách và lo bàn giao ảnh'**
+  String get collabOfferStudioNote;
+
+  /// No description provided for @collabOfferFeeNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao · studio trả trực tiếp cho bạn sau buổi chụp'**
+  String get collabOfferFeeNote;
+
+  /// No description provided for @collabOfferDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả lời trước {time} (còn {left})'**
+  String collabOfferDeadline(String time, String left);
+
+  /// No description provided for @collabOfferTimeToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'{time} hôm nay'**
+  String collabOfferTimeToday(String time);
+
+  /// No description provided for @collabOfferDeadlineNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không trả lời coi như từ chối'**
+  String get collabOfferDeadlineNote;
+
+  /// No description provided for @collabOfferLockNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận việc thì khung giờ này bị khoá trên lịch của bạn và bạn vào hội thoại với khách.'**
+  String get collabOfferLockNote;
+
+  /// No description provided for @collabOfferAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận việc'**
+  String get collabOfferAccept;
+
+  /// No description provided for @collabOfferDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get collabOfferDecline;
+
+  /// No description provided for @collabOfferAcceptedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận việc'**
+  String get collabOfferAcceptedToast;
+
+  /// No description provided for @collabOfferDeclinedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối, studio được báo'**
+  String get collabOfferDeclinedToast;
+
+  /// No description provided for @collabOfferExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc này đã hết hạn trả lời'**
+  String get collabOfferExpired;
+
+  /// No description provided for @collabOfferGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc này không còn chờ bạn nhận.'**
+  String get collabOfferGone;
+
+  /// No description provided for @assignGroupMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get assignGroupMembers;
+
+  /// No description provided for @assignGroupCollaborators.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác viên'**
+  String get assignGroupCollaborators;
+
+  /// No description provided for @assignFeeLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thù lao'**
+  String get assignFeeLabel;
+
+  /// No description provided for @assignFeeRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập thù lao cho cộng tác viên'**
+  String get assignFeeRequired;
+
+  /// S26.04-collab: assignBooking refused deadline_passed for a collaborator offer (under 15 minutes left, Decision 13).
+  ///
+  /// In vi, this message translates to:
+  /// **'Không còn đủ thời gian để cộng tác viên nhận. Giao cho thành viên.'**
+  String get assignCollabErrDeadline;
+
+  /// S26.04-collab: assignBooking refused blocked (the studio and the collaborator blocked each other).
+  ///
+  /// In vi, this message translates to:
+  /// **'Không giao việc được: hai bên đã chặn nhau.'**
+  String get assignCollabErrBlocked;
+
+  /// S26.04-collab: assignBooking refused not_found (the collaboration ended).
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác với {name} đã kết thúc.'**
+  String assignCollabErrEnded(String name);
+
+  /// No description provided for @assignCollabNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} có 6 giờ để nhận việc; khách chỉ thấy thợ khi {name} đã nhận.'**
+  String assignCollabNote(String name);
+
+  /// No description provided for @assignSendTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi việc cho {name}'**
+  String assignSendTo(String name);
+
+  /// No description provided for @assignOfferPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ {name} nhận · còn {left}'**
+  String assignOfferPending(String name, String left);
+
+  /// No description provided for @assignOfferDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã từ chối. Giao người khác trước {deadline}.'**
+  String assignOfferDeclined(String name, String deadline);
+
+  /// No description provided for @assigneeCollabLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác với {studio}'**
+  String assigneeCollabLabel(String studio);
+
+  /// No description provided for @workCollabLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác · {studio}'**
+  String workCollabLabel(String studio);
+
+  /// No description provided for @settingsCollab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác'**
+  String get settingsCollab;
+
+  /// No description provided for @settingsCollabProviderMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{studios} studio · {offers} việc chờ nhận'**
+  String settingsCollabProviderMeta(int studios, int offers);
+
+  /// No description provided for @settingsCollabStudioMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} cộng tác viên'**
+  String settingsCollabStudioMeta(int n);
+
+  /// No description provided for @settingsRecruit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin tuyển'**
+  String get settingsRecruit;
+
+  /// No description provided for @settingsRecruitMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n}/3 tin mở'**
+  String settingsRecruitMeta(int n);
+
+  /// No description provided for @collabOfferAcceptedState.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã nhận việc này.'**
+  String get collabOfferAcceptedState;
+
+  /// No description provided for @collabDeclineConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối việc này?'**
+  String get collabDeclineConfirmTitle;
+
+  /// No description provided for @collabDeclineConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.'**
+  String get collabDeclineConfirmBody;
 }
 
 class _AppLocalizationsDelegate

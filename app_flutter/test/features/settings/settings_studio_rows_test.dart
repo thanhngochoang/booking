@@ -11,6 +11,9 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/award/award_repository.dart';
+import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/collab/collab_providers.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
@@ -19,6 +22,8 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
+import 'package:photobooking/data/recruit/recruit_repository.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
@@ -33,6 +38,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/photo_scope.dart';
+import '../../support/recruit_world.dart';
 import '../../support/studio_world.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
@@ -45,6 +51,12 @@ Future<void> _open(
   bool businessVerified = false,
   StreamController<PhotographerIntro?>? introLater,
   void Function(FakeStudioRepository studios, String uid)? seed,
+  void Function(
+    FakeCollabRepository collabs,
+    FakeRecruitRepository recruits,
+    String uid,
+  )?
+  seedCollab,
 }) async {
   tester.view.physicalSize = const Size(390, 2400);
   tester.view.devicePixelRatio = 1;
@@ -70,6 +82,9 @@ Future<void> _open(
     );
   final studios = FakeStudioRepository(uid: u.uid);
   seed?.call(studios, u.uid);
+  final collabs = FakeCollabRepository(uid: u.uid, clock: () => recruitNow);
+  final recruits = FakeRecruitRepository(uid: u.uid);
+  seedCollab?.call(collabs, recruits, u.uid);
 
   Widget stub(BuildContext _, GoRouterState s) =>
       Scaffold(body: Text('stub ${s.uri}'));
@@ -87,6 +102,8 @@ Future<void> _open(
         '/profile/phone',
         '/profile/skills',
         '/setup/4',
+        '/collab',
+        '/studio/recruit',
       ])
         GoRoute(path: p, builder: stub),
     ],
@@ -120,6 +137,9 @@ Future<void> _open(
         ),
         photographerIntroRepositoryProvider.overrideWithValue(intros),
         studioRepositoryProvider.overrideWithValue(studios),
+        collabRepositoryProvider.overrideWithValue(collabs),
+        clockProvider.overrideWithValue(() => recruitNow),
+        recruitRepositoryProvider.overrideWithValue(recruits),
         if (introLater != null)
           myIntroProvider.overrideWith((ref) => introLater.stream),
       ],
@@ -239,5 +259,96 @@ void main() {
     await _open(tester, type: null);
     expect(_key('settings-studio-members'), findsNothing);
     expect(_key('settings-my-studio'), findsNothing);
+  });
+
+  group('S27 rows', () {
+    testWidgets('photographer sees "Cộng tác" with "{n} studio · {m} việc chờ '
+        'nhận" → /collab', (tester) async {
+      await _open(
+        tester,
+        seedCollab: (collabs, recruits, uid) {
+          final later = recruitNow.add(const Duration(hours: 4));
+          collabs
+            ..seedCollaboration(makeCollaboration(collaboratorId: uid))
+            ..seedCollaboration(
+              makeCollaboration(
+                studioId: 'nang',
+                collaboratorId: uid,
+                status: CollabStatus.invited,
+              ),
+            )
+            ..seedJob(
+              makeCollabJob(
+                collaboratorId: uid,
+                offerStatus: OfferStatus.pending,
+                offerExpiresAt: later,
+              ),
+            )
+            ..seedJob(
+              makeCollabJob(
+                bookingId: 'b2',
+                collaboratorId: uid,
+                offerStatus: OfferStatus.accepted,
+              ),
+            );
+        },
+      );
+      expect(_in('settings-collab', 'Cộng tác'), findsOneWidget);
+      expect(
+        _in('settings-collab', '1 studio · 1 việc chờ nhận'),
+        findsOneWidget,
+      );
+      expect(_key('settings-recruit'), findsNothing);
+      // Group Tài khoản: after "Studio của tôi", before the public profile.
+      final y = tester.getTopLeft(_key('settings-collab')).dy;
+      expect(y, greaterThan(tester.getTopLeft(_key('settings-my-studio')).dy));
+      expect(y, lessThan(tester.getTopLeft(_key('profile-public')).dy));
+      await tester.tap(_key('settings-collab'));
+      await tester.pumpAndSettle();
+      expect(find.text('stub /collab'), findsOneWidget);
+    });
+
+    testWidgets('studio sees "Cộng tác" with "{n} cộng tác viên" and "Tin '
+        'tuyển" with "{n}/3 tin mở" → /studio/recruit', (tester) async {
+      await _open(
+        tester,
+        type: ProviderType.studio,
+        seedCollab: (collabs, recruits, uid) {
+          collabs
+            ..seedCollaboration(makeCollaboration(studioId: uid))
+            ..seedCollaboration(
+              makeCollaboration(studioId: uid, collaboratorId: 'hoa'),
+            )
+            ..seedCollaboration(
+              makeCollaboration(
+                studioId: uid,
+                collaboratorId: 'yen',
+                status: CollabStatus.invited,
+              ),
+            );
+          recruits.setCounters(uid, const RecruitCounters(openPostCount: 1));
+        },
+      );
+      expect(_in('settings-collab', '2 cộng tác viên'), findsOneWidget);
+      expect(_in('settings-recruit', 'Tin tuyển'), findsOneWidget);
+      expect(_in('settings-recruit', '1/3 tin mở'), findsOneWidget);
+      final collab = tester.getTopLeft(_key('settings-collab')).dy;
+      final recruit = tester.getTopLeft(_key('settings-recruit')).dy;
+      expect(
+        collab,
+        greaterThan(tester.getTopLeft(_key('settings-studio-members')).dy),
+      );
+      expect(recruit, greaterThan(collab));
+      expect(recruit, lessThan(tester.getTopLeft(_key('profile-public')).dy));
+      await tester.tap(_key('settings-recruit'));
+      await tester.pumpAndSettle();
+      expect(find.text('stub /studio/recruit'), findsOneWidget);
+    });
+
+    testWidgets('customer sees neither', (tester) async {
+      await _open(tester, type: null);
+      expect(_key('settings-collab'), findsNothing);
+      expect(_key('settings-recruit'), findsNothing);
+    });
   });
 }

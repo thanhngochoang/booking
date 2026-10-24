@@ -49,7 +49,7 @@ Nhãn mã màn ở góc trên trái, chỉ ở chế độ debug. `ScreenCode(St
 **Chiều cao cố định**: nút chính luôn cao đúng `controlHeight` (52dp) ở mọi vị trí (thanh dưới, sheet, thẻ). Không đặt nút trong `Expanded`/`Flexible` theo trục dọc và không để nút co theo nội dung; trong `Column` của sheet bọc `SizedBox(height: controlHeight)` hoặc dùng `BottomActionBar`. Nút "thấp" (38dp) chỉ dùng trong hàng nút phụ của thẻ. Mọi `AppBottomSheet` và màn có thanh dưới (S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04…) phải qua golden test kiểm chiều cao nút bằng nhau.
 
 ### AppChip (FilterChip) · Mới
-`AppChip({required String label, required bool selected, required ValueChanged<bool> onChanged, AppChipKind kind = filter, Widget? leading})`. `kind: filter` đã chọn = nền primary đặc, chữ trên primary (bộ lọc: S02.06, S02.04; S11.01 lọc loại bằng hàng tag chữ `#workshop`, xem `screens/events.md`, chỉ chip “Không thu phí” dùng `AppChip`); `kind: context` đã chọn = nền `primarySubtle`, viền + chữ primary (danh mục ngữ cảnh/lựa chọn đơn: S02.01, S04.02, S12.01, S08.04). Cao 32 (vùng chạm 48), radius tròn, `Semantics(selected)`. Hàng chip dùng `Wrap` khi cần xuống dòng, cuộn ngang khi là bộ lọc.
+`AppChip({required String label, required bool selected, required ValueChanged<bool> onChanged, AppChipKind kind = filter, Widget? leading, Widget? trailing, String? semanticsLabel, bool enabled = true})`. `kind: filter` đã chọn = nền primary đặc, chữ trên primary (bộ lọc: S02.06, S02.04; S11.01 lọc loại bằng hàng tag chữ `#workshop`, xem `screens/events.md`, chỉ chip “Không thu phí” dùng `AppChip`); `kind: context` đã chọn = nền `primarySubtle`, viền + chữ primary (danh mục ngữ cảnh/lựa chọn đơn: S02.01, S04.02, S12.01, S08.04). Cao 32 (vùng chạm 48), radius tròn, `Semantics(selected)`. Hàng chip dùng `Wrap` khi cần xuống dòng, cuộn ngang khi là bộ lọc. `trailing` (S27, #151): biểu tượng sau nhãn, cỡ 16 cùng màu chữ, cho chip mở bộ chọn ("Khu vực ▾" ở S27.01 với `AppIcons.expandMore`). `enabled: false` (S27, #151): lựa chọn chưa chọn được lúc này (thể loại thứ 5, khu vực thứ 6 ở S27.04) mờ 50% như `AppOptionTile`, không nhận chạm, trình đọc màn hình đọc là bị tắt; chip bật giữ nguyên nút ngữ nghĩa cũ.
 
 ### SegmentedTabs · Mới
 `SegmentedTabs<T>({required List<SegmentOption<T>> options, required T value, required ValueChanged<T> onChanged})`. Nền ô nhập, ô chọn nền `primarySubtle` + viền primary; chia đều chiều ngang, cao 40; nhãn một dòng thu nhỏ khi hẹp. `Semantics` kiểu tab. Dùng ở S03.01 (4), S05.01 (3 + 2), S11.04, S06.01, S10.01, S09.02 (3 + 2).
@@ -313,7 +313,7 @@ Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), bi
 Hàng có tay nắm ≡ (vùng chạm 48dp, nhấn giữ để kéo), ảnh, tên, phụ đề, menu "…" có Chuyển lên / Chuyển xuống / Lên đầu / Xuống cuối (đường thay thế không cần kéo). Đọc vị trí "n trên m"; trạng thái đang kéo: viền primary, nền accent nhạt, bóng.
 
 #### PostPickerGrid · Mới
-Lưới 3 cột chọn nhiều, ô chọn có số thứ tự (thứ tự chọn), nhãn góc dưới ("4 ảnh", tên album hiện tại). Giới hạn số ô chọn; ô vượt giới hạn vô hiệu.
+Lưới 3 cột chọn nhiều, ô chọn có số thứ tự (thứ tự chọn), nhãn góc dưới ("4 ảnh", tên album hiện tại). Giới hạn số ô chọn; ô vượt giới hạn vô hiệu. Tham số `crossAxisCount` (mặc định `PostPickerGrid.columns` = 3; S27.03 dùng 5 ô nhỏ mỗi hàng như mock, #151).
 
 #### JobCard · Mới
 Biến thể `customer` (S15.02: tag thể loại, `StatusBadge`, tiêu đề, ngày · quận · ngân sách, hàng avatar người báo giá + "{n} báo giá · {m} mới", thời gian còn) và `photographer` (S16.02: tag + "Bạn được mời", `FitPill`, tiêu đề, ngày · giờ · quận · khoảng cách, ngân sách, "{n} báo giá · còn {m} ngày"; biến thể khoá mờ với dòng lý do). Không bao giờ hiện số điện thoại hay địa chỉ cụ thể.
@@ -376,7 +376,25 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 `MemberStrip({required List<MemberStripItem> members, required int total, required String label, ValueChanged<String>? onTap})` · `MemberStripItem({required String id, required String name, String? avatarUrl, int? tomatoPct})` · `MemberStrip.skeleton()`. Hàng thành viên của hồ sơ studio (mock `.mems`, S03.01-studio): tối đa 4 người, mỗi ô rộng tối đa 54dp gồm `AppAvatar` 40 (trang trí), tên (một dòng, cắt "…") và `MetaLine` cà chua (bỏ khi `tomatoPct` null, tức chưa đủ 5 đánh giá); còn lại của `total` (`memberCount`) là vòng "+n" nền field. Các ô co lại cùng nhau khi hẹp (320dp, chữ 1,3). Trình đọc màn hình: một danh sách (`SemanticsRole.list`) tên `label` ("Thành viên Studio Mây"), mỗi người là một mục đọc "tên, 97% cà chua" và bấm được (mở hồ sơ thợ qua `onTap(id)`), mục "+n" đọc "và {n} thành viên khác". Skeleton: bốn vòng avatar và một dòng. Dùng ở S03.01 (studio).
 
 #### AssigneeCard · Đã có
-`AssigneeCard({required AssigneeSummary summary, required String studioName, required VoidCallback onViewProfile, String? changeLabel, VoidCallback? onChange})` · `AssigneeSummary({required String id, required String name, String? avatarUrl, bool verified = false, int? tomatoPct, int shoots = 0})` · `AssigneeCard.skeleton()`. Thẻ "Thợ chụp cho bạn" của booking studio phía khách (mock `#S05.02-studio`): `AppAvatar` 48 (trang trí), tên đậm kèm tích xanh khi `verified`, `MetaLine` "🍅 97% · 112 buổi · thợ của Studio Mây" (bỏ phần cà chua khi `tomatoPct` null, tức chưa đủ 5 đánh giá; `studioName` rỗng thì chỉ "112 buổi"), nút viền xsmall "Xem hồ sơ" bên phải (rộng tối đa nửa hàng), và dưới cùng nút viền small `changeLabel` ("Xin đổi thợ (1 lần)"; `onChange` null thì tắt, ví dụ "Đã xin đổi · chờ studio"; `changeLabel` null thì không có nút). Nhãn "Giao {ngày}" và tiêu đề khối nằm ở màn hình (`StudioAssigneeBlock` của S05.02), không trong thẻ. Trình đọc màn hình đọc người là một nhãn "tên, Đã xác minh, 97% cà chua · 112 buổi · thợ của Studio Mây"; mỗi nút giữ nhãn riêng và vùng chạm 48dp. Skeleton: vòng avatar và hai dòng trong khung thẻ (khi hồ sơ thợ đang tải). Dùng ở S05.02 (booking studio, phía khách).
+`AssigneeCard({required AssigneeSummary summary, required String studioName, required VoidCallback onViewProfile, String? changeLabel, VoidCallback? onChange, bool collaborator = false})` · `AssigneeSummary({required String id, required String name, String? avatarUrl, bool verified = false, int? tomatoPct, int shoots = 0})` · `AssigneeCard.skeleton()`. Thẻ "Thợ chụp cho bạn" của booking studio phía khách (mock `#S05.02-studio`): `AppAvatar` 48 (trang trí), tên đậm kèm tích xanh khi `verified`, `MetaLine` "🍅 97% · 112 buổi · thợ của Studio Mây" (bỏ phần cà chua khi `tomatoPct` null, tức chưa đủ 5 đánh giá; `studioName` rỗng thì chỉ "112 buổi"), nút viền xsmall "Xem hồ sơ" bên phải (rộng tối đa nửa hàng), và dưới cùng nút viền small `changeLabel` ("Xin đổi thợ (1 lần)"; `onChange` null thì tắt, ví dụ "Đã xin đổi · chờ studio"; `changeLabel` null thì không có nút). Nhãn "Giao {ngày}" và tiêu đề khối nằm ở màn hình (`StudioAssigneeBlock` của S05.02), không trong thẻ. Trình đọc màn hình đọc người là một nhãn "tên, Đã xác minh, 97% cà chua · 112 buổi · thợ của Studio Mây"; mỗi nút giữ nhãn riêng và vùng chạm 48dp. Skeleton: vòng avatar và hai dòng trong khung thẻ (khi hồ sơ thợ đang tải). Dùng ở S05.02 (booking studio, phía khách). `collaborator: true` (S27, #151, mock `#S05.02-studio-collab`): meta chỉ "{n} buổi" và thêm dòng "Cộng tác với {Studio}" dưới meta (khoá `assignee-collab-label`, cũng nằm trong nhãn đọc); `StudioAssigneeBlock` bật cờ khi thợ đã nhận là cộng tác viên.
+
+---
+
+### Component của S27 (tuyển thợ, cộng tác viên) · Đã có (#151)
+
+Không có widget mới trong `lib/core/`: lõi chỉ thêm tham số (`AppChip.trailing`, `AppChip.enabled`, `PostPickerGrid.crossAxisCount`, `AssigneeCard.collaborator`), hai biểu tượng (`AppIcons.handshake`, `AppIcons.campaign`) và hàm `vnDaysBetween(from, to)` (`lib/core/vn_time.dart`: số ngày lịch Việt Nam giữa hai thời điểm, có dấu; dùng cho "hôm qua", "{n} tuần trước", "còn {n} ngày"). Các widget dưới đây nằm trong feature (không dùng ở use case khác nên chưa rút vào lõi; rút khi có màn thứ hai cần).
+
+#### CollabTermsCard · Đã có (feature)
+`CollabTermsCard({required bool agreed, required ValueChanged<bool>? onChanged})` (`lib/features/recruit/collab_terms_card.dart`). Khối "Điều khoản cộng tác" (mock S27.03): tiêu đề, ba gạch đầu dòng `collabTerm1–3` (mẫu tối thiểu, chờ luật sư duyệt), ô "Tôi đồng ý điều khoản cộng tác" (khoá `collab-terms-agree`). `onChanged` null thì ô tắt (đang gửi). Màn giữ nút chính tắt cho tới khi `agreed`. Dùng ở S27.03 (tin cộng tác) và sheet "Cộng tác với {Studio}" của S27.06 (thợ).
+
+#### RecruitCard, RecruitKindTag, RecruitMatchTag, RecruitNote · Đã có (feature)
+`RecruitCard({required RecruitPost post, required bool match, required DateTime now, required VoidCallback onTap})` · `RecruitCard.skeleton()` (`lib/features/recruit/recruit_card.dart`, mock `.jcard`): tag loại (`RecruitKindTag`, mock `.tag`) + "Hợp với bạn" (`RecruitMatchTag`, mock `.fit`) khi điểm khớp 2, tiêu đề đậm, dòng "Studio · khu vực · thể loại" kèm con dấu studio, hàng thù lao ("800.000₫/buổi" / "Thoả thuận") + "{tần suất} · {bao lâu trước}". `RecruitNote(text, {icon = AppIcons.lock})` là dòng ghi chú mock `.lockn` (khoá hoặc info). Dùng ở S27.01, S27.02, S27.05.
+
+#### CollabPayBadge, CollabTitleMeta · Đã có (feature)
+`CollabPayBadge(PayStatus status)` (`lib/features/collab/collab_controller.dart`): `StatusBadge.custom` chữ in hoa như mock `.badge`, "Cần trả" (vàng), "Chưa nhận" (đỏ), "Đã báo trả" (tím), "Đã nhận" (xanh); màu lấy cặp subtle/ink của theme tối hoặc sáng. `CollabTitleMeta({required String title, required String meta})`: hai dòng tiêu đề + meta của thẻ việc (mock `.irow2`). Dùng ở S27.06 (studio và thợ).
+
+#### StudioOfferLine · Đã có (feature)
+`StudioOfferLine({required Booking booking})` (`lib/features/booking/widgets/studio_offer_line.dart`): phía studio của booking có offer CTV, dựa trên `studioOfferOf(booking, now)`: "Chờ {tên} nhận · còn {thời gian}" (đếm lùi bằng đồng hồ tiêm vào) hoặc dòng đỏ "{tên} đã từ chối. Giao người khác trước {hạn}."; không hiện khi booking đã huỷ, xong hoặc offer không còn liên quan. Dùng ở S05.02 (studio) và trong `StudioJobCard` của S06.01.
 
 ---
 
@@ -396,7 +414,7 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | Widget | Màn |
 |--------|-----|
 | `CtaSurface`/`AppButton` | mọi màn có nút chính, đĩa tab giữa |
-| `AppChip`, `SegmentedTabs` | S02.01, S03.01, S02.06, S04.02, S05.01, S11.01, S11.04, S06.01, S10.01, S12.01, S09.01, S09.02, S02.04 |
+| `AppChip`, `SegmentedTabs` | S02.01, S03.01, S02.06, S04.02, S05.01, S11.01, S11.04, S06.01, S10.01, S12.01, S09.01, S09.02, S02.04, S27.01, S27.04, S27.06 (sheet đã trả) |
 | `PhotoCard` | S02.01, S03.01, S02.03, S10.01 |
 | `PhotographerCard`, `ReasonChips` | S02.01, S02.06 |
 | `BookingCard` | S04.03, S04.04, S05.02, S07.01, S05.01, S06.01 |
@@ -431,7 +449,7 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `CountdownPill` | S04.04 |
 | `PaymentScreen`, `QrCheckoutView`, `WalletWaitingView`, `FakeTransferSheet` (`features/payment/`) | S04.04 (mọi chủ thể thanh toán: booking, vé sự kiện, Chụp ngay, phí xác minh) |
 | `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08, S14.03 (GPS chưa chính xác, khách không có mặt) |
-| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03 |
+| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03, S27.07 (`CountdownText`: hạn trả lời offer) |
 | `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06 |
 | `SwipeDeck` | S13.02 |
 | `MatchOverlay` | S13.04 (khách; nhiếp ảnh gia trên S14.02) |
@@ -441,15 +459,19 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `AwardChip`, `AwardRow` | S03.01, S25.01 |
 | `ImagePurpose`, `MediaUploader.upload(purpose:)` | mọi màn tải ảnh: S10.01, S05.05, S11.05, S12.01, S25 (minh chứng), S07.01, S11.06, S09.03 |
 | `PortfolioViewToggle`, `AlbumTile` | S03.01, S24.02 |
-| `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp) |
+| `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp); `PostPickerGrid` cả S27.03 (5 cột) |
 | `JobCard` | S15.02, S16.02 |
 | `QuoteCard`, `DeliverableChips`, `FitPill`, `MilestoneTable` | S15.02, S15.03, S15.04, S16.01, S16.03 |
 | `VerdictIcon`, `MetaLine` | S02.01, S02.02, S02.06, S03.01, S12.02, S15.03, S26 |
 | `VerdictPad`, `VerdictLevel` | S05.05 (khối thợ và khối studio dùng `compact`) |
 | `VerdictBadge`, `TomatoRatioBar` | S03.01 (tab Đánh giá) |
-| `MemberRow` | S26.01, S26.02, S26.03 |
+| `MemberRow` | S26.01, S26.02 (cả S26.02-collab), S26.03, S27.06 (hàng CTV, studio cộng tác, lời mời) |
 | `MemberStrip` | S03.01 (studio) |
-| `AssigneeCard` | S05.02 (booking studio, phía khách) |
+| `AssigneeCard` | S05.02 (booking studio, phía khách; `collaborator` khi thợ là CTV) |
+| `CollabTermsCard` | S27.03, S27.06 (sheet nhận lời cộng tác) |
+| `RecruitCard`, `RecruitKindTag`, `RecruitMatchTag`, `RecruitNote` | S27.01, S27.02, S27.05 |
+| `CollabPayBadge`, `CollabTitleMeta` | S27.06 |
+| `StudioOfferLine` | S05.02 (studio), S06.01 (`StudioJobCard`) |
 | `SpotCard`, `SeasonTag` | S02.01, S02.03, S02.04, S29.01, S29.02 |
 | `SlotGrid` | S29.06 |
 | `ScreenCode` | mọi màn |
@@ -543,6 +565,8 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.verified` | `verified` | (mới, chưa có trong mock) | `Icons.verified` |
 | `AppIcons.work` | `work` | `i-brief` | `Icons.work_outline` |
 | `AppIcons.store` | `storefront` | (mới, chưa có trong mock) | `Icons.storefront_outlined` |
+| `AppIcons.handshake` | `handshake` | (chỉ nêu trong chú thích S09.02 của mock) | — |
+| `AppIcons.campaign` | `campaign` | `campaign` (có trong mock, S03.01-studio) | — |
 | `AppIcons.verifiedUser` | `verified_user` | (mới, chưa có trong mock) | `Icons.verified_user` |
 | `AppIcons.people` | `group` | (mới, chưa có trong mock) | `Icons.people` |
 | `AppIcons.celebration` | `celebration` | (mới, chưa có trong mock) | `Icons.celebration` |

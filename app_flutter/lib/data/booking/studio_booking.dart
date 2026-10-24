@@ -34,8 +34,9 @@ enum StudioFaultKind {
 /// The customer's one request to change the assignee (S26.05).
 enum ChangeRequestStatus { pending, reassigned, declined, expired }
 
-/// One line of the assignment log; `assigneeKind` is `member` (S27 adds
-/// `collaborator` without migration).
+/// One line of the assignment log; `assigneeKind` is `member` or (S27)
+/// `collaborator`, whose entry carries the offer's expiry and its answer
+/// (#151 Decision 3: never the fee).
 @freezed
 abstract class StudioAssignment with _$StudioAssignment {
   const factory StudioAssignment({
@@ -45,6 +46,11 @@ abstract class StudioAssignment with _$StudioAssignment {
     required String by,
     String? reason,
     @Default(false) bool late,
+
+    /// S27: when a collaborator's offer lapses (6 h, capped by the deadline).
+    DateTime? offerExpiresAt,
+    DateTime? acceptedAt,
+    DateTime? declinedAt,
   }) = _StudioAssignment;
 
   factory StudioAssignment.fromJson(Map<String, dynamic> json) =>
@@ -85,9 +91,12 @@ abstract class StudioBookingInfo with _$StudioBookingInfo {
   const StudioBookingInfo._();
 
   const factory StudioBookingInfo({
-    /// Who shoots; kept after "Trả việc" until the studio reassigns.
+    /// Who shoots; kept after "Trả việc" until the studio reassigns. For a
+    /// collaborator (S27) it is set at offer time, with [assigneeAccepted]
+    /// false until they accept (`assignStatus` stays unassigned meanwhile).
     String? assigneeId,
     String? assigneeKind,
+    @Default(false) bool assigneeAccepted,
     @Default(StudioAssignStatus.unassigned) StudioAssignStatus assignStatus,
     required DateTime assignDeadline,
 
@@ -109,6 +118,17 @@ abstract class StudioBookingInfo with _$StudioBookingInfo {
 
   bool get isAssigned => assigneeId != null;
   bool get isReturned => returnedAt != null;
+
+  /// S27: a collaborator holds an offer they have not accepted yet.
+  bool get hasPendingOffer =>
+      assigneeId != null && assigneeKind == 'collaborator' && !assigneeAccepted;
+
+  /// The assignee who took the job (a pending collaborator is not one).
+  String? get confirmedAssigneeId => hasPendingOffer ? null : assigneeId;
+
+  /// The newest line of the assignment log.
+  StudioAssignment? get lastAssignment =>
+      assignments.isEmpty ? null : assignments.last;
 
   factory StudioBookingInfo.fromJson(Map<String, dynamic> json) =>
       _$StudioBookingInfoFromJson(json);
@@ -165,6 +185,9 @@ StudioBookingInfo? studioBookingInfoFrom(Map<String, dynamic> data) {
           by: _str(a['by']) ?? '',
           reason: _str(a['reason']),
           late: a['late'] == true,
+          offerExpiresAt: _date(a['offerExpiresAt']),
+          acceptedAt: _date(a['acceptedAt']),
+          declinedAt: _date(a['declinedAt']),
         ),
       );
     }
@@ -202,6 +225,7 @@ StudioBookingInfo? studioBookingInfoFrom(Map<String, dynamic> data) {
   return StudioBookingInfo(
     assigneeId: _str(data['assigneeId']),
     assigneeKind: _str(data['assigneeKind']),
+    assigneeAccepted: data['assigneeAccepted'] == true,
     assignStatus: data['assignStatus'] == 'assigned'
         ? StudioAssignStatus.assigned
         : StudioAssignStatus.unassigned,

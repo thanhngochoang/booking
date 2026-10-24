@@ -14,6 +14,15 @@ _StudioAssignment _$StudioAssignmentFromJson(Map<String, dynamic> json) =>
       by: json['by'] as String,
       reason: json['reason'] as String?,
       late: json['late'] as bool? ?? false,
+      offerExpiresAt: json['offerExpiresAt'] == null
+          ? null
+          : DateTime.parse(json['offerExpiresAt'] as String),
+      acceptedAt: json['acceptedAt'] == null
+          ? null
+          : DateTime.parse(json['acceptedAt'] as String),
+      declinedAt: json['declinedAt'] == null
+          ? null
+          : DateTime.parse(json['declinedAt'] as String),
     );
 
 Map<String, dynamic> _$StudioAssignmentToJson(_StudioAssignment instance) =>
@@ -24,6 +33,9 @@ Map<String, dynamic> _$StudioAssignmentToJson(_StudioAssignment instance) =>
       'by': instance.by,
       'reason': instance.reason,
       'late': instance.late,
+      'offerExpiresAt': instance.offerExpiresAt?.toIso8601String(),
+      'acceptedAt': instance.acceptedAt?.toIso8601String(),
+      'declinedAt': instance.declinedAt?.toIso8601String(),
     };
 
 _StudioChangeRequest _$StudioChangeRequestFromJson(Map<String, dynamic> json) =>
@@ -80,6 +92,7 @@ _StudioBookingInfo _$StudioBookingInfoFromJson(Map<String, dynamic> json) =>
     _StudioBookingInfo(
       assigneeId: json['assigneeId'] as String?,
       assigneeKind: json['assigneeKind'] as String?,
+      assigneeAccepted: json['assigneeAccepted'] as bool? ?? false,
       assignStatus:
           $enumDecodeNullable(
             _$StudioAssignStatusEnumMap,
@@ -119,6 +132,7 @@ Map<String, dynamic> _$StudioBookingInfoToJson(_StudioBookingInfo instance) =>
     <String, dynamic>{
       'assigneeId': instance.assigneeId,
       'assigneeKind': instance.assigneeKind,
+      'assigneeAccepted': instance.assigneeAccepted,
       'assignStatus': _$StudioAssignStatusEnumMap[instance.assignStatus]!,
       'assignDeadline': instance.assignDeadline.toIso8601String(),
       'assignOverdue': instance.assignOverdue,

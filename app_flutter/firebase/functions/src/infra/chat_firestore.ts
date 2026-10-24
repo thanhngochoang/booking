@@ -1,5 +1,6 @@
 import { FieldValue, GeoPoint, Timestamp, type Firestore } from 'firebase-admin/firestore';
 import {
+  CHAT_KINDS,
   chatMembers,
   type Chat,
   type ChatStore,
@@ -45,7 +46,8 @@ export function fromFirestoreChat(id: string, data: Record<string, unknown>): Ch
 
   return {
     id,
-    kind: (data.kind as 'inquiry' | 'booking') || 'inquiry',
+    // An unknown kind reads as an inquiry (the app does the same); S27 adds `collab`.
+    kind: CHAT_KINDS.find((k) => k === data.kind) ?? 'inquiry',
     customerId: String(data.customerId ?? ''),
     photographerId: String(data.photographerId ?? ''),
     assigneeId: typeof data.assigneeId === 'string' && data.assigneeId !== '' ? data.assigneeId : null,
@@ -199,6 +201,24 @@ export class FirestoreChatStore implements ChatStore {
       };
 
       return fn(tx);
+    });
+  }
+
+  /**
+   * S27 (#151 Decision 16): after an ended or reactivated collaboration commits, marks its chat read-only from
+   * `at`, or writable again with null. Only an existing chat is touched (it is created lazily by
+   * openCollabChat); false when there is none.
+   */
+  async setReadOnly(chatId: string, at: Date | null): Promise<boolean> {
+    const ref = this.db.collection('chats').doc(chatId);
+    return this.db.runTransaction(async (fTx) => {
+      const snap = await fTx.get(ref);
+      if (!snap.exists) return false;
+      fTx.update(ref, {
+        readOnlyAt: at === null ? null : Timestamp.fromDate(at),
+        updatedAt: Timestamp.fromDate(new Date()),
+      });
+      return true;
     });
   }
 
