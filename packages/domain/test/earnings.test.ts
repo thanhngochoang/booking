@@ -11,13 +11,13 @@ import {
 import type { Payment } from '../src/escrow.js';
 import type { Payout } from '../src/payout.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
-import { openDispute } from '../src/open_dispute.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { approvePayout, createPayout, executePayout } from '../src/payout_use_cases.js';
 import { DEFAULT_PAYOUT_POLICY } from '../src/payout_policy.js';
 import type { ProviderType } from '../src/provider_type.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { ADMIN, addAccount, createPayoutWorld, paidBooking } from './support/payout_world.js';
+import { freezeBookingPayment } from './support/dispute_world.js';
 
 const NOW = new Date('2026-10-20T10:00:00.000Z');
 const subject = { counterpartName: 'Khách Hàng Một', label: 'Gói Chân dung', day: '2026-10-15', milestones: null };
@@ -213,7 +213,7 @@ describe('earnings summary', () => {
     await transitionBooking(w.deps, { bookingId: b.bookingId, action: 'complete', actorId: 'p1' });
     await transitionBooking(w.deps, { bookingId: c.bookingId, action: 'complete', actorId: 'p1' });
     w.clock.setTime(new Date('2026-10-17T10:00:00.000Z'));
-    await openDispute(w.deps, { bookingId: c.bookingId, customerId: 'c1', reason: 'Thiếu ảnh' });
+    freezeBookingPayment(w.store, c.bookingId, w.clock.now());
     w.clock.setTime(new Date('2026-10-18T10:00:00.000Z'));
     await runBookingSweeps(w.deps);
 

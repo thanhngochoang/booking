@@ -43,8 +43,6 @@ export function clampRevisions(v: unknown): number {
 export const MAX_NOTE_LENGTH = 300;
 export const MIN_PLACE_LENGTH = 3;
 export const MAX_PLACE_LENGTH = 120;
-export const MIN_DISPUTE_REASON_LENGTH = 1;
-export const MAX_DISPUTE_REASON_LENGTH = 500;
 export const MAX_CANCEL_REASON_LENGTH = 200;
 export const MAX_BOOKING_DAYS_AHEAD = 365;
 

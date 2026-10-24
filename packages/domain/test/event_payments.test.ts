@@ -273,6 +273,30 @@ describe('refund state on the ticket', () => {
     assert.equal(reg(w, id).refundStatus, 'done');
   });
 
+  test('a pending dispute refund re-sent by ticketRefundHandler only mirrors refundStatus, the ticket stays paid', async () => {
+    const w = await paidWorld();
+    const id = await bought(w, cu1);
+    const paid = reg(w, id);
+    const payment = pay(w, paid.paymentId);
+    const at = w.clock.now().toISOString();
+    // S18: resolveDispute refunded out of escrow; the first send threw, so the refund waits for the clock.
+    w.store.refunds.set('rf_dispute', {
+      id: 'rf_dispute', paymentId: payment.id, subjectType: 'event_registration', amount: PRICE, percent: 100,
+      status: 'pending', manual: false, fromEscrow: true, method: 'gateway', attempts: 1, reason: 'dispute:d1',
+      createdAt: at, updatedAt: at,
+    });
+    w.store.registrations.set(`${EV}/${id}`, { ...paid, disputeId: 'd1', refundId: 'rf_dispute', refundStatus: 'pending' });
+
+    const out = await ticketRefundHandler(w.pay).resend(must(w.store.refunds.get('rf_dispute')));
+    assert.equal(out.status, 'done');
+    const after = reg(w, id);
+    assert.equal(after.refundStatus, 'done');
+    assert.equal(after.status, 'paid');
+    assert.equal(after.cancelledAt, null);
+    assert.equal(after.disputeId, 'd1');
+    assert.equal(after.refundPercent, paid.refundPercent);
+  });
+
   test('ticketRefundHandler.resend sends under the same id', async () => {
     const w = await paidWorld();
     const id = await bought(w, cu1);

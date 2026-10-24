@@ -40,6 +40,10 @@ import {
   SEED_ADDONS,
   SEED_CREATED_AT,
   SEED_EVENT_SOON,
+  SEED_EVENT_PAST,
+  SEED_BOOKING_COMPLETED_WINDOW,
+  SEED_DISPUTE_LAN_AN,
+  SEED_REGISTRATION_LAN_PAST,
   SEED_PASSWORD,
   SEED_INSTANT_CONFIG,
   SEED_PHOTOGRAPHERS,
@@ -381,7 +385,8 @@ describe('seed payouts and earnings', () => {
   test('the disputed booking holds its payment with the reason', () => {
     const pay = get('payments/seed-payment-seed-booking-disputed');
     assert.equal(pay?.escrowStatus, 'disputed');
-    assert.equal((pay?.dispute as { reason: string }).reason, 'Ảnh giao thiếu so với gói');
+    // S18 (#142): the reason is the dispute's code; the customer's words are the dispute's description.
+    assert.equal((pay?.dispute as { reason: string }).reason, 'photos_missing');
     assert.equal(get('bookings/seed-booking-disputed')?.escrowStatus, 'disputed');
     const item = get('earnings/seed-photographer-an/items/seed-payment-seed-booking-disputed');
     assert.equal(item?.state, 'disputed');
@@ -392,16 +397,21 @@ describe('seed payouts and earnings', () => {
     const e = get('earnings/seed-photographer-an');
     const dep = (price: number) => computeDeposit(price).deposit;
     // An has:
-    // - Legacy bookings: accepted (held 1.5m), upcoming (held 1.5m), disputed (held 1.5m), completed-recent (soon 1.5m), completed-old (received 1.5m)
+    // - Legacy bookings: accepted (held 1.5m), upcoming (held 1.5m), disputed (held 1.5m), completed-window (held 1.5m, S18), completed-recent (soon 1.5m), completed-old (received 1.5m)
     // - Delivery milestone bookings (1.5m deposit each, 750k shoot / 750k delivery):
     //   - shot: shoot held (750k), delivery held (750k) -> held 1.5m
     //   - delivered: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - revision_requested: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - approved: shoot released (soon 750k), delivery released (soon 750k) -> soon 1.5m
-    // Total held = 1.5m * 3 + 1.5m (shot) + 750k (delivered) + 750k (revision) = 7.5m
+    // - Lan's paid ticket of the past workshop (S18): held 250k until the end + 24 h
+    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) = 9.25m
     // Total soon = 1.5m (recent) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 4.5m
     // Total received = 1.5m (completed-old)
-    assert.equal(e?.heldAmount, 7_500_000);
+    assert.equal(e?.heldAmount, 9_250_000);
+    const ticket = get('earnings/seed-photographer-an/items/seed-payment-ticket-lan-past');
+    assert.equal(ticket?.state, 'held');
+    assert.equal(ticket?.amount, 250_000);
+    assert.equal(ticket?.counterpartName, 'Lan (seed)');
     assert.equal(e?.soonAmount, 4_500_000);
     assert.equal(e?.receivedAmount, dep(1_500_000));
     assert.equal((e?.lastPayout as { status: string }).status, 'paid');
@@ -464,7 +474,8 @@ describe('seed event reminder (S17)', () => {
     assert.ok(isTicketCode(String(reg?.ticketCode)));
     assert.deepEqual(get(`ticket_codes/${String(reg?.ticketCode)}`), { eventId: SEED_EVENT_SOON, registrationId: SEED_REGISTRATION_LAN_SOON });
     // Every other seed event is still more than 48 hours away (only this one is reminded).
-    for (const d of docs.filter((x) => /^events\/[^/]+$/.test(x.path) && x.path !== `events/${SEED_EVENT_SOON}`)) {
+    // (The S18 past workshop has already ended: no reminder either.)
+    for (const d of docs.filter((x) => /^events\/[^/]+$/.test(x.path) && x.path !== `events/${SEED_EVENT_SOON}` && x.path !== `events/${SEED_EVENT_PAST}`)) {
       assert.ok((d.data.startAt as Timestamp).toMillis() > NOW.getTime() + 48 * 3_600_000, d.path);
     }
   });
@@ -503,7 +514,8 @@ describe('seed reviews (tomato/brick)', () => {
       score: 0.942,
       punctualMentions: 3,
       nextFreeDate: '2026-09-01',
-      completedCount: 3,
+      // recent, old, disputed and (S18) the completed-window booking.
+      completedCount: 4,
     });
     const an = reviewsOf(AN);
     assert.deepEqual(an.map((r) => r.id).sort(), ['seed-review-an-1', 'seed-review-an-2', 'seed-review-an-3']);
@@ -737,7 +749,7 @@ describe('seed discovery stats (S02)', () => {
     assert.ok(an);
     assert.equal(an.startingPrice, 1_500_000);
     const anStats = an.stats as Record<string, unknown>;
-    assert.equal(anStats.completedCount, 3);
+    assert.equal(anStats.completedCount, 4);
     assert.ok(typeof anStats.nextFreeDate === 'string');
     assert.match(anStats.nextFreeDate as string, /^\d{4}-\d{2}-\d{2}$/);
     assert.equal(anStats.reviewCount, 58);
@@ -1068,5 +1080,106 @@ describe('seed recruiting (S27, #151)', () => {
       assert.deepEqual(doc?.recruitMatchKeys, expected, p.uid);
     }
     assert.deepEqual(get(`photographers/${CUC}`)?.recruitMatchKeys, []);
+  });
+});
+
+describe('seed disputes (S18, #142)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+  const HOUR = 3_600_000;
+
+  test('seed-dispute-lan-an is open on seed-booking-disputed with a thread', () => {
+    const d = get(`disputes/${SEED_DISPUTE_LAN_AN}`);
+    assert.ok(d);
+    assert.equal(d.id, SEED_DISPUTE_LAN_AN);
+    assert.equal(d.status, 'open');
+    assert.equal(d.subjectType, 'booking');
+    assert.equal(d.subjectId, 'seed-booking-disputed');
+    assert.equal(d.paymentId, 'seed-payment-seed-booking-disputed');
+    assert.equal(d.customerId, LAN);
+    assert.equal(d.providerId, AN);
+    assert.deepEqual(d.parties, [LAN, AN]);
+    assert.equal(d.reason, 'photos_missing');
+    assert.equal(d.amountHeld, computeDeposit(1_500_000).deposit);
+    assert.equal(d.outcome, null);
+    assert.equal(d.threadId, `dispute_${SEED_DISPUTE_LAN_AN}`);
+    assert.equal((d.snapshot as { title: string }).title, 'An Studio (seed) · Chân dung 2 giờ');
+    // The mirrors and the frozen payment point at it.
+    assert.equal(get('bookings/seed-booking-disputed')?.disputeId, SEED_DISPUTE_LAN_AN);
+    const pay = get('payments/seed-payment-seed-booking-disputed');
+    assert.equal(pay?.escrowStatus, 'disputed');
+    assert.deepEqual(
+      { ...(pay?.dispute as Record<string, unknown>), openedAt: undefined },
+      { reason: 'photos_missing', openedAt: undefined, disputeId: SEED_DISPUTE_LAN_AN, milestone: null, prevEscrowStatus: 'held' },
+    );
+    assert.equal(millis((pay?.dispute as { openedAt: unknown }).openedAt), millis(d.createdAt));
+    // Opened inside the 24-hour window after completion.
+    const completedAt = millis(get('bookings/seed-booking-disputed')?.completedAt);
+    assert.ok(millis(d.createdAt) > completedAt && millis(d.createdAt) < completedAt + 24 * HOUR);
+
+    const thread = get(`support_threads/dispute_${SEED_DISPUTE_LAN_AN}`);
+    assert.ok(thread);
+    assert.equal(thread.kind, 'dispute');
+    assert.equal(thread.disputeId, SEED_DISPUTE_LAN_AN);
+    assert.deepEqual(thread.participants, [LAN, AN]);
+    assert.equal(thread.status, 'open');
+    const messages = docs
+      .filter((x) => x.path.startsWith(`support_threads/dispute_${SEED_DISPUTE_LAN_AN}/messages/`))
+      .map((x) => x.data)
+      .sort((a, b) => millis(a.createdAt) - millis(b.createdAt));
+    assert.deepEqual(messages.map((m) => m.senderRole), ['system', 'customer', 'staff', 'provider']);
+    assert.equal(messages[1]?.body, d.description);
+    // Like openDispute: only the description carries the opening marker (no dispute_message for it).
+    assert.deepEqual(messages.map((m) => m.opening === true), [false, true, false, false]);
+    assert.equal(messages[2]?.senderId, ADMIN);
+    assert.equal(messages[3]?.senderId, AN);
+    // The last word is the provider's: support has something to read.
+    assert.equal(thread.lastSenderRole, 'provider');
+    assert.equal(thread.awaitingStaff, true);
+    assert.equal(millis(thread.lastMessageAt), millis(messages[3]?.createdAt));
+  });
+
+  test('seed-booking-completed-window is completed 2 hours before seeding with a held payment', () => {
+    const b = get(`bookings/${SEED_BOOKING_COMPLETED_WINDOW}`);
+    assert.equal(b?.status, 'completed');
+    assert.equal(b?.customerId, LAN);
+    assert.equal(millis(b?.completedAt), NOW.getTime() - 2 * HOUR);
+    assert.equal(b?.escrowStatus, 'held');
+    assert.equal(b?.disputeId, undefined);
+    const pay = get(`payments/seed-payment-${SEED_BOOKING_COMPLETED_WINDOW}`);
+    assert.equal(pay?.status, 'paid');
+    assert.equal(pay?.escrowStatus, 'held');
+    assert.equal(pay?.milestones, undefined);
+    // Released by the booking clock once the dispute window is over, not before.
+    assert.equal(millis(pay?.releaseAfter), NOW.getTime() + 22 * HOUR);
+    assert.equal(get(`ledger_entries/seed-ledger-${SEED_BOOKING_COMPLETED_WINDOW}-rel`), undefined);
+  });
+
+  test('the past paid ticket ended 3 hours before seeding with a held payment', () => {
+    const ev = get(`events/${SEED_EVENT_PAST}`);
+    assert.ok(ev);
+    assert.equal(millis(ev.endAt), NOW.getTime() - 3 * HOUR);
+    assert.equal(ev.status, 'completed');
+    assert.ok((ev.price as number) > 0);
+    const reg = get(`events/${SEED_EVENT_PAST}/registrations/${SEED_REGISTRATION_LAN_PAST}`);
+    assert.equal(reg?.userId, LAN);
+    assert.equal(reg?.status, 'paid');
+    assert.equal(reg?.amount, ev.price);
+    assert.equal(reg?.disputeId, null);
+    assert.ok(isTicketCode(String(reg?.ticketCode)));
+    assert.deepEqual(get(`ticket_codes/${String(reg?.ticketCode)}`), { eventId: SEED_EVENT_PAST, registrationId: SEED_REGISTRATION_LAN_PAST });
+    const pay = get(`payments/${String(reg?.paymentId)}`);
+    assert.equal(pay?.subjectType, 'event_registration');
+    assert.equal(pay?.subjectId, SEED_REGISTRATION_LAN_PAST);
+    assert.equal(pay?.eventId, SEED_EVENT_PAST);
+    assert.equal(pay?.payerId, LAN);
+    assert.equal(pay?.payeeId, AN);
+    assert.equal(pay?.amount, ev.price);
+    assert.equal(pay?.status, 'paid');
+    assert.equal(pay?.escrowStatus, 'held');
+    assert.equal(millis(pay?.releaseAfter), NOW.getTime() + 21 * HOUR);
+    // A paid ticket has its private contact snapshot (O3), never on the public registration.
+    assert.equal(get(`events/${SEED_EVENT_PAST}/registrations/${SEED_REGISTRATION_LAN_PAST}/private/contact`)?.phone, '+84903000001');
+    assert.equal(JSON.stringify(reg).includes('+849'), false);
   });
 });

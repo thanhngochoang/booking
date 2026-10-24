@@ -68,8 +68,13 @@ export interface Payment {
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;
-  /** Set by openDispute; server-only. */
-  readonly dispute?: { readonly reason: string; readonly openedAt: string } | null;
+  /**
+   * The last dispute on this payment (S18, `openDispute`); server-only, kept after resolution as history.
+   * `milestone`: the frozen milestone (its own status is `disputed`); null for a payment without
+   * milestones, which is frozen whole and keeps `prevEscrowStatus` to restore on resolution.
+   * Rows from before S18 carry only `reason` (free text) and `openedAt`.
+   */
+  readonly dispute?: PaymentDispute | null;
   /** Current payout batch; cleared when that batch fails. */
   readonly payoutId?: string | null;
   /** Payer account info captured from notification (server-only). */
@@ -82,6 +87,14 @@ export interface Payment {
   readonly payableAmount?: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+export interface PaymentDispute {
+  readonly reason: string;
+  readonly openedAt: string;
+  readonly disputeId?: string;
+  readonly milestone?: import('./milestones.js').MilestoneKind | null;
+  readonly prevEscrowStatus?: 'held' | 'partially_refunded';
 }
 
 export const REFUND_STATUSES = ['awaiting_account', 'pending', 'done', 'failed'] as const;
@@ -233,6 +246,10 @@ export function createDepositPayment(params: {
 
 /**
  * Applies a refund to an escrow payment (Invariant 12: only held or partially_refunded).
+ * Without `amount`: `percent` of `payment.amount`. With `amount` (a dispute outcome): exactly that,
+ * an integer from 1 to what escrow still holds (`payment.amount − escrowRefunded`, where
+ * `escrowRefunded` is `escrowRefundedTotal` of the payment's refunds); the payment is fully refunded
+ * once escrow refunds reach `payment.amount`. `percent` is then only recorded on the refund.
  */
 export function applyRefundToPayment(params: {
   readonly payment: Payment;
@@ -241,7 +258,10 @@ export function applyRefundToPayment(params: {
   readonly ledgerEntryId: string;
   readonly reason?: string;
   readonly now: Date;
-}): {
+} & (
+  | { readonly amount?: undefined; readonly escrowRefunded?: undefined }
+  | { readonly amount: number; readonly escrowRefunded: number }
+)): {
   readonly payment: Payment;
   readonly refund: Refund;
   readonly ledgerEntry: LedgerEntry;
@@ -253,10 +273,22 @@ export function applyRefundToPayment(params: {
     throw new DomainError('conflict');
   }
 
-  const refundAmount = computeRefund(payment.amount, percent);
+  let refundAmount: number;
+  let isFullRefund: boolean;
+  if (params.amount === undefined) {
+    refundAmount = computeRefund(payment.amount, percent);
+    isFullRefund = percent === 100 || refundAmount === payment.amount;
+  } else {
+    const before = params.escrowRefunded;
+    const held = payment.amount - before;
+    if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(params.amount) || params.amount < 1 || params.amount > held) {
+      throw new DomainError('invalid_argument');
+    }
+    refundAmount = params.amount;
+    isFullRefund = before + refundAmount === payment.amount;
+  }
   const at = now.toISOString();
 
-  const isFullRefund = percent === 100 || refundAmount === payment.amount;
   const newStatus: PaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
   const newEscrowStatus: EscrowStatus = isFullRefund ? 'refunded' : 'partially_refunded';
 

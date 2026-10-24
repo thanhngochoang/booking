@@ -179,6 +179,9 @@ abstract class Booking with _$Booking {
     String? slotOfferId,
     String? source,
 
+    /// The open or resolved dispute of this booking (S18, server mirror).
+    String? disputeId,
+
     /// The studio part (#136); null for an individual booking.
     StudioBookingInfo? studio,
 
@@ -352,6 +355,7 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       spotScheduleId: data['spotScheduleId'] as String?,
       slotOfferId: data['slotOfferId'] as String?,
       source: data['source'] as String?,
+      disputeId: data['disputeId'] as String?,
       checkout: bookingCheckoutFrom(data['checkout']),
       version: (data['version'] as num?)?.toInt() ?? 1,
       createdAt: createdAt,

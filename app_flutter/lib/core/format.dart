@@ -72,6 +72,10 @@ String _two(int n) => n.toString().padLeft(2, '0');
 /// `12/10`.
 String formatDayMonth(DateTime day) => '${_two(day.day)}/${_two(day.month)}';
 
+/// `07:05`. Reads the clock fields of [t] as is: pass a Vietnamese wall-clock
+/// time (`toVn(...)`).
+String formatHm(DateTime t) => '${_two(t.hour)}:${_two(t.minute)}';
+
 /// `T7 12/10`. [day] is a Vietnamese calendar date; only its calendar fields
 /// are read, so no time zone conversion happens here.
 String formatDay(DateTime day) =>

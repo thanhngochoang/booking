@@ -12,7 +12,6 @@ import { createPayment } from '../src/create_payment.js';
 import { escrowRefundedTotal, isEscrowRefund, type Payment, type Refund } from '../src/escrow.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
-import { openDispute } from '../src/open_dispute.js';
 import { createPayout } from '../src/payout_use_cases.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { dispatchRefund, dispatchRefunds } from '../src/refunds.js';
@@ -155,16 +154,6 @@ describe('unpaid booking payments', () => {
     assert.deepEqual(released(w, paymentId), [500_000]);
     assert.deepEqual(released(w, stray.id), []);
     assert.equal(w.store.payments.get(stray.id)?.releaseAfter, undefined);
-  });
-
-  it('a dispute holds the paid payment, never a stray created one', async () => {
-    const w = createPayoutWorld();
-    const { bookingId, paymentId, stray } = await withStrayFirst(w);
-    w.clock.setTime(new Date('2026-10-16T09:30:00.000Z'));
-    await transitionBooking(w.deps, { bookingId, action: 'complete', actorId: 'p1' });
-    await openDispute(w.deps, { bookingId, customerId: 'c1', reason: 'Thiếu ảnh' });
-    assert.equal(w.store.payments.get(paymentId)?.escrowStatus, 'disputed');
-    assert.equal(w.store.payments.get(stray.id)?.escrowStatus, 'held');
   });
 });
 

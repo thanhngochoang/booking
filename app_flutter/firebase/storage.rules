@@ -44,6 +44,24 @@ service firebase.storage {
         && jpegUpTo(3 * 1024 * 1024);
     }
 
+    // Dispute evidence (S18.01, #142, purpose document, 2048 px): disputeEvidence/{uid}/{disputeId}/{file}.
+    // The customer uploads under their own uid before the dispute exists (the id is minted by the app),
+    // JPEG up to 3 MiB named `<id>.jpg` (letters, digits, _ and -, at most 64), create once (fresh ULID
+    // per file). The uploader and the dispute's parties read it; staff through the Admin SDK. The
+    // uploader may delete a file only while no dispute with that id exists (an abandoned sheet cleans
+    // up); afterwards it is evidence and stays.
+    match /disputeEvidence/{uid}/{disputeId}/{file} {
+      allow create: if isOwner(uid)
+        && resource == null
+        && file.matches('^[A-Za-z0-9_-]{1,64}[.]jpg$')
+        && jpegUpTo(3 * 1024 * 1024);
+      allow read: if isOwner(uid) || (signedIn()
+        && request.auth.uid in firestore.get(/databases/(default)/documents/disputes/$(disputeId)).data.parties);
+      allow delete: if isOwner(uid)
+        && !firestore.exists(/databases/(default)/documents/disputes/$(disputeId));
+      allow update: if false;
+    }
+
     // Business registration photos (S21.04, purpose document, 2048 px): businessDocs/{uid}/{file}.
     // Owner only (staff read through the Admin SDK), JPEG up to 3 MiB, create once: a submitted
     // photo cannot be overwritten (the app names each file with a fresh ULID) nor deleted by the

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
@@ -74,7 +75,7 @@ void main() {
     currentTime = DateTime.utc(2026, 10, 14, 20, 0); // 10h after submission (left = 2 days 14 hours)
   });
 
-  Widget buildApp(Widget child, {String currentUid = 'c1'}) {
+  Widget buildApp(Widget child, {String currentUid = 'c1', GoRouter? router}) {
     return ProviderScope(
       overrides: [
         deliveryRepositoryProvider.overrideWithValue(fakeDeliveryRepo),
@@ -87,12 +88,19 @@ void main() {
         authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: currentUid))),
         clockProvider.overrideWithValue(() => currentTime),
       ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('vi'),
-        home: child,
-      ),
+      child: router != null
+          ? MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('vi'),
+            )
+          : MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('vi'),
+              home: child,
+            ),
     );
   }
 
@@ -186,7 +194,7 @@ void main() {
     expect(find.widgetWithText(AppButton, 'Yêu cầu chỉnh sửa'), findsNothing);
   });
 
-  testWidgets('approved: "Mở bộ ảnh gốc" launches link, check card shows "còn 47 giờ" with bar, "Báo vấn đề" opens report sheet', (tester) async {
+  testWidgets('approved: "Mở bộ ảnh gốc" launches link, check card shows "còn 47 giờ" with bar, "Báo vấn đề với ảnh gốc" opens S18.01 through /b/:id/dispute?from=delivery', (tester) async {
     final approvedTime = DateTime.utc(2026, 10, 15, 10, 0);
     final checkUntilTime = approvedTime.add(const Duration(hours: 48));
     currentTime = approvedTime.add(const Duration(hours: 1)); // 47 hours left
@@ -200,9 +208,20 @@ void main() {
     fakeDeliveryRepo.seedRound('b-rev', deliveredRound);
     fakeDeliveryRepo.seedLink('b-rev', const DeliveryLink(link: 'https://drive.google.com/real-photos', round: 1));
 
-    await tester.pumpWidget(
-      buildApp(const DeliveryReviewScreen(bookingId: 'b-rev')),
+    final router = GoRouter(
+      initialLocation: '/b/b-rev/delivery',
+      routes: [
+        GoRoute(
+          path: '/b/:id/delivery',
+          builder: (_, s) => DeliveryReviewScreen(bookingId: s.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: '/b/:id/dispute',
+          builder: (_, s) => Scaffold(body: Text('stub ${s.uri}')),
+        ),
+      ],
     );
+    await tester.pumpWidget(buildApp(const SizedBox.shrink(), router: router));
     await tester.pumpAndSettle();
 
     expect(find.text('Bàn giao · đã đồng ý'), findsOneWidget);
@@ -216,12 +235,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(fakeLauncher.opened, [Uri.parse('https://drive.google.com/real-photos')]);
 
-    // Open report sheet
+    // Report: S18.01 over S05.02 with the delivery reasons (Decision 13).
     final reportFinder = find.text('Báo vấn đề với ảnh gốc');
     await tester.scrollUntilVisible(reportFinder, 200);
     await tester.tap(reportFinder);
     await tester.pumpAndSettle();
-    expect(find.text('Báo vấn đề với ảnh gốc'), findsWidgets);
+    expect(router.state.uri.toString(), '/b/b-rev/dispute?from=delivery');
+  });
+
+  Future<void> pumpApproved(
+    WidgetTester tester, {
+    String? disputeId,
+    EscrowStatus escrow = EscrowStatus.held,
+  }) async {
+    final approvedTime = DateTime.utc(2026, 10, 15, 10, 0);
+    currentTime = approvedTime.add(const Duration(hours: 1));
+    fakeBookingRepo.bookings['b-rev'] = testBooking.copyWith(
+      status: BookingStatus.approved,
+      approvedAt: approvedTime,
+      checkUntil: approvedTime.add(const Duration(hours: 48)),
+      disputeId: disputeId,
+      escrowStatus: escrow,
+    );
+    fakeDeliveryRepo.seedRound('b-rev', deliveredRound);
+
+    await tester.pumpWidget(
+      buildApp(const DeliveryReviewScreen(bookingId: 'b-rev')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('còn 47 giờ'), findsOneWidget);
+  }
+
+  testWidgets('a booking with an open dispute has no report button on the check card', (tester) async {
+    await pumpApproved(tester, disputeId: 'dK7Q2', escrow: EscrowStatus.disputed);
+    expect(find.text('Báo vấn đề với ảnh gốc'), findsNothing);
+  });
+
+  testWidgets('after a resolved shoot dispute the delivery can still be reported', (tester) async {
+    await pumpApproved(tester, disputeId: 'dK7Q2');
+    expect(find.text('Báo vấn đề với ảnh gốc'), findsOneWidget);
+  });
+
+  testWidgets('"Báo vấn đề với ảnh gốc" is hidden when escrow no longer holds money', (tester) async {
+    await pumpApproved(tester, escrow: EscrowStatus.released);
+    expect(find.text('Báo vấn đề với ảnh gốc'), findsNothing);
   });
 
   testWidgets('approved: "Đánh giá buổi chụp" navigates to review, reviewed shows "Xem đánh giá"', (tester) async {

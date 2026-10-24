@@ -64,4 +64,27 @@ void main() {
       expect(skeletonSize.height, realSize.height);
     }
   });
+
+  testWidgets('title, trailing and onTap make a tappable notice', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      hostWidget(
+        EscrowNotice(
+          title: 'Đang khiếu nại',
+          text: 'Tiền được giữ tới khi có kết quả.',
+          trailing: const Text('Xem khiếu nại'),
+          onTap: () => taps++,
+        ),
+        width: 320,
+        textScale: 1.3,
+      ),
+    );
+    expect(find.text('Đang khiếu nại'), findsOneWidget);
+    expect(find.text('Tiền được giữ tới khi có kết quả.'), findsOneWidget);
+    await tester.tap(find.text('Xem khiếu nại'));
+    expect(taps, 1);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -94,6 +94,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 | `reviewed` | Xem bàn giao, Xem đánh giá | Xem bàn giao |
 
 - **Chuỗi**: `s09_title` "Buổi chụp #{code}", `s09_contact` "Liên hệ", `s09_reschedule` "Đổi lịch", `s09_cancel` "Huỷ yêu cầu · hoàn {pct}%", `s09_directions` "Chỉ đường"; chi tiết bàn giao: `detailMarkShot` "Đã chụp xong", `detailDeliver` "Nộp bàn giao", `detailDeliverRound` "Nộp vòng {round}", `detailViewDelivery` "Xem bàn giao", `detailRevisionCard` "Khách muốn chỉnh sửa vòng {round}", `detailWaitingApproval` "Đã gửi vòng {round} · chờ khách duyệt", `detailApprovedProvider` "Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra", `detailExtraRoundTitle` "{name} xin thêm 1 vòng sửa", `detailExtraGrant` "Cho thêm 1 vòng", `detailExtraDecline` "Không thêm".
+- **Khiếu nại (S18, #142)**: khách còn trong cửa sổ khiếu nại thấy nút chữ đỏ "Báo vấn đề · còn {h} giờ" (→ S18.01); booking có `disputeId` hiện dải "Đang khiếu nại" / "Khiếu nại đã có kết quả" dưới thẻ booking (→ S18.02); chi tiết ở [disputes-help.md](disputes-help.md).
 - **Phân tích**: `booking_open{status}`, `contact_tapped{channel, source:"S05.02"}`, `booking_action{action}`.
 - **Chấp nhận**: timeline đúng thứ tự và thời điểm (thêm bước Bàn giao & duyệt ảnh); số hoàn trên nút huỷ khớp bảng chính sách theo giờ hiện tại; trạng thái đổi theo thời gian thực không cần tải lại; hiển thị đúng các nút hành động bàn giao theo vai trò và trạng thái.
 
@@ -103,7 +104,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 
 - **Thông tin**: `/b/:id/delivery` · khách (và NAG xem ở chế độ chỉ đọc) · sub‑project 4 · Chưa có (kế hoạch `2026-10-07-s05-delivery-two-layer.md` #152).
 - **Mục đích**: xem ảnh mẫu đã đóng watermark trên server, yêu cầu chỉnh sửa hoặc đồng ý để mở link bộ ảnh gốc và kích hoạt 48 giờ kiểm tra.
-- **Điểm vào → ra**: từ nút "Xem bàn giao" ở S05.02 hoặc push thông báo bàn giao. "Yêu cầu chỉnh sửa" / "Xin thêm 1 vòng" mở sheet S05.07; "Đồng ý ảnh" mở sheet xác nhận; "Mở bộ ảnh gốc" mở link trình duyệt ngoài (`drive.google.com`, `dropbox.com`,...); "Báo vấn đề với ảnh gốc" mở sheet báo cáo sự cố (#S18.01 / `#S05.06-report`); "Đánh giá buổi chụp" → S05.05.
+- **Điểm vào → ra**: từ nút "Xem bàn giao" ở S05.02 hoặc push thông báo bàn giao. "Yêu cầu chỉnh sửa" / "Xin thêm 1 vòng" mở sheet S05.07; "Đồng ý ảnh" mở sheet xác nhận; "Mở bộ ảnh gốc" mở link trình duyệt ngoài (`drive.google.com`, `dropbox.com`,...); "Báo vấn đề với ảnh gốc" mở `/b/:id/dispute?from=delivery` (sheet S18.01, biến thể bàn giao: lý do thiếu ảnh, khác ảnh mẫu, link hỏng, khác; [disputes-help.md](disputes-help.md)); "Đánh giá buổi chụp" → S05.05.
 - **Bố cục (trước khi duyệt)**: thanh trên "Bàn giao · vòng {round}"; dòng "{name} gửi {count} ảnh mẫu · {date}"; lưới ảnh mẫu (thumbnail 400px, bấm mở xem toàn màn hình 1600px có watermark); thẻ "Bộ ảnh gốc · {count} ảnh" bị khoá, link bị che dạng `{host}/••••••••`, dòng chú thích "Mở khi bạn đồng ý ảnh"; thông tin lượt sửa: "Còn {left}/{total} lượt sửa miễn phí" (hoặc "Hết lượt sửa miễn phí ({total}/{total})"); đếm ngược "Tự đồng ý sau {time} nếu bạn không phản hồi" (3 ngày kể từ khi nộp); thanh dưới:
   - Còn lượt sửa: nút viền "Yêu cầu chỉnh sửa" + nút chính "Đồng ý ảnh".
   - Hết lượt sửa: nút viền "Xin thêm 1 vòng" + nút chính "Đồng ý ảnh".

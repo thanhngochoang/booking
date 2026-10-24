@@ -2245,6 +2245,140 @@ test('a participant reads the threads messages, a third user cannot', async () =
   await assertFails(getDoc(doc(thirdPartyDb, 'support_threads/help_u1/messages/m1')));
 });
 
+// ---- S18 disputes and evidence (#142) ----
+
+const seedDispute = (id, parties = ['dc1', 'dp1']) =>
+  env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), `disputes/${id}`), {
+      id, subjectType: 'booking', subjectId: `b-${id}`, customerId: parties[0], providerId: parties[1] ?? 'platform',
+      parties, status: 'open', outcome: null, threadId: `dispute_${id}`, createdAt: Timestamp.now(),
+    });
+    await setDoc(doc(c.firestore(), `support_threads/dispute_${id}`), {
+      id: `dispute_${id}`, kind: 'dispute', ownerId: null, disputeId: id, participants: parties, status: 'open',
+    });
+    await setDoc(doc(c.firestore(), `support_threads/dispute_${id}/messages/m1`), {
+      id: 'm1', threadId: `dispute_${id}`, senderId: parties[0], senderRole: 'customer', body: 'Thiếu ảnh', createdAt: Timestamp.now(),
+    });
+  });
+
+test('a party reads its dispute', async () => {
+  await seedDispute('dsp-r1');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('dc1').firestore(), 'disputes/dsp-r1')));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('dp1').firestore(), 'disputes/dsp-r1')));
+  // S18.03 "Khiếu nại của bạn": a list filtered on the caller's uid.
+  const mine = await assertSucceeds(getDocs(query(collection(env.authenticatedContext('dc1').firestore(), 'disputes'),
+    where('parties', 'array-contains', 'dc1'))));
+  assert.ok(mine.docs.some((d) => d.id === 'dsp-r1'));
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('dp1').firestore(), 'disputes'),
+    where('parties', 'array-contains', 'dp1'))));
+});
+
+test('a third user cannot get or list a dispute', async () => {
+  await seedDispute('dsp-r2');
+  const stranger = env.authenticatedContext('dx1').firestore();
+  await assertFails(getDoc(doc(stranger, 'disputes/dsp-r2')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'disputes/dsp-r2')));
+  // An unfiltered list, a list on someone else's uid, or on another field is refused.
+  await assertFails(getDocs(collection(stranger, 'disputes')));
+  await assertFails(getDocs(query(collection(stranger, 'disputes'), where('parties', 'array-contains', 'dc1'))));
+  await assertFails(getDocs(query(collection(stranger, 'disputes'), where('status', '==', 'open'))));
+  await assertFails(getDocs(query(collection(stranger, 'disputes'), where('customerId', '==', 'dc1'))));
+  // Its own uid: allowed and empty.
+  const own = await assertSucceeds(getDocs(query(collection(stranger, 'disputes'), where('parties', 'array-contains', 'dx1'))));
+  assert.equal(own.size, 0);
+  // Staff read through the Admin SDK, not with a client token.
+  const staff = env.authenticatedContext('staff1', { staffRole: 'admin' }).firestore();
+  await assertFails(getDoc(doc(staff, 'disputes/dsp-r2')));
+});
+
+test('nobody writes disputes from the client', async () => {
+  await seedDispute('dsp-r3');
+  const party = env.authenticatedContext('dc1').firestore();
+  await assertFails(setDoc(doc(party, 'disputes/dsp-new'), { parties: ['dc1'], status: 'open' }));
+  await assertFails(updateDoc(doc(party, 'disputes/dsp-r3'), { status: 'resolved' }));
+  await assertFails(deleteDoc(doc(party, 'disputes/dsp-r3')));
+  const staff = env.authenticatedContext('staff1', { staffRole: 'admin' }).firestore();
+  await assertFails(updateDoc(doc(staff, 'disputes/dsp-r3'), { status: 'resolved' }));
+});
+
+test('a party reads dispute thread messages, a third user cannot', async () => {
+  await seedDispute('dsp-r4');
+  for (const uid of ['dc1', 'dp1']) {
+    const db = env.authenticatedContext(uid).firestore();
+    await assertSucceeds(getDoc(doc(db, 'support_threads/dispute_dsp-r4')));
+    await assertSucceeds(getDoc(doc(db, 'support_threads/dispute_dsp-r4/messages/m1')));
+    await assertSucceeds(getDocs(collection(db, 'support_threads/dispute_dsp-r4/messages')));
+  }
+  const stranger = env.authenticatedContext('dx1').firestore();
+  await assertFails(getDoc(doc(stranger, 'support_threads/dispute_dsp-r4')));
+  await assertFails(getDoc(doc(stranger, 'support_threads/dispute_dsp-r4/messages/m1')));
+  await assertFails(getDocs(collection(stranger, 'support_threads/dispute_dsp-r4/messages')));
+  await assertFails(getDocs(query(collection(stranger, 'support_threads'), where('participants', 'array-contains', 'dc1'))));
+  await assertFails(setDoc(doc(env.authenticatedContext('dc1').firestore(), 'support_threads/dispute_dsp-r4/messages/m2'), { body: 'x' }));
+});
+
+test('dispute evidence: owner uploads a JPEG under their uid, not another\'s', async () => {
+  const own = ref(env.authenticatedContext('dc1').storage(), 'disputeEvidence/dc1/dsp-e1/01JEVIDENCE1.jpg');
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertSucceeds(getBytes(own));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('dc1').storage(), 'disputeEvidence/dc2/dsp-e1/01JEVIDENCE2.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(env.unauthenticatedContext().storage(), 'disputeEvidence/dc1/dsp-e1/01JEVIDENCE3.jpg'), photo(), jpeg));
+});
+
+test('dispute evidence: PNG or a JPEG over 3 MiB is refused (jpegUpTo)', async () => {
+  const st = env.authenticatedContext('dc1').storage();
+  await assertSucceeds(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e2/max.jpg'), photo(3 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e2/big.jpg'), photo(3 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e2/a.png'), photo(), { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e2/a.heic'), photo(), { contentType: 'image/heic' }));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e2/a.pdf'), photo(), { contentType: 'application/pdf' }));
+});
+
+test('dispute evidence: only <id>.jpg file names (letters, digits, _ and -, at most 64) are accepted', async () => {
+  const st = env.authenticatedContext('dc1').storage();
+  await assertSucceeds(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/01JEVIDENCE_8-a.jpg'), photo(), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, `disputeEvidence/dc1/dsp-e7/${'a'.repeat(64)}.jpg`), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, `disputeEvidence/dc1/dsp-e7/${'a'.repeat(65)}.jpg`), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/no-extension'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/two.dots.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/upper.JPG'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'disputeEvidence/dc1/dsp-e7/.jpg'), photo(), jpeg));
+});
+
+test('dispute evidence: overwrite refused', async () => {
+  const own = ref(env.authenticatedContext('dc1').storage(), 'disputeEvidence/dc1/dsp-e3/fixed.jpg');
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertFails(uploadBytes(own, photo(), jpeg));
+});
+
+test('dispute evidence: a party reads evidence, a third user cannot', async () => {
+  const path = 'disputeEvidence/dc1/dsp-e4/01JEVIDENCE4.jpg';
+  await assertSucceeds(uploadBytes(ref(env.authenticatedContext('dc1').storage(), path), photo(), jpeg));
+  // Before the dispute exists only the uploader reads it.
+  await assertFails(getBytes(ref(env.authenticatedContext('dp1').storage(), path)));
+  await seedDispute('dsp-e4');
+  await assertSucceeds(getBytes(ref(env.authenticatedContext('dc1').storage(), path)));
+  await assertSucceeds(getBytes(ref(env.authenticatedContext('dp1').storage(), path)));
+  await assertFails(getBytes(ref(env.authenticatedContext('dx1').storage(), path)));
+  await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), path)));
+  // The provider cannot add files to the customer's folder.
+  await assertFails(uploadBytes(ref(env.authenticatedContext('dp1').storage(), 'disputeEvidence/dc1/dsp-e4/01JEVIDENCE5.jpg'), photo(), jpeg));
+});
+
+test('dispute evidence: owner deletes evidence only while no dispute document exists', async () => {
+  const st = env.authenticatedContext('dc1').storage();
+  const draft = ref(st, 'disputeEvidence/dc1/dsp-e5/01JEVIDENCE6.jpg');
+  await assertSucceeds(uploadBytes(draft, photo(), jpeg));
+  await assertFails(deleteObject(ref(env.authenticatedContext('dx1').storage(), 'disputeEvidence/dc1/dsp-e5/01JEVIDENCE6.jpg')));
+  await assertSucceeds(deleteObject(draft));
+
+  const sent = ref(st, 'disputeEvidence/dc1/dsp-e6/01JEVIDENCE7.jpg');
+  await assertSucceeds(uploadBytes(sent, photo(), jpeg));
+  await seedDispute('dsp-e6');
+  await assertFails(deleteObject(sent));
+  await assertFails(deleteObject(ref(env.authenticatedContext('dp1').storage(), 'disputeEvidence/dc1/dsp-e6/01JEVIDENCE7.jpg')));
+});
+
 // ---- photographers/{uid}/addons (S08.06, #190) ----
 const addonPath = (uid, id) => `photographers/${uid}/addons/${id}`;
 const addonDoc = (o = {}) => ({

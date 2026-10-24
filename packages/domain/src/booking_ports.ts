@@ -233,6 +233,10 @@ export interface BookingStore {
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
   /** accepted | upcoming bookings ended before `cutoff`, without studio bookings that have no assignee. */
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /**
+   * Payments with `releaseAfter <= cutoff` whose escrow is `held` or `partially_refunded`, or `disputed`
+   * with milestones (another milestone may be due; S18 Decision 1). Never a disputed payment without milestones.
+   */
   findReleasableEscrows(cutoff: Date, limit?: number): Promise<readonly Payment[]>;
   /** status delivered, autoApproveAt <= now */
   findDueAutoApprovals(now: Date, limit?: number): Promise<readonly Booking[]>;

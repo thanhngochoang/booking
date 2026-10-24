@@ -362,8 +362,11 @@ create table payments (
   escrow_status   text not null default 'held' check (escrow_status in ('held','released','paid_out','partially_refunded','refunded','disputed')),
   release_after   timestamptz,                    -- hết cửa sổ khiếu nại
   released_at     timestamptz,
-  dispute_reason  text,                           -- do open_dispute ghi; không hiện cho người nhận
+  dispute_reason  text,                           -- do open_dispute ghi (mã DisputeReason; bản ghi trước S18 là chữ tự do); không hiện cho người nhận
   disputed_at     timestamptz,
+  dispute_id      text,                           -- #142: khiếu nại đang/đã giữ khoản này (FK disputes, thêm ở 2.5a)
+  dispute_milestone text check (dispute_milestone in ('shoot','delivery')),  -- #142: mốc bị giữ; null = giữ cả khoản (không có mốc)
+  dispute_prev_escrow_status text check (dispute_prev_escrow_status in ('held','partially_refunded')),  -- #142: chỉ khi giữ cả khoản
   provider_ref    text,
   raw             jsonb,                          -- phản hồi thô của cổng
   idempotency_key text not null unique,
@@ -585,9 +588,9 @@ create table chat_pins (
 create table support_threads (
   id              text primary key,                   -- 'help_{uid}' hoặc 'dispute_{id}'
   kind            text not null check (kind in ('help', 'dispute')),
-  owner_id        text not null references users(id) on delete cascade,
+  owner_id        text references users(id) on delete cascade,  -- luồng help: chủ; luồng dispute: null (#142)
   status          text not null default 'open' check (status in ('open', 'closed')),
-  dispute_id      text,
+  dispute_id      text,                               -- luồng dispute (FK disputes, thêm ở 2.5a)
   awaiting_staff  boolean not null default false,
   last_message    jsonb,
   created_at      timestamptz not null default now(),
@@ -604,13 +607,66 @@ create table support_thread_participants (
 create table support_messages (
   id          text primary key,
   thread_id   text not null references support_threads(id) on delete cascade,
-  sender_id   text not null references users(id),
-  sender_role text not null check (sender_role in ('user', 'staff')),
+  sender_id   text references users(id),             -- null với tin hệ thống (#142)
+  sender_role text not null check (sender_role in ('customer', 'provider', 'user', 'staff', 'system')),
   sender_name text not null,
   body        text not null,
+  opening     boolean not null default false,        -- #142: mô tả của khách lúc mở khiếu nại (không sinh thông báo dispute_message)
   created_at  timestamptz not null default now()
 );
 create index ix_support_messages_thread on support_messages (thread_id, created_at asc);
+
+-- 2.5a Khiếu nại (S18, #142). Chỉ máy chủ ghi; parties đọc; staff qua quyền admin.
+create table disputes (
+  id              text primary key,                   -- ULID do app sinh trước khi tải ảnh bằng chứng
+  subject_type    text not null check (subject_type in ('booking','ticket')),
+  booking_id      text references bookings(id),       -- subject_type = 'booking'
+  registration_id text,                               -- subject_type = 'ticket' (FK thêm ở 2.6, sau event_registrations)
+  event_id        text,                               -- vé: sự kiện của đăng ký (FK thêm ở 2.6)
+  payment_id      text not null references payments(id),
+  customer_id     text not null references users(id),
+  provider_id     text references users(id),          -- null = sự kiện nền tảng (Firestore 'platform')
+  opened_by       text not null default 'customer' check (opened_by in ('customer')),
+  reason          text not null check (reason in ('no_show','not_as_agreed','photos_missing','not_as_sample','link_broken','event_not_held','not_as_described','other')),
+  description     text not null,                      -- 10–1000 grapheme
+  snapshot_title  text not null,
+  snapshot_subtitle text not null,
+  snapshot_provider_name text,
+  snapshot_thumb_url text,
+  amount_held     bigint not null check (amount_held > 0),
+  status          text not null default 'open' check (status in ('open','resolved')),
+  outcome_kind    text check (outcome_kind in ('release','refund','split')),
+  outcome_refund_percent smallint check (outcome_refund_percent between 0 and 100),
+  outcome_refund_amount  bigint check (outcome_refund_amount >= 0),
+  outcome_release_amount bigint check (outcome_release_amount >= 0),
+  outcome_note    text,                               -- 5–500 ký tự
+  decided_by      text references users(id),
+  decided_at      timestamptz,
+  refund_id       text references refunds(id),
+  thread_id       text not null,                      -- 'dispute_{id}' (FK support_threads)
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  resolved_at     timestamptz,
+  version         int not null default 1,
+  check ((subject_type = 'booking') = (booking_id is not null)),
+  check ((subject_type = 'ticket') = (registration_id is not null)),
+  check ((status = 'resolved') = (outcome_kind is not null and decided_at is not null and resolved_at is not null))
+);
+create unique index ux_disputes_open_booking on disputes (booking_id) where status = 'open';
+create unique index ux_disputes_open_registration on disputes (registration_id) where status = 'open';
+create index ix_disputes_status on disputes (status, created_at);        -- CLI / S23.01 hàng đợi
+create index ix_disputes_customer on disputes (customer_id, created_at desc);
+create index ix_disputes_provider on disputes (provider_id, created_at desc);
+
+create table dispute_evidence (                     -- 🔒 chỉ parties và staff đọc
+  dispute_id text not null references disputes(id) on delete cascade,
+  position   smallint not null check (position between 1 and 5),
+  file_id    text not null references files(id),    -- Storage disputeEvidence/{uid}/{disputeId}/{fileId}.jpg
+  primary key (dispute_id, position)
+);
+alter table payments add constraint fk_payments_dispute foreign key (dispute_id) references disputes(id);
+alter table support_threads add constraint fk_support_threads_dispute foreign key (dispute_id) references disputes(id);
+alter table disputes add constraint fk_disputes_thread foreign key (thread_id) references support_threads(id);
 
 create table notifications (
   id         text primary key,                   -- 'n_{dedupeKey}' hoặc 'g_{groupKey}' (dòng gom)
@@ -710,6 +766,8 @@ create index ix_event_regs_user on event_registrations (user_id, status);
 create unique index ux_event_regs_active on event_registrations (event_id, user_id) where status in ('held','paid');
 create index ix_event_regs_refund_due on event_registrations (refund_due) where refund_due;
 alter table event_registrations add constraint fk_event_regs_refund foreign key (refund_id) references refunds(id);
+alter table disputes add constraint fk_disputes_registration foreign key (registration_id) references event_registrations(id);
+alter table disputes add constraint fk_disputes_event foreign key (event_id) references events(id);
 alter table payments add constraint fk_payments_event foreign key (event_id) references events(id);
 
 create table event_posts (
@@ -1609,7 +1667,11 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột; `chats.bookingStatus`→không có cột, suy ra từ `bookings.status` qua `chats.booking_id` (join; trường Firestore chỉ là read model cho danh sách S07.02) |
-| `support_threads/{id}` + `support_threads/{id}/messages/{id}` | `support_threads`, `support_thread_participants`, `support_messages` | `participants[]`→`support_thread_participants`; `lastMessage`→jsonb cột `last_message` |
+| `support_threads/{id}` + `support_threads/{id}/messages/{id}` | `support_threads`, `support_thread_participants`, `support_messages` | `participants[]`→`support_thread_participants`; `lastMessageAt`, `lastMessagePreview`, `lastSenderRole`→jsonb cột `last_message`; `rate{}` (hạn mức gửi) không thành cột (tính lại từ `support_messages`); tin hệ thống `senderId` null; `opening` chỉ có khi true → `opening = true` |
+| `disputes/{id}` | `disputes` + `dispute_evidence` | #142. `subjectId` → `booking_id` hoặc `registration_id` theo `subjectType`; `providerId = 'platform'` → `provider_id` null; `parties[]` không thành bảng (= `customer_id` + `provider_id`); `snapshot.*` → `snapshot_*`; `outcome.*` → `outcome_*`, `decided_by`, `decided_at`, `refund_id`; `evidencePaths[]` → `dispute_evidence` (tạo `files`, giữ thứ tự ở `position`) |
+| `payments/{id}.dispute` | `payments.dispute_reason`, `disputed_at`, `dispute_id`, `dispute_milestone`, `dispute_prev_escrow_status` | #142. `openedAt` → `disputed_at`; bản ghi trước S18 chỉ có `reason`, `openedAt`; `milestone: null` → `dispute_milestone` null |
+| `bookings/{id}.disputeId`, `events/{e}/registrations/{r}.disputeId` | (không có cột) | #142. Bản sao cho app (banner S05.02, ẩn nút "Báo vấn đề"): khiếu nại mới nhất của chủ thể, lấy bằng `disputes` theo `booking_id` / `registration_id` sắp `created_at desc` |
+| Storage `disputeEvidence/{uid}/{disputeId}/{fileId}` | `files` (qua `dispute_evidence`) | #142. Mục đích `document` (JPEG ≤ 3 MiB), giữ sau khi có kết quả (xoá theo tài khoản, hoặc job sau) |
 | `users/{uid}/notifications/{id}` | `notifications` | `actors[]`→`actors jsonb`; `users/{uid}/private/inbox.unreadCount` không có cột (đếm `read_at is null`) |
 | `users/{uid}/private/notification_prefs` | `notification_prefs` | `quietHours.*`→`quiet_*`, `reminders.*`→`reminder_*` |
 | `events/{id}` | `events` | `location.*`→cột phẳng; `host.*`, `createdBy*` |
@@ -1663,7 +1725,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

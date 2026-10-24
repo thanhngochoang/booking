@@ -167,8 +167,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
 | S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ (10a) · thêm sau khi mua vé (#138) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
-| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute` (sheet trên S05.02; `?from=delivery` từ S05.06) · sheet trên S11.04 (vé) | khách | mới | ⬜ có mock, có plan (#142) | — |
-| S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ có mock, có plan (#142) | — |
+| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute` (sheet trên S05.02; `?from=delivery` từ S05.06) · sheet trên S11.04 (vé) | khách | mới | [#142](https://github.com/thanhngochoang/booking/issues/142) | — |
+| S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | [#142](https://github.com/thanhngochoang/booking/issues/142) | — |
 | S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help`, `/help/chat` | cả hai | mới | ✅ đã làm (#204) | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
 | S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ✅ đã làm (#143) | — |
@@ -944,6 +944,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
   - Tiền tạm dừng chuyển cho mốc/khoản bị khiếu nại. Kết quả gồm: thả (chuyển thợ), hoàn (cho khách), hoặc chia theo tỉ lệ %. Tiền hoàn chỉ từ số đang giữ.
   - Hội thoại khiếu nại gồm 3 bên (khách, bên cung cấp, hỗ trợ).
   - Trợ giúp S18.03 gồm FAQ tĩnh và chat hỗ trợ 1-1 qua `support_threads/help_{uid}`. Khiếu nại dùng chung nền tảng `support_threads` này.
+- **Như đã làm ở #142**: cửa sổ đi theo mốc của booking (`shot`: 24 giờ sau buổi chụp, giữ mốc 1; `approved`: 48 giờ kiểm tra bộ ảnh gốc, giữ mốc 2; booking không có mốc: 24 giờ sau khi hoàn thành, giữ cả khoản), vé có phí 24 giờ sau khi sự kiện kết thúc (không cần check-in). "Một khiếu nại mở" nghĩa là đang mở: khiếu nại mốc 1 đã có kết quả thì mốc 2 vẫn khiếu nại được trong cửa sổ của nó. Staff xử lý bằng callable `resolveDispute` hoặc CLI `npm run disputes` tới khi có S23.01. Chi tiết: `screens/disputes-help.md`, ledger `../handover/ledger-s18-disputes.md`.
 
 ### 3i.2 S19 · Lưu & theo dõi
 - **Vì sao cần**: S09.01 có hàng số "đang theo dõi · đã lưu" đang ẩn vì chưa có danh sách; nút lưu ở S02.02 và tín hiệu "đã lưu" của gợi ý (mục 3e.7) cần nơi xem lại.

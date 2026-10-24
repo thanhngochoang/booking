@@ -441,6 +441,31 @@ void main() {
     expect(find.textContaining('Huỷ yêu cầu'), findsOneWidget);
   });
 
+  testWidgets('a disputed studio booking: the studio sees the dispute banner, '
+      'the assigned member (not a party of the dispute) does not', (
+    tester,
+  ) async {
+    final disputed = _booking(
+      assignee: 'minh',
+    ).copyWith(disputeId: 'dK7Q2', escrowStatus: EscrowStatus.disputed);
+    for (final (uid, shown) in [('cuc', true), ('minh', false)]) {
+      await pumpBookingDetail(
+        tester,
+        uid: uid,
+        bookings: RecordingBookingRepository()..seedBooking(disputed),
+        now: _weekBefore,
+        features: _chatOn,
+        profiles: _profiles,
+      );
+      await _settle(tester);
+      expect(
+        find.byKey(const Key('dispute-banner')),
+        shown ? findsOneWidget : findsNothing,
+        reason: uid,
+      );
+    }
+  });
+
   testWidgets('fits 320dp at 1.3x text', (tester) async {
     await _pump(
       tester,

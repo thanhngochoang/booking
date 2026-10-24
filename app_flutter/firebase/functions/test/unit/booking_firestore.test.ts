@@ -72,6 +72,7 @@ describe('Firestore <-> Domain booking mappers', () => {
     },
     samplesPurgeAfter: '2027-01-15T09:00:00.000Z',
     samplesPurged: false,
+    disputeId: 'dsp_01',
     version: 2,
     createdAt: '2026-10-10T09:00:00.000Z',
     updatedAt: '2026-10-10T10:00:00.000Z',
@@ -128,6 +129,10 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual(restored.extraRound, sampleBooking.extraRound);
     assert.equal(restored.samplesPurgeAfter, sampleBooking.samplesPurgeAfter);
     assert.equal(restored.samplesPurged, false);
+    // S18: the dispute mirror survives every booking write (Review Focus 5).
+    assert.equal(docData.disputeId, 'dsp_01');
+    assert.equal(restored.disputeId, 'dsp_01');
+    assert.equal(bookingToFirestore({ ...sampleBooking, disputeId: undefined }).disputeId, null);
     assert.equal(restored.version, sampleBooking.version);
     assert.deepEqual(restored.addons, sampleBooking.addons);
     assert.deepEqual(restored.pickup, sampleBooking.pickup);
@@ -739,6 +744,76 @@ describe('FirestoreBookingStore sweep queries', () => {
       ['payableUntil', '<=', CUTOFF.toISOString()],
     ]);
     assert.deepEqual(found.map((b) => [b.id, b.payableUntil]), [['b_9', '2026-10-10T08:30:00.000Z']]);
+  });
+
+  it('findReleasableEscrows also returns disputed milestone payments (another milestone may be due), never a disputed payment without milestones', async () => {
+    const base: Payment = {
+      id: 'pay_h', subjectType: 'booking', subjectId: 'b_h', payerId: 'c1', payeeId: 'p1', provider: 'fake', amount: 1_000_000,
+      status: 'paid', escrowStatus: 'held', idempotencyKey: 'k', releaseAfter: '2026-10-10T08:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const milestone = (kind: 'shoot' | 'delivery', status: 'held' | 'disputed', releaseAfter: string | null) =>
+      ({ kind, amount: 500_000, status, releaseAfter, releasedAt: null, payoutId: null });
+    const byStatus: Record<string, Payment[]> = {
+      'held,partially_refunded': [base],
+      disputed: [
+        { ...base, id: 'pay_legacy', escrowStatus: 'disputed' },
+        {
+          ...base, id: 'pay_ms', escrowStatus: 'disputed',
+          milestones: [milestone('shoot', 'held', '2026-10-10T08:00:00.000Z'), milestone('delivery', 'disputed', null)],
+        },
+      ],
+    };
+    const wheres: unknown[][] = [];
+    let statuses = '';
+    const query = {
+      where: (field: string, op: string, value: unknown) => {
+        wheres.push([field, op, value instanceof Timestamp ? value.toDate().toISOString() : value]);
+        if (field === 'escrowStatus') statuses = String(value);
+        return query;
+      },
+      limit: () => query,
+      get: async () => {
+        const docs = (byStatus[statuses] ?? []).map((p) => ({ id: p.id, data: () => paymentToFirestore(p) }));
+        return { empty: docs.length === 0, size: docs.length, docs };
+      },
+    };
+    const firestore = { collection: () => query } as unknown as Firestore;
+    const found = await new FirestoreBookingStore(firestore).findReleasableEscrows(CUTOFF);
+    assert.deepEqual(found.map((p) => p.id), ['pay_h', 'pay_ms']);
+    assert.deepEqual(wheres, [
+      ['escrowStatus', 'in', ['held', 'partially_refunded']],
+      ['releaseAfter', '<=', CUTOFF.toISOString()],
+      ['escrowStatus', 'in', ['disputed']],
+      ['releaseAfter', '<=', CUTOFF.toISOString()],
+    ]);
+  });
+
+  it('payment dispute keeps disputeId, milestone and prevStatus', () => {
+    const base: Payment = {
+      id: 'pay_d', subjectType: 'booking', subjectId: 'b_d', payerId: 'c1', payeeId: 'p1', provider: 'fake', amount: 1_000_000,
+      status: 'paid', escrowStatus: 'disputed', idempotencyKey: 'k', payoutId: null,
+      createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const legacy: Payment = {
+      ...base,
+      dispute: { reason: 'photos_missing', openedAt: '2026-10-02T00:00:00.000Z', disputeId: 'dsp_1', milestone: null, prevEscrowStatus: 'partially_refunded' },
+    };
+    const legacyDoc = paymentToFirestore(legacy);
+    assert.ok(legacyDoc.dispute.openedAt instanceof Timestamp);
+    assert.deepEqual(paymentFromFirestore('pay_d', legacyDoc)?.dispute, legacy.dispute);
+
+    const milestone: Payment = {
+      ...base,
+      dispute: { reason: 'no_show', openedAt: '2026-10-02T00:00:00.000Z', disputeId: 'dsp_2', milestone: 'shoot' },
+    };
+    assert.deepEqual(paymentFromFirestore('pay_d', paymentToFirestore(milestone))?.dispute, milestone.dispute);
+
+    // A dispute stored before S18 has only the reason and the time; nothing is invented on read.
+    const old: Payment = { ...base, dispute: { reason: 'Ảnh giao thiếu', openedAt: '2026-10-02T00:00:00.000Z' } };
+    const oldDoc = paymentToFirestore(old);
+    assert.deepEqual(Object.keys(oldDoc.dispute).sort(), ['openedAt', 'reason']);
+    assert.deepEqual(paymentFromFirestore('pay_d', oldDoc)?.dispute, old.dispute);
   });
 
   it('findPaymentsByTransferCode filters by the code only (any status)', async () => {

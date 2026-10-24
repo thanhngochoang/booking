@@ -892,6 +892,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // S18 disputes (#142): server-written only (openDispute / resolveDispute / staff CLI). A party
+    // (customer, or provider unless 'platform') reads it; staff read through the Admin SDK. A list must
+    // filter `parties array-contains <uid>` (S18.03 "Khiếu nại của bạn"); no field is read with a
+    // default, so an unfiltered list is refused.
+    match /disputes/{disputeId} {
+      allow get, list: if signedIn() && request.auth.uid in resource.data.parties;
+      allow write: if false;
+    }
+
     match /support_threads/{threadId} {
       // A missing help thread must read as "none", not as a denial.
       allow get: if signedIn() && (threadId == 'help_' + request.auth.uid

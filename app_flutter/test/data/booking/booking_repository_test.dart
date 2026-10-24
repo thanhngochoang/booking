@@ -136,17 +136,6 @@ void main() {
       expect(completed.completedAt, isNotNull);
     });
 
-    test('dispute updates escrowStatus to disputed', () async {
-      final b = makeTestBooking(id: 'b1', status: BookingStatus.completed);
-      repo.seedBooking(b);
-
-      final disputed = await repo.openDispute(
-        bookingId: 'b1',
-        reason: 'Chất lượng không tốt',
-      );
-      expect(disputed.escrowStatus, EscrowStatus.disputed);
-    });
-
     test('watchCustomerBookings filters out drafts', () async {
       final b1 = makeTestBooking(id: 'b1', status: BookingStatus.requested);
       final b2 = makeTestBooking(id: 'b2', status: BookingStatus.draft);
@@ -288,6 +277,23 @@ void main() {
       expect(b?.place.lat, 21.0285);
       expect(b?.place.lng, 105.8542);
       expect(b?.escrowStatus, EscrowStatus.held);
+    });
+
+    test('Booking maps disputeId', () {
+      final docData = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'completed',
+        'deposit': 1000000,
+        'remaining': 0,
+        'escrowStatus': 'disputed',
+      };
+      expect(bookingFromFirestore('b', docData)?.disputeId, isNull);
+      final b = bookingFromFirestore('b', {...docData, 'disputeId': 'd1'});
+      expect(b?.disputeId, 'd1');
+      expect(b?.escrowStatus, EscrowStatus.disputed);
     });
 
     test('bookingFromFirestore reads spotId, spotScheduleId, slotOfferId, source', () {
