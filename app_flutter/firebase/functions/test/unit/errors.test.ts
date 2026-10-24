@@ -57,6 +57,8 @@ describe('toHttpsError', () => {
       offer_expired: 'failed-precondition',
       already_assigned: 'failed-precondition',
       outside_service_area: 'failed-precondition',
+      collab_full: 'resource-exhausted',
+      recruit_blocked: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

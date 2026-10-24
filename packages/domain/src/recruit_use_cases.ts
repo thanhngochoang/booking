@@ -1,0 +1,376 @@
+/**
+ * S27 recruit posts and applications (plan #151 Task 2). Each use case reads everything first, then writes,
+ * in one `RecruitTx`; notifications go through #138's hooks after the commit and never fail the use case.
+ * Accepting an application (both kinds) is Task 3.
+ */
+
+import { DomainError, type ErrorCode } from './errors.js';
+import { isId } from './ids.js';
+import { notifyRecruitApplicationNew, notifyRecruitApplicationResult } from './notification_hooks.js';
+import {
+  APPLICATION_MESSAGE_MAX,
+  APPLICATION_SAMPLES_MAX,
+  APPLICATION_TTL_DAYS,
+  APPLY_DAILY,
+  assertNoContact,
+  isRecruitBlocked,
+  MAX_OPEN_APPLICATIONS,
+  MAX_OPEN_POSTS,
+  RECRUIT_POST_DAYS,
+  recruitApplicationId,
+  recruitDaysAfter,
+  recruitFilterKeys,
+  recruitMatchKeys,
+  STUDIO_COLLAB_DAILY_ACTIONS,
+  STUDIO_POST_DAILY_ACTIONS,
+  takeDaily,
+  validateRecruitPostInput,
+  type RecruitApplication,
+  type RecruitKind,
+  type RecruitPost,
+  type RecruitPostFields,
+  type RecruitStudioSnapshot,
+} from './recruit.js';
+import type { ProviderFacts, RecruitDeps } from './recruit_ports.js';
+
+/** Applications settled per page when a post closes or expires (Decision 9). */
+const CASCADE_PAGE = 200;
+const CASCADE_MAX_PAGES = 50;
+
+function fail(code: ErrorCode, field?: string): never {
+  throw new DomainError(code, field);
+}
+
+const decrement = (n: number): number => Math.max(0, n - 1);
+
+function objectOf(raw: unknown): Record<string, unknown> {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail('invalid_argument');
+  return raw as Record<string, unknown>;
+}
+
+function idOf(r: Record<string, unknown>, field: string): string {
+  const v = r[field];
+  return isId(v) ? v : fail('invalid_argument', field);
+}
+
+/** Runs a post-commit notification; a failure is reported, never thrown (the write already happened). */
+async function safely(deps: RecruitDeps, uid: string, send: () => Promise<unknown>): Promise<void> {
+  try {
+    await send();
+  } catch (e) {
+    deps.notify.onPushError?.(uid, e);
+  }
+}
+
+const isStudioAccount = (p: ProviderFacts | null): p is ProviderFacts =>
+  p !== null && p.role === 'photographer' && p.providerType === 'studio';
+
+/** Individual or artist in photographer mode (the only ones who apply or collaborate, Decision 12). */
+const isApplicantAccount = (p: ProviderFacts | null): p is ProviderFacts =>
+  p !== null && p.role === 'photographer' && (p.providerType === 'individual' || p.providerType === 'artist');
+
+const snapshotOf = (p: ProviderFacts): RecruitStudioSnapshot =>
+  ({ name: p.name, avatarUrl: p.avatarUrl, businessVerified: p.businessVerified });
+
+/** The stored post fields derived from validated input. */
+function postFields(kind: RecruitKind, f: RecruitPostFields) {
+  return {
+    kind,
+    title: f.title,
+    specialties: f.specialties,
+    areas: f.areas,
+    frequency: f.frequency,
+    feeHint: f.feeHint,
+    requirements: f.requirements,
+    matchKeys: recruitMatchKeys(f.areas, f.specialties),
+    filterKeys: recruitFilterKeys({ kind, areas: f.areas, specialties: f.specialties }),
+  };
+}
+
+/** The open post of `studioId` (`not_found`, `permission_denied`, `deadline_passed` otherwise). */
+function ownOpenPost(post: RecruitPost | null, studioId: string, now: Date): RecruitPost {
+  if (!post) return fail('not_found');
+  if (post.studioId !== studioId) fail('permission_denied');
+  if (post.status !== 'open' || post.expiresAt <= now) fail('deadline_passed');
+  return post;
+}
+
+// ── posts ─────────────────────────────────────────────────────────────────────────────────────
+
+/** S27.04 "Đăng tin": a verified studio, ≤ 3 open posts, ≤ 5 creates/closes per VN day, not recruit-blocked. */
+export async function createRecruitPost(deps: RecruitDeps, uid: string, raw: unknown): Promise<{ postId: string }> {
+  const fields = validateRecruitPostInput(raw, 'create');
+  const kind = fields.kind ?? fail('invalid_argument', 'kind');
+  const me = await deps.people.provider(uid);
+  if (!isStudioAccount(me)) fail('invalid_argument');
+  if (!(await deps.orders.acceptsOrders(uid))) fail('not_accepting_orders');
+  const now = deps.clock.now();
+  const postId = deps.ids.newId();
+  await deps.store.runTransaction(async (tx) => {
+    const c = await tx.getCounters(uid);
+    if (isRecruitBlocked(c, now)) fail('recruit_blocked');
+    if (c.openPostCount >= MAX_OPEN_POSTS) fail('limit_exceeded');
+    const postActions = takeDaily(c.postActions, now, STUDIO_POST_DAILY_ACTIONS);
+    // ---- writes ----
+    tx.putPost({
+      id: postId,
+      studioId: uid,
+      studio: snapshotOf(me),
+      ...postFields(kind, fields),
+      status: 'open',
+      renewed: false,
+      applicationCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: recruitDaysAfter(now, RECRUIT_POST_DAYS),
+      closedAt: null,
+    });
+    tx.putCounters(uid, { ...c, openPostCount: c.openPostCount + 1, postActions });
+  });
+  return { postId };
+}
+
+/** Edits an open post of the caller; `kind` is fixed after creation (Decision 22). Not a counted action. */
+export async function updateRecruitPost(deps: RecruitDeps, uid: string, raw: unknown): Promise<void> {
+  const postId = idOf(objectOf(raw), 'postId');
+  const fields = validateRecruitPostInput(raw, 'update');
+  const me = await deps.people.provider(uid);
+  const now = deps.clock.now();
+  await deps.store.runTransaction(async (tx) => {
+    const post = ownOpenPost(await tx.getPost(postId), uid, now);
+    if (fields.kind !== null && fields.kind !== post.kind) fail('invalid_argument', 'kind');
+    tx.putPost({
+      ...post,
+      ...postFields(post.kind, fields),
+      studio: me ? snapshotOf(me) : post.studio,
+      updatedAt: now,
+    });
+  });
+}
+
+/** One renewal while open: `expiresAt += 30 days` (`conflict` the second time). Not a counted action. */
+export async function renewRecruitPost(deps: RecruitDeps, uid: string, raw: unknown): Promise<{ expiresAt: Date }> {
+  const postId = idOf(objectOf(raw), 'postId');
+  const me = await deps.people.provider(uid);
+  const now = deps.clock.now();
+  return deps.store.runTransaction(async (tx) => {
+    const post = ownOpenPost(await tx.getPost(postId), uid, now);
+    if (post.renewed) fail('conflict');
+    const expiresAt = recruitDaysAfter(post.expiresAt, RECRUIT_POST_DAYS);
+    tx.putPost({ ...post, renewed: true, expiresAt, studio: me ? snapshotOf(me) : post.studio, updatedAt: now });
+    return { expiresAt };
+  });
+}
+
+/**
+ * Closes an open post of the caller (a counted action) and declines every application still `applied`
+ * (Decision 9), each in its own transaction so each applicant's counter drops exactly once.
+ */
+export async function closeRecruitPost(deps: RecruitDeps, uid: string, raw: unknown): Promise<void> {
+  const postId = idOf(objectOf(raw), 'postId');
+  const now = deps.clock.now();
+  const post = await deps.store.runTransaction(async (tx) => {
+    const p = await tx.getPost(postId);
+    if (!p) return fail('not_found');
+    if (p.studioId !== uid) fail('permission_denied');
+    if (p.status !== 'open') fail('deadline_passed');
+    const c = await tx.getCounters(uid);
+    const postActions = takeDaily(c.postActions, now, STUDIO_POST_DAILY_ACTIONS);
+    // ---- writes ----
+    tx.putPost({ ...p, status: 'closed', closedAt: now, updatedAt: now });
+    tx.putCounters(uid, { ...c, openPostCount: decrement(c.openPostCount), postActions });
+    return p;
+  });
+  await settleApplied(deps, post.id, 'declined');
+}
+
+/**
+ * Sweep step (Task 4 calls it): an `open` post past `expiresAt` becomes `expired`, the studio's open-post
+ * count drops once, and its `applied` applications expire. False when the post is not due (idempotent).
+ */
+export async function expireRecruitPost(deps: RecruitDeps, postId: string): Promise<boolean> {
+  const now = deps.clock.now();
+  const post = await deps.store.runTransaction(async (tx) => {
+    const p = await tx.getPost(postId);
+    if (!p || p.status !== 'open' || p.expiresAt > now) return null;
+    const c = await tx.getCounters(p.studioId);
+    tx.putPost({ ...p, status: 'expired', updatedAt: now });
+    tx.putCounters(p.studioId, { ...c, openPostCount: decrement(c.openPostCount) });
+    return p;
+  });
+  if (!post) return false;
+  await settleApplied(deps, post.id, 'expired');
+  return true;
+}
+
+// ── applications ──────────────────────────────────────────────────────────────────────────────
+
+interface ApplyInput {
+  readonly postId: string;
+  readonly message: string;
+  readonly samplePostIds: readonly string[];
+  readonly acceptTerms: boolean;
+}
+
+function parseApplyInput(raw: unknown): ApplyInput {
+  const r = objectOf(raw);
+  const postId = idOf(r, 'postId');
+  if (r.message !== undefined && r.message !== null && typeof r.message !== 'string') fail('invalid_argument', 'message');
+  const message = typeof r.message === 'string' ? r.message.trim() : '';
+  if ([...message.normalize('NFC')].length > APPLICATION_MESSAGE_MAX) fail('invalid_argument', 'message');
+  const samples = r.samplePostIds ?? [];
+  if (!Array.isArray(samples) || samples.length > APPLICATION_SAMPLES_MAX || !samples.every(isId)
+    || new Set(samples).size !== samples.length) {
+    fail('invalid_argument', 'samplePostIds');
+  }
+  if (r.acceptTerms !== undefined && typeof r.acceptTerms !== 'boolean') fail('invalid_argument', 'acceptTerms');
+  return { postId, message, samplePostIds: samples as string[], acceptTerms: r.acceptTerms === true };
+}
+
+/**
+ * S27.03 "Ứng tuyển": a verified individual or artist, not blocked by (and not blocking) the studio, not
+ * its active member; once per post, ≤ 10 open applications, ≤ 3 applies per VN day.
+ */
+export async function applyToRecruitPost(
+  deps: RecruitDeps,
+  uid: string,
+  raw: unknown,
+): Promise<{ applicationId: string }> {
+  const input = parseApplyInput(raw);
+  assertNoContact(input.message, 'message'); // 'zalo' included
+  const me = await deps.people.provider(uid);
+  if (!isApplicantAccount(me)) fail('invalid_argument');
+  if (!(await deps.orders.acceptsOrders(uid))) fail('not_accepting_orders');
+  if (!(await deps.posts.ownedBy(uid, input.samplePostIds))) fail('invalid_argument', 'samplePostIds');
+  const now = deps.clock.now();
+  const post = await deps.store.runTransaction(async (tx) => {
+    const p = await tx.getPost(input.postId);
+    if (!p) return fail('not_found');
+    if (p.status !== 'open' || p.expiresAt <= now) fail('deadline_passed');
+    if (p.kind === 'collaborator' && !input.acceptTerms) fail('invalid_argument', 'acceptTerms');
+    if (await deps.blocks.isBlockedEitherWay(p.studioId, uid)) fail('blocked');
+    if ((await tx.activeMembershipStudioOf(uid)) === p.studioId) fail('membership_conflict');
+    if (await tx.getApplication(p.id, uid)) fail('conflict');
+    const c = await tx.getCounters(uid);
+    if (c.openApplicationCount >= MAX_OPEN_APPLICATIONS) fail('limit_exceeded');
+    const applyActions = takeDaily(c.applyActions, now, APPLY_DAILY);
+    // ---- writes ----
+    tx.putApplication({
+      id: recruitApplicationId(p.id, uid),
+      postId: p.id,
+      studioId: p.studioId,
+      applicantId: uid,
+      kind: p.kind,
+      postTitle: p.title,
+      applicant: { name: me.name, avatarUrl: me.avatarUrl },
+      status: 'applied',
+      message: input.message,
+      samplePostIds: input.samplePostIds,
+      termsAcceptedAt: p.kind === 'collaborator' ? now : null,
+      createdAt: now,
+      expiresAt: recruitDaysAfter(now, APPLICATION_TTL_DAYS),
+      respondedAt: null,
+    });
+    tx.putPost({ ...p, applicationCount: p.applicationCount + 1, updatedAt: now });
+    tx.putCounters(uid, { ...c, openApplicationCount: c.openApplicationCount + 1, applyActions });
+    return p;
+  });
+  await safely(deps, post.studioId, () => notifyRecruitApplicationNew(deps.notify,
+    { studioId: post.studioId, postId: post.id, title: post.title, applicantId: uid }));
+  return { applicationId: recruitApplicationId(post.id, uid) };
+}
+
+/** The applicant withdraws while `applied` (Decision 23): the open count drops; the daily quota is not refunded. */
+export async function withdrawRecruitApplication(deps: RecruitDeps, uid: string, raw: unknown): Promise<void> {
+  const postId = idOf(objectOf(raw), 'postId');
+  const now = deps.clock.now();
+  await deps.store.runTransaction(async (tx) => {
+    const a = await tx.getApplication(postId, uid);
+    if (!a) return fail('not_found');
+    if (a.status !== 'applied' || a.expiresAt <= now) fail('deadline_passed');
+    const c = await tx.getCounters(uid);
+    tx.putApplication({ ...a, status: 'withdrawn' });
+    tx.putCounters(uid, { ...c, openApplicationCount: decrement(c.openApplicationCount) });
+  });
+}
+
+/**
+ * S27.05: the posting studio answers an `applied` application. A decline is one studio collaboration
+ * action (Decision 5) and tells the applicant. Accepting is Task 3.
+ */
+export async function respondRecruitApplication(
+  deps: RecruitDeps,
+  uid: string,
+  raw: unknown,
+): Promise<{ status: 'accepted' | 'declined' }> {
+  const r = objectOf(raw);
+  const postId = idOf(r, 'postId');
+  const applicantId = idOf(r, 'applicantId');
+  if (typeof r.accept !== 'boolean') fail('invalid_argument', 'accept');
+  const now = deps.clock.now();
+  const app = await deps.store.runTransaction(async (tx) => {
+    const a = await tx.getApplication(postId, applicantId);
+    if (!a) return fail('not_found');
+    if (a.studioId !== uid) fail('permission_denied');
+    if (a.status !== 'applied' || a.expiresAt <= now) fail('deadline_passed');
+    if (r.accept === true) fail('not_eligible'); // Task 3: collaborator and member branches
+    const studio = await tx.getCounters(uid);
+    const applicant = await tx.getCounters(applicantId);
+    const collabActions = takeDaily(studio.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);
+    // ---- writes ----
+    tx.putApplication({ ...a, status: 'declined', respondedAt: now });
+    tx.putCounters(uid, { ...studio, collabActions });
+    tx.putCounters(applicantId, { ...applicant, openApplicationCount: decrement(applicant.openApplicationCount) });
+    return a;
+  });
+  await notifyResult(deps, app, 'declined');
+  return { status: 'declined' };
+}
+
+/** Sweep step (Task 4 calls it): an `applied` application past `expiresAt` expires. False when not due. */
+export async function expireRecruitApplication(deps: RecruitDeps, postId: string, applicantId: string): Promise<boolean> {
+  return (await settleApplication(deps, postId, applicantId, 'expired', (a, now) => a.expiresAt <= now)) !== null;
+}
+
+// ── shared exits ──────────────────────────────────────────────────────────────────────────────
+
+function notifyResult(deps: RecruitDeps, a: RecruitApplication, outcome: 'declined' | 'expired'): Promise<void> {
+  return safely(deps, a.applicantId, () => notifyRecruitApplicationResult(deps.notify,
+    { applicantId: a.applicantId, studioId: a.studioId, postId: a.postId, title: a.postTitle, outcome }));
+}
+
+/**
+ * Ends one application still `applied` (and `due`) in its own transaction: status `to`, the applicant's open
+ * count −1, then the result notification. Null (and nothing written) when it no longer qualifies.
+ */
+async function settleApplication(
+  deps: RecruitDeps,
+  postId: string,
+  applicantId: string,
+  to: 'declined' | 'expired',
+  due: (a: RecruitApplication, now: Date) => boolean,
+): Promise<RecruitApplication | null> {
+  const now = deps.clock.now();
+  const app = await deps.store.runTransaction(async (tx) => {
+    const a = await tx.getApplication(postId, applicantId);
+    if (!a || a.status !== 'applied' || !due(a, now)) return null;
+    const c = await tx.getCounters(applicantId);
+    tx.putApplication({ ...a, status: to, respondedAt: to === 'declined' ? now : a.respondedAt });
+    tx.putCounters(applicantId, { ...c, openApplicationCount: decrement(c.openApplicationCount) });
+    return a;
+  });
+  if (app) await notifyResult(deps, app, to);
+  return app;
+}
+
+/** Settles every `applied` application of a closed or expired post, a page of 200 at a time. */
+async function settleApplied(deps: RecruitDeps, postId: string, to: 'declined' | 'expired'): Promise<void> {
+  for (let page = 0; page < CASCADE_MAX_PAGES; page++) {
+    const apps = await deps.store.appliedOf(postId, CASCADE_PAGE);
+    let settled = 0;
+    for (const a of apps) {
+      if (await settleApplication(deps, postId, a.applicantId, to, () => true)) settled += 1;
+    }
+    if (settled === 0) return;
+  }
+}
