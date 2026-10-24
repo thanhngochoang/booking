@@ -121,7 +121,7 @@ void main() {
     expect(draft.disputeId, isNotEmpty);
   });
 
-  testWidgets('Fixed reason calls openDispute with reason label', (tester) async {
+  testWidgets('a fixed reason opens a dispute with its code and label as the description', (tester) async {
     await tester.pumpWidget(
       buildApp(
         Builder(

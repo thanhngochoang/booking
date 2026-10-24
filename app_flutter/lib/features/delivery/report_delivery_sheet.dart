@@ -48,14 +48,14 @@ Future<bool?> showReportDeliverySheet(
                 description: pick.text,
               ),
             );
-      } catch (e) {
+      } on DisputeError catch (e) {
         throw _DisputeActionError(_disputeErrorText(e, l10n));
       }
     },
   );
 }
 
-String _disputeErrorText(Object error, AppLocalizations l10n) =>
+String _disputeErrorText(DisputeError error, AppLocalizations l10n) =>
     switch (error) {
       DisputeError(code: 'not_eligible') => l10n.disputeErrNotEligible,
       DisputeError(code: 'deadline_passed') => l10n.disputeErrDeadline,

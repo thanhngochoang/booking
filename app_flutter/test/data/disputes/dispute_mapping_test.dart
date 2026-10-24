@@ -309,6 +309,22 @@ void main() {
       expect(await repo.watch('missing').first, isNull);
     });
 
+    test('watch() maps a permission-denied stream error to null', () async {
+      final denied = disputeSnapshots(
+        Stream.error(
+          FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied'),
+        ),
+      );
+      expect(await denied.toList(), [null]);
+
+      final other = disputeSnapshots(
+        Stream.error(
+          FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
+        ),
+      );
+      await expectLater(other, emitsError(isA<FirebaseException>()));
+    });
+
     test('evidence goes to disputeEvidence/uid/disputeId as a document image',
         () async {
       final path = repo.evidencePath('d1', 'f1');

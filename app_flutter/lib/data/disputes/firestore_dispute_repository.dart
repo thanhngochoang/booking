@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'package:photobooking/data/backend/backend_config.dart';
 import 'package:photobooking/data/disputes/dispute.dart';
@@ -82,29 +83,7 @@ class FirestoreDisputeRepository implements DisputeRepository {
     if (!_validId(disputeId)) {
       return Stream.value(null);
     }
-    return _disputes
-        .doc(disputeId)
-        .snapshots()
-        .transform(
-          StreamTransformer<
-            DocumentSnapshot<Map<String, dynamic>>,
-            Dispute?
-          >.fromHandlers(
-            handleData: (snap, sink) {
-              final d = snap.data();
-              sink.add(d == null ? null : Dispute.fromFirestore(snap.id, d));
-            },
-            // A missing dispute has no `parties` to admit the reader, so the
-            // rule refuses it: S18.02 shows "not found" for both cases.
-            handleError: (e, st, sink) {
-              if (e is FirebaseException && e.code == 'permission-denied') {
-                sink.add(null);
-              } else {
-                sink.addError(e, st);
-              }
-            },
-          ),
-        );
+    return disputeSnapshots(_disputes.doc(disputeId).snapshots());
   }
 
   @override
@@ -153,5 +132,27 @@ class FirestoreDisputeRepository implements DisputeRepository {
     }
   }
 }
+
+/// `disputes/{id}` snapshots → disputes. A missing dispute has no `parties`
+/// to admit the reader, so the rule refuses it: `permission-denied` becomes
+/// null, and S18.02 shows "not found" for both cases. Other errors pass.
+@visibleForTesting
+Stream<Dispute?> disputeSnapshots(
+  Stream<DocumentSnapshot<Map<String, dynamic>>> snapshots,
+) => snapshots.transform(
+  StreamTransformer<DocumentSnapshot<Map<String, dynamic>>, Dispute?>.fromHandlers(
+    handleData: (snap, sink) {
+      final d = snap.data();
+      sink.add(d == null ? null : Dispute.fromFirestore(snap.id, d));
+    },
+    handleError: (e, st, sink) {
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        sink.add(null);
+      } else {
+        sink.addError(e, st);
+      }
+    },
+  ),
+);
 
 bool _validId(String id) => id.isNotEmpty && !id.contains('/');
