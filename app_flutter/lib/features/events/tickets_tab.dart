@@ -13,6 +13,7 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -103,6 +104,9 @@ TicketView ticketViewOf(
   }
 }
 
+/// How often the tickets tab re-reads "now" (past state, "Báo vấn đề").
+const ticketsTick = Duration(minutes: 1);
+
 /// S11.04: the customer's event tickets, inside S05.01 "Vé sự kiện".
 class EventTicketsTab extends ConsumerStatefulWidget {
   const EventTicketsTab({super.key, this.highlightId});
@@ -126,7 +130,10 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final tickets = ref.watch(myTicketsProvider);
-    final now = ref.watch(clockProvider)();
+    // Ticks: a ticket turns past at its end, which opens "Báo vấn đề".
+    final now =
+        ref.watch(nowTickerProvider(ticketsTick)).value ??
+        ref.read(clockProvider)();
     return ScreenCode(
       ScreenCodes.eventTickets,
       child: AsyncView<List<EventRegistration>>(
@@ -338,7 +345,10 @@ class _TicketTile extends ConsumerWidget {
     final pending = view.state == TicketState.pendingPayment;
     // A paid ticket from the end of its event until 24 h later (Decision 2).
     final disputeClosesAt = ticketDisputeClosesAt(r);
-    final now = ref.read(clockProvider)();
+    // Like S05.02: the button appears at the end and goes 24 h later.
+    final now =
+        ref.watch(nowTickerProvider(ticketsTick)).value ??
+        ref.read(clockProvider)();
     final canReport =
         disputeClosesAt != null &&
         !now.isBefore(r.event.endsAt) &&

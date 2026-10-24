@@ -496,6 +496,36 @@ void main() {
     );
   });
 
+  testWidgets('"Báo vấn đề" appears when the event ends and goes 24 hours '
+      'later while the tab stays open', (tester) async {
+    var now = eventNow;
+    final w = DisputeWorld(now: eventNow);
+    // Ends one minute from now.
+    await _open(
+      tester,
+      [
+        _reg(
+          'paid',
+          amount: 300000,
+          startsIn: const Duration(hours: -2, minutes: 1),
+        ),
+      ],
+      clock: () => now,
+      extra: [disputeRepositoryProvider.overrideWithValue(w.repo)],
+    );
+    expect(find.byKey(const Key('ticket-report-problem')), findsNothing);
+
+    now = eventNow.add(const Duration(minutes: 2));
+    await tester.pump(ticketsTick);
+    await tester.pump();
+    expect(find.byKey(const Key('ticket-report-problem')), findsOneWidget);
+
+    now = eventNow.add(const Duration(hours: 24, minutes: 2));
+    await tester.pump(ticketsTick);
+    await tester.pump();
+    expect(find.byKey(const Key('ticket-report-problem')), findsNothing);
+  });
+
   testWidgets('"Báo vấn đề" opens S18.01 for the ticket and a success pushes '
       '/disputes/:id', (tester) async {
     final w = DisputeWorld(now: eventNow);

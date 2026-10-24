@@ -501,8 +501,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           const SizedBox(height: AppSpace.s4),
           // Mock S05.02-disputed: under the card, for both parties. The
           // dispute freezes the money (`escrowStatus: disputed`) until it is
-          // resolved, so the booking alone says which banner it is.
-          if (b.disputeId != null) ...[
+          // resolved, so the booking alone says which banner it is. A studio
+          // member assigned to the job is not a party of the dispute (it is
+          // the studio's), so S18.02 would not open for them: no banner.
+          if (b.disputeId != null && !assignee) ...[
             DisputeBanner(
               open: b.escrowStatus == EscrowStatus.disputed,
               onTap: () => context.push('/disputes/${b.disputeId}'),

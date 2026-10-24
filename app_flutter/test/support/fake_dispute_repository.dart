@@ -6,16 +6,21 @@ import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
+import 'dispute_world.dart' show disputeNow;
+
 /// In-memory [DisputeRepository] for widget tests. Uploads go through a
 /// [FakeMediaUploader] (so `uploader.purposes` / `uploader.deleted` can be
 /// asserted); `open` records the draft and, unless [failWith] is set, stores
-/// an open dispute built from it.
+/// an open dispute built from it, created at [clock] (the world's fake
+/// clock; [disputeNow] when none is given).
 class FakeDisputeRepository implements DisputeRepository {
   FakeDisputeRepository({
     this.uid = 'c1',
     FakeMediaUploader? uploader,
     Iterable<Dispute> disputes = const [],
-  }) : uploader = uploader ?? FakeMediaUploader() {
+    DateTime Function()? clock,
+  }) : uploader = uploader ?? FakeMediaUploader(),
+       clock = clock ?? (() => disputeNow) {
     for (final d in disputes) {
       _disputes[d.id] = d;
     }
@@ -24,6 +29,7 @@ class FakeDisputeRepository implements DisputeRepository {
   /// The signed-in user: evidence paths and new disputes use it.
   final String uid;
   final FakeMediaUploader uploader;
+  final DateTime Function() clock;
 
   final Map<String, Dispute> _disputes = {};
   final _changes = StreamController<String>.broadcast();
@@ -73,7 +79,7 @@ class FakeDisputeRepository implements DisputeRepository {
     if (existing != null) {
       return existing.id;
     }
-    final now = DateTime.now().toUtc();
+    final now = clock().toUtc();
     put(
       Dispute(
         id: draft.disputeId,

@@ -257,7 +257,7 @@ class _DisputeRow extends StatelessWidget {
     final status = d.status == DisputeStatus.open
         ? l.disputeStatusOpen
         : l.disputeStatusResolved;
-    const radius = BorderRadius.all(Radius.circular(28));
+    const radius = BorderRadius.all(Radius.circular(AppRadius.sheet));
     return GlassCard(
       child: Material(
         type: MaterialType.transparency,

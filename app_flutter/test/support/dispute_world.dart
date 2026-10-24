@@ -68,6 +68,7 @@ class DisputeWorld {
       uid: uid,
       uploader: uploader,
       disputes: disputes,
+      clock: () => this.now,
     );
   }
 
