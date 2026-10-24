@@ -58,7 +58,7 @@ export const mirrorRefund = (r: InstantRequest, refund: Refund): InstantRequest 
  * Sends the refunds a transaction wrote, one gateway call each under the refund's id. Never throws:
  * the transaction that wrote them has committed, so the caller's answer stands. A refund whose
  * outcome could not be stored stays `pending` and V2's re-send sends it again under the same id
- * (the gateway treats a repeated id as the same refund). Returns how many failed (for logs).
+ * (the gateway treats a repeated id as the same refund). Reports how many failed to `deps.log` and returns it.
  */
 export async function sendInstantRefunds(deps: InstantDeps, sends: readonly InstantRefundSend[]): Promise<{ failed: number }> {
   let failed = 0;
@@ -69,6 +69,7 @@ export async function sendInstantRefunds(deps: InstantDeps, sends: readonly Inst
       failed += 1;
     }
   }
+  if (failed > 0) deps.log?.refundSendsFailed(failed);
   return { failed };
 }
 

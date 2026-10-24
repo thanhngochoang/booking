@@ -29,7 +29,7 @@ import {
   handleUpdateInstantJob,
   type InstantCallableInput,
 } from '../../src/callables/instant.js';
-import { liveInstantDeps } from '../../src/infra/live_instant.js';
+import { instantCloudLog, liveInstantDeps } from '../../src/infra/live_instant.js';
 import { FirestoreBlockGate } from '../../src/infra/safety_firestore.js';
 import {
   LAN,
@@ -191,6 +191,14 @@ describe('instant callables', () => {
     assert.equal(deps.gateway.provider, 'fake');
     assert.ok(deps.payments);
     assert.equal(typeof deps.cipher.encrypt, 'function');
+  });
+
+  it('liveInstantDeps logs failed refund sends as a count only (#202)', async (t) => {
+    assert.equal(liveInstantDeps().log, instantCloudLog);
+    const lines = await captureLogs(t, async () => instantCloudLog.refundSendsFailed(2));
+    const line = lines.find((l) => l.includes('instant refund sends failed'));
+    assert.ok(line, lines.join(''));
+    assert.match(line, /"count":2/);
   });
 
   it('liveInstantDeps wires a BlockGate', () => {

@@ -701,7 +701,9 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual([back?.subjectType, back?.payeeId, back?.feeBp], ['instant_request', '', 1_000]);
     const plain = paymentFromFirestore('pay_b', paymentToFirestore({ ...p, subjectType: 'booking', feeBp: undefined }));
     assert.equal(plain?.feeBp, undefined);
-    assert.equal(paymentToFirestore({ ...p, feeBp: undefined }).feeBp, null);
+    // Written only when set: a booking, ticket or fee payment carries no feeBp key at all.
+    assert.equal('feeBp' in paymentToFirestore({ ...p, feeBp: undefined }), false);
+    assert.equal('feeBp' in paymentToFirestore({ ...p, subjectType: 'booking', feeBp: undefined }), false);
   });
 });
 

@@ -582,8 +582,8 @@ export function paymentToFirestore(p: Payment): DocumentData {
     dispute: p.dispute ? paymentDisputeToFirestore(p.dispute) : null,
     payoutId: p.payoutId ?? null,
     payableAmount: p.payableAmount ?? null,
-    // An instant payment's platform fee snapshot (Decision 6); null → the payout policy's rate.
-    feeBp: p.feeBp ?? null,
+    // An instant payment's platform fee snapshot (Decision 6); absent → the payout policy's rate.
+    ...(p.feeBp !== undefined ? { feeBp: p.feeBp } : {}),
     milestones: p.milestones
       ? p.milestones.map((m) => ({
           kind: m.kind,

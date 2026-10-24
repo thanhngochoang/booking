@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { fakeTransferFor } from '../src/fake_payment_gateway.js';
 import type { Payment } from '../src/escrow.js';
-import { InstantPaymentSettler } from '../src/instant_payments.js';
+import { InstantPaymentSettler, sendInstantRefunds } from '../src/instant_payments.js';
+import type { InstantDeps } from '../src/instant_ports.js';
 import { cancelInstantRequest, inviteInstant } from '../src/instant_requests.js';
 import { transferCodeFor } from '../src/payment_code.js';
 import { transferRecordId } from '../src/payment_settlement.js';
@@ -70,6 +71,36 @@ describe('InstantPaymentSettler', () => {
     assert.deepEqual(w.gateway.refundCalls, [refunds[0]?.id]);
     assert.equal(w.store.refunds.get(refunds[0]?.id ?? '')?.status, 'done');
     assert.equal(await settler.expire(payment.id, at(16 * MIN)), 'unchanged');
+  });
+
+  test('a refund whose outcome cannot be stored stays pending and is logged as a count', async () => {
+    const w = createInstantWorld();
+    const { payment } = await openPayment(w);
+    const settler = new InstantPaymentSettler(w.deps);
+    assert.equal(await settler.settle(payment.id, fakeTransferFor(payment as Payment & { transferCode: string }, 'under', T0)), 'partial');
+    // The expiry commits; the transaction that stores the gateway's answer fails.
+    const logged: number[] = [];
+    let transactions = 0;
+    const deps: InstantDeps = {
+      ...w.deps,
+      store: {
+        findDue: (now, limit) => w.store.findDue(now, limit),
+        runTransaction: (fn) => (++transactions > 1 ? Promise.reject(new Error('store down')) : w.store.runTransaction(fn)),
+      },
+      log: { refundSendsFailed: (n) => logged.push(n) },
+    };
+    assert.equal(await new InstantPaymentSettler(deps).expire(payment.id, at(15 * MIN)), 'expired');
+    const refund = [...w.store.refunds.values()][0];
+    assert.equal(refund?.status, 'pending');
+    assert.deepEqual(w.gateway.refundCalls, [refund?.id]);
+    assert.deepEqual(logged, [1]);
+  });
+
+  test('sendInstantRefunds logs nothing when every send is stored', async () => {
+    const w = createInstantWorld();
+    const logged: number[] = [];
+    assert.deepEqual(await sendInstantRefunds({ ...w.deps, log: { refundSendsFailed: (n) => logged.push(n) } }, []), { failed: 0 });
+    assert.deepEqual(logged, []);
   });
 
   test("statusOf(payment) returns the status of payment.subjectId's request, gone when missing", async () => {

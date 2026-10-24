@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
 import {
+  FakeBlockGate,
   InstantPaymentSettler,
+  MemoryAddonStore,
+  MemoryBookingStore,
   answerInstantOffer,
   cancelInstantRequest,
   confirmInstantComplete,
@@ -10,7 +13,9 @@ import {
   fakeTransferFor,
   instantRefundHandler,
   inviteInstant,
+  resendPendingRefunds,
   updateInstantJob,
+  type BookingDeps,
   type InstantDeps,
   type InstantOffer,
   type Payment,
@@ -34,6 +39,7 @@ import {
   FirestoreInstantDayReader,
   instantProfileOf,
 } from '../../src/infra/instant_readers.js';
+import { refundSubjectsOf } from '../../src/infra/live_refunds.js';
 import { LAN, MEET, createInstantWorld } from '../../../../../packages/domain/test/support/instant_world.js';
 import { T0, aConfig, aPresence, aRequest } from '../../../../../packages/domain/test/support/instant_fixtures.js';
 
@@ -427,6 +433,42 @@ describe('instant money over the Firestore adapter (#202; strict: every read bef
     assert.equal(pending.status, 'pending');
     const resent = await instantRefundHandler(m.deps).resend(pending);
     assert.equal(resent.status, 'done');
+    assert.equal(refundDocs(m.db)[0]?.status, 'done');
+    assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'done');
+  });
+
+  it("V2's payment-clock re-send (resendPendingRefunds + refundSubjectsOf) settles a pending instant refund", async () => {
+    const m = await paidRequest();
+    m.w.gateway.refundThrowCount = 1;
+    m.w.clock.advance(5 * 60_000);
+    await cancelInstantRequest(m.deps, LAN, { requestId: m.requestId, dryRun: false });
+    const [pending] = refundDocs(m.db);
+    assert.ok(pending);
+    assert.deepEqual([pending.status, pending.subjectType], ['pending', 'instant_request']);
+    assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'pending');
+
+    // In Firestore every subject's refunds share one collection, which the booking store queries;
+    // the memory booking store stands in for that query, ten minutes later.
+    m.w.clock.advance(10 * 60_000);
+    const store = new MemoryBookingStore();
+    store.refunds.set(pending.id, pending);
+    const bookingDeps: BookingDeps = {
+      store,
+      services: { getService: async () => null },
+      addons: new MemoryAddonStore(),
+      contacts: { get: async () => null },
+      providers: { acceptsOrders: async () => true, orderProfile: async () => ({ acceptsOrders: true, providerType: 'individual' }) },
+      blocks: new FakeBlockGate(),
+      gateway: m.w.gateway,
+      cipher: m.w.deps.cipher,
+      clock: m.w.clock,
+      ids: { newId: () => '01ARZ3NDEKTSV4RRFFQ69G5F01' },
+    };
+
+    const res = await resendPendingRefunds(bookingDeps, refundSubjectsOf({ instant: m.deps }));
+
+    assert.deepEqual(res, { resent: 1, failed: 0, skipped: 0 });
+    assert.deepEqual(m.w.gateway.refundCalls, [pending.id, pending.id]);
     assert.equal(refundDocs(m.db)[0]?.status, 'done');
     assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'done');
   });

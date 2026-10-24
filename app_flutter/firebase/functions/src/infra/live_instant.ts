@@ -2,7 +2,8 @@
  * Production and emulator wiring of InstantDeps (plan #140 Task 4, money #202). `blocks` is set explicitly:
  * #198's `orderBlocker` skips blocks silently when `OrderGateDeps.blocks` is missing.
  */
-import { newUlid, type InstantDeps } from '@photobooking/domain';
+import { newUlid, type InstantDeps, type InstantLog } from '@photobooking/domain';
+import * as logger from 'firebase-functions/logger';
 import { db } from './admin.js';
 import { FirestoreCustomerContactReader, FirestoreProviderOrderGate } from './booking_readers.js';
 import { FirestoreInstantStore, FirestorePresenceDirectory } from './instant_firestore.js';
@@ -17,6 +18,14 @@ import { getSharedFakeGateway, liveAccountCipher } from './live_booking.js';
 import { liveBlockGate } from './live_safety.js';
 import { FirestorePaymentLookup } from './payment_firestore.js';
 import { FirestoreUserDirectory } from './user_directory.js';
+
+/**
+ * Refund sends that failed after their transaction committed (#202): a count only, no ids or
+ * accounts. The refunds stay `pending` for V2's re-send on the payment clock.
+ */
+export const instantCloudLog: InstantLog = {
+  refundSendsFailed: (count) => logger.warn('instant refund sends failed', { count }),
+};
 
 /** One per instance, so the 60 s config cache survives across calls. */
 let sharedConfig: FirestoreInstantConfigReader | undefined;
@@ -43,5 +52,6 @@ export function liveInstantDeps(): InstantDeps {
     push: livePushSender(),
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
+    log: instantCloudLog,
   };
 }

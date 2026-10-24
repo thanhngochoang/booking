@@ -83,6 +83,18 @@ export interface InstantDayReader {
 }
 
 /**
+ * Operational log of the Chụp ngay use cases: counts and codes only, never names, phones or accounts.
+ * The Functions adapter writes it to Cloud Logging; tests may record it or leave it out.
+ */
+export interface InstantLog {
+  /**
+   * Refunds a committed transaction wrote whose send or stored outcome failed. Each stays `pending`
+   * and V2's re-send (`instantRefundHandler`) sends it again under the same id.
+   */
+  refundSendsFailed(count: number): void;
+}
+
+/**
  * #198's OrderGateDeps: providers + blocks. `blocks` is optional there, so every InstantDeps literal sets it:
  * liveInstantDeps() → liveBlockGate(), the test world → FakeBlockGate. #202 adds the money: #129's
  * gateway, V1's cross-subject payment lookup (fresh transfer codes) and V2's account cipher (refunds).
@@ -104,6 +116,8 @@ export interface InstantDeps extends OrderGateDeps {
   readonly push: PushSender;
   readonly clock: Clock;
   readonly ids: IdGenerator;
+  /** Optional: without it a failed refund send is only left `pending` for V2's re-send. */
+  readonly log?: InstantLog;
 }
 
 export interface InstantCaller {
