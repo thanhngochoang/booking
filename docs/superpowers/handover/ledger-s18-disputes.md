@@ -13,7 +13,8 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 | 10 App data | `8a2ac00d` | `lib/data/disputes/*` (`Dispute`, `DisputeRepository`, `FirestoreDisputeRepository`, provider), `Booking.disputeId`, `EventRegistration.disputeId`; bỏ `BookingRepository.openDispute`, `BookingRules.canCustomerDispute`; trỏ lại người gọi S05.06 |
 | 11 S18.01 | `cc0ca86d`, `a2c687f6` | sheet mở khiếu nại, `dispute_entry.dart`, điểm vào S05.02 / S05.06 / S11.04, dải khiếu nại S05.02 |
 | 12 S18.02 | `b4227386`, `a49ea1f8`, sửa `06e1b8c2` | màn chi tiết, `DisputeOutcomeCard`, mục "Khiếu nại của bạn" ở S18.03, `KeyValueBox`/`InlineToast` vào core, `SupportThreadView.scrollHeader` + tin hệ thống |
-| 13 Tài liệu | commit `docs(spec): S18 disputes in the data model, ledger [#142]` | spec chính §2 và §3i.1, mô hình dữ liệu, `screens/disputes-help.md`, `shared-components.md`, `FIREBASE-SETUP.md`, ledger này |
+| 13 Tài liệu | `59efdf59` | spec chính §2 và §3i.1, mô hình dữ liệu, `screens/disputes-help.md`, `shared-components.md`, `FIREBASE-SETUP.md`, ledger này |
+| Final review (fix wave) | `8171a3c8`, `2cea7aa1`, commit `docs(s18): #207 hand-off, plan corrections, final review outcomes [#142]` | máy chủ S1–S4, app A1–A4, tài liệu D1–D6 (mục 13) |
 
 ## 2. Quyết định khi làm (rulings)
 
@@ -43,6 +44,10 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 24. **Hàng S18.03 của bên nhận tiền (Task 12)**: tài liệu khiếu nại không có tên khách, nên bên nhận thấy phụ đề của khoản (ngày · khung giờ) thay vì tên mình; khách thấy người nhận ("ứng dụng" với sự kiện nền tảng). Đúng về quyền riêng tư.
 25. **Dòng hệ thống mở khiếu nại theo mock**: "Đã mở khiếu nại · HH:mm dd/MM" giờ VN (`disputeOpenedText(at)`), app hiển thị nguyên văn. Dòng kết quả: "Khiếu nại đã có kết quả: {hoàn …/chuyển …}. Ghi chú của hỗ trợ: {note}".
 26. **Dọn widget dùng chung (Task 12)**: `KeyValueBox`/`KeyValueRow` (từ S04.04) và `InlineToast` (từ S05.02) chuyển vào core; `SupportThreadView` thêm `scrollHeader` và tin hệ thống (`SystemContent`; chat hỗ trợ không đổi); `disputeReasonLabel`, `disputeReceiverName` công khai trong `dispute_entry.dart`; `Dispute.isPlatformHosted`; `EscrowNotice` thêm `icon`/`title`/`trailing`/`onTap` (dải khiếu nại không còn khung riêng); `ReasonPicker.otherField`; `formatHm` dùng chung. Ghi ở `shared-components.md`.
+27. **Gửi lại quyết định của staff (final review S1)**: `resolveDispute` trên khiếu nại đã có kết quả trả lại kết quả đã lưu (và lệnh hoàn của nó) khi cùng staff gửi cùng quyết định (`outcome`, phần trăm khi chia, ghi chú): mất phản hồi rồi bấm lại không còn ra `conflict`. Staff khác hoặc quyết định khác vẫn `conflict`. Callable và CLI sau đó gọi `dispatchDisputeRefund`, vốn chỉ gửi khi lệnh hoàn còn `pending`.
+28. **CLI khi gửi hoàn lỗi sau khi đã ghi quyết định (final review S2)**: in `refund <id>: decision saved; refund left pending for re-send (<lỗi>)` và thoát mã 2 (`SEND_FAILED_EXIT`), không in `refused`; 0 = xong, 1 = bị từ chối. Ghi trong `HELP`.
+29. **Chọn khoản bị giữ ở một chỗ (final review S3)**: `pickSubjectPayment` chuyển từ adapter Firestore vào domain (`dispute_ports.ts`); `MemoryDisputeStore` dùng cùng hàm (khoản đã trả còn giữ tiền trước), nên bộ nhớ và Firestore chọn cùng khoản khi booking có khoản lạc.
+30. **Tên tệp bằng chứng (final review S4)**: Storage chỉ nhận `disputeEvidence/{uid}/{disputeId}/{file}` với `file` khớp `^[A-Za-z0-9_-]{1,64}[.]jpg$`.
 
 ## 3. Khác biệt với Contract của plan (đã chấp nhận)
 
@@ -55,7 +60,7 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 - `openDispute` gửi lại cùng id bởi người khác: `permission_denied`; đường dẫn ảnh trùng: `invalid_argument`. Luồng khiếu nại `ownerId: null`; mô tả đóng dấu `now + 1 ms` để xếp sau dòng hệ thống.
 - Các test cũ dùng `openDispute` đã xoá được thay bằng `dispute.test.ts` / `dispute_use_cases.test.ts`; test "khoản lạc `created`" chuyển sang adapter (`findSubjectPayment for a booking picks the held payment`).
 - `handleResolveDispute`: lỗi gửi hoàn sau khi đã ghi quyết định chỉ log (`dispute_refund_send_failed {disputeId, refundId, code}`), callable vẫn trả thành công; không đọc lại được khoản thì log `dispute_refund_send_skipped`.
-- CLI: `runCli` trả mã thoát; lỗi domain in `refused: <code>`; `list` hiện tối đa 50 và báo khi còn nữa; `--actor` theo sau bởi `--…` báo `--actor needs a uid`.
+- CLI: `runCli` trả mã thoát (0 xong, 1 bị từ chối, 2 quyết định đã ghi nhưng gửi hoàn lỗi); lỗi domain in `refused: <code>`; `list` hiện tối đa 50 và báo khi còn nữa; `--actor` theo sau bởi `--…` báo `--actor needs a uid`.
 - App: `DisputeReason.fromCode` nhận `Object?`; `DisputeOutcome` không có `decidedBy`/`refundId`; khoá controller là `OpenDisputeArgs(disputeId, subject)` (id sinh trong `showOpenDisputeSheet`); `?from=delivery` không cần xử lý riêng (biến thể theo trạng thái booking, `approved` = bàn giao); `ScreenCode(…, label: 'delivery')`; thêm chuỗi `disputeSheetClose` "Đóng" và `disputeEvidencePhoto` "Ảnh bằng chứng {index}".
 
 ## 4. Sửa lời plan
@@ -76,15 +81,21 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 
 ## 6. Minor để lại
 
-**Ứng viên FINAL WAVE**
+**Ứng viên FINAL WAVE: final review giữ lại, không sửa trong unit này**
 
-- `findReleasableEscrows` của Firestore: truy vấn `disputed` áp `limit` trước khi lọc khoản có mốc ở client, khoản không mốc bị giữ có thể chiếm chỗ.
-- `findDueChecks` (`limit 100`) không loại booking đang khiếu nại, nên được thử lại mỗi 15 phút.
-- `commit_transition` đọc khoản thanh toán ngoài giao dịch (an toàn khi máy trạng thái còn từ chối `finish` lúc booking `disputed`).
-- Khiếu nại mốc BÀN GIAO đã xong trên booking `approved` mà trạng thái tổng vẫn `held` (mốc chụp chưa thả) làm app hiện lại điểm vào; máy chủ trả `not_eligible`. App không biết khiếu nại đã giữ mốc nào từ bản sao booking: sao thêm mốc (ví dụ `disputeMilestone`) lên booking hoặc đọc khiếu nại.
+- `findReleasableEscrows` của Firestore: truy vấn `disputed` áp `limit` trước khi lọc khoản có mốc ở client, khoản không mốc bị giữ có thể chiếm chỗ. Lý do giữ: chỉ khoản không mốc (trước #152, hiếm) bị giữ cả khoản mới chiếm chỗ, kết quả `held` được điền trước, tiền chỉ chậm một vòng 15 phút chứ không đi sai. Cách sửa sau: xoá `releaseAfter` khi giữ cả khoản (khoản đó rời truy vấn), đặt lại khi có kết quả.
+- `findDueChecks` (`limit 100`) không loại booking đang khiếu nại, nên được thử lại mỗi 15 phút. Lý do giữ: máy trạng thái từ chối nên không ghi gì, chỉ tốn lượt đọc.
+- `commit_transition` đọc khoản thanh toán ngoài giao dịch. Lý do giữ: an toàn khi máy trạng thái còn từ chối `finish` lúc booking `disputed`. **Đề xuất issue tiếp theo**: chuyển lần đọc khoản thanh toán của `commit_transition` vào trong giao dịch (đọc trước mọi lần ghi), để luật này không phụ thuộc vào lời từ chối của máy trạng thái.
+- Khiếu nại mốc BÀN GIAO đã xong trên booking `approved` mà trạng thái tổng vẫn `held` (mốc chụp chưa thả) làm app hiện lại điểm vào; cùng loại: booking `completed` còn mốc chụp `held`. Máy chủ trả `not_eligible` nên tiền không sai, chỉ hiện nút thừa. Cách sửa đúng: sao mốc bị giữ (ví dụ `disputeMilestone`) lên booking để app biết, thay vì đọc khiếu nại.
 
 **Hoãn (không sửa)**
 
+- `payment.dispute` chỉ giữ khiếu nại gần nhất: khiếu nại thứ hai trên mốc kia ghi đè; lịch sử đầy đủ ở `disputes` (đã ghi "của khiếu nại gần nhất" ở `domain-model.md`).
+- Booking chỉ mang một `disputeId` (khiếu nại gần nhất); khiếu nại trước vẫn mở được từ "Khiếu nại của bạn" ở S18.03. Đăng ký vé cũng vậy.
+- `amountHeld` trên khiếu nại là bản chụp lúc mở; với khoản bị giữ cả khoản, số này có thể cũ nếu khoản đổi sau đó. Chỉ để hiển thị ở S18.02; tiền lúc xử lý tính lại từ khoản thật.
+- Sheet S18.01 vẫn bấm gửi được khi cửa sổ vừa hết mà sheet đang mở; máy chủ trả `deadline_passed` và sheet hiện lỗi.
+- Lỗi của trình chọn ảnh trong S18.01 không bắt riêng (giống các màn tải ảnh khác).
+- S18.02 dùng `uid ?? ''` khi chưa có người dùng; route nằm sau cổng đăng nhập nên không xảy ra trong thực tế.
 - Seed dựng `Dispute`/luồng bằng tay (chữ "Hệ thống" lặp `SYSTEM_NAME`); có thể thêm `buildOpenedDispute`.
 - Đóng dấu `depositRefundedAt` một lần lặp lại logic của handler V2; booking đã có `depositRefundedAt` từ lần hoàn trước không nhận thêm `refund_done` cho hoàn khiếu nại.
 - Storage không giới hạn số ảnh bằng chứng tải lên (plan chấp nhận; chỉ 5 đường dẫn vào khiếu nại; job dọn hoãn).
@@ -106,8 +117,8 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 
 ## 8. Viết nhưng không chạy (CI chạy)
 
-- `app_flutter/firebase/rules-test/rules.test.mjs`: `a party reads its dispute`; `a third user cannot get or list a dispute`; `nobody writes disputes from the client`; `a party reads dispute thread messages, a third user cannot`; Storage `dispute evidence: owner uploads a JPEG under their uid, not another's`, `… PNG or a JPEG over 3 MiB is refused (jpegUpTo)`, `… overwrite refused`, `… a party reads evidence, a third user cannot`, `… owner deletes evidence only while no dispute document exists`. Chỉ `node --check`.
-- `app_flutter/firebase/functions/test/integration/dispute.test.ts`: `openDispute then bookingClock leaves the payment disputed; resolveDispute split releases and refunds on the fake gateway` (chỉ typecheck).
+- `app_flutter/firebase/rules-test/rules.test.mjs`: `a party reads its dispute`; `a third user cannot get or list a dispute`; `nobody writes disputes from the client`; `a party reads dispute thread messages, a third user cannot`; Storage `dispute evidence: owner uploads a JPEG under their uid, not another's`, `… PNG or a JPEG over 3 MiB is refused (jpegUpTo)`, `… only <id>.jpg file names (letters, digits, _ and -, at most 64) are accepted` (final review S4), `… overwrite refused`, `… a party reads evidence, a third user cannot`, `… owner deletes evidence only while no dispute document exists`. Chỉ `node --check`.
+- `app_flutter/firebase/functions/test/integration/dispute.test.ts`: `openDispute then bookingClock leaves the payment disputed; resolveDispute split releases and refunds on the fake gateway` (thêm ở final review: gửi lại cùng quyết định trả kết quả đã lưu; chỉ typecheck).
 - Unit test domain, Functions và Flutter đều đã chạy xanh ở từng task (báo cáo task 7–12).
 
 ## 9. Thứ tự deploy và công tắc Blaze
@@ -119,9 +130,9 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 
 ## 10. Điểm mở rộng để lại
 
-- **#129 / V2 (tiền)**: `DisputeTx.findSubjectPayment` (booking: khoản đã trả theo `subjectId`, `isSettledPayment`; vé: `registration.paymentId`) là chỗ duy nhất chọn khoản bị giữ; `dispatchDisputeRefund` đã theo V2, trung gian thật chỉ cần thay `PaymentGateway`. `awaiting_account` (#141) không gửi.
+- **#129 / V2 (tiền)**: `DisputeTx.findSubjectPayment` (booking: `pickSubjectPayment` của domain trên các khoản theo `subjectId`, khoản đã trả còn giữ tiền trước; vé: `registration.paymentId`) là chỗ duy nhất chọn khoản bị giữ; `dispatchDisputeRefund` đã theo V2, trung gian thật chỉ cần thay `PaymentGateway`. `awaiting_account` (#141) không gửi.
 - **#152 / #130 (bàn giao)**: `disputeWindow` là luật cửa sổ duy nhất (mốc `shoot`/`delivery`); `DisputeOrigin.deliveryCheck` + `/b/:id/dispute?from=delivery` là điểm vào của S05.06; khiếu nại do thợ mở sau "hết lượt sửa" đi qua cùng use case với `openedBy: 'provider'` (chưa có).
-- **#207 (S05.08 huỷ phần bàn giao)**: mốc `delivery` đang `disputed` không còn `held`, nên luồng huỷ cần kiểm.
+- **#207 (S05.08 huỷ phần bàn giao khi trễ)**: #207 chỉ nhận booking `shot` (Quyết định 1 của nó), còn khiếu nại mốc bàn giao chỉ có ở `approved`, nên hai luồng không gặp nhau; khiếu nại mốc chụp đang mở (`escrowStatus: disputed`) vẫn bị #207 từ chối `conflict` (Quyết định 6). Plan #207 viết trên code trước #142: `open_dispute.ts`, `canCustomerDispute` và `BookingRepository.openDispute` không còn. Booking có mốc ở `completed` đã là `not_eligible` trong `disputeWindow` (không phải `conflict`; Quyết định 14 của #207 dựa vào mã lỗi, nên test Task 2 của #207 về khiếu nại booking `completed` phải mong `not_eligible`). Quyết định 16 của #207 áp vào `bookingDisputeClosesAt` (`features/disputes/dispute_entry.dart`).
 - **#83 / S23.01, S23.06**: dashboard gọi `resolveDispute` và `staffReply`; cần rule đọc `disputes` cho staff.
 - **Phase 2 (#90)**: `services/api` không có khiếu nại; DDL đích ở `relational-schema.md` mục 2.5a.
 
@@ -140,8 +151,29 @@ Plan `docs/superpowers/plans/2026-10-07-s18-disputes-help.md`, Tasks 7–13 (Tas
 
 ## 13. Final review
 
-> **[CHỜ FINAL REVIEW]** Kết quả review toàn nhánh (base 4b24b14a → HEAD), các mục Important/Minor và quyết định với từng mục sẽ ghi ở đây.
+Review toàn nhánh (base 4b24b14a → `59efdf59`), ba phần: máy chủ và app "sẵn sàng merge" kèm minor gộp vào fix wave; tài liệu có ba mục Important (D1–D3).
 
-> **[CHỜ FIX WAVE]** Commit sửa sau final review (gồm các ứng viên FINAL WAVE ở mục 6 nếu được chọn) và test đã chạy sẽ ghi ở đây.
+**Đã sửa (fix wave)**
 
-> **[CHỜ PR]** Số PR vào `develop` và trạng thái CI (rules test, integration test của mục 8) sẽ ghi ở đây.
+| Mục | Nội dung | Commit |
+|---|---|---|
+| S1 | `resolveDispute` gửi lại cùng quyết định của cùng staff trả kết quả đã lưu thay vì `conflict` (mục 2.27); test domain, callable, CLI, integration (viết, không chạy) | `8171a3c8` |
+| S2 | CLI `disputes resolve`: lỗi gửi hoàn sau khi ghi quyết định in "decision saved; refund left pending for re-send", thoát 2 (mục 2.28) | `8171a3c8` |
+| S3 | `pickSubjectPayment` vào domain, store bộ nhớ dùng chung (mục 2.29); test khoản lạc đã trả | `8171a3c8` |
+| S4 | `storage.rules`: tên tệp bằng chứng `^[A-Za-z0-9_-]{1,64}[.]jpg$` (mục 2.30); rules test viết, không chạy | `8171a3c8` |
+| A1 | S05.02 không hiện dải khiếu nại cho thành viên studio được giao việc (không thuộc `parties`, S18.02 sẽ "Không tìm thấy") | `2cea7aa1` |
+| A2 | S11.04 theo `nowTickerProvider` (1 phút): "Báo vấn đề" hiện lúc sự kiện kết thúc và ẩn sau 24 giờ khi tab vẫn mở | `2cea7aa1` |
+| A3 | Hàng khiếu nại ở S18.03 dùng `AppRadius.sheet` | `2cea7aa1` |
+| A4 | `FakeDisputeRepository` lấy `createdAt` từ đồng hồ giả của world | `2cea7aa1` |
+| D1 | Ghi chú bàn giao cho #207 viết lại (mục 10) | commit tài liệu này |
+| D2 | Hoãn: `payment.dispute` chỉ của khiếu nại gần nhất, booking một `disputeId` (mục 6); `domain-model.md` ghi rõ | commit tài liệu này |
+| D3 | Bốn dòng sửa trong plan, mỗi dòng trỏ về mục 4 | commit tài liệu này |
+| D4 | `screens/booking.md`: S05.06 "Báo vấn đề với ảnh gốc" → `/b/:id/dispute?from=delivery`; S05.02 thêm dòng khiếu nại trỏ sang `disputes-help.md` | commit tài liệu này |
+| D5 | `shared-components.md`: `EscrowNotice` có bốn tham số mới (cả `icon`) | commit tài liệu này |
+| D6 | Điền mục này, hash Task 13 | commit tài liệu này |
+
+**Test đã chạy sau fix wave**: domain `npm test` 2211/2211 + `lint` sạch; Functions `npm test` 819/819, `build`, `lint` sạch; Flutter từng thư mục `test/features/booking` 325, `events` 151, `help` 15, `disputes` 43 đều xanh; `dart run tool/affected_test.dart origin/develop --run` 4926 xanh (42 bỏ qua có sẵn); `flutter analyze lib test` sạch. Rules test và integration test: viết, không chạy (mục 8).
+
+**Giữ lại có lý do**: các mục "Ứng viên FINAL WAVE" và "Hoãn" ở mục 6 (final review đồng ý hoãn), gồm đề xuất issue tiếp theo: chuyển lần đọc khoản thanh toán của `commit_transition` vào trong giao dịch.
+
+PR: (điền khi mở). CI chạy rules test và integration test của mục 8.
