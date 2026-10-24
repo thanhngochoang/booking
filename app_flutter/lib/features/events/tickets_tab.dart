@@ -13,6 +13,7 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
@@ -277,6 +278,34 @@ class _TicketTile extends ConsumerWidget {
     }
   }
 
+  /// S18.01 for a paid ticket inside its window; a sent dispute opens S18.02.
+  Future<void> _reportProblem(BuildContext context, DateTime closesAt) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final r = registration;
+    final starts = toVn(r.event.startsAt);
+    final ends = toVn(r.event.endsAt);
+    String hm(DateTime t) =>
+        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    final id = await showOpenDisputeSheet(
+      context,
+      subject: DisputeSubject.ticket(eventId: r.eventId, registrationId: r.id),
+      summary: DisputeSubjectSummary(
+        title: r.event.title,
+        subtitle: '${formatDay(starts)} · ${hm(starts)}–${hm(ends)}',
+      ),
+      closesAt: closesAt,
+      origin: DisputeOrigin.ticket,
+    );
+    if (id == null || !context.mounted) {
+      return;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l.disputeSent)));
+    await context.push('/disputes/$id');
+  }
+
   /// "Thanh toán tiếp": the same hold's payment step. Asks the server first
   /// (the gateway may already have it); then pushes S04.04 without extra, where
   /// it reads instructions with getPaymentInstructions.
@@ -308,6 +337,13 @@ class _TicketTile extends ConsumerWidget {
     final pct = view.refundPercentIfCancelled;
     final launcher = ref.read(externalLauncherProvider);
     final pending = view.state == TicketState.pendingPayment;
+    // A paid ticket from the end of its event until 24 h later (Decision 2).
+    final disputeClosesAt = ticketDisputeClosesAt(r);
+    final now = ref.read(clockProvider)();
+    final canReport =
+        disputeClosesAt != null &&
+        !now.isBefore(r.event.endsAt) &&
+        now.isBefore(disputeClosesAt);
     final card = TicketCard(
       ticket: TicketCardData(
         ticketCode: r.ticketCode,
@@ -331,6 +367,9 @@ class _TicketTile extends ConsumerWidget {
       onCancel: () => _cancel(context, ref),
       onPay: pending ? () => _continuePayment(context, ref) : null,
       payLabel: l.ticketPayContinue,
+      onReportProblem: canReport
+          ? () => _reportProblem(context, disputeClosesAt)
+          : null,
       // The group chat opens once the ticket is paid (a free ticket is paid at once).
       onOpenChat: r.status == RegistrationStatus.paid
           ? () => context.push('/e/${r.eventId}/chat')

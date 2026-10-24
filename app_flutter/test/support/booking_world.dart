@@ -595,6 +595,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
         '/u/:uid',
         '/chat/:id',
         '/b/:id/review',
+        '/disputes/:id',
       ])
         GoRoute(path: p, builder: stub),
     ],

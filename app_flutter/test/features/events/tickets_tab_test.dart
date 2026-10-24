@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
+import 'package:photobooking/data/disputes/dispute.dart';
+import 'package:photobooking/data/disputes/dispute_providers.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
@@ -14,6 +16,7 @@ import 'package:photobooking/features/events/tickets_tab.dart';
 import 'package:photobooking/l10n/app_localizations_vi.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../support/dispute_world.dart';
 import '../../support/event_world.dart';
 import '../../support/fake_push.dart';
 
@@ -467,6 +470,65 @@ void main() {
     await _open(tester, [_reg('a', startsIn: const Duration(days: -2))]);
     expect(find.text('ĐÃ QUA'), findsOneWidget);
     expect(find.byType(QrImageView), findsNothing);
+  });
+
+  testWidgets('a paid past ticket inside its window shows "Báo vấn đề"; a '
+      'free one does not', (tester) async {
+    final w = DisputeWorld(now: eventNow);
+    await _open(
+      tester,
+      [
+        // Ended 3 hours ago.
+        _reg('paid', amount: 300000, startsIn: const Duration(hours: -5)),
+        _reg('free', startsIn: const Duration(hours: -5)),
+        // Ended 2 days ago: the window is over.
+        _reg('old', amount: 300000, startsIn: const Duration(days: -2)),
+      ],
+      extra: [
+        disputeRepositoryProvider.overrideWithValue(w.repo),
+      ],
+    );
+    expect(find.text('Báo vấn đề'), findsOneWidget);
+    final report = find.byKey(const Key('ticket-report-problem'));
+    expect(
+      find.ancestor(of: report, matching: find.byKey(const ValueKey('paid'))),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('"Báo vấn đề" opens S18.01 for the ticket and a success pushes '
+      '/disputes/:id', (tester) async {
+    final w = DisputeWorld(now: eventNow);
+    final world = await _open(
+      tester,
+      [_reg('paid', amount: 300000, startsIn: const Duration(hours: -5))],
+      extra: [
+        disputeRepositoryProvider.overrideWithValue(w.repo),
+      ],
+    );
+    await tester.tap(find.byKey(const Key('ticket-report-problem')));
+    await settle(tester);
+    expect(
+      find.text(
+        'Còn 21 giờ để báo vấn đề. Tiền vé được giữ tới khi có kết quả.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Sự kiện không diễn ra'));
+    await tester.enterText(
+      find.byKey(const Key('dispute-description')),
+      'Tới nơi không có ai tổ chức cả.',
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('dispute-submit')));
+    await tester.tap(find.byKey(const Key('dispute-submit')));
+    await settle(tester);
+
+    final draft = w.repo.opened.single;
+    expect(draft.subjectType, DisputeSubjectType.ticket);
+    expect(draft.subjectId, 'paid');
+    expect(draft.eventId, 'ev1');
+    expect(world.router.state.uri.toString(), '/disputes/${draft.disputeId}');
   });
 
   testWidgets('cancelled and refunded tickets are compact with their label', (

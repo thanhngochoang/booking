@@ -398,6 +398,56 @@ void main() {
       expect(paid, 1);
     });
 
+    testWidgets('compact row shows "Báo vấn đề" only with onReportProblem', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(state: TicketState.past),
+            compact: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Báo vấn đề'), findsNothing);
+
+      var reported = 0;
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(state: TicketState.past),
+            compact: true,
+            onReportProblem: () => reported++,
+          ),
+        ),
+      );
+      await tester.pump();
+      final report = find.byKey(const Key('ticket-report-problem'));
+      expect(find.text('Báo vấn đề'), findsOneWidget);
+      // A red text button, not dimmed with the past row.
+      expect(
+        find.ancestor(of: report, matching: find.byType(Opacity)),
+        findsNothing,
+      );
+      expect(tester.getSize(report).height, greaterThanOrEqualTo(48));
+      await tester.tap(report);
+      expect(reported, 1);
+
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(state: TicketState.attended),
+            compact: true,
+            onReportProblem: () {},
+            reportProblemLabel: 'Báo vấn đề · còn 5 giờ',
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Báo vấn đề · còn 5 giờ'), findsOneWidget);
+    });
+
     testWidgets('fits 320dp at 1.3 text scale with a long badge', (
       tester,
     ) async {

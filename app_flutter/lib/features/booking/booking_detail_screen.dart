@@ -29,6 +29,7 @@ import 'package:photobooking/features/booking/widgets/studio_assignee_block.dart
 import 'package:photobooking/features/booking/widgets/studio_offer_line.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/delivery/delivery_review_screen.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/change_request_sheet.dart';
@@ -38,10 +39,11 @@ import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/review/review_screen.dart';
 
 /// A sheet S05.02 opens over itself after its first frame (deep links
-/// `/b/:id/cancel`, `/b/:id/decline`).
-enum DetailSheet { cancel, decline }
+/// `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/dispute`).
+enum DetailSheet { cancel, decline, dispute }
 
-/// `/b/:id`, `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/review`, `/b/:id/delivery`
+/// `/b/:id`, `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/dispute`,
+/// `/b/:id/review`, `/b/:id/delivery`
 List<RouteBase> bookingDetailRoutes() => [
   GoRoute(
     path: '/b/:id',
@@ -62,6 +64,16 @@ List<RouteBase> bookingDetailRoutes() => [
     builder: (_, s) => BookingDetailScreen(
       bookingId: s.pathParameters['id']!,
       openSheet: DetailSheet.decline,
+    ),
+  ),
+  // S18.01 over S05.02 (Decision 13). `?from=delivery` comes from S05.06:
+  // the variant follows the booking's state (an approved booking is in its
+  // delivery check), so the query needs no handling of its own.
+  GoRoute(
+    path: '/b/:id/dispute',
+    builder: (_, s) => BookingDetailScreen(
+      bookingId: s.pathParameters['id']!,
+      openSheet: DetailSheet.dispute,
     ),
   ),
   GoRoute(
@@ -225,6 +237,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ref.read(bookingProvider(b.id)).value?.depositRefunded ??
             b.deposit;
         _say(l10n.cancelDoneToast(formatMoney(refunded)));
+      case DetailAction.reportProblem:
+        await _reportProblem(b, counterpartName);
       case DetailAction.returnJob:
         await showReturnJobSheet(
           context,
@@ -234,6 +248,29 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               '',
         );
     }
+  }
+
+  /// S18.01 for [b]; a sent dispute opens S18.02.
+  Future<void> _reportProblem(Booking b, String counterpartName) async {
+    final closesAt = bookingDisputeClosesAt(b);
+    if (closesAt == null) return;
+    final l10n = context.l10n;
+    final summary = bookingSummaryFor(b, name: counterpartName);
+    final id = await showOpenDisputeSheet(
+      context,
+      subject: DisputeSubject.booking(b.id),
+      summary: DisputeSubjectSummary(
+        title: counterpartName.isEmpty
+            ? summary.serviceName
+            : '$counterpartName · ${summary.serviceName}',
+        subtitle: '${summary.day} · ${summary.start}–${summary.end}',
+      ),
+      closesAt: closesAt,
+      origin: bookingDisputeOrigin(b),
+    );
+    if (id == null || !mounted) return;
+    _say(l10n.disputeSent);
+    await context.push('/disputes/$id');
   }
 
   /// "Xin đổi thợ (1 lần)" → S26.05 (it confirms the request itself).
@@ -256,6 +293,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         DetailAction.cancelStudioFault,
       DetailSheet.cancel => DetailAction.cancel,
       DetailSheet.decline => DetailAction.decline,
+      DetailSheet.dispute => DetailAction.reportProblem,
     };
     if (!actions.contains(wanted)) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -461,6 +499,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
           const SizedBox(height: AppSpace.s4),
+          // Mock S05.02-disputed: under the card, for both parties. The
+          // dispute freezes the money (`escrowStatus: disputed`) until it is
+          // resolved, so the booking alone says which banner it is.
+          if (b.disputeId != null) ...[
+            DisputeBanner(
+              open: b.escrowStatus == EscrowStatus.disputed,
+              onTap: () => context.push('/disputes/${b.disputeId}'),
+            ),
+            const SizedBox(height: AppSpace.s4),
+          ],
           // S27 studio side: a collaborator offer waiting or declined.
           if (!customer && !assignee && b.studio != null) ...[
             StudioOfferLine(booking: b),
@@ -758,6 +806,27 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ),
           ),
           onPressed: busy ? null : () => run(DetailAction.returnJob),
+        ),
+      );
+    }
+    if (has(DetailAction.reportProblem)) {
+      // Mock S05.02-problem: red text under the actions, like the cancel.
+      final dark = Theme.of(context).brightness == Brightness.dark;
+      final now =
+          ref.watch(nowTickerProvider(_tick)).value ??
+          ref.read(clockProvider)();
+      final hours = disputeHoursLeft(bookingDisputeClosesAt(b)!, now) ?? 0;
+      add(
+        AppButton.text(
+          l10n.disputeReportProblem(hours),
+          key: const Key('detail-report-problem'),
+          size: AppButtonSize.small,
+          style: ButtonStyle(
+            foregroundColor: WidgetStatePropertyAll(
+              dark ? AppColorsDark.destructive : AppColors.destructive,
+            ),
+          ),
+          onPressed: busy ? null : () => run(DetailAction.reportProblem),
         ),
       );
     }

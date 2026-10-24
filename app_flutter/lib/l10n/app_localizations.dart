@@ -12274,48 +12274,6 @@ abstract class AppLocalizations {
   /// **'Gửi đề nghị'**
   String get deliveryExtraRoundSend;
 
-  /// No description provided for @deliveryReportSheetTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Báo vấn đề với ảnh gốc'**
-  String get deliveryReportSheetTitle;
-
-  /// No description provided for @deliveryReportReasonBrokenLink.
-  ///
-  /// In vi, this message translates to:
-  /// **'Link hỏng hoặc không truy cập được'**
-  String get deliveryReportReasonBrokenLink;
-
-  /// No description provided for @deliveryReportReasonMissingFiles.
-  ///
-  /// In vi, this message translates to:
-  /// **'Thiếu ảnh so với cam kết'**
-  String get deliveryReportReasonMissingFiles;
-
-  /// No description provided for @deliveryReportReasonWrongFiles.
-  ///
-  /// In vi, this message translates to:
-  /// **'Ảnh không đúng buổi chụp'**
-  String get deliveryReportReasonWrongFiles;
-
-  /// No description provided for @deliveryReportReasonOther.
-  ///
-  /// In vi, this message translates to:
-  /// **'Lý do khác'**
-  String get deliveryReportReasonOther;
-
-  /// No description provided for @deliveryReportButton.
-  ///
-  /// In vi, this message translates to:
-  /// **'Báo vấn đề'**
-  String get deliveryReportButton;
-
-  /// No description provided for @deliveryReportSuccess.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.'**
-  String get deliveryReportSuccess;
-
   /// No description provided for @disputeErrNotEligible.
   ///
   /// In vi, this message translates to:
@@ -12339,6 +12297,210 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa gửi được. Kiểm tra kết nối rồi thử lại.'**
   String get disputeErrGeneric;
+
+  /// No description provided for @disputeSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề'**
+  String get disputeSheetTitle;
+
+  /// No description provided for @disputeSheetTitleDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề với ảnh gốc'**
+  String get disputeSheetTitleDelivery;
+
+  /// No description provided for @disputeWindowLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {hours} giờ để báo vấn đề. Tiền của buổi chụp được giữ tới khi có kết quả.'**
+  String disputeWindowLeft(int hours);
+
+  /// No description provided for @disputeWindowLeftTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {hours} giờ để báo vấn đề. Tiền vé được giữ tới khi có kết quả.'**
+  String disputeWindowLeftTicket(int hours);
+
+  /// No description provided for @disputeWindowLeftDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {hours} giờ để kiểm tra bộ ảnh gốc. Đợt thanh toán thứ hai được giữ tới khi có kết quả.'**
+  String disputeWindowLeftDelivery(int hours);
+
+  /// No description provided for @disputeReasonTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vấn đề là gì?'**
+  String get disputeReasonTitle;
+
+  /// No description provided for @disputeReasonNoShow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ không đến'**
+  String get disputeReasonNoShow;
+
+  /// No description provided for @disputeReasonNotAsAgreed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đúng thoả thuận'**
+  String get disputeReasonNotAsAgreed;
+
+  /// No description provided for @disputeReasonPhotosMissing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiếu ảnh'**
+  String get disputeReasonPhotosMissing;
+
+  /// No description provided for @disputeReasonNotAsSample.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác ảnh mẫu'**
+  String get disputeReasonNotAsSample;
+
+  /// No description provided for @disputeReasonLinkBroken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link hỏng'**
+  String get disputeReasonLinkBroken;
+
+  /// No description provided for @disputeReasonEventNotHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện không diễn ra'**
+  String get disputeReasonEventNotHeld;
+
+  /// No description provided for @disputeReasonNotAsDescribed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác mô tả'**
+  String get disputeReasonNotAsDescribed;
+
+  /// No description provided for @disputeReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác'**
+  String get disputeReasonOther;
+
+  /// No description provided for @disputeDescriptionLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả'**
+  String get disputeDescriptionLabel;
+
+  /// No description provided for @disputeDescriptionHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyện gì đã xảy ra? Càng cụ thể, hỗ trợ xử lý càng nhanh.'**
+  String get disputeDescriptionHint;
+
+  /// No description provided for @disputeDescriptionTooShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết ít nhất 10 ký tự'**
+  String get disputeDescriptionTooShort;
+
+  /// No description provided for @disputeEvidenceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh bằng chứng · {count}/5'**
+  String disputeEvidenceTitle(int count);
+
+  /// No description provided for @disputeEvidenceAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh'**
+  String get disputeEvidenceAdd;
+
+  /// No description provided for @disputeEvidenceRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ảnh'**
+  String get disputeEvidenceRemove;
+
+  /// No description provided for @disputeEvidenceNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh chỉ bạn, người bị khiếu nại và đội hỗ trợ xem được.'**
+  String get disputeEvidenceNote;
+
+  /// No description provided for @disputeEvidenceFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một ảnh chưa tải lên được. Chạm để thử lại.'**
+  String get disputeEvidenceFailed;
+
+  /// No description provided for @disputeSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi khiếu nại'**
+  String get disputeSubmit;
+
+  /// No description provided for @disputeSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi khiếu nại. Tiền được giữ tới khi có kết quả.'**
+  String get disputeSent;
+
+  /// No description provided for @disputeDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ nội dung đang viết?'**
+  String get disputeDiscardTitle;
+
+  /// No description provided for @disputeDiscardConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ'**
+  String get disputeDiscardConfirm;
+
+  /// No description provided for @disputeDiscardKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết tiếp'**
+  String get disputeDiscardKeep;
+
+  /// No description provided for @disputeSheetClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get disputeSheetClose;
+
+  /// No description provided for @disputeReportProblem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề · còn {hours} giờ'**
+  String disputeReportProblem(int hours);
+
+  /// No description provided for @ticketReportProblem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề'**
+  String get ticketReportProblem;
+
+  /// No description provided for @disputeBannerOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang khiếu nại'**
+  String get disputeBannerOpen;
+
+  /// No description provided for @disputeBannerOpenBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền được giữ tới khi có kết quả.'**
+  String get disputeBannerOpenBody;
+
+  /// No description provided for @disputeBannerResolved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại đã có kết quả'**
+  String get disputeBannerResolved;
+
+  /// No description provided for @disputeBannerView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem khiếu nại'**
+  String get disputeBannerView;
 
   /// No description provided for @settingsPaymentsData.
   ///

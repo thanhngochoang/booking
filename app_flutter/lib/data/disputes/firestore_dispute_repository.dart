@@ -140,7 +140,10 @@ class FirestoreDisputeRepository implements DisputeRepository {
 Stream<Dispute?> disputeSnapshots(
   Stream<DocumentSnapshot<Map<String, dynamic>>> snapshots,
 ) => snapshots.transform(
-  StreamTransformer<DocumentSnapshot<Map<String, dynamic>>, Dispute?>.fromHandlers(
+  StreamTransformer<
+    DocumentSnapshot<Map<String, dynamic>>,
+    Dispute?
+  >.fromHandlers(
     handleData: (snap, sink) {
       final d = snap.data();
       sink.add(d == null ? null : Dispute.fromFirestore(snap.id, d));

@@ -7051,28 +7051,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deliveryExtraRoundSend => 'Gửi đề nghị';
 
   @override
-  String get deliveryReportSheetTitle => 'Báo vấn đề với ảnh gốc';
-
-  @override
-  String get deliveryReportReasonBrokenLink =>
-      'Link hỏng hoặc không truy cập được';
-
-  @override
-  String get deliveryReportReasonMissingFiles => 'Thiếu ảnh so với cam kết';
-
-  @override
-  String get deliveryReportReasonWrongFiles => 'Ảnh không đúng buổi chụp';
-
-  @override
-  String get deliveryReportReasonOther => 'Lý do khác';
-
-  @override
-  String get deliveryReportButton => 'Báo vấn đề';
-
-  @override
-  String get deliveryReportSuccess => 'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.';
-
-  @override
   String get disputeErrNotEligible => 'Khoản này không còn mở khiếu nại được.';
 
   @override
@@ -7084,6 +7062,122 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get disputeErrGeneric =>
       'Chưa gửi được. Kiểm tra kết nối rồi thử lại.';
+
+  @override
+  String get disputeSheetTitle => 'Báo vấn đề';
+
+  @override
+  String get disputeSheetTitleDelivery => 'Báo vấn đề với ảnh gốc';
+
+  @override
+  String disputeWindowLeft(int hours) {
+    return 'Còn $hours giờ để báo vấn đề. Tiền của buổi chụp được giữ tới khi có kết quả.';
+  }
+
+  @override
+  String disputeWindowLeftTicket(int hours) {
+    return 'Còn $hours giờ để báo vấn đề. Tiền vé được giữ tới khi có kết quả.';
+  }
+
+  @override
+  String disputeWindowLeftDelivery(int hours) {
+    return 'Còn $hours giờ để kiểm tra bộ ảnh gốc. Đợt thanh toán thứ hai được giữ tới khi có kết quả.';
+  }
+
+  @override
+  String get disputeReasonTitle => 'Vấn đề là gì?';
+
+  @override
+  String get disputeReasonNoShow => 'Thợ không đến';
+
+  @override
+  String get disputeReasonNotAsAgreed => 'Không đúng thoả thuận';
+
+  @override
+  String get disputeReasonPhotosMissing => 'Thiếu ảnh';
+
+  @override
+  String get disputeReasonNotAsSample => 'Khác ảnh mẫu';
+
+  @override
+  String get disputeReasonLinkBroken => 'Link hỏng';
+
+  @override
+  String get disputeReasonEventNotHeld => 'Sự kiện không diễn ra';
+
+  @override
+  String get disputeReasonNotAsDescribed => 'Khác mô tả';
+
+  @override
+  String get disputeReasonOther => 'Lý do khác';
+
+  @override
+  String get disputeDescriptionLabel => 'Mô tả';
+
+  @override
+  String get disputeDescriptionHint =>
+      'Chuyện gì đã xảy ra? Càng cụ thể, hỗ trợ xử lý càng nhanh.';
+
+  @override
+  String get disputeDescriptionTooShort => 'Viết ít nhất 10 ký tự';
+
+  @override
+  String disputeEvidenceTitle(int count) {
+    return 'Ảnh bằng chứng · $count/5';
+  }
+
+  @override
+  String get disputeEvidenceAdd => 'Thêm ảnh';
+
+  @override
+  String get disputeEvidenceRemove => 'Bỏ ảnh';
+
+  @override
+  String get disputeEvidenceNote =>
+      'Ảnh chỉ bạn, người bị khiếu nại và đội hỗ trợ xem được.';
+
+  @override
+  String get disputeEvidenceFailed =>
+      'Một ảnh chưa tải lên được. Chạm để thử lại.';
+
+  @override
+  String get disputeSubmit => 'Gửi khiếu nại';
+
+  @override
+  String get disputeSent =>
+      'Đã gửi khiếu nại. Tiền được giữ tới khi có kết quả.';
+
+  @override
+  String get disputeDiscardTitle => 'Bỏ nội dung đang viết?';
+
+  @override
+  String get disputeDiscardConfirm => 'Bỏ';
+
+  @override
+  String get disputeDiscardKeep => 'Viết tiếp';
+
+  @override
+  String get disputeSheetClose => 'Đóng';
+
+  @override
+  String disputeReportProblem(int hours) {
+    return 'Báo vấn đề · còn $hours giờ';
+  }
+
+  @override
+  String get ticketReportProblem => 'Báo vấn đề';
+
+  @override
+  String get disputeBannerOpen => 'Đang khiếu nại';
+
+  @override
+  String get disputeBannerOpenBody => 'Tiền được giữ tới khi có kết quả.';
+
+  @override
+  String get disputeBannerResolved => 'Khiếu nại đã có kết quả';
+
+  @override
+  String get disputeBannerView => 'Xem khiếu nại';
 
   @override
   String get settingsPaymentsData => 'Thanh toán và dữ liệu';
