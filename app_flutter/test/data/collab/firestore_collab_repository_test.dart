@@ -68,6 +68,26 @@ void main() {
     },
   );
 
+  test('pairsOf returns the studio\'s latest relationship with each id, '
+      'whatever its status (S26.02-collab)', () async {
+    final col = db.collection('studio_collaborations');
+    await col.doc('cuc_dung').set(collaborationDoc());
+    await col.doc('cuc_an').set({
+      ...collaborationDoc(status: 'ended'),
+      'collaboratorId': 'an',
+    });
+    await col.doc('gio_hoa').set({
+      ...collaborationDoc(),
+      'studioId': 'gio',
+      'collaboratorId': 'hoa',
+    });
+    final pairs = await repo.pairsOf('cuc', ['an', 'dung', 'hoa', 'zz']);
+    expect({for (final p in pairs) p.id: p.status}, {
+      'cuc_dung': CollabStatus.active,
+      'cuc_an': CollabStatus.ended,
+    });
+  });
+
   test('watchJobs lists a party\'s jobs newest first', () async {
     final col = db.collection('collab_jobs');
     await col.doc('b1_dung').set(collabJobDoc());

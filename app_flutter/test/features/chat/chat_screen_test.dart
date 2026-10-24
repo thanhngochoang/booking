@@ -879,4 +879,28 @@ void main() {
     expect(find.text('Không tìm thấy cuộc trò chuyện'), findsOneWidget);
     expect(find.text('...'), findsNothing);
   });
+
+  testWidgets('the collab chat screen has no ContactDial and no booking bar', (
+    tester,
+  ) async {
+    // S27 Decision 16: studio p1 (customer slot) and collaborator m1.
+    fakeChat.currentUserId = 'p1';
+    fakeChat.seedThread(
+      const ChatThread(
+        id: 'collab_p1_m1',
+        kind: ChatKind.collab,
+        customerId: 'p1',
+        photographerId: 'm1',
+      ),
+    );
+    await pumpScreen(tester, chatId: 'collab_p1_m1', signedInUid: 'p1');
+
+    expect(find.text('Thợ Minh'), findsOneWidget);
+    expect(find.byType(ContactDial), findsNothing);
+    expect(find.byType(BookingCard), findsNothing);
+    // Not the inquiry card with the collaborator's services either.
+    expect(find.text(bookingProfile.summary.displayName), findsNothing);
+    expect(find.byKey(const Key('chat-collab-card')), findsOneWidget);
+    expect(find.byType(ChatComposer), findsOneWidget);
+  });
 }

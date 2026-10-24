@@ -480,6 +480,8 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         thumbUrl: _customerAvatar(b),
         tag: studio == null || studio.isEmpty
             ? null
+            : b.studio?.assigneeKind == 'collaborator'
+            ? l10n.workCollabLabel(studio)
             : l10n.workAssignedBy(studio),
       ),
       highlight: true,

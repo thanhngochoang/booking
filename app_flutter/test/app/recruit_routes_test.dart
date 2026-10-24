@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/collab/collab_screen.dart';
 import 'package:photobooking/features/recruit/recruit_detail_screen.dart';
 import 'package:photobooking/features/recruit/recruit_edit_screen.dart';
 import 'package:photobooking/features/recruit/recruit_list_screen.dart';
@@ -102,5 +103,30 @@ void main() {
     expect(studioRecruitRedirect(UserRole.photographer), isNull);
     expect(studioRecruitRedirect(UserRole.customer), '/recruit');
     expect(studioRecruitRedirect(null), '/recruit');
+  });
+
+  testWidgets('the app router opens S27.06 (with an offer)', (tester) async {
+    final c = ProviderContainer(
+      retry: (_, _) => null,
+      overrides: [
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        userRepositoryProvider.overrideWithValue(FakeUserRepository()),
+      ],
+    );
+    addTearDown(c.dispose);
+    final router = c.read(routerProvider);
+    late BuildContext context;
+    await tester.pumpWidget(
+      Builder(
+        builder: (ctx) {
+          context = ctx;
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+    final plain = _screenAt(router, context, '/collab');
+    expect((plain as CollabScreen).offerBookingId, isNull);
+    final offer = _screenAt(router, context, '/collab?offer=b2');
+    expect((offer as CollabScreen).offerBookingId, 'b2');
   });
 }

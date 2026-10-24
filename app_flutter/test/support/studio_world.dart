@@ -10,6 +10,8 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/collab/collab_providers.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
@@ -287,7 +289,8 @@ class StudioWorld {
   StudioWorld._(this.uid, this.now)
     : studios = FakeStudioRepository(uid: uid, clock: () => now),
       bookings = FakeBookingRepository(customerId: 'c1', clock: () => now),
-      photographers = FakePhotographerRepository();
+      photographers = FakePhotographerRepository(),
+      collabs = FakeCollabRepository(uid: uid, clock: () => now);
 
   final String uid;
   final DateTime now;
@@ -295,12 +298,16 @@ class StudioWorld {
   final FakeBookingRepository bookings;
   final FakePhotographerRepository photographers;
 
+  /// S27 collaborators (the S26.04 "Cộng tác viên" group).
+  final FakeCollabRepository collabs;
+
   List<Override> get overrides => [
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     clockProvider.overrideWithValue(() => now),
     studioRepositoryProvider.overrideWithValue(studios),
     bookingRepositoryProvider.overrideWithValue(bookings),
     photographerRepositoryProvider.overrideWithValue(photographers),
+    collabRepositoryProvider.overrideWithValue(collabs),
   ];
 
   /// The signed-in user's own `photographers` intro (S26.01's cap and

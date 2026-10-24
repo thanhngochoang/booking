@@ -466,4 +466,109 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  group('S27 collaborator (S05.02-studio-collab)', () {
+    const lan = PhotographerProfile(
+      summary: PhotographerSummary(
+        id: 'lan',
+        displayName: 'Lan Phương',
+        verified: true,
+        acceptingOrders: true,
+        reviewCount: 20,
+        tomatoCount: 19,
+        brickCount: 1,
+        tomatoPct: 95,
+        completedCount: 42,
+      ),
+      intro: PhotographerIntro(onboardingComplete: true),
+    );
+    const profiles = {'cuc': _studio, 'minh': _member, 'lan': lan};
+
+    /// An offer to Lan Phương made at [_weekBefore] (6 h to answer), then
+    /// accepted ([accepted]) or declined ([declined]).
+    Booking collab({bool accepted = false, bool declined = false}) {
+      final b = _booking();
+      final offerAt = _weekBefore.subtract(const Duration(minutes: 1));
+      return b.copyWith(
+        studio: b.studio!.copyWith(
+          assigneeId: declined ? null : 'lan',
+          assigneeKind: declined ? null : 'collaborator',
+          assigneeAccepted: accepted,
+          assignStatus: accepted
+              ? StudioAssignStatus.assigned
+              : StudioAssignStatus.unassigned,
+          assignedAt: accepted ? DateTime.utc(2026, 10, 8, 3) : null,
+          assignments: [
+            StudioAssignment(
+              assigneeId: 'lan',
+              assigneeKind: 'collaborator',
+              at: offerAt,
+              by: 'cuc',
+              offerExpiresAt: offerAt.add(const Duration(hours: 6)),
+              acceptedAt: accepted ? _weekBefore : null,
+              declinedAt: declined ? _weekBefore : null,
+            ),
+          ],
+        ),
+      );
+    }
+
+    Future<void> pumpAs(
+      WidgetTester tester,
+      Booking b, {
+      required String uid,
+    }) async {
+      final repo = RecordingBookingRepository()..seedBooking(b);
+      await pumpBookingDetail(
+        tester,
+        uid: uid,
+        bookings: repo,
+        now: _weekBefore,
+        features: _chatOn,
+        profiles: profiles,
+      );
+      await _settle(tester);
+    }
+
+    testWidgets('pending collaborator offer still shows the S26 "chưa giao" '
+        'state, not the collaborator', (tester) async {
+      await pumpAs(tester, collab(), uid: detailCustomerUid);
+      expect(find.byKey(const Key('assignee-waiting')), findsOneWidget);
+      expect(find.byType(AssigneeCard), findsNothing);
+      expect(find.textContaining('Lan Phương'), findsNothing);
+      expect(find.byKey(const Key('studio-offer-line')), findsNothing);
+    });
+
+    testWidgets('accepted collaborator shows the block with "Cộng tác với '
+        '{Studio}"', (tester) async {
+      await pumpAs(tester, collab(accepted: true), uid: detailCustomerUid);
+      expect(find.byType(AssigneeCard), findsOneWidget);
+      expect(find.text('Lan Phương'), findsOneWidget);
+      expect(find.text('Cộng tác với Studio Mây'), findsOneWidget);
+      expect(find.textContaining('thợ của Studio Mây'), findsNothing);
+      // The fee is never on the customer's screen.
+      expect(find.textContaining('800.000'), findsNothing);
+    });
+
+    testWidgets('studio side: pending shows "Chờ {name} nhận · còn {left}"', (
+      tester,
+    ) async {
+      await pumpAs(tester, collab(), uid: 'cuc');
+      expect(
+        find.text('Chờ Lan Phương nhận · còn 5 giờ 59 phút'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('studio side: declined shows "{name} đã từ chối. Giao người '
+        'khác trước {deadline}."', (tester) async {
+      await pumpAs(tester, collab(declined: true), uid: 'cuc');
+      expect(
+        find.text(
+          'Lan Phương đã từ chối. Giao người khác trước 15:30 CN 11/10.',
+        ),
+        findsOneWidget,
+      );
+    });
+  });
 }

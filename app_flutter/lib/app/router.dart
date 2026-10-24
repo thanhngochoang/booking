@@ -64,6 +64,7 @@ import 'package:photobooking/features/saved/followers_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
+import 'package:photobooking/features/collab/collab_screen.dart';
 import 'package:photobooking/features/recruit/recruit_detail_screen.dart';
 import 'package:photobooking/features/recruit/recruit_edit_screen.dart';
 import 'package:photobooking/features/recruit/recruit_list_screen.dart';
@@ -617,6 +618,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         builder: (_, state) =>
             RecruitEditScreen(postId: state.pathParameters['postId']),
+      ),
+      // S27.06 (query `offer` opens S27.07): providers only; the screen
+      // picks the studio or the photographer view from the account's facts.
+      GoRoute(
+        path: '/collab',
+        redirect: (_, _) => photographerOnlyRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            CollabScreen(offerBookingId: state.uri.queryParameters['offer']),
       ),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
       GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),

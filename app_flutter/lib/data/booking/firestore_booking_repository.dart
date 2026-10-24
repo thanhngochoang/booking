@@ -277,9 +277,19 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<Booking> assign(String bookingId, String assigneeId) => _call(
+  Future<Booking> assign(
+    String bookingId,
+    String assigneeId, {
+    bool collaborator = false,
+    int? agreedFee,
+  }) => _call(
     'assignBooking',
-    {'bookingId': bookingId, 'assigneeId': assigneeId},
+    assignBookingPayload(
+      bookingId,
+      assigneeId,
+      collaborator: collaborator,
+      agreedFee: agreedFee,
+    ),
     _bookingOf,
   );
 

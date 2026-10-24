@@ -158,6 +158,31 @@ class FirestoreCollabRepository implements CollabRepository {
     int limit = 50,
   }) => _jobs('collaboratorId', uid, limit);
 
+  /// Equality filters only (automatic indexes); the rules prove the query
+  /// by `studioId == uid`. `whereIn` takes 30 values per query.
+  @override
+  Future<List<Collaboration>> pairsOf(
+    String studioId,
+    List<String> collaboratorIds,
+  ) async {
+    final ids = collaboratorIds.toSet().toList();
+    final out = <Collaboration>[];
+    for (var i = 0; i < ids.length; i += 30) {
+      final snap = await _db
+          .collection('studio_collaborations')
+          .where('studioId', isEqualTo: studioId)
+          .where(
+            'collaboratorId',
+            whereIn: ids.sublist(i, i + 30 > ids.length ? ids.length : i + 30),
+          )
+          .get();
+      for (final d in snap.docs) {
+        if (collaborationFrom(d.id, d.data()) case final c?) out.add(c);
+      }
+    }
+    return out;
+  }
+
   /// Index `collab_jobs (studioId, pay.dueAt)`.
   @override
   Future<List<CollabJob>> jobsDueInMonth(

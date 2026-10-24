@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
+import 'package:photobooking/features/booking/booking_view_rules.dart';
+import 'package:photobooking/features/booking/widgets/studio_offer_line.dart';
 import 'package:photobooking/features/studio/studio_common.dart';
 
 /// A studio's accepted booking before its start (mock `#S06.01-studio`): the
 /// deadline to name who shoots ("Quá hạn giao thợ" in red once it passed),
 /// "Thợ: {name}", or "{name} đã trả việc" in red once the assignee handed it
-/// back; a customer's pending change request with the small
+/// back; a collaborator offer reads [StudioOfferLine] (S27) instead; a customer's pending change request with the small
 /// outline "Từ chối đổi"; and the outline "Giao thợ" (S26.04), which is also
 /// how the studio agrees to a change. No gradient button.
 class StudioJobCard extends ConsumerWidget {
@@ -56,7 +58,9 @@ class StudioJobCard extends ConsumerWidget {
       thumbUrl: thumbUrl,
       badge: StatusBadge(booking.status),
       lines: [
-        if (assigneeId == null)
+        if (studioOfferOf(booking, now) != null)
+          StudioOfferLine(booking: booking)
+        else if (assigneeId == null)
           overdue
               ? _Line(
                   l.workAssignOverdue,
@@ -114,7 +118,8 @@ class StudioJobCard extends ConsumerWidget {
 }
 
 /// A studio shoot given to the signed-in photographer (mock
-/// `#S06.01-member`): the "Giao bởi {Studio}" tag, the "Đã giao" badge and
+/// `#S06.01-member`): the "Giao bởi {Studio}" tag ("Cộng tác · {Studio}"
+/// for a collaborator, S27), the "Đã giao" badge and
 /// the red text "Trả việc" ([onReturn]); once handed back it reads "Đã trả
 /// việc · chờ studio giao lại" with no button. Its money is the studio's.
 class AssignedJobCard extends StatelessWidget {
@@ -153,7 +158,12 @@ class AssignedJobCard extends StatelessWidget {
             ),
       lines: [
         if (returned) _Line(l.workReturned, key: const Key('work-returned')),
-        if (studioName.isNotEmpty) _StudioTag(l.workAssignedBy(studioName)),
+        if (studioName.isNotEmpty)
+          _StudioTag(
+            booking.studio!.assigneeKind == 'collaborator'
+                ? l.workCollabLabel(studioName)
+                : l.workAssignedBy(studioName),
+          ),
       ],
       below: [
         // A spot booking keeps the schedule's member (#194 Decision 7).

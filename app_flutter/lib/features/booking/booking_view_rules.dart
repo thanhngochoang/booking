@@ -755,3 +755,42 @@ bool canRequestAssigneeChange(Booking b, DateTime now) {
       now.isBefore(startsAtOf(b)) &&
       s.changeRequest == null;
 }
+
+/// Where a studio's offer to a collaborator stands (S27, #151 Decision 13).
+enum StudioOfferState {
+  /// The collaborator has not answered yet: "Chờ {name} nhận · còn {left}".
+  pending,
+
+  /// They declined or let it lapse, the booking is unassigned and the
+  /// deadline is ahead: "{name} đã từ chối. Giao người khác trước …".
+  declined,
+}
+
+/// The studio's view of [b]'s latest collaborator offer at [now], or null
+/// when there is none to tell (a member is assigned, the offer was accepted,
+/// or the S26 overdue line takes over past the deadline).
+({StudioOfferState state, String collaboratorId, DateTime? expiresAt})?
+studioOfferOf(Booking b, DateTime now) {
+  final s = b.studio;
+  final last = s?.lastAssignment;
+  if (s == null || last == null || last.assigneeKind != 'collaborator') {
+    return null;
+  }
+  if (s.hasPendingOffer && s.assigneeId == last.assigneeId) {
+    return (
+      state: StudioOfferState.pending,
+      collaboratorId: last.assigneeId,
+      expiresAt: last.offerExpiresAt,
+    );
+  }
+  if (s.assigneeId == null &&
+      last.acceptedAt == null &&
+      now.isBefore(s.assignDeadline)) {
+    return (
+      state: StudioOfferState.declined,
+      collaboratorId: last.assigneeId,
+      expiresAt: last.offerExpiresAt,
+    );
+  }
+  return null;
+}

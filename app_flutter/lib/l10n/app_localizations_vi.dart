@@ -10044,4 +10044,353 @@ class AppLocalizationsVi extends AppLocalizations {
   String profileRecruiting(int n) {
     return 'Đang tuyển · $n tin';
   }
+
+  @override
+  String get collabTitle => 'Cộng tác';
+
+  @override
+  String collabStudioMeta(int active, int max, int left) {
+    return '$active/$max cộng tác viên · còn $left thao tác hôm nay';
+  }
+
+  @override
+  String collabRowMeta(int jobs, String fee) {
+    return '$jobs việc đang giao · gợi ý $fee/buổi';
+  }
+
+  @override
+  String collabRowMetaNoFee(int jobs) {
+    return '$jobs việc đang giao';
+  }
+
+  @override
+  String collabRowOptions(String name) {
+    return 'Tuỳ chọn cho $name';
+  }
+
+  @override
+  String get collabMenuMessage => 'Nhắn tin';
+
+  @override
+  String get collabMenuFee => 'Sửa thù lao gợi ý';
+
+  @override
+  String get collabMenuEnd => 'Kết thúc cộng tác';
+
+  @override
+  String collabEndConfirmTitle(String name) {
+    return 'Kết thúc cộng tác với $name?';
+  }
+
+  @override
+  String get collabEndConfirmBody => 'Mời lại được sau 3 ngày.';
+
+  @override
+  String collabEndBusy(int n) {
+    return 'Còn $n việc được giao chưa xong.';
+  }
+
+  @override
+  String get collabKeep => 'Quay lại';
+
+  @override
+  String get collabPayDueHeader => 'Thù lao cần trả';
+
+  @override
+  String get collabMarkPaid => 'Đã trả';
+
+  @override
+  String get collabPendingHeader => 'Đang chờ';
+
+  @override
+  String collabInviteSent(int days) {
+    return 'Lời mời đã gửi · hết hạn sau $days ngày';
+  }
+
+  @override
+  String get collabCancelInvite => 'Huỷ';
+
+  @override
+  String get collabTaxNote =>
+      'Khoản từ 5.000.000đ/lần có thể phải khấu trừ thuế TNCN 10%; hãy hỏi kế toán.';
+
+  @override
+  String get collabTaxDismiss => 'Ẩn lưu ý thuế';
+
+  @override
+  String collabExportCsv(int month) {
+    return 'Sao chép bảng kê tháng $month (CSV)';
+  }
+
+  @override
+  String collabExportDone(int month) {
+    return 'Đã sao chép bảng kê tháng $month. Dán vào bảng tính để xem.';
+  }
+
+  @override
+  String collabExportEmpty(int month) {
+    return 'Tháng $month chưa có khoản thù lao nào.';
+  }
+
+  @override
+  String get collabInvite => 'Mời cộng tác viên';
+
+  @override
+  String get collabStudioEmpty =>
+      'Chưa có cộng tác viên. Mời thợ hoặc đăng tin tuyển ở Tin tuyển.';
+
+  @override
+  String get collabPaidSheetTitle => 'Đã trả thù lao';
+
+  @override
+  String get collabPaidDate => 'Ngày trả';
+
+  @override
+  String get collabPaidToday => 'Hôm nay';
+
+  @override
+  String get collabPaidYesterday => 'Hôm qua';
+
+  @override
+  String get collabPaidOtherDay => 'Ngày khác';
+
+  @override
+  String get collabPaidMethod => 'Cách trả';
+
+  @override
+  String get collabPaidConfirm => 'Xác nhận đã trả';
+
+  @override
+  String get collabFeeSheetTitle => 'Thù lao gợi ý';
+
+  @override
+  String collabFeeHint(String name) {
+    return 'Gợi ý sẵn khi giao việc cho $name';
+  }
+
+  @override
+  String get collabFeeInvalid =>
+      'Từ 1.000₫ tới 100.000.000₫, bội số của 1.000₫';
+
+  @override
+  String get collabFeeSave => 'Lưu';
+
+  @override
+  String get collabFeeSaved => 'Đã lưu thù lao gợi ý';
+
+  @override
+  String get collabInviteSearch => 'Tìm thợ theo tên';
+
+  @override
+  String get collabInviteRowMember => 'Thành viên của studio bạn';
+
+  @override
+  String get collabInviteRowActive => 'Đang cộng tác';
+
+  @override
+  String get collabInviteRowUnverified => 'Chưa xác minh';
+
+  @override
+  String collabInviteRowCooldown(String date) {
+    return 'Mời lại được từ $date';
+  }
+
+  @override
+  String get collabInviteFooter =>
+      'Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ';
+
+  @override
+  String get collabInviteAction => 'Mời';
+
+  @override
+  String get collabOffersHeader => 'Việc chờ nhận';
+
+  @override
+  String collabOfferLeft(String time) {
+    return 'Còn $time';
+  }
+
+  @override
+  String collabLeftHoursMinutes(int h, int m) {
+    return '$h giờ $m phút';
+  }
+
+  @override
+  String get collabStudiosHeader => 'Studio cộng tác';
+
+  @override
+  String collabStudiosCount(int n) {
+    return '$n / tối đa 5';
+  }
+
+  @override
+  String collabStudioRowMeta(String month, int jobs) {
+    return 'Từ $month · $jobs việc đang giao';
+  }
+
+  @override
+  String get collabInvitesHeader => 'Lời mời';
+
+  @override
+  String collabInviteRowMeta(int days) {
+    return 'Mời cộng tác · hết hạn sau $days ngày';
+  }
+
+  @override
+  String get collabAcceptInvite => 'Xem & nhận';
+
+  @override
+  String get collabDeclineInvite => 'Từ chối';
+
+  @override
+  String collabAcceptSheetTitle(String studio) {
+    return 'Cộng tác với $studio';
+  }
+
+  @override
+  String get collabAcceptSheetConfirm => 'Nhận lời cộng tác';
+
+  @override
+  String collabAcceptedToast(String studio) {
+    return 'Đã nhận lời cộng tác với $studio';
+  }
+
+  @override
+  String collabInviteDeclinedToast(String studio) {
+    return 'Đã từ chối lời mời của $studio';
+  }
+
+  @override
+  String get collabPayHeader => 'Thù lao';
+
+  @override
+  String collabPayReportedMeta(String date, String method) {
+    return 'Studio báo đã trả $date ($method)';
+  }
+
+  @override
+  String get collabConfirmReceived => 'Đã nhận';
+
+  @override
+  String get collabReportNotReceived => 'Chưa nhận';
+
+  @override
+  String get collabNotReceivedConfirmTitle => 'Báo chưa nhận thù lao?';
+
+  @override
+  String get collabNotReceivedConfirmBody =>
+      'Studio và bộ phận hỗ trợ được báo. Ứng dụng không bảo lãnh khoản này.';
+
+  @override
+  String get collabEmpty =>
+      'Chưa có studio cộng tác. Xem tin ở Công việc → Tuyển thợ.';
+
+  @override
+  String get collabOfferTitle => 'Nhận việc cộng tác';
+
+  @override
+  String get collabOfferStudioNote =>
+      'Studio chịu trách nhiệm với khách và lo bàn giao ảnh';
+
+  @override
+  String get collabOfferFeeNote =>
+      'Thù lao · studio trả trực tiếp cho bạn sau buổi chụp';
+
+  @override
+  String collabOfferDeadline(String time, String left) {
+    return 'Trả lời trước $time (còn $left)';
+  }
+
+  @override
+  String collabOfferTimeToday(String time) {
+    return '$time hôm nay';
+  }
+
+  @override
+  String get collabOfferDeadlineNote => 'Không trả lời coi như từ chối';
+
+  @override
+  String get collabOfferLockNote =>
+      'Nhận việc thì khung giờ này bị khoá trên lịch của bạn và bạn vào hội thoại với khách.';
+
+  @override
+  String get collabOfferAccept => 'Nhận việc';
+
+  @override
+  String get collabOfferDecline => 'Từ chối';
+
+  @override
+  String get collabOfferAcceptedToast => 'Đã nhận việc';
+
+  @override
+  String get collabOfferDeclinedToast => 'Đã từ chối, studio được báo';
+
+  @override
+  String get collabOfferExpired => 'Việc này đã hết hạn trả lời';
+
+  @override
+  String get collabOfferGone => 'Việc này không còn chờ bạn nhận.';
+
+  @override
+  String get assignGroupMembers => 'Thành viên';
+
+  @override
+  String get assignGroupCollaborators => 'Cộng tác viên';
+
+  @override
+  String get assignFeeLabel => 'Thù lao';
+
+  @override
+  String get assignFeeRequired => 'Nhập thù lao cho cộng tác viên';
+
+  @override
+  String assignCollabNote(String name) {
+    return '$name có 6 giờ để nhận việc; khách chỉ thấy thợ khi $name đã nhận.';
+  }
+
+  @override
+  String assignSendTo(String name) {
+    return 'Gửi việc cho $name';
+  }
+
+  @override
+  String assignOfferPending(String name, String left) {
+    return 'Chờ $name nhận · còn $left';
+  }
+
+  @override
+  String assignOfferDeclined(String name, String deadline) {
+    return '$name đã từ chối. Giao người khác trước $deadline.';
+  }
+
+  @override
+  String assigneeCollabLabel(String studio) {
+    return 'Cộng tác với $studio';
+  }
+
+  @override
+  String workCollabLabel(String studio) {
+    return 'Cộng tác · $studio';
+  }
+
+  @override
+  String get settingsCollab => 'Cộng tác';
+
+  @override
+  String settingsCollabProviderMeta(int studios, int offers) {
+    return '$studios studio · $offers việc chờ nhận';
+  }
+
+  @override
+  String settingsCollabStudioMeta(int n) {
+    return '$n cộng tác viên';
+  }
+
+  @override
+  String get settingsRecruit => 'Tin tuyển';
+
+  @override
+  String settingsRecruitMeta(int n) {
+    return '$n/3 tin mở';
+  }
 }

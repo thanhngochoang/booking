@@ -30,6 +30,14 @@ abstract class CollabRepository {
   /// The collaborator's jobs, last changed first.
   Stream<List<CollabJob>> watchJobsAsCollaborator(String uid, {int limit = 50});
 
+  /// The latest relationship of studio [studioId] with each of
+  /// [collaboratorIds], whatever its status (S26.02-collab reads the
+  /// 3-day cooldown of an ended one); missing pairs are left out.
+  Future<List<Collaboration>> pairsOf(
+    String studioId,
+    List<String> collaboratorIds,
+  );
+
   /// Jobs whose pay fell due in Vietnam month [month] of [year] (CSV export).
   Future<List<CollabJob>> jobsDueInMonth(String studioId, int year, int month);
 
@@ -151,6 +159,16 @@ class FakeCollabRepository implements CollabRepository {
     String uid, {
     int limit = 50,
   }) => _watch(() => _jobs((j) => j.collaboratorId == uid, limit));
+
+  @override
+  Future<List<Collaboration>> pairsOf(
+    String studioId,
+    List<String> collaboratorIds,
+  ) async => [
+    for (final c in collaborations.values)
+      if (c.studioId == studioId && collaboratorIds.contains(c.collaboratorId))
+        c,
+  ];
 
   @override
   Future<List<CollabJob>> jobsDueInMonth(

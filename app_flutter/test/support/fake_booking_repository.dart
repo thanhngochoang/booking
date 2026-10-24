@@ -467,10 +467,38 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<Booking> assign(String bookingId, String assigneeId) => _studio(
+  Future<Booking> assign(
+    String bookingId,
+    String assigneeId, {
+    bool collaborator = false,
+    int? agreedFee,
+  }) => _studio(
     'assignBooking',
-    {'bookingId': bookingId, 'assigneeId': assigneeId},
-    (s, now) => s.copyWith(
+    assignBookingPayload(
+      bookingId,
+      assigneeId,
+      collaborator: collaborator,
+      agreedFee: agreedFee,
+    ),
+    // S27: an offer names the collaborator but stays unassigned until they
+    // accept (6 h, capped by the deadline).
+    (s, now) => collaborator
+        ? s.copyWith(
+            assigneeId: assigneeId,
+            assigneeKind: 'collaborator',
+            assigneeAccepted: false,
+            assignments: [
+              ...s.assignments,
+              StudioAssignment(
+                assigneeId: assigneeId,
+                assigneeKind: 'collaborator',
+                at: now,
+                by: 'studio',
+                offerExpiresAt: _offerExpiry(now, s.assignDeadline),
+              ),
+            ],
+          )
+        : s.copyWith(
       assigneeId: assigneeId,
       assigneeKind: 'member',
       assignStatus: StudioAssignStatus.assigned,
@@ -492,6 +520,11 @@ class FakeBookingRepository implements BookingRepository {
       returnReason: null,
     ),
   );
+
+  static DateTime _offerExpiry(DateTime now, DateTime deadline) {
+    final six = now.add(const Duration(hours: 6));
+    return now.isBefore(deadline) && deadline.isBefore(six) ? deadline : six;
+  }
 
   @override
   Future<Booking> requestChange(String bookingId, {String? note}) => _studio(

@@ -482,6 +482,27 @@ void main() {
       expect(_codeFinder(ScreenCodes.workEmpty), findsNothing);
     });
 
+    testWidgets('an accepted collaborator job shows "Cộng tác · {Studio}"', (
+      tester,
+    ) async {
+      final b = assigned();
+      final collab = b.copyWith(
+        studio: StudioBookingInfo(
+          assigneeId: detailPhotographerUid,
+          assigneeKind: 'collaborator',
+          assigneeAccepted: true,
+          assignStatus: StudioAssignStatus.assigned,
+          assignDeadline: DateTime.utc(2026, 10, 7, 2),
+        ),
+      );
+      final repo = _repo([])..emitAssigned([collab]);
+      await _pump(tester, repo, otherUsers: const [studio]);
+      await _settle(tester);
+
+      expect(find.text('Cộng tác · Studio Ánh Dương'), findsOneWidget);
+      expect(find.text('Giao bởi Studio Ánh Dương'), findsNothing);
+    });
+
     testWidgets('a failing assigned stream still shows the dashboard', (
       tester,
     ) async {
