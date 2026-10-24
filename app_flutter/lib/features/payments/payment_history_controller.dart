@@ -1,7 +1,6 @@
 // lib/features/payments/payment_history_controller.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/payments/payment_history.dart';
 
 /// Rows asked from the server; "Xem thêm" adds one more page (Decision 1).
@@ -17,26 +16,6 @@ class PaymentsLimit extends Notifier<int> {
 final paymentsLimitProvider = NotifierProvider.autoDispose<PaymentsLimit, int>(
   PaymentsLimit.new,
 );
-
-/// Rows grouped by the Vietnamese month they were paid in (`yyyy-MM` of
-/// `createdAt`, the order of the query), newest first; the order inside a
-/// month is kept.
-List<({String monthKey, List<PayerPaymentRow> rows})> groupPaymentsByMonth(
-  List<PayerPaymentRow> rows,
-) {
-  final order = <String>[];
-  final byMonth = <String, List<PayerPaymentRow>>{};
-  for (final row in rows) {
-    final key = vnDateKey(row.createdAt).substring(0, 7);
-    byMonth
-        .putIfAbsent(key, () {
-          order.add(key);
-          return <PayerPaymentRow>[];
-        })
-        .add(row);
-  }
-  return [for (final k in order) (monthKey: k, rows: byMonth[k]!)];
-}
 
 /// The S22.04 subject of a row waiting for the customer's refund account: a
 /// booking or a ticket. Chụp ngay and the S21 fee never wait for an account

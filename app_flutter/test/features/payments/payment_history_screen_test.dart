@@ -80,6 +80,27 @@ class _SlowPages extends FakePaymentsRepository {
   }
 }
 
+/// Fails every page bigger than the first, and the totals when [totalsFail].
+class _FailingPages extends FakePaymentsRepository {
+  _FailingPages({this.totalsFail = false, this.rowsFail = false});
+
+  final bool totalsFail;
+  final bool rowsFail;
+
+  @override
+  Stream<List<PayerPaymentRow>> watchHistory(String uid, {required int limit}) {
+    if (rowsFail || limit > paymentsPageSize) {
+      return Stream.error(Exception('page failed'));
+    }
+    return super.watchHistory(uid, limit: limit);
+  }
+
+  @override
+  Stream<PaymentTotals> watchTotals(String uid) => totalsFail
+      ? Stream.error(Exception('totals failed'))
+      : super.watchTotals(uid);
+}
+
 PayerPaymentRow _ticket({
   PayerRowStatus status = PayerRowStatus.refunding,
   bool toPlatform = false,
@@ -242,11 +263,12 @@ void main() {
     );
     expect(find.text('Các khoản'), findsOneWidget);
     expect(find.text('Tháng 10'), findsOneWidget);
-    expect(find.text('Tháng 9'), findsOneWidget);
+    // Later months are the mock's `.nsec`: upper-case section labels.
+    expect(find.text('THÁNG 9'), findsOneWidget);
     double y(Finder f) => tester.getTopLeft(f).dy;
     expect(y(find.text('Các khoản')), lessThan(y(_key('pay-row-a'))));
-    expect(y(_key('pay-row-a')), lessThan(y(find.text('Tháng 9'))));
-    expect(y(find.text('Tháng 9')), lessThan(y(_key('pay-row-b'))));
+    expect(y(_key('pay-row-a')), lessThan(y(find.text('THÁNG 9'))));
+    expect(y(find.text('THÁNG 9')), lessThan(y(_key('pay-row-b'))));
   });
 
   testWidgets(
@@ -543,10 +565,100 @@ void main() {
       findsOneWidget,
     );
     expect(_inRow('v', find.text('Đã thanh toán')), findsOneWidget);
+    // An unknown subject has no detail link; an unknown status with a known
+    // subject keeps its link.
     await _tapRow(tester, 'u');
     expect(find.text('Đã trả'), findsOneWidget);
     expect(find.text('Xem buổi chụp'), findsNothing);
+    await _tapRow(tester, 'v');
+    expect(_inRow('v', find.text('Xem buổi chụp')), findsOneWidget);
   });
+
+  testWidgets(
+    'a failed "Xem thêm" page keeps the rows and shows one error below them',
+    (tester) async {
+      final rows = [
+        for (var i = 0; i < 20; i++)
+          _row(
+            'r$i',
+            createdAt: DateTime.utc(2026, 10, 1).add(Duration(hours: i)),
+          ),
+      ];
+      await _open(tester, rows: rows, repo: _FailingPages());
+      final more = find.widgetWithText(AppButton, 'Xem thêm');
+      await tester.scrollUntilVisible(more, 300);
+      await tester.pump();
+      await tester.tap(more);
+      await _settle(tester);
+      expect(_key('pay-row-r19'), findsOneWidget);
+      expect(find.byType(ErrorState), findsOneWidget);
+      final errorY = tester.getTopLeft(find.byType(ErrorState)).dy;
+      expect(tester.getTopLeft(_key('pay-row-r19')).dy, lessThan(errorY));
+    },
+  );
+
+  testWidgets('totals and rows failing together show one error', (
+    tester,
+  ) async {
+    await _open(tester, repo: _FailingPages(totalsFail: true, rowsFail: true));
+    expect(find.byType(ErrorState), findsOneWidget);
+  });
+
+  testWidgets('totals failing alone show their error above the rows', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      rows: [_row('a')],
+      repo: _FailingPages(totalsFail: true),
+    );
+    expect(find.byType(ErrorState), findsOneWidget);
+    expect(_key('pay-row-a'), findsOneWidget);
+  });
+
+  testWidgets(
+    'a dispute refund waiting for an account opens S22.04 on the booking row with that refund shown',
+    (tester) async {
+      final h = await _open(
+        tester,
+        rows: [
+          _row(
+            'd',
+            subjectId: 'bk8',
+            status: PayerRowStatus.refundAccountNeeded,
+            refunds: [
+              PayerRefundView(
+                refundId: 'rf_dispute',
+                amount: 400000,
+                status: 'awaiting_account',
+                wallet: false,
+                destinationLabel: null,
+                createdAt: DateTime.utc(2026, 10, 20),
+              ),
+            ],
+          ),
+        ],
+        seed: (p) => p.pendingBySubject[const BookingRefund('bk8')] =
+            const PendingRefund(
+              refundId: 'rf_dispute',
+              amount: 400000,
+              payer: (
+                bankName: 'Vietcombank',
+                accountLast4: '6789',
+                holderName: 'NGUYEN THANH HA',
+              ),
+            ),
+      );
+      await tester.tap(
+        find.widgetWithText(AppButton, 'Chọn tài khoản nhận hoàn'),
+      );
+      await _settle(tester);
+      expect(h.payments.pendingCalls, [const BookingRefund('bk8')]);
+      expect(find.text('Tài khoản nhận hoàn'), findsOneWidget);
+      expect(find.text('400.000₫'), findsWidgets);
+      expect(find.textContaining('6789'), findsWidgets);
+    },
+  );
 
   testWidgets('empty state copy', (tester) async {
     await _open(tester);

@@ -59,6 +59,16 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
     }
   }
 
+  Widget _rowsOf(List<PayerPaymentRow> list, int limit) => _Rows(
+    rows: list,
+    limit: limit,
+    expanded: _expanded,
+    onToggle: _toggle,
+    onOpen: _open,
+    onChooseAccount: _chooseAccount,
+    onMore: () => ref.read(paymentsLimitProvider.notifier).more(),
+  );
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -70,6 +80,9 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
     } else if (_shown != null && rows.isLoading) {
       rows = AsyncData(_shown!);
     }
+    // A failed bigger page keeps the rows already shown; the error and its
+    // retry go below them.
+    final pageFailed = rows.hasError && !rows.hasValue && _shown != null;
     const gutter = EdgeInsets.symmetric(horizontal: AppSpace.s4);
     final error = ErrorState(
       message: l.paymentsLoadError,
@@ -111,7 +124,9 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
                       ],
                     ),
                   ),
-                  error: (_, _, _) => error,
+                  // One error is enough: the rows show theirs when they failed too.
+                  error: (_, _, _) =>
+                      rows.hasError ? const SizedBox.shrink() : error,
                   data: (_, t) => StatTileRow(
                     tiles: [
                       StatTile(
@@ -140,35 +155,31 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
                 ),
               ),
               const SizedBox(height: AppSpace.s2),
-              AsyncView<List<PayerPaymentRow>>(
-                value: rows,
-                skeleton: (_) => Padding(
-                  padding: gutter,
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < 4; i++) ...[
-                        EarningRow.skeleton(),
-                        const SizedBox(height: AppSpace.s2),
+              if (pageFailed) ...[
+                _rowsOf(_shown!, limit),
+                Padding(padding: gutter, child: error),
+              ] else
+                AsyncView<List<PayerPaymentRow>>(
+                  value: rows,
+                  skeleton: (_) => Padding(
+                    padding: gutter,
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < 4; i++) ...[
+                          EarningRow.skeleton(),
+                          const SizedBox(height: AppSpace.s2),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
+                  error: (_, _, _) => error,
+                  isEmpty: (list) => list.isEmpty,
+                  empty: (_) => EmptyState(
+                    title: l.paymentsEmptyTitle,
+                    body: l.paymentsEmptyBody,
+                  ),
+                  data: (_, list) => _rowsOf(list, limit),
                 ),
-                error: (_, _, _) => error,
-                isEmpty: (list) => list.isEmpty,
-                empty: (_) => EmptyState(
-                  title: l.paymentsEmptyTitle,
-                  body: l.paymentsEmptyBody,
-                ),
-                data: (_, list) => _Rows(
-                  rows: list,
-                  limit: limit,
-                  expanded: _expanded,
-                  onToggle: _toggle,
-                  onOpen: _open,
-                  onChooseAccount: _chooseAccount,
-                  onMore: () => ref.read(paymentsLimitProvider.notifier).more(),
-                ),
-              ),
             ],
           ),
         ),
@@ -201,23 +212,23 @@ class _Rows extends ConsumerWidget {
     final l = context.l10n;
     final now = ref.watch(clockProvider)();
     final year = toVn(now).year;
-    final groups = groupPaymentsByMonth(rows);
+    final groups = groupByVnMonth(rows, (row) => vnDateKey(row.createdAt));
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var g = 0; g < groups.length; g++) ...[
-            _MonthHeader(
-              // The mock puts the first month beside "Các khoản".
-              title: g == 0
-                  ? l.paymentsItems
-                  : _monthLabel(l, groups[g].monthKey, year),
-              trailing: g == 0
-                  ? _monthLabel(l, groups[g].monthKey, year)
-                  : null,
-            ),
-            for (final row in groups[g].rows) ...[
+            // The mock puts the first month beside "Các khoản"; later ones
+            // are small upper-case section labels.
+            if (g == 0)
+              MonthHeader.first(
+                title: l.paymentsItems,
+                trailing: monthLabel(l, groups[g].monthKey, year),
+              )
+            else
+              MonthHeader.month(month: monthLabel(l, groups[g].monthKey, year)),
+            for (final row in groups[g].items) ...[
               _row(l, row, now),
               const SizedBox(height: AppSpace.s2),
             ],
@@ -449,9 +460,14 @@ class _StatePill extends StatelessWidget {
         dark ? AppColorsDark.freeBg : AppColors.freeBg,
         dark ? AppColorsDark.freeInk : AppColors.freeInk,
       ),
-      _Tone.wait => (AppColors.warning.withValues(alpha: 0.24), ink),
+      _Tone.wait => (
+        (dark ? AppColorsDark.warning : AppColors.warning).withValues(
+          alpha: 0.24,
+        ),
+        ink,
+      ),
       _Tone.dispute => (
-        AppColors.error.withValues(alpha: 0.18),
+        (dark ? AppColorsDark.error : AppColors.error).withValues(alpha: 0.18),
         dark ? AppColorsDark.error : AppColors.error,
       ),
     };
@@ -482,44 +498,4 @@ class _StatePill extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MonthHeader extends StatelessWidget {
-  const _MonthHeader({required this.title, this.trailing});
-
-  final String title;
-  final String? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
-      child: Row(
-        children: [
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          if (trailing != null)
-            Text(trailing!, style: theme.textTheme.labelMedium),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Tháng 10", or "Tháng 10/2025" for another year than [thisYear].
-String _monthLabel(AppLocalizations l, String monthKey, int thisYear) {
-  final parts = monthKey.split('-');
-  final y = int.tryParse(parts.first) ?? thisYear;
-  final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 1) : 1;
-  return y == thisYear ? l.earningsMonth(m) : l.earningsMonthYear(m, y);
 }
