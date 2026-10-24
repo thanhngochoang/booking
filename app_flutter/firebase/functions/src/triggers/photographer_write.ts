@@ -4,6 +4,7 @@ import {
   acceptingOrdersPatch,
   foldNameKey,
   providerTypeOf,
+  recruitMatchKeysOf,
   scorePhotographerSkills,
   refreshNextFreeDate,
   type ScoreSkillsDeps,
@@ -52,6 +53,57 @@ export async function syncAcceptingOrders(
   if (patch === null) return 'unchanged';
   await writer.set(input.uid, patch.acceptingOrders);
   return 'written';
+}
+
+/** `users/{uid}.role` and the server-only `photographers/{uid}.recruitMatchKeys` (S27 Decision 7). */
+export interface RecruitMatchKeyWriter {
+  role(uid: string): Promise<string | null>;
+  set(uid: string, keys: string[]): Promise<void>;
+}
+
+function storedKeys(d: DocumentData): string[] {
+  return Array.isArray(d.recruitMatchKeys) ? d.recruitMatchKeys.filter((k): k is string => typeof k === 'string') : [];
+}
+
+/**
+ * Keeps `recruitMatchKeys` = every `a=<area>|s=<specialty>` of the provider (empty for a studio and for an account in
+ * customer mode), so `onRecruitPostCreated` finds matching providers with one query. Reads the role once (not for a
+ * studio); writes only when the sorted list differs, so the re-fire of its own write changes nothing. A missing
+ * field counts as an empty list.
+ */
+export async function syncRecruitMatchKeys(
+  input: PhotographerWriteInput,
+  writer: RecruitMatchKeyWriter,
+): Promise<'written' | 'unchanged' | 'deleted'> {
+  const after = input.after;
+  if (after === undefined) return 'deleted';
+  const isStudio = providerTypeOf(after.providerType) === 'studio';
+  const role = isStudio ? null : await writer.role(input.uid);
+  const specialties = Array.isArray(after.specialties) ? after.specialties.filter((x): x is string => typeof x === 'string') : [];
+  const keys = [...new Set(recruitMatchKeysOf({ role, providerType: after.providerType, serviceArea: after.serviceArea, specialties }))].sort();
+  const stored = [...storedKeys(after)].sort();
+  if (keys.length === stored.length && keys.every((k, i) => k === stored[i])) return 'unchanged';
+  await writer.set(input.uid, keys);
+  return 'written';
+}
+
+/** The photographer document a role switch re-syncs (`FirestoreRecruitMatchKeys`). */
+export interface RecruitMatchKeyStore extends RecruitMatchKeyWriter {
+  photographer(uid: string): Promise<DocumentData | undefined>;
+}
+
+/**
+ * `users/{uid}.role` switched (S09.02 "Chế độ"): the photographer document is not written, so its match keys are
+ * re-synced here (customer mode receives no recruit notices). Other user writes read nothing.
+ */
+export async function refreshRecruitMatchKeys(
+  input: { readonly uid: string; readonly before: DocumentData | undefined; readonly after: DocumentData | undefined },
+  store: RecruitMatchKeyStore,
+): Promise<'written' | 'unchanged' | 'deleted'> {
+  if (input.after === undefined || input.before?.role === input.after.role) return 'unchanged';
+  const doc = await store.photographer(input.uid);
+  if (doc === undefined) return 'deleted';
+  return syncRecruitMatchKeys({ uid: input.uid, before: doc, after: doc }, store);
 }
 
 /** Events older than this are dropped instead of retried (deployed with `retry: true`). */

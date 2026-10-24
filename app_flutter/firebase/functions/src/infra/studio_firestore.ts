@@ -36,11 +36,10 @@ import {
 import type { NameKeyStore } from '../triggers/user_write.js';
 import { AVAILABILITY_COLLECTION, BOOKINGS_COLLECTION } from './booking_firestore.js';
 import { SPOT_SCHEDULES_COLLECTION, scheduleFromFirestore } from './spot_firestore.js';
+import { STUDIO_COLLABORATIONS_COLLECTION } from './recruit_mapping.js';
 
 export const STUDIO_MEMBERS_COLLECTION = 'studio_members';
 export const STUDIO_QUOTA_COLLECTION = 'studio_quota';
-/** S27 (#151): `studio_collaborations/{studioId}_{uid}`, the latest relationship of the pair. */
-export const STUDIO_COLLABORATIONS_COLLECTION = 'studio_collaborations';
 const PHOTOGRAPHERS = 'photographers';
 const USERS = 'users';
 

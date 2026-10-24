@@ -74,6 +74,30 @@ import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
 import {
+  handleApplyToRecruitPost,
+  handleCloseRecruitPost,
+  handleCreateRecruitPost,
+  handleRenewRecruitPost,
+  handleRespondRecruitApplication,
+  handleUpdateRecruitPost,
+  handleWithdrawRecruitApplication,
+} from './callables/recruit.js';
+import {
+  handleCancelCollabInvite,
+  handleConfirmCollabPay,
+  handleEndCollaboration,
+  handleInviteCollaborator,
+  handleOpenCollabChat,
+  handleReportCollabPaid,
+  handleRespondCollabInvite,
+  handleRespondCollabOffer,
+  handleSetCollabDefaultFee,
+} from './callables/collab.js';
+import { handleRecruitPostCreated } from './triggers/recruit_post_created.js';
+import { liveCollabBookingSync, liveCollabChatDeps, liveRecruitDeps, liveRecruitSweepDeps } from './infra/live_recruit.js';
+import { FirestoreRecruitMatchKeys } from './infra/recruit_firestore.js';
+import { FirestoreChatStore } from './infra/chat_firestore.js';
+import {
   handleAnswerInstantOffer,
   handleCancelInstantRequest,
   handleConfirmInstantComplete,
@@ -88,7 +112,13 @@ import {
 import { liveInstantDeps } from './infra/live_instant.js';
 import { instantRequestFromFirestore, instantTrackPath } from './infra/instant_firestore.js';
 import { handleInstantRequestWrite } from './triggers/instant_request_write.js';
-import { handlePhotographerEvent, healNameKey, studiosToRecompute } from './triggers/photographer_write.js';
+import {
+  handlePhotographerEvent,
+  healNameKey,
+  refreshRecruitMatchKeys,
+  studiosToRecompute,
+  syncRecruitMatchKeys,
+} from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
 import { handleReviewWrite } from './triggers/review_write.js';
@@ -286,6 +316,8 @@ export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
       purge: { db: db(), bucket: (await import('firebase-admin/storage')).getStorage().bucket(), now: new Date() },
     },
     studio: liveStudioClockExtras(),
+    // S27 (#151): runs before the studio steps; no scheduler job of its own.
+    recruit: liveRecruitSweepDeps(),
   });
 });
 
@@ -313,6 +345,8 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   // S26 (#136): a missing invite-search key is healed once; membership and gate changes move studio capacity.
   const write = { uid, before: event.data?.before.data(), after: live?.data() };
   await healNameKey(write, new FirestoreNameKeys(db()));
+  // S27 (#151 Decision 7): server-only match keys for the recruit fan-out; written only when they change.
+  await syncRecruitMatchKeys(write, new FirestoreRecruitMatchKeys(db()));
   for (const studioId of studiosToRecompute(write)) {
     await refreshAssignableMembers(db(), studioId);
     // A member who just left or was removed: their own days may now change the studio's answer.
@@ -355,6 +389,8 @@ export const onBookingWrite = onDocumentWritten(
         notify: liveNotifyDeps(),
         badges: liveBadgeDeps(),
         studioDays: (studioId, day) => recomputeStudioDay(db(), studioId, day),
+        // S27 (#151): collab jobs follow the booking; a new personal booking may raise the poaching flag.
+        collab: liveCollabBookingSync(),
       },
       liveDiscoveryDeps(),
     );
@@ -444,7 +480,10 @@ export const assignmentOptions = onCall(CALLABLE_OPTIONS, (request) =>
   handleAssignmentOptions(request, liveAssignmentOptionsDeps()),
 );
 
-/** Studio assigns or reassigns a member: `{bookingId, assigneeId}` → Booking. */
+/**
+ * Studio assigns or reassigns a member, or offers the booking to an active collaborator (S27):
+ * `{bookingId, assigneeId, assigneeKind?, agreedFee?}` → Booking.
+ */
 export const assignBooking = onCall(CALLABLE_OPTIONS, (request) =>
   handleAssignBooking(request, liveStudioBookingDeps()),
 );
@@ -462,6 +501,72 @@ export const declineAssigneeChange = onCall(CALLABLE_OPTIONS, (request) =>
 /** "Trả việc", assignee: `{bookingId, reason?}` → Booking; the studio is told. */
 export const returnAssignment = onCall(CALLABLE_OPTIONS, (request) =>
   handleReturnAssignment(request, liveStudioBookingDeps()),
+);
+
+// ---- studio recruiting and collaborators (S27, #151) ----
+
+/** S27.04: `{kind, title, specialties, areas, frequency, feeHint, requirements}` → `{postId}`. */
+export const createRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleCreateRecruitPost(request, liveRecruitDeps()));
+
+/** S27.04: `{postId, …fields}` → `{}`; open posts only, `kind` fixed. */
+export const updateRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleUpdateRecruitPost(request, liveRecruitDeps()));
+
+/** S27.05: `{postId}` → `{}`; applied applications are declined. */
+export const closeRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleCloseRecruitPost(request, liveRecruitDeps()));
+
+/** S27.05: `{postId}` → `{expiresAt}`; once, +30 days. */
+export const renewRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleRenewRecruitPost(request, liveRecruitDeps()));
+
+/** S27.03: `{postId, message, samplePostIds, acceptTerms}` → `{applicationId}`. */
+export const applyToRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleApplyToRecruitPost(request, liveRecruitDeps()));
+
+/** S27.02: `{postId}` → `{}`. */
+export const withdrawRecruitApplication = onCall(CALLABLE_OPTIONS, (request) =>
+  handleWithdrawRecruitApplication(request, liveRecruitDeps()),
+);
+
+/** S27.05: `{postId, applicantId, accept}` → `{status}`. */
+export const respondRecruitApplication = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondRecruitApplication(request, liveRecruitDeps(), new FirestoreChatStore(db())),
+);
+
+/** S27.06 studio: `{collaboratorId, defaultFee?}` → `{}`. */
+export const inviteCollaborator = onCall(CALLABLE_OPTIONS, (request) => handleInviteCollaborator(request, liveRecruitDeps()));
+
+/** S27.06 studio: `{collaboratorId}` → `{}`. */
+export const cancelCollabInvite = onCall(CALLABLE_OPTIONS, (request) => handleCancelCollabInvite(request, liveRecruitDeps()));
+
+/** S27.06 photographer: `{studioId, accept, acceptTerms}` → `{status}`. */
+export const respondCollabInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondCollabInvite(request, liveRecruitDeps(), new FirestoreChatStore(db())),
+);
+
+/** S27.06 either side: `{studioId}` or `{collaboratorId}` → `{}`; the collab chat turns read-only. */
+export const endCollaboration = onCall(CALLABLE_OPTIONS, (request) =>
+  handleEndCollaboration(request, liveRecruitDeps(), new FirestoreChatStore(db())),
+);
+
+/** S27.06 studio: `{collaboratorId, defaultFee}` → `{}`. */
+export const setCollabDefaultFee = onCall(CALLABLE_OPTIONS, (request) => handleSetCollabDefaultFee(request, liveRecruitDeps()));
+
+/** S27.07 collaborator: `{bookingId, accept}` → `{offerStatus}`. */
+export const respondCollabOffer = onCall(CALLABLE_OPTIONS, (request) => handleRespondCollabOffer(request, liveStudioBookingDeps()));
+
+/** S27.06 studio "Đã trả": `{bookingId, collaboratorId, paidOn, method}` → `{}`. */
+export const reportCollabPaid = onCall(CALLABLE_OPTIONS, (request) => handleReportCollabPaid(request, liveRecruitDeps()));
+
+/** S27.06 collaborator "Đã nhận" / "Chưa nhận": `{bookingId, received}` → `{payStatus}`. */
+export const confirmCollabPay = onCall(CALLABLE_OPTIONS, (request) => handleConfirmCollabPay(request, liveRecruitDeps()));
+
+/** S27.06 "Nhắn tin": `{studioId}` or `{collaboratorId}` → `{chatId}`. */
+export const openCollabChat = onCall(CALLABLE_OPTIONS, (request) => handleOpenCollabChat(request, liveCollabChatDeps()));
+
+/** A new recruit post notifies matching providers (≤ 200, 3 per provider per VN day; Decision 8). */
+export const onRecruitPostCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'recruitPosts/{postId}' },
+  async (event) => {
+    await handleRecruitPostCreated({ postId: event.params.postId, time: event.time }, liveRecruitDeps());
+  },
 );
 
 // ---- service add-ons (S08.06, #190) ----
@@ -708,6 +813,15 @@ export const onUserWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'us
       after: event.data?.after.exists ? event.data.after.data() : undefined,
     },
     new FirestoreNameKeys(db()),
+  );
+  // S27 (#151): a role switch (S09.02 "Chế độ") re-syncs the recruit match keys of the photographer doc.
+  await refreshRecruitMatchKeys(
+    {
+      uid: event.params.uid,
+      before: event.data?.before.exists ? event.data.before.data() : undefined,
+      after: event.data?.after.exists ? event.data.after.data() : undefined,
+    },
+    new FirestoreRecruitMatchKeys(db()),
   );
 });
 

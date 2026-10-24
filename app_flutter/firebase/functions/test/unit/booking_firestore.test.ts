@@ -184,6 +184,52 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(unassigned?.assigneeId, null);
     assert.equal(unassigned?.changeRequest, null);
     assert.deepEqual(unassigned?.assignments, []);
+
+    // S27 (#151, cross-plan review finding 41): a collaborator offer keeps its kind and acceptance, and each
+    // assignment entry its offer fields; a lost kind would make a pending collaborator look confirmed.
+    const collab: Booking = {
+      ...studio,
+      assigneeId: 'c_01',
+      assigneeKind: 'collaborator',
+      assigneeAccepted: false,
+      assignStatus: 'unassigned',
+      assignedAt: null,
+      assignments: [
+        { assigneeId: 'm_00', assigneeKind: 'member', at: '2026-10-11T08:00:00.000Z', by: 'photog_01', reason: null, late: false },
+        {
+          assigneeId: 'c_00', assigneeKind: 'collaborator', at: '2026-10-12T08:00:00.000Z', by: 'photog_01', reason: null,
+          late: false, offerExpiresAt: '2026-10-12T14:00:00.000Z', declinedAt: '2026-10-12T09:00:00.000Z',
+        },
+        {
+          assigneeId: 'c_01', assigneeKind: 'collaborator', at: '2026-10-12T10:00:00.000Z', by: 'photog_01', reason: null,
+          late: false, offerExpiresAt: '2026-10-12T16:00:00.000Z',
+        },
+      ],
+    };
+    const collabDoc = bookingToFirestore(collab);
+    assert.equal(collabDoc.assigneeKind, 'collaborator');
+    assert.equal(collabDoc.assigneeAccepted, false);
+    assert.ok(collabDoc.assignments[1].offerExpiresAt instanceof Timestamp);
+    assert.equal('agreedFee' in collabDoc.assignments[2], false);
+    const collabBack = bookingFromFirestore('b_01', collabDoc);
+    assert.ok(collabBack);
+    for (const key of ['assigneeId', 'assigneeKind', 'assigneeAccepted', 'assignStatus', 'assignments'] as const) {
+      assert.deepEqual(collabBack[key], collab[key], key);
+    }
+    const [first, declined, offer] = collab.assignments ?? [];
+    assert.ok(first && declined && offer);
+    const accepted: Booking = {
+      ...collab,
+      assigneeAccepted: true,
+      assignStatus: 'assigned',
+      assignedAt: '2026-10-12T11:00:00.000Z',
+      assignments: [first, declined, { ...offer, acceptedAt: '2026-10-12T11:00:00.000Z' }],
+    };
+    const acceptedBack = bookingFromFirestore('b_01', bookingToFirestore(accepted));
+    assert.equal(acceptedBack?.assigneeAccepted, true);
+    assert.deepEqual(acceptedBack?.assignments, accepted.assignments);
+    // A member booking written before S27 has no assigneeAccepted: it stays absent.
+    assert.equal('assigneeAccepted' in (bookingFromFirestore('b_01', studioDoc) ?? {}), false);
   });
 
   it('a booking without add-ons writes neither addons nor pickup', () => {

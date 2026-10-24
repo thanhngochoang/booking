@@ -18,8 +18,9 @@ export function liveStudioDeps(): StudioDeps {
   };
 }
 
+/** `notify`: S27 collaborator-offer notices (`collab_assignment_offer` / `_result`) after the commit (#151). */
 export function liveStudioBookingDeps(): StudioBookingDeps {
-  return { ...liveBookingDeps(), roster: new FirestoreStudioRoster(db()) };
+  return { ...liveBookingDeps(), roster: new FirestoreStudioRoster(db()), notify: liveNotifyDeps() };
 }
 
 export function liveAssignmentOptionsDeps(): StudioBookingDeps & { readonly availability: MemberDayReader } {

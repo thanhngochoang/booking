@@ -72,6 +72,25 @@ describe('toHttpsError', () => {
     }
   });
 
+  // S27 (#151) Decision 10
+  test('collab_full → resource-exhausted', () => {
+    const e = toHttpsError(new DomainError('collab_full'));
+    assert.equal(e.code, 'resource-exhausted');
+    assert.deepEqual(e.details, { code: 'collab_full' });
+  });
+
+  test('recruit_blocked → failed-precondition', () => {
+    const e = toHttpsError(new DomainError('recruit_blocked'));
+    assert.equal(e.code, 'failed-precondition');
+    assert.deepEqual(e.details, { code: 'recruit_blocked' });
+  });
+
+  test('a field error carries details.field (S27 contact in a post title)', () => {
+    const e = toHttpsError(new DomainError('invalid_argument', 'title.contact'));
+    assert.equal(e.code, 'invalid-argument');
+    assert.deepEqual(e.details, { code: 'invalid_argument', field: 'title.contact' });
+  });
+
   test('reauth_required maps to failed-precondition with details.code', () => {
     const e = toHttpsError(new DomainError('reauth_required'));
     assert.equal(e.code, 'failed-precondition');
