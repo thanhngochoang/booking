@@ -7073,6 +7073,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deliveryReportSuccess => 'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.';
 
   @override
+  String get disputeErrNotEligible => 'Khoản này không còn mở khiếu nại được.';
+
+  @override
+  String get disputeErrDeadline => 'Đã quá thời hạn báo vấn đề.';
+
+  @override
+  String get disputeErrConflict => 'Đã có một khiếu nại đang mở cho khoản này.';
+
+  @override
+  String get disputeErrGeneric =>
+      'Chưa gửi được. Kiểm tra kết nối rồi thử lại.';
+
+  @override
   String get settingsPaymentsData => 'Thanh toán và dữ liệu';
 
   @override

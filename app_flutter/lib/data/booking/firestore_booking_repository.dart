@@ -254,21 +254,6 @@ class FirestoreBookingRepository implements BookingRepository {
     );
   }
 
-  @override
-  Future<Booking> openDispute({
-    required String bookingId,
-    required String reason,
-  }) async {
-    return _call('openDispute', {'bookingId': bookingId, 'reason': reason}, (
-      raw,
-    ) {
-      final map = (raw as Map).cast<String, dynamic>();
-      final booking = bookingFromFirestore(map['id'] as String, map);
-      if (booking == null) throw const BookingException('invalid_response');
-      return booking;
-    });
-  }
-
   Booking _bookingOf(dynamic raw) {
     final map = (raw as Map).cast<String, dynamic>();
     final booking = bookingFromFirestore(map['id'] as String, map);

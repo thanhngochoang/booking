@@ -228,12 +228,6 @@ abstract class BookingRepository {
     String? reason,
   });
 
-  /// Opens dispute on completed/upcoming booking.
-  Future<Booking> openDispute({
-    required String bookingId,
-    required String reason,
-  });
-
   // ── Studio bookings (#136); refusals throw [BookingException] with the
   // server code (`day_taken`, `not_accepting_orders`, `conflict`, ...). ──
 

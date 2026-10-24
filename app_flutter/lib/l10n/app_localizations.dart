@@ -12316,6 +12316,30 @@ abstract class AppLocalizations {
   /// **'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.'**
   String get deliveryReportSuccess;
 
+  /// No description provided for @disputeErrNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản này không còn mở khiếu nại được.'**
+  String get disputeErrNotEligible;
+
+  /// No description provided for @disputeErrDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã quá thời hạn báo vấn đề.'**
+  String get disputeErrDeadline;
+
+  /// No description provided for @disputeErrConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã có một khiếu nại đang mở cho khoản này.'**
+  String get disputeErrConflict;
+
+  /// No description provided for @disputeErrGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được. Kiểm tra kết nối rồi thử lại.'**
+  String get disputeErrGeneric;
+
   /// No description provided for @settingsPaymentsData.
   ///
   /// In vi, this message translates to:
