@@ -305,4 +305,39 @@ describe('Task 5: runBookingSweeps', () => {
     // Nothing else is due: a second run releases nothing (the disputed milestone has no releaseAfter).
     assert.equal((await runBookingSweeps(world.deps)).releasedEscrows, 0);
   });
+
+  it('the escrow release reads everything before its first write (Firestore refuses a read after a write)', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const b = await newDraft(world);
+    const { paymentId } = await payDraft(world, b.id);
+    await transitionBooking(world.deps, { bookingId: b.id, action: 'accept', actorId: 'p1' });
+    world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    await transitionBooking(world.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'p1' });
+    world.clock.setTime(new Date('2026-10-16T10:00:00.000Z'));
+
+    // A store whose transactions throw on any read made after a write, like the Admin SDK.
+    const store = world.deps.store;
+    const strict = Object.create(store) as typeof store;
+    strict.runTransaction = (fn) =>
+      store.runTransaction((tx) => {
+        let wrote = false;
+        const guarded = new Proxy(tx, {
+          get(target, key, receiver) {
+            const value = Reflect.get(target, key, receiver);
+            if (typeof value !== 'function') return value;
+            const name = String(key);
+            return (...args: unknown[]) => {
+              if (/^(get|find)/.test(name) && wrote) throw new Error(`read after write: ${name}`);
+              if (/^(set|add|put|delete|increment)/.test(name)) wrote = true;
+              return value.apply(target, args);
+            };
+          },
+        });
+        return fn(guarded);
+      });
+    const sweeps = await runBookingSweeps({ ...world.deps, store: strict });
+    assert.equal(sweeps.releasedEscrows, 1);
+    const shoot = world.store.payments.get(paymentId)?.milestones?.find((m) => m.kind === 'shoot');
+    assert.equal(shoot?.status, 'released');
+  });
 });

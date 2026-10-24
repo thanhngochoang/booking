@@ -140,6 +140,8 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
   for (const payment of releasable) {
     await deps.store.runTransaction(async (tx) => {
       const p = await tx.getPayment(payment.id);
+      // Every read before the first write: Firestore refuses a transactional read after a write.
+      const booking = p ? await tx.getBooking(p.subjectId) : null;
       // A disputed milestone payment still releases its other held, due milestones (S18 Decision 1);
       // `releaseDueMilestones` never touches the disputed one. A payment without milestones stays frozen whole.
       const disputedMilestones = p?.milestones !== undefined && p.escrowStatus === 'disputed';
@@ -151,7 +153,6 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
             for (const entry of ledgerEntries) {
               await tx.addLedgerEntry(entry);
             }
-            const booking = await tx.getBooking(p.subjectId);
             if (booking) {
               await tx.setBooking({
                 ...booking,
@@ -176,7 +177,6 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
           await tx.addLedgerEntry(res.ledgerEntry);
 
           // Update booking's mirrored escrowStatus
-          const booking = await tx.getBooking(p.subjectId);
           if (booking) {
             await tx.setBooking({
               ...booking,
