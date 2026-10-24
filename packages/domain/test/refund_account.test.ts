@@ -548,6 +548,78 @@ describe('dispute refunds (#142)', () => {
   });
 });
 
+describe('dispute refunds resolved through their booking or ticket (S22.01 rows)', () => {
+  /** A waiting dispute-outcome refund of `payment`, in the dispute store (its own memory world here, one collection in Firestore). */
+  async function disputeRefundOf(w: World, payment: Payment, over: Partial<Refund> = {}): Promise<Refund> {
+    const payer = must(await payerAccountOf(TEST_CIPHER, TEST_PAYER));
+    const at = w.b.clock.now().toISOString();
+    const refund: Refund = {
+      id: 'rf_dispute_a',
+      paymentId: payment.id,
+      subjectType: payment.subjectType,
+      amount: 400_000,
+      percent: 40,
+      status: 'awaiting_account',
+      manual: false,
+      fromEscrow: true,
+      method: 'bank_transfer',
+      destination: { ...payer, source: 'payer' },
+      confirmBy: new Date(w.b.clock.now().getTime() + 24 * HOUR).toISOString(),
+      reason: 'dispute:d9',
+      attempts: 0,
+      createdAt: at,
+      updatedAt: at,
+      ...over,
+    };
+    w.d.store.payments.set(payment.id, payment);
+    w.d.store.refunds.set(refund.id, refund);
+    return refund;
+  }
+
+  test('pendingRefundFor {bookingId} finds the waiting dispute refund, and the choice commits on it', async () => {
+    const w = world();
+    const draft = await newDraft(w.b);
+    const { paymentId } = await payDraft(w.b, draft.id);
+    const refund = await disputeRefundOf(w, must(await w.b.store.getPayment(paymentId)));
+
+    const view = await pendingRefundFor(w.deps, { uid: 'c1' }, { bookingId: draft.id });
+    assert.deepEqual([view?.refundId, view?.amount, view?.payer?.accountLast4], [refund.id, 400_000, '3456']);
+    await assert.rejects(pendingRefundFor(w.deps, { uid: 'c2' }, { bookingId: draft.id }), code('permission_denied'));
+
+    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: must(view).refundId, use: 'payer' }), { status: 'done' });
+    assert.deepEqual(w.d.gateway.refundCalls, [refund.id]);
+    assert.equal(await pendingRefundFor(w.deps, { uid: 'c1' }, { bookingId: draft.id }), null);
+  });
+
+  test('pendingRefundFor {eventId, registrationId} finds the waiting dispute refund of the ticket payment, and the choice commits on it', async () => {
+    const w = world();
+    await publishedEvent(w.t, { price: 150_000 });
+    const r = await registerEvent(w.t.deps, cu1, { eventId: EV, quantity: 1, name: 'Nguyễn An', method: 'bank_qr' });
+    await w.t.payTicket(must(r.paymentId), 'exact', cu1);
+    const refund = await disputeRefundOf(w, must(w.t.store.payments.get(must(r.paymentId))));
+
+    const view = await pendingRefundFor(w.deps, { uid: 'cu1' }, { eventId: EV, registrationId: r.registrationId });
+    assert.equal(view?.refundId, refund.id);
+    await assert.rejects(
+      pendingRefundFor(w.deps, { uid: 'c2' }, { eventId: EV, registrationId: r.registrationId }),
+      code('permission_denied'),
+    );
+    assert.deepEqual(await chooseRefundAccount(w.deps, { uid: 'cu1' }, { refundId: refund.id, use: 'payer' }), { status: 'done' });
+    assert.deepEqual(w.d.gateway.refundCalls, [refund.id]);
+  });
+
+  test('with two waiting refunds on a booking the oldest is shown (the cancellation before a later dispute outcome)', async () => {
+    const w = world();
+    const { bookingId, paymentId, refund: cancel } = await cancelled(w);
+    const later = new Date(w.b.clock.now().getTime() + HOUR).toISOString();
+    await disputeRefundOf(w, must(await w.b.store.getPayment(paymentId)), { createdAt: later, updatedAt: later });
+    assert.equal((await pendingRefundFor(w.deps, { uid: 'c1' }, { bookingId }))?.refundId, cancel.id);
+    // Once the oldest is chosen, the later one is next.
+    await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: cancel.id, use: 'payer' });
+    assert.equal((await pendingRefundFor(w.deps, { uid: 'c1' }, { bookingId }))?.refundId, 'rf_dispute_a');
+  });
+});
+
 describe('subjects outside S22.04', () => {
   test('a Chụp ngay refund waiting without a payer is not chosen, not confirmed and not announced here (not_eligible)', async () => {
     const w = world();

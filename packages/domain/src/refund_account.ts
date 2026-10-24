@@ -221,8 +221,39 @@ function viewOf(r: Refund): PendingRefundView {
 // ── Use cases ──────────────────────────────────────────────────────────────────────────────────
 
 /**
+ * The refunds of one payment still waiting for an account whose ledger is one of `kinds`. A refund
+ * lives in the booking, event or dispute store depending on who wrote it (in Firestore all three
+ * are one `refunds` collection), so the booking and dispute stores are both asked and merged by id.
+ */
+async function waitingRefundsOf(deps: RefundAccountDeps, paymentId: string, kinds: readonly LedgerKind[]): Promise<Refund[]> {
+  const byId = new Map<string, Refund>();
+  for (const list of [
+    await deps.bookings.store.getRefundsForPayment(paymentId),
+    await deps.disputes.store.getRefundsForPayment(paymentId),
+  ]) {
+    for (const r of list) {
+      const kind = kindOf(r);
+      if (r.status === 'awaiting_account' && kind !== null && kinds.includes(kind)) byId.set(r.id, r);
+    }
+  }
+  return [...byId.values()];
+}
+
+/**
+ * One subject can have two waiting refunds (its cancellation and a dispute outcome): the oldest
+ * (`createdAt`, then id) is the one S22.04 shows and `chooseRefundAccount` commits, so the refund
+ * the customer sees is the refund the choice lands on.
+ */
+function oldestOf(waiting: readonly Refund[]): Refund | null {
+  const sorted = [...waiting].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  return sorted[0] ?? null;
+}
+
+/**
  * `{bookingId}` | `{eventId, registrationId}` | `{disputeId}` → the refund waiting for the caller's
  * account choice, or null when none waits. Only the customer of the subject (`permission_denied`).
+ * A booking or ticket also answers with a waiting dispute refund of its payment (S22.01 offers the
+ * choice for it on the booking / ticket row); with two waiting refunds the oldest is returned.
  */
 export async function pendingRefundFor(
   deps: RefundAccountDeps,
@@ -234,13 +265,12 @@ export async function pendingRefundFor(
     const booking = await deps.bookings.store.getBooking(ref.bookingId);
     if (booking === null) throw new DomainError('not_found');
     if (booking.customerId !== caller.uid) throw new DomainError('permission_denied');
+    const waiting: Refund[] = [];
     for (const p of await deps.bookings.store.getPaymentsForBooking(ref.bookingId)) {
-      const waiting = (await deps.bookings.store.getRefundsForPayment(p.id)).find(
-        (r) => r.status === 'awaiting_account' && kindOf(r) === 'booking',
-      );
-      if (waiting) return viewOf(waiting);
+      waiting.push(...(await waitingRefundsOf(deps, p.id, ['booking', 'dispute'])));
     }
-    return null;
+    const oldest = oldestOf(waiting);
+    return oldest === null ? null : viewOf(oldest);
   }
   if ('registrationId' in ref) {
     const found = await deps.events.events.runTransaction(async (tx) => {
@@ -250,7 +280,11 @@ export async function pendingRefundFor(
     });
     if (found.reg === null) throw new DomainError('not_found');
     if (found.reg.userId !== caller.uid) throw new DomainError('permission_denied');
-    return found.refund?.status === 'awaiting_account' ? viewOf(found.refund) : null;
+    const waiting =
+      found.reg.paymentId === null ? [] : await waitingRefundsOf(deps, found.reg.paymentId, ['ticket', 'dispute']);
+    if (found.refund?.status === 'awaiting_account' && kindOf(found.refund) === 'ticket') waiting.push(found.refund);
+    const oldest = oldestOf([...new Map(waiting.map((r) => [r.id, r])).values()]);
+    return oldest === null ? null : viewOf(oldest);
   }
   const found = await deps.disputes.store.runTransaction(async (tx) => {
     const dispute = await tx.getDispute(ref.disputeId);

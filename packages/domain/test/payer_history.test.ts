@@ -264,6 +264,15 @@ describe('payerRowOf', () => {
     );
   });
 
+  it('a ticket payment without its own event id takes it from the subject, so S22.04 can name the ticket', () => {
+    const ticket = must(rowOf(
+      payment({ subjectType: 'event_registration', subjectId: 'reg1', payeeId: 'platform', escrowStatus: 'held' }),
+      [],
+      subject({ ...NO_BOOKING, eventTitle: 'Photo walk phố cổ', quantity: 1, eventId: 'ev1' }),
+    ));
+    assert.equal(ticket.eventId, 'ev1');
+  });
+
   it('a ticket keeps its event id; platform money reads as paid to the platform', () => {
     const ticket = must(rowOf(
       payment({ subjectType: 'event_registration', subjectId: 'reg1', eventId: 'ev1', payeeId: 'platform', escrowStatus: 'released' }),
