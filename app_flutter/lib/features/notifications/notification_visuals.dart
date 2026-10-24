@@ -8,8 +8,10 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// as an info row in the default tone.
 ///
 /// [variant] refines the tone for types whose outcome differs (`approved`,
-/// `needs_info`, `rejected`, `revoked`, `expired`); rows carry only the type,
-/// so the inbox calls this without one.
+/// `needs_info`, `rejected`, `revoked`, `expired`; for the S27 `*_result`
+/// types the domain's `outcome`: `accepted`/`collaborator`/`member` success,
+/// `declined`/`expired` muted); rows carry only the type, so the inbox calls
+/// this without one.
 ({IconData icon, NotificationTone tone}) notificationVisualOf(
   String type, {
   String? variant,
@@ -27,7 +29,6 @@ import 'package:photobooking/l10n/app_localizations.dart';
     case 'assignment_returned':
       return (icon: AppIcons.calendar, tone: NotificationTone.action);
     case 'booking_reassigned':
-    case 'collab_assignment_result':
       return (icon: AppIcons.calendar, tone: NotificationTone.neutral);
     case 'shoot_reminder':
       return (icon: AppIcons.camera, tone: NotificationTone.neutral);
@@ -50,16 +51,22 @@ import 'package:photobooking/l10n/app_localizations.dart';
     case 'job_match':
     case 'job_invited':
     case 'recruit_post_new':
-    case 'recruit_application_result':
       return (icon: AppIcons.work, tone: NotificationTone.neutral);
+    case 'recruit_application_result':
+      return (icon: AppIcons.work, tone: _outcomeTone(variant));
     case 'quote_accepted':
     case 'job_selected':
       return (icon: AppIcons.work, tone: NotificationTone.success);
     case 'quote_not_selected':
       return (icon: AppIcons.work, tone: NotificationTone.muted);
     case 'recruit_application_new':
-    case 'collab_assignment_offer':
       return (icon: AppIcons.work, tone: NotificationTone.action);
+    case 'collab_invite':
+    case 'collab_assignment_offer':
+      return (icon: AppIcons.handshake, tone: NotificationTone.action);
+    case 'collab_invite_result':
+    case 'collab_assignment_result':
+      return (icon: AppIcons.handshake, tone: _outcomeTone(variant));
     case 'job_expiring':
       return (icon: AppIcons.calendar, tone: NotificationTone.action);
     case 'job_expired':
@@ -115,7 +122,6 @@ import 'package:photobooking/l10n/app_localizations.dart';
     case 'studio_invite':
     case 'studio_join_request':
     case 'studio_invite_expiring':
-    case 'collab_invite':
       return (icon: AppIcons.store, tone: NotificationTone.action);
     case 'studio_invite_accepted':
     case 'studio_join_approved':
@@ -125,8 +131,6 @@ import 'package:photobooking/l10n/app_localizations.dart';
       return (icon: AppIcons.store, tone: NotificationTone.muted);
     case 'business_rejected':
       return (icon: AppIcons.store, tone: NotificationTone.danger);
-    case 'collab_invite_result':
-      return (icon: AppIcons.store, tone: NotificationTone.neutral);
     case 'change_requested':
       return (icon: AppIcons.swap, tone: NotificationTone.action);
     case 'change_answered':
@@ -198,3 +202,11 @@ NotificationSection sectionOf(DateTime createdAt, DateTime now) {
   }
   return days <= 7 ? NotificationSection.week : NotificationSection.earlier;
 }
+
+/// The tone of an S27 `*_result` row by the domain's `outcome`; neutral
+/// without one (the inbox rows carry only the type) or for `ended`.
+NotificationTone _outcomeTone(String? outcome) => switch (outcome) {
+  'accepted' || 'collaborator' || 'member' => NotificationTone.success,
+  'declined' || 'expired' => NotificationTone.muted,
+  _ => NotificationTone.neutral,
+};

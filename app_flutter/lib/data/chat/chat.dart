@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
-enum ChatKind { inquiry, booking }
+/// `chats.kind`. `collab` (S27 Decision 16) is a studio–collaborator chat:
+/// the studio sits in the `customerId` slot, the collaborator in
+/// `photographerId`. An unknown kind reads as [inquiry].
+enum ChatKind { inquiry, booking, collab }
 
 enum MessageType { text, image, location, system }
 
@@ -206,7 +209,11 @@ class ChatThread {
     final kindStr = data['kind'] as String? ?? 'inquiry';
     return ChatThread(
       id: doc.id,
-      kind: kindStr == 'booking' ? ChatKind.booking : ChatKind.inquiry,
+      kind: switch (kindStr) {
+        'booking' => ChatKind.booking,
+        'collab' => ChatKind.collab,
+        _ => ChatKind.inquiry,
+      },
       customerId: data['customerId'] as String? ?? '',
       photographerId: data['photographerId'] as String? ?? '',
       bookingId: data['bookingId'] as String?,

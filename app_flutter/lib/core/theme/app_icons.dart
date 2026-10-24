@@ -100,6 +100,12 @@ abstract final class AppIcons {
   static const IconData verified = Symbols.verified_rounded;
   static const IconData work = Symbols.work_rounded;
   static const IconData store = Symbols.storefront_rounded;
+
+  /// S27: a studio–collaborator relationship (S27.06, S09.02 "Cộng tác").
+  static const IconData handshake = Symbols.handshake_rounded;
+
+  /// S27: a recruit notice (S27.05, S09.02 "Tin tuyển", S03.01 "Đang tuyển").
+  static const IconData campaign = Symbols.campaign_rounded;
   static const IconData verifiedUser = Symbols.verified_user_rounded;
   static const IconData businessVerify = Symbols.domain_verification_rounded;
   static const IconData people = Symbols.group_rounded;

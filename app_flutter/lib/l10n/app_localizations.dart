@@ -16304,6 +16304,126 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bản đồ: {pins}'**
   String mapSemantics(String pins);
+
+  /// No description provided for @chatKindCollab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác'**
+  String get chatKindCollab;
+
+  /// No description provided for @recruitErrorGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại sau.'**
+  String get recruitErrorGeneric;
+
+  /// No description provided for @recruitErrorRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã dùng hết lượt hôm nay. Thử lại ngày mai.'**
+  String get recruitErrorRateLimited;
+
+  /// No description provided for @recruitErrorApplyLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có 10 ứng tuyển chờ trả lời. Chờ studio trả lời hoặc rút bớt.'**
+  String get recruitErrorApplyLimit;
+
+  /// No description provided for @recruitErrorPostLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã có 3 tin mở.'**
+  String get recruitErrorPostLimit;
+
+  /// No description provided for @recruitErrorClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin đã đóng hoặc hết hạn.'**
+  String get recruitErrorClosed;
+
+  /// No description provided for @recruitErrorDuplicate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã ứng tuyển tin này.'**
+  String get recruitErrorDuplicate;
+
+  /// No description provided for @collabErrorFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ số cộng tác cho phép.'**
+  String get collabErrorFull;
+
+  /// No description provided for @collabErrorCooldown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa mời lại được, chờ đủ 3 ngày.'**
+  String get collabErrorCooldown;
+
+  /// No description provided for @collabErrorBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn việc được giao chưa xong.'**
+  String get collabErrorBusy;
+
+  /// No description provided for @collabErrorConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đang là thành viên của studio bạn.'**
+  String get collabErrorConflict;
+
+  /// No description provided for @collabErrorDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có lịch trong ngày này.'**
+  String get collabErrorDayTaken;
+
+  /// No description provided for @collabPayDue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần trả'**
+  String get collabPayDue;
+
+  /// No description provided for @collabPayDisputed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận'**
+  String get collabPayDisputed;
+
+  /// No description provided for @collabPayReported.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã báo trả'**
+  String get collabPayReported;
+
+  /// No description provided for @collabPayReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get collabPayReceived;
+
+  /// No description provided for @collabMethodBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản'**
+  String get collabMethodBank;
+
+  /// No description provided for @collabMethodCash.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền mặt'**
+  String get collabMethodCash;
+
+  /// No description provided for @collabMethodOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get collabMethodOther;
+
+  /// S27.06 CSV header (Decision 19): the seven columns, comma-separated, no commas inside a name.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp,Dịch vụ,Cộng tác viên,Thù lao,Trạng thái,Ngày trả,Cách trả'**
+  String get collabCsvHeader;
 }
 
 class _AppLocalizationsDelegate

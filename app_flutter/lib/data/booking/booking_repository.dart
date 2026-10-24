@@ -158,8 +158,10 @@ abstract class BookingRepository {
   /// Watches photographer's bookings (party = photographer).
   Stream<List<Booking>> watchPhotographerBookings(String photographerId);
 
-  /// Watches bookings a studio assigned to [uid] (`assigneeId == uid`),
-  /// drafts dropped. The studio stays the booking's `photographerId`.
+  /// Watches bookings a studio assigned to [uid] (`assigneeId == uid` and
+  /// `assignStatus == assigned`), drafts dropped. A collaborator's pending
+  /// S27 offer is not listed. The studio stays the booking's
+  /// `photographerId`.
   Stream<List<Booking>> watchAssignedBookings(String uid);
 
   /// Watches the private contact snapshot for a booking.

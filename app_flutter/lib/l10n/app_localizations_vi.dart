@@ -9538,4 +9538,68 @@ class AppLocalizationsVi extends AppLocalizations {
   String mapSemantics(String pins) {
     return 'Bản đồ: $pins';
   }
+
+  @override
+  String get chatKindCollab => 'Cộng tác';
+
+  @override
+  String get recruitErrorGeneric => 'Chưa thực hiện được. Thử lại sau.';
+
+  @override
+  String get recruitErrorRateLimited =>
+      'Bạn đã dùng hết lượt hôm nay. Thử lại ngày mai.';
+
+  @override
+  String get recruitErrorApplyLimit =>
+      'Bạn đang có 10 ứng tuyển chờ trả lời. Chờ studio trả lời hoặc rút bớt.';
+
+  @override
+  String get recruitErrorPostLimit => 'Studio đã có 3 tin mở.';
+
+  @override
+  String get recruitErrorClosed => 'Tin đã đóng hoặc hết hạn.';
+
+  @override
+  String get recruitErrorDuplicate => 'Bạn đã ứng tuyển tin này.';
+
+  @override
+  String get collabErrorFull => 'Đã đủ số cộng tác cho phép.';
+
+  @override
+  String get collabErrorCooldown => 'Chưa mời lại được, chờ đủ 3 ngày.';
+
+  @override
+  String get collabErrorBusy => 'Còn việc được giao chưa xong.';
+
+  @override
+  String get collabErrorConflict =>
+      'Thợ này đang là thành viên của studio bạn.';
+
+  @override
+  String get collabErrorDayTaken => 'Bạn đã có lịch trong ngày này.';
+
+  @override
+  String get collabPayDue => 'Cần trả';
+
+  @override
+  String get collabPayDisputed => 'Chưa nhận';
+
+  @override
+  String get collabPayReported => 'Đã báo trả';
+
+  @override
+  String get collabPayReceived => 'Đã nhận';
+
+  @override
+  String get collabMethodBank => 'Chuyển khoản';
+
+  @override
+  String get collabMethodCash => 'Tiền mặt';
+
+  @override
+  String get collabMethodOther => 'Khác';
+
+  @override
+  String get collabCsvHeader =>
+      'Ngày chụp,Dịch vụ,Cộng tác viên,Thù lao,Trạng thái,Ngày trả,Cách trả';
 }
