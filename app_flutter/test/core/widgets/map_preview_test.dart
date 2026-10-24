@@ -161,4 +161,20 @@ void main() {
     expect(palette.park, AppColors.mapPark);
     expect(MapPalette.of(Brightness.dark).water, AppColorsDark.mapWater);
   });
+
+  testWidgets('center keeps that point in the middle with every pin inside', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        MapPreview(
+          pins: const [_lanAnh, _me],
+          center: (lat: _lanAnh.lat, lng: _lanAnh.lng),
+        ),
+      ),
+    );
+    final box = tester.getRect(find.byKey(const Key('map-preview')));
+    expect((_dot(tester, 0) - box.center).distance, lessThan(0.5));
+    expect(box.contains(_dot(tester, 1)), isTrue);
+  });
 }

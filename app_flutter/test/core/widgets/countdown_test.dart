@@ -132,6 +132,32 @@ void main() {
       },
     );
 
+    testWidgets('CountdownText with an interval ticks by it above an hour', (
+      tester,
+    ) async {
+      var now = DateTime(2026, 10, 2, 10, 0, 0);
+      final deadline = DateTime(2026, 10, 2, 12, 0, 0);
+      Duration? left;
+      await tester.pumpWidget(
+        hostWidget(
+          CountdownText(
+            deadline: deadline,
+            now: () => now,
+            interval: const Duration(seconds: 1),
+            builder: (_, l) {
+              left = l;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(left, const Duration(hours: 2));
+      now = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(left, const Duration(hours: 1, minutes: 59, seconds: 59));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('reduced motion: no ticker or smooth interpolation', (
       tester,
     ) async {

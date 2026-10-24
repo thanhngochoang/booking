@@ -15081,6 +15081,690 @@ abstract class AppLocalizations {
   /// **'Mất kết nối. Thử lại nhé.'**
   String get instantErrorNetwork;
 
+  /// No description provided for @instantSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia tới trong 30–90 phút'**
+  String get instantSubtitle;
+
+  /// No description provided for @instantCardBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút'**
+  String get instantCardBody;
+
+  /// No description provided for @instantCardResumeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu chụp ngay đang mở'**
+  String get instantCardResumeTitle;
+
+  /// No description provided for @instantCardResumeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm để xem tiếp'**
+  String get instantCardResumeBody;
+
+  /// No description provided for @instantFindButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay · tới trong 30–90 phút'**
+  String get instantFindButton;
+
+  /// No description provided for @instantMeetPointPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm hẹn · {name}'**
+  String instantMeetPointPin(String name);
+
+  /// No description provided for @instantMeetPointSelf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí của bạn'**
+  String get instantMeetPointSelf;
+
+  /// No description provided for @instantMeetPointLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên điểm hẹn'**
+  String get instantMeetPointLabel;
+
+  /// No description provided for @instantMeetPointHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: Cổng Trương Định, Công viên Tao Đàn'**
+  String get instantMeetPointHint;
+
+  /// No description provided for @instantMeetPointRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên điểm hẹn để nhiếp ảnh gia dễ tìm.'**
+  String get instantMeetPointRequired;
+
+  /// No description provided for @instantPhotosCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh'**
+  String instantPhotosCount(int n);
+
+  /// No description provided for @instantNoteLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú cho nhiếp ảnh gia'**
+  String get instantNoteLabel;
+
+  /// No description provided for @instantNoteHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mình mặc áo dài trắng, chụp ở hồ…'**
+  String get instantNoteHint;
+
+  /// No description provided for @instantEscrowNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem 5 người phù hợp miễn phí. Chỉ trả khi gửi lời mời; tiền được giữ an toàn và hoàn 100% nếu bạn huỷ khi chưa có người nhận.'**
+  String get instantEscrowNote;
+
+  /// No description provided for @instantSeeMatches.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem nhiếp ảnh gia phù hợp'**
+  String get instantSeeMatches;
+
+  /// No description provided for @instantLocationTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật vị trí để Chụp ngay'**
+  String get instantLocationTitle;
+
+  /// No description provided for @instantLocationBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia cần biết bạn đang ở đâu để tới đúng chỗ.'**
+  String get instantLocationBody;
+
+  /// No description provided for @instantLocationAllow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép vị trí'**
+  String get instantLocationAllow;
+
+  /// No description provided for @instantBookNormally.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch thường'**
+  String get instantBookNormally;
+
+  /// No description provided for @instantOutsideArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay chưa có ở khu vực này. Bạn có thể đặt lịch thường.'**
+  String get instantOutsideArea;
+
+  /// No description provided for @instantDisabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay đang tạm dừng.'**
+  String get instantDisabled;
+
+  /// No description provided for @instantHasActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có một yêu cầu chụp ngay.'**
+  String get instantHasActive;
+
+  /// No description provided for @chooseTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn người bạn thích'**
+  String get chooseTitle;
+
+  /// No description provided for @chooseSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{genre} · {duration} · {amount}'**
+  String chooseSubtitle(String genre, String duration, String amount);
+
+  /// No description provided for @chooseCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'{index} / {total}'**
+  String chooseCounter(int index, int total);
+
+  /// No description provided for @chooseStamp.
+  ///
+  /// In vi, this message translates to:
+  /// **'CHỌN'**
+  String get chooseStamp;
+
+  /// No description provided for @chooseEta.
+  ///
+  /// In vi, this message translates to:
+  /// **'đến khoảng {minutes} phút'**
+  String chooseEta(int minutes);
+
+  /// No description provided for @chooseLike.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn người này'**
+  String get chooseLike;
+
+  /// No description provided for @chooseSkip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ qua'**
+  String get chooseSkip;
+
+  /// No description provided for @chooseUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get chooseUndo;
+
+  /// No description provided for @choosePicked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn {n} người'**
+  String choosePicked(int n);
+
+  /// No description provided for @chooseDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get chooseDone;
+
+  /// No description provided for @chooseSummaryTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Những người bạn đã chọn'**
+  String get chooseSummaryTitle;
+
+  /// No description provided for @chooseUnpick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chọn'**
+  String get chooseUnpick;
+
+  /// No description provided for @chooseUnpickA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chọn {name}'**
+  String chooseUnpickA11y(String name);
+
+  /// No description provided for @chooseUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} vừa nhận việc khác'**
+  String chooseUnavailable(String name);
+
+  /// No description provided for @chooseInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lời mời'**
+  String get chooseInvite;
+
+  /// No description provided for @chooseMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem 5 người khác'**
+  String get chooseMore;
+
+  /// No description provided for @chooseEscrow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.'**
+  String get chooseEscrow;
+
+  /// No description provided for @chooseRoundEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai nhận. Chọn thêm người nhé.'**
+  String get chooseRoundEnded;
+
+  /// No description provided for @chooseEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn'**
+  String get chooseEmptyTitle;
+
+  /// No description provided for @chooseEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường.'**
+  String get chooseEmptyBody;
+
+  /// No description provided for @chooseEmptyRetry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử lại'**
+  String get chooseEmptyRetry;
+
+  /// No description provided for @choosePriceChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá vừa đổi thành {amount}. Kiểm tra lại trước khi thanh toán.'**
+  String choosePriceChanged(String amount);
+
+  /// No description provided for @doneHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get doneHome;
+
+  /// No description provided for @instantNotFoundTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy yêu cầu'**
+  String get instantNotFoundTitle;
+
+  /// No description provided for @instantNotFoundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.'**
+  String get instantNotFoundBody;
+
+  /// No description provided for @trackingCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get trackingCancel;
+
+  /// S13.05 map pin of the meet point (the customer's own live position is never shown)
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn'**
+  String get trackingSelf;
+
+  /// No description provided for @trackingPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {minutes} phút'**
+  String trackingPin(String name, int minutes);
+
+  /// No description provided for @trackingEta.
+  ///
+  /// In vi, this message translates to:
+  /// **'đến trong khoảng {minutes} phút'**
+  String trackingEta(int minutes);
+
+  /// the bold part of trackingEta
+  ///
+  /// In vi, this message translates to:
+  /// **'{minutes} phút'**
+  String trackingEtaBold(int minutes);
+
+  /// No description provided for @trackingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đối chiếu ảnh đại diện khi gặp. Vị trí của {name} chỉ hiện trong lúc đang đến.'**
+  String trackingNote(String name);
+
+  /// No description provided for @trackingMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin'**
+  String get trackingMessage;
+
+  /// No description provided for @trackingCancelFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ (miễn phí thêm {time})'**
+  String trackingCancelFree(String time);
+
+  /// No description provided for @trackingCancelLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ (hoàn 100%)'**
+  String get trackingCancelLate;
+
+  /// No description provided for @trackingStale.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ cập nhật vị trí'**
+  String get trackingStale;
+
+  /// No description provided for @trackingLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đến trễ. Bạn có thể huỷ và được hoàn 100%.'**
+  String trackingLate(String name);
+
+  /// trackingLate without the money: nothing is paid before #202
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đến trễ. Bạn có thể huỷ yêu cầu.'**
+  String trackingLateUnpaid(String name);
+
+  /// No description provided for @trackingArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến điểm hẹn'**
+  String get trackingArrived;
+
+  /// No description provided for @trackingArrivedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang chờ bạn ở {place}.'**
+  String trackingArrivedBody(String name, String place);
+
+  /// No description provided for @shootingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get shootingTitle;
+
+  /// No description provided for @shootingCard.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {genre} {duration}'**
+  String shootingCard(String name, String genre, String duration);
+
+  /// No description provided for @shootingMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu {time} · {place}'**
+  String shootingMeta(String time, String place);
+
+  /// No description provided for @shootingStepDeliver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành và giao {photos} ảnh trong 48 giờ'**
+  String shootingStepDeliver(int photos);
+
+  /// No description provided for @shootingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi {name} bấm Hoàn thành, bạn xác nhận ở đây. Không xác nhận thì tự hoàn thành sau 2 giờ; có vấn đề thì báo trong 24 giờ.'**
+  String shootingNote(String name);
+
+  /// No description provided for @shootingConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận hoàn thành'**
+  String get shootingConfirm;
+
+  /// No description provided for @shootingFinishedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bạn xác nhận'**
+  String get shootingFinishedTitle;
+
+  /// time is h:mm:ss, shown bold
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã hoàn thành buổi chụp. Tự hoàn thành sau {time} nếu bạn không xác nhận.'**
+  String shootingFinishedBody(String name, String time);
+
+  /// No description provided for @doneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp đã hoàn thành'**
+  String get doneTitle;
+
+  /// No description provided for @doneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} sẽ giao {photos} ảnh trong 48 giờ.'**
+  String doneBody(String name, int photos);
+
+  /// No description provided for @cancelInstantTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ chụp ngay?'**
+  String get cancelInstantTitle;
+
+  /// No description provided for @cancelRowFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chọn, đang chờ trả lời, chưa tìm được, hoặc 2 phút đầu sau khi có người nhận'**
+  String get cancelRowFree;
+
+  /// No description provided for @cancelRowEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đang đến'**
+  String get cancelRowEnRoute;
+
+  /// No description provided for @cancelRowArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến, bạn không có mặt sau 15 phút'**
+  String get cancelRowArrived;
+
+  /// No description provided for @cancelRowNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'{row} (bây giờ)'**
+  String cancelRowNow(String row);
+
+  /// No description provided for @cancelOutcome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn {percent}%'**
+  String cancelOutcome(int percent);
+
+  /// refund and fee are formatMoney amounts from the server's dry run, shown bold
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ được hoàn {refund}; {fee} là phí đi lại trả cho {name}.'**
+  String cancelInstantRefundFee(String refund, String fee, String name);
+
+  /// No description provided for @cancelInstantRefundAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ được hoàn {refund}.'**
+  String cancelInstantRefundAll(String refund);
+
+  /// No description provided for @cancelInstantLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đến trễ hơn 15 phút nên bạn được hoàn đủ.'**
+  String cancelInstantLate(String name);
+
+  /// No description provided for @cancelInstantUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa thanh toán nên không có khoản tiền nào.'**
+  String get cancelInstantUnpaid;
+
+  /// No description provided for @cancelInstantConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ và hoàn {refund}'**
+  String cancelInstantConfirm(String refund);
+
+  /// No description provided for @cancelInstantConfirmUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu'**
+  String get cancelInstantConfirmUnpaid;
+
+  /// No description provided for @cancelInstantKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ yêu cầu'**
+  String get cancelInstantKeep;
+
+  /// No description provided for @cancelledTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ yêu cầu'**
+  String get cancelledTitle;
+
+  /// method is refundToBankQr / refundToMomo / refundToZaloPay
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn {amount} về {method}. Tiền thường về trong vài phút.'**
+  String cancelledRefund(String amount, String method);
+
+  /// No description provided for @cancelledNoMoney.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có khoản tiền nào.'**
+  String get cancelledNoMoney;
+
+  /// No description provided for @abandonedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn'**
+  String get abandonedTitle;
+
+  /// No description provided for @abandonedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa gửi lời mời trong 30 phút nên yêu cầu đã đóng.'**
+  String get abandonedBody;
+
+  /// No description provided for @noShowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia báo bạn không có mặt'**
+  String get noShowTitle;
+
+  /// percent is the request's refundPercent, from the server
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được hoàn {amount} ({percent}%).'**
+  String noShowBody(String amount, int percent);
+
+  /// No description provided for @closedNewRequest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo yêu cầu mới'**
+  String get closedNewRequest;
+
+  /// No description provided for @refundToBankQr.
+  ///
+  /// In vi, this message translates to:
+  /// **'tài khoản đã chuyển'**
+  String get refundToBankQr;
+
+  /// No description provided for @refundToMomo.
+  ///
+  /// In vi, this message translates to:
+  /// **'MoMo'**
+  String get refundToMomo;
+
+  /// No description provided for @refundToZaloPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'ZaloPay'**
+  String get refundToZaloPay;
+
+  /// No description provided for @waitingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ trả lời'**
+  String get waitingTitle;
+
+  /// No description provided for @waitingSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi lời mời cho {n} người'**
+  String waitingSent(int n);
+
+  /// time is m:ss to the latest pending invite's expiry, shown bold
+  ///
+  /// In vi, this message translates to:
+  /// **'Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn {time}.'**
+  String waitingBody(String time);
+
+  /// the ETA part of an S13.03 row's MetaLine, after the tomato percent when there are 5+ reviews
+  ///
+  /// In vi, this message translates to:
+  /// **'khoảng {minutes} phút'**
+  String waitingRowEta(int minutes);
+
+  /// No description provided for @waitingViewing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xem'**
+  String get waitingViewing;
+
+  /// No description provided for @waitingDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối'**
+  String get waitingDeclined;
+
+  /// No description provided for @waitingExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get waitingExpired;
+
+  /// No description provided for @waitingNotCounted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tính'**
+  String get waitingNotCounted;
+
+  /// No description provided for @waitingRowUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'vừa nhận việc khác'**
+  String get waitingRowUnavailable;
+
+  /// No description provided for @waitingRowSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đang xem lời mời'**
+  String waitingRowSemantics(String name);
+
+  /// No description provided for @waitingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.'**
+  String get waitingNote;
+
+  /// waitingNote without the money: nothing is paid or held before #202
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác.'**
+  String get waitingNoteUnpaid;
+
+  /// No description provided for @waitingCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu'**
+  String get waitingCancel;
+
+  /// No description provided for @noMatchTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tìm được nhiếp ảnh gia'**
+  String get noMatchTitle;
+
+  /// No description provided for @noMatchBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã mời {invited} người trong {rounds} lượt; gần bạn lúc này ít người đang sẵn sàng.'**
+  String noMatchBody(int invited, int rounds);
+
+  /// method is refundToBankQr / refundToMomo / refundToZaloPay
+  ///
+  /// In vi, this message translates to:
+  /// **'{amount} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về {method}.'**
+  String noMatchHeld(String amount, String method);
+
+  /// No description provided for @noMatchBookNormally.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch thường với người bạn chọn'**
+  String get noMatchBookNormally;
+
+  /// No description provided for @noMatchCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu và hoàn {amount}'**
+  String noMatchCancel(String amount);
+
+  /// No description provided for @noMatchMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thêm người'**
+  String get noMatchMore;
+
   /// No description provided for @liveShutterTitle.
   ///
   /// In vi, this message translates to:
@@ -15308,6 +15992,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{name} đang chờ ở {place}. Tiếp tục để xem đường đi.'**
   String matchBodyPhotographer(String name, String place);
+
+  /// No description provided for @matchBodyCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}, khoảng {minutes} phút.'**
+  String matchBodyCustomer(String name, String place, int minutes);
+
+  /// matchBodyCustomer when the request has no ETA
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã nhận lời mời của bạn và đang chuẩn bị tới {place}.'**
+  String matchBodyCustomerNoEta(String name, String place);
 
   /// No description provided for @matchContinue.
   ///

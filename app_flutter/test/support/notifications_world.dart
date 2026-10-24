@@ -131,6 +131,7 @@ class NotificationsWorld {
           '/u/:uid/badges',
           '/bookings',
           '/action',
+          '/instant/:id',
         ])
           GoRoute(path: p, builder: stub),
       ],

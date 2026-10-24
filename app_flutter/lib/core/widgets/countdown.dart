@@ -246,7 +246,8 @@ class _RingPainter extends CustomPainter {
 }
 
 /// Dynamic countdown text builder (e.g. "Nhận · còn 22 giờ"):
-/// ticks per minute when >= 1 hour, per second when < 1 hour.
+/// ticks per minute when >= 1 hour, per second when < 1 hour, or every
+/// [interval] when set (a text that shows seconds, e.g. "1:52:10").
 class CountdownText extends StatefulWidget {
   const CountdownText({
     super.key,
@@ -254,12 +255,14 @@ class CountdownText extends StatefulWidget {
     required this.builder,
     this.onExpired,
     this.now,
+    this.interval,
   });
 
   final DateTime deadline;
   final Widget Function(BuildContext context, Duration left) builder;
   final VoidCallback? onExpired;
   final DateTime Function()? now;
+  final Duration? interval;
 
   @override
   State<CountdownText> createState() => _CountdownTextState();
@@ -316,9 +319,11 @@ class _CountdownTextState extends State<CountdownText> {
 
     if (_left <= Duration.zero) return;
 
-    final duration = _left.inHours >= 1
-        ? const Duration(minutes: 1)
-        : const Duration(seconds: 1);
+    final duration =
+        widget.interval ??
+        (_left.inHours >= 1
+            ? const Duration(minutes: 1)
+            : const Duration(seconds: 1));
 
     _timer = Timer(duration, () {
       if (!mounted) return;

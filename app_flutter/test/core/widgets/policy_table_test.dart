@@ -33,6 +33,21 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('whenMaxLines lets a long condition wrap; -1 highlights none', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        const PolicyTable(rows: _sampleRows, activeIndex: -1, whenMaxLines: 3),
+        width: 320,
+      ),
+    );
+    expect(tester.widget<Text>(find.text(_sampleRows.first.when)).maxLines, 3);
+    expect(find.bySemanticsLabel(RegExp('Đang áp dụng')), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets('renders cleanly at 320dp and 1.3x text in dark and light', (
     tester,
   ) async {

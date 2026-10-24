@@ -8773,6 +8773,438 @@ class AppLocalizationsVi extends AppLocalizations {
   String get instantErrorNetwork => 'Mất kết nối. Thử lại nhé.';
 
   @override
+  String get instantSubtitle => 'Nhiếp ảnh gia tới trong 30–90 phút';
+
+  @override
+  String get instantCardBody =>
+      'Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút';
+
+  @override
+  String get instantCardResumeTitle => 'Yêu cầu chụp ngay đang mở';
+
+  @override
+  String get instantCardResumeBody => 'Chạm để xem tiếp';
+
+  @override
+  String get instantFindButton => 'Chụp ngay · tới trong 30–90 phút';
+
+  @override
+  String instantMeetPointPin(String name) {
+    return 'Điểm hẹn · $name';
+  }
+
+  @override
+  String get instantMeetPointSelf => 'Vị trí của bạn';
+
+  @override
+  String get instantMeetPointLabel => 'Tên điểm hẹn';
+
+  @override
+  String get instantMeetPointHint =>
+      'Ví dụ: Cổng Trương Định, Công viên Tao Đàn';
+
+  @override
+  String get instantMeetPointRequired =>
+      'Nhập tên điểm hẹn để nhiếp ảnh gia dễ tìm.';
+
+  @override
+  String instantPhotosCount(int n) {
+    return '$n ảnh';
+  }
+
+  @override
+  String get instantNoteLabel => 'Ghi chú cho nhiếp ảnh gia';
+
+  @override
+  String get instantNoteHint => 'Mình mặc áo dài trắng, chụp ở hồ…';
+
+  @override
+  String get instantEscrowNote =>
+      'Xem 5 người phù hợp miễn phí. Chỉ trả khi gửi lời mời; tiền được giữ an toàn và hoàn 100% nếu bạn huỷ khi chưa có người nhận.';
+
+  @override
+  String get instantSeeMatches => 'Xem nhiếp ảnh gia phù hợp';
+
+  @override
+  String get instantLocationTitle => 'Bật vị trí để Chụp ngay';
+
+  @override
+  String get instantLocationBody =>
+      'Nhiếp ảnh gia cần biết bạn đang ở đâu để tới đúng chỗ.';
+
+  @override
+  String get instantLocationAllow => 'Cho phép vị trí';
+
+  @override
+  String get instantBookNormally => 'Đặt lịch thường';
+
+  @override
+  String get instantOutsideArea =>
+      'Chụp ngay chưa có ở khu vực này. Bạn có thể đặt lịch thường.';
+
+  @override
+  String get instantDisabled => 'Chụp ngay đang tạm dừng.';
+
+  @override
+  String get instantHasActive => 'Bạn đang có một yêu cầu chụp ngay.';
+
+  @override
+  String get chooseTitle => 'Chọn người bạn thích';
+
+  @override
+  String chooseSubtitle(String genre, String duration, String amount) {
+    return '$genre · $duration · $amount';
+  }
+
+  @override
+  String chooseCounter(int index, int total) {
+    return '$index / $total';
+  }
+
+  @override
+  String get chooseStamp => 'CHỌN';
+
+  @override
+  String chooseEta(int minutes) {
+    return 'đến khoảng $minutes phút';
+  }
+
+  @override
+  String get chooseLike => 'Chọn người này';
+
+  @override
+  String get chooseSkip => 'Bỏ qua';
+
+  @override
+  String get chooseUndo => 'Hoàn tác';
+
+  @override
+  String choosePicked(int n) {
+    return 'Đã chọn $n người';
+  }
+
+  @override
+  String get chooseDone => 'Xong';
+
+  @override
+  String get chooseSummaryTitle => 'Những người bạn đã chọn';
+
+  @override
+  String get chooseUnpick => 'Bỏ chọn';
+
+  @override
+  String chooseUnpickA11y(String name) {
+    return 'Bỏ chọn $name';
+  }
+
+  @override
+  String chooseUnavailable(String name) {
+    return '$name vừa nhận việc khác';
+  }
+
+  @override
+  String get chooseInvite => 'Gửi lời mời';
+
+  @override
+  String get chooseMore => 'Xem 5 người khác';
+
+  @override
+  String get chooseEscrow =>
+      'Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.';
+
+  @override
+  String get chooseRoundEnded => 'Chưa ai nhận. Chọn thêm người nhé.';
+
+  @override
+  String get chooseEmptyTitle => 'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn';
+
+  @override
+  String get chooseEmptyBody =>
+      'Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường.';
+
+  @override
+  String get chooseEmptyRetry => 'Thử lại';
+
+  @override
+  String choosePriceChanged(String amount) {
+    return 'Giá vừa đổi thành $amount. Kiểm tra lại trước khi thanh toán.';
+  }
+
+  @override
+  String get doneHome => 'Về trang chủ';
+
+  @override
+  String get instantNotFoundTitle => 'Không tìm thấy yêu cầu';
+
+  @override
+  String get instantNotFoundBody =>
+      'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.';
+
+  @override
+  String get trackingCancel => 'Huỷ';
+
+  @override
+  String get trackingSelf => 'Bạn';
+
+  @override
+  String trackingPin(String name, int minutes) {
+    return '$name · $minutes phút';
+  }
+
+  @override
+  String trackingEta(int minutes) {
+    return 'đến trong khoảng $minutes phút';
+  }
+
+  @override
+  String trackingEtaBold(int minutes) {
+    return '$minutes phút';
+  }
+
+  @override
+  String trackingNote(String name) {
+    return 'Đối chiếu ảnh đại diện khi gặp. Vị trí của $name chỉ hiện trong lúc đang đến.';
+  }
+
+  @override
+  String get trackingMessage => 'Nhắn tin';
+
+  @override
+  String trackingCancelFree(String time) {
+    return 'Huỷ (miễn phí thêm $time)';
+  }
+
+  @override
+  String get trackingCancelLate => 'Huỷ (hoàn 100%)';
+
+  @override
+  String get trackingStale => 'Đang chờ cập nhật vị trí';
+
+  @override
+  String trackingLate(String name) {
+    return '$name đến trễ. Bạn có thể huỷ và được hoàn 100%.';
+  }
+
+  @override
+  String trackingLateUnpaid(String name) {
+    return '$name đến trễ. Bạn có thể huỷ yêu cầu.';
+  }
+
+  @override
+  String get trackingArrived => 'Đã đến điểm hẹn';
+
+  @override
+  String trackingArrivedBody(String name, String place) {
+    return '$name đang chờ bạn ở $place.';
+  }
+
+  @override
+  String get shootingTitle => 'Đang chụp';
+
+  @override
+  String shootingCard(String name, String genre, String duration) {
+    return '$name · $genre $duration';
+  }
+
+  @override
+  String shootingMeta(String time, String place) {
+    return 'Bắt đầu $time · $place';
+  }
+
+  @override
+  String shootingStepDeliver(int photos) {
+    return 'Hoàn thành và giao $photos ảnh trong 48 giờ';
+  }
+
+  @override
+  String shootingNote(String name) {
+    return 'Khi $name bấm Hoàn thành, bạn xác nhận ở đây. Không xác nhận thì tự hoàn thành sau 2 giờ; có vấn đề thì báo trong 24 giờ.';
+  }
+
+  @override
+  String get shootingConfirm => 'Xác nhận hoàn thành';
+
+  @override
+  String get shootingFinishedTitle => 'Chờ bạn xác nhận';
+
+  @override
+  String shootingFinishedBody(String name, String time) {
+    return '$name đã hoàn thành buổi chụp. Tự hoàn thành sau $time nếu bạn không xác nhận.';
+  }
+
+  @override
+  String get doneTitle => 'Buổi chụp đã hoàn thành';
+
+  @override
+  String doneBody(String name, int photos) {
+    return '$name sẽ giao $photos ảnh trong 48 giờ.';
+  }
+
+  @override
+  String get cancelInstantTitle => 'Huỷ chụp ngay?';
+
+  @override
+  String get cancelRowFree =>
+      'Đang chọn, đang chờ trả lời, chưa tìm được, hoặc 2 phút đầu sau khi có người nhận';
+
+  @override
+  String get cancelRowEnRoute => 'Nhiếp ảnh gia đang đến';
+
+  @override
+  String get cancelRowArrived => 'Đã đến, bạn không có mặt sau 15 phút';
+
+  @override
+  String cancelRowNow(String row) {
+    return '$row (bây giờ)';
+  }
+
+  @override
+  String cancelOutcome(int percent) {
+    return 'Hoàn $percent%';
+  }
+
+  @override
+  String cancelInstantRefundFee(String refund, String fee, String name) {
+    return 'Bạn sẽ được hoàn $refund; $fee là phí đi lại trả cho $name.';
+  }
+
+  @override
+  String cancelInstantRefundAll(String refund) {
+    return 'Bạn sẽ được hoàn $refund.';
+  }
+
+  @override
+  String cancelInstantLate(String name) {
+    return '$name đến trễ hơn 15 phút nên bạn được hoàn đủ.';
+  }
+
+  @override
+  String get cancelInstantUnpaid =>
+      'Bạn chưa thanh toán nên không có khoản tiền nào.';
+
+  @override
+  String cancelInstantConfirm(String refund) {
+    return 'Huỷ và hoàn $refund';
+  }
+
+  @override
+  String get cancelInstantConfirmUnpaid => 'Huỷ yêu cầu';
+
+  @override
+  String get cancelInstantKeep => 'Giữ yêu cầu';
+
+  @override
+  String get cancelledTitle => 'Đã huỷ yêu cầu';
+
+  @override
+  String cancelledRefund(String amount, String method) {
+    return 'Hoàn $amount về $method. Tiền thường về trong vài phút.';
+  }
+
+  @override
+  String get cancelledNoMoney => 'Không có khoản tiền nào.';
+
+  @override
+  String get abandonedTitle => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get abandonedBody =>
+      'Bạn chưa gửi lời mời trong 30 phút nên yêu cầu đã đóng.';
+
+  @override
+  String get noShowTitle => 'Nhiếp ảnh gia báo bạn không có mặt';
+
+  @override
+  String noShowBody(String amount, int percent) {
+    return 'Bạn được hoàn $amount ($percent%).';
+  }
+
+  @override
+  String get closedNewRequest => 'Tạo yêu cầu mới';
+
+  @override
+  String get refundToBankQr => 'tài khoản đã chuyển';
+
+  @override
+  String get refundToMomo => 'MoMo';
+
+  @override
+  String get refundToZaloPay => 'ZaloPay';
+
+  @override
+  String get waitingTitle => 'Đang chờ trả lời';
+
+  @override
+  String waitingSent(int n) {
+    return 'Đã gửi lời mời cho $n người';
+  }
+
+  @override
+  String waitingBody(String time) {
+    return 'Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn $time.';
+  }
+
+  @override
+  String waitingRowEta(int minutes) {
+    return 'khoảng $minutes phút';
+  }
+
+  @override
+  String get waitingViewing => 'Đang xem';
+
+  @override
+  String get waitingDeclined => 'Đã từ chối';
+
+  @override
+  String get waitingExpired => 'Hết hạn';
+
+  @override
+  String get waitingNotCounted => 'Không tính';
+
+  @override
+  String get waitingRowUnavailable => 'vừa nhận việc khác';
+
+  @override
+  String waitingRowSemantics(String name) {
+    return '$name đang xem lời mời';
+  }
+
+  @override
+  String get waitingNote =>
+      'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.';
+
+  @override
+  String get waitingNoteUnpaid =>
+      'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác.';
+
+  @override
+  String get waitingCancel => 'Huỷ yêu cầu';
+
+  @override
+  String get noMatchTitle => 'Chưa tìm được nhiếp ảnh gia';
+
+  @override
+  String noMatchBody(int invited, int rounds) {
+    return 'Bạn đã mời $invited người trong $rounds lượt; gần bạn lúc này ít người đang sẵn sàng.';
+  }
+
+  @override
+  String noMatchHeld(String amount, String method) {
+    return '$amount vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về $method.';
+  }
+
+  @override
+  String get noMatchBookNormally => 'Đặt lịch thường với người bạn chọn';
+
+  @override
+  String noMatchCancel(String amount) {
+    return 'Huỷ yêu cầu và hoàn $amount';
+  }
+
+  @override
+  String get noMatchMore => 'Chọn thêm người';
+
+  @override
   String get liveShutterTitle => 'Live Shutter';
 
   @override
@@ -8912,6 +9344,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String matchBodyPhotographer(String name, String place) {
     return '$name đang chờ ở $place. Tiếp tục để xem đường đi.';
+  }
+
+  @override
+  String matchBodyCustomer(String name, String place, int minutes) {
+    return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place, khoảng $minutes phút.';
+  }
+
+  @override
+  String matchBodyCustomerNoEta(String name, String place) {
+    return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place.';
   }
 
   @override

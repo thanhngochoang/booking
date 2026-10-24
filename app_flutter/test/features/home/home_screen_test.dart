@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
+import '../../support/fake_instant_repository.dart';
 import '../../support/icon_finders.dart';
 import '../../support/meta_finders.dart';
 import '../../support/screen_host.dart';
@@ -73,6 +75,43 @@ final _feed = find
 double _left(WidgetTester t, Key k) => t.getTopLeft(find.byKey(k)).dx;
 
 void main() {
+  testWidgets('no Chụp ngay card while the flag is off', (tester) async {
+    await _pump(tester, DiscoveryWorld());
+    expect(find.byKey(const Key('instant-entry-card')), findsNothing);
+    expect(find.text('Chụp ngay'), findsNothing);
+  });
+
+  testWidgets('with Chụp ngay on, the card sits between greeting and chips', (
+    tester,
+  ) async {
+    _phone(tester);
+    final w = DiscoveryWorld();
+    await w.init();
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: _router(),
+        overrides: [
+          ...w.overrides,
+          instantEnabledProvider.overrideWithValue(true),
+          instantRepositoryProvider.overrideWithValue(FakeInstantRepository()),
+        ],
+      ),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final card = find.byKey(const Key('instant-entry-card'));
+    expect(card, findsOneWidget);
+    expect(
+      tester.getTopLeft(card).dy,
+      greaterThan(tester.getBottomLeft(find.text('Hôm nay chụp gì?')).dy),
+    );
+    expect(
+      tester.getBottomLeft(card).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('home-chip-all'))).dy),
+    );
+  });
+
   testWidgets(
     'header, chips and the first post with its pills, name row and save button',
     (tester) async {

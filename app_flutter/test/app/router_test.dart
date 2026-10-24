@@ -194,4 +194,23 @@ void main() {
     expect(photographerOnlyRedirect(UserRole.customer), '/home');
     expect(photographerOnlyRedirect(null), '/home');
   });
+
+  test('/instant is for customers while Chụp ngay is on', () {
+    expect(
+      instantCustomerRedirect(enabled: true, role: UserRole.customer),
+      isNull,
+    );
+    expect(
+      instantCustomerRedirect(enabled: false, role: UserRole.customer),
+      '/home',
+    );
+    expect(
+      instantCustomerRedirect(enabled: true, role: UserRole.photographer),
+      '/home',
+    );
+    // Profile still loading: a cold-start deep link or push keeps its
+    // destination (the app-level redirect parks it on /splash meanwhile).
+    expect(instantCustomerRedirect(enabled: true), isNull);
+    expect(instantCustomerRedirect(enabled: false), '/home');
+  });
 }

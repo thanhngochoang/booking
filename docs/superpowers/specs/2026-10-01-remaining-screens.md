@@ -78,12 +78,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S01.04 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S41 |
 | S01.05 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S29 |
 | **S02** | **Khám phá & tìm thợ** | | | | | |
-| S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S01 |
+| S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · Chụp ngay: [#140](https://github.com/thanhngochoang/booking/issues/140) | S01 |
 | S02.02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) · vuốt trong phạm vi album hoãn (plan C, quyết định 9: S24.01 mở `/p/:id` như Dòng thời gian) | S02 |
 | S02.03 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S13 |
 | S02.04 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S35 |
 | S02.05 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S36 |
-| S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) | S04 |
+| S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) · Chụp ngay: [#140](https://github.com/thanhngochoang/booking/issues/140) | S04 |
 | S02.07 | Tìm kiếm: ô tìm, nhóm Dịch vụ / Phong cách / Địa điểm / Thợ ảnh, không kết quả có "Xem tất cả thợ ảnh" | `/explore/search` | cả hai | 3 | ⬜ có mock, có plan (#132) | — |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
 | S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm · khớp mock: nút lưu & chia sẻ/tuỳ chọn trên ảnh bìa, nút theo dõi xs, bố cục header · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S03 |
@@ -144,11 +144,11 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S13.01 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá; "Xem nhiếp ảnh gia phù hợp" | `/instant` | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S47 |
 | S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
 | S13.03 | Đang chờ trả lời (người đã mời, trạng thái từng người) | `/instant/:id` (`searching`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S48 |
-| S13.04 | Đã match (chuyển tiếp, cả hai bên) | — (lớp phủ trên S13.05/S14.02) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
+| S13.04 | Đã match (chuyển tiếp, cả hai bên) | — (khách: trạng thái của `/instant/:id` trước S13.05; thợ: trên S14.02) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | — (mới) |
 | S13.05 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S49 |
 | S13.06 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S50 |
 | S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S51 |
-| S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S55 |
+| S13.08 | Huỷ chụp ngay (sheet) và màn đã đóng | — (sheet trên `/instant/:id` và S14.03; màn đã đóng `/instant/:id`) | cả hai | I4 · I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S55 |
 | **S14** | **Chụp ngay (nhiếp ảnh gia)** | | | | | |
 | S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S52 |
 | S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S53 |
@@ -262,7 +262,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S30.06 | Nhân viên soát vé | `/organizer/gate-staff` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
 | S30.07 | Quét mã: soát vé ở cổng, thợ gặp khách ("Đang chụp") | `/scan` | chủ sự kiện · nhân viên soát vé · thợ ảnh · studio | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
 
-Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6; giai đoạn 1 chạy trên Functions + Firestore, hộp ở mục 5 của spec đó); từng màn phía thợ (S14.01–S14.03, S13.04 và S13.08 phía thợ, thẻ ở S06.01) ở [`screens/instant.md`](screens/instant.md). Cả hai phía thuộc #140 (PR 1 điều phối và app thợ, PR 2 app khách); tiền ở #202.
+Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6; giai đoạn 1 chạy trên Functions + Firestore, hộp ở mục 5 của spec đó); từng màn của cả hai phía (S14.01–S14.03, thẻ ở S06.01; S13.01–S13.08, lối vào ở S02.01 và S02.06; S13.04 và S13.08 có cả hai phía) ở [`screens/instant.md`](screens/instant.md). Cả hai phía thuộc #140 (PR 1 điều phối và app thợ, PR 2 app khách); tiền ở #202.
 
 Use case S26 (**Studio và thành viên**) đặc tả ở [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md); S05.06, S05.07, S06.07 (bàn giao hai lớp) ở [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đánh giá cà chua/gạch (S05.05) ở [`2026-10-06-tomato-brick-reviews-design.md`](2026-10-06-tomato-brick-reviews-design.md).
 

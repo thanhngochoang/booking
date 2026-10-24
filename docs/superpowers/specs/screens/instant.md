@@ -1,8 +1,8 @@
 # Chụp ngay (S13–S14)
 
-Màn của use case S13 (khách) và S14 (thợ ảnh) trong [`../2026-10-01-instant-booking-design.md`](../2026-10-01-instant-booking-design.md) (gọi là "spec Chụp ngay"; luồng §2, trạng thái và lời mời §3, tiền §4, giai đoạn 1 ở hộp đầu §5, vị trí §9). Mẫu mục và quy ước chung ở [`README.md`](README.md). Mock: `docs/design/ui-mock.html`, khung `#S06.01-instant`, `#S13.04-provider`, `#S13.08-provider`, `#S14.01`, `#S14.01-terms`, `#S14.01-locked`, `#S14.02`, `#S14.03`, `#S14.03-arrived`, `#S14.03-shooting`, `#S14.03-done`. Plan: [`../../plans/2026-10-07-s13-s14-dispatch-provider.md`](../../plans/2026-10-07-s13-s14-dispatch-provider.md) (gọi là "plan", Decisions 1–31); sổ bàn giao [`../../handover/ledger-instant-dispatch-provider.md`](../../handover/ledger-instant-dispatch-provider.md).
+Màn của use case S13 (khách) và S14 (thợ ảnh) trong [`../2026-10-01-instant-booking-design.md`](../2026-10-01-instant-booking-design.md) (gọi là "spec Chụp ngay"; luồng §2, trạng thái và lời mời §3, tiền §4, giai đoạn 1 ở hộp đầu §5, vị trí §9). Mẫu mục và quy ước chung ở [`README.md`](README.md). Mock: `docs/design/ui-mock.html`, khung phía thợ `#S06.01-instant`, `#S13.04-provider`, `#S13.08-provider`, `#S14.01`, `#S14.01-terms`, `#S14.01-locked`, `#S14.02`, `#S14.03`, `#S14.03-arrived`, `#S14.03-shooting`, `#S14.03-done`; phía khách `#S02.01-instant`, `#S02.06-instant`, `#S13.01`, `#S13.01-noloc`, `#S13.02`, `#S13.02-summary`, `#S13.02-round`, `#S13.02-empty`, `#S13.03`, `#S13.04`, `#S13.05`, `#S13.05-arrived`, `#S13.05-stale`, `#S13.06`, `#S13.06-confirm`, `#S13.06-done`, `#S13.07`, `#S13.08`, `#S13.08-done`. Plan phía thợ: [`../../plans/2026-10-07-s13-s14-dispatch-provider.md`](../../plans/2026-10-07-s13-s14-dispatch-provider.md) (gọi là "plan", Decisions 1–31); sổ bàn giao [`../../handover/ledger-instant-dispatch-provider.md`](../../handover/ledger-instant-dispatch-provider.md). Plan phía khách: [`../../plans/2026-10-07-s13-instant-customer.md`](../../plans/2026-10-07-s13-instant-customer.md) (gọi là "plan khách", Decisions 1–14); sổ bàn giao [`../../handover/ledger-instant-customer.md`](../../handover/ledger-instant-customer.md).
 
-Phần thợ ảnh dưới đây mô tả **đúng như đã làm ở #140** (PR 1). Phần khách (S13.01–S13.08 phía khách) là chỗ dành cho plan [`../../plans/2026-10-07-s13-instant-customer.md`](../../plans/2026-10-07-s13-instant-customer.md) (#140 PR 2).
+Phần thợ ảnh dưới đây mô tả **đúng như đã làm ở #140** (PR 1); mục "S13 khách" ở cuối (S13.01–S13.08 phía khách, lối vào ở S02.01 và S02.06) mô tả đúng như đã làm ở #140 PR 2.
 
 ## Quy ước riêng của Chụp ngay (phía thợ)
 
@@ -74,7 +74,7 @@ Phần thợ ảnh dưới đây mô tả **đúng như đã làm ở #140** (PR
 
 ## S13.04 · Đã match (phía thợ, `#S13.04-provider`)
 
-- **Thông tin**: không có route; hiện trên S14.02 sau khi nhận thắng · thợ ảnh · I4 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), mã S13.04 nhãn `provider`. Phía khách (trên S13.05) thuộc plan khách.
+- **Thông tin**: không có route; hiện trên S14.02 sau khi nhận thắng · thợ ảnh · I4 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), mã S13.04 nhãn `provider`. Phía khách ở mục S13.04 của "S13 khách".
 - **Mục đích**: khoảnh khắc ngắn "đã match", rồi sang việc.
 - **Bố cục**: `MatchOverlay` trên nền aurora: máy ảnh một nét, hai avatar (của mình từ hồ sơ, của khách) đáp vào ống kính, "Đã match với {tên}" (tên màu `primary`), dòng phụ, nút "Tiếp tục".
 - **Tương tác**: tự sang S14.03 sau khoảng 3 giây hoặc khi bấm "Tiếp tục" (S14.03 thay S14.02); chạm bất kỳ đâu nhảy tới khung cuối; giảm chuyển động thì hiện ngay khung cuối. Nơi chờ là tên điểm hẹn khách gõ, không có thì khu.
@@ -113,7 +113,7 @@ Phần thợ ảnh dưới đây mô tả **đúng như đã làm ở #140** (PR
 
 ## S13.08 · Huỷ việc (phía thợ, `#S13.08-provider`)
 
-- **Thông tin**: sheet trên S14.03 · thợ ảnh đã nhận · I4 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), mã S13.08 nhãn `provider`. Phía khách thuộc plan khách.
+- **Thông tin**: sheet trên S14.03 · thợ ảnh đã nhận · I4 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), mã S13.08 nhãn `provider`. Phía khách ở mục S13.08 của "S13 khách".
 - **Mục đích**: huỷ một việc đã nhận khi biết rõ hậu quả trước.
 - **Điểm vào → ra**: nút chữ đỏ "Huỷ việc" ở S14.03 khi `assigned` hoặc `en_route` (không có khi đã đến) → huỷ xong: đóng sheet, về S14.01; "Giữ việc", Back hoặc chạm ngoài: đóng, việc giữ nguyên.
 - **Bố cục**: `showAppSheet`: "Huỷ việc chụp ngay?", câu hậu quả, nút đỏ "Huỷ việc" (`AppButton.danger`), nút chữ "Giữ việc".
@@ -132,4 +132,121 @@ Phần thợ ảnh dưới đây mô tả **đúng như đã làm ở #140** (PR
 
 ## S13 khách
 
-Chỗ dành cho plan khách [`../../plans/2026-10-07-s13-instant-customer.md`](../../plans/2026-10-07-s13-instant-customer.md) (#140 PR 2): S13.01 Chụp ngay (gói, kiểu chụp, điểm hẹn), S13.02 vuốt chọn, S13.03 chờ trả lời, S13.04 đã match (phía khách), S13.05 đang đến, S13.06 đang chụp, S13.07 không tìm được người, S13.08 huỷ (phía khách). Dữ liệu và callable phía khách đã có ở #140 PR 1 (`InstantRepository`: `createRequest`, `nextCandidates`, `invite`, `cancel`, `confirmComplete`, `tick`, `watchRequest`, `watchTrack`, `myActiveRequestId`).
+Mô tả **đúng như đã làm ở #140 PR 2** (plan khách Tasks 1–7). Dữ liệu và callable dùng chung với phía thợ (`InstantRepository` của PR 1: `config`, `createRequest`, `nextCandidates`, `invite`, `cancel`, `confirmComplete`, `tick`, `watchRequest`, `watchTrack`, `myActiveRequestId`).
+
+### Quy ước riêng (phía khách)
+
+- **Cờ tính năng**: lối vào ở S02.01/S02.06 chỉ hiện khi `instantEnabledProvider` bật **và** người dùng là khách; route `/instant` và `/instant/:id` có cùng chốt (`instantCustomerRedirect`: cờ tắt hoặc vai đã biết là thợ thì về `/home`; hồ sơ còn đang tải thì không chuyển, để link sâu và push mở lạnh vẫn tới đích). #140 không bật cờ; #202 bật.
+- **Không có tiền ở #140**: "Gửi lời mời" gửi lời mời ngay ở mọi lượt, không bước thanh toán, không chọn phương thức. Các màn có hai nhánh theo `request.paid`: chưa trả (mọi yêu cầu của #140) thì không có câu tiền ("Bạn chưa thanh toán nên không có khoản tiền nào.", "Không có khoản tiền nào.", S13.03 và S13.07 không nói "tiền vẫn được giữ"); đã trả (từ #202; test chạy bằng dữ liệu giả) thì hiện số tiền giữ, hoàn và phí. "Giá vừa đổi … trước khi thanh toán" và "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận." giữ nguyên chữ của mock (đúng từ #202).
+- **Một route, đổi theo trạng thái** (plan khách Decision 4): `/instant/:id` (`InstantFlowScreen`) nghe `instantRequestProvider(id)` và hiện `choosing`/`pending_payment` → S13.02, `searching` → S13.03, `assigned`/`en_route`/`arrived` → S13.05 (S13.04 trước đó khi vừa có người nhận), `in_progress`/`finished` → S13.06, `completed` → S13.06 `done`, `no_match` → S13.07, `cancelled_by_customer`/`abandoned`/`no_show_customer` → S13.08 `done`. Đang tải: `SignatureLoader` (sóng lan) trong khung "Chụp ngay" có Back; lỗi: `ErrorState` "Thử lại"; không đọc được (không còn, không phải của mình): "Không tìm thấy yêu cầu" + "Về trang chủ". Yêu cầu kết thúc hoặc biến mất thì thẻ ở Trang chủ đọc lại (`instantActiveRequestIdProvider`).
+- **Hẹn giờ** (Decision 6, `InstantTickScheduler` + `instantTickDeadlines`): màn gọi `tickInstantRequest` đúng một lần mỗi mốc: 1 giây sau `expiresAt` muộn nhất của lời mời đang chờ và ở `searchDeadlineAt` (`searching`); ở `searchDeadlineAt` (`choosing` đã gửi lời mời); ở `shootEndsAt` (`in_progress`); và một lần khi app quay lại tiền cảnh. Tick lỗi thì im lặng (ghi log), luồng nghe cho thấy sự thật. Đồng hồ là `clockProvider`.
+- **Huỷ**: mọi nút Huỷ là chữ đỏ mở S13.08 (sheet, không route riêng; `/instant/:id/cancel` của spec không thêm); xác nhận là nút đỏ trong sheet; số tiền chỉ lấy từ bản tính thử của server.
+- **Riêng tư** (spec §9): vị trí của khách chỉ gửi một lần khi tạo yêu cầu (điểm hẹn), không bao giờ chia sẻ trực tiếp. Ghim của thợ chỉ hiện khi `en_route`.
+- **Lỗi thao tác**: toast một dòng (`instantErrorText`), như phía thợ.
+
+## S02.01 · Thẻ Chụp ngay ở Trang chủ (biến thể `#S02.01-instant`)
+
+- **Thông tin**: `/home` · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), ẩn khi cờ tắt hoặc là thợ.
+- **Mục đích**: vào Chụp ngay, hoặc quay lại yêu cầu đang mở.
+- **Điểm vào → ra**: giữa dòng chào và hàng chip; chạm → `/instant` (S13.01), hoặc `/instant/{id}` khi có yêu cầu đang mở.
+- **Bố cục**: `InstantEntryCard`: thẻ nổi (mock `.card.hi`) với ô biểu tượng `AppIcons.instant` (bolt), "Chụp ngay" + "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút", mũi tên; có yêu cầu đang mở thì "Yêu cầu chụp ngay đang mở" + "Chạm để xem tiếp".
+- **Dữ liệu**: `instantActiveRequestIdProvider` (một lần `get` khi thẻ hiện, không nghe trực tiếp; đọc lại khi tạo yêu cầu, khi yêu cầu kết thúc và khi kéo làm mới Trang chủ). Ẩn thì không đọc gì.
+- **Trạng thái**: đọc lỗi → thẻ vào thường (S13.01).
+- **Chuỗi**: `instantTitle`, `instantCardBody`, `instantCardResumeTitle`, `instantCardResumeBody`.
+- **Chấp nhận**: cờ tắt hoặc là thợ thì không có thẻ và không gọi repository.
+
+## S02.06 · Nút Chụp ngay ở Tìm thợ ảnh (biến thể `#S02.06-instant`)
+
+- **Thông tin**: `/action` · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), ẩn khi cờ tắt.
+- **Bố cục**: `InstantFindButton`: nút viền nhỏ có bolt "Chụp ngay · tới trong 30–90 phút", giữa hàng chip/sắp xếp và dòng đếm kết quả.
+- **Tương tác**: chạm thì đọc `myActiveRequestId()` một lần (không đọc khi mở Tìm thợ) → có yêu cầu đang mở thì `/instant/{id}`, không thì `/instant` (chú thích mock).
+- **Chuỗi**: `instantFindButton`.
+
+## S13.01 · Chụp ngay: gói, kiểu chụp, điểm hẹn
+
+- **Thông tin**: `/instant` · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)). Mã gắn nhãn `noloc` khi chưa có vị trí (mock `#S13.01-noloc`).
+- **Mục đích**: chọn gói, kiểu chụp, đặt tên điểm hẹn tại vị trí hiện tại, rồi xem người phù hợp.
+- **Điểm vào → ra**: S02.01, S02.06, "Tạo yêu cầu mới" của S13.08 `done` → tạo xong: `/instant/{id}` (S13.02; `go`, form không nằm dưới); chưa có số điện thoại → `/profile/phone?returnTo=/instant` (S04.05) rồi quay lại với nháp còn nguyên; đã có yêu cầu đang mở (`conflict`) → toast "Bạn đang có một yêu cầu chụp ngay." và mở yêu cầu đó; "Đặt lịch thường" → `/action`.
+- **Bố cục** (theo mock): thanh "Chụp ngay" + "Nhiếp ảnh gia tới trong 30–90 phút" có Back; `MapPreview` cao 170, một ghim (`self`) "Vị trí của bạn" khi chưa gõ tên, "Điểm hẹn · {tên}" khi đã gõ, nút "Về vị trí của tôi" lấy vị trí mới; ba ô gói (thời lượng đậm, "{n} ảnh", giá ngắn "390K"/"1,19M"; ô chọn viền primary, nền `primarySubtle`; mặc định gói 1 giờ); năm chip kiểu chụp theo thứ tự mock (Chân dung, Cặp đôi, Gia đình, Sản phẩm, Sự kiện nhỏ; mặc định Chân dung); ô "Tên điểm hẹn" (≤ 80, bắt buộc), ô ghi chú (≤ 140, có bộ đếm); dòng lỗi vùng/tạm dừng (khi có); `EscrowNotice` ba vế (không cắt dòng); chân: nút chính "Xem nhiếp ảnh gia phù hợp".
+- **Không có vị trí** (`#S13.01-noloc`): đĩa biểu tượng, "Bật vị trí để Chụp ngay", "Nhiếp ảnh gia cần biết bạn đang ở đâu để tới đúng chỗ.", nút chính "Cho phép vị trí" (hỏi quyền; bị từ chối hẳn → cài đặt của app; vị trí của máy tắt → cài đặt vị trí, `openLocationSettings`), nút chữ "Đặt lịch thường". Chụp ngay cần vị trí (plan khách Decision 3); quay lại app thì kiểm lại.
+- **Dữ liệu**: `instantRequestControllerProvider` (`AsyncNotifier`: cấu hình `instantConfigProvider`, quyền và một vị trí tiết kiệm pin `currentFix()`, không GPS cao); `instantDraftProvider` (giữ sống: gói, kiểu chụp, tên điểm hẹn, ghi chú; giữ qua S04.05, xoá sau khi tạo xong và khi đổi tài khoản hoặc đăng xuất). Mở lần đầu chỉ hỏi quyền khi chưa từng hỏi.
+- **Trạng thái**: đang tải → skeleton; lỗi cấu hình hoặc bảng giá rỗng → `ErrorState` "Thử lại"; đang tạo → nút chính chờ, không gọi chồng (rời màn giữa chừng vẫn xoá nháp).
+- **Tương tác**: "Xem nhiếp ảnh gia phù hợp": thiếu tên → "Nhập tên điểm hẹn để nhiếp ảnh gia dễ tìm."; chưa có số (đọc số lỗi cũng coi là chưa có) → S04.05; rồi `createInstantRequest(packageCode, genre, lat, lng, tên điểm hẹn đã cắt khoảng trắng, ghi chú hoặc null)`. Server từ chối: `phone_required` → S04.05; `outside_service_area` → dòng "Chụp ngay chưa có ở khu vực này. Bạn có thể đặt lịch thường." + "Đặt lịch thường"; `not_eligible` → "Chụp ngay đang tạm dừng."; khi bị từ chối, bàn phím đóng và dòng lỗi được cuộn vào màn; lỗi khác → toast, form giữ nguyên.
+- **Chuỗi**: `instantTitle`, `instantSubtitle`, `instantMeetPointPin` "Điểm hẹn · {name}", `instantMeetPointSelf` "Vị trí của bạn", `instantMeetPointLabel` "Tên điểm hẹn", `instantMeetPointHint` "Ví dụ: Cổng Trương Định, Công viên Tao Đàn", `instantMeetPointRequired`, `instantPhotosCount` "{n} ảnh", `instantNoteLabel` "Ghi chú cho nhiếp ảnh gia", `instantNoteHint`, `instantEscrowNote` "Xem 5 người phù hợp miễn phí. Chỉ trả khi gửi lời mời; tiền được giữ an toàn và hoàn 100% nếu bạn huỷ khi chưa có người nhận.", `instantSeeMatches`, `instantLocationTitle`, `instantLocationBody`, `instantLocationAllow`, `instantBookNormally`, `instantOutsideArea`, `instantDisabled`, `instantHasActive`, `mapRecenter`.
+- **Chấp nhận**: không tạo yêu cầu khi thiếu tên, vị trí hoặc số điện thoại; nháp sống qua S04.05; vừa 320dp với chữ 1,3×.
+
+## S13.02 · Vuốt chọn nhiếp ảnh gia
+
+- **Thông tin**: `/instant/:id` khi `choosing` (và `pending_payment`, chỉ từ #202) · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)). Mã gắn nhãn `summary` (người đã chọn), `round` (hết lượt), `empty` (chưa có ai) (mock `#S13.02-summary`, `-round`, `-empty`).
+- **Mục đích**: xem tối đa 5 người phù hợp của lượt, chọn một hay nhiều người, gửi lời mời.
+- **Điểm vào → ra**: tạo yêu cầu ở S13.01; "Chọn thêm người" ở S13.07; thợ huỷ sau khi nhận (về `choosing`). Gửi lời mời thành công → S13.03 (cùng route). Back → trang dưới hoặc `/home` (yêu cầu vẫn mở); "Đặt lịch thường" → `/action`.
+- **Bố cục chung**: thanh Back + "Chọn người bạn thích" + "{kiểu chụp} · {thời lượng} · {giá}" + bộ đếm "n / 5" (chỉ khi xem thẻ); khi yêu cầu đã gửi lời mời ít nhất một lần (`committed`), đã trả hoặc `pending_payment`: thêm chữ đỏ "Huỷ" ở thanh → S13.08 (mock `#S13.02-round`).
+- **Bộ thẻ** (`SwipeDeck`): thẻ ảnh (chạm nửa trái/phải đổi ảnh, tối đa 3, gạch trên đầu thẻ; vuốt ngang là chọn/bỏ qua), tên + `VerifiedMark`, `MetaLine` [cà chua từ 5 đánh giá | "Mới · n đánh giá"] · "{n} buổi" · "đến khoảng {n} phút", tối đa 2 lý do; hàng người đã chọn (avatar chồng nhau, "Đã chọn n người", nút viền "Xong"); hàng nút Hoàn tác / ✕ / ♥ (nhãn đọc màn hình "Hoàn tác", "Bỏ qua", "Chọn người này"). Hết thẻ: có người được chọn → tóm tắt; không ai → nút chính "Xem 5 người khác" (bộ thẻ còn đó, Hoàn tác vẫn dùng được).
+- **Tóm tắt** (`summary`): "Những người bạn đã chọn", mỗi người một hàng kính (avatar, tên, cà chua · ETA, chữ "Bỏ chọn" đọc là "Bỏ chọn {tên}"), `EscrowNotice` "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.", chân: nút chính "Gửi lời mời" (vô hiệu khi không còn ai) + chữ "Xem 5 người khác". Back (cả nút hệ thống) về bộ thẻ, giữ lịch sử Hoàn tác.
+- **Hết lượt** (`round`: không còn ứng viên và lượt đã hết hoặc đã gửi lời mời): banner (vùng đọc trực tiếp) "Chưa ai nhận. Chọn thêm người nhé." trên bộ thẻ trống; mọi người được chọn đều bận lúc gửi thì banner là "{tên, tên} vừa nhận việc khác"; nút chính "Xem 5 người khác".
+- **Chưa có ai** (`empty`: chưa gửi lời mời, không có ứng viên): đĩa `person_search`, "Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn", "Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường.", nút chính nhỏ "Thử lại", nút viền nhỏ "Đặt lịch thường".
+- **Dữ liệu**: `chooseControllerProvider(id)` (ai được chọn/bỏ qua, chỉ ở máy tới khi gửi; lượt mới từ server thì làm lại từ đầu); `request.candidates` (tối đa 5).
+- **Tương tác**: "Gửi lời mời" → `inviteInstant(liked, skipped, expectedAmountVnd)` (không `payMethod` ở #140), một lệnh mỗi lần (bấm hai lần chỉ gửi một); `price_changed` → giữ tóm tắt với giá mới; người bận lúc gửi → toast "{tên} vừa nhận việc khác"; lần gửi đầu tiên tới được ít nhất một người (`invitedTotal == 0` trước đó) → hỏi quyền thông báo `CustomerInstantPrimer` một lần (#202 chuyển sang sau khi trả). "Xem 5 người khác" / "Thử lại" → `nextInstantCandidates(skipped)`. Lỗi → toast.
+- **Chuỗi**: `chooseTitle`, `chooseSubtitle`, `chooseCounter`, `chooseStamp` "CHỌN", `chooseEta`, `chooseLike` "Chọn người này", `chooseSkip`, `chooseUndo`, `choosePicked`, `chooseDone`, `chooseSummaryTitle`, `chooseUnpick`, `chooseUnpickA11y`, `chooseInvite`, `chooseMore`, `chooseEscrow`, `chooseRoundEnded`, `chooseUnavailable`, `chooseEmptyTitle`, `chooseEmptyBody`, `chooseEmptyRetry`, `choosePriceChanged`, `trackingCancel` "Huỷ".
+- **Chấp nhận**: nút ♥/✕/Hoàn tác luôn có (≥ 48dp); giảm chuyển động thì thẻ đổi tức thì; một lần bấm gửi một bộ lời mời; lượt sau không trả thêm.
+
+## S13.03 · Đang chờ trả lời
+
+- **Thông tin**: `/instant/:id` khi `searching` · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)).
+- **Mục đích**: thấy từng người được mời đang xem lời mời và còn bao lâu.
+- **Điểm vào → ra**: "Gửi lời mời" ở S13.02; có người nhận → S13.04 rồi S13.05; hết lượt → S13.02 `round`; hết 10 phút → S13.07; "Huỷ yêu cầu" → S13.08.
+- **Bố cục** (theo mock): thanh giữa "Đang chờ trả lời", không Back; `SignatureLoader` sóng rung (chạy khi còn người đang xem); "Đã gửi lời mời cho {n} người" (chỉ đếm người nhận được lời mời của lượt này, không đếm hàng "Không tính"); "Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn **m:ss**." đếm tới `expiresAt` muộn nhất (0:00 khi không còn ai chờ); thẻ kính các hàng: avatar, tên, `MetaLine` (cà chua từ 5 đánh giá) · "khoảng {n} phút", hoặc "vừa nhận việc khác" cho người bận lúc gửi; nhãn trạng thái bằng chữ: "Đang xem" (đang chờ), "Đã từ chối", "Hết hạn" (hết hạn, bị rút), "Không tính" (bận); ghi chú; chân: chữ đỏ "Huỷ yêu cầu".
+- **Đọc màn hình**: hàng đang chờ đọc "{tên} đang xem lời mời"; hàng khác "{tên}, {meta}, {trạng thái}"; một hàng chỉ được đọc lại khi trạng thái của nó đổi.
+- **Chuỗi**: `waitingTitle`, `waitingSent`, `waitingBody`, `waitingRowEta`, `waitingRowUnavailable`, `waitingViewing`, `waitingDeclined`, `waitingExpired`, `waitingNotCounted`, `waitingRowSemantics`, `waitingNote` (đã trả: "… không trả thêm. Tiền vẫn được giữ …") / `waitingNoteUnpaid` "Chưa ai nhận thì bạn chọn tiếp trong 5 người khác." (chưa trả), `waitingCancel`.
+- **Chấp nhận**: "Hết hạn" đọc từ dữ liệu server; tick một lần mỗi mốc, không còn hẹn giờ sau khi rời màn.
+
+## S13.04 · Đã match (phía khách, `#S13.04`)
+
+- **Thông tin**: không có route; là một trạng thái của `/instant/:id`, hiện thay S13.05 tới khi đi tiếp · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)), mã S13.04 không nhãn. Phía thợ ở mục S13.04 bên trên.
+- **Khi nào**: màn thấy `searching → assigned` khi đang mở, hoặc mở (từ push) một yêu cầu `assigned` có `assignedAt` cách đây dưới 60 giây (plan khách Decision 5); ngoài ra vào thẳng S13.05. Một snapshot gộp `searching → en_route` không hiện lớp phủ.
+- **Bố cục**: `MatchOverlay` trên nền aurora: avatar của khách và của thợ, "Đã match với {tên}", "{tên} đã nhận lời mời của bạn và đang chuẩn bị tới {điểm hẹn}, khoảng {n} phút." (không biết ETA thì bỏ phần phút), "Tiếp tục".
+- **Tương tác**: "Tiếp tục", tự đi sau khoảng 3 giây, hoặc Back hệ thống → S13.05 (không rời yêu cầu). Yêu cầu rời các trạng thái đang đến (huỷ, đóng) thì lớp phủ biến mất.
+- **Chuỗi**: `matchTitle`, `matchBodyCustomer`, `matchBodyCustomerNoEta`, `matchContinue`.
+
+## S13.05 · Đang đến (bản đồ, ETA)
+
+- **Thông tin**: `/instant/:id` khi `assigned`, `en_route`, `arrived` · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)). Mã gắn nhãn `arrived`, `stale` (mock `#S13.05-arrived`, `-stale`).
+- **Mục đích**: biết ai đang tới, còn bao lâu, liên lạc, huỷ khi cần.
+- **Bố cục**: `MapPreview` tràn viền cao 250: ghim "Bạn" (`self`) **tại điểm hẹn** (không bao giờ là vị trí trực tiếp của khách) và, **chỉ khi `en_route`**, ghim "{tên} · {n} phút" ở điểm vị trí mới nhất của thợ, đường chấm giữa hai ghim khi có điểm; "Về vị trí của tôi" đưa điểm hẹn về giữa bản đồ (không lấy vị trí). Thẻ thợ: avatar, tên, `MetaLine` [cà chua | "Mới · n đánh giá"] · "{n} buổi" · "đến trong khoảng **n phút**", nhãn trạng thái; ghi chú "Đối chiếu ảnh đại diện khi gặp. Vị trí của {tên} chỉ hiện trong lúc đang đến."; "Nhắn tin" → `/chat/{chatId}`; "Liên hệ" (`PhotographerContactAction`, mở khoá) **chỉ khi đã trả** (#140: không có); chữ đỏ Huỷ.
+- **ETA** (Decision 7): `assigned` dùng `request.etaMinutes`; `en_route` tính lại từ mỗi điểm (đường thẳng `haversineKm` tới điểm hẹn → `estimateEtaMinutes`).
+- **Trạng thái**: không có điểm mới trong 3 phút khi `en_route` → "Đang chờ cập nhật vị trí" (`stale`, ghim giữ ở điểm cuối); quá `lateDeadlineAt` mà chưa đến → dòng trễ ("{tên} đến trễ. Bạn có thể huỷ và được hoàn 100%." khi đã trả, "{tên} đến trễ. Bạn có thể huỷ yêu cầu." khi chưa) và "Huỷ (hoàn 100%)"; `arrived` → không ghim thợ, không ETA, "Đã đến điểm hẹn" + "{tên} đang chờ bạn ở {điểm hẹn}.". Lỗi nghe vị trí: ghi log, thử lại sau 10 giây, tối đa 3 lần liên tiếp; màn giữ trạng thái "chưa có điểm".
+- **Nút Huỷ**: đã trả và còn trong 2 phút miễn phí → "Huỷ (miễn phí thêm m:ss)" rồi "Huỷ"; trễ → "Huỷ (hoàn 100%)"; còn lại "Huỷ". Đều mở S13.08.
+- **Dữ liệu**: `instantRequestProvider(id)`, `instantTrackProvider(id)` (chỉ nghe khi `en_route`, đăng ký lại khi trạng thái đổi). Một hẹn giờ đánh thức màn ở mốc "chờ cập nhật"/trễ kế tiếp.
+- **Chuỗi**: `trackingSelf` "Bạn", `trackingPin`, `trackingEta`, `trackingEtaBold`, `trackingNote`, `trackingMessage`, `trackingCancelFree`, `trackingCancel`, `trackingCancelLate`, `trackingStale`, `trackingLate`, `trackingLateUnpaid`, `trackingArrived`, `trackingArrivedBody`, `mapRecenter`.
+- **Chấp nhận**: ghim thợ chỉ khi `en_route`; liên hệ chỉ khi có thợ (nút gọi chỉ khi đã trả); vị trí của khách không rời máy.
+
+## S13.06 · Đang chụp, chờ xác nhận, đã xong
+
+- **Thông tin**: `/instant/:id` khi `in_progress`, `finished` (nhãn `confirm`), `completed` (nhãn `done`) · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)) (mock `#S13.06`, `-confirm`, `-done`).
+- **Đang chụp**: thanh giữa có nút chat, không Back; `CountdownRing` 132dp tới `shootEndsAt` + "còn lại"; thẻ "{tên} · {kiểu chụp} {thời lượng}", "Bắt đầu {giờ} · {điểm hẹn}", nhãn "Đang chụp"; `StatusTimeline` (Đã nhận · giờ, Đã đến · giờ, "Hoàn thành và giao {n} ảnh trong 48 giờ"); ghi chú; nút chính "Xác nhận hoàn thành". Giờ theo giờ Việt Nam.
+- **Chờ xác nhận** (`finished`): "Chờ bạn xác nhận", "{tên} đã hoàn thành buổi chụp. Tự hoàn thành sau **h:mm:ss** nếu bạn không xác nhận." (đếm từng giây tới `finishedAt + 2 giờ`; về 0 thì chờ bước 15 phút của server), cùng nút chính.
+- **Đã xong** (`completed`): đĩa `task_alt`, "Buổi chụp đã hoàn thành", "{tên} sẽ giao {n} ảnh trong 48 giờ.", nút viền "Về trang chủ". Không có đánh giá và khiếu nại (Decision 12; câu "có vấn đề thì báo trong 24 giờ" chỉ là thông tin).
+- **Tương tác**: "Xác nhận hoàn thành" → `confirmInstantComplete`; `conflict` → đọc lại yêu cầu, không báo; lỗi khác → toast, nút dùng lại được. Hết giờ gói → tick (server chuyển `finished`).
+- **Chuỗi**: `shootingTitle`, `shootingCard`, `shootingMeta`, `shootingStepDeliver`, `shootingNote`, `shootingConfirm`, `shootingFinishedTitle`, `shootingFinishedBody`, `doneTitle`, `doneBody`, `doneHome`, `jobStepAccepted`, `jobStepArrived`, `jobShootLeft`.
+
+## S13.07 · Chưa tìm được nhiếp ảnh gia
+
+- **Thông tin**: `/instant/:id` khi `no_match` · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)).
+- **Mục đích**: không ai nhận trong 10 phút; chọn tiếp, đặt lịch thường hoặc huỷ. Không phải trạng thái kết thúc: tiền đã trả vẫn giữ, không tự hoàn (spec §2.1.9).
+- **Bố cục**: thanh Back + "Chụp ngay"; đĩa `person_search`, "Chưa tìm được nhiếp ảnh gia", "Bạn đã mời {n} người trong {m} lượt; gần bạn lúc này ít người đang sẵn sàng."; đã trả: `EscrowNotice` "{số tiền} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về {MoMo | ZaloPay | tài khoản đã chuyển}." và chữ đỏ "Huỷ yêu cầu và hoàn {số tiền}"; chưa trả: không có dòng tiền, chữ đỏ "Huỷ yêu cầu"; nút viền "Đặt lịch thường với người bạn chọn" → `/action` (yêu cầu vẫn mở); chân: nút chính "Chọn thêm người".
+- **Tương tác**: "Chọn thêm người" = `nextInstantCandidates` như "Xem 5 người khác" (server mở lại yêu cầu, cửa sổ 10 phút tính lại) → S13.02 lượt mới.
+- **Chuỗi**: `noMatchTitle`, `noMatchBody`, `noMatchHeld`, `refundToBankQr`/`refundToMomo`/`refundToZaloPay`, `noMatchCancel`, `waitingCancel`, `noMatchBookNormally`, `noMatchMore`.
+
+## S13.08 · Huỷ chụp ngay (phía khách) và đã đóng
+
+- **Thông tin**: sheet trên S13.02 (đã gửi lời mời), S13.03, S13.05, S13.07; không route riêng · khách · I5 · Đã có ([#140](https://github.com/thanhngochoang/booking/issues/140)). Màn kết thúc là `#S13.08-done` (mã S13.08 nhãn `done`) trên `/instant/:id`.
+- **Bố cục sheet**: "Huỷ chụp ngay?"; `PolicyTable` ba hàng (điều kiện dài xuống dòng tới 3 dòng): "Đang chọn, đang chờ trả lời, chưa tìm được, hoặc 2 phút đầu sau khi có người nhận" · "Hoàn 100%", "Nhiếp ảnh gia đang đến" · "Hoàn 80%", "Đã đến, bạn không có mặt sau 15 phút" · "Hoàn {100 − arrivedCancelPhotographerPercent}%" (số của yêu cầu); hàng của luật trong bản tính thử (`full_refund`/`free_window`/`photographer_late` → hàng 1, `en_route` → 2, `arrived` → 3) được tô, thêm "(bây giờ)" và hiện phần trăm của bản tính thử; `unpaid` không tô hàng nào. Dòng tóm tắt: chưa trả "Bạn chưa thanh toán nên không có khoản tiền nào."; có phí "Bạn sẽ được hoàn **{hoàn}**; {phí} là phí đi lại trả cho {tên}."; thợ trễ "{tên} đến trễ hơn 15 phút nên bạn được hoàn đủ." + "Bạn sẽ được hoàn {hoàn}."; còn lại "Bạn sẽ được hoàn {hoàn}.". Nút đỏ "Huỷ và hoàn {hoàn}" (chưa trả: "Huỷ yêu cầu"), chữ "Giữ yêu cầu".
+- **Dữ liệu**: `customerCancelQuoteProvider(id)` = `cancelInstantRequest(dryRun: true)`; sheet không bao giờ tự tính tiền (Decision 8). Bản tính thử được hỏi lại khi trạng thái yêu cầu đổi lúc sheet mở và 1 giây sau mốc `freeCancelUntil`/`lateDeadlineAt` kế tiếp; nút xác nhận vô hiệu khi bản tính đang tải lại hoặc lỗi.
+- **Tương tác**: xác nhận → `cancelInstantRequest(dryRun: false)` một lần (sheet không đóng được khi đang chạy) → đóng sheet, luồng nghe hiện màn đã đóng. `conflict` (ở bản tính thử hoặc lệnh thật: yêu cầu đã đi tiếp, ví dụ đã bắt đầu chụp) → đóng sheet với "Chưa thực hiện được. Thử lại nhé."; lỗi khác khi xác nhận → lỗi đỏ trong sheet, sheet ở lại.
+- **Đã đóng** (`#S13.08-done`): thanh giữa "Chụp ngay" không Back; đĩa `event_busy`; khách huỷ: "Đã huỷ yêu cầu" + "Hoàn {số tiền} về {phương thức}. Tiền thường về trong vài phút." (đã trả, số = `amountVnd − feeVnd` của server) hoặc "Không có khoản tiền nào." (chưa trả, hoặc không hoàn gì); hết hạn (`abandoned`): "Yêu cầu đã hết hạn" + "Bạn chưa gửi lời mời trong 30 phút nên yêu cầu đã đóng."; thợ báo vắng mặt: "Nhiếp ảnh gia báo bạn không có mặt" + "Bạn được hoàn {số tiền} ({phần trăm}%)." (đã trả; phần trăm từ server) hoặc "Không có khoản tiền nào."; chân: nút chính "Tạo yêu cầu mới" → `/instant`, nút viền "Về trang chủ".
+- **Chuỗi**: `cancelInstantTitle`, `cancelRowFree`, `cancelRowEnRoute`, `cancelRowArrived`, `cancelRowNow`, `cancelOutcome`, `cancelInstantRefundFee`, `cancelInstantRefundAll`, `cancelInstantLate`, `cancelInstantUnpaid`, `cancelInstantConfirm`, `cancelInstantConfirmUnpaid`, `cancelInstantKeep`, `cancelledTitle`, `cancelledRefund`, `cancelledNoMoney`, `abandonedTitle`, `abandonedBody`, `noShowTitle`, `noShowBody`, `closedNewRequest`, `doneHome`.
+- **Chấp nhận**: số tiền luôn hiện bằng chữ trước khi xác nhận và đúng bằng bản tính thử; xác nhận là nút đỏ trong sheet; không bao giờ "0₫ (0%)".
+
+## Test hai bên
+
+`test/features/instant/instant_two_party_test.dart` chạy app khách và app thợ (hai `ProviderScope`, hai router, một hiện một ẩn) trên cùng một backend trong bộ nhớ (`test/support/instant_simulator.dart`, theo luật của `packages/domain`: lượt 5 người, lời mời 60 giây, ai nhận trước thì được, mũi tên trạng thái, hẹn giờ lười, bảng huỷ) và một đồng hồ: chọn ba người và người thứ hai nhận; cả lượt hết hạn rồi lượt hai; thợ huỷ sau khi nhận; khách huỷ ở từng mốc (chưa trả, đang chờ 100%, đang đến sau 2 phút 80/20, đã đến theo cấu hình 50/50 và 70/30); 10 phút không ai nhận rồi chọn tiếp; hoàn thành và xác nhận.

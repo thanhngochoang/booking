@@ -10,12 +10,14 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/discovery/photographer_meta.dart';
 import 'package:photobooking/features/home/home_controller.dart';
+import 'package:photobooking/features/instant/instant_entry_card.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 
@@ -97,6 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.invalidate(freeThisWeekProvider);
     ref.invalidate(realShootsProvider);
     ref.invalidate(hotSpotsProvider(ref.read(spotRegionProvider)));
+    ref.invalidate(instantActiveRequestIdProvider);
     await ref.read(homeFeedProvider.notifier).refresh();
   }
 
@@ -166,6 +169,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
+              // Mock `#S02.01-instant`: under the greeting, customers only.
+              const InstantEntryCard(),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),

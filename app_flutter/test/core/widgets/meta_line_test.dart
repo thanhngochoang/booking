@@ -156,4 +156,39 @@ void main() {
     expect(style?.fontSize, 20);
     expect(style?.color, const Color(0xFF010203));
   });
+
+  testWidgets('a text part draws its bold part bold in tabular figures', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const MetaLine([
+          MetaPart.text('112 buổi'),
+          MetaPart.text('đến trong khoảng 9 phút', bold: '9 phút'),
+        ]),
+      ),
+    );
+    expect(_plain(tester), '112 buổi · đến trong khoảng 9 phút');
+    expect(
+      metaPartsText(const [MetaPart.text('đến 9 phút', bold: '9 phút')]),
+      'đến 9 phút',
+    );
+    final spans = <TextSpan>[];
+    tester
+        .widget<RichText>(
+          find.descendant(
+            of: find.byType(MetaLine),
+            matching: find.byType(RichText),
+          ),
+        )
+        .text
+        .visitChildren((span) {
+          if (span is TextSpan && span.text == '9 phút') spans.add(span);
+          return true;
+        });
+    expect(spans.single.style?.fontWeight, FontWeight.w700);
+    expect(spans.single.style?.fontFeatures, const [
+      FontFeature.tabularFigures(),
+    ]);
+  });
 }

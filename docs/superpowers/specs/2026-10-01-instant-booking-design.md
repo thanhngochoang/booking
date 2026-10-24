@@ -205,9 +205,11 @@ Firestore (bản sao, chỉ dịch vụ ghi): `instant_requests/{id}` (`status`,
 | S14.01 | Live Shutter (công tắc, bảng giá, "Sẵn sàng hỗ trợ") | `/work/instant` | NAG |
 | S14.02 | Lời mời việc (toàn màn, chồng thẻ tới 3 lời mời, mỗi thẻ đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG |
 | S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG |
-| S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai |
+| S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` (đã làm: sheet không route riêng, xem dưới bảng) | cả hai |
 | **S13.02** | **Vuốt chọn nhiếp ảnh gia** (5 thẻ, tóm tắt người đã chọn, nút gửi lời mời) | `/instant/:id` (`choosing`) | khách |
 | **S13.04** | **Đã match** (chuyển tiếp ~1,5 giây) | không có route riêng (lớp phủ trên S13.05/S14.03) | cả hai |
+
+**Đã làm (#140):** `/instant/:id/cancel` không thêm: S13.08 là sheet trên view của `/instant/:id` (như S05.03), màn đã đóng là S13.08 `done` trên chính `/instant/:id`; điểm hẹn là vị trí GPS hiện tại + một tên khách gõ (≤ 80 ký tự), không kéo ghim, không tìm địa chỉ (plan khách Decisions 3, 4).
 
 Một route `/instant/:id` hiển thị S13.02, S13.03, S13.05, S13.06, S13.07 theo trạng thái nghe từ Firestore; mỗi trạng thái bọc `ScreenCode` riêng. Hai màn mới của lần sửa này là S13.02 (vuốt chọn) và S13.04 (đã match), theo quy tắc mã use case của spec chính mục 2.02, S13.04. Bảng mã ở spec chính mục 2, `ScreenCodes` và mock được cập nhật cùng lúc.
 

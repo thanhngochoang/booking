@@ -27,6 +27,7 @@ const _entries = <String, IconData>{
   'arrowDown': AppIcons.arrowDown,
   'check': AppIcons.check,
   'checkCircle': AppIcons.checkCircle,
+  'taskAlt': AppIcons.taskAlt,
   'doneAll': AppIcons.doneAll,
   'close': AppIcons.close,
   'undo': AppIcons.undo,
@@ -88,6 +89,8 @@ const _entries = <String, IconData>{
   'volumeOff': AppIcons.volumeOff,
   'delete': AppIcons.delete,
   'personRemove': AppIcons.personRemove,
+  'personSearch': AppIcons.personSearch,
+  'hourglass': AppIcons.hourglass,
   'flag': AppIcons.flag,
 };
 
