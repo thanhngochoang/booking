@@ -16,6 +16,7 @@ import {
   MAX_MEMBERS_VERIFIED,
   OPEN_RELATION_STATUSES,
   RELATION_STATUSES,
+  collaborationId,
   foldNameKey,
   inviteCandidateState,
   isStudio,
@@ -216,7 +217,7 @@ export class FirestoreStudioStore implements StudioStore {
         },
         activeCollaborationOf: async (studioId, uid) => {
           // Read in the transaction: an activation of the collaboration racing this join retries one side.
-          const snap = await fTx.get(this.firestore.collection(STUDIO_COLLABORATIONS_COLLECTION).doc(`${studioId}_${uid}`));
+          const snap = await fTx.get(this.firestore.collection(STUDIO_COLLABORATIONS_COLLECTION).doc(collaborationId(studioId, uid)));
           return snap.exists && snap.data()?.status === 'active';
         },
         putRelation: (r) => {

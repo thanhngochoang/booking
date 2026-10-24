@@ -265,6 +265,34 @@ describe('syncRecruitMatchKeys (S27 Decision 7)', () => {
     assert.equal(calls.length, 0);
   });
 
+  test('skips the role read when providerType, serviceArea and specialties are unchanged and keys exist', async () => {
+    const { writer, calls, roleReads } = recorder();
+    const before = { ...individual, bio: 'a', recruitMatchKeys: HCM_WEDDING };
+    const after = { ...individual, serviceArea: { city: 'TP.HCM' }, bio: 'b', recruitMatchKeys: HCM_WEDDING };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before, after }, writer), 'unchanged');
+    assert.deepEqual(roleReads, [], 'an unrelated edit reads nothing');
+    // An emptied list (customer mode) counts as existing keys.
+    const emptied = { ...individual, recruitMatchKeys: [] };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: emptied, after: { ...emptied, bio: 'c' } }, writer), 'unchanged');
+    assert.deepEqual(roleReads, []);
+    assert.equal(calls.length, 0);
+  });
+
+  test('still reads the role when a matching field changed or the keys were never written', async () => {
+    const { writer, calls, roleReads } = recorder();
+    const before = { ...individual, recruitMatchKeys: HCM_WEDDING };
+    const moreSpecialties = { ...before, specialties: ['wedding', 'family'] };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before, after: moreSpecialties }, writer), 'written');
+    const moved = { ...before, serviceArea: { city: 'Hà Nội' } };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p2', before, after: moved }, writer), 'written');
+    const nowStudio = { ...before, providerType: 'studio' };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p3', before, after: nowStudio }, writer), 'written');
+    const neverWritten = { ...individual, bio: 'x' };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p4', before: individual, after: neverWritten }, writer), 'written');
+    assert.deepEqual(roleReads, ['p1', 'p2', 'p4'], 'a studio reads no role');
+    assert.equal(calls.length, 4);
+  });
+
   test('writes nothing for a deleted doc', async () => {
     const { writer, calls, roleReads } = recorder();
     assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: individual, after: undefined }, writer), 'deleted');

@@ -33,6 +33,7 @@ import {
   BINH,
   CUC,
   DUNG,
+  HOA,
   LAN,
   MINH,
   ADMIN,
@@ -42,6 +43,7 @@ import {
   SEED_PASSWORD,
   SEED_INSTANT_CONFIG,
   SEED_PHOTOGRAPHERS,
+  SEED_RECRUIT_POST_CUC,
   SEED_REGISTRATION_LAN_SOON,
   SEED_REVIEWS,
   SEED_USERS,
@@ -1016,19 +1018,35 @@ describe('seed recruiting (S27, #151)', () => {
     assert.equal(countersFromDoc(get(`photographers/${CUC}/private/recruit`)).openPostCount, 1);
   });
 
-  test('seeds an applied application by An', () => {
+  test('seeds two applied applications to the post: An (Cúc\'s member, the refusal case) and Hòa', () => {
     const apps = under('recruitApplications/').map((d) => applicationFromDoc(d.path.slice('recruitApplications/'.length), d.data));
-    assert.equal(apps.length, 1);
-    const app = apps[0];
-    assert.ok(app);
-    assert.equal(app.applicantId, AN);
-    assert.equal(app.studioId, CUC);
-    assert.equal(app.status, 'applied');
-    assert.ok(app.termsAcceptedAt, 'a collaborator application carries the accepted terms');
-    assert.equal(app.id, `${app.postId}_${AN}`);
-    const post = recruitPostFromDoc(app.postId, get(`recruitPosts/${app.postId}`));
-    assert.equal(post?.applicationCount, 1);
-    assert.equal(countersFromDoc(get(`photographers/${AN}/private/recruit`)).openApplicationCount, 1);
+    assert.deepEqual(apps.map((a) => a?.applicantId).sort(), [AN, HOA].sort());
+    for (const app of apps) {
+      assert.ok(app);
+      assert.equal(app.studioId, CUC);
+      assert.equal(app.status, 'applied');
+      assert.ok(app.termsAcceptedAt, 'a collaborator application carries the accepted terms');
+      assert.equal(app.id, `${app.postId}_${app.applicantId}`);
+      assert.equal(countersFromDoc(get(`photographers/${app.applicantId}/private/recruit`)).openApplicationCount, 1);
+    }
+    const post = recruitPostFromDoc(SEED_RECRUIT_POST_CUC, get(`recruitPosts/${SEED_RECRUIT_POST_CUC}`));
+    assert.equal(post?.applicationCount, 2);
+  });
+
+  test('Hòa is a verified individual in no studio, accepting orders, matching the post (Cúc can accept her)', () => {
+    const doc = get(`photographers/${HOA}`) as Record<string, unknown> | undefined;
+    assert.ok(doc);
+    assert.equal(doc.verified, true);
+    assert.equal(doc.acceptingOrders, true);
+    assert.equal(doc.providerType, undefined, 'individual');
+    assert.equal(doc.studioId, undefined, 'member of no studio');
+    const memberOf = (uid: string) => under('studio_members/').some((d) => (d.data as { memberId?: string }).memberId === uid);
+    assert.equal(memberOf(AN), true, 'control: An is in a studio_members doc');
+    assert.equal(memberOf(HOA), false);
+    assert.equal((get(`verifications/${HOA}`) as { status?: string } | undefined)?.status, 'approved');
+    const post = recruitPostFromDoc(SEED_RECRUIT_POST_CUC, get(`recruitPosts/${SEED_RECRUIT_POST_CUC}`));
+    const keys = doc.recruitMatchKeys as string[];
+    assert.ok(post?.matchKeys.some((k) => keys.includes(k)), 'her TP.HCM keys meet the post');
   });
 
   test('seeds an active collaboration Cúc–Dũng with defaultFee 600000 and both counters', () => {

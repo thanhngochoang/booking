@@ -370,37 +370,50 @@ describe('collaborator offers in the Firestore assignment transaction (Decision 
 });
 
 describe('S27 indexes', () => {
-  it('every S27 adapter query has its composite index', () => {
+  it('every S27 adapter query has its composite index (fields, order and arrayConfig)', () => {
     const indexes = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as {
       indexes: { collectionGroup: string; fields: { fieldPath: string; order?: string; arrayConfig?: string }[] }[];
     };
-    const has = (group: string, fields: string[]) =>
-      indexes.indexes.some((i) => i.collectionGroup === group && i.fields.map((f) => f.fieldPath).join(',') === fields.join(','));
+    const MODE: Record<string, string> = { ASC: 'ASCENDING', DESC: 'DESCENDING', CONTAINS: 'CONTAINS' };
+    const shapeOf = (fields: readonly { fieldPath: string; order?: string; arrayConfig?: string }[]) =>
+      fields.map((f) => `${f.fieldPath} ${f.order ?? f.arrayConfig ?? '?'}`).join(',');
+    const has = (group: string, fields: readonly string[]) => {
+      const want = fields
+        .map((f) => {
+          const [path, mode] = f.split(' ');
+          return `${path} ${MODE[mode ?? ''] ?? '?'}`;
+        })
+        .join(',');
+      return indexes.indexes.some((i) => i.collectionGroup === group && shapeOf(i.fields) === want);
+    };
     for (const [group, fields] of [
-      ['recruitPosts', ['status', 'expiresAt']],
-      ['recruitApplications', ['status', 'expiresAt']],
-      ['recruitApplications', ['postId', 'status', 'createdAt']],
-      ['studio_collaborations', ['status', 'expiresAt']],
-      ['collab_jobs', ['offerStatus', 'offerExpiresAt']],
-      ['collab_jobs', ['offerStatus', 'payStatus', 'pay.checkAfter']],
-      ['collab_jobs', ['payStatus', 'pay.overdueFlaggedAt', 'pay.dueAt']],
+      ['recruitPosts', ['status ASC', 'expiresAt ASC']],
+      ['recruitApplications', ['status ASC', 'expiresAt ASC']],
+      ['recruitApplications', ['postId ASC', 'status ASC', 'createdAt ASC']],
+      ['studio_collaborations', ['status ASC', 'expiresAt ASC']],
+      ['collab_jobs', ['offerStatus ASC', 'offerExpiresAt ASC']],
+      ['collab_jobs', ['offerStatus ASC', 'payStatus ASC', 'pay.checkAfter ASC']],
+      ['collab_jobs', ['payStatus ASC', 'pay.overdueFlaggedAt ASC', 'pay.dueAt ASC']],
       // app queries of the Contract
-      ['recruitPosts', ['status', 'createdAt']],
-      ['recruitPosts', ['status', 'filterKeys', 'createdAt']],
-      ['recruitPosts', ['studioId', 'status', 'createdAt']],
-      ['recruitPosts', ['studioId', 'createdAt']],
-      ['recruitApplications', ['studioId', 'postId', 'status', 'createdAt']],
-      ['recruitApplications', ['applicantId', 'createdAt']],
-      ['studio_collaborations', ['studioId', 'status', 'updatedAt']],
-      ['studio_collaborations', ['collaboratorId', 'status', 'updatedAt']],
-      ['collab_jobs', ['studioId', 'updatedAt']],
-      ['collab_jobs', ['collaboratorId', 'updatedAt']],
-      ['collab_jobs', ['studioId', 'collaboratorId', 'offerStatus']],
-      ['collab_jobs', ['studioId', 'pay.dueAt']],
-      ['collab_jobs', ['collaboratorId', 'customerId', 'acceptedAt']],
+      ['recruitPosts', ['status ASC', 'createdAt DESC']],
+      ['recruitPosts', ['status ASC', 'filterKeys CONTAINS', 'createdAt DESC']],
+      ['recruitPosts', ['studioId ASC', 'status ASC', 'createdAt DESC']],
+      ['recruitPosts', ['studioId ASC', 'createdAt DESC']],
+      ['recruitApplications', ['studioId ASC', 'postId ASC', 'status ASC', 'createdAt DESC']],
+      ['recruitApplications', ['applicantId ASC', 'createdAt DESC']],
+      ['studio_collaborations', ['studioId ASC', 'status ASC', 'updatedAt DESC']],
+      ['studio_collaborations', ['collaboratorId ASC', 'status ASC', 'updatedAt DESC']],
+      ['collab_jobs', ['studioId ASC', 'updatedAt DESC']],
+      ['collab_jobs', ['collaboratorId ASC', 'updatedAt DESC']],
+      ['collab_jobs', ['studioId ASC', 'collaboratorId ASC', 'offerStatus ASC']],
+      ['collab_jobs', ['studioId ASC', 'pay.dueAt ASC']],
+      ['collab_jobs', ['collaboratorId ASC', 'customerId ASC', 'acceptedAt DESC']],
     ] as const) {
-      assert.ok(has(group, [...fields]), `${group}(${fields.join(', ')})`);
+      assert.ok(has(group, fields), `${group}(${fields.join(', ')})`);
     }
+    // The comparison is strict: a wrong direction is not covered.
+    assert.equal(has('recruitPosts', ['status ASC', 'createdAt ASC']), false);
+    assert.equal(has('recruitPosts', ['status ASC', 'filterKeys ASC', 'createdAt DESC']), false);
   });
 });
 

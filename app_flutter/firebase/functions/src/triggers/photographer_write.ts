@@ -65,11 +65,28 @@ function storedKeys(d: DocumentData): string[] {
   return Array.isArray(d.recruitMatchKeys) ? d.recruitMatchKeys.filter((k): k is string => typeof k === 'string') : [];
 }
 
+/** A key-order independent JSON form, to compare a field of two snapshots. */
+function stableJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(',')}]`;
+  if (v !== null && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v) ?? 'undefined';
+}
+
+/** The inputs of the keys did not change and the keys were written before: nothing to recompute. */
+function matchInputsUnchanged(before: DocumentData | undefined, after: DocumentData): boolean {
+  if (before === undefined || !Array.isArray(after.recruitMatchKeys)) return false;
+  return (['providerType', 'serviceArea', 'specialties'] as const).every((f) => stableJson(before[f]) === stableJson(after[f]));
+}
+
 /**
  * Keeps `recruitMatchKeys` = every `a=<area>|s=<specialty>` of the provider (empty for a studio and for an account in
  * customer mode), so `onRecruitPostCreated` finds matching providers with one query. Reads the role once (not for a
- * studio); writes only when the sorted list differs, so the re-fire of its own write changes nothing. A missing
- * field counts as an empty list.
+ * studio), and not at all when `providerType`, `serviceArea` and `specialties` are unchanged and the keys exist (a
+ * role switch is re-synced by `refreshRecruitMatchKeys`); writes only when the sorted list differs, so the re-fire
+ * of its own write changes nothing. A missing field counts as an empty list.
  */
 export async function syncRecruitMatchKeys(
   input: PhotographerWriteInput,
@@ -77,6 +94,7 @@ export async function syncRecruitMatchKeys(
 ): Promise<'written' | 'unchanged' | 'deleted'> {
   const after = input.after;
   if (after === undefined) return 'deleted';
+  if (matchInputsUnchanged(input.before, after)) return 'unchanged';
   const isStudio = providerTypeOf(after.providerType) === 'studio';
   const role = isStudio ? null : await writer.role(input.uid);
   const specialties = Array.isArray(after.specialties) ? after.specialties.filter((x): x is string => typeof x === 'string') : [];
@@ -103,7 +121,8 @@ export async function refreshRecruitMatchKeys(
   if (input.after === undefined || input.before?.role === input.after.role) return 'unchanged';
   const doc = await store.photographer(input.uid);
   if (doc === undefined) return 'deleted';
-  return syncRecruitMatchKeys({ uid: input.uid, before: doc, after: doc }, store);
+  // `before: undefined`: the role changed, so the unchanged-inputs shortcut must not apply.
+  return syncRecruitMatchKeys({ uid: input.uid, before: undefined, after: doc }, store);
 }
 
 /** Events older than this are dropped instead of retried (deployed with `retry: true`). */

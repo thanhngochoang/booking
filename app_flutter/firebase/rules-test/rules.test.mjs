@@ -1718,12 +1718,14 @@ test('a stranger cannot read a booking assigned to someone else', async () => {
   await seedDoc('bookings/b_as3', { customerId: 'asc1', photographerId: 'asstudio1', status: 'upcoming' });
   await assertFails(getDoc(doc(env.authenticatedContext('asm2').firestore(), 'bookings/b_as3')));
 });
-test('an assignee query (where assigneeId == uid) is allowed; an unfiltered one is not', async () => {
-  await seedDoc('bookings/b_as4', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm3', status: 'upcoming' });
+test('an assignee query (where assigneeId == uid and assignStatus == assigned) is allowed; an unfiltered one is not', async () => {
+  await seedDoc('bookings/b_as4', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm3', assignStatus: 'assigned', status: 'upcoming' });
   const db = env.authenticatedContext('asm3').firestore();
-  const snap = await assertSucceeds(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
+  const snap = await assertSucceeds(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'), where('assignStatus', '==', 'assigned'))));
   assert.ok(snap.docs.some((d) => d.id === 'b_as4'));
-  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'))));
+  // S27 (#151): without the assignStatus filter the rule cannot rule out a pending collaborator offer.
+  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
+  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'), where('assignStatus', '==', 'assigned'))));
   await assertFails(getDocs(collection(db, 'bookings')));
 });
 test('nobody reads or writes otp_challenges', async () => {
@@ -2990,6 +2992,31 @@ describe('S27 studio recruiting', () => {
     await contactOf('rcb_member');
     await assertSucceeds(getDoc(doc(as('rc_other'), 'bookings/rcb_member/private/contact')));
     await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_member/private/contact')));
+  });
+
+  test('pending collaborator cannot get the booking or its events', async () => {
+    await collabBooking('rcb_pend_doc', { assignStatus: 'unassigned' });
+    await seedDoc('bookings/rcb_pend_doc/events/e1', { status: 'accepted', at: Timestamp.now() });
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_pend_doc')));
+    await assertFails(getDoc(doc(as('rc_ind'), 'bookings/rcb_pend_doc/events/e1')));
+    await assertFails(getDocs(collection(as('rc_ind'), 'bookings/rcb_pend_doc/events')));
+    // The studio and the customer still read both.
+    await assertSucceeds(getDoc(doc(as('rc_studio'), 'bookings/rcb_pend_doc')));
+    await assertSucceeds(getDoc(doc(as('rc_cust'), 'bookings/rcb_pend_doc/events/e1')));
+  });
+
+  test('accepted collaborator can get the booking and its events', async () => {
+    await collabBooking('rcb_acc_doc', { assigneeAccepted: true, assignStatus: 'assigned', status: 'upcoming' });
+    await seedDoc('bookings/rcb_acc_doc/events/e1', { status: 'upcoming', at: Timestamp.now() });
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_acc_doc')));
+    await assertSucceeds(getDoc(doc(as('rc_ind'), 'bookings/rcb_acc_doc/events/e1')));
+  });
+
+  test('the S06.01 query lists an accepted collaborator job, never a pending offer', async () => {
+    await collabBooking('rcb_q_pending', { assigneeId: 'rc_q', assignStatus: 'unassigned' });
+    await collabBooking('rcb_q_accepted', { assigneeId: 'rc_q', assigneeAccepted: true, assignStatus: 'assigned', status: 'upcoming' });
+    const snap = await assertSucceeds(getDocs(query(collection(as('rc_q'), 'bookings'), where('assigneeId', '==', 'rc_q'), where('assignStatus', '==', 'assigned'))));
+    assert.deepEqual(snap.docs.map((d) => d.id), ['rcb_q_accepted']);
   });
 
   test('accepted collaborator cannot read it 7 days after completedAt', async () => {

@@ -498,15 +498,25 @@ service cloud.firestore {
     // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The assignee
     // also reads the events and, under the photographer's unlock rule, the customer's contact (#136
     // Decision 17); a reassigned member loses all of it with `assigneeId`. Deliveries stay the studio's.
+    // S27 (#151): a collaborator whose offer is still pending (`assigneeKind == 'collaborator'`,
+    // `assigneeAccepted != true`, `assignStatus == 'unassigned'`) is `assigneeId` but reads neither the
+    // booking nor its events until accepting; the offer itself is in collab_jobs. S06.01 lists
+    // `assigneeId == uid && assignStatus == 'assigned'`, which the first branch proves for the query.
     match /bookings/{bookingId} {
       function bk() { return get(/databases/$(database)/documents/bookings/$(bookingId)).data; }
       function isParty() { return signedIn() && (bk().customerId == request.auth.uid || bk().photographerId == request.auth.uid); }
       function isAssignee(b) { return signedIn() && b.get('assigneeId', null) == request.auth.uid; }
+      function isConfirmedAssignee(b) {
+        return isAssignee(b)
+          && (b.get('assignStatus', null) == 'assigned'
+              || b.get('assigneeKind', 'member') != 'collaborator'
+              || b.get('assigneeAccepted', false) == true);
+      }
 
       allow read: if signedIn()
         && (resource.data.customerId == request.auth.uid
             || resource.data.photographerId == request.auth.uid
-            || resource.data.get('assigneeId', null) == request.auth.uid);
+            || isConfirmedAssignee(resource.data));
       allow write: if false; // only Cloud Functions (sub-project 4)
 
       match /private/{docId} {
@@ -526,7 +536,7 @@ service cloud.firestore {
       match /milestones/{kind} { allow read: if isParty(); allow write: if false; }
 
       match /events/{eventId} {
-        allow read: if isParty() || isAssignee(bk());
+        allow read: if isParty() || isConfirmedAssignee(bk());
         allow write: if false;
       }
     }
