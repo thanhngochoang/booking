@@ -191,3 +191,4 @@ Mọi khoá trong `screens/recruit.md` đã so với `app_vi.arb` (254 cặp kho
   - `_selected` ghi trong `build`; tông `*_result` cần `variant`; bí danh `*Subtle` của `AppColorsDark` (mức token).
 - PR: (điền khi mở)
 - Re-review đợt sửa cuối: mọi Important đã sửa; D5 (dòng ánh xạ `seq`) sửa trong commit này. Để sau: `recruit_blocked` khi luồng bộ đếm chưa kịp cập nhật `recruitBlockedUntil` rơi về dòng chung "Thử lại" (tạm thời, vài giây); `_send` của S26.04 chép thân `runStudioAction` thay vì thêm tham số `errorText`.
+- CI (firestore-rules, lần chạy thật đầu tiên): truy vấn `bookings` chỉ lọc `assigneeId` cho phép cộng tác viên đang chờ liệt kê booking (query được xét theo bộ lọc, `get(field, default)` của trường không lọc đọc ra giá trị mặc định). Sửa: tách `allow get` (xét theo tài liệu) và `allow list` (người được giao bắt buộc lọc `assignStatus == 'assigned'`), kèm rules test (commit af66c8bb).
