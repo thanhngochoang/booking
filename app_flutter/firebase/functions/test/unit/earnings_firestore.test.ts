@@ -270,6 +270,20 @@ describe('earnings triggers', () => {
     assert.equal(w.earnings.summaries.get('p1')?.soonAmount, 0);
   });
 
+  it('a payee change refreshes the old payee too (an instant photographer who cancelled loses the row)', async () => {
+    const w = world();
+    withBooking(w, payment());
+    await handlePaymentWrite('pay1', undefined, { payeeId: 'p1' }, w.deps);
+    assert.equal(w.earnings.items.has('p1/pay1'), true);
+    w.booking.payments.set('pay1', payment({ payeeId: 'p3' }));
+    assert.equal(await handlePaymentWrite('pay1', { payeeId: 'p1' }, { payeeId: 'p3' }, w.deps), 'p3');
+    assert.equal(w.earnings.items.has('p1/pay1'), false);
+    assert.equal(w.earnings.summaries.get('p1')?.soonAmount, 0);
+    w.booking.payments.set('pay1', payment({ payeeId: '' }));
+    assert.equal(await handlePaymentWrite('pay1', { payeeId: 'p3' }, { payeeId: '' }, w.deps), 'p3');
+    assert.equal(w.earnings.items.has('p3/pay1'), false);
+  });
+
   it('platform ticket money has no earnings page (payee platform is skipped)', async () => {
     const w = world();
     assert.equal(await handlePaymentWrite('pay1', undefined, { payeeId: 'platform' }, w.deps), null);
@@ -359,5 +373,43 @@ describe('FirestoreEarningsStore.getSubject', () => {
     assert.equal(row.milestonesDone, 1);
     assert.equal(row.milestonesTotal, 2);
     assert.equal(row.counterpartName, 'Lan');
+  });
+});
+
+describe('FirestoreEarningsStore.getSubject for instant_request (#202)', () => {
+  const instantDocs = (over: Partial<Payment> = {}) => ({
+    'payments/pay_i': paymentToFirestore(payment({
+      id: 'pay_i', subjectType: 'instant_request', subjectId: 'ir_1', payeeId: 'p1', amount: 690_000, status: 'paid',
+      escrowStatus: 'held', ...over,
+    })),
+    'photographers/p1': { providerType: 'individual' },
+    // 2026-10-22 17:30 UTC is 2026-10-23 00:30 in Vietnam.
+    'instant_requests/ir_1': { customerName: 'Lan Anh', durationMin: 60, assignedAt: Timestamp.fromDate(new Date('2026-10-22T17:30:00.000Z')) },
+  });
+  const deps = (db: Firestore) => ({
+    store: new FirestoreEarningsStore(db),
+    clock: { now: () => new Date('2026-10-23T00:00:00.000Z') },
+    policy: DEFAULT_PAYOUT_POLICY,
+  });
+
+  it('instant payment row reads "Chụp ngay · 1 giờ" with the customer name and the assignment day', async () => {
+    const { db, sets } = pathDb(instantDocs());
+    await refreshEarnings(deps(db), { payeeId: 'p1', paymentIds: ['pay_i'] });
+    const row = sets.get('earnings/p1/items/pay_i');
+    assert.ok(row !== undefined, [...sets.keys()].join(' | '));
+    assert.deepEqual(
+      [row.subjectType, row.subjectId, row.counterpartName, row.subjectLabel, row.day, row.amount, row.state],
+      ['instant_request', 'ir_1', 'Lan Anh', 'Chụp ngay · 1 giờ', '2026-10-23', 690_000, 'held'],
+    );
+    assert.equal(earningItemFromFirestore('pay_i', row).subjectType, 'instant_request');
+  });
+
+  it('unpaid or payee-less instant payment has no row', async () => {
+    for (const over of [{ status: 'created' as const }, { payeeId: '' }]) {
+      const { db, sets, reads } = pathDb(instantDocs(over));
+      await refreshEarnings(deps(db), { payeeId: 'p1', paymentIds: ['pay_i'] });
+      assert.equal(sets.has('earnings/p1/items/pay_i'), false, JSON.stringify(over));
+      assert.ok(!reads.includes('instant_requests/ir_1'), 'no subject read for money that is not an earning');
+    }
   });
 });

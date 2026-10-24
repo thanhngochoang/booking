@@ -338,6 +338,10 @@ class InstantJobController extends Notifier<InstantJobUi> {
   Future<void> noShow() =>
       _run(InstantJobAction.noShow, () => _update(InstantJobAction.noShow));
 
+  /// The server's split for a no-show (#202): what the confirm sheet shows.
+  Future<InstantCancelQuote> noShowQuote() =>
+      ref.read(instantRepositoryProvider).noShowQuote(requestId);
+
   /// The shoot countdown reached zero: let the server settle the timer.
   Future<void> tick() async {
     try {

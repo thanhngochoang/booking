@@ -15699,6 +15699,18 @@ abstract class AppLocalizations {
   /// **'Gửi lời mời'**
   String get chooseInvite;
 
+  /// No description provided for @choosePayAndInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán {amount} và gửi lời mời'**
+  String choosePayAndInvite(String amount);
+
+  /// No description provided for @choosePayContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán tiếp'**
+  String get choosePayContinue;
+
   /// No description provided for @chooseMore.
   ///
   /// In vi, this message translates to:
@@ -15980,6 +15992,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Giữ yêu cầu'**
   String get cancelInstantKeep;
+
+  /// No description provided for @cancelInstantQuoteChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền hoàn vừa đổi, xem lại trước khi huỷ.'**
+  String get cancelInstantQuoteChanged;
 
   /// No description provided for @cancelledTitle.
   ///

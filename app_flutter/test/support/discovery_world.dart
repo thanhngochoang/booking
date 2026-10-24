@@ -10,6 +10,7 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/local_recommender.dart';
@@ -25,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'content_fixtures.dart';
 import 'fake_chat_repository.dart';
+import 'fake_instant_repository.dart';
 
 /// p1 free Sat 3 Oct, p2 free Fri 2 Oct, p3 free Sun 4 Oct, p4 no free day.
 List<PhotographerSummary> discoveryPhotographers() => [
@@ -186,6 +188,7 @@ class DiscoveryWorld {
     this.prefsValues = const {},
     this.recommenderFactory,
     this.clock,
+    this.instantEnabled = false,
   }) : posts = FakePostRepository(posts ?? discoveryPosts()),
        photographers = FakePhotographerRepository(
          photographers ?? discoveryPhotographers(),
@@ -220,6 +223,11 @@ class DiscoveryWorld {
   late String uid;
   late RecommendationRepository recommender;
   late List<Override> overrides;
+
+  /// Chụp ngay entries (S02.01 card, S02.06 button). Off by default so the
+  /// discovery screens are tested on their own; on, they read [instant].
+  final bool instantEnabled;
+  final instant = FakeInstantRepository();
 
   LocalRecommender localRecommender() => LocalRecommender(
     posts: posts,
@@ -260,6 +268,8 @@ class DiscoveryWorld {
       availabilityLookupProvider.overrideWithValue(availability),
       recommendationRepositoryProvider.overrideWithValue(recommender),
       chatRepositoryProvider.overrideWithValue(chat),
+      instantEnabledProvider.overrideWithValue(instantEnabled),
+      instantRepositoryProvider.overrideWithValue(instant),
     ];
   }
 }

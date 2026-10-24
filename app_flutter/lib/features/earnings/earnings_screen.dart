@@ -423,6 +423,8 @@ class _Rows extends ConsumerWidget {
       noteIcon: reason == null ? null : AppIcons.warning,
       breakdown: _breakdown(l, item),
       expanded: expanded.contains(item.id),
+      // Every row expands to its breakdown, a Chụp ngay job (#202) too (mock
+      // S06.05 wins over the plan's "opens /work/instant").
       onTap: () => onToggle(item),
     );
   }

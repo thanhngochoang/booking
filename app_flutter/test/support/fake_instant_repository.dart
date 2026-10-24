@@ -231,6 +231,15 @@ class FakeInstantRepository implements InstantRepository {
     return inviteResult;
   }
 
+  /// `checkPayment`'s answer (V1's S04.04 resume).
+  bool checkPaymentResult = false;
+
+  @override
+  Future<bool> checkPayment(String requestId) async {
+    await _record('checkPayment', {'requestId': requestId});
+    return checkPaymentResult;
+  }
+
   @override
   Future<void> confirmComplete(String requestId) =>
       _record('confirmComplete', {'requestId': requestId});
@@ -255,8 +264,13 @@ class FakeInstantRepository implements InstantRepository {
   Future<InstantCancelQuote> cancel(
     String requestId, {
     required bool dryRun,
+    InstantCancelQuote? expected,
   }) async {
-    await _record('cancel', {'requestId': requestId, 'dryRun': dryRun});
+    await _record('cancel', {
+      'requestId': requestId,
+      'dryRun': dryRun,
+      'expected': ?expected,
+    });
     return cancelQuote;
   }
 
@@ -325,6 +339,21 @@ class FakeInstantRepository implements InstantRepository {
     }
     await _record('answerOffer', {'offerId': offerId, 'accept': accept});
     return answeredRequestId ?? requestId ?? 'req1';
+  }
+
+  /// `noShowQuote`'s answer (the server's dry run).
+  InstantCancelQuote noShowQuoteValue = const InstantCancelQuote(
+    rule: InstantCancelRule.noShow,
+    refundPercent: 50,
+    refundVnd: 345000,
+    feeVnd: 345000,
+    amountVnd: 690000,
+  );
+
+  @override
+  Future<InstantCancelQuote> noShowQuote(String requestId) async {
+    await _record('noShowQuote', {'requestId': requestId});
+    return noShowQuoteValue;
   }
 
   @override

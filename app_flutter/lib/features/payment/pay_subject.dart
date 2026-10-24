@@ -58,10 +58,30 @@ final class VerificationFeePay extends PaySubject {
   int get hashCode => (VerificationFeePay).hashCode;
 }
 
+/// A Chụp ngay request's first-round payment (#202): S04.04 for the request
+/// waiting in `pending_payment`.
+@immutable
+final class InstantPay extends PaySubject {
+  const InstantPay(this.requestId);
+
+  final String requestId;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InstantPay &&
+          runtimeType == other.runtimeType &&
+          requestId == other.requestId;
+
+  @override
+  int get hashCode => requestId.hashCode;
+}
+
 /// Route path for [subject].
 String payPathOf(PaySubject s) => switch (s) {
   BookingPay(:final bookingId) => '/b/$bookingId/pay',
   TicketPay(:final eventId, :final registrationId) =>
     '/e/$eventId/pay/$registrationId',
   VerificationFeePay() => '/verify/start/fee/pay',
+  InstantPay(:final requestId) => '/instant/$requestId/pay',
 };

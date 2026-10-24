@@ -58,8 +58,10 @@ export function settleInstant(r: InstantRequest, now: Date): SettleOutcome {
   if (next.status === 'pending_payment' && next.paymentDeadlineAt !== null && next.paymentDeadlineAt.getTime() <= t) {
     next = { ...next, status: 'choosing', pendingInviteIds: [] };
   }
-  if (!committed && (next.status === 'choosing' || next.status === 'pending_payment')
-      && next.lastActivityAt.getTime() + INSTANT.ABANDON_AFTER_MIN * MINUTE <= t) {
+  // #202 (ledger of #140): never abandoned while its payment window is open; once it closes the
+  // request is back in `choosing` (above) and the 30 minutes count from the last activity.
+  const abandonable = next.status === 'choosing' || (next.status === 'pending_payment' && next.paymentDeadlineAt === null);
+  if (!committed && abandonable && next.lastActivityAt.getTime() + INSTANT.ABANDON_AFTER_MIN * MINUTE <= t) {
     next = { ...next, status: 'abandoned', active: false, candidates: [], offers: [], pendingInviteIds: [] };
   }
   if (next.status === 'in_progress' && next.shootEndsAt !== null && next.shootEndsAt.getTime() <= t) {
@@ -94,7 +96,8 @@ export function nextDeadlineOf(r: InstantRequest): Date | null {
     case 'choosing':
       return committed ? r.searchDeadlineAt : abandonAt;
     case 'pending_payment':
-      return earliest(r.paymentDeadlineAt, abandonAt);
+      // The window's end settles first (back to `choosing`, then the abandon rule applies).
+      return r.paymentDeadlineAt ?? abandonAt;
     case 'searching':
       return earliest(
         ...r.offers.filter((o) => o.outcome === 'pending').map((o) => o.expiresAt),

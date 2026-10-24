@@ -9144,6 +9144,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get chooseInvite => 'Gửi lời mời';
 
   @override
+  String choosePayAndInvite(String amount) {
+    return 'Thanh toán $amount và gửi lời mời';
+  }
+
+  @override
+  String get choosePayContinue => 'Thanh toán tiếp';
+
+  @override
   String get chooseMore => 'Xem 5 người khác';
 
   @override
@@ -9330,6 +9338,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get cancelInstantKeep => 'Giữ yêu cầu';
+
+  @override
+  String get cancelInstantQuoteChanged =>
+      'Số tiền hoàn vừa đổi, xem lại trước khi huỷ.';
 
   @override
   String get cancelledTitle => 'Đã huỷ yêu cầu';

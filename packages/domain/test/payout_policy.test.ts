@@ -59,4 +59,10 @@ describe('payout policy', () => {
     assert.deepEqual(DEFAULT_PAYOUT_POLICY.feeBp, { individual: 0, artist: 0, studio: 0 });
     assert.deepEqual(DEFAULT_PAYOUT_POLICY.individualTaxBp, { vat: 500, pit: 200 });
   });
+  it("an explicit fee rate (an instant payment's platformFeeBp, Decision 6) replaces the policy's", () => {
+    assert.deepEqual(payoutLineOf(690_000, 'studio', DEFAULT_PAYOUT_POLICY, 1_000), {
+      gross: 690_000, fee: 69_000, tax: 0, net: 621_000, feeRateBp: 1_000, taxRateBp: 0,
+    });
+    assert.equal(payoutLineOf(690_000, 'individual', DEFAULT_PAYOUT_POLICY, 0).fee, 0);
+  });
 });

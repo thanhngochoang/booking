@@ -33,7 +33,8 @@ abstract class InstantRepository {
     List<String> skipped = const [],
   });
 
-  /// `inviteInstant`. #140 sends no [payMethod]; #202 sends its code.
+  /// `inviteInstant`. The first round sends [payMethod] (its code) and gets
+  /// [InstantPaymentNeeded]; later rounds send none and get [InstantInvited].
   Future<InstantInviteResult> invite(
     String requestId, {
     required List<String> photographerIds,
@@ -41,6 +42,11 @@ abstract class InstantRepository {
     required int expectedAmountVnd,
     PayMethod? payMethod,
   });
+
+  /// `checkInstantPayment` (S04.04 on resume): applies what the gateway
+  /// reports for the request's open payments; true once the request is paid.
+  /// The fake confirmation is V1's `PaymentsRepository.confirmFake`.
+  Future<bool> checkPayment(String requestId);
 
   /// `confirmInstantComplete`.
   Future<void> confirmComplete(String requestId);
@@ -61,8 +67,14 @@ abstract class InstantRepository {
   /// A denied read emits null and ends the stream.
   Stream<InstantRequest?> watchRequest(String requestId);
 
-  /// `cancelInstantRequest`; [dryRun] only quotes.
-  Future<InstantCancelQuote> cancel(String requestId, {required bool dryRun});
+  /// `cancelInstantRequest`; [dryRun] only quotes. A real cancel sends the
+  /// quote the user confirmed as [expected]: when the server's rule or amount
+  /// changed in between (a window ended), it refuses with `conflict`.
+  Future<InstantCancelQuote> cancel(
+    String requestId, {
+    required bool dryRun,
+    InstantCancelQuote? expected,
+  });
 
   /// `tickInstantRequest`: settles timers when a countdown reaches zero.
   Future<void> tick(String requestId);
@@ -94,6 +106,10 @@ abstract class InstantRepository {
 
   /// `answerInstantOffer`; returns the request id.
   Future<String> answerOffer(String offerId, {required bool accept});
+
+  /// `updateInstantJob(no_show, dryRun: true)`: the server's split for
+  /// "Khách không có mặt" (S14.03 shows it; the app never computes money).
+  Future<InstantCancelQuote> noShowQuote(String requestId);
 
   /// `updateInstantJob`; returns the new status.
   Future<InstantStatus> updateJob(

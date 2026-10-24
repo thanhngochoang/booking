@@ -17,6 +17,7 @@ function cli(w: InstantWorld) {
       opened += 1;
       return w.deps;
     },
+    settlement: async () => w.settlement,
   };
   return { out, io, opened: () => opened };
 }
@@ -34,7 +35,7 @@ describe('instant CLI', () => {
     assert.equal(w.store.requests.size, 0);
   });
 
-  it('offer creates a request and one offer for an online photographer', async () => {
+  it('offer creates a paid request and one offer for an online photographer', async () => {
     const w = createInstantWorld();
     w.customer('seed-customer-lan', { name: 'Lan (seed)' });
     const t = cli(w);
@@ -44,6 +45,9 @@ describe('instant CLI', () => {
     assert.equal(w.store.requests.size, 1);
     assert.equal(request.customerId, 'seed-customer-lan');
     assert.equal(request.status, 'searching');
+    assert.ok(request.paidAt !== null && request.committedAt !== null);
+    const payment = w.store.payments.get(request.paymentId ?? '');
+    assert.deepEqual([payment?.status, payment?.method, payment?.subjectType], ['paid', 'bank_qr', 'instant_request']);
     assert.equal(request.meetPoint.name, CLI_MEET_NAME);
     assert.equal(request.packageCode, 'p60');
     assert.equal(request.genre, 'portrait');
@@ -53,7 +57,7 @@ describe('instant CLI', () => {
     const offers = w.store.offersOf('p3');
     assert.equal(offers.length, 1);
     assert.equal([...w.store.offers.values()].length, 1);
-    assert.deepEqual(t.out, [`request ${request.id}`, `offer ${offers[0]?.id}`]);
+    assert.deepEqual(t.out, [`request ${request.id}`, `paid ${request.paymentId} (paid)`, `offer ${offers[0]?.id}`]);
 
     // status prints the request and its rows.
     const s = cli(w);
@@ -90,7 +94,7 @@ describe('instant CLI', () => {
     assert.equal(await runInstantCli(['offer', '--photographer', 'p2'], LOCAL, again.io), 0);
   });
 
-  it('a photographer refused at invite (unavailable): the request is cancelled again', async () => {
+  it('a photographer refused when the paid offers go out (unavailable): the request is cancelled again and refunded', async () => {
     const w = createInstantWorld();
     w.customer('seed-customer-lan');
     w.gate.set('p1', { verified: false, onboardingComplete: true }); // suggestions do not check the order gate; invite does
@@ -100,10 +104,12 @@ describe('instant CLI', () => {
     assert.ok(request !== undefined);
     assert.deepEqual(t.out, [
       `request ${request.id}`,
+      `paid ${request.paymentId} (paid)`,
       'p1 is unavailable; nothing sent',
       `request ${request.id} cancelled: status=cancelled_by_customer, seed-customer-lan can request again`,
     ]);
-    assert.deepEqual([request.status, request.active], ['cancelled_by_customer', false]);
+    assert.deepEqual([request.status, request.active, request.cancelRule], ['cancelled_by_customer', false, 'full_refund']);
+    assert.equal(w.store.payments.get(request.paymentId ?? '')?.status, 'refunded');
     const again = cli(w);
     assert.equal(await runInstantCli(['offer', '--photographer', 'p2'], LOCAL, again.io), 0);
   });

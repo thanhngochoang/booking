@@ -6,10 +6,10 @@ import { encodeGeohash } from '../src/event.js';
 import { FakeBlockGate } from '../src/fake_block_gate.js';
 import { answerInstantOffer, saveInstantSettings, setLiveShutter, updateInstantJob } from '../src/instant_jobs.js';
 import {
-  cancelInstantRequest, confirmInstantComplete, createInstantRequest, inviteInstant, runInstantSweep, tickInstantRequest,
+  cancelInstantRequest, confirmInstantComplete, createInstantRequest, runInstantSweep, tickInstantRequest,
 } from '../src/instant_requests.js';
-import { BEN_THANH, MIN, SEC, T0, TAO_DAN, aPresence, at, north } from './support/instant_fixtures.js';
-import { LAN, createInstantWorld, lanInvites, offerOf, type InstantWorld } from './support/instant_world.js';
+import { BEN_THANH, HOUR, MIN, SEC, T0, TAO_DAN, aPresence, at, north } from './support/instant_fixtures.js';
+import { LAN, createInstantWorld, inviteAndPay, lanInvites, offerOf, type InstantWorld } from './support/instant_world.js';
 
 const code = (c: string) => (e: unknown) => e instanceof DomainError && e.code === c;
 
@@ -115,7 +115,7 @@ describe('Live Shutter and settings', () => {
 });
 
 describe('answerInstantOffer', () => {
-  test('accept: assigned, round emptied, chatId set, no contact copy while the request is unpaid (assignment empties the round)', async () => {
+  test('accept of a paid request writes the contact copy and sets the payment payee', async () => {
     const w = createInstantWorld();
     const id = await lanInvites(w, ['p1', 'p2', 'p3']);
     w.clock.advance(20 * SEC);
@@ -135,7 +135,9 @@ describe('answerInstantOffer', () => {
     assert.deepEqual(r.freeCancelUntil, at(20 * SEC + 2 * MIN));
     assert.deepEqual(r.lateDeadlineAt, at(20 * SEC + 20 * MIN));
     assert.equal(r.nextDeadlineAt, null);
-    assert.equal(w.store.contacts.size, 0);
+    assert.deepEqual(w.store.contacts.get(id), { name: 'Lan Anh', phone: '+84901234567', allowZalo: false, allowWhatsApp: false });
+    const pay = w.store.payments.get(r.paymentId ?? '');
+    assert.deepEqual([pay?.payeeId, pay?.status, pay?.escrowStatus], ['p2', 'paid', 'held']);
     assert.equal(w.store.offer('p2', offerOf(w, 'p2', id))?.outcome, 'accepted');
     for (const uid of ['p1', 'p3']) {
       assert.equal(w.store.offer(uid, offerOf(w, uid, id))?.outcome, 'withdrawn');
@@ -167,7 +169,7 @@ describe('answerInstantOffer', () => {
     w.customer('c-minh', { name: 'Minh' });
     const { requestId: b } = await createInstantRequest(w.deps, { uid: 'c-minh' },
       { packageCode: 'p30', genre: 'couple', meetPoint: { ...north(TAO_DAN, 0.3), name: 'Nhà thờ Đức Bà' } });
-    await inviteInstant(w.deps, { uid: 'c-minh' }, { requestId: b, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 390_000 });
+    await inviteAndPay(w, { uid: 'c-minh' }, b, ['p1']);
     assert.equal(presence(w, 'p1').pendingOffers.length, 2);
     const offerB = offerOf(w, 'p1', b);
     const results = await Promise.allSettled([
@@ -326,8 +328,8 @@ describe('updateInstantJob', () => {
     const created = await createInstantRequest(w.deps, mai, { packageCode: 'p60', genre: 'portrait', meetPoint: { ...TAO_DAN, name: 'Hồ Con Rùa' } });
     const next = created.requestId;
     assert.ok(req(w, next).candidates.some((c) => c.photographerId === 'p1'));
-    const res = await inviteInstant(w.deps, mai, { requestId: next, photographerIds: ['p1'], skipped: [], expectedAmountVnd: req(w, next).amountVnd });
-    assert.equal(res.kind, 'invited');
+    const res = await inviteAndPay(w, mai, next, ['p1']);
+    assert.equal(res.kind, 'payment');
     assert.deepEqual(await accept(w, 'p1', next), { outcome: 'accepted', requestId: next });
     assert.equal(presence(w, 'p1').activeRequestId, next);
     assert.deepEqual(await confirmInstantComplete(w.deps, LAN, { requestId: id }), { status: 'completed' });
@@ -350,7 +352,7 @@ describe('updateInstantJob', () => {
     }
   });
 
-  test('no_show before 15 minutes is deadline_passed; after, no_show_customer with rule no_show recorded (zero money while unpaid)', async () => {
+  test('no_show after 15 minutes refunds 50/50 and stamps releaseAfter', async () => {
     const w = createInstantWorld();
     const id = await assigned(w);
     await job(w, 'p1', id, 'start_route', { location: HERE });
@@ -358,23 +360,37 @@ describe('updateInstantJob', () => {
     w.clock.advance(14 * MIN);
     await assert.rejects(job(w, 'p1', id, 'no_show'), code('deadline_passed'));
     w.clock.advance(MIN);
+    // The S14.03 sheet shows the server's quote (a dry run writes nothing).
+    const commits = w.store.commits;
+    assert.deepEqual(await job(w, 'p1', id, 'no_show', { dryRun: true }), {
+      rule: 'no_show', refundPercent: 50, refundVnd: 345_000, feeVnd: 345_000, amountVnd: 690_000, status: 'arrived',
+    });
+    assert.equal(w.store.commits, commits);
+    await assert.rejects(job(w, 'p1', id, 'start', { dryRun: true }), code('invalid_argument'));
     assert.deepEqual(await job(w, 'p1', id, 'no_show'), { status: 'no_show_customer' });
     const r = req(w, id);
-    assert.deepEqual([r.active, r.cancelRule, r.refundPercent, r.feeVnd], [false, 'no_show', 0, 0]);
+    assert.deepEqual([r.active, r.cancelRule, r.refundPercent, r.feeVnd], [false, 'no_show', 50, 345_000]);
     const p = presence(w, 'p1');
     assert.equal(p.activeRequestId, null);
     assert.deepEqual(p.reliability, { offers: 1, accepted: 1, declined: 0, expired: 0, cancelled: 0, late: 0, noShow: 0 });
-    assert.equal(w.store.payments.size + w.store.refunds.size + w.store.ledger.size, 0);
+    const pay = w.store.payments.get(r.paymentId ?? '');
+    assert.deepEqual([pay?.status, pay?.escrowStatus, pay?.payeeId], ['partially_refunded', 'partially_refunded', 'p1']);
+    assert.equal(pay?.releaseAfter, at(15 * MIN + 24 * HOUR).toISOString());
+    const refunds = [...w.store.refunds.values()];
+    assert.deepEqual(refunds.map((x) => [x.amount, x.percent, x.reason, x.status]), [[345_000, 50, 'no_show', 'done']]);
+    assert.deepEqual([r.refundId, r.refundStatus], [refunds[0]?.id, 'done']);
+    const sum = [...w.store.ledger.values()].filter((e) => e.paymentId === pay?.id).reduce((t, e) => t + e.amount, 0);
+    assert.equal(sum, 345_000);
   });
 
-  test('photographer cancel returns the request to choosing, excludes them, clears contact and track, resets the 10-minute window', async () => {
+  test('photographer cancel clears the payee and keeps the money held; the request returns to choosing, excludes them, clears contact and track, resets the 10-minute window', async () => {
     const w = createInstantWorld();
     const id = await assigned(w);
     await job(w, 'p1', id, 'start_route', { location: HERE });
     w.store.contacts.set(id, { name: 'Lan Anh', phone: '+84901234567', allowZalo: false, allowWhatsApp: false });
     w.clock.advance(5 * MIN);
     const res = await cancelInstantRequest(w.deps, { uid: 'p1' }, { requestId: id, dryRun: false });
-    assert.deepEqual(res, { rule: 'unpaid', refundPercent: 0, refundVnd: 0, feeVnd: 0, amountVnd: 0, status: 'choosing' });
+    assert.deepEqual(res, { rule: 'photographer_cancel', refundPercent: 100, refundVnd: 690_000, feeVnd: 0, amountVnd: 690_000, status: 'choosing' });
     const r = req(w, id);
     assert.equal(r.status, 'choosing');
     assert.ok(r.excludedIds.includes('p1'));
@@ -387,6 +403,10 @@ describe('updateInstantJob', () => {
     assert.equal(w.store.tracks.has(id), false);
     const p = presence(w, 'p1');
     assert.deepEqual([p.activeRequestId, p.reliability.cancelled], [null, 1]);
+    // The money stays held for the next round; nobody is its payee any more.
+    const pay = w.store.payments.get(r.paymentId ?? '');
+    assert.deepEqual([pay?.payeeId, pay?.status, pay?.escrowStatus], ['', 'paid', 'held']);
+    assert.equal(w.store.refunds.size, 0);
     w.clock.set(at(15 * MIN));
     await runInstantSweep(w.deps);
     assert.equal(req(w, id).status, 'no_match');

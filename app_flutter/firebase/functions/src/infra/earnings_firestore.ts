@@ -2,6 +2,8 @@ import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/fir
 import {
   EARNING_STATES,
   formatVnDate,
+  instantEarningLabel,
+  isPaymentSubject,
   isSettledPayment,
   providerTypeOf,
   type EarningItem,
@@ -21,6 +23,7 @@ import {
   paymentFromFirestore,
 } from './booking_firestore.js';
 import { PAYOUTS_COLLECTION, payoutFromFirestore } from './payout_firestore.js';
+import { INSTANT_REQUESTS } from './instant_firestore.js';
 import { PHOTOGRAPHERS_COLLECTION } from './review_firestore.js';
 
 export const EARNINGS_COLLECTION = 'earnings';
@@ -64,7 +67,8 @@ export function earningItemFromFirestore(id: string, d: DocumentData): EarningIt
   return {
     id,
     payeeId: String(d.payeeId ?? ''),
-    subjectType: (d.subjectType === 'event_registration' ? 'event_registration' : 'booking') satisfies PaymentSubject,
+    // Rows before subjects existed read as bookings; every known subject keeps its own (#202: instant_request).
+    subjectType: (isPaymentSubject(d.subjectType) ? d.subjectType : 'booking') satisfies PaymentSubject,
     subjectId: String(d.subjectId ?? ''),
     counterpartName: String(d.counterpartName ?? ''),
     subjectLabel: String(d.subjectLabel ?? ''),
@@ -138,6 +142,21 @@ export class FirestoreEarningsStore implements EarningsStore {
               counterpartName: typeof r.userName === 'string' ? r.userName : '',
               label: typeof ev.title === 'string' ? ev.title : '',
               day: start === null ? '' : formatVnDate(start),
+              milestones: null,
+            };
+          }
+          if (p.subjectType === 'instant_request') {
+            // A Chụp ngay job (#202): the customer, "Chụp ngay · {duration}", the Vietnam day of the
+            // assignment. Unpaid money or a payment with no photographer yet is not an earning.
+            if (!p.payeeId || (!isSettledPayment(p) && p.status !== 'refunded')) return null;
+            const r = (await fTx.get(this.db.collection(INSTANT_REQUESTS).doc(p.subjectId))).data();
+            if (r === undefined) return null;
+            const assignedAt = r.assignedAt instanceof Timestamp ? r.assignedAt.toDate() : null;
+            const durationMin = typeof r.durationMin === 'number' ? r.durationMin : 0;
+            return {
+              counterpartName: typeof r.customerName === 'string' ? r.customerName : '',
+              label: instantEarningLabel(durationMin),
+              day: assignedAt === null ? '' : formatVnDate(assignedAt),
               milestones: null,
             };
           }

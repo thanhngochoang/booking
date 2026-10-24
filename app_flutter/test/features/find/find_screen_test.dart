@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
@@ -13,7 +12,6 @@ import 'package:photobooking/features/find/find_screen.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
-import '../../support/fake_instant_repository.dart';
 import '../../support/screen_host.dart';
 
 class _Spy extends DelegatingRecommender {
@@ -124,17 +122,10 @@ void main() {
     tester,
   ) async {
     _phone(tester);
-    final w = DiscoveryWorld();
+    final w = DiscoveryWorld(instantEnabled: true);
     await w.init();
     await tester.pumpWidget(
-      screenRouterApp(
-        router: _router(),
-        overrides: [
-          ...w.overrides,
-          instantEnabledProvider.overrideWithValue(true),
-          instantRepositoryProvider.overrideWithValue(FakeInstantRepository()),
-        ],
-      ),
+      screenRouterApp(router: _router(), overrides: w.overrides),
     );
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -656,7 +647,8 @@ void main() {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final w = DiscoveryWorld();
+      // Chụp ngay on, as shipped since #202: the S02.06 button fits too.
+      final w = DiscoveryWorld(instantEnabled: true);
       await w.init();
       await tester.pumpWidget(
         screenRouterApp(
@@ -668,6 +660,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('instant-find-button')), findsOneWidget);
       await _tapChip(tester, 'find-service');
       expect(tester.takeException(), isNull, reason: 'the sheet fits too');
     });

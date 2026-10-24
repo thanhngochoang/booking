@@ -582,6 +582,8 @@ export function paymentToFirestore(p: Payment): DocumentData {
     dispute: p.dispute ? paymentDisputeToFirestore(p.dispute) : null,
     payoutId: p.payoutId ?? null,
     payableAmount: p.payableAmount ?? null,
+    // An instant payment's platform fee snapshot (Decision 6); absent → the payout policy's rate.
+    ...(p.feeBp !== undefined ? { feeBp: p.feeBp } : {}),
     milestones: p.milestones
       ? p.milestones.map((m) => ({
           kind: m.kind,
@@ -635,6 +637,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     dispute: paymentDisputeFromFirestore(d.dispute),
     payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
     ...(typeof d.payableAmount === 'number' ? { payableAmount: d.payableAmount } : {}),
+    ...(typeof d.feeBp === 'number' && Number.isInteger(d.feeBp) && d.feeBp >= 0 && d.feeBp <= 10_000 ? { feeBp: d.feeBp } : {}),
     ...(Array.isArray(d.milestones)
       ? {
           milestones: d.milestones.map((m: { kind?: unknown; amount?: unknown; status?: unknown; releaseAfter?: unknown; releasedAt?: unknown; payoutId?: unknown }) => ({

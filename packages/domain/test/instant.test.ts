@@ -9,6 +9,7 @@ import {
   areaLabelAt,
   cityAt,
   estimateEtaMinutes,
+  instantEarningLabel,
   instantSearchCells,
   isInstantActive,
   livePendingOffers,
@@ -216,5 +217,14 @@ describe('instant presence', () => {
     assert.equal(presenceFresh(p, at(INSTANT.PRESENCE_FRESH_MIN * MIN)), false);
     assert.equal(presenceFresh(aPresence('p2', { online: false }), T0), false);
     assert.equal(presenceFresh(aPresence('p3', { heartbeatAt: null }), T0), false);
+  });
+});
+
+describe('instantEarningLabel (#202)', () => {
+  it('reads the package duration', () => {
+    assert.equal(instantEarningLabel(60), 'Chụp ngay · 1 giờ');
+    assert.equal(instantEarningLabel(30), 'Chụp ngay · 30 phút');
+    assert.equal(instantEarningLabel(120), 'Chụp ngay · 2 giờ');
+    assert.equal(instantEarningLabel(90), 'Chụp ngay · 1 giờ 30 phút');
   });
 });

@@ -8,18 +8,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/instant/instant_flow_screen.dart';
 import 'package:photobooking/features/instant/instant_request_screen.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 
 import 'fake_instant_repository.dart';
+import 'fake_payments_repository.dart';
 import 'instant_work_world.dart';
 import 'screen_host.dart';
 
@@ -38,6 +44,7 @@ class InstantCustomerWorld {
     InstantRepository? repository,
     bool flag = true,
     this.role = UserRole.customer,
+    this.paymentsRepository,
     List<Override> extra = const [],
   }) : base = InstantWorld(
          repo: repo,
@@ -50,6 +57,13 @@ class InstantCustomerWorld {
 
   final InstantWorld base;
   final UserRole role;
+
+  /// What S04.04 talks to instead of [payments] (the two-party test's
+  /// simulator).
+  final PaymentsRepository? paymentsRepository;
+
+  /// S04.04's fake bank (`confirmFake`), #202.
+  final payments = FakePaymentsRepository();
 
   FakeInstantRepository get repo => base.repo;
   FakeLocationRepository get location => base.location;
@@ -87,6 +101,9 @@ class InstantCustomerWorld {
 
   List<Override> get overrides => [
     ...base.overrides,
+    paymentsRepositoryProvider.overrideWithValue(
+      paymentsRepository ?? payments,
+    ),
     authStateProvider.overrideWith((ref) => _watchAuth()),
     currentContactProvider.overrideWith((ref) => _watchContact()),
     currentProfileProvider.overrideWith(
@@ -101,7 +118,8 @@ Widget _stub(BuildContext _, GoRouterState s) =>
     Scaffold(body: Text('stub ${s.uri}'));
 
 /// `/home`, `/action`, `/chat/:chatId` (stub), `/instant` (S13.01),
-/// `/instant/:id` (the request's status switch), `/profile/phone` (a stub whose
+/// `/instant/:id` (the request's status switch; `?paid=1` after S04.04),
+/// `/instant/:id/pay` (V1's S04.04 for `InstantPay`), `/profile/phone` (a stub whose
 /// "save-phone" saves a number and goes to `returnTo`, like S04.05).
 GoRouter instantCustomerRouter(
   InstantCustomerWorld world, {
@@ -123,7 +141,17 @@ GoRouter instantCustomerRouter(
     GoRoute(path: '/instant', builder: (_, _) => const InstantRequestScreen()),
     GoRoute(
       path: '/instant/:id',
-      builder: (_, s) => InstantFlowScreen(requestId: s.pathParameters['id']!),
+      builder: (_, s) => InstantFlowScreen(
+        requestId: s.pathParameters['id']!,
+        justPaid: s.uri.queryParameters['paid'] == '1',
+      ),
+    ),
+    GoRoute(
+      path: '/instant/:id/pay',
+      builder: (_, s) => PaymentScreen(
+        subject: InstantPay(s.pathParameters['id']!),
+        initial: s.extra as PaymentInstructions?,
+      ),
     ),
     GoRoute(
       path: '/profile/phone',
@@ -244,6 +272,9 @@ InstantRequest customerRequestOf({
   bool roundEnded = false,
   int round = 1,
   int amountVnd = 690000,
+  bool paid = false,
+  List<String> pendingInviteIds = const [],
+  PayMethod? payMethod,
 }) => InstantRequest(
   id: id,
   customerId: 'cus1',
@@ -262,9 +293,31 @@ InstantRequest customerRequestOf({
   amountVnd: amountVnd,
   earningVnd: amountVnd,
   committed: committed,
+  paid: paid,
+  payMethod: payMethod,
+  pendingInviteIds: pendingInviteIds,
   round: round,
   candidates: candidates,
   roundEnded: roundEnded,
+);
+
+/// What `inviteInstant` answers in the first round (#202): V1's flat
+/// instructions for `req1`'s payment [paymentId], 15 minutes from [instantNow].
+PaymentInstructions instantInstructionsOf({
+  String paymentId = 'pay1',
+  PayMethod method = PayMethod.bankQr,
+  int amount = 690000,
+  String transferCode = 'PB 7K2M9Q',
+}) => PaymentInstructions(
+  paymentId: paymentId,
+  method: method,
+  amount: amount,
+  expiresAt: instantNow.add(const Duration(minutes: 15)),
+  transferCode: transferCode,
+  qrPayload: method == PayMethod.bankQr ? 'vietqr:$transferCode' : null,
+  bankName: method == PayMethod.bankQr ? 'Vietcombank' : null,
+  accountMasked: method == PayMethod.bankQr ? '•••• 6789' : null,
+  payUrl: method == PayMethod.bankQr ? null : 'https://wallet.test/$paymentId',
 );
 
 /// Pumps `/instant/[id]` with [request] already in the fake listener.

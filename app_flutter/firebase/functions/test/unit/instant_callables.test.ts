@@ -9,12 +9,16 @@ import {
   type BookingDeps,
   type InstantDeps,
 } from '@photobooking/domain';
-import { CALLABLE_OPTIONS, CONTENDED_CALLABLE_OPTIONS } from '../../src/config.js';
+import * as allExports from '../../src/index.js';
+import { CALLABLE_OPTIONS, CONTENDED_CALLABLE_OPTIONS, PAYOUT_ACCOUNT_KEY } from '../../src/config.js';
+import { liveSettlementDeps } from '../../src/infra/live_payments.js';
+import { liveRefundSubjects } from '../../src/infra/live_refunds.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
 import { TEST_CIPHER, captureLogs } from './support/payment_world.js';
 import {
   handleAnswerInstantOffer,
   handleCancelInstantRequest,
+  handleCheckInstantPayment,
   handleConfirmInstantComplete,
   handleCreateInstantRequest,
   handleInviteInstant,
@@ -25,7 +29,7 @@ import {
   handleUpdateInstantJob,
   type InstantCallableInput,
 } from '../../src/callables/instant.js';
-import { liveInstantDeps } from '../../src/infra/live_instant.js';
+import { instantCloudLog, liveInstantDeps } from '../../src/infra/live_instant.js';
 import { FirestoreBlockGate } from '../../src/infra/safety_firestore.js';
 import {
   LAN,
@@ -38,7 +42,7 @@ import {
 } from '../../../../../packages/domain/test/support/instant_world.js';
 import { TAO_DAN, north } from '../../../../../packages/domain/test/support/instant_fixtures.js';
 
-/** A `demo-*` emulator: the only place (with the dev project) where #140's free dispatch runs. */
+/** A `demo-*` emulator: with the dev project, where the fake checkout gateway is available (payments on). */
 const DEMO_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-nag' };
 
 const as = (uid: string, data: unknown): InstantCallableInput => ({ auth: { uid }, data });
@@ -58,11 +62,30 @@ async function accepted(w: InstantWorld, uid: string, requestId: string): Promis
   assert.equal(res.outcome, 'accepted');
 }
 
+/** The secret names a deployed callable binds (firebase-functions v2 `__endpoint`). */
+const secretsOf = (fn: unknown): string[] =>
+  ((fn as { __endpoint?: { secretEnvironmentVariables?: { key: string }[] } }).__endpoint?.secretEnvironmentVariables ?? [])
+    .map((s) => s.key);
+
 describe('instant callable options', () => {
-  it('CONTENDED_CALLABLE_OPTIONS has the 30 s of the contended transactions and no secrets (#140 moves no money)', () => {
+  it('CONTENDED_CALLABLE_OPTIONS has the 30 s of the contended transactions and no secrets', () => {
     assert.equal(CONTENDED_CALLABLE_OPTIONS.timeoutSeconds, 30);
     assert.equal(CONTENDED_CALLABLE_OPTIONS.region, CALLABLE_OPTIONS.region);
     assert.equal('secrets' in CONTENDED_CALLABLE_OPTIONS, false);
+  });
+
+  it('the callables that move money bind PAYOUT_ACCOUNT_KEY (#202); answerInstantOffer stays without secrets', () => {
+    for (const name of ['inviteInstant', 'checkInstantPayment', 'cancelInstantRequest', 'confirmInstantComplete', 'updateInstantJob'] as const) {
+      assert.deepEqual(secretsOf(allExports[name]), [PAYOUT_ACCOUNT_KEY.name], name);
+    }
+    assert.deepEqual(secretsOf(allExports.answerInstantOffer), []);
+  });
+
+  it('instant_request is registered in V1 settlement and V2 refund subjects', () => {
+    assert.ok(liveSettlementDeps().subjects.instant_request !== undefined);
+    const handler = liveRefundSubjects().instant_request;
+    assert.equal(typeof handler?.resend, 'function');
+    assert.equal(typeof handler?.record, 'function');
   });
 });
 
@@ -102,39 +125,80 @@ describe('instant callables', () => {
     const anonymous: InstantCallableInput = { data: {} };
     const handlers: Array<(r: InstantCallableInput, d: InstantDeps) => Promise<unknown>> = [
       handleCreateInstantRequest, handleNextInstantCandidates, (r, d) => handleInviteInstant(r, d, DEMO_ENV),
-      handleCancelInstantRequest, handleConfirmInstantComplete, handleTickInstantRequest, handleSetLiveShutter,
+      (r, d) => handleCheckInstantPayment(r, { ...d, settlement: createInstantWorld().settlement }), handleCancelInstantRequest, handleConfirmInstantComplete, handleTickInstantRequest, handleSetLiveShutter,
       handleSaveInstantSettings, handleAnswerInstantOffer, handleUpdateInstantJob,
     ];
     for (const handle of handlers) await refused(handle(anonymous, w.deps), 'unauthenticated', 'permission_denied');
     assert.equal(w.store.commits, 0);
   });
 
-  it('inviteInstant returns invited rows', async () => {
+  it("inviteInstant returns V1's flat PaymentInstructions (bank_qr has transferCode and qrPayload)", async () => {
     const w = createInstantWorld();
     const requestId = await lanRequests(w);
     const amount = w.store.requests.get(requestId)?.amountVnd;
     const res = await handleInviteInstant(
-      as(LAN.uid, { requestId, photographerIds: ['p1', 'p2'], skipped: [], expectedAmountVnd: amount }),
+      as(LAN.uid, { requestId, photographerIds: ['p1', 'p2'], skipped: [], expectedAmountVnd: amount, payMethod: 'bank_qr' }),
       w.deps,
       DEMO_ENV,
     );
-    assert.deepEqual(res, { kind: 'invited', invited: ['p1', 'p2'], unavailable: [] });
-    assert.equal(w.store.requests.get(requestId)?.status, 'searching');
-    assert.equal(w.store.offersOf('p1').length, 1);
+    assert.equal(res.kind, 'payment');
+    if (res.kind !== 'payment') return;
+    assert.equal(res.amountVnd, 690_000);
+    const i = res.instructions;
+    assert.deepEqual([i.subjectType, i.subjectId, i.method, i.amount], ['instant_request', requestId, 'bank_qr', 690_000]);
+    assert.match(i.transferCode, /^PB [2-9A-Z]{6}$/);
+    assert.match(i.qrPayload ?? '', /^000201/);
+    assert.equal(typeof i.expiresAt, 'string');
+    assert.equal(w.store.requests.get(requestId)?.status, 'pending_payment');
+    assert.equal(w.store.offers.size, 0);
+    // The flat shape is what a callable returns: JSON round trip keeps every field.
+    assert.deepEqual(JSON.parse(JSON.stringify(res)), res);
   });
 
-  it('inviteInstant outside the dev project or a demo emulator is not_eligible', async () => {
+  it('inviteInstant in payments-off mode is not_eligible', async () => {
     const w = createInstantWorld();
     const requestId = await lanRequests(w);
-    const data = { requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000 };
+    const data = { requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000, payMethod: 'bank_qr' };
     for (const env of [{ GCLOUD_PROJECT: 'booking-prod' }, { GCLOUD_PROJECT: 'demo-nag' }, { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'other' }]) {
       await refused(handleInviteInstant(as(LAN.uid, data), w.deps, env), 'failed-precondition', 'not_eligible');
     }
-    assert.equal(w.store.offers.size, 0);
+    assert.equal(w.store.payments.size, 0);
     assert.equal(w.store.requests.get(requestId)?.status, 'choosing');
-    // The dev project runs it.
+    // The dev project has the fake checkout gateway.
     const res = await handleInviteInstant(as(LAN.uid, data), w.deps, { GCLOUD_PROJECT: 'booking-c1922' });
-    assert.equal(res.kind, 'invited');
+    assert.equal(res.kind, 'payment');
+  });
+
+  it('checkInstantPayment maps to the payer only', async () => {
+    const w = createInstantWorld();
+    const requestId = await lanRequests(w);
+    const res = await handleInviteInstant(
+      as(LAN.uid, { requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000, payMethod: 'bank_qr' }),
+      w.deps,
+      DEMO_ENV,
+    );
+    assert.equal(res.kind, 'payment');
+    const deps = { ...w.deps, settlement: w.settlement };
+    assert.deepEqual(await handleCheckInstantPayment(as(LAN.uid, { requestId }), deps), { paid: false, status: 'pending_payment' });
+    await refused(handleCheckInstantPayment(as('p1', { requestId }), deps), 'permission-denied', 'permission_denied');
+    await refused(handleCheckInstantPayment(as(LAN.uid, { requestId: 'ir_missing' }), deps), 'not-found', 'not_found');
+    if (res.kind === 'payment') await w.pay(res.instructions.paymentId);
+    assert.deepEqual(await handleCheckInstantPayment(as(LAN.uid, { requestId }), deps), { paid: true, status: 'searching' });
+  });
+
+  it('liveInstantDeps wires the gateway, the payment lookup and the cipher (#202)', () => {
+    const deps = liveInstantDeps();
+    assert.equal(deps.gateway.provider, 'fake');
+    assert.ok(deps.payments);
+    assert.equal(typeof deps.cipher.encrypt, 'function');
+  });
+
+  it('liveInstantDeps logs failed refund sends as a count only (#202)', async (t) => {
+    assert.equal(liveInstantDeps().log, instantCloudLog);
+    const lines = await captureLogs(t, async () => instantCloudLog.refundSendsFailed(2));
+    const line = lines.find((l) => l.includes('instant refund sends failed'));
+    assert.ok(line, lines.join(''));
+    assert.match(line, /"count":2/);
   });
 
   it('liveInstantDeps wires a BlockGate', () => {

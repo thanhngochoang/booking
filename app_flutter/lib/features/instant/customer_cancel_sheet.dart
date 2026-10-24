@@ -1,8 +1,8 @@
 // S13.08 (customer): cancel a Chụp ngay request. Every amount on the sheet is
 // the server's dry run (Decision 8): the app shows the quote, it never
 // computes money. The policy rows highlight the quote's rule with "(bây giờ)";
-// row 3 reads the request's own arrived split. #140 moves no money: every
-// quote is `unpaid` and the sheet says so.
+// row 3 reads the request's own arrived split. The confirmed quote goes with
+// the real cancel; the server refuses (`conflict`) one that changed (#202).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -35,8 +35,10 @@ enum _Closed { kept, cancelled, refused }
 
 /// Opens S13.08 over the request's view. Closes on "Giữ yêu cầu", back or a
 /// tap outside, and after the cancel went through (the request's listener
-/// then shows the closed view). A `conflict` from the server (the request
-/// moved on, e.g. the shoot started) closes it with the generic error.
+/// then shows the closed view). A cancel refused with `conflict` (the quote
+/// changed, e.g. a window ended) re-quotes in place with "Số tiền hoàn vừa
+/// đổi…"; a dry run answering `conflict` (the request moved on, e.g. the
+/// shoot started) closes it with the generic error.
 Future<void> showCustomerCancelSheet(
   BuildContext context,
   WidgetRef ref, {
@@ -126,20 +128,32 @@ class _CustomerCancelBodyState extends ConsumerState<_CustomerCancelBody> {
   }
 
   Future<void> _confirm() async {
-    if (_running || _closing) return;
+    // The red button is enabled only with a fresh quote; without one, no cancel.
+    final shown = ref.read(customerCancelQuoteProvider(_id)).value;
+    if (_running || _closing || shown == null) return;
     final l = context.l10n;
     setState(() {
       _running = true;
       _error = null;
     });
     try {
-      await ref.read(instantRepositoryProvider).cancel(_id, dryRun: false);
+      // The quote on screen goes with the cancel: if the server's changed in
+      // between (a window ended), it answers `conflict` and nothing moves.
+      await ref
+          .read(instantRepositoryProvider)
+          .cancel(_id, dryRun: false, expected: shown);
       if (!mounted) return;
       _close(_Closed.cancelled);
     } on Object catch (e) {
       if (!mounted) return;
       if (_isConflict(e)) {
-        _close(_Closed.refused);
+        // The quote changed under the tap: ask again and say so; the dry
+        // run closes the sheet if the request cannot be cancelled any more.
+        setState(() {
+          _running = false;
+          _error = l.cancelInstantQuoteChanged;
+        });
+        ref.invalidate(customerCancelQuoteProvider(_id));
         return;
       }
       // The request is still open: the sheet stays with the reason.

@@ -126,6 +126,8 @@ Future<BookingsTabHandles> _pump(
   List<AuthUser> otherUsers = const [],
 }) => pumpBookingsTab(
   tester,
+  // The Live Shutter card (Chụp ngay, on since #202) has its own group.
+  extraOverrides: [instantEnabledProvider.overrideWithValue(false)],
   uid: detailPhotographerUid,
   role: UserRole.photographer,
   bookings: repo,

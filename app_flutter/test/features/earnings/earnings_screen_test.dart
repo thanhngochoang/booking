@@ -352,6 +352,34 @@ void main() {
     expect(w.events.last.$2, {'state': 'held'});
   });
 
+  testWidgets(
+    'an instant_request row expands to Hoa hồng / Thuế khấu trừ / Thực nhận like a booking row',
+    (tester) async {
+      final w = await _open(
+        tester,
+        seed: (w) => w.repo.emitItems([
+          w.item(
+            'pay_i',
+            subjectType: 'instant_request',
+            subjectId: 'ir_1',
+            label: 'Chụp ngay · 1 giờ',
+            amount: 690000,
+            fee: 69000,
+            feeRateBp: 1000,
+            tax: 43470,
+            taxRateBp: 700,
+            net: 577530,
+          ),
+        ]),
+      );
+      await _expand(tester, 'Lan Anh · Chụp ngay · 1 giờ');
+      expect(w.router.state.uri.path, '/work/earnings');
+      expect(find.text('Hoa hồng (10%)'), findsOneWidget);
+      expect(find.text('Thuế khấu trừ (7%)'), findsOneWidget);
+      expect(find.text('577.530₫'), findsOneWidget);
+    },
+  );
+
   testWidgets('a row without a customer name says Khách', (tester) async {
     await _open(tester, seed: (w) => w.repo.emitItems([w.item('a', name: '')]));
     expect(find.text('Khách · Chân dung 2h'), findsOneWidget);

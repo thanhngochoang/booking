@@ -133,6 +133,17 @@ export function quoteInstantPrice(pkg: InstantPackage, city: InstantCity): numbe
   return Math.round((pkg.priceVnd * city.surgeBp) / 10_000_000) * 1000;
 }
 
+/** "30 phút", "1 giờ", "1 giờ 30 phút": a package duration as S06.05 and S14.01 read it. */
+export function instantDurationLabel(durationMin: number): string {
+  const h = Math.floor(durationMin / 60);
+  const m = durationMin % 60;
+  if (h === 0) return `${m} phút`;
+  return m === 0 ? `${h} giờ` : `${h} giờ ${m} phút`;
+}
+
+/** The S06.05 earnings row label of an instant job (#202): "Chụp ngay · 1 giờ". */
+export const instantEarningLabel = (durationMin: number): string => `Chụp ngay · ${instantDurationLabel(durationMin)}`;
+
 /** What the photographer is paid for an amount: the amount minus the platform fee (Decision 6). */
 export function photographerEarning(amountVnd: number, cfg: Pick<InstantConfig, 'platformFeeBp'>): number {
   return amountVnd - Math.round((amountVnd * cfg.platformFeeBp) / 10_000);

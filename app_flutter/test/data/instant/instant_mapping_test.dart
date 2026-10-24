@@ -287,6 +287,20 @@ void main() {
         expect(r.refundPercent, isNull);
         expect(r.assignedAt, isNull);
         expect(r.searchDeadlineAt, isNull);
+        expect(r.pendingInviteIds, isEmpty);
+      },
+    );
+
+    test(
+      'pending_payment reads the waiting choice (pendingInviteIds, #202)',
+      () {
+        final r = instantRequestFromFirestore('req1', {
+          ...fullRequestDoc(),
+          'status': 'pending_payment',
+          'pendingInviteIds': ['ph1', 'ph2', 7],
+        })!;
+        expect(r.status, InstantStatus.pendingPayment);
+        expect(r.pendingInviteIds, ['ph1', 'ph2']);
       },
     );
   });
@@ -492,6 +506,7 @@ void main() {
         'status': 'en_route',
       });
       expect(q.rule, InstantCancelRule.enRoute);
+      expect(q.ruleCode, 'en_route');
       expect(q.refundPercent, 80);
       expect(q.refundVnd, 552000);
       expect(q.feeVnd, 138000);

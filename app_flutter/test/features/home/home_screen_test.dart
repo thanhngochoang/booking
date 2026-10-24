@@ -4,14 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/content/provider_type.dart';
-import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
-import '../../support/fake_instant_repository.dart';
 import '../../support/icon_finders.dart';
 import '../../support/meta_finders.dart';
 import '../../support/screen_host.dart';
@@ -85,17 +83,10 @@ void main() {
     tester,
   ) async {
     _phone(tester);
-    final w = DiscoveryWorld();
+    final w = DiscoveryWorld(instantEnabled: true);
     await w.init();
     await tester.pumpWidget(
-      screenRouterApp(
-        router: _router(),
-        overrides: [
-          ...w.overrides,
-          instantEnabledProvider.overrideWithValue(true),
-          instantRepositoryProvider.overrideWithValue(FakeInstantRepository()),
-        ],
-      ),
+      screenRouterApp(router: _router(), overrides: w.overrides),
     );
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -519,7 +510,8 @@ void main() {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final w = DiscoveryWorld();
+      // Chụp ngay on, as shipped since #202: the S02.01 card fits too.
+      final w = DiscoveryWorld(instantEnabled: true);
       await w.init();
       await tester.pumpWidget(
         screenApp(
@@ -531,6 +523,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('instant-entry-card')), findsOneWidget);
       expect(find.byType(BackdropFilter), findsNothing);
     });
   }

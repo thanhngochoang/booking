@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 
 DateTime? _date(Object? v) => switch (v) {
   Timestamp() => v.toDate().toUtc(),
@@ -123,6 +124,7 @@ InstantRequest? instantRequestFromFirestore(
     roundsWithInvites: _int(d['roundsWithInvites']),
     candidates: _list(d['candidates']).map(_candidate).toList(),
     offers: _list(d['offers']).map(_offerRow).toList(),
+    pendingInviteIds: _strings(d['pendingInviteIds']),
     roundEnded: _bool(d['roundEnded']),
     photographerId: _strOrNull(d['photographerId']),
     photographer: _party(d['photographer']),
@@ -310,8 +312,10 @@ InstantTrack? instantTrackFromFirestore(Map<String, dynamic>? d) {
 /// `cancelInstantRequest`'s `{rule, refundPercent, refundVnd, feeVnd, amountVnd, status}`.
 InstantCancelQuote instantCancelQuoteFromJson(Object? data) {
   final d = _map(data);
+  final rule = _code(d['rule']);
   return InstantCancelQuote(
-    rule: InstantCancelRule.fromCode(_code(d['rule'])),
+    rule: InstantCancelRule.fromCode(rule),
+    ruleCode: rule,
     refundPercent: _int(d['refundPercent']),
     refundVnd: _int(d['refundVnd']),
     feeVnd: _int(d['feeVnd']),
@@ -319,11 +323,18 @@ InstantCancelQuote instantCancelQuoteFromJson(Object? data) {
   );
 }
 
-/// `inviteInstant`'s answer; a kind this build does not know is an
-/// `unknown` error rather than a silent success.
+/// `inviteInstant`'s answer; a kind this build does not know (or a payment
+/// without readable instructions) is an `unknown` error rather than a silent
+/// success.
 InstantInviteResult instantInviteResultFromJson(Object? data) {
   final d = _map(data);
   return switch (d['kind']) {
+    'payment' => InstantPaymentNeeded(
+      instructions:
+          paymentInstructionsFrom(d['instructions']) ??
+          (throw const InstantError('unknown')),
+      amountVnd: _int(d['amountVnd']),
+    ),
     'invited' => InstantInvited(
       invited: _strings(d['invited']),
       unavailable: _strings(d['unavailable']),

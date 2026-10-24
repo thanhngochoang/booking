@@ -7,15 +7,19 @@
 // `instant_jobs.ts`, `instant_settle.ts`, `instant_cancel.ts`) at the level the
 // screens see: rounds of five, 60 s offers, first accept wins, the status
 // arrows, lazy timers settled by every call and by `tick`, and the cancel
-// table. Time comes from the injected [InstantSimulator.now]. #140 moves no
-// money: a request is unpaid unless the test calls [InstantSimulator.markPaid]
-// (standing in for #202's payment) to show the paid quotes.
+// table. Time comes from the injected [InstantSimulator.now]. Money (#202,
+// `inviteInstant` and `InstantPaymentSettler`): the first round's invite
+// opens a payment and waits in `pending_payment`; the offers go out only when
+// S04.04's fake bank pays it ([InstantSimulator.payments], V1's
+// `confirmFakePayment`); later rounds send at once on the held money.
 import 'dart:async';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_repository.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 
 import 'instant_customer_world.dart' show instantCandidates;
 
@@ -28,12 +32,19 @@ const _lateGrace = Duration(minutes: 15);
 const _noShowWait = Duration(minutes: 15);
 const _autoComplete = Duration(hours: 2);
 const _roundSize = 5;
+// Domain `PAYMENT_EXPIRY_MINUTES` (booking_policy.ts).
+const _paymentExpiry = Duration(minutes: 15);
 const _arriveRadiusM = 200.0;
 const _poorAccuracyM = 100.0;
 
 /// Domain `nextInstantStatus`: the allowed arrows; anything else is `conflict`.
 const _arrows = <(InstantStatus, String), InstantStatus>{
   (InstantStatus.choosing, 'invite'): InstantStatus.searching,
+  (InstantStatus.choosing, 'invite_unpaid'): InstantStatus.pendingPayment,
+  (InstantStatus.pendingPayment, 'paid'): InstantStatus.searching,
+  (InstantStatus.pendingPayment, 'payment_expired'): InstantStatus.choosing,
+  (InstantStatus.pendingPayment, 'customer_cancel'):
+      InstantStatus.cancelledByCustomer,
   (InstantStatus.searching, 'round_ended'): InstantStatus.choosing,
   (InstantStatus.searching, 'accept'): InstantStatus.assigned,
   (InstantStatus.choosing, 'no_match'): InstantStatus.noMatch,
@@ -155,6 +166,7 @@ class InstantSimulator {
   /// Every offer ever sent, by photographer.
   final _offers = <String, List<InstantOffer>>{};
   final _tracks = <String, InstantTrack>{};
+  final _payments = <String, _SimPayment>{};
   final _changes = StreamController<void>.broadcast();
   var _nextId = 1;
 
@@ -172,8 +184,17 @@ class InstantSimulator {
     (o) => o.requestId == requestId,
   );
 
-  /// Stands in for #202's payment: from now on the request holds its money.
-  void markPaid(String id) => _write(id, (r) => r.copyWith(paid: true));
+  /// S04.04's fake bank (V1's `confirmFakePayment`) on these payments.
+  late final PaymentsRepository payments = _SimPayments(this);
+
+  /// Every payment opened for request [id], oldest first.
+  List<PaymentInstructions> paymentsOf(String id) => [
+    for (final p in _payments.values)
+      if (p.requestId == id) p.instructions,
+  ];
+
+  /// Every offer [uid] has received.
+  List<InstantOffer> offersTo(String uid) => List.of(_offers[uid] ?? const []);
 
   /// Closes the change feed. Not awaited by callers: its done future may
   /// wait on root-zone work the widget tester's fake async never runs.
@@ -184,12 +205,6 @@ class InstantSimulator {
   // ---- storage ---------------------------------------------------------------
 
   _Row _row(String id) => _rows[id] ?? (throw const InstantError('not_found'));
-
-  void _write(String id, InstantRequest Function(InstantRequest) change) {
-    final row = _row(id);
-    row.request = change(row.request);
-    _changed();
-  }
 
   void _changed() {
     if (!_changes.isClosed) _changes.add(null);
@@ -286,6 +301,15 @@ class InstantSimulator {
         status: InstantStatus.abandoned,
         candidates: [],
         offers: [],
+      );
+    }
+    final payBy = r.paymentDeadlineAt;
+    if (r.status == InstantStatus.pendingPayment &&
+        payBy != null &&
+        !payBy.isAfter(t)) {
+      r = r.copyWith(
+        status: _next(r.status, 'payment_expired'),
+        pendingInviteIds: [],
       );
     }
     final ends = r.shootEndsAt;
@@ -476,20 +500,109 @@ class InstantSimulator {
     _changed();
   }
 
+  /// Domain `inviteInstant`: uncommitted → the choice waits on a payment
+  /// (reused while open with the same method); committed → offers at once.
   InstantInviteResult _invite(
     String id,
     String uid,
     List<String> ids,
     List<String> skipped,
+    int expectedAmountVnd,
+    PayMethod? payMethod,
   ) {
     final r = _customerRequest(id, uid);
-    if (r.status != InstantStatus.choosing) {
+    if (!r.committed && payMethod == null) {
+      throw const InstantError('invalid_argument');
+    }
+    if (r.committed
+        ? r.status != InstantStatus.choosing
+        : r.status != InstantStatus.choosing &&
+              r.status != InstantStatus.pendingPayment) {
       throw const InstantError('conflict');
     }
     if (!ids.every((p) => r.candidates.any((c) => c.photographerId == p))) {
       throw const InstantError('not_eligible');
     }
     final row = _row(id)..excluded.addAll(skipped);
+    if (r.committed) return _sendOffers(row, r, ids);
+    if (expectedAmountVnd != r.amountVnd) {
+      return InstantPriceChanged(amountVnd: r.amountVnd);
+    }
+    final t = now();
+    final open = _payments[_openPaymentOf(id)];
+    final _SimPayment payment;
+    if (open != null &&
+        !open.paid &&
+        open.instructions.method == payMethod &&
+        open.instructions.expiresAt.isAfter(t)) {
+      payment = open;
+    } else {
+      final n = paymentsOf(id).length + 1;
+      final paymentId = 'inst_${id}_$n';
+      final code = 'PB IN${id.toUpperCase()}$n';
+      payment = _payments[paymentId] = _SimPayment(
+        requestId: id,
+        instructions: PaymentInstructions(
+          paymentId: paymentId,
+          method: payMethod!,
+          amount: r.amountVnd,
+          expiresAt: t.add(_paymentExpiry),
+          transferCode: code,
+          qrPayload: payMethod == PayMethod.bankQr ? 'vietqr:$code' : null,
+          bankName: payMethod == PayMethod.bankQr ? 'Vietcombank' : null,
+          accountMasked: payMethod == PayMethod.bankQr ? '•••• 6789' : null,
+          payUrl: payMethod == PayMethod.bankQr
+              ? null
+              : 'https://wallet.test/$paymentId',
+        ),
+      );
+    }
+    row.lastActivityAt = t;
+    row.request = r.copyWith(
+      status: r.status == InstantStatus.choosing
+          ? _next(r.status, 'invite_unpaid')
+          : r.status,
+      pendingInviteIds: List.of(ids),
+      payMethod: payMethod,
+      paymentDeadlineAt: payment.instructions.expiresAt,
+    );
+    _changed();
+    return InstantPaymentNeeded(
+      instructions: payment.instructions,
+      amountVnd: r.amountVnd,
+    );
+  }
+
+  /// The id of [requestId]'s latest payment.
+  String _openPaymentOf(String requestId) =>
+      paymentsOf(requestId).lastOrNull?.paymentId ?? '';
+
+  /// Domain `InstantPaymentSettler.settle` for an exact transfer: the request
+  /// waiting on [paymentId] is paid and its choice gets the offers.
+  String _pay(String paymentId) {
+    final p =
+        _payments[paymentId] ?? (throw const InstantError('not_found'));
+    if (p.paid) return 'duplicate';
+    p.paid = true;
+    final r = _settle(p.requestId);
+    final row = _row(p.requestId);
+    if (r.status != InstantStatus.pendingPayment ||
+        _openPaymentOf(r.id) != paymentId) {
+      // Nobody waits for this money any more: back in full.
+      return 'refunded';
+    }
+    _sendOffers(
+      row,
+      r.copyWith(paid: true, pendingInviteIds: []),
+      r.pendingInviteIds,
+    );
+    return 'paid';
+  }
+
+  /// Domain `sendInstantOffers`: busy people get an `unavailable` row; all
+  /// unavailable ends the round (from `pending_payment`: back to `choosing`).
+  InstantInvited _sendOffers(_Row row, InstantRequest r, List<String> ids) {
+    final id = r.id;
     final t = now();
     final expiresAt = t.add(_offerTtl);
     final invited = [
@@ -539,15 +652,20 @@ class InstantSimulator {
       );
     }
     row.lastActivityAt = t;
+    final fromPayment = r.status == InstantStatus.pendingPayment;
     final common = r.copyWith(
       offers: rows,
       committed: true,
       searchDeadlineAt: t.add(_searchWindow),
     );
     row.request = invited.isEmpty
-        ? common.copyWith(roundEnded: true, candidates: [])
+        ? common.copyWith(
+            status: fromPayment ? InstantStatus.choosing : r.status,
+            roundEnded: true,
+            candidates: [],
+          )
         : common.copyWith(
-            status: _next(r.status, 'invite'),
+            status: _next(r.status, fromPayment ? 'paid' : 'invite'),
             roundEnded: false,
             invitedTotal: r.invitedTotal + invited.length,
             roundsWithInvites: r.roundsWithInvites + 1,
@@ -556,7 +674,28 @@ class InstantSimulator {
     return InstantInvited(invited: invited, unavailable: unavailable);
   }
 
-  InstantCancelQuote _cancel(String id, String uid, {required bool dryRun}) {
+  /// `updateInstantJob(no_show, dryRun: true)`: the split, nothing changed.
+  InstantCancelQuote _noShowQuote(String id, String uid) {
+    final r = _settle(id);
+    if (r.photographerId != uid) throw const InstantError('permission_denied');
+    final arrivedAt = r.arrivedAt;
+    if (r.status != InstantStatus.arrived || arrivedAt == null) {
+      throw const InstantError('conflict');
+    }
+    if (now().isBefore(arrivedAt.add(_noShowWait))) {
+      throw const InstantError('deadline_passed');
+    }
+    return r.paid
+        ? _quote(r, InstantCancelRule.noShow, 50)
+        : const InstantCancelQuote(rule: InstantCancelRule.noShow);
+  }
+
+  InstantCancelQuote _cancel(
+    String id,
+    String uid, {
+    required bool dryRun,
+    InstantCancelQuote? expected,
+  }) {
     final first = _row(id).request;
     final byCustomer = first.customerId == uid;
     if (!byCustomer && first.photographerId != uid) {
@@ -568,6 +707,11 @@ class InstantSimulator {
     }
     final q = _cancelQuote(r, byCustomer);
     if (dryRun) return q;
+    // #202: the quote the user confirmed must still hold.
+    if (expected != null &&
+        (expected.rule != q.rule || expected.refundVnd != q.refundVnd)) {
+      throw const InstantError('conflict');
+    }
     final t = now();
     final recorded = r.copyWith(
       cancelRule: q.rule,
@@ -875,7 +1019,16 @@ class _SimRepository implements InstantRepository {
     required List<String> skipped,
     required int expectedAmountVnd,
     PayMethod? payMethod,
-  }) => _call(() => sim._invite(requestId, uid, photographerIds, skipped));
+  }) => _call(
+    () => sim._invite(
+      requestId,
+      uid,
+      photographerIds,
+      skipped,
+      expectedAmountVnd,
+      payMethod,
+    ),
+  );
 
   @override
   Future<void> confirmComplete(String requestId) =>
@@ -899,8 +1052,21 @@ class _SimRepository implements InstantRepository {
       sim._watch(() => sim._readable(requestId, uid));
 
   @override
-  Future<InstantCancelQuote> cancel(String requestId, {required bool dryRun}) =>
-      _call(() => sim._cancel(requestId, uid, dryRun: dryRun));
+  Future<InstantCancelQuote> cancel(
+    String requestId, {
+    required bool dryRun,
+    InstantCancelQuote? expected,
+  }) => _call(
+    () => sim._cancel(requestId, uid, dryRun: dryRun, expected: expected),
+  );
+
+  @override
+  Future<bool> checkPayment(String requestId) =>
+      _call(() => sim._row(requestId).request.paid);
+
+  @override
+  Future<InstantCancelQuote> noShowQuote(String requestId) =>
+      _call(() => sim._noShowQuote(requestId, uid));
 
   @override
   Future<void> tick(String requestId) => _call(() => sim._tick(requestId, uid));
@@ -976,4 +1142,38 @@ class _SimRepository implements InstantRepository {
   @override
   Stream<InstantRequest?> watchMyActiveJob() =>
       sim._watch(() => sim._activeJobOf(uid));
+}
+
+/// One payment the simulator opened for a request.
+class _SimPayment {
+  _SimPayment({required this.requestId, required this.instructions});
+
+  final String requestId;
+  final PaymentInstructions instructions;
+  bool paid = false;
+}
+
+/// V1's payments port on the simulator: the fake bank pays exactly.
+class _SimPayments implements PaymentsRepository {
+  _SimPayments(this.sim);
+
+  final InstantSimulator sim;
+
+  @override
+  Future<String> confirmFake(
+    String paymentId, {
+    FakeTransferKind kind = FakeTransferKind.exact,
+  }) => Future.microtask(() {
+    if (kind != FakeTransferKind.exact) {
+      throw UnimplementedError('only exact transfers are simulated');
+    }
+    return sim._pay(paymentId);
+  });
+
+  @override
+  Future<PaymentInstructions?> instructions(String paymentId) =>
+      Future.microtask(() {
+        final p = sim._payments[paymentId];
+        return p == null || p.paid ? null : p.instructions;
+      });
 }

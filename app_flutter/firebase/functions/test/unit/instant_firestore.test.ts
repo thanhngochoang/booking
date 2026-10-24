@@ -1,7 +1,26 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
-import { cancelInstantRequest, createInstantRequest, type InstantDeps, type InstantOffer } from '@photobooking/domain';
+import {
+  FakeBlockGate,
+  InstantPaymentSettler,
+  MemoryAddonStore,
+  MemoryBookingStore,
+  answerInstantOffer,
+  cancelInstantRequest,
+  confirmInstantComplete,
+  createInstantRequest,
+  fakeTransferFor,
+  instantRefundHandler,
+  inviteInstant,
+  resendPendingRefunds,
+  updateInstantJob,
+  type BookingDeps,
+  type InstantDeps,
+  type InstantOffer,
+  type Payment,
+} from '@photobooking/domain';
+import { paymentFromFirestore, paymentToFirestore, refundFromFirestore } from '../../src/infra/booking_firestore.js';
 import {
   FirestoreInstantStore,
   FirestoreInstantTx,
@@ -20,6 +39,7 @@ import {
   FirestoreInstantDayReader,
   instantProfileOf,
 } from '../../src/infra/instant_readers.js';
+import { refundSubjectsOf } from '../../src/infra/live_refunds.js';
 import { LAN, MEET, createInstantWorld } from '../../../../../packages/domain/test/support/instant_world.js';
 import { T0, aConfig, aPresence, aRequest } from '../../../../../packages/domain/test/support/instant_fixtures.js';
 
@@ -33,13 +53,35 @@ function undefinedPaths(v: unknown, path = ''): string[] {
 }
 
 /**
- * A small in-memory Firestore: `doc(path)`, `getAll`, `runTransaction` (writes applied at the end,
- * no retries). Records every transaction's reads and writes by path.
+ * A small in-memory Firestore: `doc(path)`, `getAll`, equality queries (`collection().where()`),
+ * `runTransaction` (writes applied at the end, no retries). Records every transaction's reads and
+ * writes by path. Like the Admin SDK, a transaction refuses a read after its first write.
  */
 class FakeFirestore {
   readonly docs = new Map<string, DocumentData>();
   readonly getAllCalls: string[][] = [];
   readonly txLog: Array<{ reads: string[]; writes: string[] }> = [];
+
+  collection(path: string) {
+    const query = (filters: Array<[string, unknown]>) => ({
+      kind: 'query' as const,
+      path,
+      filters,
+      where: (field: string, op: string, value: unknown) => {
+        assert.equal(op, '==', 'the fake answers equality filters only');
+        return query([...filters, [field, value]]);
+      },
+    });
+    return query([]);
+  }
+
+  private run(q: { path: string; filters: Array<[string, unknown]> }) {
+    const depth = q.path.split('/').length + 1;
+    const docs = [...this.docs.entries()]
+      .filter(([k, d]) => k.startsWith(`${q.path}/`) && k.split('/').length === depth && q.filters.every(([f, v]) => d[f] === v))
+      .map(([k, d]) => ({ id: k.split('/').pop() ?? '', data: () => d }));
+    return { docs, empty: docs.length === 0, size: docs.length };
+  }
 
   private snap(path: string) {
     const data = this.docs.get(path);
@@ -58,10 +100,19 @@ class FakeFirestore {
   async runTransaction<T>(fn: (tx: unknown) => Promise<T>): Promise<T> {
     const log = { reads: [] as string[], writes: [] as string[] };
     const staged: Array<() => void> = [];
+    const noWriteYet = (what: string) => {
+      if (log.writes.length > 0) throw new Error(`read after write: ${what}`);
+    };
     const tx = {
       getAll: async (...refs: Array<{ path: string }>) => {
+        noWriteYet(refs.map((r) => r.path).join(','));
         log.reads.push(...refs.map((r) => r.path));
         return refs.map((r) => this.snap(r.path));
+      },
+      get: async (q: { kind: 'query'; path: string; filters: Array<[string, unknown]> }) => {
+        noWriteYet(q.path);
+        log.reads.push(`${q.path}?${q.filters.map(([f, v]) => `${f}=${String(v)}`).join('&')}`);
+        return this.run(q);
       },
       set: (ref: { path: string }, data: DocumentData) => {
         log.writes.push(ref.path);
@@ -260,6 +311,190 @@ describe('instant transaction adapter', () => {
     });
     assert.equal(db.docs.has('instant_tracks/ir_01'), false);
     assert.deepEqual(db.txLog.at(-1)?.writes, ['instant_tracks/ir_01']);
+  });
+});
+
+describe('instant money over the Firestore adapter (#202; strict: every read before the first write)', () => {
+  function moneyWorld() {
+    const w = createInstantWorld();
+    const db = new FakeFirestore();
+    for (const p of w.store.presences.values()) db.docs.set(`instant_presence/${p.uid}`, instantPresenceToFirestore(p));
+    const deps: InstantDeps = { ...w.deps, store: new FirestoreInstantStore(db.firestore) };
+    const paymentDoc = (id: string): Payment => {
+      const p = paymentFromFirestore(id, db.docs.get(`payments/${id}`));
+      assert.ok(p, `payments/${id}`);
+      return p;
+    };
+    return { w, db, deps, paymentDoc };
+  }
+
+  it('invite, fake payment, accept and a paid cancel write payments, refunds, ledger and the transfer record', async () => {
+    const { w, db, deps, paymentDoc } = moneyWorld();
+    const { requestId } = await createInstantRequest(deps, LAN, { packageCode: 'p60', genre: 'portrait', meetPoint: MEET });
+    const res = await inviteInstant(deps, LAN, {
+      requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000, payMethod: 'bank_qr',
+    });
+    assert.equal(res.kind, 'payment');
+    if (res.kind !== 'payment') return;
+    const created = paymentDoc(res.instructions.paymentId);
+    assert.deepEqual([created.status, created.subjectType, created.subjectId], ['created', 'instant_request', requestId]);
+    assert.ok(created.instructions?.qrPayload, 'the gateway answer is saved on the open payment');
+    assert.equal(db.docs.get(instantRequestPath(requestId))?.status, 'pending_payment');
+
+    const transfer = fakeTransferFor(created as Payment & { transferCode: string }, 'exact', w.clock.now());
+    assert.equal(await new InstantPaymentSettler(deps).settle(created.id, transfer), 'paid');
+    assert.equal(paymentDoc(created.id).status, 'paid');
+    assert.equal(db.docs.get(`payment_notifications/fake_${transfer.txnId}`)?.outcome, 'paid');
+    assert.equal(db.docs.get(instantRequestPath(requestId))?.status, 'searching');
+    const offerPath = [...db.docs.keys()].find((k) => k.startsWith('instant_offers/p1/offers/'));
+    assert.ok(offerPath !== undefined);
+
+    await answerInstantOffer(deps, { uid: 'p1' }, { offerId: offerPath.split('/').pop(), action: 'accept' });
+    assert.equal(paymentDoc(created.id).payeeId, 'p1');
+    assert.equal(db.docs.get(`instant_requests/${requestId}/private/contact`)?.phone, '+84901234567');
+
+    w.clock.advance(5 * 60_000); // past the free window, before the late deadline: 80% back
+    const q = await cancelInstantRequest(deps, LAN, { requestId, dryRun: false });
+    assert.deepEqual([q.rule, q.refundVnd, q.feeVnd], ['en_route', 552_000, 138_000]);
+    const after = paymentDoc(created.id);
+    assert.deepEqual([after.status, after.escrowStatus], ['partially_refunded', 'partially_refunded']);
+    assert.ok(after.releaseAfter !== undefined);
+    const refunds = [...db.docs.entries()].filter(([k]) => k.startsWith('refunds/'));
+    assert.deepEqual(refunds.map(([, d]) => [d.amount, d.reason, d.status, d.subjectType]), [[552_000, 'en_route', 'done', 'instant_request']]);
+    const ledger = [...db.docs.entries()].filter(([k]) => k.startsWith('ledger_entries/')).map(([, d]) => d.amount as number);
+    assert.equal(ledger.reduce((a, b) => a + b, 0), 138_000);
+    assert.equal(db.docs.get(instantRequestPath(requestId))?.refundStatus, 'done');
+    // Every transaction read before it wrote (the fake throws otherwise) and some did both.
+    assert.ok(db.txLog.some((t) => t.reads.length > 0 && t.writes.length > 0));
+  });
+
+  /** Lan's request through the adapter: paid with a fake transfer, p1 assigned (unless `assign` is false). */
+  async function paidRequest(assign = true) {
+    const m = moneyWorld();
+    const { requestId } = await createInstantRequest(m.deps, LAN, { packageCode: 'p60', genre: 'portrait', meetPoint: MEET });
+    const res = await inviteInstant(m.deps, LAN, {
+      requestId, photographerIds: ['p1'], skipped: [], expectedAmountVnd: 690_000, payMethod: 'bank_qr',
+    });
+    assert.equal(res.kind, 'payment');
+    const paymentId = res.kind === 'payment' ? res.instructions.paymentId : '';
+    if (assign) {
+      const created = m.paymentDoc(paymentId);
+      await new InstantPaymentSettler(m.deps).settle(paymentId, fakeTransferFor(created as Payment & { transferCode: string }, 'exact', m.w.clock.now()));
+      const offerPath = [...m.db.docs.keys()].find((k) => k.startsWith('instant_offers/p1/offers/'));
+      assert.ok(offerPath !== undefined);
+      await answerInstantOffer(m.deps, { uid: 'p1' }, { offerId: offerPath.split('/').pop(), action: 'accept' });
+    }
+    return { ...m, requestId, paymentId };
+  }
+  const HERE = { lat: MEET.lat, lng: MEET.lng, accuracyM: 10 };
+  const refundDocs = (db: FakeFirestore) =>
+    [...db.docs.entries()].filter(([k]) => k.startsWith('refunds/')).map(([k, d]) => refundFromFirestore(k.split('/')[1] ?? '', d));
+
+  it('no-show (dry run and real), photographer cancel and confirm read before they write', async () => {
+    const noShow = await paidRequest();
+    for (const action of ['start_route', 'arrive']) {
+      await updateInstantJob(noShow.deps, { uid: 'p1' }, { requestId: noShow.requestId, action, location: HERE });
+    }
+    noShow.w.clock.advance(15 * 60_000);
+    const quote = await updateInstantJob(noShow.deps, { uid: 'p1' }, { requestId: noShow.requestId, action: 'no_show', dryRun: true });
+    assert.equal((quote as { feeVnd?: number }).feeVnd, 345_000);
+    await updateInstantJob(noShow.deps, { uid: 'p1' }, { requestId: noShow.requestId, action: 'no_show' });
+    assert.deepEqual(refundDocs(noShow.db).map((r) => [r?.amount, r?.reason, r?.status]), [[345_000, 'no_show', 'done']]);
+    assert.ok(noShow.paymentDoc(noShow.paymentId).releaseAfter !== undefined);
+
+    const dropped = await paidRequest();
+    await cancelInstantRequest(dropped.deps, { uid: 'p1' }, { requestId: dropped.requestId, dryRun: false });
+    const held = dropped.paymentDoc(dropped.paymentId);
+    assert.deepEqual([held.payeeId, held.escrowStatus], ['', 'held']);
+    assert.equal(dropped.db.docs.has(`instant_requests/${dropped.requestId}/private/contact`), false);
+
+    const done = await paidRequest();
+    for (const action of ['start_route', 'arrive', 'start']) {
+      await updateInstantJob(done.deps, { uid: 'p1' }, { requestId: done.requestId, action, location: HERE });
+    }
+    await confirmInstantComplete(done.deps, LAN, { requestId: done.requestId });
+    const kept = done.paymentDoc(done.paymentId);
+    assert.deepEqual([kept.status, kept.payeeId], ['paid', 'p1']);
+    assert.equal(kept.releaseAfter, new Date(done.w.clock.now().getTime() + 24 * 3_600_000).toISOString());
+  });
+
+  it("expire and V2's record/resend read before they write", async () => {
+    const open = await paidRequest(false);
+    open.w.clock.advance(16 * 60_000);
+    assert.equal(await new InstantPaymentSettler(open.deps).expire(open.paymentId, open.w.clock.now()), 'expired');
+    assert.equal(open.paymentDoc(open.paymentId).status, 'expired');
+
+    const m = await paidRequest();
+    m.w.gateway.refundThrowCount = 1;
+    m.w.clock.advance(5 * 60_000);
+    await cancelInstantRequest(m.deps, LAN, { requestId: m.requestId, dryRun: false });
+    const [pending] = refundDocs(m.db);
+    assert.ok(pending);
+    assert.equal(pending.status, 'pending');
+    const resent = await instantRefundHandler(m.deps).resend(pending);
+    assert.equal(resent.status, 'done');
+    assert.equal(refundDocs(m.db)[0]?.status, 'done');
+    assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'done');
+  });
+
+  it("V2's payment-clock re-send (resendPendingRefunds + refundSubjectsOf) settles a pending instant refund", async () => {
+    const m = await paidRequest();
+    m.w.gateway.refundThrowCount = 1;
+    m.w.clock.advance(5 * 60_000);
+    await cancelInstantRequest(m.deps, LAN, { requestId: m.requestId, dryRun: false });
+    const [pending] = refundDocs(m.db);
+    assert.ok(pending);
+    assert.deepEqual([pending.status, pending.subjectType], ['pending', 'instant_request']);
+    assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'pending');
+
+    // In Firestore every subject's refunds share one collection, which the booking store queries;
+    // the memory booking store stands in for that query, ten minutes later.
+    m.w.clock.advance(10 * 60_000);
+    const store = new MemoryBookingStore();
+    store.refunds.set(pending.id, pending);
+    const bookingDeps: BookingDeps = {
+      store,
+      services: { getService: async () => null },
+      addons: new MemoryAddonStore(),
+      contacts: { get: async () => null },
+      providers: { acceptsOrders: async () => true, orderProfile: async () => ({ acceptsOrders: true, providerType: 'individual' }) },
+      blocks: new FakeBlockGate(),
+      gateway: m.w.gateway,
+      cipher: m.w.deps.cipher,
+      clock: m.w.clock,
+      ids: { newId: () => '01ARZ3NDEKTSV4RRFFQ69G5F01' },
+    };
+
+    const res = await resendPendingRefunds(bookingDeps, refundSubjectsOf({ instant: m.deps }));
+
+    assert.deepEqual(res, { resent: 1, failed: 0, skipped: 0 });
+    assert.deepEqual(m.w.gateway.refundCalls, [pending.id, pending.id]);
+    assert.equal(refundDocs(m.db)[0]?.status, 'done');
+    assert.equal(m.db.docs.get(instantRequestPath(m.requestId))?.refundStatus, 'done');
+  });
+
+  it('paymentsOfRequest is a transactional equality query on subjectType and subjectId', async () => {
+    const db = new FakeFirestore();
+    const base: Payment = {
+      id: 'pay_a', subjectType: 'instant_request', subjectId: 'ir_1', payerId: 'c-lan', payeeId: '', provider: 'fake',
+      amount: 690_000, status: 'created', escrowStatus: 'held', idempotencyKey: 'inst_ir_1_1',
+      createdAt: T0.toISOString(), updatedAt: T0.toISOString(),
+    };
+    db.docs.set('payments/pay_a', paymentToFirestore(base));
+    db.docs.set('payments/pay_b', paymentToFirestore({ ...base, id: 'pay_b', subjectType: 'booking' }));
+    db.docs.set('payments/pay_c', paymentToFirestore({ ...base, id: 'pay_c', subjectId: 'ir_2' }));
+    const store = new FirestoreInstantStore(db.firestore);
+    const found = await store.runTransaction((tx) => tx.paymentsOfRequest('ir_1'));
+    assert.deepEqual(found.map((p) => p.id), ['pay_a']);
+    assert.deepEqual(db.txLog.at(-1)?.reads, ['payments?subjectType=instant_request&subjectId=ir_1']);
+    await assert.rejects(
+      db.runTransaction(async (fTx) => {
+        const tx = new FirestoreInstantTx(db.firestore, fTx as never);
+        tx.putPayment(base);
+        await tx.paymentsOfRequest('ir_1');
+      }),
+      /read after write/,
+    );
   });
 });
 
