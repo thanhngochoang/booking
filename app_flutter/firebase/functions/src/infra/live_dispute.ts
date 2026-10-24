@@ -8,7 +8,8 @@ import { FirestoreDisputeStore } from './dispute_firestore.js';
 import { getSharedFakeGateway, liveAccountCipher } from './live_booking.js';
 import { FirestoreDisplayNames } from './support_firestore.js';
 
-export function liveDisputeDeps(): DisputeDeps {
+/** `store` is the Firestore store, which also lists thread messages (the disputes staff CLI). */
+export function liveDisputeDeps(): DisputeDeps & { readonly store: FirestoreDisputeStore } {
   const firestore = db();
   return {
     store: new FirestoreDisputeStore(firestore),

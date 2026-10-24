@@ -9,6 +9,7 @@ import {
 } from './callables/booking.js';
 import { handleOpenDispute, handleResolveDispute } from './callables/dispute.js';
 import { liveDisputeDeps } from './infra/live_dispute.js';
+import { handleDisputeWrite } from './triggers/dispute_write.js';
 import {
   handleSubmitDelivery,
   handleApproveDelivery,
@@ -298,6 +299,13 @@ export const openDispute = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleO
 
 /** S18 staff (claim `staffRole == 'admin'`): release / refund / split; the refund goes out on the fake rails. */
 export const resolveDispute = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleResolveDispute(request, liveDisputeDeps()));
+
+/** S18 (#142 Decision 11): `dispute_opened` to the provider on create, `dispute_resolved` to both parties on resolve. */
+export const onDisputeWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'disputes/{disputeId}' }, async (event) => {
+  const before = event.data?.before.exists ? event.data.before.data() : undefined;
+  const after = event.data?.after.exists ? event.data.after.data() : undefined;
+  await handleDisputeWrite(before, after, liveNotifyDeps());
+});
 
 
 /** Delivery: provider submits preview round */

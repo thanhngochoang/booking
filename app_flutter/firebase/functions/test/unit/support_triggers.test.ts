@@ -115,6 +115,53 @@ describe('support triggers', () => {
     assert.equal(rows[0]?.id, 'n_support_reply_msg_staff');
   });
 
+  it('dispute_message for a party message in a dispute thread', async () => {
+    users.users.set('c1', { name: 'An', avatarUrl: null });
+    users.users.set('p1', { name: 'Minh Trí', avatarUrl: null });
+    const thread: SupportThread = {
+      id: 'dispute_d1',
+      kind: 'dispute',
+      ownerId: null,
+      disputeId: 'd1',
+      participants: ['c1', 'p1'],
+      status: 'open',
+      awaitingStaff: true,
+      lastMessageAt: '2026-10-10T12:00:00.000Z',
+      lastMessagePreview: 'Tôi đã gửi lại link',
+      lastSenderRole: 'provider',
+      rate: {},
+      createdAt: '2026-10-10T11:00:00.000Z',
+      updatedAt: '2026-10-10T12:00:00.000Z',
+    };
+    await supportStore.runTransaction(async (tx) => {
+      tx.putThread(thread);
+    });
+
+    const res = await handleSupportMessageCreated(
+      {
+        threadId: 'dispute_d1',
+        messageId: 'msg_p1',
+        messageData: {
+          senderId: 'p1',
+          senderRole: 'provider',
+          senderName: 'Minh Trí',
+          body: 'Tôi đã gửi lại link',
+          createdAt: '2026-10-10T12:00:00.000Z',
+        },
+      },
+      { notify: mockNotifyDeps(), store: supportStore },
+    );
+
+    assert.equal(res, 'sent');
+    const rows = notifStore.rowsOf('c1');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.type, 'dispute_message');
+    assert.equal(rows[0]?.target, '/disputes/d1');
+    assert.equal(rows[0]?.title, 'Minh Trí nhắn trong khiếu nại');
+    // The sender hears nothing about their own message.
+    assert.equal(notifStore.rowsOf('p1').length, 0);
+  });
+
   it('a retry of the same event writes no second row (dedupe)', async () => {
     const thread: SupportThread = {
       id: 'help_u1',

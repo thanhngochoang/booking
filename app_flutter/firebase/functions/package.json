@@ -20,6 +20,7 @@
     "spots": "tsx tools/spots.ts",
     "payouts": "tsx tools/payouts.ts",
     "support": "tsx tools/support.ts",
+    "disputes": "tsx tools/disputes.ts",
     "clock": "tsx tools/clock.ts",
     "stats": "tsx tools/discovery_stats.ts",
     "reports": "tsx tools/reports.ts",

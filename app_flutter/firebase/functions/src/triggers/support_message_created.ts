@@ -13,6 +13,8 @@ export interface SupportTriggerDeps {
   readonly getThreadData?: (threadId: string) => Promise<Record<string, unknown> | null>;
 }
 
+const NOTIFYING_ROLES: ReadonlySet<string> = new Set(['staff', 'customer', 'provider']);
+
 export async function handleSupportMessageCreated(
   event: SupportMessageCreatedInput,
   deps: SupportTriggerDeps,
@@ -25,7 +27,9 @@ export async function handleSupportMessageCreated(
     ...event.messageData,
   });
 
-  if (!message || message.senderRole !== 'staff') {
+  // Staff replies and dispute-party messages may notify someone (the domain decides who); a help-thread
+  // user message or a system line never does, so the thread is not even read for them.
+  if (!message || !NOTIFYING_ROLES.has(message.senderRole)) {
     return 'skipped';
   }
 

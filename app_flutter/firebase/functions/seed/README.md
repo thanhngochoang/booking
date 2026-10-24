@@ -334,9 +334,31 @@ To try the other side of S18.01: `seed-booking-completed-window` (booking) and `
 
 ### Staff CLI for disputes
 
-`resolveDispute` is callable by `seed-staff-admin` (claim `staffRole: 'admin'`). The staff CLI
-`npm run disputes -- list | show <id> | resolve <id> release|refund|split [percent] "<note>" --actor seed-staff-admin`
-comes with #142 Task 9 and calls the same `resolveDispute` use case.
+`resolveDispute` is callable by `seed-staff-admin` (claim `staffRole: 'admin'`). Until the S23.01
+dashboard exists, `tools/disputes.ts` is the staff side: `list [open|resolved]` (oldest first: id,
+opened at, subject, amount held, status), `show <id>` (the dispute, its evidence paths and the last 30
+thread messages) and `resolve`, which runs the same `resolveDispute` use case as the callable and then
+sends the refund on the fake gateway (`dispatchDisputeRefund`). `--actor` must be a user with the
+admin claim; the note (5–500 characters) is shown to both parties. Staff answer in the dispute thread
+with `npm run support -- reply dispute_<id> "<text>" --actor seed-staff-admin`.
+
+The tool refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` point at a local
+host (money only moves on the fake rails); `PAYOUT_ACCOUNT_KEY` defaults to the emulator key of
+`.secret.local`. `npm run disputes -- --help` lists the commands.
+
+```bash
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>
+npm run disputes -- list
+npm run disputes -- show seed-dispute-lan-an
+npm run disputes -- resolve seed-dispute-lan-an split 40 "Thiếu một phần ảnh so với gói" --actor seed-staff-admin
+# seed-dispute-lan-an -> resolved split: refund 600.000₫, release 900.000₫
+# refund 01J…: done
+npm run disputes -- resolve <id> release "Ảnh đã giao đủ theo gói" --actor seed-staff-admin
+npm run disputes -- resolve <id> refund "Thợ không đến buổi chụp" --actor seed-staff-admin
+```
+
+Check: Lan and An each get "Khiếu nại đã có kết quả" (`onDisputeWrite`); the dispute thread is closed
+with the outcome line; the booking's `depositRefunded` grows by the refund.
 
 ## Staff CLI for support
 
