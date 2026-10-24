@@ -18288,8 +18288,26 @@ abstract class AppLocalizations {
   /// No description provided for @refundAccountLookupError.
   ///
   /// In vi, this message translates to:
-  /// **'Không tra được tên. Thử lại'**
+  /// **'Không tra được tên. Thử lại.'**
   String get refundAccountLookupError;
+
+  /// S22.04: the server's stored candidate is not the account on screen (conflict while the refund still waits).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản vừa thay đổi. Tra tên lại rồi xác nhận.'**
+  String get refundAccountLookupStale;
+
+  /// S22.04 other-account form: text link back to the paying account card.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn về tài khoản đã chuyển'**
+  String get refundAccountBackToPayer;
+
+  /// S22.04: the refund already left (24-hour default or another choice); destination is the S22.01 row's label, e.g. Vietcombank •••• 6789.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền hoàn đã được gửi về {destination} trước khi bạn chọn.'**
+  String refundAccountWentTo(String destination);
 
   /// No description provided for @refundAccountSent.
   ///

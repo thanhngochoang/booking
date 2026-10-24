@@ -1204,5 +1204,6 @@ class _SimPayments implements PaymentsRepository {
   Future<String> chooseRefundAccount({
     required String refundId,
     required RefundAccountChoice use,
+    ({String bankCode, String accountLast4})? shown,
   }) => Future.error(UnimplementedError('S22.04 is not simulated'));
 }

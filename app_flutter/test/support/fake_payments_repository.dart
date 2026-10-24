@@ -115,7 +115,11 @@ class FakePaymentsRepository implements PaymentsRepository {
   /// full account number.
   final List<String> lookupCalls = [];
 
-  /// `refundId:payer|candidate` of each successful choice.
+  /// When set, every lookup waits for it before answering (a slow bank).
+  Completer<void>? lookupGate;
+
+  /// `refundId:payer` or `refundId:candidate:bankCode:last4` of each
+  /// successful choice.
   final List<String> chooseCalls = [];
 
   /// The status [chooseRefundAccount] answers.
@@ -149,6 +153,8 @@ class FakePaymentsRepository implements PaymentsRepository {
         ? accountNumber
         : accountNumber.substring(accountNumber.length - 4);
     lookupCalls.add('$refundId:$bankCode:$last4');
+    final gate = lookupGate;
+    if (gate != null) await gate.future;
     _throwNextError();
     return lookups['$bankCode:$accountNumber'] ?? defaultLookup;
   }
@@ -157,9 +163,14 @@ class FakePaymentsRepository implements PaymentsRepository {
   Future<String> chooseRefundAccount({
     required String refundId,
     required RefundAccountChoice use,
+    ({String bankCode, String accountLast4})? shown,
   }) async {
     _throwNextError();
-    chooseCalls.add('$refundId:${use.code}');
+    chooseCalls.add(
+      shown == null
+          ? '$refundId:${use.code}'
+          : '$refundId:${use.code}:${shown.bankCode}:${shown.accountLast4}',
+    );
     if (onChoose != null) await onChoose!(refundId, use);
     return chooseStatus;
   }

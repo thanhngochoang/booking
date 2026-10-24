@@ -65,9 +65,15 @@ abstract class PaymentsRepository {
   /// Sends the waiting refund to the paying account or the looked-up one;
   /// returns the refund status (`pending`, `done`, …). A late choice returns
   /// the status the refund already has. Throws [BookingException].
+  ///
+  /// A [RefundAccountChoice.candidate] choice names the account the customer
+  /// was shown ([shown]: bank code and last 4); the server answers
+  /// `conflict` when its stored candidate is another account, or when the
+  /// refund already went elsewhere (the 24-hour default or another choice).
   Future<String> chooseRefundAccount({
     required String refundId,
     required RefundAccountChoice use,
+    ({String bankCode, String accountLast4})? shown,
   });
 }
 
@@ -202,10 +208,15 @@ class FirebasePaymentsRepository implements PaymentsRepository {
   Future<String> chooseRefundAccount({
     required String refundId,
     required RefundAccountChoice use,
+    ({String bankCode, String accountLast4})? shown,
   }) async {
     final d = await _call<Object?>('chooseRefundAccount', {
       'refundId': refundId,
       'use': use.code,
+      if (shown != null) ...{
+        'bankCode': shown.bankCode,
+        'accountLast4': shown.accountLast4,
+      },
     });
     final status = d is Map ? d['status'] : null;
     if (status is! String) throw const BookingException('unknown');

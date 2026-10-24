@@ -201,13 +201,36 @@ void main() {
 
         final status = await repo.chooseRefundAccount(
           refundId: 'r1',
-          use: RefundAccountChoice.candidate,
+          use: RefundAccountChoice.payer,
         );
 
         expect(status, 'pending');
         verify(() => functions.httpsCallable('chooseRefundAccount')).called(1);
         verify(
-          () => callable.call<Object?>({'refundId': 'r1', 'use': 'candidate'}),
+          () => callable.call<Object?>({'refundId': 'r1', 'use': 'payer'}),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a candidate choice sends the shown bankCode and accountLast4',
+      () async {
+        answerAny(<Object?, Object?>{'status': 'done'});
+
+        final status = await repo.chooseRefundAccount(
+          refundId: 'r1',
+          use: RefundAccountChoice.candidate,
+          shown: (bankCode: 'TCB', accountLast4: '4321'),
+        );
+
+        expect(status, 'done');
+        verify(
+          () => callable.call<Object?>({
+            'refundId': 'r1',
+            'use': 'candidate',
+            'bankCode': 'TCB',
+            'accountLast4': '4321',
+          }),
         ).called(1);
       },
     );

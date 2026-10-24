@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/features/earnings/widgets/account_inputs.dart';
@@ -13,8 +16,7 @@ import '../../support/screen_host.dart';
 
 const _subject = BookingRefund('b1');
 
-/// 10:00 25/10 in Vietnam; the 24-hour default fires at 10:00 26/10.
-final _now = DateTime.utc(2026, 10, 25, 3);
+/// The 24-hour default fires at 10:00 26/10 in Vietnam.
 final _confirmBy = DateTime.utc(2026, 10, 26, 3);
 
 const RefundPayerAccount _payer = (
@@ -28,6 +30,28 @@ PendingRefund _pending({bool payer = true}) => PendingRefund(
   amount: 1500000,
   payer: payer ? _payer : null,
   confirmBy: payer ? _confirmBy : null,
+);
+
+/// The S22.01 row of the booking's payment with refund r1 sent to
+/// [destination].
+PayerPaymentRow _rowWithRefund(String destination) => PayerPaymentRow(
+  paymentId: 'pay_b1',
+  subjectType: PayerSubjectType.booking,
+  subjectId: 'b1',
+  amount: 1500000,
+  status: PayerRowStatus.refunding,
+  open: true,
+  refunds: [
+    PayerRefundView(
+      refundId: 'r1',
+      amount: 1500000,
+      status: 'pending',
+      wallet: false,
+      destinationLabel: destination,
+      createdAt: DateTime.utc(2026, 10, 25, 3),
+    ),
+  ],
+  createdAt: DateTime.utc(2026, 10, 24, 3),
 );
 
 final _sheet = find.byKey(const Key('app-sheet'));
@@ -54,20 +78,20 @@ Future<FakePaymentsRepository> _open(
   bool seed = true,
   double width = 390,
   double textScale = 1,
-  DateTime? now,
 }) async {
   tester.view.physicalSize = Size(width, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final payments = FakePaymentsRepository();
   if (seed) payments.pendingBySubject[_subject] = pending ?? _pending();
-  final clock = now ?? _now;
   await tester.pumpWidget(
     screenApp(
       textScale: textScale,
       overrides: [
         paymentsRepositoryProvider.overrideWithValue(payments),
-        clockProvider.overrideWithValue(() => clock),
+        authStateProvider.overrideWith(
+          (ref) => Stream.value(const AuthUser(uid: 'c1')),
+        ),
       ],
       home: Consumer(
         builder: (context, ref, _) => Scaffold(
@@ -209,7 +233,8 @@ void main() {
     await tester.tap(_confirm);
     await _settle(tester);
 
-    expect(payments.chooseCalls, ['r1:candidate']);
+    // The choice names the account shown (the server's last 4).
+    expect(payments.chooseCalls, ['r1:candidate:TCB:4321']);
     expect(_sheet, findsNothing);
     expect(find.text('Đã gửi yêu cầu hoàn tiền'), findsOneWidget);
   });
@@ -320,38 +345,37 @@ void main() {
     expect(_sheet, findsNothing);
   });
 
-  testWidgets('a choice after the 24-hour default re-reads the refund and '
-      'never claims the chosen account was used', (tester) async {
-    final payments = await _open(
-      tester,
-      now: _confirmBy.add(const Duration(minutes: 10)),
-    );
-    // The payment clock sent it to the paying account meanwhile.
-    payments.pendingBySubject.remove(_subject);
-
+  testWidgets('a choice that lost to the 24-hour default (conflict) names the '
+      'account the money went to, never the chosen one', (tester) async {
+    final payments = await _open(tester);
     await _useOther(tester);
     await _fill(tester, 'TCB', '1903612344321');
     await _lookup(tester);
+    // The payment clock sent it to the paying account meanwhile.
+    payments.pendingBySubject.remove(_subject);
+    payments.emitHistory('c1', [_rowWithRefund('Vietcombank •••• 6789')]);
+    payments.nextError = 'conflict';
+
     await tester.ensureVisible(_confirm);
     await tester.tap(_confirm);
     await _settle(tester);
 
-    expect(payments.pendingCalls, [_subject, _subject]);
     expect(payments.chooseCalls, isEmpty);
+    expect(payments.pendingCalls, [_subject, _subject]);
     expect(_sheet, findsNothing);
     expect(find.text('Đã gửi yêu cầu hoàn tiền'), findsNothing);
     expect(
       find.text(
-        'Tiền hoàn đã được gửi đi trước khi bạn chọn. Xem nơi nhận ở Lịch sử '
-        'thanh toán.',
+        'Tiền hoàn đã được gửi về Vietcombank •••• 6789 trước khi bạn chọn.',
       ),
       findsOneWidget,
     );
   });
 
-  testWidgets('a refund that left while the sheet was open (conflict) closes '
-      'it with the same line', (tester) async {
+  testWidgets('a refund that left with no row yet points to Lịch sử thanh '
+      'toán', (tester) async {
     final payments = await _open(tester);
+    payments.pendingBySubject.remove(_subject);
     payments.nextError = 'conflict';
 
     await tester.tap(_confirm);
@@ -365,6 +389,96 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a candidate the server no longer holds (conflict while still '
+      'waiting) asks for a new lookup and sends nothing', (tester) async {
+    final payments = await _open(tester);
+    await _useOther(tester);
+    await _fill(tester, 'TCB', '1903612344321');
+    await _lookup(tester);
+    payments.nextError = 'conflict';
+
+    await tester.ensureVisible(_confirm);
+    await tester.tap(_confirm);
+    await _settle(tester);
+
+    expect(_sheet, findsOneWidget);
+    expect(payments.chooseCalls, isEmpty);
+    expect(
+      _inSheet(find.text('Tài khoản vừa thay đổi. Tra tên lại rồi xác nhận.')),
+      findsOneWidget,
+    );
+    expect(_inSheet(find.text('TRAN VAN B')), findsNothing);
+    expect(_confirmEnabled(tester), isFalse);
+
+    await _lookup(tester);
+    await tester.ensureVisible(_confirm);
+    await tester.tap(_confirm);
+    await _settle(tester);
+    expect(payments.chooseCalls, ['r1:candidate:TCB:4321']);
+  });
+
+  testWidgets('a lookup in flight locks the bank and number; confirm sends the '
+      'account shown', (tester) async {
+    final payments = await _open(tester);
+    await _useOther(tester);
+    await _fill(tester, 'TCB', '1903612344321');
+    payments.lookupGate = Completer<void>();
+    final button = _inSheet(
+      find.widgetWithText(AppButton, 'Tra tên chủ tài khoản'),
+    );
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+
+    final field = tester.widget<TextField>(
+      find.byKey(const Key('refund-number')),
+    );
+    expect(field.enabled, isFalse);
+    expect(tester.widget<BankField>(find.byType(BankField)).onTap, isNull);
+    // Typing (or submitting) another number while the bank answers changes
+    // nothing: no second lookup.
+    await tester.enterText(
+      find.byKey(const Key('refund-number')),
+      '1903612340000',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump();
+    expect(payments.lookupCalls, ['r1:TCB:4321']);
+
+    payments.lookupGate!.complete();
+    await _settle(tester);
+    expect(_inSheet(find.text('TRAN VAN B')), findsOneWidget);
+    await tester.ensureVisible(_confirm);
+    await tester.tap(_confirm);
+    await _settle(tester);
+    expect(payments.chooseCalls, ['r1:candidate:TCB:4321']);
+  });
+
+  testWidgets('the form links back to the paying account', (tester) async {
+    final payments = await _open(tester);
+    await _useOther(tester);
+
+    await tester.tap(_inSheet(find.text('Hoàn về tài khoản đã chuyển')));
+    await _settle(tester);
+
+    expect(_inSheet(find.text('Vietcombank •••• 6789')), findsOneWidget);
+    expect(_inSheet(find.byType(BankField)), findsNothing);
+    await tester.tap(_confirm);
+    await _settle(tester);
+    expect(payments.chooseCalls, ['r1:payer']);
+  });
+
+  testWidgets('a lookup that fails for another reason says to try again', (
+    tester,
+  ) async {
+    final payments = await _open(tester);
+    await _useOther(tester);
+    await _fill(tester, 'TCB', '1903612344321');
+    payments.nextError = 'network';
+    await _lookup(tester);
+    expect(_inSheet(find.text('Không tra được tên. Thử lại.')), findsOneWidget);
   });
 
   testWidgets('a failed choice keeps the sheet open with an error line', (

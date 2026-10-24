@@ -10727,7 +10727,19 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.';
 
   @override
-  String get refundAccountLookupError => 'Không tra được tên. Thử lại';
+  String get refundAccountLookupError => 'Không tra được tên. Thử lại.';
+
+  @override
+  String get refundAccountLookupStale =>
+      'Tài khoản vừa thay đổi. Tra tên lại rồi xác nhận.';
+
+  @override
+  String get refundAccountBackToPayer => 'Hoàn về tài khoản đã chuyển';
+
+  @override
+  String refundAccountWentTo(String destination) {
+    return 'Tiền hoàn đã được gửi về $destination trước khi bạn chọn.';
+  }
 
   @override
   String get refundAccountSent => 'Đã gửi yêu cầu hoàn tiền';

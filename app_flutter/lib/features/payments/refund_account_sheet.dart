@@ -20,8 +20,9 @@ import 'package:photobooking/features/payments/refund_account_controller.dart';
 
 /// Opens S22.04 for the refund of [subject] that waits for the customer's
 /// account; does nothing when none waits. Says "Đã gửi yêu cầu hoàn tiền"
-/// after a choice, or that the refund already left (the 24-hour default or
-/// staff) without naming the account it went to.
+/// only when the server took the choice; when the refund already left (the
+/// 24-hour default, another choice or staff) it names the account the money
+/// went to (S22.01's row), never the one chosen.
 Future<void> showRefundAccountSheet(
   BuildContext context,
   WidgetRef ref,
@@ -42,7 +43,7 @@ Future<void> showRefundAccountSheet(
     return;
   }
   if (pending == null || !context.mounted) return;
-  final outcome = await showAppSheet<RefundChooseOutcome>(
+  final outcome = await showAppSheet<RefundChooseResult>(
     context,
     // The form has a text field: dragging would fight typing.
     enableDrag: false,
@@ -50,11 +51,15 @@ Future<void> showRefundAccountSheet(
         _RefundAccountSheet(args: (subject: subject, pending: pending!)),
   );
   switch (outcome) {
-    case RefundChooseOutcome.sent:
+    case RefundChosen():
       say(l.refundAccountSent);
-    case RefundChooseOutcome.alreadySent:
-      say(l.refundAccountAlreadySent);
-    case RefundChooseOutcome.failed || null:
+    case RefundAlreadySent(:final destination):
+      say(
+        destination == null
+            ? l.refundAccountAlreadySent
+            : l.refundAccountWentTo(destination),
+      );
+    case RefundNotChosen() || null:
       break;
   }
 }
@@ -96,22 +101,21 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
   }
 
   Future<void> _lookup() async {
+    if (!ref.read(refundAccountControllerProvider(widget.args)).canLookup) {
+      return;
+    }
     FocusScope.of(context).unfocus();
-    await _controller.lookup();
-    if (!mounted) return;
-    final lookup = ref
-        .read(refundAccountControllerProvider(widget.args))
-        .lookup;
+    final result = await _controller.lookup();
     // The refund stopped waiting while the sheet was open.
-    if (lookup is RefundLookupFailed && lookup.code == 'conflict') {
-      Navigator.of(context).pop(RefundChooseOutcome.alreadySent);
+    if (mounted && result is RefundAlreadySent) {
+      Navigator.of(context).pop(result);
     }
   }
 
   Future<void> _confirm() async {
-    final outcome = await _controller.confirm();
-    if (!mounted || outcome == RefundChooseOutcome.failed) return;
-    Navigator.of(context).pop(outcome);
+    final result = await _controller.confirm();
+    if (!mounted || result is RefundNotChosen) return;
+    Navigator.of(context).pop(result);
   }
 
   @override
@@ -186,11 +190,14 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
             ] else
               ..._form(context, state, quiet),
             gap,
-            if (state.failed) ...[
+            if (state.error case final error?) ...[
               Semantics(
                 liveRegion: true,
                 child: Text(
-                  l.refundAccountFailed,
+                  switch (error) {
+                    RefundConfirmError.failed => l.refundAccountFailed,
+                    RefundConfirmError.stale => l.refundAccountLookupStale,
+                  },
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.error,
                   ),
@@ -218,6 +225,16 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
               const SizedBox(height: AppSpace.s2),
               Text(l.refundAccountWalletNote, style: quiet),
             ] else ...[
+              if (payer != null) ...[
+                const SizedBox(height: AppSpace.s1),
+                AppButton.text(
+                  l.refundAccountBackToPayer,
+                  key: const Key('refund-account-back-to-payer'),
+                  onPressed: state.sending || state.lookingUp
+                      ? null
+                      : _controller.usePayer,
+                ),
+              ],
               const SizedBox(height: AppSpace.s2),
               Text(l.refundAccountEncrypted, style: quiet),
             ],
@@ -250,13 +267,14 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
       BankField(
         label: l.refundAccountBank,
         bank: state.bank,
-        onTap: state.sending ? null : _pickBank,
+        // Locked while the bank answers: the account shown is the one asked.
+        onTap: state.sending || state.lookingUp ? null : _pickBank,
       ),
       const SizedBox(height: AppSpace.s3),
       TextField(
         key: const Key('refund-number'),
         controller: _number,
-        enabled: !state.sending,
+        enabled: !state.sending && !state.lookingUp,
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.search,
         autofillHints: const [],
@@ -279,7 +297,7 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
           key: const Key('refund-account-lookup'),
           size: AppButtonSize.small,
           loading: lookup is RefundLookupLoading,
-          onPressed: state.canLookup && !state.sending ? _lookup : null,
+          onPressed: state.canLookup ? _lookup : null,
         ),
       ),
       if (lookup is RefundLookupFound) ...[
