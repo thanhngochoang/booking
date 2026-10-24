@@ -414,3 +414,72 @@ describe('counters under every exit', () => {
     assert.equal(results.length, 3, 'declined (p1), declined by close (p3), expired (p4)');
   });
 });
+
+describe('Task 2 review follow-ups', () => {
+  it('a failing settle after close is reported through onPushError, never thrown; the close stands', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    await apply(w, 'p1', postId);
+    await apply(w, 'p2', postId);
+    const run = w.store.runTransaction.bind(w.store);
+    let calls = 0;
+    w.store.runTransaction = (async (fn: Parameters<typeof run>[0]) => {
+      calls += 1;
+      if (calls === 2) throw new Error('store down'); // the first application of the cascade
+      return run(fn);
+    }) as typeof w.store.runTransaction;
+    await closeRecruitPost(w.deps, 's1', { postId });
+    assert.equal(w.store.posts.get(postId)?.status, 'closed');
+    assert.equal(counters(w, 's1').openPostCount, 0);
+    assert.equal(w.store.applications.get(`${postId}_p1`)?.status, 'applied', 'the failed one waits for the sweep');
+    assert.equal(w.store.applications.get(`${postId}_p2`)?.status, 'declined', 'the cascade continues');
+    assert.equal(w.notify.pushErrors.length, 1);
+    assert.match(String(w.notify.pushErrors[0]), /store down/);
+  });
+
+  it('two parallel applies at openApplicationCount 9: one succeeds, one gets limit_exceeded (retried)', async () => {
+    const w = createRecruitWorld();
+    const a = await openPost(w, 's1');
+    const b = await openPost(w, 's2');
+    w.store.seedCounters('p1', { openApplicationCount: 9 });
+    const results = await Promise.allSettled([apply(w, 'p1', a), apply(w, 'p1', b)]);
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    assert.ok(rejected?.status === 'rejected' && rejected.reason instanceof DomainError);
+    assert.equal(rejected.reason.code, 'limit_exceeded');
+    assert.equal(counters(w, 'p1').openApplicationCount, 10);
+    assert.ok(w.store.retries > 0);
+  });
+
+  it('two parallel creates at 2 open posts: one succeeds, one gets limit_exceeded (retried)', async () => {
+    const w = createRecruitWorld();
+    await openPost(w, 's1');
+    await openPost(w, 's1');
+    const results = await Promise.allSettled([
+      createRecruitPost(w.deps, 's1', VALID_POST),
+      createRecruitPost(w.deps, 's1', VALID_POST),
+    ]);
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    assert.ok(rejected?.status === 'rejected' && rejected.reason instanceof DomainError);
+    assert.equal(rejected.reason.code, 'limit_exceeded');
+    assert.equal(counters(w, 's1').openPostCount, 3);
+    assert.equal([...w.store.posts.values()].filter((p) => p.status === 'open').length, 3);
+    assert.ok(w.store.retries > 0);
+  });
+
+  it('update and renew re-copy the studio snapshot (Decision 22)', async () => {
+    const w = createRecruitWorld();
+    const postId = await openPost(w, 's1');
+    const s1 = w.people.get('s1');
+    assert.ok(s1);
+    w.people.set('s1', { ...s1, name: 'Studio Mây Mới', avatarUrl: 'https://img/s1-new.jpg' });
+    await updateRecruitPost(w.deps, 's1', { ...VALID_POST, postId });
+    assert.deepEqual(w.store.posts.get(postId)?.studio,
+      { name: 'Studio Mây Mới', avatarUrl: 'https://img/s1-new.jpg', businessVerified: true });
+    w.people.set('s1', { ...s1, name: 'Studio Mây 2026', businessVerified: false });
+    await renewRecruitPost(w.deps, 's1', { postId });
+    assert.deepEqual(w.store.posts.get(postId)?.studio,
+      { name: 'Studio Mây 2026', avatarUrl: 'https://img/s1.jpg', businessVerified: false });
+  });
+});

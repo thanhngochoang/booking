@@ -23,7 +23,7 @@ import {
   recruitMatchKeys,
   STUDIO_COLLAB_DAILY_ACTIONS,
   STUDIO_POST_DAILY_ACTIONS,
-  takeDaily,
+  takeRecruitDaily,
   validateRecruitPostInput,
   type RecruitApplication,
   type RecruitKind,
@@ -110,7 +110,7 @@ export async function createRecruitPost(deps: RecruitDeps, uid: string, raw: unk
     const c = await tx.getCounters(uid);
     if (isRecruitBlocked(c, now)) fail('recruit_blocked');
     if (c.openPostCount >= MAX_OPEN_POSTS) fail('limit_exceeded');
-    const postActions = takeDaily(c.postActions, now, STUDIO_POST_DAILY_ACTIONS);
+    const postActions = takeRecruitDaily(c.postActions, now, STUDIO_POST_DAILY_ACTIONS);
     // ---- writes ----
     tx.putPost({
       id: postId,
@@ -175,7 +175,7 @@ export async function closeRecruitPost(deps: RecruitDeps, uid: string, raw: unkn
     if (p.studioId !== uid) fail('permission_denied');
     if (p.status !== 'open') fail('deadline_passed');
     const c = await tx.getCounters(uid);
-    const postActions = takeDaily(c.postActions, now, STUDIO_POST_DAILY_ACTIONS);
+    const postActions = takeRecruitDaily(c.postActions, now, STUDIO_POST_DAILY_ACTIONS);
     // ---- writes ----
     tx.putPost({ ...p, status: 'closed', closedAt: now, updatedAt: now });
     tx.putCounters(uid, { ...c, openPostCount: decrement(c.openPostCount), postActions });
@@ -253,7 +253,7 @@ export async function applyToRecruitPost(
     if (await tx.getApplication(p.id, uid)) fail('conflict');
     const c = await tx.getCounters(uid);
     if (c.openApplicationCount >= MAX_OPEN_APPLICATIONS) fail('limit_exceeded');
-    const applyActions = takeDaily(c.applyActions, now, APPLY_DAILY);
+    const applyActions = takeRecruitDaily(c.applyActions, now, APPLY_DAILY);
     // ---- writes ----
     tx.putApplication({
       id: recruitApplicationId(p.id, uid),
@@ -316,7 +316,7 @@ export async function respondRecruitApplication(
     if (r.accept === true) fail('not_eligible'); // Task 3: collaborator and member branches
     const studio = await tx.getCounters(uid);
     const applicant = await tx.getCounters(applicantId);
-    const collabActions = takeDaily(studio.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);
+    const collabActions = takeRecruitDaily(studio.collabActions, now, STUDIO_COLLAB_DAILY_ACTIONS);
     // ---- writes ----
     tx.putApplication({ ...a, status: 'declined', respondedAt: now });
     tx.putCounters(uid, { ...studio, collabActions });
@@ -363,13 +363,30 @@ async function settleApplication(
   return app;
 }
 
-/** Settles every `applied` application of a closed or expired post, a page of 200 at a time. */
+/**
+ * Settles every `applied` application of a closed or expired post, a page of 200 at a time. Runs after the
+ * post's own commit, so it never throws: a failing application is reported through `onPushError` and
+ * skipped (the application sweep expires it after its 7 days).
+ */
 async function settleApplied(deps: RecruitDeps, postId: string, to: 'declined' | 'expired'): Promise<void> {
+  const failed = new Set<string>();
   for (let page = 0; page < CASCADE_MAX_PAGES; page++) {
-    const apps = await deps.store.appliedOf(postId, CASCADE_PAGE);
+    let apps: RecruitApplication[];
+    try {
+      apps = await deps.store.appliedOf(postId, CASCADE_PAGE);
+    } catch (e) {
+      deps.notify.onPushError?.(postId, e);
+      return;
+    }
     let settled = 0;
     for (const a of apps) {
-      if (await settleApplication(deps, postId, a.applicantId, to, () => true)) settled += 1;
+      if (failed.has(a.applicantId)) continue;
+      try {
+        if (await settleApplication(deps, postId, a.applicantId, to, () => true)) settled += 1;
+      } catch (e) {
+        failed.add(a.applicantId);
+        deps.notify.onPushError?.(a.applicantId, e);
+      }
     }
     if (settled === 0) return;
   }

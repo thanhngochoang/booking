@@ -6,12 +6,12 @@
  */
 
 import { notifyRecruitPostNew } from './notification_hooks.js';
-import { RECRUIT_FANOUT_MAX, RECRUIT_NOTICES_DAILY, type NoticeDaily } from './recruit.js';
+import { RECRUIT_FANOUT_MAX, RECRUIT_NOTICES_DAILY, type RecruitNoticeDaily } from './recruit.js';
 import type { RecruitDeps } from './recruit_ports.js';
 import { vnDayKey } from './verification.js';
 
 /** One more notice for `postId` today; 'counted' when this post was already counted today; 'capped' when full. */
-export function takeNotice(d: NoticeDaily | null, postId: string, at: Date): NoticeDaily | 'counted' | 'capped' {
+export function takeNotice(d: RecruitNoticeDaily | null, postId: string, at: Date): RecruitNoticeDaily | 'counted' | 'capped' {
   const day = vnDayKey(at);
   if (d === null || d.day !== day) return { day, count: 1, postIds: [postId] };
   if (d.postIds.includes(postId)) return 'counted';

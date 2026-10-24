@@ -4,11 +4,11 @@ import { findContactLeak } from '../src/contact_filter.js';
 import { DomainError } from '../src/errors.js';
 import {
   EMPTY_COUNTERS,
-  isValidFee,
+  isValidRecruitFee,
   recruitFilterKey,
   recruitFilterKeys,
   recruitMatchKeys,
-  takeDaily,
+  takeRecruitDaily,
   validateRecruitPostInput,
 } from '../src/recruit.js';
 import { applyToRecruitPost } from '../src/recruit_use_cases.js';
@@ -145,8 +145,8 @@ describe('validateRecruitPostInput', () => {
     assert.deepEqual(ok({ feeHint: { type: 'per_shoot', amount: 800_000 } }).feeHint, { type: 'per_shoot', amount: 800_000 });
     assert.deepEqual(ok({ feeHint: { type: 'negotiable', amount: 5 } }).feeHint, { type: 'negotiable' });
     assert.deepEqual(bad({ feeHint: { type: 'hourly' } }), { code: 'invalid_argument', field: 'feeHint' });
-    assert.equal(isValidFee(1_000), true);
-    assert.equal(isValidFee(100_000_000), true);
+    assert.equal(isValidRecruitFee(1_000), true);
+    assert.equal(isValidRecruitFee(100_000_000), true);
   });
 
   it('requirements: at most 600 characters', () => {
@@ -195,19 +195,19 @@ describe('recruit keys', () => {
   });
 });
 
-describe('takeDaily', () => {
-  it('takeDaily resets at VN midnight', () => {
+describe('takeRecruitDaily', () => {
+  it('takeRecruitDaily resets at VN midnight', () => {
     const before = new Date('2026-10-10T16:59:59.000Z');
     const after = new Date('2026-10-10T17:00:00.000Z');
-    const d = takeDaily(takeDaily(null, before, 3), before, 3);
+    const d = takeRecruitDaily(takeRecruitDaily(null, before, 3), before, 3);
     assert.deepEqual(d, { day: '2026-10-10', count: 2 });
-    assert.deepEqual(takeDaily(d, after, 3), { day: '2026-10-11', count: 1 });
+    assert.deepEqual(takeRecruitDaily(d, after, 3), { day: '2026-10-11', count: 1 });
   });
 
   it('throws rate_limited when full', () => {
     const at = new Date('2026-10-10T10:00:00.000Z');
     const full = { day: '2026-10-10', count: 3 };
-    assert.deepEqual(refusal(() => takeDaily(full, at, 3)), { code: 'rate_limited', field: undefined });
+    assert.deepEqual(refusal(() => takeRecruitDaily(full, at, 3)), { code: 'rate_limited', field: undefined });
   });
 
   it('EMPTY_COUNTERS starts at zero', () => {

@@ -63,7 +63,7 @@ export const recruitDaysAfter = (at: Date, days: number): Date => new Date(at.ge
 export type FeeHint = { readonly type: 'per_shoot'; readonly amount: number } | { readonly type: 'negotiable' };
 
 /** An integer VND amount 1.000–100.000.000 in steps of 1.000 (fee hints, agreed fees, default fees). */
-export function isValidFee(v: unknown): v is number {
+export function isValidRecruitFee(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= FEE_MIN && v <= FEE_MAX && v % FEE_STEP === 0;
 }
 
@@ -120,26 +120,26 @@ export interface RecruitApplication {
 export const recruitApplicationId = (postId: string, applicantId: string): string => `${postId}_${applicantId}`;
 
 /** Actions counted on the Vietnam day `day` (`vnDayKey`). */
-export interface Daily {
+export interface RecruitDaily {
   readonly day: string;
   readonly count: number;
 }
 
 /** `recruit_post_new` received on `day`; `postIds` makes a replayed fan-out count once. */
-export interface NoticeDaily extends Daily {
+export interface RecruitNoticeDaily extends RecruitDaily {
   readonly postIds: readonly string[];
 }
 
 /** `photographers/{uid}/private/recruit` (Decision 5), server-only. */
 export interface RecruitCounters {
   readonly openPostCount: number;
-  readonly postActions: Daily | null;
+  readonly postActions: RecruitDaily | null;
   readonly activeCollabCount: number;
   readonly pendingInviteCount: number;
-  readonly collabActions: Daily | null;
+  readonly collabActions: RecruitDaily | null;
   readonly openApplicationCount: number;
-  readonly applyActions: Daily | null;
-  readonly notices: NoticeDaily | null;
+  readonly applyActions: RecruitDaily | null;
+  readonly notices: RecruitNoticeDaily | null;
   readonly unpaidFlags: readonly Date[];
   readonly recruitBlockedUntil: Date | null;
 }
@@ -158,7 +158,7 @@ export const EMPTY_COUNTERS: RecruitCounters = {
 };
 
 /** One more action today (VN day); throws `rate_limited` when `max` were already taken today. */
-export function takeDaily(d: Daily | null, at: Date, max: number): Daily {
+export function takeRecruitDaily(d: RecruitDaily | null, at: Date, max: number): RecruitDaily {
   const day = vnDayKey(at);
   if (d === null || d.day !== day) return { day, count: 1 };
   if (d.count >= max) throw new DomainError('rate_limited');
@@ -233,7 +233,7 @@ function feeHintOf(raw: unknown): FeeHint {
   if (raw === null || typeof raw !== 'object') throw invalid('feeHint');
   const { type, amount } = raw as { type?: unknown; amount?: unknown };
   if (type === 'negotiable') return { type: 'negotiable' };
-  if (type === 'per_shoot' && isValidFee(amount)) return { type: 'per_shoot', amount };
+  if (type === 'per_shoot' && isValidRecruitFee(amount)) return { type: 'per_shoot', amount };
   throw invalid('feeHint');
 }
 
