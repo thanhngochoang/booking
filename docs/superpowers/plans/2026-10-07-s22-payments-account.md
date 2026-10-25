@@ -241,7 +241,7 @@ export async function requestDataExport(deps: DataExportDeps, caller: { uid: str
 |---|---|---|---|
 | `pendingRefund` (callable, #141) | `{bookingId}`, `{eventId, registrationId}` or `{disputeId}` | `PendingRefundView \| null` | `invalid_argument`, `not_found`, `permission_denied` |
 | `lookupRefundAccount` (callable, #141, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, bankCode, accountNumber}` | `{holderName, bankName, accountLast4}` | `invalid_argument`, `permission_denied`, `conflict`, `not_found`, `not_eligible`, `limit_exceeded` (`NAME_LOOKUPS_PER_DAY` attempts per refund per Vietnam day, every attempt counts; #141 fix round 1) |
-| `chooseRefundAccount` (callable, #141, `PAYMENT_CALLABLE_OPTIONS`, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, use: 'payer'\|'candidate'}` | `{status}` | `invalid_argument`, `permission_denied`, `not_found` |
+| `chooseRefundAccount` (callable, #141, `PAYMENT_CALLABLE_OPTIONS`, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, use: 'payer'\|'candidate'}` (`'candidate'` cũng mang `bankCode` + `accountLast4` của tài khoản đang hiện) | `{status}` | `invalid_argument`, `permission_denied`, `not_found`, `conflict` (lỗi, không phải kết quả thành công) |
 | `getAccountDeletionBlockers` (callable, #205) | `{}` | `{blockers: Blocker[]}` | — |
 | `requestAccountDeletion` (callable, #205) | `{}` | `{status: 'deletion_pending', restoreUntil}` | `reauth_required`, `conflict` (`details.blockers`: kinds) |
 | `restoreAccount` (callable, #205) | `{}` | `{status: 'restored'}` | `not_found`, `deadline_passed` |

@@ -38,12 +38,38 @@ All the plan's soft and hard dependencies had merged, so nothing is written agai
 - `lib/features/payments/refund_account_sheet.dart`, `refund_account_controller.dart` (`pendingRefundProvider`, `RefundAccountController`).
 - Entry points: S05.03 after cancel (`openRefundAccountAfterCancel`, only `checkout?.method == bankQr`), S05.02 card `_RefundAccountCard` while `refundAccountNeeded`, S11.04 after a refunded ticket cancel, S18.02 `_RefundAccountEntry` from `pendingRefund({disputeId})`. `BankField` gains an optional `label`.
 
-### Task 10: S22.01 screen and S09.02 row (bc08abb5)
+### Task 10: S22.01 screen and S09.02 row (bc08abb5; fix 9a3636d4 domain, 6c286503 app)
 - `lib/features/payments/payment_history_screen.dart`, `payment_history_controller.dart` (`paymentsPageSize = 20`, `paymentsLimitProvider`, month groups, `refundSubjectOf`); route `/me/payments`; S09.02 "Lịch sử thanh toán" first in the `paymentsData` group (key `settings-payment-history`).
 - `EarningRow` gains three optional slots: `statusLabel`, `action`, `footer` (S06.05 unchanged); `shared-components.md` notes them.
-- The Task 10 review fix round was still running when this ledger was written; the controller updates this ledger after it and after the final wave.
 
-### Task 11: docs (this commit)
+Fix round 1 (re-review folded into the final review):
+- Domain: `pendingRefundFor({bookingId})` and `({eventId, registrationId})` also return a waiting dispute refund through `waitingRefundsOf` (booking kinds `booking|dispute`, ticket kinds `ticket|dispute` plus the registration's own `refundId`), oldest by `(createdAt, id)`; `chooseRefundAccount` lands on the refund shown. `payerRowOf` takes `eventId = p.eventId ?? subject.eventId`.
+- App: core `MonthHeader` (`.first` / `.month`, `monthLabel`) and `groupByVnMonth` exported from `core.dart`; the earnings `groupByMonth` is a wrapper and the private copies are gone. Later months are `.nsec` (uppercase `labelSmall`, 0.08em, muted), which changes S06.05 (its test now reads THÁNG 9 / THÁNG 12/2025).
+- A failed "Xem thêm" keeps the rows with one `ErrorState` below; totals and rows both failing give one `ErrorState`; totals alone fail into their own error. Dispute and wait pills follow `AppColorsDark` in dark mode. An unknown-status row with a known subject keeps its detail link. New widget test: a dispute-refund booking row opens S22.04.
+- Decision 6 consequence: `booking.refundAccountNeeded` is raised only by `commit_transition` policy refunds, so a dispute refund on a booking shows the S22.01 button and S22.04 but not the S05.02 card.
+
+### Final review and final wave (server 9bb382e9, app 95bf27ee)
+
+Final review (server, app, docs in parallel): 0 Critical; server 3 Important, app 1 Important, docs 5 Important (the fix round not folded in; this commit).
+
+Server (`9bb382e9`):
+- S1: `openRows` in `payer_history_firestore.ts` also reads `users/{payer}/private/paymentTotals` inside the refresh transaction (before any write), so two concurrent refreshes of one payer contend and the totals cannot drift. Unit test asserts the path is among the strict fake's reads; no emulator test of two concurrent refreshes (not feasible with the fake; emulator suites are not run here).
+- S2: `triggers/instant_payer_rows.ts` (`handleInstantPayerRows`), called from `onInstantRequestWrite` after `handleInstantRequestWrite`, refreshes the payer row only on a `status` change of an existing request (`no_match` ↔ `choosing` no longer leaves "đang tìm thợ" stale).
+- S3: `refreshPayerHistoryOfSubject` refreshes every id, remembers the first error and rethrows after the loop (one failing payment no longer starves the others).
+- S4: `lookupRefundAccount` throws `not_found` when the counting `ledger.update` returns null, before the bank call (bank asked 0 times).
+- S9: the rules-test seed row uses `photographerName`/`serviceName` (and null `eventTitle`/`quantity`/`areaLabel`) instead of `title`; written, not run.
+- S10 ruling: a refund whose payment is missing cannot name its booking (the booking id lives on the payment; `Refund` has no `subjectId`), so `leaveDueQueue`'s payment-missing branch cannot lower `refundAccountNeeded`. Staff own that refund (`failed`, `manual`, `payment_missing`). Comment in code, no behaviour change.
+
+App (`95bf27ee`):
+- A1: after a conflict `_destination()` names the account only when the S22.01 row's refund is `pending` or `done`; for `awaiting_account` or `failed` it returns null and the sheet shows the generic `refundAccountAlreadySent`. Ruling: the repository `watchHistory` has no server-only read, so no non-cached read was added.
+- A2: comments corrected (the rows are the newest payments by creation time; an older payment's refund is not found and the sheet points to S22.01).
+- A3: `PopScope(canPop: !state.sending)` around the sheet body: barrier tap and Back cannot dismiss it while the choice is being sent.
+- A4: named constants `_pillWaitAlpha`, `_pillDisputeAlpha`, `_pillMaxWidthFraction` (no opacity token exists).
+- A5: the sheet's error text uses `AppColorsDark.error` / `AppColors.error` by brightness.
+- A6: `wallet` is true only for a refund with a `method` other than `bank_transfer` (a refund without a method is not a wallet refund).
+- A7 answer: yes, `pendingRefund` right after a cancel finds the refund. `commit_transition.ts` calls `tx.addRefund(...)` in the same transaction as the status change (and sets `refundAccountNeeded`), and `cancelRegistration` awaits `refundTicket` before the callable returns.
+
+### Task 11: docs (71377237, then the fold-in commit of the fix round and final wave)
 - Main spec §2 status cells for S22.01 and S22.04 link [#141]; §3i.5 as built; payments spec §5 "Đã làm ở #141"; screen specs above; data model; terms notes P15–P16; this ledger.
 - Data model gap closed while there: `payments.payer_id` (and `Payment.payerId`) was missing from `relational-schema.md` / `domain-model.md` although the code and #205's index `payments (payerId, createdAt desc)` use it.
 
@@ -108,10 +134,12 @@ Extra strings beyond the plan's l10n block:
 ## Deferred
 
 - Plan Deferred list: email delivery of the data copy; Google Play's web deletion request; real account-name lookup and real bank refunds (licensed intermediary, #129 Deferred; refunds stay on the fake gateway); staff tools for failed/manual refunds and `needs_review` payments (S23.02, S23.03, #83); jobs/quotes payments (#139); export of chat and post images as files; remote recommender filtering of hidden profiles; self-hosted parity of the new collections (phase 2 #90, now booking-be).
-- Final-wave candidates, Deferred unless the final wave fixes them (the controller updates this list after it):
-  - a Chụp ngay row stays `searching` after `no_match` → `choosing` (no `instant_requests` status hook refreshes the payer row); `refreshPayerHistoryOfSubject` has no per-payment error isolation;
-  - name lookups are capped per refund, not per customer (a customer with many no-payer refunds waiting gets 20 a day each); check that `refund_write.ts` ignores `accountLookups`-only writes (notice/refresh churn); the lookup charge step ignores `ledger.update`'s null;
-  - after a conflict the sheet trusts the S22.01 row's `destinationLabel` without checking that the row's refund has left `awaiting_account` (stale while triggers catch up); optionally add `holderName` to the shown-account match.
+- Final-wave Deferred (the other final-review items were fixed in 9bb382e9 and 95bf27ee):
+  - **Per-customer lookup counter** (real-adapter issue): lookups are capped per refund, not per customer, so a customer with many no-payer refunds waiting gets 20 a day each. With the real bank adapter this is a holder-name oracle risk (enumerating accounts through the name lookup); the cap must move to the customer when the real adapter lands. The fake lookup only echoes the caller's own name.
+  - **`refund_write` refresh on lookup-only writes**: `onRefundWritten` has no filter on what changed, so a write that only bumps `accountLookups` / `candidate` (each name lookup) also runs the notice check and the payer-row refresh (idempotent churn).
+  - **Ticket day and title stale on event edit**: ticket rows carry the event's day and title as written at the last payment or refund refresh; editing the event does not refresh them (booking rows do refresh on day or photographer change).
+  - **`monthLabel` reuses the `earningsMonth*` keys** (S06.05's) for S22.01 month headings; give S22.01 its own keys only if the wording diverges.
+  - **Epoch fallback for a malformed `createdAt`**: the app reads a malformed `createdAt` as `paidAt`, then as the epoch (oldest group), to keep the row; the epoch group is a placeholder, not a real date.
 - Cost notes: a refunded ticket cancel and each view of a resolved dispute with a refund call `pendingRefund` once; a cancel with a refund may refresh the payer row up to three times (booking, payment and refund triggers; idempotent).
 
 ## Questions for the owner
