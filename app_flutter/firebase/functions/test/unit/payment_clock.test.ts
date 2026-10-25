@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { handlePaymentClock } from '../../src/scheduled/payment_clock.js';
 import { PAYMENT_CLOCK_OPTIONS, REGION, WEBHOOK_OPTIONS } from '../../src/config.js';
 import { captureLogs, openPayment, paymentWorld } from './support/payment_world.js';
+import { transitionBooking, type RefundAccountDeps } from '@photobooking/domain';
 
 describe('payment clock', () => {
   it('the clock runs runPaymentSweeps and logs counts only', async (t) => {
@@ -33,6 +34,8 @@ describe('payment clock', () => {
       expireFailed: 0,
       resendFailed: 0,
       skippedRefunds: 0,
+      refundAccountsConfirmed: 0,
+      confirmFailed: 0,
     });
     assert.equal((await w.store.getPayment(p.paymentId))?.status, 'expired');
 
@@ -51,6 +54,8 @@ describe('payment clock', () => {
       expireFailed: 0,
       resendFailed: 0,
       skippedRefunds: 0,
+      refundAccountsConfirmed: 0,
+      confirmFailed: 0,
     });
     for (const l of lines) {
       assert.doesNotMatch(l, /PAYER|5555/, l);
@@ -162,5 +167,51 @@ describe('payment clock', () => {
     const res = await handlePaymentClock(settlementDeps);
     assert.equal(res.expired, 1);
     assert.equal(tw.store.payments.get(p.id)?.status, 'expired');
+  });
+
+  it('confirmDueRefundAccounts runs as the last named step and a failure in it does not stop the other steps', async (t) => {
+    const { createBookingWorld, newDraft, payDraft } = await import('../../../../../packages/domain/test/support/booking_world.js');
+    const { refundAccountDepsOf } = await import('../../../../../packages/domain/test/support/refund_account_world.js');
+    // c1's cancelled bank-QR booking: the refund waits for the account, 24 hours by default.
+    const w = createBookingWorld();
+    const draft = await newDraft(w);
+    const { paymentId } = await payDraft(w, draft.id);
+    await transitionBooking(w.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    const [refund] = await w.store.getRefundsForPayment(paymentId);
+    assert.equal(refund?.status, 'awaiting_account');
+    const refundAccounts = refundAccountDepsOf({ bookings: w.deps });
+
+    // Before confirmBy nothing moves; at confirmBy the step sends it to the payer.
+    w.clock.advanceHours(23);
+    assert.equal((await handlePaymentClock(w.deps, { refundSubjects: {}, refundAccounts })).refundAccountsConfirmed, 0);
+    w.clock.advanceHours(1);
+    let results: Awaited<ReturnType<typeof handlePaymentClock>> | undefined;
+    const lines = await captureLogs(t, async () => {
+      results = await handlePaymentClock(w.deps, { refundSubjects: {}, refundAccounts });
+    });
+    assert.deepEqual([results?.refundAccountsConfirmed, results?.confirmFailed], [1, 0]);
+    assert.equal((await w.store.getRefund(refund?.id ?? ''))?.status, 'done');
+    assert.deepEqual(w.gateway.refundCalls, [refund?.id]);
+    const logged = lines.filter((l) => l.includes('paymentClock completed'));
+    assert.match(logged[0] ?? '', /"refundAccountsConfirmed":1/);
+    for (const l of lines) assert.doesNotMatch(l, /3456|NGUYEN/, l);
+
+    // A failing step (its query throws) is counted; the steps before it still ran.
+    const p = paymentWorld();
+    const open = await openPayment(p);
+    p.gateway.pushTransfer(open.paymentId, {
+      provider: 'fake', txnId: 'txn_late_webhook', amount: open.amount, content: open.transferCode,
+      receivedAt: '2026-10-01T10:01:00.000Z',
+    });
+    p.advanceMinutes(4);
+    const broken: RefundAccountDeps = {
+      ...refundAccountDepsOf({ bookings: p.deps }),
+      bookings: { ...p.deps, store: Object.assign(Object.create(p.store) as typeof p.store, {
+        awaitingRefundsDue: async () => { throw new Error('index missing'); },
+      }) },
+    };
+    const res = await handlePaymentClock(p.deps, { refundSubjects: {}, refundAccounts: broken });
+    assert.deepEqual([res.reconciled, res.refundAccountsConfirmed, res.confirmFailed], [1, 0, 1]);
+    assert.equal((await p.store.getPayment(open.paymentId))?.status, 'paid');
   });
 });

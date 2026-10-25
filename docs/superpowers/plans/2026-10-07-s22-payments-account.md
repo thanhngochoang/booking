@@ -142,7 +142,7 @@ export class FakeAccountNameLookup implements AccountNameLookup { constructor(ec
 // refund_account.ts (new)
 export const REFUND_ACCOUNT_CONFIRM_HOURS = 24;
 /** A policy refund paid back by bank transfer waits for the customer (Decision 5). */
-export function needsAccountChoice(r: Pick<Refund, 'fromEscrow' | 'method'>): boolean;   // fromEscrow && method === 'bank_transfer' (V2 has no Refund.kind)
+export function needsAccountChoice(r: Pick<Refund, 'fromEscrow' | 'method'>): boolean;   // fromEscrow && method === 'bank_transfer' (V2 has no Refund.kind); as built in escrow.ts with canChooseRefundAccount (booking/ticket subjects)
 export type RefundSubjectRef = { bookingId: string } | { eventId: string; registrationId: string } | { disputeId: string }; // dispute: #142 (Decision 5)
 export interface PendingRefundView { readonly refundId: string; readonly amount: number; readonly payer: { bankName: string; accountLast4: string; holderName: string } | null; readonly confirmBy: string | null }
 export interface RefundAccountDeps {
@@ -155,6 +155,7 @@ export async function lookupRefundAccount(deps: RefundAccountDeps, caller: { uid
   Promise<{ holderName: string; bankName: string; accountLast4: string }>;
   // raw {refundId, bankCode, accountNumber}; payer only (permission_denied); refund awaiting_account else conflict;
   // bad bank/number invalid_argument; 'not_found' → not_found; 'unsupported' → not_eligible; stores encrypted candidate
+  // charges Refund.accountLookups {day, count} before asking the bank: the 21st attempt of a Vietnam day → limit_exceeded
 export async function chooseRefundAccount(deps: RefundAccountDeps, caller: { uid: string }, raw: unknown): Promise<{ status: RefundStatus }>;
   // raw {refundId, use: 'payer' | 'candidate'}; not awaiting → returns the current status (idempotent);
   // 'payer' without a payer destination or 'candidate' without a candidate → invalid_argument; then pending + dispatch
@@ -239,8 +240,8 @@ export async function requestDataExport(deps: DataExportDeps, caller: { uid: str
 | Name | Input | Output | Errors |
 |---|---|---|---|
 | `pendingRefund` (callable, #141) | `{bookingId}`, `{eventId, registrationId}` or `{disputeId}` | `PendingRefundView \| null` | `invalid_argument`, `not_found`, `permission_denied` |
-| `lookupRefundAccount` (callable, #141, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, bankCode, accountNumber}` | `{holderName, bankName, accountLast4}` | `invalid_argument`, `permission_denied`, `conflict`, `not_found`, `not_eligible` |
-| `chooseRefundAccount` (callable, #141, `PAYMENT_CALLABLE_OPTIONS`, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, use: 'payer'\|'candidate'}` | `{status}` | `invalid_argument`, `permission_denied`, `not_found` |
+| `lookupRefundAccount` (callable, #141, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, bankCode, accountNumber}` | `{holderName, bankName, accountLast4}` | `invalid_argument`, `permission_denied`, `conflict`, `not_found`, `not_eligible`, `limit_exceeded` (`NAME_LOOKUPS_PER_DAY` attempts per refund per Vietnam day, every attempt counts; #141 fix round 1) |
+| `chooseRefundAccount` (callable, #141, `PAYMENT_CALLABLE_OPTIONS`, secrets `PAYOUT_ACCOUNT_KEY`) | `{refundId, use: 'payer'\|'candidate'}` (`'candidate'` cũng mang `bankCode` + `accountLast4` của tài khoản đang hiện) | `{status}` | `invalid_argument`, `permission_denied`, `not_found`, `conflict` (lỗi, không phải kết quả thành công) |
 | `getAccountDeletionBlockers` (callable, #205) | `{}` | `{blockers: Blocker[]}` | — |
 | `requestAccountDeletion` (callable, #205) | `{}` | `{status: 'deletion_pending', restoreUntil}` | `reauth_required`, `conflict` (`details.blockers`: kinds) |
 | `restoreAccount` (callable, #205) | `{}` | `{status: 'restored'}` | `not_found`, `deadline_passed` |

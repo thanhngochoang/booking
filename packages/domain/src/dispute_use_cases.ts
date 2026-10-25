@@ -285,6 +285,9 @@ export async function resolveDispute(
         ledgerEntryId: deps.ids.newId(),
         reason: `dispute:${d.id}`,
         now,
+        // #141 Decision 5: a bank-QR dispute refund waits for the customer's account (S18.02 → S22.04);
+        // dispatchDisputeRefund skips it, chooseRefundAccount or the 24-hour default sends it.
+        waitForAccount: true,
       });
       pay = r.payment;
       refund = r.refund;

@@ -369,15 +369,15 @@ class _Rows extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var g = 0; g < groups.length; g++) ...[
-            _MonthHeader(
-              // The mock puts the first month beside "Các khoản".
-              title: g == 0
-                  ? l.earningsItems
-                  : _monthLabel(l, groups[g].monthKey, year),
-              trailing: g == 0
-                  ? _monthLabel(l, groups[g].monthKey, year)
-                  : null,
-            ),
+            // The mock puts the first month beside "Các khoản"; later ones
+            // are small upper-case section labels.
+            if (g == 0)
+              MonthHeader.first(
+                title: l.earningsItems,
+                trailing: monthLabel(l, groups[g].monthKey, year),
+              )
+            else
+              MonthHeader.month(month: monthLabel(l, groups[g].monthKey, year)),
             for (final item in groups[g].items) ...[
               _row(context, l, item),
               const SizedBox(height: AppSpace.s2),
@@ -481,46 +481,6 @@ List<EarningBreakdownLine> _breakdown(AppLocalizations l, EarningItem item) {
       strong: true,
     ),
   ];
-}
-
-class _MonthHeader extends StatelessWidget {
-  const _MonthHeader({required this.title, this.trailing});
-
-  final String title;
-  final String? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
-      child: Row(
-        children: [
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          if (trailing != null)
-            Text(trailing!, style: theme.textTheme.labelMedium),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Tháng 10", or "Tháng 10/2025" for another year than [thisYear].
-String _monthLabel(AppLocalizations l, String monthKey, int thisYear) {
-  final parts = monthKey.split('-');
-  final y = int.tryParse(parts.first) ?? thisYear;
-  final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 1) : 1;
-  return y == thisYear ? l.earningsMonth(m) : l.earningsMonthYear(m, y);
 }
 
 /// The fixed label of a hold reason code; free text never reaches the screen.

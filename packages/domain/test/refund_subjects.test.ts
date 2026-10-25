@@ -4,6 +4,14 @@ import { createBookingWorld, newDraft, payDraft, transferOf } from './support/bo
 import { applyRefundEvent, bookingRefundHandler, resendPendingRefunds, type RefundEvent } from '../src/refund_subjects.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import type { Refund } from '../src/escrow.js';
+import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
+
+/** #141 (S22.04): c1 confirms the paying account for the booking's waiting cancel refund, which sends it. */
+async function confirmPayer(world: ReturnType<typeof createBookingWorld>, paymentId: string): Promise<void> {
+  const [waiting] = await world.store.getRefundsForPayment(paymentId);
+  assert.equal(waiting?.status, 'awaiting_account');
+  await confirmRefundToPayer(refundAccountDepsOf({ bookings: world.deps }), waiting?.id ?? '');
+}
 
 const must = <T>(v: T | null | undefined): T => {
   assert.ok(v);
@@ -77,6 +85,7 @@ describe('refund_subjects: applyRefundEvent', () => {
     const draft = await newDraft(world);
     const { paymentId } = await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    await confirmPayer(world, paymentId);
     const [refund] = await world.store.getRefundsForPayment(paymentId);
     assert.ok(refund);
     assert.equal(refund.status, 'done');
@@ -216,6 +225,7 @@ describe('refund_subjects: re-send', () => {
     const { paymentId } = await payDraft(world, draft.id);
     world.gateway.refundThrowCount = 1;
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    await confirmPayer(world, paymentId);
     const [refund] = await world.store.getRefundsForPayment(paymentId);
     assert.ok(refund);
     assert.equal(refund.status, 'pending');

@@ -183,10 +183,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
-| S22.01 | Lịch sử thanh toán: đã trả, đang giữ (kể cả Chụp ngay chưa tìm được người), hoàn tiền, phương thức, trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ có mock (2026-10-07), có plan (#141) | — |
+| S22.01 | Lịch sử thanh toán: đã trả, đang giữ (kể cả Chụp ngay chưa tìm được người), hoàn tiền, phương thức, trạng thái từng khoản | `/me/payments` | khách | mới | [#141](https://github.com/thanhngochoang/booking/issues/141) | — |
 | S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ✅ đã làm (#205) | — |
 | S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ✅ đã làm (#205) · link tải trong app | — |
-| S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | ⬜ có mock (2026-10-07), có plan (#141) | — |
+| S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | [#141](https://github.com/thanhngochoang/booking/issues/141) | — |
 | S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ✅ đã làm (#205) | — |
 | **S23** | **Vận hành nội bộ (staff)** | | | | | |
 | S23.01 | Khiếu nại: hàng đợi và chi tiết (bằng chứng, hai mốc tiền, hội thoại ba bên, thả / hoàn / chia; hoàn từ 10 triệu cần người thứ hai) | `/staff/disputes` (web) | admin · support (quyết định) · finance (xem số tiền) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
@@ -969,6 +969,8 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 
 ### 3i.5 S22 · Thanh toán & tài khoản
 - **S22.01**: khách xem mọi khoản đã trả và đang được giữ, kể cả tiền Chụp ngay đang treo khi chưa tìm được người (spec Chụp ngay), hoàn tiền đang xử lý và đã xong; mỗi dòng mở chi tiết booking/vé/yêu cầu. Nhiếp ảnh gia đã có S06.05 cho tiền nhận.
+  - Bản đã làm (#141): mỗi khoản đã nhận tiền có một dòng do máy chủ ghi ở `users/{uid}/payments/{paymentId}` (trigger `onPaymentWritten`, `onRefundWritten` và đổi trạng thái booking), tổng "Đang giữ · Đang hoàn" ở `users/{uid}/private/paymentTotals`; một mã trạng thái mỗi dòng (`held`, `disputed`, `released`, `refund_account_needed`, `refunding`, `refunded`, `partially_refunded`); tiêu đề do app ghép từ các phần (tên thợ, gói, sự kiện, số vé, khu Chụp ngay); 20 dòng mỗi trang, "Xem thêm". Màn ở [`screens/account.md`](screens/account.md#s2201--lịch-sử-thanh-toán).
+- **S22.04 Tài khoản nhận hoàn** (sheet, #141): khoản hoàn theo chính sách của khoản trả bằng chuyển khoản QR (khách huỷ, bị từ chối, hết hạn, sự kiện huỷ, kết quả khiếu nại) chờ khách chọn tài khoản: có tài khoản đã chuyển thì sau 24 giờ không chọn tự hoàn về đó; không có thì chờ khách khai. Hoàn tiền thừa/chuyển trễ và hoàn về ví không chờ. Chi tiết ở [spec thanh toán §5](2026-10-06-payments-payouts-design.md#5-hoàn-tiền) và [`screens/account.md`](screens/account.md#s2204--tài-khoản-nhận-hoàn-sheet).
 - **S22.02 Xoá tài khoản** (bắt buộc với Google Play và App Store khi có đăng ký tài khoản): chặn khi còn booking chưa xong, vé chưa diễn ra, tiền đang giữ hoặc khiếu nại mở (liệt kê từng thứ kèm lối đi); xoá dữ liệu cá nhân, giữ bút toán sổ cái ẩn danh theo yêu cầu kế toán; bài công khai gỡ xuống. Khoá ngay, xoá hẳn sau 30 ngày; đăng nhập lại trong 30 ngày thì khôi phục được (S22.05).
 - **S22.03**: ẩn hồ sơ khỏi gợi ý và tìm kiếm (nhiếp ảnh gia vẫn nhận khách cũ), tải bản sao dữ liệu (link tải trong app, 7 ngày; xem câu hỏi 1 kế hoạch S22).
 

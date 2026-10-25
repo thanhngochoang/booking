@@ -54,7 +54,7 @@ Màn: S11.01, S11.02, S11.03, S11.04, S12.01, S12.02, S12.03. Quy ước chung �
 - **Bố cục**: `SegmentedTabs` "Buổi chụp | Vé sự kiện"; `TicketCard` sắp diễn ra (viền nổi bật (trung tính)): tag loại (pill), tên, một dòng ngày giờ · số vé, badge "Đã đăng ký"; hàng mã QR 112dp trên nền trắng với lời nhắc "Đưa mã này cho chủ sự kiện khi đến điểm hẹn." và mã vé chọn‑copy bên phải; "Chỉ đường" (viền) + "Thêm vào lịch" (phụ); "Vào nhóm chat" khi vé đã trả; nút chữ đỏ "Huỷ vé · hoàn {x}%" dưới thẻ; các vé khác (chờ thanh toán có nút nhỏ "Thanh toán tiếp", hết hạn, đã qua, đã huỷ) dạng thẻ gọn. "Thanh toán tiếp" gọi `checkTicketPayment` kiểm tra trước; nếu chưa thanh toán thì mở S04.04 (`/e/:eventId/pay/:regId`).
 - **Dữ liệu**: collection group `registrations (userId)` + sự kiện tương ứng; QR mã hoá `ticketCode`.
 - **Trạng thái**: vé chờ thanh toán có "Thanh toán tiếp" (còn thời gian giữ) hoặc "Hết hạn"; vé đã qua mờ, không hiện QR; sự kiện bị huỷ → "Đã hoàn tiền" hoặc "Đang hoàn".
-- **Tương tác**: huỷ vé mở xác nhận nêu số tiền hoàn; chạm QR phóng to với độ sáng cao (nếu khả thi).
+- **Tương tác**: huỷ vé mở xác nhận nêu số tiền hoàn; vé trả tiền huỷ có hoàn (`pct > 0`) thì sau khi huỷ app gọi `pendingRefund(TicketRefund)` và mở sheet S22.04 Tài khoản nhận hoàn nếu lệnh hoàn chờ tài khoản (vé trả bằng chuyển khoản QR; ví thì máy chủ trả null, không mở gì; #141); vé có lệnh hoàn `awaiting_account` vẫn đọc "Đang hoàn"; chạm QR phóng to với độ sáng cao (nếu khả thi).
 - **Chuỗi**: `s18_tab` "Vé sự kiện", `s18_code` "Mã vé", `s18_cancel` "Huỷ vé · hoàn {pct}%", `s18_registered` "Đã đăng ký".
 - **Phân tích**: `ticket_view`, `ticket_cancel`.
 - **Chấp nhận**: QR quét được bởi S12.03; mã vé duy nhất; vé đã check‑in hiện "Đã tham gia".

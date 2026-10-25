@@ -11,6 +11,7 @@ import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/disputes/dispute_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -19,6 +20,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
 import '../../support/dispute_world.dart';
+import '../../support/fake_payments_repository.dart';
 
 /// Shoot on Monday 12/10 15:30–17:30 Vietnam = 08:30–10:30 UTC.
 final _startsAt = DateTime.utc(2026, 10, 12, 8, 30);
@@ -87,6 +89,93 @@ List<String> primaryButtonLabels(WidgetTester tester) => [
 ];
 
 void main() {
+  testWidgets('S05.02 shows the refund card while refundAccountNeeded and '
+      'hides it after', (tester) async {
+    // Declined after payment: the server's refund waits for the account.
+    final declined = _booking(
+      status: BookingStatus.declined,
+      escrow: EscrowStatus.refunded,
+    ).copyWith(depositRefunded: 1500000, refundAccountNeeded: true);
+    final payments = FakePaymentsRepository()
+      ..pendingBySubject[const BookingRefund('b1')] = PendingRefund(
+        refundId: 'r1',
+        amount: 1500000,
+        payer: (
+          bankName: 'Vietcombank',
+          accountLast4: '6789',
+          holderName: 'NGUYEN THANH HA',
+        ),
+        confirmBy: _startsAt,
+      );
+    final handles = await pumpBookingDetail(
+      tester,
+      uid: detailCustomerUid,
+      bookings: _repo(declined),
+      payments: payments,
+    );
+    await _settle(tester);
+
+    final card = find.byKey(const Key('detail-refund-account'));
+    expect(card, findsOneWidget);
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.text('Bạn được hoàn 1.500.000₫'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.text('Chọn tài khoản để nhận tiền hoàn.'),
+      ),
+      findsOneWidget,
+    );
+    final choose = find.descendant(
+      of: card,
+      matching: find.widgetWithText(AppButton, 'Chọn tài khoản nhận hoàn'),
+    );
+    expect(choose, findsOneWidget);
+    // An outline button: the screen keeps at most one primary.
+    expect(
+      primaryButtonLabels(tester),
+      isNot(contains('Chọn tài khoản nhận hoàn')),
+    );
+
+    await tester.ensureVisible(choose);
+    await tester.tap(choose);
+    await _settle(tester);
+    expect(payments.pendingCalls, [const BookingRefund('b1')]);
+    expect(find.text('Tài khoản nhận hoàn'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Hoàn về tài khoản này'));
+    await _settle(tester);
+    expect(payments.chooseCalls, ['r1:payer']);
+
+    // The server clears the flag once the refund leaves.
+    handles.bookings.seedBooking(
+      declined.copyWith(refundAccountNeeded: false),
+    );
+    await _settle(tester);
+    expect(card, findsNothing);
+  });
+
+  testWidgets('the photographer never sees the refund card', (tester) async {
+    await pumpBookingDetail(
+      tester,
+      uid: detailPhotographerUid,
+      bookings: _repo(
+        _booking(
+          status: BookingStatus.declined,
+          escrow: EscrowStatus.refunded,
+        ).copyWith(depositRefunded: 1500000, refundAccountNeeded: true),
+        copy: testContactSnapshot,
+      ),
+    );
+    await _settle(tester);
+
+    expect(find.byKey(const Key('detail-refund-account')), findsNothing);
+  });
+
   testWidgets('the paid toast shows "Đã thanh toán 3.400.000₫…" and the block '
       'lists the add-ons and the pickup', (tester) async {
     await pumpBookingDetail(

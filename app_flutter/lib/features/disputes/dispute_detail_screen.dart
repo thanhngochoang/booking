@@ -11,10 +11,13 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/disputes/dispute.dart';
 import 'package:photobooking/data/disputes/dispute_providers.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/support/support_thread.dart';
 import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/disputes/widgets/dispute_outcome_card.dart';
 import 'package:photobooking/features/help/support_thread_view.dart';
+import 'package:photobooking/features/payments/refund_account_controller.dart';
+import 'package:photobooking/features/payments/refund_account_sheet.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 class DisputeDetailScreen extends ConsumerWidget {
@@ -201,6 +204,10 @@ class _DisputeDetails extends StatelessWidget {
             viewerIsCustomer: viewerIsCustomer,
           ),
           gap,
+          // Decision 5 (#141): a refund of a bank transfer waits for the
+          // customer's account; only the customer chooses it.
+          if (viewerIsCustomer && outcome.refundAmount > 0)
+            _RefundAccountEntry(disputeId: d.id),
         ],
         Text(l.disputeThreadTitle, style: sectionStyle),
         if (!open) ...[
@@ -214,6 +221,41 @@ class _DisputeDetails extends StatelessWidget {
         ],
         const SizedBox(height: AppSpace.s1),
       ],
+    );
+  }
+}
+
+/// The outline "Chọn tài khoản nhận hoàn" while the dispute's refund waits
+/// for the customer's account (S22.04 with `DisputeRefund`); nothing
+/// otherwise, also while asking and when the server cannot be reached.
+class _RefundAccountEntry extends ConsumerWidget {
+  const _RefundAccountEntry({required this.disputeId});
+
+  final String disputeId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subject = DisputeRefund(disputeId);
+    return AsyncView<PendingRefund?>(
+      value: ref.watch(pendingRefundProvider(subject)),
+      skeleton: (_) => const SizedBox.shrink(),
+      error: (_, _, _) => const SizedBox.shrink(),
+      isEmpty: (p) => p == null,
+      empty: (_) => const SizedBox.shrink(),
+      data: (context, _) => Padding(
+        padding: const EdgeInsets.only(bottom: AppSpace.s3),
+        child: AppButton.outline(
+          context.l10n.payChooseRefundAccount,
+          key: const Key('dispute-refund-account'),
+          size: AppButtonSize.small,
+          onPressed: () async {
+            await showRefundAccountSheet(context, ref, subject);
+            if (context.mounted) {
+              ref.invalidate(pendingRefundProvider(subject));
+            }
+          },
+        ),
+      ),
     );
   }
 }

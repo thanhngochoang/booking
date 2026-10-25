@@ -7320,6 +7320,122 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsPaymentHistoryBody => 'Khoản đã trả, đang giữ, đang hoàn';
 
   @override
+  String get paymentsTitle => 'Lịch sử thanh toán';
+
+  @override
+  String get paymentsHeld => 'Đang giữ';
+
+  @override
+  String get paymentsRefunding => 'Đang hoàn';
+
+  @override
+  String get paymentsHeldNote =>
+      'Tiền bạn trả được trung gian thanh toán giữ, chỉ chuyển cho thợ theo 2 mốc.';
+
+  @override
+  String get paymentsItems => 'Các khoản';
+
+  @override
+  String get paymentsMore => 'Xem thêm';
+
+  @override
+  String get paymentsEmptyTitle => 'Chưa có khoản thanh toán nào';
+
+  @override
+  String get paymentsEmptyBody =>
+      'Khi bạn đặt lịch hay mua vé, các khoản sẽ hiện ở đây.';
+
+  @override
+  String get paymentsLoadError => 'Không tải được lịch sử thanh toán';
+
+  @override
+  String get payStatusHeld => 'Đang giữ';
+
+  @override
+  String get payStatusDisputed => 'Đang khiếu nại';
+
+  @override
+  String get payStatusReleasedBooking => 'Đã chuyển cho thợ';
+
+  @override
+  String get payStatusReleasedTicket => 'Đã chuyển cho chủ sự kiện';
+
+  @override
+  String get payStatusReleasedPlatform => 'Đã thanh toán';
+
+  @override
+  String get payStatusRefunding => 'Đang hoàn';
+
+  @override
+  String get payStatusNeedsAccount => 'Cần tài khoản';
+
+  @override
+  String get payStatusRefunded => 'Đã hoàn';
+
+  @override
+  String get payStatusPartlyRefunded => 'Đã hoàn một phần';
+
+  @override
+  String payMetaToday(String time) {
+    return 'Hôm nay $time';
+  }
+
+  @override
+  String get payMetaSearching => 'đang tìm thợ';
+
+  @override
+  String get payMetaCancelled => 'đã huỷ';
+
+  @override
+  String payTitleBooking(String photographer, String service) {
+    return '$photographer · $service';
+  }
+
+  @override
+  String payTitleTicket(String title, int n) {
+    return '$title · $n vé';
+  }
+
+  @override
+  String payTitleInstant(String area) {
+    return 'Chụp ngay · $area';
+  }
+
+  @override
+  String get payDetailPaid => 'Đã trả';
+
+  @override
+  String payDetailRefundTo(String destination) {
+    return 'Hoàn về $destination';
+  }
+
+  @override
+  String get payDetailRefund => 'Hoàn tiền';
+
+  @override
+  String payDetailWallet(String wallet) {
+    return 'ví $wallet';
+  }
+
+  @override
+  String get payDetailRefundPending => 'đang xử lý';
+
+  @override
+  String get payDetailRefundDone => 'đã về';
+
+  @override
+  String get payDetailWillGetBack => 'Sẽ nhận lại';
+
+  @override
+  String get payDetailOpenBooking => 'Xem buổi chụp';
+
+  @override
+  String get payDetailOpenTicket => 'Xem vé';
+
+  @override
+  String get payDetailOpenInstant => 'Xem yêu cầu Chụp ngay';
+
+  @override
   String get settingsPrivacy => 'Quyền riêng tư & dữ liệu';
 
   @override
@@ -10669,4 +10785,103 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get collabDeclineConfirmBody =>
       'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.';
+
+  @override
+  String get refundAccountTitle => 'Tài khoản nhận hoàn';
+
+  @override
+  String get refundAccountYouGet => 'Bạn được hoàn';
+
+  @override
+  String get refundAccountToPayer => 'Tiền hoàn về tài khoản đã chuyển:';
+
+  @override
+  String get refundAccountConfirm => 'Hoàn về tài khoản này';
+
+  @override
+  String get refundAccountOther => 'Dùng tài khoản khác';
+
+  @override
+  String get refundAccountWalletNote =>
+      'Ví MoMo/ZaloPay: hoàn về ví, không cần chọn.';
+
+  @override
+  String get refundAccountAutoNote =>
+      'Không chọn thì sau 24 giờ tiền tự hoàn về tài khoản đã chuyển.';
+
+  @override
+  String get refundAccountNoPayer =>
+      'Chưa có thông tin tài khoản đã chuyển. Nhập tài khoản để nhận tiền hoàn.';
+
+  @override
+  String get refundAccountBank => 'Ngân hàng';
+
+  @override
+  String get refundAccountNumber => 'Số tài khoản';
+
+  @override
+  String get refundAccountLookup => 'Tra tên chủ tài khoản';
+
+  @override
+  String get refundAccountLookupNote =>
+      'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ.';
+
+  @override
+  String get refundAccountEncrypted =>
+      'Số tài khoản được mã hoá, chỉ hiện 4 số cuối.';
+
+  @override
+  String get refundAccountNotFound =>
+      'Không tìm thấy tài khoản này. Kiểm tra lại ngân hàng và số tài khoản.';
+
+  @override
+  String get refundAccountUnsupported =>
+      'Ngân hàng này chưa tra được tên chủ tài khoản. Chọn ngân hàng khác hoặc hoàn về tài khoản đã chuyển.';
+
+  @override
+  String get refundAccountLookupLimit =>
+      'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get refundAccountLookupError => 'Không tra được tên. Thử lại.';
+
+  @override
+  String get refundAccountLookupStale =>
+      'Tài khoản vừa thay đổi. Tra tên lại rồi xác nhận.';
+
+  @override
+  String get refundAccountBackToPayer => 'Hoàn về tài khoản đã chuyển';
+
+  @override
+  String refundAccountWentTo(String destination) {
+    return 'Tiền hoàn đã được gửi về $destination trước khi bạn chọn.';
+  }
+
+  @override
+  String get refundAccountSent => 'Đã gửi yêu cầu hoàn tiền';
+
+  @override
+  String get refundAccountAlreadySent =>
+      'Tiền hoàn đã được gửi đi trước khi bạn chọn. Xem nơi nhận ở Lịch sử thanh toán.';
+
+  @override
+  String get refundAccountFailed => 'Chưa gửi được, thử lại sau.';
+
+  @override
+  String get refundAccountLoadError =>
+      'Chưa mở được tài khoản nhận hoàn, thử lại sau.';
+
+  @override
+  String get refundAccountClose => 'Đóng';
+
+  @override
+  String get payChooseRefundAccount => 'Chọn tài khoản nhận hoàn';
+
+  @override
+  String detailRefundAccountTitle(String amount) {
+    return 'Bạn được hoàn $amount';
+  }
+
+  @override
+  String get detailRefundAccountBody => 'Chọn tài khoản để nhận tiền hoàn.';
 }

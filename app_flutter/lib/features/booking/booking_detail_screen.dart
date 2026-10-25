@@ -18,6 +18,7 @@ import 'package:photobooking/data/photographer/photographer_contact_providers.da
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/delivery/delivery_providers.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
@@ -36,6 +37,7 @@ import 'package:photobooking/features/studio/change_request_sheet.dart';
 import 'package:photobooking/features/studio/return_job_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:photobooking/features/payments/refund_account_sheet.dart';
 import 'package:photobooking/features/review/review_screen.dart';
 
 /// A sheet S05.02 opens over itself after its first frame (deep links
@@ -206,6 +208,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ? l10n.cancelDoneToast(formatMoney(refunded))
               : l10n.cancelDoneNoRefund,
         );
+        if (refunded > 0) await openRefundAccountAfterCancel(context, ref, b);
       case DetailAction.bookAgain:
         await context.push(
           bookingPath(photographerId: b.photographerId, serviceId: b.serviceId),
@@ -237,6 +240,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ref.read(bookingProvider(b.id)).value?.depositRefunded ??
             b.deposit;
         _say(l10n.cancelDoneToast(formatMoney(refunded)));
+        await openRefundAccountAfterCancel(context, ref, b);
       case DetailAction.reportProblem:
         await _reportProblem(b, counterpartName);
       case DetailAction.returnJob:
@@ -499,6 +503,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
           const SizedBox(height: AppSpace.s4),
+          // Mock S05.02-refund: a policy refund of a bank transfer waits for
+          // the customer's account (server mirror) until S22.04 or 24 h.
+          if (customer && b.refundAccountNeeded) ...[
+            _RefundAccountCard(
+              amount: b.depositRefunded,
+              onChoose: () =>
+                  showRefundAccountSheet(context, ref, BookingRefund(b.id)),
+            ),
+            const SizedBox(height: AppSpace.s4),
+          ],
           // Mock S05.02-disputed: under the card, for both parties. The
           // dispute freezes the money (`escrowStatus: disputed`) until it is
           // resolved, so the booking alone says which banner it is. A studio
@@ -1061,6 +1075,55 @@ class _ExtraRoundCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Mock S05.02-refund: "Bạn được hoàn {amount}", "Chọn tài khoản để nhận
+/// tiền hoàn." and the outline "Chọn tài khoản nhận hoàn" (S22.04). The
+/// amount is the server's refund; without it the title is left out.
+class _RefundAccountCard extends StatelessWidget {
+  const _RefundAccountCard({required this.amount, required this.onChoose});
+
+  final int? amount;
+  final VoidCallback onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final a = amount;
+    return GlassCard(
+      key: const Key('detail-refund-account'),
+      highlight: false,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (a != null && a > 0)
+              Text(
+                l10n.detailRefundAccountTitle(formatMoney(a)),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            Text(
+              l10n.detailRefundAccountBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpace.s2),
+            AppButton.outline(
+              l10n.payChooseRefundAccount,
+              key: const Key('detail-refund-account-choose'),
+              size: AppButtonSize.small,
+              onPressed: onChoose,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -173,6 +173,11 @@ export interface Booking {
   readonly depositProvider?: PaymentProvider;
   readonly depositPaidAt?: string;
   readonly depositRefundedAt?: string;
+  /**
+   * Server-written (#141 Decision 6): the booking's cancel/decline/expiry refund waits in
+   * `awaiting_account` for the customer to confirm an account (S05.02 row, S22.04); false once chosen.
+   */
+  readonly refundAccountNeeded?: boolean;
   readonly acceptDeadline?: string;
   readonly cancel?: BookingCancel;
   readonly completedAt?: string;

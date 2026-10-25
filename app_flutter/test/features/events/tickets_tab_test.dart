@@ -9,6 +9,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -831,6 +832,101 @@ void main() {
     await settle(tester);
     expect(w.repo.registrations.single.status, RegistrationStatus.refunded);
     expect(find.text('ĐÃ HOÀN TIỀN'), findsOneWidget);
+  });
+
+  testWidgets('a bank_qr ticket cancelled ≥ 48 h opens the sheet', (
+    tester,
+  ) async {
+    final w = EventsWorld(
+      events: [detailOf('ev1', priceVnd: 250000)],
+      registrations: [_reg('a', amount: 500000, quantity: 2)],
+    );
+    w.payments.pendingBySubject[const TicketRefund('ev1', 'a')] =
+        const PendingRefund(
+          refundId: 'r1',
+          amount: 500000,
+          payer: (
+            bankName: 'Vietcombank',
+            accountLast4: '6789',
+            holderName: 'NGUYEN THANH HA',
+          ),
+        );
+    await w.pump(
+      tester,
+      path: '/bookings',
+      size: const Size(390, 1400),
+      bookings: (_) => const Scaffold(body: EventTicketsTab()),
+    );
+    await tester.tap(find.text('Huỷ vé · hoàn 100%'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+
+    expect(w.payments.pendingCalls, [const TicketRefund('ev1', 'a')]);
+    expect(find.text('Đã huỷ vé'), findsOneWidget);
+    expect(find.text('Tài khoản nhận hoàn'), findsOneWidget);
+    expect(find.text('Vietcombank •••• 6789'), findsOneWidget);
+  });
+
+  testWidgets('a wallet ticket cancel asks once and opens no sheet', (
+    tester,
+  ) async {
+    final w = await _open(tester, [
+      _reg('a', amount: 250000),
+    ], priceVnd: 250000);
+    await tester.tap(find.text('Huỷ vé · hoàn 100%'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+    // The registration does not carry the method: the server says nothing
+    // waits for a wallet payment.
+    expect(w.payments.pendingCalls, [const TicketRefund('ev1', 'a')]);
+    expect(find.text('Tài khoản nhận hoàn'), findsNothing);
+  });
+
+  testWidgets('a no-refund ticket cancel never asks for a refund account', (
+    tester,
+  ) async {
+    final late = await _open(
+      tester,
+      [_reg('b', amount: 250000)],
+      priceVnd: 250000,
+      now: eventNow.add(const Duration(days: 2)),
+    );
+    await tester.tap(find.text('Huỷ vé · không hoàn tiền'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+    expect(late.payments.pendingCalls, isEmpty);
+  });
+
+  testWidgets('a ticket whose refund waits for an account stays "Đang hoàn" '
+      '(S11.04-pending)', (tester) async {
+    await _open(tester, [
+      _reg(
+        'a',
+        amount: 250000,
+        status: RegistrationStatus.refunded,
+        refundPercent: 100,
+        refundStatus: TicketRefundStatus.awaitingAccount,
+      ),
+    ], priceVnd: 250000);
+    expect(find.text('ĐANG HOÀN'), findsOneWidget);
   });
 
   testWidgets('cancel within 48 hours warns there is no refund', (

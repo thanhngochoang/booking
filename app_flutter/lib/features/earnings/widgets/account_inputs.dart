@@ -46,24 +46,32 @@ class AccountNumberFormatter extends TextInputFormatter {
 
 /// The mock's bank field: a code badge, the short and full name, and a
 /// search mark that opens the bank list ([onTap]). Without a bank it reads
-/// "Chọn ngân hàng".
+/// "Chọn ngân hàng". [label] replaces "Ngân hàng" of S06.06 (S22.04 has its
+/// own key with the same words).
 class BankField extends StatelessWidget {
-  const BankField({super.key, required this.bank, required this.onTap});
+  const BankField({
+    super.key,
+    required this.bank,
+    required this.onTap,
+    this.label,
+  });
 
   final VnBank? bank;
   final VoidCallback? onTap;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
     final b = bank;
+    final fieldLabel = label ?? l.payoutAccountBank;
     return Semantics(
       button: true,
       enabled: onTap != null,
       excludeSemantics: true,
       label:
-          '${l.payoutAccountBank}, ${b == null ? l.payoutAccountBankPick : '${b.shortName}, ${b.name}'}',
+          '$fieldLabel, ${b == null ? l.payoutAccountBankPick : '${b.shortName}, ${b.name}'}',
       onTap: onTap,
       child: InkWell(
         key: const Key('payout-bank'),
@@ -72,7 +80,7 @@ class BankField extends StatelessWidget {
         child: InputDecorator(
           isEmpty: false,
           decoration: InputDecoration(
-            labelText: l.payoutAccountBank,
+            labelText: fieldLabel,
             floatingLabelBehavior: FloatingLabelBehavior.always,
             enabled: onTap != null,
             suffixIcon: const AppIcon(AppIcons.search),

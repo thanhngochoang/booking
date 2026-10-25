@@ -1,12 +1,20 @@
 import { Firestore, Timestamp } from 'firebase-admin/firestore';
 import type { Bucket } from '@google-cloud/storage';
 import { db, bucket as getBucket } from './admin.js';
+import { PAYER_PAYMENTS, payerRowFromFirestore } from './payer_history_firestore.js';
 import {
+  type PayerPaymentRow,
   type DataExportDeps,
   type ExportParts,
   EXPORT_LIMITS,
 } from '@photobooking/domain';
 import { randomUUID } from 'node:crypto';
+
+/** The payer's history rows, newest first, as shown on S22.01 (ISO instants, refunds with masked destinations). */
+export async function paymentHistoryForExport(firestore: Firestore, uid: string, limit: number): Promise<PayerPaymentRow[]> {
+  const snap = await firestore.collection('users').doc(uid).collection(PAYER_PAYMENTS).orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs.flatMap((d) => payerRowFromFirestore(d.id, d.data()) ?? []);
+}
 
 export class FirestoreDataExportDeps implements DataExportDeps {
   constructor(
@@ -66,9 +74,9 @@ export class FirestoreDataExportDeps implements DataExportDeps {
     const regSnap = await this.firestore.collectionGroup('registrations').where('userId', '==', uid).limit(limits.registrations).get();
     parts.registrations = regSnap.docs.map((d) => d.data());
 
-    // 5. Payments
-    const paySnap = await this.firestore.collection('payments').where('payerId', '==', uid).limit(limits.payments).get();
-    parts.payments = paySnap.docs.map((d) => d.data());
+    // 5. Payments: the customer's S22.01 history rows (#141 Decision 10), never the raw payments
+    // (payee-side fields such as feeBp, payableAmount, payoutId, idempotencyKey stay out).
+    parts.payments = await paymentHistoryForExport(this.firestore, uid, limits.payments);
 
     // 6. Posts
     const postSnap = await this.firestore.collection('posts').where('authorId', '==', uid).limit(limits.posts).get();

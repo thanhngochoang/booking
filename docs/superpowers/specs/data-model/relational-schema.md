@@ -343,6 +343,7 @@ create table payments (
   id              text primary key,
   subject_type    text not null check (subject_type in ('booking','event_registration','instant_request','verification_fee')),
   subject_id      text not null,
+  payer_id        text not null references users(id),  -- khách trả (Firestore `payerId`); S22.01 và chặn xoá tài khoản (#205, #141)
   payee_id        text references users(id),      -- nhiếp ảnh gia / chủ sự kiện nhận tiền; null = nền tảng
   provider        text not null check (provider in ('momo','vnpay')),
   method          text check (method in ('bank_qr','momo','zalopay','domestic_card','intl_card')),  -- cách khách trả; null với vé cũ
@@ -375,6 +376,7 @@ create table payments (
   updated_at      timestamptz not null default now()
 );
 create index ix_payments_subject on payments (subject_type, subject_id);
+create index ix_payments_payer on payments (payer_id, created_at desc);  -- #205 chặn xoá, #141 lịch sử của khách
 create unique index ux_payments_transfer_code on payments (transfer_code) where transfer_code is not null;
 create index ix_payments_reconcile on payments (status, created_at) where status = 'created' and method is not null;  -- job đối soát và hết hạn
 create index ix_payments_event on payments (event_id, status, escrow_status) where event_id is not null;
@@ -394,7 +396,14 @@ create table refunds (
   destination_account_last4 text,                      -- #201: 4 số cuối tài khoản nhận hoàn
   destination_holder_name text,                        -- #201: tên chủ tài khoản nhận hoàn
   destination_source text check (destination_source in ('payer','customer')), -- #201: nguồn gốc tài khoản
-  confirm_by      timestamptz,                         -- #201/#141: hạn xác nhận tài khoản
+  confirm_by      timestamptz,                         -- #201/#141: hạn xác nhận tài khoản (created_at + 24 giờ khi có tài khoản người chuyển; null: chờ khách)
+  candidate_bank_code text,                            -- #141: tài khoản khác khách đã tra tên ở S22.04 (xoá khi rời awaiting_account)
+  candidate_bank_name text,
+  candidate_account_enc text,                          -- #141: mã hoá AES-256-GCM như destination_account_enc
+  candidate_account_last4 text,
+  candidate_holder_name text,                          -- #141: tên ngân hàng trả về (in hoa, bỏ dấu)
+  account_lookups_day date,                            -- #141: ngày VN của các lần tra tên
+  account_lookups_count smallint not null default 0 check (account_lookups_count between 0 and 20),  -- #141: tối đa 20 lần mỗi ngày mỗi lệnh hoàn
   attempts        integer not null default 0,          -- #201: số lần đã gửi lệnh hoàn sang cổng/ngân hàng
   last_attempt_at timestamptz,                         -- #201: lần gửi gần nhất, dùng cho retry
   failure_reason  text,                                -- #201: mã hoặc lý do lỗi từ cổng/ngân hàng
@@ -407,6 +416,39 @@ create table refunds (
 );
 create index ix_refunds_pending on refunds (status, last_attempt_at) where status = 'pending';
 create index ix_refunds_awaiting on refunds (status, confirm_by) where status = 'awaiting_account';
+
+-- #141 S22.01 lịch sử thanh toán của khách. Firestore giữ hình chiếu do trigger ghi (`users/{uid}/payments/{paymentId}`,
+-- `users/{uid}/private/paymentTotals`); máy chủ riêng đọc view này. Mã trạng thái theo `payerRowOf` (Decision 3 kế hoạch S22),
+-- phần tiêu đề (tên thợ, gói, tên sự kiện, số vé, khu Chụp ngay) join từ chủ thể khi đọc.
+create view payer_payment_rows as
+select
+  p.id as payment_id, p.payer_id, p.subject_type, p.subject_id, p.event_id, p.method, p.created_at,
+  p.payee_id is null as to_platform,
+  r.refunding_amount, r.refunded_amount, r.excess_amount,
+  case
+    when r.awaiting_choosable then 'refund_account_needed'
+    when r.unsettled > 0 then 'refunding'
+    when p.escrow_status = 'disputed' then 'disputed'
+    when p.status = 'refunded' or p.escrow_status = 'refunded' then 'refunded'
+    when p.escrow_status in ('released','paid_out') then case when r.policy_count > 0 then 'partially_refunded' else 'released' end
+    else 'held'
+  end as status
+from payments p
+left join lateral (
+  select
+    coalesce(sum(amount) filter (where status <> 'done'), 0) as refunding_amount,
+    coalesce(sum(amount) filter (where status = 'done'), 0) as refunded_amount,
+    coalesce(sum(amount) filter (where not from_escrow), 0) as excess_amount,
+    count(*) filter (where from_escrow) as policy_count,
+    count(*) filter (where status in ('pending','failed','awaiting_account')) as unsettled,
+    bool_or(status = 'awaiting_account' and subject_type in ('booking','event_registration')) as awaiting_choosable
+  from refunds where payment_id = p.id
+) r on true
+where p.status in ('paid','partially_refunded','refunded') or coalesce(p.received_amount, 0) > 0
+   or exists (select 1 from refunds x where x.payment_id = p.id);
+-- amount (số khách đã chuyển), held_amount (theo mốc booking_milestones khi có) và chữ chi tiết từng lệnh hoàn
+-- ("Vietcombank •••• 6789") tính trong use case đọc như `payerRowOf`; tổng "Đang giữ / Đang hoàn" = sum trên các dòng
+-- status in ('held','disputed','refund_account_needed','refunding').
 
 create table payment_notifications (              -- 🔒 chỉ máy chủ; khoá chống trùng của webhook
   id          text primary key,                   -- '{provider}_{txn_id}'
@@ -1651,6 +1693,10 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `bookings/{id}/milestones/{kind}`, `bookings/{id}/deliveries/{round}` | `booking_milestones`, `booking_deliveries` + `booking_delivery_previews` | Đề xuất (spec 10-05) |
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received`; (đề xuất) tài khoản nền tảng của Firestore (`platform_escrow`, `platform_revenue` ở `accountOwnerId`) thành `account_owner_id` null, phân biệt bằng `type` (`fee_charged` là doanh thu) |
+| `refunds/{id}` | `refunds` | `destination.*` → `destination_*`; `candidate.*` → `candidate_*` (#141); `accountLookups.{day,count}` → `account_lookups_day`, `account_lookups_count` (#141); `confirmBy` → `confirm_by` |
+| `users/{uid}/payments/{paymentId}` | view `payer_payment_rows` | #141. Hình chiếu S22.01 do `onPaymentWritten`, `onRefundWritten` và `onBookingWrite` ghi; không nhập (dựng lại từ `payments`/`refunds`); `refunds[]` → các dòng `refunds` của khoản; phần tiêu đề join từ chủ thể |
+| `users/{uid}/private/paymentTotals` | (không có bảng) | #141. `{held, refunding}` = tổng trên `payer_payment_rows` còn mở của người trả |
+| `bookings/{id}.refundAccountNeeded` | (không có cột) | #141. Bản sao cho app (thẻ S05.02): có lệnh hoàn `awaiting_account` của một khoản của booking (`refunds` join `payments` theo `subject_id`) |
 | `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
 | `studio_members/{studioId}_{memberId}_{createdAtMs}` | `studio_members` | Id ghép không thành cột: khoá `(studio_id, member_id, created_at)`; `createdAt` là phần mili giây của id |
 | `studio_quota/{uid}` | `studio_quotas` | `dayKey`→`day`; `studioActions`, `memberActions`→`studio_actions`, `member_actions` |
@@ -1720,6 +1766,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `events.registered_count`, `held_count` | `event_registrations` | `register_event` trong giao dịch; đối soát khi `release_expired_holds` |
 | `chats.last_message_*`, `chat_members.unread_count` | `messages` | Trigger tin mới |
 | Số dư treo/chờ chi trả | `ledger_entries` | Truy vấn tổng; không lưu cột số dư riêng |
+| Lịch sử thanh toán của khách và tổng "Đang giữ / Đang hoàn" (S22.01, #141) | `payments`, `refunds` | View `payer_payment_rows`; Firestore giữ hình chiếu do trigger ghi |
 | `recruit_posts.application_count`, `recruit_counters.*_count` | `recruit_applications`, `recruit_posts`, `studio_collaborations` | Use case S27 cập nhật trong cùng giao dịch với đổi trạng thái (kể cả job); đếm lại được bằng truy vấn |
 | `photographer_recruit_match_keys` | `photographers.service_*`, `photographer_specialties`, `users.role` | `onPhotographerWrite`, `onUserWrite` (đổi vai trò); studio và tài khoản ở vai khách không có dòng |
 

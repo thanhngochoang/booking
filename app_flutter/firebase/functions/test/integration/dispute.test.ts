@@ -112,8 +112,14 @@ describe('disputes on the emulators', () => {
     assert.equal(outcome.decidedBy, ADMIN);
     const refund = await data(`refunds/${outcome.refundId}`);
     assert.equal(refund.amount, 600_000);
-    assert.equal(refund.status, 'done');
+    // #141: the seeded payment is bank QR, so the dispute refund waits for Lan's account (S18.02 → S22.04).
+    assert.equal(refund.status, 'awaiting_account');
     assert.equal(refund.fromEscrow, true);
+    const pending = await call('pendingRefund', LAN, { disputeId });
+    assert.equal((pending.result as { refundId?: string } | null)?.refundId, outcome.refundId, pending.text);
+    const chosen = await call('chooseRefundAccount', LAN, { refundId: outcome.refundId, use: 'payer' });
+    assert.deepEqual(chosen.result, { status: 'done' }, chosen.text);
+    assert.equal((await data(`refunds/${outcome.refundId}`)).status, 'done');
     const pay = await data(`payments/${PAYMENT}`);
     assert.equal(pay.escrowStatus, 'released');
     const ledger = (await db.collection('ledger_entries').where('paymentId', '==', PAYMENT).get()).docs.map((d) => d.data());

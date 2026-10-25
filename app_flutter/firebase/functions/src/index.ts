@@ -19,7 +19,7 @@ import {
 import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment, handleGetPaymentInstructions } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
-import { liveSettlementDeps } from './infra/live_payments.js';
+import { livePayerHistoryDeps, liveSettlementDeps } from './infra/live_payments.js';
 import { handleCreatePayouts } from './scheduled/create_payouts.js';
 import {
   handleOpenInquiry,
@@ -67,7 +67,16 @@ import {
   handleRequestPayoutOtp,
   handleSavePayoutAccount,
 } from './callables/payout_account.js';
+import {
+  handleChooseRefundAccount,
+  handleLookupRefundAccount,
+  handlePendingRefund,
+} from './callables/refund_account.js';
+import { liveRefundAccountDeps } from './infra/live_refund_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
+import { handleRefundWrite } from './triggers/refund_write.js';
+import { handleBookingPayerRows } from './triggers/booking_payer_rows.js';
+import { handleInstantPayerRows } from './triggers/instant_payer_rows.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
@@ -287,7 +296,10 @@ export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) =>
   servePaymentWebhook(req, res, liveSettlementDeps(), undefined, liveRefundSubjects()),
 );
 
-/** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
+/**
+ * Every 5 minutes: reconcile open payments with the provider, expire unpaid QRs, re-send pending
+ * refunds and (#141) send refunds still waiting for an account after 24 hours to the paying account.
+ */
 export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
   await handlePaymentClock(liveSettlementDeps());
 });
@@ -408,6 +420,8 @@ export const onBookingWrite = onDocumentWritten(
       },
       liveDiscoveryDeps(),
     );
+    // S22.01 (#141): after the booking's own work; a cancel with no refund or a reschedule touches no payment.
+    await handleBookingPayerRows(bookingId, before, after, livePayerHistoryDeps());
   },
 );
 
@@ -908,13 +922,55 @@ export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_
   handleSavePayoutAccount(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
 );
 
-/** A payment write refreshes the payee's earnings rows and totals. */
+// ---- refund account (S22.04, #141) ----
+
+/**
+ * S22.04 `{bookingId}` | `{eventId, registrationId}` | `{disputeId}` → the caller's refund waiting
+ * for an account (amount, paying account masked, `confirmBy`), or null. No secret: nothing is decrypted.
+ */
+export const pendingRefund = onCall(CALLABLE_OPTIONS, (request) =>
+  handlePendingRefund(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/**
+ * S22.04 `{refundId, bankCode, accountNumber}` → `{holderName, bankName, accountLast4}`: the bank's
+ * holder name for another account (fake lookup on the emulator/dev only, else `not_eligible`); the
+ * account is kept on the refund encrypted with PAYOUT_ACCOUNT_KEY until the customer chooses it.
+ */
+export const lookupRefundAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
+  handleLookupRefundAccount(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/**
+ * S22.04 `{refundId, use: 'payer' | 'candidate'}` → `{status}`: sends the waiting refund to the paying
+ * account or the looked-up one, once (the 24-hour default of `paymentClock` racing it never pays twice).
+ */
+export const chooseRefundAccount = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleChooseRefundAccount(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/** A payment write refreshes the payee's earnings rows and totals and the payer's S22.01 row (#141). */
 export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payments/{paymentId}' }, async (event) => {
   await handlePaymentWrite(
     event.params.paymentId,
     event.data?.before.exists ? event.data.before.data() : undefined,
     event.data?.after.exists ? event.data.after.data() : undefined,
     liveEarningsDeps(),
+    livePayerHistoryDeps(),
+  );
+});
+
+/**
+ * S22.01 (#141): every refund write refreshes the payer's row of its payment and their totals; a
+ * refund entering `awaiting_account` tells its payer to choose the account (S22.04, `refund_account_needed`).
+ */
+export const onRefundWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'refunds/{refundId}' }, async (event) => {
+  await handleRefundWrite(
+    event.params.refundId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    livePayerHistoryDeps(),
+    { notify: liveNotifyDeps(), payments: liveBookingDeps().store },
   );
 });
 
@@ -1228,18 +1284,17 @@ export const onInstantRequestWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'instant_requests/{requestId}' },
   async (event) => {
     const requestId = event.params.requestId;
+    const before = instantRequestFromFirestore(requestId, event.data?.before.data());
+    const after = instantRequestFromFirestore(requestId, event.data?.after.data());
     await handleInstantRequestWrite(
-      {
-        requestId,
-        time: event.time,
-        before: instantRequestFromFirestore(requestId, event.data?.before.data()),
-        after: instantRequestFromFirestore(requestId, event.data?.after.data()),
-      },
+      { requestId, time: event.time, before, after },
       {
         notify: liveNotifyDeps(),
         chat: liveChatDeps(),
         deleteTrack: async (id) => { await db().doc(instantTrackPath(id)).delete(); },
       },
     );
+    // S22.01 (#141): after the request's own work; no_match <-> choosing/searching touches no payment.
+    await handleInstantPayerRows(requestId, before, after, livePayerHistoryDeps());
   },
 );

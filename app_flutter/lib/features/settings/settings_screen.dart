@@ -292,14 +292,26 @@ class SettingsScreen extends ConsumerWidget {
                   guard(
                     GlassCard(
                       highlight: false,
-                      child: _LinkTile(
-                        key: const Key('settings-privacy'),
-                        icon: AppIcons.privacy,
-                        title: l.settingsPrivacy,
-                        subtitle: isPhotographer
-                            ? l.settingsPrivacyBody
-                            : l.settingsPrivacyBodyCustomer,
-                        path: '/settings/privacy',
+                      child: Column(
+                        children: [
+                          _LinkTile(
+                            key: const Key('settings-payment-history'),
+                            icon: AppIcons.receipt,
+                            title: l.settingsPaymentHistory,
+                            subtitle: l.settingsPaymentHistoryBody,
+                            path: '/me/payments',
+                          ),
+                          const _RowDivider(),
+                          _LinkTile(
+                            key: const Key('settings-privacy'),
+                            icon: AppIcons.privacy,
+                            title: l.settingsPrivacy,
+                            subtitle: isPhotographer
+                                ? l.settingsPrivacyBody
+                                : l.settingsPrivacyBodyCustomer,
+                            path: '/settings/privacy',
+                          ),
+                        ],
                       ),
                     ),
                   ),

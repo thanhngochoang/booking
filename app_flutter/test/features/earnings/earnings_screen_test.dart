@@ -92,12 +92,13 @@ void main() {
     );
     expect(find.text('Các khoản'), findsOneWidget);
     expect(find.text('Tháng 10'), findsOneWidget);
-    expect(find.text('Tháng 9'), findsOneWidget);
-    await tester.ensureVisible(find.text('Tháng 12/2025'));
+    // Later months are the mock's `.nsec`: upper-case section labels.
+    expect(find.text('THÁNG 9'), findsOneWidget);
+    await tester.ensureVisible(find.text('THÁNG 12/2025'));
     await tester.pumpAndSettle();
-    expect(find.text('Tháng 12/2025'), findsOneWidget);
-    final y = tester.getTopLeft(find.text('Tháng 9')).dy;
-    expect(y, lessThan(tester.getTopLeft(find.text('Tháng 12/2025')).dy));
+    expect(find.text('THÁNG 12/2025'), findsOneWidget);
+    final y = tester.getTopLeft(find.text('THÁNG 9')).dy;
+    expect(y, lessThan(tester.getTopLeft(find.text('THÁNG 12/2025')).dy));
   });
 
   testWidgets('a held row shows Đang giữ', (tester) async {

@@ -55,6 +55,7 @@ import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
+import 'package:photobooking/features/payments/payment_history_screen.dart';
 import 'package:photobooking/features/photo/photo_detail_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -524,6 +525,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      // S22.01 (#141): from S09.02 and the `refund_account_needed` notice.
+      GoRoute(
+        path: '/me/payments',
+        builder: (_, _) => const PaymentHistoryScreen(),
+      ),
       // S26.03 (individual, NAG) and S26.01 (studio owner); the server refuses
       // the wrong side's calls, the settings rows pick the right screen.
       GoRoute(

@@ -411,6 +411,14 @@ service cloud.firestore {
         allow read: if signedIn();
         allow write: if false;
       }
+
+      // S22.01 payment history (#141): the payer's rows, written by the payment and refund
+      // triggers (never the payer's account, refund candidates or provider refs). Totals live in
+      // private/paymentTotals (read by the private rule above).
+      match /payments/{paymentId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
     }
 
     // Badge catalogue.

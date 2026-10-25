@@ -405,6 +405,24 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
   The `onAccountDeletionUpdated` trigger will purge the account and tombstone `users/{uid}`.
 - To test data export: call `requestDataExport` to generate an export JSON under `exports/{uid}/{exportId}.json` in Storage.
 
+## Payment history (S22.01 · #141)
+
+`users/{uid}/payments/{paymentId}` (one row per payment that received money) and
+`users/{uid}/private/paymentTotals` (`held`, `refunding`), computed with the same pure functions as
+the `onPaymentWritten` / `onRefundWritten` triggers, so they exist before any trigger runs:
+
+| Payer | Rows |
+|---|---|
+| Lan | held (`seed-booking-accepted`, `-upcoming`, `-requested-binh`, the studio bookings; `-delivered` and `-revision` hold only the delivery milestone, 750 000), disputed (`seed-booking-disputed`), released (`seed-booking-completed-recent`, `-completed-old`, `-approved`), refunded to Vietcombank •••• 3456 (`seed-booking-cancelled`), her 250 000 ticket of the past workshop (held), and her Chụp ngay request `seed-instant-lan-cancelled` (Quận 1, TP.HCM; 690 000 by MoMo; no photographer found, cancelled by Lan, refunded in full: "đã huỷ", "Đã hoàn") |
+| Giang | her S21 fee, released to the platform ("Đã thanh toán") |
+
+Rows hold structured parts (`photographerName`, `serviceName`, `eventTitle`, `quantity`, `areaLabel`, `day`), never a composed title: the app writes the title in its own copy.
+
+The Chụp ngay request is real (request, payment, refund and ledger entries) and **terminal** on
+purpose: a seeded `searching` or `assigned` request would start the live matching clock or the job
+timers, hold money and block S22.02. To see "đang tìm thợ" and "Đang giữ" on a Chụp ngay row, pay a
+request on the emulators (S13).
+
 ## Điểm chụp (S29)
 
 | Điểm chụp | Khu vực | Mùa đẹp | Thợ nhận chụp | Gói chia suất |

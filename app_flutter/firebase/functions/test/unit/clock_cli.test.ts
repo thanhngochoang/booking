@@ -22,7 +22,7 @@ function io() {
     },
     payments: async () => {
       calls.push('payments');
-      return { reconciled: 1, expired: 0, refunded: 0, refundsResent: 0, reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0 };
+      return { reconciled: 1, expired: 0, refunded: 0, refundsResent: 0, reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0 };
     },
   };
   return { out, calls, clockIo };
