@@ -34,7 +34,10 @@ PendingRefund _pending({bool payer = true}) => PendingRefund(
 
 /// The S22.01 row of the booking's payment with refund r1 sent to
 /// [destination].
-PayerPaymentRow _rowWithRefund(String destination) => PayerPaymentRow(
+PayerPaymentRow _rowWithRefund(
+  String destination, {
+  String status = 'pending',
+}) => PayerPaymentRow(
   paymentId: 'pay_b1',
   subjectType: PayerSubjectType.booking,
   subjectId: 'b1',
@@ -45,7 +48,7 @@ PayerPaymentRow _rowWithRefund(String destination) => PayerPaymentRow(
     PayerRefundView(
       refundId: 'r1',
       amount: 1500000,
-      status: 'pending',
+      status: status,
       wallet: false,
       destinationLabel: destination,
       createdAt: DateTime.utc(2026, 10, 25, 3),
@@ -370,6 +373,47 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a conflict while the row still awaits the account never names '
+      'a label (stale row) → generic text', (tester) async {
+    final payments = await _open(tester);
+    payments.pendingBySubject.remove(_subject);
+    payments.emitHistory('c1', [
+      _rowWithRefund('Vietcombank •••• 6789', status: 'awaiting_account'),
+    ]);
+    payments.nextError = 'conflict';
+
+    await tester.tap(_confirm);
+    await _settle(tester);
+
+    expect(_sheet, findsNothing);
+    expect(find.textContaining('Vietcombank'), findsNothing);
+    expect(
+      find.text(
+        'Tiền hoàn đã được gửi đi trước khi bạn chọn. Xem nơi nhận ở Lịch sử '
+        'thanh toán.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the barrier cannot dismiss the sheet while the choice is being '
+      'sent', (tester) async {
+    final payments = await _open(tester);
+    final gate = Completer<void>();
+    payments.onChoose = (_, _) => gate.future;
+
+    await tester.tap(_confirm);
+    await tester.pump();
+    await tester.tapAt(const Offset(195, 20));
+    await _settle(tester);
+    expect(_sheet, findsOneWidget);
+
+    gate.complete();
+    await _settle(tester);
+    expect(_sheet, findsNothing);
+    expect(find.text('Đã gửi yêu cầu hoàn tiền'), findsOneWidget);
   });
 
   testWidgets('a refund that left with no row yet points to Lịch sử thanh '

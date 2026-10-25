@@ -127,6 +127,23 @@ void main() {
       expect(wallet.doneAt, DateTime.utc(2026, 10, 10, 6));
     });
 
+    test('a refund without a method is not a wallet refund', () {
+      final row = payerRowFrom(
+        'p1',
+        _row(
+          refunds: [
+            {
+              'refundId': 'r1',
+              'amount': 1000,
+              'status': 'pending',
+              'createdAt': _ts(12, 1),
+            },
+          ],
+        ),
+      )!;
+      expect(row.refunds.single.wallet, isFalse);
+    });
+
     test('an unknown status/subject renders as a generic row', () {
       // Installed apps lag behind the server: a newer code keeps its row (its
       // money and its place in the page), only a missing document is skipped.

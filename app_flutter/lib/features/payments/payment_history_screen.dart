@@ -434,6 +434,11 @@ String? _linkLabel(AppLocalizations l, PayerPaymentRow row) {
   };
 }
 
+/// The mock's `.st` pill tints (warning 24%, error 18%) and its width cap.
+const _pillWaitAlpha = 0.24;
+const _pillDisputeAlpha = 0.18;
+const _pillMaxWidthFraction = 0.4;
+
 /// The mock's `.st` pill: plain text (no capitals), wraps inside 40% of the
 /// screen so a long state ("Đã chuyển cho chủ sự kiện") never squeezes the
 /// title at large text.
@@ -462,18 +467,20 @@ class _StatePill extends StatelessWidget {
       ),
       _Tone.wait => (
         (dark ? AppColorsDark.warning : AppColors.warning).withValues(
-          alpha: 0.24,
+          alpha: _pillWaitAlpha,
         ),
         ink,
       ),
       _Tone.dispute => (
-        (dark ? AppColorsDark.error : AppColors.error).withValues(alpha: 0.18),
+        (dark ? AppColorsDark.error : AppColors.error).withValues(
+          alpha: _pillDisputeAlpha,
+        ),
         dark ? AppColorsDark.error : AppColors.error,
       ),
     };
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+        maxWidth: MediaQuery.sizeOf(context).width * _pillMaxWidthFraction,
       ),
       child: DecoratedBox(
         decoration: BoxDecoration(

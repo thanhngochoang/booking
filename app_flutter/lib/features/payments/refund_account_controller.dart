@@ -21,7 +21,8 @@ final pendingRefundProvider = FutureProvider.autoDispose
     );
 
 /// How many S22.01 rows are read to find where a refund that already left
-/// went (the newest ones; the refund is recent).
+/// went (the newest payments by creation time; a refund of an older payment
+/// is not found and the sheet then points to S22.01).
 const refundDestinationRowsRead = 50;
 
 /// Which half of S22.04 shows: the paying account (mock `#S22.04`) or the
@@ -314,7 +315,11 @@ class RefundAccountController extends Notifier<RefundAccountState> {
           .timeout(const Duration(seconds: 10));
       for (final row in rows) {
         for (final r in row.refunds) {
-          if (r.refundId == pending.refundId) return r.destinationLabel;
+          if (r.refundId != pending.refundId) continue;
+          // Only a refund that left names its account; a stale row (still
+          // awaiting_account) or a failed one must not.
+          final left = r.status == 'pending' || r.status == 'done';
+          return left ? r.destinationLabel : null;
         }
       }
     } catch (_) {

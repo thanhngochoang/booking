@@ -128,117 +128,123 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
     final secondary = theme.brightness == Brightness.dark
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
+    final errorInk = theme.brightness == Brightness.dark
+        ? AppColorsDark.error
+        : AppColors.error;
     final quiet = theme.textTheme.bodySmall?.copyWith(color: secondary);
     const gap = SizedBox(height: AppSpace.s3);
     final onPayer = state.step == RefundAccountStep.payer && payer != null;
-    return ScreenCode(
-      ScreenCodes.refundAccount,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.s4,
-          0,
-          AppSpace.s4,
-          AppSpace.s4,
-        ),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      l.refundAccountTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+    // Back or a tap on the barrier must not drop the choice while it is
+    // being sent: the result would be lost.
+    return PopScope(
+      canPop: !state.sending,
+      child: ScreenCode(
+        ScreenCodes.refundAccount,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s4,
+            0,
+            AppSpace.s4,
+            AppSpace.s4,
+          ),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        l.refundAccountTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                IconButton(
-                  key: const Key('refund-account-close'),
-                  tooltip: l.refundAccountClose,
-                  icon: const AppIcon(AppIcons.close),
-                  onPressed: state.sending
-                      ? null
-                      : () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(child: Text(l.refundAccountYouGet, style: quiet)),
-                const SizedBox(width: AppSpace.s2),
-                Text(
-                  formatMoney(pending.amount),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: AppText.md,
-                    fontWeight: FontWeight.w700,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                  IconButton(
+                    key: const Key('refund-account-close'),
+                    tooltip: l.refundAccountClose,
+                    icon: const AppIcon(AppIcons.close),
+                    onPressed: state.sending
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(child: Text(l.refundAccountYouGet, style: quiet)),
+                  const SizedBox(width: AppSpace.s2),
+                  Text(
+                    formatMoney(pending.amount),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: AppText.md,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+              gap,
+              if (onPayer) ...[
+                Text(l.refundAccountToPayer, style: quiet),
+                const SizedBox(height: AppSpace.s2),
+                _PayerCard(payer: payer),
+              ] else
+                ..._form(context, state, quiet),
+              gap,
+              if (state.error case final error?) ...[
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    switch (error) {
+                      RefundConfirmError.failed => l.refundAccountFailed,
+                      RefundConfirmError.stale => l.refundAccountLookupStale,
+                    },
+                    style: theme.textTheme.bodySmall?.copyWith(color: errorInk),
                   ),
                 ),
+                const SizedBox(height: AppSpace.s2),
               ],
-            ),
-            gap,
-            if (onPayer) ...[
-              Text(l.refundAccountToPayer, style: quiet),
-              const SizedBox(height: AppSpace.s2),
-              _PayerCard(payer: payer),
-            ] else
-              ..._form(context, state, quiet),
-            gap,
-            if (state.error case final error?) ...[
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  switch (error) {
-                    RefundConfirmError.failed => l.refundAccountFailed,
-                    RefundConfirmError.stale => l.refundAccountLookupStale,
-                  },
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
+              AppButton.primary(
+                l.refundAccountConfirm,
+                key: const Key('refund-account-confirm'),
+                loading: state.sending,
+                onPressed: state.canConfirm ? _confirm : null,
               ),
-              const SizedBox(height: AppSpace.s2),
-            ],
-            AppButton.primary(
-              l.refundAccountConfirm,
-              key: const Key('refund-account-confirm'),
-              loading: state.sending,
-              onPressed: state.canConfirm ? _confirm : null,
-            ),
-            if (onPayer) ...[
-              const SizedBox(height: AppSpace.s1),
-              AppButton.text(
-                l.refundAccountOther,
-                key: const Key('refund-account-other'),
-                onPressed: state.sending ? null : _controller.useOther,
-              ),
-              if (pending.confirmBy != null) ...[
-                const SizedBox(height: AppSpace.s1),
-                Text(l.refundAccountAutoNote, style: quiet),
-              ],
-              const SizedBox(height: AppSpace.s2),
-              Text(l.refundAccountWalletNote, style: quiet),
-            ] else ...[
-              if (payer != null) ...[
+              if (onPayer) ...[
                 const SizedBox(height: AppSpace.s1),
                 AppButton.text(
-                  l.refundAccountBackToPayer,
-                  key: const Key('refund-account-back-to-payer'),
-                  onPressed: state.sending || state.lookingUp
-                      ? null
-                      : _controller.usePayer,
+                  l.refundAccountOther,
+                  key: const Key('refund-account-other'),
+                  onPressed: state.sending ? null : _controller.useOther,
                 ),
+                if (pending.confirmBy != null) ...[
+                  const SizedBox(height: AppSpace.s1),
+                  Text(l.refundAccountAutoNote, style: quiet),
+                ],
+                const SizedBox(height: AppSpace.s2),
+                Text(l.refundAccountWalletNote, style: quiet),
+              ] else ...[
+                if (payer != null) ...[
+                  const SizedBox(height: AppSpace.s1),
+                  AppButton.text(
+                    l.refundAccountBackToPayer,
+                    key: const Key('refund-account-back-to-payer'),
+                    onPressed: state.sending || state.lookingUp
+                        ? null
+                        : _controller.usePayer,
+                  ),
+                ],
+                const SizedBox(height: AppSpace.s2),
+                Text(l.refundAccountEncrypted, style: quiet),
               ],
-              const SizedBox(height: AppSpace.s2),
-              Text(l.refundAccountEncrypted, style: quiet),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -251,6 +257,9 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
   ) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final errorInk = theme.brightness == Brightness.dark
+        ? AppColorsDark.error
+        : AppColors.error;
     final lookup = state.lookup;
     final failure = switch (lookup) {
       RefundLookupFailed(code: 'not_found') => l.refundAccountNotFound,
@@ -310,7 +319,7 @@ class _RefundAccountSheetState extends ConsumerState<_RefundAccountSheet> {
           liveRegion: true,
           child: Text(
             failure,
-            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.error),
+            style: theme.textTheme.bodySmall?.copyWith(color: errorInk),
           ),
         ),
       ],

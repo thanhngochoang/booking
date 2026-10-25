@@ -189,7 +189,7 @@ PayerRefundView? _refundFrom(Object? raw) {
     refundId: id,
     amount: _int(raw['amount']),
     status: status is String ? status : 'pending',
-    wallet: raw['method'] != 'bank_transfer',
+    wallet: raw['method'] is String && raw['method'] != 'bank_transfer',
     destinationLabel: _strOrNull(raw['destinationLabel']),
     createdAt: createdAt,
     doneAt: _time(raw['doneAt']),
