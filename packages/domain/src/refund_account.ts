@@ -322,12 +322,13 @@ export async function lookupRefundAccount(
   // One transaction before the bank is asked: charge this attempt to the refund's Vietnam day (found,
   // not found and unsupported alike); the 21st is `limit_exceeded` and never reaches the bank.
   const day = formatVnDate(deps.clock.now());
-  await ledger.update(refundId, (current) => {
+  const counted = await ledger.update(refundId, (current) => {
     if (current.status !== 'awaiting_account') throw new DomainError('conflict');
     const count = current.accountLookups?.day === day ? current.accountLookups.count : 0;
     if (count >= NAME_LOOKUPS_PER_DAY) throw new DomainError('limit_exceeded');
     return { ...current, accountLookups: { day, count: count + 1 }, updatedAt: deps.clock.now().toISOString() };
   });
+  if (counted === null) throw new DomainError('not_found');
 
   const found = await deps.lookup.lookup({ bankCode: bank.code, accountNumber });
   if (found.status === 'not_found') throw new DomainError('not_found');
@@ -479,6 +480,8 @@ async function leaveDueQueue(deps: RefundAccountDeps, refundId: string, now: Dat
     if (!current.confirmBy || Date.parse(current.confirmBy) > now.getTime()) return;
     const payment = await tx.getPayment(current.paymentId);
     const at = deps.clock.now().toISOString();
+    // Without its payment the refund does not name its booking (the id lives on the payment), so the
+    // booking's `refundAccountNeeded` flag cannot be lowered here; staff, who now own the refund, see it.
     await tx.addRefund(
       payment === null
         ? refundWithoutPayment(current, deps.clock.now())

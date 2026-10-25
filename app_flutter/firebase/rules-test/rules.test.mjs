@@ -3186,7 +3186,7 @@ describe('S22.01 payment history', () => {
   const seedRow = (uid, id) =>
     env.withSecurityRulesDisabled(async (c) =>
       setDoc(doc(c.firestore(), `users/${uid}/payments/${id}`), {
-        payerId: uid, subjectType: 'booking', subjectId: 'b1', eventId: null, title: 'Minh Trí · Chân dung', day: '2026-10-12',
+        payerId: uid, subjectType: 'booking', subjectId: 'b1', eventId: null, photographerName: 'Minh Trí', serviceName: 'Chân dung', eventTitle: null, quantity: null, areaLabel: null, day: '2026-10-12',
         method: 'bank_qr', amount: 1500000, status: 'held', open: true, toPlatform: false, heldAmount: 1500000,
         refundingAmount: 0, refundedAmount: 0, searching: false, cancelled: false, refunds: [],
         createdAt: Timestamp.now(), paidAt: Timestamp.now(), updatedAt: Timestamp.now(),

@@ -148,6 +148,16 @@ describe('payer history rows in Firestore', () => {
     assert.equal(docs['users/c1/private/paymentTotals']?.held, 800_000);
   });
 
+  it('the payer\'s totals document is read inside the transaction, so concurrent refreshes of one payer contend on it', async () => {
+    const { fake, deps } = world();
+    assert.equal(await refreshPayerHistory(deps, 'pay1'), 'written');
+    const totalsPath = 'users/c1/private/paymentTotals';
+    const readAt = fake.reads.indexOf(totalsPath);
+    assert.ok(readAt >= 0, 'totals doc read in the transaction');
+    // Still before the first write (the strict fake would have refused it otherwise).
+    assert.deepEqual(fake.writes.map((w) => w.path).includes(totalsPath), true);
+  });
+
   it('every read comes before the first write (the strict fake refuses a read after a write)', async () => {
     const { fake, deps } = world({ 'refunds/r1': refundToFirestore(refund({ status: 'pending' })) });
     await assert.rejects(

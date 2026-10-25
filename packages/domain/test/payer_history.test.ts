@@ -361,6 +361,26 @@ describe('refreshPayerHistory', () => {
     assert.equal(store.rows.has('c1/payX'), false);
   });
 
+  it('refreshPayerHistoryOfSubject refreshes the other payments when one throws, then rethrows the first error', async () => {
+    const { store, deps } = world();
+    store.payments.set('pay0', unpaid({ id: 'pay0', status: 'expired', escrowStatus: 'refunded' }));
+    store.payments.set('pay1', payment());
+    store.payments.set('pay2', payment({ id: 'pay2', idempotencyKey: 'k2' }));
+    store.subjects.set('pay1', subject());
+    store.subjects.set('pay2', subject());
+    const real = store.runTransaction.bind(store);
+    let calls = 0;
+    store.runTransaction = ((fn: Parameters<typeof real>[0]) => {
+      calls += 1;
+      if (calls === 1) return Promise.reject(new Error('first failed'));
+      if (calls === 2) return Promise.reject(new Error('second failed'));
+      return real(fn);
+    }) as typeof real;
+    await assert.rejects(refreshPayerHistoryOfSubject(deps, 'booking', 'b1'), /first failed/);
+    assert.equal(calls, 3);
+    assert.equal(store.rows.size, 1);
+  });
+
   it('the memory store refuses a read after a write, like Firestore', async () => {
     const { store } = world();
     await assert.rejects(

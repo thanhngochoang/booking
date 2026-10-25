@@ -243,6 +243,9 @@ export class FirestorePayerHistoryStore implements PayerHistoryStore {
         },
         subjectOf: (p) => this.subjectOf(fTx, p),
         openRows: async (payerId) => {
+          // The totals document `putTotals` overwrites: reading it makes two concurrent refreshes of
+          // one payer contend on it (the loser retries and sees the other's open row), so totals cannot drift.
+          await fTx.get(this.db.collection('users').doc(payerId).collection('private').doc(PAYMENT_TOTALS_DOC));
           const snap = await fTx.get(this.rows(payerId).where('open', '==', true));
           return snap.docs.flatMap((d) => payerRowFromFirestore(d.id, d.data()) ?? []);
         },

@@ -299,6 +299,15 @@ export async function refreshPayerHistoryOfSubject(
   subjectId: string,
 ): Promise<number> {
   const ids = await deps.store.paymentIdsOf(subjectType, subjectId);
-  for (const id of ids) await refreshPayerHistory(deps, id);
+  // One failing payment must not leave the others stale: refresh them all, then rethrow the first error.
+  let failure: { readonly error: unknown } | null = null;
+  for (const id of ids) {
+    try {
+      await refreshPayerHistory(deps, id);
+    } catch (error) {
+      failure ??= { error };
+    }
+  }
+  if (failure !== null) throw failure.error;
   return ids.length;
 }

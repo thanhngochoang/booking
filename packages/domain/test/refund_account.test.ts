@@ -249,6 +249,25 @@ describe('lookupRefundAccount', () => {
     assert.equal((await stored(w, refund.id)).candidate?.accountLast4, '4321');
   });
 
+  test('a refund whose payment vanishes before the counting transaction → not_found, and the bank is never asked', async () => {
+    const w = world();
+    const { refund, paymentId } = await cancelled(w);
+    let asked = 0;
+    const lookup = { lookup: async (...a: Parameters<typeof w.deps.lookup.lookup>) => { asked += 1; return w.deps.lookup.lookup(...a); } };
+    const store = w.b.store;
+    const original = store.runTransaction.bind(store);
+    // findRefund has read the refund and its payment; the payment goes before the first transaction.
+    store.runTransaction = ((fn: Parameters<typeof original>[0]) => {
+      store.payments.delete(paymentId);
+      return original(fn);
+    }) as typeof original;
+    await assert.rejects(
+      lookupRefundAccount({ ...w.deps, lookup }, { uid: 'c1' }, { refundId: refund.id, bankCode: 'VCB', accountNumber: '0011001234' }),
+      code('not_found'),
+    );
+    assert.equal(asked, 0);
+  });
+
   test('unknown bank → invalid_argument; bad number → invalid_argument; another user → permission_denied; refund not awaiting → conflict', async () => {
     const w = world();
     const { refund } = await cancelled(w);

@@ -76,6 +76,7 @@ import { liveRefundAccountDeps } from './infra/live_refund_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handleRefundWrite } from './triggers/refund_write.js';
 import { handleBookingPayerRows } from './triggers/booking_payer_rows.js';
+import { handleInstantPayerRows } from './triggers/instant_payer_rows.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
@@ -1283,18 +1284,17 @@ export const onInstantRequestWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'instant_requests/{requestId}' },
   async (event) => {
     const requestId = event.params.requestId;
+    const before = instantRequestFromFirestore(requestId, event.data?.before.data());
+    const after = instantRequestFromFirestore(requestId, event.data?.after.data());
     await handleInstantRequestWrite(
-      {
-        requestId,
-        time: event.time,
-        before: instantRequestFromFirestore(requestId, event.data?.before.data()),
-        after: instantRequestFromFirestore(requestId, event.data?.after.data()),
-      },
+      { requestId, time: event.time, before, after },
       {
         notify: liveNotifyDeps(),
         chat: liveChatDeps(),
         deleteTrack: async (id) => { await db().doc(instantTrackPath(id)).delete(); },
       },
     );
+    // S22.01 (#141): after the request's own work; no_match <-> choosing/searching touches no payment.
+    await handleInstantPayerRows(requestId, before, after, livePayerHistoryDeps());
   },
 );
