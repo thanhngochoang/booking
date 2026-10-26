@@ -7,7 +7,7 @@ Chi tiết sâu hơn: `README.md` (toolchain, `.env`), `docs/FIREBASE-SETUP.md` 
 ## Tóm tắt
 
 ```bash
-brew install openjdk@21 node@22                 # 1. công cụ nền (hoặc cách khác, xem bước 1)
+brew install openjdk@21 node@24                 # 1. công cụ nền (hoặc cách khác, xem bước 1)
 git clone https://github.com/thanhngochoang/booking.git && cd booking
 git checkout flutter-rewrite
 scripts/setup.sh                                # 2. Android SDK, Flutter, font; 3. tự ghi biến môi trường vào ~/.zshrc (scripts/machine-env.sh)
@@ -23,7 +23,7 @@ cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analy
 |---|---|---|
 | `git`, `curl`, `unzip`, `python3` | script cài đặt | macOS có sẵn (`xcode-select --install` nếu thiếu `git`) |
 | JDK 21 | Gradle/Android, Firebase emulators | `brew install openjdk@21`, hoặc giải nén Temurin/Zulu 21 (tar.gz) vào `.jdk/` sao cho có `.jdk/Contents/Home/bin/java`. Firebase CLI 15 đòi Java 21+, AGP chỉ chạy trên JDK 17–21. |
-| Node.js 22+ | Firebase CLI, Cloud Functions, backend local | `brew install node@22` hoặc nvm |
+| Node.js 24+ | Firebase CLI, Cloud Functions, backend local | `brew install node@24` hoặc nvm |
 | VS Code + extension **Flutter** (Dart-Code) | debug app | — |
 
 ## 2. Cài SDK vào repo
@@ -84,7 +84,7 @@ cd app_flutter
 ../scripts/check-device.sh              # adb, thiết bị, khoá ký: so sánh giữa các máy khi có lỗi
 ```
 
-Backend local (không bắt buộc, cần Node 22): `scripts/backend-local.sh`, Emulator UI ở http://127.0.0.1:4000, tài khoản seed trong `app_flutter/firebase/functions/seed/README.md`.
+Backend local (không bắt buộc, cần Node 24): `scripts/backend-local.sh`, Emulator UI ở http://127.0.0.1:4000, tài khoản seed trong `app_flutter/firebase/functions/seed/README.md`.
 
 ## 7. Chạy app từ VS Code
 

@@ -12,8 +12,8 @@ if [ ! -x "$ROOT/.jdk/Contents/Home/bin/java" ] && [ ! -x "$ROOT/.jdk/bin/java" 
   echo "  or download a JDK 21 .tar.gz (Temurin/Zulu, macOS, your CPU arch) and extract it so that .jdk/Contents/Home/bin/java exists."
   exit 1
 fi
-if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 22 ]; then
-  echo "   warning: Node.js 22+ not found (needed only for the local backend and Cloud Functions): brew install node@22"
+if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 24 ]; then
+  echo "   warning: Node.js 24+ not found (needed only for the local backend and Cloud Functions): brew install node@24"
 fi
 
 echo "== 2/5 Android SDK -> .android-sdk/"

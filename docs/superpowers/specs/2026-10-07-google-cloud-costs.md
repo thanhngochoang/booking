@@ -8,7 +8,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
 
 ## 0. Hình dạng sử dụng của repo (đọc từ code)
 
-- `app_flutter/firebase/functions/src/index.ts`: **41 callable**, **18 trigger Firestore** (`onDocumentCreated`/`onDocumentWritten`, thêm các trigger cập nhật chỉ số S02 ở #132), **10 hàm lập lịch**. Runtime nodejs22, region `asia-southeast1`, mặc định 256 MiB, `minInstances: 0` (`config.ts`).
+- `app_flutter/firebase/functions/src/index.ts`: **41 callable**, **18 trigger Firestore** (`onDocumentCreated`/`onDocumentWritten`, thêm các trigger cập nhật chỉ số S02 ở #132), **10 hàm lập lịch**. Runtime nodejs24, region `asia-southeast1`, mặc định 256 MiB, `minInstances: 0` (`config.ts`).
 - 10 lịch (= 10 job Cloud Scheduler; bảng dưới liệt kê 7 từ ngày 2026-10-07 và thêm `rankSpots` của #194; `paymentClock` và `createPayouts` chưa vào bảng):
   | Hàm | Lịch | Lần chạy/tháng |
   |---|---|---|

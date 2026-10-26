@@ -44,7 +44,7 @@ jobs:
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '21' }
       - uses: actions/setup-node@v4
-        with: { node-version: '22' }
+        with: { node-version: '24' }
       - run: npm ci
       - name: Firestore rules tests (emulator)
         run: npm test
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '21' }
       - uses: actions/setup-node@v4
-        with: { node-version: '22' }
+        with: { node-version: '24' }
       - name: Domain package (pure TypeScript)
         working-directory: packages/domain
         run: npm ci && npm run typecheck && npm run lint && npm test
@@ -83,7 +83,7 @@ jobs:
         if: ${{ env.PROJECT_ID != '' }}
       - uses: actions/setup-node@v4
         if: ${{ env.PROJECT_ID != '' }}
-        with: { node-version: '22' }
+        with: { node-version: '24' }
       - run: npm ci
         if: ${{ env.PROJECT_ID != '' }}
       - uses: google-github-actions/auth@v2
@@ -129,7 +129,7 @@ jobs:
         if: ${{ env.ON == 'true' }}
       - uses: actions/setup-node@v4
         if: ${{ env.ON == 'true' }}
-        with: { node-version: '22' }
+        with: { node-version: '24' }
       - run: npm ci
         if: ${{ env.ON == 'true' }}
       - uses: google-github-actions/auth@v2
