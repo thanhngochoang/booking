@@ -5,7 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { applySeed } from '../../seed/apply.js';
 import { callCallable, emulatorProject, resetEmulators, signIn } from '../../seed/emulator_client.js';
-import { AN, LAN, SEED_PASSWORD, SEED_USERS } from '../../seed/fixtures.js';
+import { AN, LAN, MINH, SEED_PASSWORD, SEED_USERS } from '../../seed/fixtures.js';
 
 let app: App;
 let db: Firestore;
@@ -54,6 +54,9 @@ describe('spot bookings and spot schedules on the emulators', () => {
 
     const slotDraft = {
       photographerId: AN,
+      // A slot booking names the offer as its service and still sends a place (the spot decides it).
+      serviceId: slotOfferId,
+      place: { name: 'Hồ Tây' },
       day,
       start: '06:00',
       spotScheduleId: scheduleId,
@@ -61,10 +64,14 @@ describe('spot bookings and spot schedules on the emulators', () => {
       expectedPrice: 490_000,
     };
 
-    // Parallel attempts from LAN and another client
+    // Minh has no phone in the seed and booking needs one (phone_required).
+    await db.doc(`users/${MINH}/private/contact`).set({ phone: '+84906002002', phoneVerified: false, allowZalo: true, allowWhatsApp: false });
+
+    // Parallel attempts from two customers. (The same customer's second call is idempotent: the slot
+    // already held by their own draft is not "taken" for them, so only different customers contend.)
     const [res1, res2] = await Promise.all([
       call('createBooking', LAN, slotDraft),
-      call('createBooking', LAN, slotDraft),
+      call('createBooking', MINH, slotDraft),
     ]);
 
     const statuses = [res1.status, res2.status].sort();

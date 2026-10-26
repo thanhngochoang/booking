@@ -84,8 +84,10 @@ async function inviteAndPay(uid: string, requestId: string, photographerIds: str
     await call('inviteInstant', uid, { requestId, photographerIds, skipped: [], expectedAmountVnd: amountVnd, payMethod: 'bank_qr' }),
   );
   assert.equal(res.kind, 'payment');
-  const paid = ok<{ outcome: string; subjectType: string }>(await call('confirmFakePayment', uid, { paymentId: res.instructions.paymentId }));
-  assert.deepEqual([paid.outcome, paid.subjectType], ['paid', 'instant_request']);
+  // The callable answers only the outcome (the webhook path); the subject is read back.
+  const paid = ok<{ outcome: string }>(await call('confirmFakePayment', uid, { paymentId: res.instructions.paymentId }));
+  const payment = (await db.doc(`payments/${res.instructions.paymentId}`).get()).data() ?? {};
+  assert.deepEqual([paid.outcome, payment.subjectType], ['paid', 'instant_request']);
   return res.instructions.paymentId;
 }
 
@@ -126,8 +128,9 @@ describe('Chụp ngay on the emulators', () => {
     assert.equal((await db.collection('instant_offers/it-inst-p1/offers').where('requestId', '==', requestId).get()).size, 0);
     assert.deepEqual(ok(await call('checkInstantPayment', LAN, { requestId })), { paid: false, status: 'pending_payment' });
     const paymentId = pay.instructions.paymentId;
-    const paid = ok<{ outcome: string; subjectStatus: string }>(await call('confirmFakePayment', LAN, { paymentId }));
-    assert.deepEqual([paid.outcome, paid.subjectStatus], ['paid', 'searching']);
+    const paid = ok<{ outcome: string }>(await call('confirmFakePayment', LAN, { paymentId }));
+    assert.equal(paid.outcome, 'paid');
+    assert.equal((await db.doc(`instant_requests/${requestId}`).get()).get('status'), 'searching');
 
     const offers = await db.collection('instant_offers/it-inst-p1/offers').where('requestId', '==', requestId).get();
     assert.equal(offers.size, 1);

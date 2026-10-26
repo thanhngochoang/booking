@@ -37,6 +37,17 @@ function assertNotEligible(res: Awaited<ReturnType<typeof call>>): void {
   assert.deepEqual(res.error?.details, { code: 'not_eligible' });
 }
 
+/** End the member's open relations to a studio (the seed gives Dũng a request and Bình an invite to Cúc). */
+async function closeOpenRelations(memberId: string, status: 'cancelled' | 'declined'): Promise<void> {
+  const open = await db
+    .collection('studio_members')
+    .where('memberId', '==', memberId)
+    .where('status', 'in', ['invited', 'requested', 'active'])
+    .get();
+  assert.ok(open.size > 0);
+  for (const r of open.docs) await r.ref.update({ status });
+}
+
 describe('provider callables on the emulators', () => {
   test('an accepted booking makes the switch not_eligible; the type stays', async () => {
     const res = await call('setProviderType', AN, { type: 'studio' });
@@ -45,7 +56,15 @@ describe('provider callables on the emulators', () => {
     assert.equal(doc.providerType, undefined);
   });
 
+  test('an open studio relation blocks the switch with membership_conflict (#136 Decision 7)', async () => {
+    const res = await call('setProviderType', DUNG, { type: 'studio' });
+    assert.equal(res.error?.status, 'FAILED_PRECONDITION', res.text);
+    assert.deepEqual(res.error?.details, { code: 'membership_conflict' });
+    assert.equal((await photographer(DUNG)).providerType, 'artist');
+  });
+
   test('a photographer with no open work becomes a studio and loses artistSince', async () => {
+    await closeOpenRelations(DUNG, 'cancelled');
     assert.ok((await photographer(DUNG)).artistSince instanceof Timestamp);
     const res = await call('setProviderType', DUNG, { type: 'studio' });
     assert.deepEqual(res.result, { providerType: 'studio' }, res.text);
@@ -103,6 +122,7 @@ describe('provider callables on the emulators', () => {
 
   test('a requested booking blocks; once it is completed the photographer can switch', async () => {
     assertNotEligible(await call('setProviderType', BINH, { type: 'studio' }));
+    await closeOpenRelations(BINH, 'declined');
 
     // Only a completed booking left: the booking is done and its deposit released.
     await db.doc('bookings/seed-booking-requested-binh').update({ status: 'completed' });

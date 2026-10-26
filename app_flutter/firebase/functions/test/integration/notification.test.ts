@@ -52,14 +52,18 @@ describe('notifications on the emulators', () => {
   const BOOKING = 'seed-booking-requested-binh';
 
   test('accepting a booking creates one row for the customer', async () => {
-    const before = await rows(LAN);
+    // Count the rows of this booking only: the seed's own dispute, delivery and instant documents fire
+    // their triggers for LAN a few seconds after applySeed, so the inbox total is not stable here.
+    const ofBooking = async () => (await rows(LAN)).filter((r) => r.id.includes(BOOKING));
+    const before = await ofBooking();
     await db.doc(`bookings/${BOOKING}`).update({ status: 'accepted' });
     const id = `n_booking_accepted_${BOOKING}`;
     await waitFor(async () => (await db.doc(`users/${LAN}/notifications/${id}`).get()).exists, 'the accepted row');
     const row = await data(`users/${LAN}/notifications/${id}`);
     assert.equal(row.type, 'booking_accepted');
     assert.equal(row.readAt, null);
-    assert.equal((await rows(LAN)).length, before.length + 1);
+    await new Promise((r) => setTimeout(r, 1000));
+    assert.equal((await ofBooking()).length, before.length + 1);
   });
 
   test('a retried booking trigger leaves one row', async () => {
