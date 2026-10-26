@@ -55,8 +55,10 @@ async function addPost(uid: string, images: number, extra: Record<string, unknow
   return id;
 }
 
+// 60 s: the first test runs right after applySeed, whose documents queue many triggers on the Functions
+// emulator; on a CI runner onPostCreated can wait behind them for more than 20 s.
 async function waitFor(check: () => Promise<boolean>, what: string): Promise<void> {
-  const end = Date.now() + 20_000;
+  const end = Date.now() + 60_000;
   while (Date.now() < end) {
     if (await check()) return;
     await new Promise((r) => setTimeout(r, 200));
