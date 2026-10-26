@@ -139,6 +139,10 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
       createdAt: T, updatedAt: T, processingAt: T, paidAt: T,
     };
     assert.deepEqual(payoutFromFirestore('po1', payoutToFirestore(p)), p);
+    // A milestone item keeps its milestone: executePayout checks the payment's milestone against it (#306).
+    const item = { paymentId: 'pay1', amount: 150_000, fee: 0, tax: 10_500, net: 139_500 };
+    const m: Payout = { ...p, items: [{ ...item, milestone: 'shoot' }, { ...item, milestone: 'delivery' }] };
+    assert.deepEqual(payoutFromFirestore('po1', payoutToFirestore(m)), m);
     const a: PayoutAccount = {
       id: 'a1', userId: 'p1', bankCode: 'VCB', accountNumberEnc: 'v1:a:b:c', accountLast4: '6789', holderName: 'AN', active: true, createdAt: T,
       nameStatus: 'matched', activeFrom: T,

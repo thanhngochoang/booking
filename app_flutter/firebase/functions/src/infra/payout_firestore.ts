@@ -1,10 +1,12 @@
 import { Timestamp, type DocumentData, type Firestore, type Transaction } from 'firebase-admin/firestore';
 import {
+  MILESTONE_KINDS,
   NAME_STATUSES,
   PAYOUT_STATUSES,
   isPayoutPayable,
   providerTypeOf,
   type LedgerEntry,
+  type MilestoneKind,
   type NameStatus,
   type OtpChallenge,
   type Payment,
@@ -53,7 +55,11 @@ export function payoutToFirestore(p: Payout): DocumentData {
     accountId: p.accountId,
     amount: p.amount,
     status: p.status,
-    items: p.items.map((i) => ({ paymentId: i.paymentId, amount: i.amount, fee: i.fee, tax: i.tax, net: i.net })),
+    // `milestone` must survive the round trip: executePayout checks a milestone payment's items against it.
+    items: p.items.map((i) => ({
+      paymentId: i.paymentId, amount: i.amount, fee: i.fee, tax: i.tax, net: i.net,
+      ...(i.milestone ? { milestone: i.milestone } : {}),
+    })),
     platformFee: p.platformFee,
     taxWithheld: p.taxWithheld,
     amountNet: p.amountNet,
@@ -82,9 +88,13 @@ export function payoutFromFirestore(id: string, d: DocumentData | undefined): Pa
   const status = (PAYOUT_STATUSES as readonly unknown[]).includes(d.status) ? (d.status as PayoutStatus) : 'pending';
   const items: PayoutItem[] = [];
   if (Array.isArray(d.items)) {
-    for (const i of d.items as { paymentId?: unknown; amount?: unknown; fee?: unknown; tax?: unknown; net?: unknown }[]) {
+    for (const i of d.items as { paymentId?: unknown; amount?: unknown; fee?: unknown; tax?: unknown; net?: unknown; milestone?: unknown }[]) {
       if (typeof i?.paymentId === 'string' && typeof i.amount === 'number') {
-        items.push({ paymentId: i.paymentId, amount: i.amount, fee: int(i.fee, 0), tax: int(i.tax, 0), net: int(i.net, i.amount) });
+        const milestone = (MILESTONE_KINDS as readonly unknown[]).includes(i.milestone) ? (i.milestone as MilestoneKind) : null;
+        items.push({
+          paymentId: i.paymentId, amount: i.amount, fee: int(i.fee, 0), tax: int(i.tax, 0), net: int(i.net, i.amount),
+          ...(milestone ? { milestone } : {}),
+        });
       }
     }
   }
