@@ -5,7 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { applySeed } from '../../seed/apply.js';
 import { emulatorProject, resetEmulators, signIn } from '../../seed/emulator_client.js';
-import { SEED_BOOKINGS, SEED_PASSWORD, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
+import { SEED_PASSWORD, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
 
 let app: App;
 
@@ -23,8 +23,13 @@ describe('seed on the emulators', () => {
     await applySeed(getFirestore(app), getAuth(app), now);
     await applySeed(getFirestore(app), getAuth(app), now);
     const db = getFirestore(app);
-    for (const d of seedDocuments(now)) assert.ok((await db.doc(d.path).get()).exists, d.path);
-    assert.equal((await db.collection('bookings').count().get()).data().count, SEED_BOOKINGS.length);
+    const docs = seedDocuments(now);
+    for (const d of docs) assert.ok((await db.doc(d.path).get()).exists, d.path);
+    // Every booking comes from the seed documents (the base list plus the studio, assigned and rebooking ones),
+    // and the second run adds none.
+    const bookingDocs = docs.filter((d) => /^bookings\/[^/]+$/.test(d.path)).length;
+    assert.ok(bookingDocs >= 12);
+    assert.equal((await db.collection('bookings').count().get()).data().count, bookingDocs);
     assert.equal((await getAuth(app).listUsers()).users.length, SEED_USERS.length);
   });
 

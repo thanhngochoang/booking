@@ -13,7 +13,7 @@ import { storageUrlPrefixes } from '../../src/config.js';
 import { handleReleaseEventHolds } from '../../src/scheduled/event_clock.js';
 import { eventStartInDays } from './event_social_support.js';
 
-// Paid tickets on the Functions emulator (plan 10c Task 9): hold, fake confirmation (allowed on the
+// Paid tickets on the Functions emulator (plan 10c Task 9): hold, fake confirmation (`confirmFakePayment`, allowed on the
 // emulator), hold expiry, event cancellation with refunds. CI runs it (npm run test:integration).
 
 let app: App;
@@ -65,7 +65,7 @@ async function publishPaid(over: Record<string, unknown> = {}): Promise<string> 
   return eventId;
 }
 
-type Registered = { registrationId: string; status: string; paymentId: string; payUrl: string; holdExpiresAt: string };
+type Registered = { registrationId: string; status: string; paymentId: string; instructions: { paymentId: string; method: string; amount: number; transferCode: string }; holdExpiresAt: string };
 
 async function waitFor(check: () => Promise<boolean>, ms = 10_000): Promise<void> {
   const until = Date.now() + ms;
@@ -80,18 +80,20 @@ describe('paid tickets on the emulators', () => {
   test('paid register, fake confirm, ticket', async () => {
     const eventId = await publishPaid();
     const buyer = await makeCustomer(1);
-    const res = await call('registerEvent', buyer, { eventId, quantity: 2, name: 'Khách 1', provider: 'momo' });
+    const res = await call('registerEvent', buyer, { eventId, quantity: 2, name: 'Khách 1', method: 'momo' });
     assert.equal(res.status, 200, res.text);
     const r = res.result as Registered;
     assert.equal(r.status, 'held');
-    assert.ok(r.payUrl.length > 0 && r.holdExpiresAt.length > 0);
+    assert.ok(r.holdExpiresAt.length > 0);
+    assert.deepEqual([r.instructions.paymentId, r.instructions.method, r.instructions.amount], [r.paymentId, 'momo', 2 * PRICE]);
+    assert.match(r.instructions.transferCode, /^PB /);
     assert.equal((await data(`events/${eventId}`)).heldCount, 2);
     const payment = await data(`payments/${r.paymentId}`);
     assert.deepEqual([payment.subjectType, payment.eventId, payment.status, payment.amount], ['event_registration', eventId, 'created', 2 * PRICE]);
 
-    const paid = await call('confirmFakeTicketPayment', buyer, { paymentId: r.paymentId });
+    const paid = await call('confirmFakePayment', buyer, { paymentId: r.paymentId });
     assert.equal(paid.status, 200, paid.text);
-    assert.deepEqual(paid.result, { status: 'paid' });
+    assert.deepEqual(paid.result, { outcome: 'paid' });
     const reg = await data(`events/${eventId}/registrations/${r.registrationId}`);
     assert.deepEqual([reg.status, reg.contactEligible], ['paid', true]);
     const ev = await data(`events/${eventId}`);
@@ -109,8 +111,8 @@ describe('paid tickets on the emulators', () => {
     const eventId = await publishPaid({ capacity: 1 });
     const first = await makeCustomer(2);
     const second = await makeCustomer(3);
-    const r = (await call('registerEvent', first, { eventId, quantity: 1, name: 'Khách 2', provider: 'vnpay' })).result as Registered;
-    const blocked = await call('registerEvent', second, { eventId, quantity: 1, name: 'Khách 3', provider: 'momo' });
+    const r = (await call('registerEvent', first, { eventId, quantity: 1, name: 'Khách 2', method: 'zalopay' })).result as Registered;
+    const blocked = await call('registerEvent', second, { eventId, quantity: 1, name: 'Khách 3', method: 'momo' });
     assert.equal((blocked.error?.details as { code?: string } | undefined)?.code, 'sold_out', blocked.text);
     // The 10 minutes pass.
     await db.doc(`events/${eventId}/registrations/${r.registrationId}`).update({ holdExpiresAt: Timestamp.fromMillis(Date.now() - 1000) });
@@ -125,11 +127,11 @@ describe('paid tickets on the emulators', () => {
     });
     assert.ok(released >= 1);
     assert.equal((await data(`events/${eventId}/registrations/${r.registrationId}`)).status, 'cancelled');
-    const ok = await call('registerEvent', second, { eventId, quantity: 1, name: 'Khách 3', provider: 'momo' });
+    const ok = await call('registerEvent', second, { eventId, quantity: 1, name: 'Khách 3', method: 'momo' });
     assert.equal(ok.status, 200, ok.text);
     // The first buyer's late payment is refunded in full.
-    const late = await call('confirmFakeTicketPayment', first, { paymentId: r.paymentId });
-    assert.deepEqual(late.result, { status: 'cancelled' });
+    const late = await call('confirmFakePayment', first, { paymentId: r.paymentId });
+    assert.deepEqual(late.result, { outcome: 'refunded' });
     assert.equal((await data(`payments/${r.paymentId}`)).status, 'refunded');
     // The cancelled ticket shows the refund ("Đã huỷ · đã hoàn tiền").
     assert.equal((await data(`events/${eventId}/registrations/${r.registrationId}`)).refundStatus, 'done');
@@ -138,8 +140,8 @@ describe('paid tickets on the emulators', () => {
   test('cancel event refunds and removes members', async () => {
     const eventId = await publishPaid();
     const buyer = await makeCustomer(4);
-    const r = (await call('registerEvent', buyer, { eventId, quantity: 1, name: 'Khách 4', provider: 'momo' })).result as Registered;
-    await call('confirmFakeTicketPayment', buyer, { paymentId: r.paymentId });
+    const r = (await call('registerEvent', buyer, { eventId, quantity: 1, name: 'Khách 4', method: 'momo' })).result as Registered;
+    await call('confirmFakePayment', buyer, { paymentId: r.paymentId });
     await waitFor(async () => ((await data(`chats/event_${eventId}`)).members as string[] | undefined)?.includes(buyer) === true);
 
     const res = await call('cancelEvent', AN, { eventId });
