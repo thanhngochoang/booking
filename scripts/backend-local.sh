@@ -54,9 +54,9 @@ export JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true
 # real Google APIs (anything the emulators do not cover); local runs use no credentials.
 unset GOOGLE_APPLICATION_CREDENTIALS
 
-command -v node >/dev/null || { echo "Node.js 22 or newer is required (brew install node@22)." >&2; exit 1; }
+command -v node >/dev/null || { echo "Node.js 24 or newer is required (brew install node@24)." >&2; exit 1; }
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-[ "$NODE_MAJOR" -ge 22 ] || { echo "Node.js 22 or newer is required, found $(node -v)." >&2; exit 1; }
+[ "$NODE_MAJOR" -ge 24 ] || { echo "Node.js 24 or newer is required, found $(node -v)." >&2; exit 1; }
 
 GS="$ROOT/app_flutter/android/app/google-services.json"
 if [ -n "${FIREBASE_PROJECT:-}" ]; then

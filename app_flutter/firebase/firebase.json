@@ -5,7 +5,7 @@
     {
       "source": "functions",
       "codebase": "default",
-      "runtime": "nodejs22",
+      "runtime": "nodejs24",
       "ignore": ["node_modules", ".git", "*.log", "src", "test", "seed", "build.mjs", "tsconfig.json", "eslint.config.js"],
       "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
     }

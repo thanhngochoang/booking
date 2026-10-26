@@ -50,7 +50,7 @@ On pull requests CI runs only the affected tests and falls back to all of them w
 
 ## Local backend (Firebase Emulator Suite)
 
-One command from the repo root (Node 22+, JDK 21 via `scripts/env.sh`):
+One command from the repo root (Node 24+, JDK 21 via `scripts/env.sh`):
 
 ```bash
 scripts/backend-local.sh            # start; reuses saved data, seeds on the first run
