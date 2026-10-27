@@ -132,7 +132,7 @@ class JobCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          onTap: data.locked ? null : onTap,
+          onTap: onTap,
           child: content,
         ),
       ),

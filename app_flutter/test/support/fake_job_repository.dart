@@ -424,19 +424,38 @@ class FakeJobRepository implements JobRepository {
     }
   }
 
+  List<OpenJobItem>? openJobsOverride;
+  List<Quote>? myQuotesList;
+  int myStartingPrice = 0;
+
   @override
   Future<List<OpenJobItem>> openJobs(OpenJobsFilter filter) async {
-    final now = _clock();
-    final items = <OpenJobItem>[];
-    for (final j in jobs.values) {
-      if (j.status == JobStatus.open && now.isBefore(j.quoteDeadline)) {
-        final invited = invitesByJob[j.id]?.contains(currentUid) ?? false;
-        items.add(OpenJobItem(
-          job: j,
-          fit: 85,
-          invited: invited,
-        ));
+    List<OpenJobItem> items;
+    if (openJobsOverride != null) {
+      items = List<OpenJobItem>.from(openJobsOverride!);
+    } else {
+      final now = _clock();
+      items = <OpenJobItem>[];
+      for (final j in jobs.values) {
+        if (j.status == JobStatus.open && now.isBefore(j.quoteDeadline)) {
+          final invited = invitesByJob[j.id]?.contains(currentUid) ?? false;
+          items.add(OpenJobItem(
+            job: j,
+            fit: 85,
+            invited: invited,
+          ));
+        }
       }
+    }
+
+    if (filter.specialtyId != null) {
+      items = items.where((i) => i.job.specialtyId == filter.specialtyId).toList();
+    }
+    if (filter.budgetOnly) {
+      items = items.where((i) {
+        final maxBudget = i.job.budget?.max;
+        return maxBudget == null || maxBudget >= myStartingPrice;
+      }).toList();
     }
     return items;
   }
@@ -448,12 +467,20 @@ class FakeJobRepository implements JobRepository {
 
   @override
   Stream<Quote?> watchMyQuote(String jobId) {
-    return _quotesControllers.putIfAbsent(jobId, () => StreamController<List<Quote>>.broadcast()).stream
-        .map((quotes) => quotesByJob[jobId]?[currentUid]);
+    final controller = _quotesControllers.putIfAbsent(jobId, () => StreamController<List<Quote>>.broadcast());
+    Future.microtask(() => controller.add(quotesByJob[jobId]?.values.toList() ?? []));
+    return controller.stream.map((quotes) => quotesByJob[jobId]?[currentUid]);
   }
 
   @override
   Stream<List<Quote>> watchMyQuotes({int limit = 30}) {
+    if (myQuotesList != null) {
+      scheduleMicrotask(() {
+        if (!_myQuotesController.isClosed) {
+          _myQuotesController.add(myQuotesList!);
+        }
+      });
+    }
     return _myQuotesController.stream;
   }
 

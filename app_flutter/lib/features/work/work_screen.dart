@@ -27,23 +27,49 @@ import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/decline_change_sheet.dart';
 import 'package:photobooking/features/studio/return_job_sheet.dart';
+import 'package:photobooking/data/jobs/job_providers.dart';
+import 'package:photobooking/data/jobs/job_repository.dart';
+import 'package:photobooking/features/job_market/my_quotes_tab.dart';
+import 'package:photobooking/features/job_market/open_jobs_tab.dart';
 import 'package:photobooking/features/work/studio_work_cards.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
 
+enum PhotographerWorkTab { today, jobs, quotes }
+
 /// Tab root of `/bookings` for photographers.
 class WorkScreen extends ConsumerStatefulWidget {
-  const WorkScreen({super.key, this.showEvents = false});
+  const WorkScreen({
+    super.key,
+    this.showEvents = false,
+    this.initialTab,
+  });
 
   /// "Sự kiện của tôi" (Decision 9): the photographer's next events, drafts
   /// tagged "Nháp", under the month's numbers.
   final bool showEvents;
+
+  final String? initialTab;
 
   @override
   ConsumerState<WorkScreen> createState() => _WorkScreenState();
 }
 
 class _WorkScreenState extends ConsumerState<WorkScreen> {
+  late PhotographerWorkTab _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = _parseInitialTab(widget.initialTab);
+  }
+
+  PhotographerWorkTab _parseInitialTab(String? tab) {
+    if (tab == 'jobs') return PhotographerWorkTab.jobs;
+    if (tab == 'quotes') return PhotographerWorkTab.quotes;
+    return PhotographerWorkTab.today;
+  }
+
   /// The request being accepted; every Nhận/Từ chối waits for it.
   String? _accepting;
 
@@ -183,39 +209,60 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         ref.read(clockProvider)();
     final features = ref.watch(bookingFeaturesProvider);
 
-    return ScreenCode(
-      ScreenCodes.work,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          centerTitle: false,
-          titleTextStyle: tabRootTitleStyle(context),
-          // Mock: small "Công việc" over today's date.
-          title: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.workTitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: dark
-                      ? AppColorsDark.foregroundSecondary
-                      : AppColors.foregroundSecondary,
-                ),
+    final unseenInvites = ref.watch(unseenInviteCountProvider).value ?? 0;
+    final openJobsList = ref.watch(openJobsProvider(const OpenJobsFilter())).value ?? const [];
+    final jobCount = openJobsList.isNotEmpty ? openJobsList.length : unseenInvites;
+
+    final title = switch (_tab) {
+      PhotographerWorkTab.today => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.workTitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: dark
+                    ? AppColorsDark.foregroundSecondary
+                    : AppColors.foregroundSecondary,
               ),
-              Text(_dateTitle(context, now)),
-            ],
-          ),
-          actions: [
-            IconButton(
-              key: const Key('open-calendar'),
-              tooltip: l10n.myCalendarTitle,
-              icon: const AppIcon(AppIcons.calendarCheck),
-              onPressed: () => context.push('/work/calendar'),
             ),
+            Text(_dateTitle(context, now)),
           ],
         ),
-        body: AsyncView<WorkDashboard>(
+      PhotographerWorkTab.jobs => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.workTitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: dark
+                    ? AppColorsDark.foregroundSecondary
+                    : AppColors.foregroundSecondary,
+              ),
+            ),
+            Text(l10n.workJobsTitle),
+          ],
+        ),
+      PhotographerWorkTab.quotes => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.workTitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: dark
+                    ? AppColorsDark.foregroundSecondary
+                    : AppColors.foregroundSecondary,
+              ),
+            ),
+            Text(l10n.workQuotesTitle),
+          ],
+        ),
+    };
+
+    final body = switch (_tab) {
+      PhotographerWorkTab.today => AsyncView<WorkDashboard>(
           value: dashboard,
           skeleton: (_) => _skeleton(),
           onRetry: () =>
@@ -233,6 +280,53 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           ),
           data: (context, d) => _dashboard(context, d, features, now),
         ),
+      PhotographerWorkTab.jobs => const OpenJobsTab(),
+      PhotographerWorkTab.quotes => const MyQuotesTab(),
+    };
+
+    return ScreenCode(
+      ScreenCodes.work,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: title,
+          actions: [
+            if (_tab == PhotographerWorkTab.today)
+              IconButton(
+                key: const Key('open-calendar'),
+                tooltip: l10n.myCalendarTitle,
+                icon: const AppIcon(AppIcons.calendarCheck),
+                onPressed: () => context.push('/work/calendar'),
+              ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4, vertical: AppSpace.s1),
+              child: SegmentedTabs<PhotographerWorkTab>(
+                value: _tab,
+                options: [
+                  SegmentOption(
+                    value: PhotographerWorkTab.today,
+                    label: l10n.workTabToday,
+                  ),
+                  SegmentOption(
+                    value: PhotographerWorkTab.jobs,
+                    label: l10n.workTabJobs(jobCount),
+                  ),
+                  SegmentOption(
+                    value: PhotographerWorkTab.quotes,
+                    label: l10n.workTabQuotes,
+                  ),
+                ],
+                onChanged: (tab) => setState(() => _tab = tab),
+              ),
+            ),
+          ),
+        ),
+        body: body,
       ),
     );
   }

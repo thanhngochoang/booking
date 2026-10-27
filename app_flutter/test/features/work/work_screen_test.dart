@@ -227,7 +227,7 @@ void main() {
     expect(find.byKey(const Key('open-calendar')), findsOneWidget);
 
     // Today's shoot: the only highlighted card.
-    expect(find.text('Hôm nay'), findsOneWidget);
+    expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsOneWidget);
     final today = tester.widget<BookingCard>(
       find.ancestor(
         of: find.text('Lan Anh · Kỷ yếu nửa ngày'),
@@ -432,7 +432,7 @@ void main() {
     await _pump(tester, _repo([_busy()[1], _busy()[2]]));
     await _settle(tester);
 
-    expect(find.text('Hôm nay'), findsNothing);
+    expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsNothing);
     expect(
       tester
           .widgetList<BookingCard>(find.byType(BookingCard))
@@ -467,7 +467,7 @@ void main() {
       await _pump(tester, repo, otherUsers: const [studio]);
       await _settle(tester);
 
-      expect(find.text('Hôm nay'), findsOneWidget);
+      expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsOneWidget);
       expect(find.byKey(const Key('booking-card-tag')), findsOneWidget);
       expect(find.text('Giao bởi Studio Ánh Dương'), findsOneWidget);
       // The studio gets the money: nothing in Đang giữ, one in Buổi sắp tới.
@@ -766,7 +766,7 @@ void main() {
     testWidgets('flag off: no Live Shutter card', (tester) async {
       await _pump(tester, _repo(_busy()));
       await _settle(tester);
-      expect(find.text('Hôm nay'), findsOneWidget);
+      expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsOneWidget);
       expect(find.byType(LiveShutterCard), findsNothing);
       expect(find.text('Live Shutter'), findsNothing);
     });
@@ -800,7 +800,7 @@ void main() {
       );
       expect(
         tester.getTopLeft(find.text('Live Shutter')).dy,
-        lessThan(tester.getTopLeft(find.text('Hôm nay')).dy),
+        lessThan(tester.getTopLeft(find.widgetWithText(SectionHeader, 'Hôm nay')).dy),
       );
 
       await pumpBookingsTab(

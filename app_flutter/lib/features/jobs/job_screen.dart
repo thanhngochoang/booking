@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/widgets/empty_state.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
+import 'package:photobooking/features/job_market/job_photographer_detail.dart';
 import 'package:photobooking/features/jobs/job_owner_detail.dart';
 
 class JobScreen extends ConsumerWidget {
@@ -32,8 +33,8 @@ class JobScreen extends ConsumerWidget {
               title: const Text('Chi tiết công việc'),
             ),
             body: const EmptyState(
-              title: 'Không tìm thấy công việc',
-              body: 'Công việc này không tồn tại hoặc đã bị xoá.',
+              title: 'Không tìm thấy việc này',
+              body: '',
             ),
           );
         }
@@ -42,17 +43,10 @@ class JobScreen extends ConsumerWidget {
           // Owner view (S15.02)
           return JobOwnerDetail(job: job);
         }
-        // Photographer view (S16.01) placeholder
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(job.title),
-          ),
-          body: EmptyState(
-            title: job.title,
-            body: openQuote
-                ? 'Đang mở sheet gửi báo giá (S16.03).'
-                : 'Trang xem công việc cho thợ ảnh (S16.01).',
-          ),
+        // Photographer view (S16.01)
+        return JobPhotographerDetail(
+          job: job,
+          openQuote: openQuote,
         );
       },
       loading: () => Scaffold(

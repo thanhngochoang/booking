@@ -7152,5 +7152,201 @@
       }
     }
   },
-  "quotePayErrAddress": "Nhập địa chỉ cụ thể (3–120 ký tự)"
+  "quotePayErrAddress": "Nhập địa chỉ cụ thể (3–120 ký tự)",
+  "workTabToday": "Hôm nay",
+  "workTabJobs": "Việc đang tuyển · {n}",
+  "@workTabJobs": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "workTabQuotes": "Báo giá của tôi",
+  "workJobsTitle": "Việc đang tuyển",
+  "workQuotesTitle": "Báo giá của tôi",
+  "openJobsFit": "Hợp với bạn",
+  "openJobsNear": "Gần tôi",
+  "openJobsBudget": "Ngân sách",
+  "openJobsNeedSetupTitle": "Hoàn tất hồ sơ để thấy việc đang tuyển",
+  "openJobsNeedSetupAction": "Hoàn tất hồ sơ",
+  "openJobsEmpty": "Chưa có việc hợp với bạn. Thêm thể loại hoặc mở rộng khu vực.",
+  "openJobsEmptyAction": "Sửa thể loại",
+  "myQuotesPending": "Đang chờ",
+  "myQuotesChosen": "Được chọn",
+  "myQuotesNotChosen": "Không được chọn",
+  "myQuotesWithdrawn": "Đã rút",
+  "myQuotesAuto": "Tự rút · bạn đã kín lịch ngày này",
+  "myQuotesEmpty": "Bạn chưa gửi báo giá nào",
+  "jobHirer": "Đã thuê {n} lần",
+  "@jobHirer": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jobPhoneOk": "SĐT đã xác minh",
+  "jobFree": "Bạn rảnh ngày này",
+  "jobBusy": "Bạn đã có lịch",
+  "jobPending": "Bạn có yêu cầu đang chờ",
+  "jobAreaLine": "{area} · cách bạn {km} km",
+  "@jobAreaLine": {
+    "placeholders": {
+      "area": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "jobAreaSub": "Địa chỉ cụ thể gửi khi bạn được chọn",
+  "jobBudgetLine": "Ngân sách {range}",
+  "@jobBudgetLine": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "jobWantsLine": "Bàn giao ≥ {n} ảnh chỉnh · trong {days} ngày",
+  "@jobWantsLine": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "jobCompetition": "{n} thợ ảnh đã báo giá · còn {m} ngày",
+  "@jobCompetition": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "jobAsk": "Hỏi khách",
+  "jobQuote": "Gửi báo giá",
+  "jobEditQuote": "Sửa báo giá",
+  "jobWithdraw": "Rút báo giá",
+  "jobWithdrawTitle": "Rút báo giá?",
+  "jobWithdrawBody": "Khách sẽ không thấy báo giá này nữa. Bạn có thể gửi lại khi việc còn mở.",
+  "jobWithdrawnToast": "Đã rút báo giá",
+  "jobMine": "Báo giá của bạn · {amount} · {status}",
+  "@jobMine": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "jobChosen": "Khách đã chọn bạn",
+  "jobOpenShoot": "Mở buổi chụp",
+  "jobClosedNotice": "Việc đã đóng",
+  "jobDayBusy": "Ngày này bạn đã có lịch",
+  "jobArtistLockButton": "Chỉ Nhiếp ảnh gia báo giá được",
+  "jobNotFound": "Không tìm thấy việc này",
+  "quoteSheetTitle": "Gửi báo giá",
+  "quoteSheetBudget": "Ngân sách khách {range}",
+  "@quoteSheetBudget": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteBasedOn": "Dựa trên gói · tuỳ chọn",
+  "quoteBasedOnNone": "Không dựa trên gói",
+  "quoteProposal": "Ngày chụp đề xuất · bắt buộc",
+  "quoteProposalHint": "Trong khoảng {from}–{to}",
+  "@quoteProposalHint": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "quotePrice": "Giá báo · bắt buộc",
+  "quoteMilestones": "Mốc 1 sau buổi chụp {a} · Mốc 2 khi khách duyệt ảnh {b}",
+  "@quoteMilestones": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteEditedField": "Ảnh chỉnh",
+  "quoteDeliveryField": "Giao trong",
+  "quoteDeliveryValue": "{n} ngày",
+  "@quoteDeliveryValue": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteRevisionsField": "Sửa",
+  "quoteRevisionsValue": "{n} lần",
+  "@quoteRevisionsValue": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteMessage": "Lời nhắn · bắt buộc",
+  "quoteMessageCount": "{n} / 500",
+  "@quoteMessageCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteAlbumField": "Album đính kèm · tuỳ chọn",
+  "quoteAlbumValue": "{name} · {n} ảnh",
+  "@quoteAlbumValue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteAlbumNone": "Không đính kèm",
+  "quoteNote": "Khách chọn và trả tiền thì buổi chụp được xác nhận luôn. Sửa hoặc rút báo giá được tới lúc đó.",
+  "quoteSend": "Gửi báo giá",
+  "quoteSaveEdit": "Lưu báo giá",
+  "quoteSentToast": "Đã gửi báo giá",
+  "quoteSavedToast": "Đã lưu báo giá",
+  "quoteDiscardTitle": "Bỏ báo giá?",
+  "quoteDiscard": "Bỏ",
+  "quoteKeep": "Tiếp tục sửa",
+  "quoteErrPrice": "Nhập giá lớn hơn 0",
+  "quoteErrMessage": "Lời nhắn cần 20–500 ký tự",
+  "quoteErrContact": "Bỏ số điện thoại hoặc link khỏi lời nhắn",
+  "quoteErrLimit": "Bạn đang có 20 báo giá chờ khách. Rút bớt để gửi thêm.",
+  "quoteErrDayTaken": "Ngày này bạn đã có lịch",
+  "quoteErrNotEligible": "Bạn chưa đủ điều kiện báo giá việc này",
+  "quoteErrClosed": "Việc đã đóng, không gửi được báo giá",
+  "quoteErrInCheckout": "Khách đang thanh toán báo giá này, chưa sửa hay rút được.",
+  "quoteErrProposal": "Chọn ngày trong khoảng của khách"
 }

@@ -191,7 +191,7 @@ final unseenInviteCountProvider = StreamProvider.autoDispose<int>((ref) {
   return repo.watchUnseenInviteCount();
 });
 
-/// Temporary state controllers for Task 7 & Task 9
+/// Temporary state controller for JobDraft (Task 7)
 class JobDraftController extends Notifier<Object?> {
   @override
   Object? build() => null;
@@ -200,15 +200,3 @@ class JobDraftController extends Notifier<Object?> {
 
 final jobDraftControllerProvider =
     NotifierProvider.autoDispose<JobDraftController, Object?>(JobDraftController.new);
-
-class QuoteSheetController extends Notifier<Object?> {
-  QuoteSheetController(this.jobId);
-  final String jobId;
-
-  @override
-  Object? build() => null;
-  void update(Object? value) => state = value;
-}
-
-final quoteSheetControllerProvider = NotifierProvider.autoDispose
-    .family<QuoteSheetController, Object?, String>(QuoteSheetController.new);
