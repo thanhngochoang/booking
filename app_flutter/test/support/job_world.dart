@@ -11,10 +11,46 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
 import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/recommendation/recommendation_models.dart';
+import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 import 'package:photobooking/features/jobs/job_screen.dart';
+import 'package:photobooking/features/jobs/quote_checkout_screen.dart';
+import 'package:photobooking/features/jobs/quote_detail_screen.dart';
+import 'package:photobooking/features/jobs/quotes_screen.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_job_repository.dart';
+
+class FakeRecommender implements RecommendationRepository {
+  FakeRecommender();
+
+  @override
+  Future<RecommendationPage> recommendPhotographers(RecommendationQuery query) async {
+    return const RecommendationPage(
+      items: [],
+      requestId: 'req_1',
+      algorithm: 'test',
+      algorithmVersion: '1.0',
+    );
+  }
+
+  @override
+  Future<RecommendationPage> similar(String photographerId, {int limit = 8}) async =>
+      recommendPhotographers(const RecommendationQuery());
+
+  @override
+  Future<PostRecommendationPage> recommendPosts(PostRecommendationQuery query) async =>
+      const PostRecommendationPage(
+        items: [],
+        requestId: 'req_1',
+        algorithm: 'test',
+        algorithmVersion: '1.0',
+      );
+
+  @override
+  Future<void> sendFeedback(List<RecommendationSignal> signals) async {}
+}
 
 final jobNow = DateTime.utc(2026, 10, 20, 3); // 10:00 VN
 
@@ -44,6 +80,7 @@ class JobWorld {
       jobRepositoryProvider.overrideWithValue(repository),
       sharedPreferencesProvider.overrideWithValue(prefs),
       clockProvider.overrideWithValue(() => clock),
+      recommendationRepositoryProvider.overrideWithValue(FakeRecommender()),
       currentProfileProvider.overrideWith(
         (ref) => Stream.value(
           UserProfile(
@@ -84,20 +121,22 @@ class JobWorld {
             ),
             GoRoute(
               path: 'applications',
-              builder: (_, state) => JobScreen(
+              builder: (_, state) => QuotesScreen(
                 jobId: state.pathParameters['id']!,
               ),
               routes: [
                 GoRoute(
                   path: ':quoteId',
-                  builder: (_, state) => JobScreen(
+                  builder: (_, state) => QuoteDetailScreen(
                     jobId: state.pathParameters['id']!,
+                    initialPhotographerId: state.pathParameters['quoteId']!,
                   ),
                   routes: [
                     GoRoute(
                       path: 'pay',
-                      builder: (_, state) => JobScreen(
+                      builder: (_, state) => QuoteCheckoutScreen(
                         jobId: state.pathParameters['id']!,
+                        photographerId: state.pathParameters['quoteId']!,
                       ),
                     ),
                   ],
@@ -116,6 +155,8 @@ class JobWorld {
       overrides: overrides(),
       child: MaterialApp.router(
         routerConfig: router,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       ),
     );
   }

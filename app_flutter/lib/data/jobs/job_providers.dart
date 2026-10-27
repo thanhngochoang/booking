@@ -2,6 +2,7 @@
 //
 // Riverpod providers for jobs, open jobs, quotes and drafts.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/jobs/firestore_job_repository.dart';
 import 'package:photobooking/data/jobs/job.dart';
 import 'package:photobooking/data/jobs/job_repository.dart';
@@ -93,11 +94,41 @@ final sortedQuotesProvider =
   final sort = ref.watch(quotesSortProvider(jobId));
   final saved = ref.watch(savedQuotesProvider(jobId));
 
-  final list = List<Quote>.from(quotes);
+  DateTime now;
+  try {
+    now = ref.watch(clockProvider)();
+  } catch (_) {
+    now = DateTime.now().toUtc();
+  }
+
+  // Filter out:
+  // 1. declined quotes (not listed)
+  // 2. withdrawn quotes older than 24 hours
+  final filtered = quotes.where((q) {
+    if (q.status == QuoteStatus.declined) return false;
+    if (q.status == QuoteStatus.withdrawn) {
+      final withdrawnAt = q.withdrawnAt ?? q.updatedAt;
+      final age = now.difference(withdrawnAt);
+      if (age >= const Duration(hours: 24)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  var list = List<Quote>.from(filtered);
 
   switch (sort) {
     case QuoteSort.fit:
-      list.sort((a, b) => b.fit.compareTo(a.fit));
+      list.sort((a, b) {
+        final fitComp = b.fit.compareTo(a.fit);
+        if (fitComp != 0) return fitComp;
+        // invited first on ties
+        if (a.invited != b.invited) {
+          return a.invited ? -1 : 1;
+        }
+        return a.id.compareTo(b.id);
+      });
       break;
     case QuoteSort.price:
       list.sort((a, b) => a.terms.price.compareTo(b.terms.price));
@@ -109,7 +140,11 @@ final sortedQuotesProvider =
         final sc = q.photographer.score;
         return (rc * sc + 10 * 0.6) / (rc + 10);
       }
-      list.sort((a, b) => smoothedScore(b).compareTo(smoothedScore(a)));
+      list.sort((a, b) {
+        final scoreComp = smoothedScore(b).compareTo(smoothedScore(a));
+        if (scoreComp != 0) return scoreComp;
+        return b.photographer.reviewCount.compareTo(a.photographer.reviewCount);
+      });
       break;
     case QuoteSort.saved:
       list.sort((a, b) {
@@ -121,6 +156,10 @@ final sortedQuotesProvider =
         return b.fit.compareTo(a.fit);
       });
       break;
+  }
+
+  if (sort == QuoteSort.saved) {
+    list = list.where((q) => saved.contains(q.id)).toList();
   }
 
   return list;

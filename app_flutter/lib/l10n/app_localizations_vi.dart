@@ -9564,4 +9564,146 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get findPostJob => 'Không tìm thấy? Đăng việc để thợ ảnh báo giá';
+
+  @override
+  String quotesTitle(int n) {
+    return '$n báo giá';
+  }
+
+  @override
+  String get quotesSortFit => 'Phù hợp nhất';
+
+  @override
+  String get quotesSortPrice => 'Giá thấp';
+
+  @override
+  String get quotesSortRating => 'Đánh giá';
+
+  @override
+  String get quotesSaved => 'Đã lưu';
+
+  @override
+  String get quotesEmptyTitle => 'Đang chờ báo giá đầu tiên';
+
+  @override
+  String get quotesSavedEmpty => 'Bạn chưa lưu báo giá nào';
+
+  @override
+  String quoteCounter(int i, int n) {
+    return 'Báo giá $i / $n';
+  }
+
+  @override
+  String get quoteProfile => 'Hồ sơ';
+
+  @override
+  String get quoteM1 => 'Sau buổi chụp';
+
+  @override
+  String get quoteM1Sub => 'thả cho thợ ảnh';
+
+  @override
+  String get quoteM2 => 'Khi bạn đồng ý ảnh + 48 giờ kiểm tra';
+
+  @override
+  String quoteM2Sub(int days) {
+    return 'hoặc tự đồng ý sau $days ngày';
+  }
+
+  @override
+  String get quoteTileEdited => 'ảnh chỉnh';
+
+  @override
+  String get quoteTileRaw => 'ảnh gốc';
+
+  @override
+  String get quoteTileDays => 'ngày giao';
+
+  @override
+  String get quoteTileRevisions => 'lần sửa';
+
+  @override
+  String quoteAlbum(String name) {
+    return 'Album · $name';
+  }
+
+  @override
+  String quoteAlbumSub(int n) {
+    return '$n ảnh · đính kèm báo giá';
+  }
+
+  @override
+  String quoteEscrow(String amount) {
+    return 'Bạn trả $amount ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc.';
+  }
+
+  @override
+  String quoteChoose(String amount) {
+    return 'Chọn và thanh toán $amount';
+  }
+
+  @override
+  String get quoteAsk => 'Nhắn tin hỏi thêm';
+
+  @override
+  String get quoteDecline => 'Từ chối báo giá';
+
+  @override
+  String get quoteDeclineTitle => 'Từ chối báo giá này?';
+
+  @override
+  String get quoteDeclineReason => 'Lý do · tuỳ chọn';
+
+  @override
+  String get quoteDeclineConfirm => 'Từ chối';
+
+  @override
+  String get quoteDeclinedToast => 'Đã từ chối báo giá';
+
+  @override
+  String get quoteUnavailableWithdrawn => 'Thợ ảnh đã rút báo giá này';
+
+  @override
+  String get quoteUnavailableClosed => 'Việc không còn nhận báo giá';
+
+  @override
+  String get quoteDayTaken => 'Thợ ảnh này đã kín lịch ngày đó';
+
+  @override
+  String get quoteNotAccepting => 'Thợ ảnh này tạm thời chưa nhận đơn';
+
+  @override
+  String get quotePayTitle => 'Xem lại';
+
+  @override
+  String get quotePayAddress => 'Địa chỉ cụ thể · bắt buộc';
+
+  @override
+  String get quotePayAddressHint => 'Số nhà, đường, phường';
+
+  @override
+  String get quotePayAddressNote => 'Chỉ thợ ảnh bạn chọn thấy địa chỉ này.';
+
+  @override
+  String get quotePayNote => 'Ghi chú · tuỳ chọn';
+
+  @override
+  String quotePayLine(String name) {
+    return 'Báo giá của $name';
+  }
+
+  @override
+  String get quotePayTotal => 'Thanh toán 100%';
+
+  @override
+  String get quotePayPolicy =>
+      'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.';
+
+  @override
+  String quotePayButton(String amount) {
+    return 'Thanh toán $amount';
+  }
+
+  @override
+  String get quotePayErrAddress => 'Nhập địa chỉ cụ thể (3–120 ký tự)';
 }

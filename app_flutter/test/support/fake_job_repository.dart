@@ -32,6 +32,7 @@ class FakeJobRepository implements JobRepository {
   final List<({String jobId, JobDraft draft})> updateCalls = [];
   final List<String> extendCalls = [];
   final List<String> closeCalls = [];
+  final List<String> markQuotesSeenCalls = [];
   final List<({String jobId, List<String> photographerIds})> inviteCalls = [];
   final List<({String jobId, String photographerId, String? reason})> declineCalls = [];
   final List<({String jobId, String photographerId, String placeName, String? note, PayMethod method})> acceptCalls = [];
@@ -95,7 +96,14 @@ class FakeJobRepository implements JobRepository {
 
   @override
   Stream<Job?> watchJob(String jobId) {
-    return _jobControllers.putIfAbsent(jobId, () => StreamController<Job?>.broadcast()).stream;
+    final controller = _jobControllers.putIfAbsent(jobId, () => StreamController<Job?>.broadcast());
+    // Emit current value if present
+    if (jobs.containsKey(jobId)) {
+      scheduleMicrotask(() {
+        if (!controller.isClosed) controller.add(jobs[jobId]);
+      });
+    }
+    return controller.stream;
   }
 
   @override
@@ -105,7 +113,14 @@ class FakeJobRepository implements JobRepository {
 
   @override
   Stream<List<Quote>> watchQuotes(String jobId, {int limit = 50}) {
-    return _quotesControllers.putIfAbsent(jobId, () => StreamController<List<Quote>>.broadcast()).stream;
+    final controller = _quotesControllers.putIfAbsent(jobId, () => StreamController<List<Quote>>.broadcast());
+    // Emit current value if present
+    if (quotesByJob.containsKey(jobId)) {
+      scheduleMicrotask(() {
+        if (!controller.isClosed) controller.add(quotesByJob[jobId]?.values.toList() ?? []);
+      });
+    }
+    return controller.stream;
   }
 
   @override
@@ -374,6 +389,7 @@ class FakeJobRepository implements JobRepository {
 
   @override
   Future<void> markQuotesSeen(String jobId) async {
+    markQuotesSeenCalls.add(jobId);
     final existing = jobs[jobId];
     if (existing != null) {
       jobs[jobId] = Job(

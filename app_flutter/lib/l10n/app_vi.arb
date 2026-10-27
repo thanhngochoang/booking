@@ -7045,5 +7045,112 @@
   },
   "jobInviteEmpty": "Chưa có thợ ảnh phù hợp trong khu vực",
   "jobInviteFull": "Việc này đã mời đủ 5 người",
-  "findPostJob": "Không tìm thấy? Đăng việc để thợ ảnh báo giá"
+  "findPostJob": "Không tìm thấy? Đăng việc để thợ ảnh báo giá",
+  "quotesTitle": "{n} báo giá",
+  "@quotesTitle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quotesSortFit": "Phù hợp nhất",
+  "quotesSortPrice": "Giá thấp",
+  "quotesSortRating": "Đánh giá",
+  "quotesSaved": "Đã lưu",
+  "quotesEmptyTitle": "Đang chờ báo giá đầu tiên",
+  "quotesSavedEmpty": "Bạn chưa lưu báo giá nào",
+  "quoteCounter": "Báo giá {i} / {n}",
+  "@quoteCounter": {
+    "placeholders": {
+      "i": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteProfile": "Hồ sơ",
+  "quoteM1": "Sau buổi chụp",
+  "quoteM1Sub": "thả cho thợ ảnh",
+  "quoteM2": "Khi bạn đồng ý ảnh + 48 giờ kiểm tra",
+  "quoteM2Sub": "hoặc tự đồng ý sau {days} ngày",
+  "@quoteM2Sub": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteTileEdited": "ảnh chỉnh",
+  "quoteTileRaw": "ảnh gốc",
+  "quoteTileDays": "ngày giao",
+  "quoteTileRevisions": "lần sửa",
+  "quoteAlbum": "Album · {name}",
+  "@quoteAlbum": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteAlbumSub": "{n} ảnh · đính kèm báo giá",
+  "@quoteAlbumSub": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteEscrow": "Bạn trả {amount} ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc.",
+  "@quoteEscrow": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteChoose": "Chọn và thanh toán {amount}",
+  "@quoteChoose": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteAsk": "Nhắn tin hỏi thêm",
+  "quoteDecline": "Từ chối báo giá",
+  "quoteDeclineTitle": "Từ chối báo giá này?",
+  "quoteDeclineReason": "Lý do · tuỳ chọn",
+  "quoteDeclineConfirm": "Từ chối",
+  "quoteDeclinedToast": "Đã từ chối báo giá",
+  "quoteUnavailableWithdrawn": "Thợ ảnh đã rút báo giá này",
+  "quoteUnavailableClosed": "Việc không còn nhận báo giá",
+  "quoteDayTaken": "Thợ ảnh này đã kín lịch ngày đó",
+  "quoteNotAccepting": "Thợ ảnh này tạm thời chưa nhận đơn",
+  "quotePayTitle": "Xem lại",
+  "quotePayAddress": "Địa chỉ cụ thể · bắt buộc",
+  "quotePayAddressHint": "Số nhà, đường, phường",
+  "quotePayAddressNote": "Chỉ thợ ảnh bạn chọn thấy địa chỉ này.",
+  "quotePayNote": "Ghi chú · tuỳ chọn",
+  "quotePayLine": "Báo giá của {name}",
+  "@quotePayLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quotePayTotal": "Thanh toán 100%",
+  "quotePayPolicy": "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.",
+  "quotePayButton": "Thanh toán {amount}",
+  "@quotePayButton": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "quotePayErrAddress": "Nhập địa chỉ cụ thể (3–120 ký tự)"
 }

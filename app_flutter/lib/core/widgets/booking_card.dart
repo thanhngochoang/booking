@@ -6,6 +6,8 @@ import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/status_badge.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
+typedef BookingCardData = BookingSummary;
+
 @immutable
 class BookingSummary {
   const BookingSummary({

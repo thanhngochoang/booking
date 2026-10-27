@@ -16400,6 +16400,252 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không tìm thấy? Đăng việc để thợ ảnh báo giá'**
   String get findPostJob;
+
+  /// No description provided for @quotesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} báo giá'**
+  String quotesTitle(int n);
+
+  /// No description provided for @quotesSortFit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phù hợp nhất'**
+  String get quotesSortFit;
+
+  /// No description provided for @quotesSortPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá thấp'**
+  String get quotesSortPrice;
+
+  /// No description provided for @quotesSortRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get quotesSortRating;
+
+  /// No description provided for @quotesSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu'**
+  String get quotesSaved;
+
+  /// No description provided for @quotesEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ báo giá đầu tiên'**
+  String get quotesEmptyTitle;
+
+  /// No description provided for @quotesSavedEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa lưu báo giá nào'**
+  String get quotesSavedEmpty;
+
+  /// No description provided for @quoteCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá {i} / {n}'**
+  String quoteCounter(int i, int n);
+
+  /// No description provided for @quoteProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get quoteProfile;
+
+  /// No description provided for @quoteM1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sau buổi chụp'**
+  String get quoteM1;
+
+  /// No description provided for @quoteM1Sub.
+  ///
+  /// In vi, this message translates to:
+  /// **'thả cho thợ ảnh'**
+  String get quoteM1Sub;
+
+  /// No description provided for @quoteM2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi bạn đồng ý ảnh + 48 giờ kiểm tra'**
+  String get quoteM2;
+
+  /// No description provided for @quoteM2Sub.
+  ///
+  /// In vi, this message translates to:
+  /// **'hoặc tự đồng ý sau {days} ngày'**
+  String quoteM2Sub(int days);
+
+  /// No description provided for @quoteTileEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'ảnh chỉnh'**
+  String get quoteTileEdited;
+
+  /// No description provided for @quoteTileRaw.
+  ///
+  /// In vi, this message translates to:
+  /// **'ảnh gốc'**
+  String get quoteTileRaw;
+
+  /// No description provided for @quoteTileDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngày giao'**
+  String get quoteTileDays;
+
+  /// No description provided for @quoteTileRevisions.
+  ///
+  /// In vi, this message translates to:
+  /// **'lần sửa'**
+  String get quoteTileRevisions;
+
+  /// No description provided for @quoteAlbum.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album · {name}'**
+  String quoteAlbum(String name);
+
+  /// No description provided for @quoteAlbumSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh · đính kèm báo giá'**
+  String quoteAlbumSub(int n);
+
+  /// No description provided for @quoteEscrow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn trả {amount} ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc.'**
+  String quoteEscrow(String amount);
+
+  /// No description provided for @quoteChoose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn và thanh toán {amount}'**
+  String quoteChoose(String amount);
+
+  /// No description provided for @quoteAsk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin hỏi thêm'**
+  String get quoteAsk;
+
+  /// No description provided for @quoteDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối báo giá'**
+  String get quoteDecline;
+
+  /// No description provided for @quoteDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối báo giá này?'**
+  String get quoteDeclineTitle;
+
+  /// No description provided for @quoteDeclineReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do · tuỳ chọn'**
+  String get quoteDeclineReason;
+
+  /// No description provided for @quoteDeclineConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get quoteDeclineConfirm;
+
+  /// No description provided for @quoteDeclinedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối báo giá'**
+  String get quoteDeclinedToast;
+
+  /// No description provided for @quoteUnavailableWithdrawn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh đã rút báo giá này'**
+  String get quoteUnavailableWithdrawn;
+
+  /// No description provided for @quoteUnavailableClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc không còn nhận báo giá'**
+  String get quoteUnavailableClosed;
+
+  /// No description provided for @quoteDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh này đã kín lịch ngày đó'**
+  String get quoteDayTaken;
+
+  /// No description provided for @quoteNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh này tạm thời chưa nhận đơn'**
+  String get quoteNotAccepting;
+
+  /// No description provided for @quotePayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lại'**
+  String get quotePayTitle;
+
+  /// No description provided for @quotePayAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cụ thể · bắt buộc'**
+  String get quotePayAddress;
+
+  /// No description provided for @quotePayAddressHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nhà, đường, phường'**
+  String get quotePayAddressHint;
+
+  /// No description provided for @quotePayAddressNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ thợ ảnh bạn chọn thấy địa chỉ này.'**
+  String get quotePayAddressNote;
+
+  /// No description provided for @quotePayNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú · tuỳ chọn'**
+  String get quotePayNote;
+
+  /// No description provided for @quotePayLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá của {name}'**
+  String quotePayLine(String name);
+
+  /// No description provided for @quotePayTotal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán 100%'**
+  String get quotePayTotal;
+
+  /// No description provided for @quotePayPolicy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.'**
+  String get quotePayPolicy;
+
+  /// No description provided for @quotePayButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán {amount}'**
+  String quotePayButton(String amount);
+
+  /// No description provided for @quotePayErrAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập địa chỉ cụ thể (3–120 ký tự)'**
+  String get quotePayErrAddress;
 }
 
 class _AppLocalizationsDelegate

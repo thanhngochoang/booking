@@ -39,6 +39,9 @@ import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/jobs/job_post_screen.dart';
 import 'package:photobooking/features/jobs/job_screen.dart';
+import 'package:photobooking/features/jobs/quote_checkout_screen.dart';
+import 'package:photobooking/features/jobs/quote_detail_screen.dart';
+import 'package:photobooking/features/jobs/quotes_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/search/explore_search_screen.dart';
 import 'package:photobooking/features/help/help_screen.dart';
@@ -489,20 +492,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'applications',
-            builder: (_, state) => JobScreen(
+            builder: (_, state) => QuotesScreen(
               jobId: state.pathParameters['id']!,
             ),
             routes: [
               GoRoute(
                 path: ':quoteId',
-                builder: (_, state) => JobScreen(
+                builder: (_, state) => QuoteDetailScreen(
                   jobId: state.pathParameters['id']!,
+                  initialPhotographerId: state.pathParameters['quoteId']!,
                 ),
                 routes: [
                   GoRoute(
                     path: 'pay',
-                    builder: (_, state) => JobScreen(
+                    builder: (_, state) => QuoteCheckoutScreen(
                       jobId: state.pathParameters['id']!,
+                      photographerId: state.pathParameters['quoteId']!,
                     ),
                   ),
                 ],
