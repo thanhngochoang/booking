@@ -90,7 +90,7 @@ void main() {
     tester,
   ) async {
     await _open(tester);
-    for (final c in ['booking', 'events', 'chat', 'badges']) {
+    for (final c in ['booking', 'jobs', 'events', 'chat', 'badges']) {
       expect(_on(tester, c, 'push'), isTrue, reason: '$c push');
       expect(_on(tester, c, 'inApp'), isTrue, reason: '$c inApp');
     }
@@ -109,16 +109,17 @@ void main() {
     expect(find.text('Trong app'), findsOneWidget);
   });
 
-  testWidgets('jobs and instant rows are hidden while their flags are off', (
+  testWidgets('jobs row is shown when kJobsEnabled is true, instant stays hidden', (
     tester,
   ) async {
     await _open(tester, role: UserRole.photographer);
-    expect(kJobsEnabled, isFalse);
+    expect(kJobsEnabled, isTrue);
     expect(kInstantEnabled, isFalse);
-    expect(find.text('Việc đăng tuyển'), findsNothing);
+    expect(find.text('Việc đăng tuyển'), findsOneWidget);
     expect(find.text('Chụp ngay'), findsNothing);
     for (final label in [
       'Đặt lịch và thanh toán',
+      'Việc đăng tuyển',
       'Sự kiện',
       'Tin nhắn',
       'Huy hiệu và đánh giá',

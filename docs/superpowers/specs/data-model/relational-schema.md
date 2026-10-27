@@ -942,8 +942,11 @@ create table jobs (
   description       text not null default '' check (char_length(description) <= 1000),
   schedule_kind     text not null check (schedule_kind in ('fixed','flexible')),
   day date, start_time time, end_time time, from_day date, to_day date,
+  day_from          date not null,
+  day_to            date not null,
   duration_minutes  int not null check (duration_minutes > 0),
-  city text not null, district text not null, geohash text not null,
+  city text not null, city_key text not null, district text not null, geohash text not null,
+  lat double precision, lng double precision,
   budget_min        bigint check (budget_min > 0),
   budget_max        bigint check (budget_max >= budget_min),
   wants_edited_count int, wants_delivery_days int,
@@ -952,9 +955,20 @@ create table jobs (
   extended          boolean not null default false,
   status            text not null default 'draft' check (status in ('draft','open','awarded','expired','closed')),
   quote_count       int not null default 0,
+  new_quote_count   int not null default 0,
   view_count        int not null default 0,
+  invite_count      int not null default 0,
+  match_count       int not null default 0,
   awarded_quote_id  text,                    -- fk quotes, đặt sau
   booking_id        text references bookings(id),
+  checkout_quote_id text,
+  checkout_booking_id text references bookings(id),
+  checkout_expires_at timestamptz,
+  expiring_notified_at timestamptz,
+  closed_at         timestamptz,
+  references_purge_after timestamptz,
+  quotes_seen_at    timestamptz,
+  version           int not null default 1,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now(),
   check ((schedule_kind = 'fixed' and day is not null) or (schedule_kind = 'flexible' and from_day is not null and to_day is not null))
@@ -971,6 +985,8 @@ create table quotes (
   id                  text primary key,
   job_id              text not null references jobs(id) on delete cascade,
   photographer_id     text not null references photographers(user_id),
+  customer_id         text not null references users(id),
+  job_title           text not null,
   based_on_service_id text references services(id) on delete set null,
   price               bigint not null check (price > 0),
   duration_minutes    int not null,
@@ -979,19 +995,44 @@ create table quotes (
   delivery_days       int not null check (delivery_days between 1 and 60),
   revisions           smallint not null check (revisions between 0 and 5),
   milestones          jsonb not null,           -- [{kind, percent}], tổng 100
+  milestone_shoot     bigint not null,
+  milestone_delivery  bigint not null,
+  proposal_day        date not null,
+  proposal_start      time not null,
+  proposal_end        time not null,
   message             text not null check (char_length(message) between 20 and 500),
   album_id            text references albums(id) on delete set null,
+  invited             boolean not null default false,
+  fit                 int not null default 0 check (fit between 0 and 100),
   status              text not null default 'submitted' check (status in ('submitted','withdrawn','accepted','not_selected','declined')),
+  not_selected_reason text check (not_selected_reason in ('awarded','expired','closed')),
+  auto_withdrawn      boolean not null default false,
+  decline_reason      text,
+  booking_id          text references bookings(id),
+  withdrawn_at        timestamptz,
+  version             int not null default 1,
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
   unique (job_id, photographer_id)
 );
 alter table jobs add constraint fk_jobs_awarded_quote foreign key (awarded_quote_id) references quotes(id);
+alter table jobs add constraint fk_jobs_checkout_quote foreign key (checkout_quote_id) references quotes(id);
 create table job_invites (
   job_id          text not null references jobs(id) on delete cascade,
   photographer_id text not null references photographers(user_id) on delete cascade,
+  customer_id     text not null references users(id),
+  fit             int not null default 0 check (fit between 0 and 100),
+  job_status      text not null default 'open' check (job_status in ('open','closed')),
   created_at      timestamptz not null default now(),
   seen_at         timestamptz,
+  primary key (job_id, photographer_id)
+);
+create table job_matches (
+  job_id          text not null references jobs(id) on delete cascade,
+  photographer_id text not null references photographers(user_id) on delete cascade,
+  fit             int not null default 0 check (fit between 0 and 100),
+  job_status      text not null default 'open' check (job_status in ('open','closed')),
+  created_at      timestamptz not null default now(),
   primary key (job_id, photographer_id)
 );
 
@@ -1394,7 +1435,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `likes/{uid}_{postId}`, `saves/…`, `follows/{uid}_{photographerId}` | `likes`, `saves`, `follows` | Khoá ghép thay id ghép chuỗi |
 | `awards/{id}`, `awardProofs/{id}` | `awards`, `award_proofs` + `award_proof_files` | `proof.files[]`→`award_proof_files` |
 | `albums/{id}`; `posts/{id}.albumId/albumPosition` | `albums`; `posts.album_id`, `album_position` | `cover.{postId,position}`→`cover_post_id`, `cover_position` |
-| `jobs/{id}`, `jobs/{id}/quotes/{photographerId}`, `jobs/{id}/invites/{photographerId}` | `jobs` + `job_references`, `quotes`, `job_invites` | `schedule.*`, `area.*`, `budget.*`, `wants.*` → cột phẳng; id báo giá Firestore là uid, bảng dùng `id` riêng + `unique (job_id, photographer_id)` |
+| `jobs/{id}`, `jobs/{id}/quotes/{photographerId}`, `jobs/{id}/invites/{photographerId}`, `jobs/{id}/matches/{photographerId}` | `jobs` + `job_references`, `quotes`, `job_invites`, `job_matches` | `schedule.*`, `area.*`, `budget.*`, `wants.*`, `checkout.*` → cột phẳng; id báo giá Firestore là uid, bảng dùng `id` riêng + `unique (job_id, photographer_id)`; `job_matches` lưu danh sách match tự động (tối đa 30 thợ) |
 | `bookings/{id}/milestones/{kind}`, `bookings/{id}/deliveries/{round}` | `booking_milestones`, `booking_deliveries` + `booking_delivery_previews` | Đề xuất (spec 10-05) |
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received`; (đề xuất) tài khoản nền tảng của Firestore (`platform_escrow`, `platform_revenue` ở `accountOwnerId`) thành `account_owner_id` null, phân biệt bằng `type` (`fee_charged` là doanh thu) |

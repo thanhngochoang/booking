@@ -124,6 +124,7 @@ class NotificationsWorld {
           '/b/:id',
           '/e/:id',
           '/events/:id/manage',
+          '/jobs/:id',
           '/jobs/:id/applications',
           '/chat/:id',
           '/me/awards',

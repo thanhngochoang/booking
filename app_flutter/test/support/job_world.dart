@@ -11,6 +11,7 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
 import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 import 'package:photobooking/features/jobs/job_screen.dart';
@@ -81,6 +82,7 @@ class JobWorld {
       sharedPreferencesProvider.overrideWithValue(prefs),
       clockProvider.overrideWithValue(() => clock),
       recommendationRepositoryProvider.overrideWithValue(FakeRecommender()),
+      availabilityLookupProvider.overrideWithValue(FakeAvailabilityLookup()),
       currentProfileProvider.overrideWith(
         (ref) => Stream.value(
           UserProfile(

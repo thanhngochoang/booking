@@ -154,14 +154,14 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S53 |
 | S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S54 |
 | **S15** | **Đăng việc (khách)** | | | | | |
-| S15.01 | Đăng việc (2 bước: việc gì; khi nào, ở đâu, ngân sách, ai được báo giá) | `/jobs/new` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S56 |
-| S15.02 | Việc của tôi (tab "Việc đăng" của S05.01) / chi tiết việc | `/bookings?tab=jobs`, `/jobs/:id` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S57 |
-| S15.03 | Danh sách báo giá | `/jobs/:id/applications` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S58 |
-| S15.04 | Chi tiết báo giá ("Chọn và thanh toán") | `/jobs/:id/applications/:quoteId`, `…/:quoteId/pay` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S59 |
+| S15.01 | Đăng việc (2 bước: việc gì; khi nào, ở đâu, ngân sách, ai được báo giá) | `/jobs/new` | khách | D (spec 10-05) | ✅ đã làm (#139) | S56 |
+| S15.02 | Việc của tôi (tab "Việc đăng" của S05.01) / chi tiết việc | `/bookings?tab=jobs`, `/jobs/:id` | khách | D (spec 10-05) | ✅ đã làm (#139) | S57 |
+| S15.03 | Danh sách báo giá | `/jobs/:id/applications` | khách | D (spec 10-05) | ✅ đã làm (#139) | S58 |
+| S15.04 | Chi tiết báo giá ("Chọn và thanh toán") | `/jobs/:id/applications/:quoteId`, `…/:quoteId/pay` | khách | D (spec 10-05) | ✅ đã làm (#139) | S59 |
 | **S16** | **Nhận việc đăng (thợ ảnh)** | | | | | |
-| S16.01 | Chi tiết việc (thợ ảnh) | `/jobs/:id` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S60 |
-| S16.02 | Việc đang tuyển (tab trong Công việc) | `/bookings?tab=jobs`, `?tab=quotes` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
-| S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S62 |
+| S16.01 | Chi tiết việc (thợ ảnh) | `/jobs/:id` | thợ ảnh | D (spec 10-05) | ✅ đã làm (#139) | S60 |
+| S16.02 | Việc đang tuyển (tab trong Công việc) | `/bookings?tab=jobs`, `?tab=quotes` | thợ ảnh | D (spec 10-05) | ✅ đã làm (#139) | S61 |
+| S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ✅ đã làm (#139) | S62 |
 | **S17** | **Thông báo** | | | | | |
 | S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ✅ đã làm (10a) · đủ loại + hook (#138) | S63 |
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
@@ -833,7 +833,7 @@ Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notific
 | `job_invited` | thợ ảnh | `work` · tím | Công việc | `/jobs/:id` (S16.01) | Việc đăng tuyển | |
 | `quote_accepted` | thợ ảnh | `work` · xanh | Công việc | `/b/:id` (S05.02) | Việc đăng tuyển | Khách đã chọn và trả tiền; **thay `job_selected`** |
 | `quote_not_selected` | thợ ảnh | `work` · xám | Công việc | `/jobs/:id` (S16.01) | Việc đăng tuyển | Việc awarded / expired / closed, hoặc khách từ chối |
-| `job_selected` | thợ ảnh | `work` · xanh | Công việc | — | Việc đăng tuyển | Bỏ: **thay bằng `quote_accepted`**; còn trong danh mục để dòng cũ vẫn có biểu tượng, không còn hook |
+| `job_selected` | thợ ảnh | `work` · xanh | Công việc | — | Việc đăng tuyển | Bỏ: **thay bằng `quote_accepted`**; không được phát (not emitted); còn trong danh mục để dòng cũ vẫn có biểu tượng, không còn hook |
 | `recruit_post_new` | thợ ảnh khớp tin | `work` · tím | Công việc | `/recruit/:id` (S27) | Việc đăng tuyển | Tối đa 3 mỗi thợ mỗi ngày (#151) |
 | `recruit_application_new` | studio | `work` · vàng | Công việc | `/studio/recruit?post=<id>` | Việc đăng tuyển | Gom theo tin (`recruit:<postId>:apps`) |
 | `recruit_application_result` | thợ ảnh | `work` · tím | Công việc | `/recruit/:id` | Việc đăng tuyển | Nhận làm cộng tác viên / thành viên, từ chối, hết hạn |
