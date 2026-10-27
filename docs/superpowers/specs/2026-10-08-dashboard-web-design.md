@@ -2,6 +2,7 @@
 
 - **Issue:** #161 (spec), áp dụng luôn cho #162 (nền tảng). Epic #83, milestone Phase 1.5.
 - **Ngày:** 2026-10-08. **Trạng thái:** chờ chủ dự án duyệt.
+- **Cập nhật 2026-10-27 (chủ dự án, #299 quyết định D3):** code dashboard nằm trong repo booking-be (https://github.com/thanhngochoang/booking-be), không ở repo app; spec, mock và plan vẫn ở repo này (D11).
 - **Mock:** `docs/design/dashboard-mock.html` (màn S23.08–S23.11 và khung studio). Mở bằng trình duyệt, nút "Debug" hiện mã màn, thêm `#S23.09` vào URL để nhảy tới màn. Bản xuất bản: https://claude.ai/artifact/PG6UzagCjTxGfGUn9HRKJi (riêng tư; tệp trong repo là bản gốc để sửa).
 - **Spec liên quan:** spec chính `2026-10-01-remaining-screens.md` (§2 bảng mã, §3i.6 S23), `data-model/README.md` (quy ước, ma trận quyền), `2026-10-06-payments-payouts-design.md`, `2026-10-06-identity-verification-design.md`, `2026-10-06-studio-members-design.md`.
 - **Spec màn của từng ticket** (viết sau spec này, dùng chung mọi quy định ở đây):
@@ -20,7 +21,7 @@
 
 | # | Quyết định | Nguồn |
 |---|---|---|
-| D1 | Dashboard là một ứng dụng Next.js (App Router, TypeScript strict) ở `apps/dashboard/`, dùng cho staff và chủ studio. Trả lời câu hỏi mở 22 của spec chính: web nội bộ riêng, không phải chế độ staff trong app. | #83, chủ dự án 2026-10-08 |
+| D1 | Dashboard là một ứng dụng Next.js (App Router, TypeScript strict) ở `apps/dashboard/` của repo booking-be (D11), dùng cho staff và chủ studio. Trả lời câu hỏi mở 22 của spec chính: web nội bộ riêng, không phải chế độ staff trong app. | #83, chủ dự án 2026-10-08 |
 | D2 | **Trình duyệt không gọi Firestore hay Storage.** Mọi dữ liệu qua lớp server của Next.js (BFF). BFF **đọc** bằng Firebase Admin SDK qua các interface đọc, **ghi** bằng cách gọi callable của Cloud Functions với ID token của chính người dùng. BFF không tự ghi Firestore. | chủ dự án 2026-10-08 (hướng B) |
 | D3 | **Phase 1.5 chạy local với emulator**, không deploy. Chủ dự án tắt mọi thứ cần gói Blaze (2026-10-09, công tắc `BLAZE_ENABLED` trong `firebase-deploy.yml`, `docs/FIREBASE-SETUP.md` §10). Khi bật Blaze: deploy lên **Firebase App Hosting**, region `asia-southeast1`, cùng project với Functions (§9). Phase 2 chuyển sang VPS cùng Go (#92, #98). | chủ dự án 2026-10-08, 2026-10-09 |
 | D4 | Vai trò staff: `admin`, `finance`, `support`, `sales` (claim `staffRole`, mỗi người một vai trò). Trả lời câu hỏi mở 18. | chủ dự án 2026-10-08 |
@@ -30,6 +31,7 @@
 | D8 | File riêng tư (giấy tờ, minh chứng, bằng chứng) chỉ xem qua callable `getSensitiveFileUrl`: kiểm vai trò, ghi audit, trả signed URL sống 5 phút. | — |
 | D9 | Staff giữ use case S23, thêm S23.08–S23.11. Studio trên web là use case mới **S28**. | §6 |
 | D10 | Không dùng listener realtime. Hàng đợi tự tải lại mỗi 30 giây khi tab đang mở và sau mỗi thao tác. | chi phí, đơn giản |
+| D11 | Dashboard nằm trong repo **booking-be** (`apps/dashboard/`), cạnh `packages/domain`, Cloud Functions, rules, index, seed và emulator mà #299 chuyển sang đó: BFF import domain bằng `tsconfig` `paths`, callable staff và Playwright trên emulator đều ở cùng repo. Spec, mock (`docs/design/dashboard-mock.html`) và plan vẫn ở repo app; `design-system/tokens.json` vẫn ở repo app, dashboard giữ một bản chụp ghim commit (§8). Dashboard chạy sau #299. | chủ dự án 2026-10-27 (#299, D3) |
 
 ## 1. Mục tiêu và phạm vi
 
@@ -59,10 +61,10 @@ Next.js server (BFF, apps/dashboard/src/server)
                                      └─ packages/domain: luật, quyền, audit_log
 ```
 
-### 2.1 Vị trí trong repo
+### 2.1 Vị trí trong repo (booking-be)
 
 ```
-apps/dashboard/
+apps/dashboard/                    (repo booking-be, D11)
   package.json, tsconfig.json, next.config.ts, apphosting.yaml, eslint.config.js
   src/
     app/
@@ -77,12 +79,13 @@ apps/dashboard/
     components/                    thành phần web dùng chung (§8)
     lib/   screen-codes.ts, format.ts (tiền, ngày giờ), permissions.ts
     messages/vi.ts                 mọi chữ hiển thị
-    styles/tokens.css              sinh từ design-system/tokens.json, không sửa tay
+    styles/tokens.css              sinh từ bản chụp design-tokens/tokens.json (§8), không sửa tay
+  design-tokens/ tokens.json, tokens.lock   bản chụp tokens của repo app, ghim commit (§8)
   test/  (Vitest), e2e/ (Playwright)
 ```
 
-- `@photobooking/domain` được import qua `tsconfig` `paths` như Functions đang làm. Dashboard chỉ dùng **kiểu, hàm kiểm tra đầu vào, bảng quyền và nhãn**; không chạy use case ghi.
-- Không có npm workspace ở gốc repo (giữ như hiện tại). `apps/dashboard` có `npm ci` riêng.
+- `@photobooking/domain` được import qua `tsconfig` `paths` (`../../packages/domain/src/index` trong booking-be) như Functions đang làm. Dashboard chỉ dùng **kiểu, hàm kiểm tra đầu vào, bảng quyền và nhãn**; không chạy use case ghi.
+- Không dựng npm workspace: gốc repo booking-be là `package.json` riêng của API (Fastify). `apps/dashboard` có `package.json`, lockfile và `npm ci` riêng.
 
 ### 2.2 Phiên và luồng một request
 
@@ -100,7 +103,7 @@ Chống CSRF: server action của Next.js đã kiểm `Origin`; route handler t�
 - Mỗi màn có một interface đọc trong `server/read/<màn>.ts` và DTO của nó. Adapter `server/read/firestore/<màn>.ts` dùng Admin SDK. Phase 2 thêm `server/read/http/` gọi Go; màn không đổi.
 - DTO theo quy ước `data-model/README.md`: id là chuỗi, tiền là số nguyên VND (`amount` + không có số thực), thời điểm là chuỗi ISO UTC, enum là mã chuỗi. Không gửi `Timestamp` hay `DocumentReference` xuống trình duyệt.
 - Danh sách phân trang bằng con trỏ (sau id hoặc sau thời điểm), mỗi trang 50 dòng. Số đếm hàng đợi dùng truy vấn `count()` (tính 1 lượt đọc cho mỗi 1.000 doc).
-- Mỗi truy vấn mới kèm index trong `app_flutter/firebase/firestore.indexes.json`, do spec của từng ticket liệt kê.
+- Mỗi truy vấn mới kèm index trong `firebase/firestore.indexes.json` của booking-be, do spec của từng ticket liệt kê.
 - Dữ liệu nhạy cảm không đi qua lớp đọc: số tài khoản ngân hàng chỉ hiện 4 số cuối như app; số giấy tờ tuỳ thân chỉ 4 số cuối (spec xác minh 10-06); ảnh và file riêng tư qua `getSensitiveFileUrl` (§5.3).
 
 ### 2.4 Lớp ghi
@@ -126,7 +129,7 @@ Không dùng listener. Màn hàng đợi gọi `router.refresh()` mỗi 30 giây
 ### 2.7 Sang phase 2 (#98)
 
 - Lớp đọc: thêm adapter `http/` gọi API Go, chọn bằng biến môi trường; bỏ adapter Firestore.
-- Lớp ghi: `CALLABLE_BASE_URL` trỏ sang Go; tên thao tác giữ nguyên, Go cung cấp endpoint cùng tên và cùng dạng dữ liệu (`services/api` lấy `relational-schema.md` làm đích).
+- Lớp ghi: `CALLABLE_BASE_URL` trỏ sang Go; tên thao tác giữ nguyên, Go cung cấp endpoint cùng tên và cùng dạng dữ liệu (API phase 2 trong booking-be lấy `relational-schema.md` làm đích).
 - Đăng nhập: vẫn Firebase Auth tới phase 3.
 
 ## 3. Đăng nhập và phiên
@@ -347,7 +350,7 @@ staff_approvals/{ulid}
 
 ## 8. Bố cục chung và thành phần web
 
-- **Theme:** dark aurora mặc định, có sáng; màu 60-30-10 (tím chỉ cho nút chính, mục đang chọn, link, tiêu điểm); icon Material Symbols Rounded; chữ Be Vietnam Pro, tiêu đề Fraunces. `styles/tokens.css` sinh bằng `tool/gen_tokens_css.mjs` (mới, nằm trong repo, thay cho script ngoài repo mà `design-system/README.md` đang nhắc) từ `design-system/tokens.json`; CI báo lỗi khi file sinh ra cũ (giống kiểm `tokens.g.dart`).
+- **Theme:** dark aurora mặc định, có sáng; màu 60-30-10 (tím chỉ cho nút chính, mục đang chọn, link, tiêu điểm); icon Material Symbols Rounded; chữ Be Vietnam Pro, tiêu đề Fraunces. `styles/tokens.css` sinh bằng `apps/dashboard/tool/gen_tokens_css.mjs` (mới, thay cho script ngoài repo mà `design-system/README.md` đang nhắc) từ **bản chụp** `apps/dashboard/design-tokens/tokens.json`. Bản gốc `design-system/tokens.json` ở repo app; `design-tokens/tokens.lock` ghi commit của repo app đã chụp (`ref=<sha>`), script `tool/sync_tokens.mjs` lấy đúng tệp đó ở commit đó. Đổi tokens trong repo app thì mở một PR booking-be nâng `tokens.lock`. CI báo lỗi khi `tokens.css` cũ so với bản chụp (giống kiểm `tokens.g.dart`).
 - **Kích thước:** staff dùng tốt từ 1024 px trở lên (dưới 1024 hiện thanh "Dashboard staff cần màn hình rộng hơn" nhưng vẫn đọc được). Studio dùng tốt từ 768 px (tablet); dưới 768 thanh bên thu thành menu.
 - **`StaffShell` / `StudioShell`:** thanh bên trái 248 px, nhóm mục (staff: Hàng đợi · Tiền · Nội dung · Hệ thống), mỗi hàng đợi có số đếm, đỏ khi có việc quá hạn; thanh trên: ô "Tìm theo mã" (dán id booking, người dùng, thanh toán, khiếu nại → mở chi tiết), chip vai trò, menu tài khoản (Đăng xuất).
 - **Mẫu hàng đợi (`QueueLayout`):** cột trái là `DataTable` có bộ lọc, mặc định sắp việc quá hạn rồi việc cũ nhất lên đầu; cột phải là `DetailPane`. Chân `DetailPane` có **một** nút chính (ví dụ "Duyệt") và nút phụ. Phím `j`/`k` chuyển dòng, `Enter` mở.
@@ -358,13 +361,13 @@ staff_approvals/{ulid}
 
 ## 9. Deploy, môi trường, chi phí
 
-- **Local:** `../scripts/backend-local.sh` (emulator + seed), rồi trong `apps/dashboard`: `npm run dev` với `USE_EMULATORS=1` (Admin SDK đọc `FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST`; callable trỏ functions emulator).
+- **Local (repo booking-be):** `scripts/backend-local.sh` (emulator + seed; #299 chuyển script này sang booking-be), rồi trong `apps/dashboard`: `npm run dev` với `USE_EMULATORS=1` (Admin SDK đọc `FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST`; callable trỏ functions emulator).
 - **Blaze tắt (hiện tại):** chỉ có cách chạy local ở trên. Mọi thứ cần Blaze mà dashboard dùng (App Hosting, Cloud Functions cho mọi thao tác ghi và URL ký, Storage cho file riêng tư và tệp xuất, Identity Platform) chỉ có trên emulator. Không thêm bước deploy nào ngoài công tắc `BLAZE_ENABLED`.
 - **App Hosting (khi bật Blaze):** backend `dashboard`, region `asia-southeast1`, `apphosting.yaml`: `runConfig.minInstances: 0`, `maxInstances: 2`, `concurrency: 80`; biến `CALLABLE_BASE_URL`, `FIREBASE_PROJECT_ID`. Không có secret: Admin SDK dùng service account của backend.
 - **Service account của backend:** chỉ `roles/datastore.viewer` và `roles/firebaseauth.viewer` (cho `checkRevoked`). Không có quyền Storage: mọi URL ký đi qua callable.
 - **CI:**
-  - Workflow mới `.github/workflows/dashboard.yml` (chạy khi đổi `apps/dashboard/**`, `packages/domain/**`, `design-system/**`): `npm ci`, lint, typecheck, Vitest, `next build`, kiểm `tokens.css` không cũ; job Playwright chạy trên emulator như `functions-test`.
-  - `firebase-deploy.yml` thêm job `deploy-dashboard` sau `deploy-functions` (`firebase deploy --only apphosting:dashboard`), cùng môi trường `dev` / `production`; chạy cùng điều kiện với `deploy-functions`: có `FIREBASE_PROJECT_ID` **và** `BLAZE_ENABLED` = `true`; ngược lại chỉ in cảnh báo.
+  - Workflow mới `.github/workflows/dashboard.yml` **của booking-be** (chạy khi đổi `apps/dashboard/**`, `packages/domain/**`, `firebase/**`): `npm ci`, lint, typecheck, Vitest, `next build`, kiểm `tokens.css` khớp bản chụp; job Playwright chạy trên emulator như job test Functions của booking-be.
+  - Workflow deploy Firebase của booking-be (bản `firebase-deploy.yml` mà #299 chuyển sang) thêm job `deploy-dashboard` sau `deploy-functions` (`firebase deploy --only apphosting:dashboard`), cùng môi trường `dev` / `production`; chạy cùng điều kiện với `deploy-functions`: có `FIREBASE_PROJECT_ID` **và** `BLAZE_ENABLED` = `true`; ngược lại chỉ in cảnh báo.
 - **Chi phí** (đơn giá theo `2026-10-07-google-cloud-costs.md`, Cloud Run Tier 2; ước tính, sai số cao):
   - Dashboard ít người dùng (5 staff, 8 giờ/ngày; vài chục chủ studio), `minInstances: 0`: thời gian chạy nằm trong hạn mức miễn phí của Cloud Run → **~$0/tháng**, cold start vài trăm ms.
   - Đọc Firestore: 5 staff × 8 giờ × 120 lần làm mới/giờ × ~10 truy vấn (`count()` + trang đầu) ≈ 48.000 lượt/ngày, chạm hạn mức miễn phí 50.000/ngày. Vì vậy: chỉ làm mới màn đang mở (không làm mới thẻ tổng quan ở tab ẩn), và S23.09 làm mới mỗi 60 giây thay vì 30. Phần vượt (nếu có) ≈ $0,06/100K đọc → **< $1/tháng** ở cả mức 1.000 và 10.000 người dùng app.
@@ -385,7 +388,7 @@ staff_approvals/{ulid}
 - Spec chính §2: thêm S23.08–S23.11, đổi cột Vai trò của S23.01–S23.07 theo §4.2, thêm tiêu đề S28; §3i.6 ghi đã chốt nền tảng; §8 câu 18 và 22 ghi đã chốt.
 - `screens/README.md`: mục lục thêm các tệp spec dashboard; ghi rằng quy ước chung về code Flutter không áp dụng cho dashboard (dashboard theo §8 ở đây).
 
-Phần đổi `data-model` (§5.1), `shared-components.md` (§8) và `design-system/README.md` làm trong plan #162 cùng code.
+Phần đổi `data-model` (§5.1), `shared-components.md` (§8) và `design-system/README.md` làm trong plan #162 cùng code; ba tệp này ở repo app (D11), nên plan #162 có một PR tài liệu ở repo app bên cạnh PR code ở booking-be.
 
 ## 12. Câu hỏi mở (có mặc định, không chặn)
 
@@ -399,6 +402,8 @@ Phần đổi `data-model` (§5.1), `shared-components.md` (§8) và `design-sys
 | Q6 | Chủ studio có bắt buộc TOTP khi studio có doanh thu lớn? | Không bắt buộc, khuyến khích bật |
 
 ## 13. Thứ tự gợi ý cho plan #162
+
+Plan #162 chạy sau #299; bước 1, 2, 4–8 là code trong booking-be (D11).
 
 1. Domain: `staff_permissions.ts` (`STAFF_ROLES`, `StaffAction`, `staffMay`), `audit.ts` (`AuditWriter`), `StaffActor {uid, role}` cho use case chi trả.
 2. Functions: `assertStaff`, adapter `audit_log`, `staff_approvals` (§5.4) với `decideStaffApproval`/`cancelStaffApproval`, `setStaffRole`, `resetStaffMfa`, `findUserForStaff`, `getSensitiveFileUrl`, CLI `staff`, rules + index, seed bốn tài khoản.
