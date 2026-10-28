@@ -122,8 +122,11 @@ export function residentFromFirestore(providerId: string, d: DocumentData | unde
 
 // ---- organizers/{uid}/gate_staff/{staffUid} -----------------------------------------------
 
-export function gateStaffToFirestore(g: GateStaff): DocumentData {
+/** `staffUid` and `organizerId` are stored too: the invitee's list is a collection-group query on `staffUid`. */
+export function gateStaffToFirestore(g: GateStaff, organizerId?: string): DocumentData {
   return {
+    staffUid: g.staffUid,
+    ...(organizerId !== undefined ? { organizerId } : {}),
     status: g.status,
     invitedAt: Timestamp.fromDate(new Date(g.invitedAt)),
     respondedAt: ts(g.respondedAt),
@@ -279,7 +282,7 @@ export class FirestoreOrganizerStore implements OrganizerStore {
             .filter((g): g is GateStaff => g !== null),
         putGateStaff: (organizerId, g) => {
           writes.push(() =>
-            fTx.set(this.organizerRef(organizerId).collection(GATE_STAFF_SUBCOLLECTION).doc(g.staffUid), gateStaffToFirestore(g)));
+            fTx.set(this.organizerRef(organizerId).collection(GATE_STAFF_SUBCOLLECTION).doc(g.staffUid), gateStaffToFirestore(g, organizerId)));
         },
         openEventsOf: async (organizerId) =>
           (await queryDocs(fs.collection(EVENTS).where('hostId', '==', organizerId).where('status', 'in', [...OPEN_EVENT_STATUSES])))

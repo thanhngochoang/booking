@@ -89,7 +89,7 @@ export class FirestoreScanStore implements ScanStore {
           fTx.set(dayRef(d.eventId, d.day), entryDayToFirestore(d));
         },
         putGateStaff: async (organizerId, g) => {
-          fTx.set(staffRef(organizerId, g.staffUid), gateStaffToFirestore(g));
+          fTx.set(staffRef(organizerId, g.staffUid), gateStaffToFirestore(g, organizerId));
         },
       };
       return fn(tx);

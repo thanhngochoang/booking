@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
@@ -75,6 +76,8 @@ describe('organizer Firestore mapping', () => {
     assert.deepEqual(gateStaffFromFirestore('g1', gateStaffToFirestore(invited)), invited);
     const active: GateStaff = { ...invited, status: 'active', respondedAt: NOW, scansToday: { day: '2026-10-18', count: 3 } };
     assert.deepEqual(gateStaffFromFirestore('g1', gateStaffToFirestore(active)), active);
+    // The invitee lists their invites with a collection-group query on `staffUid` (S30.06 "{org} mời bạn soát vé").
+    assert.deepEqual([gateStaffToFirestore(active, 'org1').staffUid, gateStaffToFirestore(active, 'org1').organizerId], ['g1', 'org1']);
 
     for (const read of [organizerFromFirestore, residentFromFirestore, gateStaffFromFirestore, claimFromFirestore]) {
       assert.equal(read('x', undefined), null);
@@ -216,5 +219,40 @@ describe('firestoreOrganizerPeople', () => {
     assert.equal(await people.payoutAccountOk('u1'), false);
     assert.equal(await people.isStaff('admin1'), true);
     assert.equal(await people.isStaff('u1'), false);
+  });
+});
+
+describe('S30 indexes (Task 6)', () => {
+  type Json = {
+    indexes: { collectionGroup: string; queryScope: string; fields: { fieldPath: string; order: string }[] }[];
+    fieldOverrides: { collectionGroup: string; fieldPath: string; indexes: { order?: string; queryScope: string }[] }[];
+  };
+  const json = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as Json;
+  const shapes = json.indexes.map((i) => `${i.queryScope} ${i.collectionGroup}: ${i.fields.map((f) => `${f.fieldPath} ${f.order}`).join(', ')}`);
+
+  it('the Contract\'s composite and collection-group indexes exist', () => {
+    for (const shape of [
+      // S29.02 / S30.03: the spot's entry event (type == entry, spotId, status in [open, full])
+      'COLLECTION events: type ASCENDING, spotId ASCENDING, status ASCENDING',
+      // S30.03 "Sự kiện ở đây chờ bạn đồng ý"
+      'COLLECTION events: venue.spotId ASCENDING, venueConsent ASCENDING',
+      // S12.03-entry: the paid tickets of a visit day across events
+      'COLLECTION_GROUP registrations: visitDay ASCENDING, status ASCENDING',
+      // spots CLI `claims list` (status, oldest first)
+      'COLLECTION spot_claims: status ASCENDING, createdAt ASCENDING',
+    ]) {
+      assert.ok(shapes.includes(shape), shape);
+    }
+  });
+
+  it('the collection-group field overrides of the phone lookup, the residents sweep and the invitee\'s invites', () => {
+    for (const [group, field] of [['private', 'phone'], ['residents', 'validUntil'], ['gate_staff', 'staffUid']] as const) {
+      const o = json.fieldOverrides.find((f) => f.collectionGroup === group && f.fieldPath === field);
+      assert.ok(o, `${group}.${field}`);
+      assert.ok(o.indexes.some((i) => i.queryScope === 'COLLECTION_GROUP' && i.order === 'ASCENDING'), `${group}.${field} collection group`);
+      // An override replaces the automatic indexes: the collection scope keeps both orders.
+      assert.ok(o.indexes.some((i) => i.queryScope === 'COLLECTION' && i.order === 'ASCENDING'), `${group}.${field} asc`);
+      assert.ok(o.indexes.some((i) => i.queryScope === 'COLLECTION' && i.order === 'DESCENDING'), `${group}.${field} desc`);
+    }
   });
 });
