@@ -423,6 +423,20 @@ List<TimelineStep> timelineSteps(
         step6(upcoming),
         step7(upcoming),
       ];
+    case BookingStatus.shooting:
+      // S30: the pass was scanned, the shoot is on (Task 9 adds the
+      // "Đang chụp" step, `timelineShooting`).
+      return [
+        step1,
+        step2(done),
+        step3(done),
+        ...assignStep(),
+        step4(done),
+        step5(current),
+        stepDelivery(upcoming),
+        step6(upcoming),
+        step7(upcoming),
+      ];
     case BookingStatus.shot:
     case BookingStatus.delivered:
     case BookingStatus.revisionRequested:

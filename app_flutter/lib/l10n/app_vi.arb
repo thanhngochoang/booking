@@ -7966,5 +7966,9 @@
   "payChooseRefundAccount": "Chọn tài khoản nhận hoàn",
   "detailRefundAccountTitle": "Bạn được hoàn {amount}",
   "@detailRefundAccountTitle": {"description": "S05.02-refund (mock): the refund waiting for the customer's account.", "placeholders": {"amount": {"type": "String"}}},
-  "detailRefundAccountBody": "Chọn tài khoản để nhận tiền hoàn."
+  "detailRefundAccountBody": "Chọn tài khoản để nhận tiền hoàn.",
+  "statusShooting": "Đang chụp",
+  "@statusShooting": {"description": "S30 (#223): booking status after the photographer scanned the customer's pass (BookingStatus.shooting)."},
+  "eventTypeEntry": "Vé vào cửa",
+  "@eventTypeEntry": {"description": "S30 (#223): the event type of an organizer's entry tickets (EventType.entry); never offered in S11.01 filters or S12.01."}
 }

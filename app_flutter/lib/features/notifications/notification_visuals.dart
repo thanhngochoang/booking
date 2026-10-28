@@ -32,6 +32,12 @@ import 'package:photobooking/l10n/app_localizations.dart';
       return (icon: AppIcons.calendar, tone: NotificationTone.neutral);
     case 'shoot_reminder':
       return (icon: AppIcons.camera, tone: NotificationTone.neutral);
+    // S30: "Buổi chụp có diễn ra không?" waits for the customer's answer.
+    case 'shoot_question':
+      return (icon: AppIcons.camera, tone: NotificationTone.action);
+    // S30: the booking or ticket pass (QR) is ready.
+    case 'pass_ready':
+      return (icon: AppIcons.qrCode, tone: NotificationTone.success);
     case 'refund_done':
     case 'payout_released':
     case 'dispute_resolved':

@@ -1,7 +1,8 @@
 // lib/features/event_manage/ticket_scanner.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/event_manage/checkin_sheet.dart';
@@ -12,7 +13,8 @@ abstract class TicketScanner {
   Future<String?> scan(BuildContext context);
 }
 
-/// The scanner of the app: the camera through `mobile_scanner`, with "Nhập mã
+/// The scanner of the app: the camera through the `PassScanner` port
+/// (`core/scan`; S30.07 replaces this sheet in Task 9), with "Nhập mã
 /// vé" always offered (a denied camera, or a code that will not scan).
 final ticketScannerProvider = Provider<TicketScanner>(
   (ref) => const MobileScannerTicketScanner(),
@@ -29,25 +31,32 @@ class MobileScannerTicketScanner implements TicketScanner {
   );
 }
 
-class _ScanSheet extends StatefulWidget {
+class _ScanSheet extends ConsumerStatefulWidget {
   const _ScanSheet({required this.sheet});
   final BuildContext sheet;
 
   @override
-  State<_ScanSheet> createState() => _ScanSheetState();
+  ConsumerState<_ScanSheet> createState() => _ScanSheetState();
 }
 
-class _ScanSheetState extends State<_ScanSheet> {
-  late final MobileScannerController _controller = MobileScannerController(
-    formats: const [BarcodeFormat.qrCode],
-    detectionSpeed: DetectionSpeed.noDuplicates,
-  );
+class _ScanSheetState extends ConsumerState<_ScanSheet> {
+  late final PassScanner _scanner = ref.read(passScannerFactoryProvider)();
+  StreamSubscription<String>? _codes;
   bool _manual = false;
   bool _done = false;
 
   @override
+  void initState() {
+    super.initState();
+    _codes = _scanner.codes().listen(
+      (raw) => _finish(normalizeTicketCode(raw)),
+    );
+  }
+
+  @override
   void dispose() {
-    _controller.dispose();
+    unawaited(_codes?.cancel());
+    _scanner.dispose();
     super.dispose();
   }
 
@@ -57,16 +66,6 @@ class _ScanSheetState extends State<_ScanSheet> {
     }
     _done = true;
     Navigator.of(widget.sheet).pop(code);
-  }
-
-  void _onDetect(BarcodeCapture capture) {
-    for (final b in capture.barcodes) {
-      final raw = b.rawValue?.trim();
-      if (raw != null && raw.isNotEmpty) {
-        _finish(normalizeTicketCode(raw));
-        return;
-      }
-    }
   }
 
   @override
@@ -100,9 +99,7 @@ class _ScanSheetState extends State<_ScanSheet> {
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 child: AspectRatio(
                   aspectRatio: 1,
-                  child: MobileScanner(
-                    controller: _controller,
-                    onDetect: _onDetect,
+                  child: _scanner.preview(
                     errorBuilder: (context, _) => ColoredBox(
                       color: theme.colorScheme.secondary,
                       child: Center(

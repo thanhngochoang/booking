@@ -502,6 +502,7 @@ class RecordingBookingRepository extends FakeBookingRepository {
     required String bookingId,
     required String action,
     String? reason,
+    bool keepTickets = false,
   }) async {
     transitions.add((bookingId: bookingId, action: action, reason: reason));
     final g = gate;
@@ -510,6 +511,7 @@ class RecordingBookingRepository extends FakeBookingRepository {
       bookingId: bookingId,
       action: action,
       reason: reason,
+      keepTickets: keepTickets,
     );
   }
 }

@@ -690,7 +690,7 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
               spacing: AppSpace.s2,
               runSpacing: AppSpace.s1,
               children: [
-                for (final t in EventType.values)
+                for (final t in EventType.listed)
                   AppChip(
                     key: Key('create-event-type-${t.code}'),
                     label: t.label(l),

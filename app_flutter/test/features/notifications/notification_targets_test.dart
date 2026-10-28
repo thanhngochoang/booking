@@ -45,6 +45,11 @@ const _accepted = [
   '/studio/recruit?post=x',
   '/collab',
   '/collab?offer=x',
+  // S30 organizers (#223): S30.02, S30.03, S30.06 and the spot page S29.02
+  '/organizer/spots/claim',
+  '/organizer/spots/x',
+  '/organizer/gate-staff',
+  '/spots/x',
 ];
 
 void main() {
@@ -109,6 +114,10 @@ void main() {
       '/me/payments',
       '/recruit/x',
       '/collab',
+      '/organizer/spots/claim',
+      '/organizer/spots/x',
+      '/organizer/gate-staff',
+      '/spots/x',
     ]) {
       expect(safeTarget(t), t, reason: t);
       expect(safeTarget('$t?x=1'), isNull, reason: '$t?x=1');

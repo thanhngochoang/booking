@@ -727,6 +727,9 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.notFound:
       case BookingErrorCode.notAcceptingOrders:
       case BookingErrorCode.blocked:
+      // S30: the ticket day closed or sold out (S04.03-entry copy: Task 9).
+      case BookingErrorCode.dayClosed:
+      case BookingErrorCode.soldOutDay:
         state = state.copyWith(
           clearBookingId: true,
           phase: SubmitPhase.idle,

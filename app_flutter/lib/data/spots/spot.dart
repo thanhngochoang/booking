@@ -2,6 +2,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:photobooking/data/organizer/organizer.dart';
+
 @immutable
 class SpotStats {
   const SpotStats({
@@ -80,6 +82,9 @@ class Spot {
     required this.hidden,
     required this.archived,
     required this.stats,
+    this.managedBy,
+    this.access,
+    this.openHours,
   });
 
   final String id;
@@ -97,6 +102,21 @@ class Spot {
   final bool hidden;
   final bool archived;
   final SpotStats stats;
+
+  /// The organizer that manages the spot (S30, staff-approved claim); null =
+  /// nobody, the spot can be claimed.
+  final String? managedBy;
+
+  /// The entry fee block of S29.02 "Vào cửa"; null = not known.
+  final SpotAccess? access;
+
+  /// Opening hours (Vietnam `HH:mm`); null = not known.
+  final OpenHours? openHours;
+
+  bool get isManaged => managedBy != null;
+
+  /// The spot sells or asks for tickets at the gate.
+  bool get isTicketed => access?.type == SpotAccessType.ticket;
 
   @override
   bool operator ==(Object other) =>
@@ -117,7 +137,10 @@ class Spot {
           pinned == other.pinned &&
           hidden == other.hidden &&
           archived == other.archived &&
-          stats == other.stats;
+          stats == other.stats &&
+          managedBy == other.managedBy &&
+          access == other.access &&
+          openHours == other.openHours;
 
   @override
   int get hashCode => Object.hash(
@@ -136,6 +159,9 @@ class Spot {
     hidden,
     archived,
     stats,
+    managedBy,
+    access,
+    openHours,
   );
 }
 
@@ -479,6 +505,11 @@ Spot? spotFromMap(String id, Map<String, dynamic>? d) {
     hidden: d['hidden'] == true,
     archived: status == 'archived',
     stats: stats,
+    managedBy: d['managedBy'] is String && (d['managedBy'] as String).isNotEmpty
+        ? d['managedBy'] as String
+        : null,
+    access: spotAccessFromFirestore(d['access']),
+    openHours: openHoursFromFirestore(d['openHours']),
   );
 }
 

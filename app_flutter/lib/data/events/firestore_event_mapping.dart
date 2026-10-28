@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 
 DateTime? _date(Object? v) {
   if (v is Timestamp) {
@@ -107,6 +108,11 @@ EventDetail? eventDetailFromFirestore(String id, Map<String, dynamic>? d) {
     // The server stores the S12.01 decision itself (`spotDecided`), so a
     // chosen "Không thuộc điểm chụp nào" survives a resume.
     spotDecided: d['spotDecided'] == true || _str(d['spotId']) != null,
+    venue: EventVenue.fromJson(d['venue']),
+    venueConsent: HostConsent.fromCode(_str(d['venueConsent'])),
+    venueConsentExpiresAt: _date(d['venueConsentExpiresAt']),
+    venueFeePerGuest: _int(d['venueFeePerGuest']),
+    entry: entryEventFromFirestore(id, d),
   );
 }
 
@@ -148,6 +154,11 @@ EventRegistration? registrationFromFirestore(
     refundDue: d['refundDue'] == true,
     refundStatus: TicketRefundStatus.fromCode(_str(d['refundStatus'])),
     disputeId: _str(d['disputeId']),
+    visitDay: _str(d['visitDay']),
+    items: entryLinesFrom(d['items']),
+    bookingId: _str(d['bookingId']),
+    gateCheckedInAt: _date(d['gateCheckedInAt']),
+    ticketCodeLast4: _str(d['ticketCodeLast4']) ?? '',
     event: EventTicketSnapshot(
       title: _str(ev['title']) ?? '',
       type: EventType.fromCode(_str(ev['type'])),

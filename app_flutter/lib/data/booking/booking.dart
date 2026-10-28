@@ -4,6 +4,7 @@ import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/booking/studio_booking.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 
 export 'package:photobooking/data/booking/studio_booking.dart';
 
@@ -123,6 +124,72 @@ abstract class ExtraRound with _$ExtraRound {
       _$ExtraRoundFromJson(json);
 }
 
+/// Entry tickets bought with the booking (S30 Decision 15, `bookings/{id}.entry`):
+/// the customer's lines plus the provider's ticket unless waived.
+@freezed
+abstract class BookingEntry with _$BookingEntry {
+  const factory BookingEntry({
+    required String eventId,
+    required String visitDay,
+
+    /// The held/paid registration of the tickets; null until `createPayment`.
+    String? registrationId,
+    @Default(<EntryLine>[]) List<EntryLine> items,
+
+    /// A ticket for the photographer is in [items].
+    @Default(false) bool providerTicket,
+
+    /// The resident's waiver at booking time (S04.03-entry lines).
+    @Default(false) bool waivedProvider,
+    @Default(false) bool waivedGuests,
+    @Default(0) int waivedGuestCount,
+
+    /// Integer VND of the tickets line.
+    @Default(0) int amount,
+  }) = _BookingEntry;
+}
+
+BookingEntry? bookingEntryFrom(Object? raw) {
+  if (raw is! Map) return null;
+  final eventId = raw['eventId'];
+  final visitDay = raw['visitDay'];
+  if (eventId is! String || visitDay is! String) return null;
+  final waived = raw['waived'] is Map ? raw['waived'] as Map : const {};
+  return BookingEntry(
+    eventId: eventId,
+    visitDay: visitDay,
+    registrationId: raw['registrationId'] is String && (raw['registrationId'] as String).isNotEmpty
+        ? raw['registrationId'] as String
+        : null,
+    items: entryLinesFrom(raw['items']),
+    providerTicket: raw['providerTicket'] == true,
+    waivedProvider: waived['provider'] == true,
+    waivedGuests: waived['guests'] == true,
+    waivedGuestCount: raw['waivedGuests'] is num ? (raw['waivedGuests'] as num).toInt() : 0,
+    amount: raw['amount'] is num ? (raw['amount'] as num).toInt() : 0,
+  );
+}
+
+/// The `createBooking.entry` request: the customer's ticket picks for the
+/// booking day; the server adds the provider's ticket and prices the lines.
+class BookingEntryRequest {
+  const BookingEntryRequest({
+    required this.eventId,
+    required this.visitDay,
+    required this.items,
+  });
+
+  final String eventId;
+  final String visitDay;
+  final List<EntryItem> items;
+
+  Map<String, Object?> toCallable() => {
+    'eventId': eventId,
+    'visitDay': visitDay,
+    'items': [for (final i in items) i.toCallable()],
+  };
+}
+
 @freezed
 abstract class Booking with _$Booking {
   const Booking._();
@@ -130,6 +197,14 @@ abstract class Booking with _$Booking {
   /// What the customer pays: package price + Σ add-on amounts.
   int get totalVnd =>
       addons.fold(serviceSnapshot.price, (total, l) => total + l.amount);
+
+  /// What the one VietQR asks for: [totalVnd] plus the entry tickets bought
+  /// with the booking (the group payment, Decision 6).
+  int get payTotalVnd => totalVnd + (entry?.amount ?? 0);
+
+  /// The booking has a meeting pass (paid after S30, not instant): the scan
+  /// comes before "Đã chụp xong" (Decision 14).
+  bool get hasPass => passCode4 != null;
 
   const factory Booking({
     required String id,
@@ -186,6 +261,24 @@ abstract class Booking with _$Booking {
 
     /// The studio part (#136); null for an individual booking.
     StudioBookingInfo? studio,
+
+    /// S30: the photographer's scan (`upcoming → shooting`).
+    DateTime? checkedInAt,
+
+    /// S30 "Buổi chụp có diễn ra không?": asked at, answer by, answered no.
+    DateTime? shootQuestionAt,
+    DateTime? shootQuestionUntil,
+    DateTime? shootDeniedAt,
+
+    /// The last 4 random characters of the pass (the code itself is in
+    /// `private/pass`, customer only); null without a pass.
+    String? passCode4,
+
+    /// The group payment that pays the booking with its tickets.
+    String? groupId,
+
+    /// Entry tickets bought with the booking. Not part of the JSON form.
+    @JsonKey(includeFromJson: false, includeToJson: false) BookingEntry? entry,
 
     /// A policy refund waits for the customer to choose the account it goes
     /// to (S22.04; server mirror, #141). S05.02 shows the refund card.
@@ -365,6 +458,17 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       quoteId: data['quoteId'] as String?,
       disputeId: data['disputeId'] as String?,
       refundAccountNeeded: data['refundAccountNeeded'] == true,
+      checkedInAt: toDateTime(data['checkedInAt']),
+      shootQuestionAt: toDateTime(data['shootQuestionAt']),
+      shootQuestionUntil: toDateTime(data['shootQuestionUntil']),
+      shootDeniedAt: toDateTime(data['shootDeniedAt']),
+      passCode4: data['passCode4'] is String && (data['passCode4'] as String).isNotEmpty
+          ? data['passCode4'] as String
+          : null,
+      groupId: data['groupId'] is String && (data['groupId'] as String).isNotEmpty
+          ? data['groupId'] as String
+          : null,
+      entry: bookingEntryFrom(data['entry']),
       checkout: bookingCheckoutFrom(data['checkout']),
       version: (data['version'] as num?)?.toInt() ?? 1,
       createdAt: createdAt,

@@ -20060,6 +20060,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn tài khoản để nhận tiền hoàn.'**
   String get detailRefundAccountBody;
+
+  /// S30 (#223): booking status after the photographer scanned the customer's pass (BookingStatus.shooting).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chụp'**
+  String get statusShooting;
+
+  /// S30 (#223): the event type of an organizer's entry tickets (EventType.entry); never offered in S11.01 filters or S12.01.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé vào cửa'**
+  String get eventTypeEntry;
 }
 
 class _AppLocalizationsDelegate

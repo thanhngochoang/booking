@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/data/auth/staff_role.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 
 /// A staff-entered question and answer shown on a platform-hosted event
 /// (owner decision O2: no "ask first" chat for platform events).
@@ -45,6 +46,107 @@ enum HostConsent {
   );
 }
 
+/// Where an event happens (S12.01 "Địa điểm · bắt buộc", Decision 16).
+enum VenueKind {
+  managedSpot('managed_spot'),
+  paidPlace('paid_place'),
+  publicPlace('public');
+
+  const VenueKind(this.code);
+  final String code;
+
+  static VenueKind? fromCode(Object? code) {
+    for (final k in values) {
+      if (k.code == code) return k;
+    }
+    return null;
+  }
+}
+
+/// `events/{id}.venue`: the venue kind, its spot (managed spot), whether the
+/// ticket price includes the entry fee (and the reference fee when not), the
+/// public-place commitment and the organizer terms version.
+@immutable
+class EventVenue {
+  const EventVenue({
+    required this.kind,
+    this.spotId,
+    this.entryFeeIncluded = true,
+    this.entryFeeVnd,
+    this.commitmentAt,
+    required this.termsVersion,
+  });
+
+  final VenueKind kind;
+  final String? spotId;
+  final bool entryFeeIncluded;
+
+  /// Reference entry fee per guest (integer VND) when not included.
+  final int? entryFeeVnd;
+
+  /// When the host ticked "Tôi tự chịu trách nhiệm xin phép…" (public place).
+  final DateTime? commitmentAt;
+
+  /// `ORGANIZER_TERMS_VERSION` the host agreed to.
+  final String termsVersion;
+
+  Map<String, Object?> toJson() => {
+    'kind': kind.code,
+    'spotId': spotId,
+    'entryFee': {'included': entryFeeIncluded, 'amountVnd': entryFeeVnd},
+    'commitmentAt': commitmentAt?.toUtc().toIso8601String(),
+    'termsVersion': termsVersion,
+  };
+
+  /// Reads the stored block or [toJson]'s; null when it has no known kind.
+  static EventVenue? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final kind = VenueKind.fromCode(raw['kind']);
+    if (kind == null) return null;
+    final fee = raw['entryFee'] is Map ? raw['entryFee'] as Map : const {};
+    final at = raw['commitmentAt'];
+    return EventVenue(
+      kind: kind,
+      spotId: raw['spotId'] is String && (raw['spotId'] as String).isNotEmpty
+          ? raw['spotId'] as String
+          : null,
+      entryFeeIncluded: fee['included'] != false,
+      entryFeeVnd: fee['amountVnd'] is num
+          ? (fee['amountVnd'] as num).toInt()
+          : null,
+      // The server stores the instant as an ISO string (`Venue.commitmentAt`).
+      commitmentAt: at is String
+          ? DateTime.tryParse(at)?.toUtc()
+          : at is DateTime
+          ? at.toUtc()
+          : null,
+      termsVersion: raw['termsVersion'] is String
+          ? raw['termsVersion'] as String
+          : '',
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is EventVenue &&
+      other.kind == kind &&
+      other.spotId == spotId &&
+      other.entryFeeIncluded == entryFeeIncluded &&
+      other.entryFeeVnd == entryFeeVnd &&
+      other.commitmentAt == commitmentAt &&
+      other.termsVersion == termsVersion;
+
+  @override
+  int get hashCode => Object.hash(
+    kind,
+    spotId,
+    entryFeeIncluded,
+    entryFeeVnd,
+    commitmentAt,
+    termsVersion,
+  );
+}
+
 /// The whole event as the event screens need it (S11.02, S11.05, S12.03).
 ///
 /// A draft saved before its schedule was chosen has no dates: [endsAt] and
@@ -75,6 +177,11 @@ class EventDetail {
     this.capacitySet = true,
     this.spotId,
     this.spotDecided = false,
+    this.venue,
+    this.venueConsent = HostConsent.notRequired,
+    this.venueConsentExpiresAt,
+    this.venueFeePerGuest = 0,
+    this.entry,
   });
 
   final EventSummary summary;
@@ -115,15 +222,33 @@ class EventDetail {
   /// draft saved before the choice.
   final bool spotDecided;
 
+  /// S30 (Decision 16): the venue block; null on events made before it.
+  final EventVenue? venue;
+
+  /// The spot manager's answer to an event at their managed spot (72 h).
+  final HostConsent venueConsent;
+  final DateTime? venueConsentExpiresAt;
+
+  /// The venue fee inside the ticket price, per guest (integer VND; 0 none).
+  final int venueFeePerGuest;
+
+  /// The per-day rules of an entry event (`type == entry`); null otherwise.
+  final EntryEvent? entry;
+
+  bool get isEntry => summary.type == EventType.entry;
+
   String get id => summary.id;
 
-  /// Mirrors the domain `isEventManager`: the hosting photographer, an admin,
-  /// or the sales member who created the event.
+  /// Mirrors the domain `isEventManager`: the hosting photographer or
+  /// organizer, an admin, or the sales member who created the event. Gate
+  /// staff are never managers (Decision 9).
   bool isManagedBy(String? uid, StaffRole? role) {
     if (uid == null) {
       return false;
     }
-    if (summary.hostType == HostType.photographer && summary.hostId == uid) {
+    if ((summary.hostType == HostType.photographer ||
+            summary.hostType == HostType.organizer) &&
+        summary.hostId == uid) {
       return true;
     }
     return role == StaffRole.admin ||
@@ -137,7 +262,8 @@ class EventDetail {
     if (uid == null || uid.isEmpty) {
       return false;
     }
-    return (summary.hostType == HostType.photographer &&
+    return ((summary.hostType == HostType.photographer ||
+                summary.hostType == HostType.organizer) &&
             summary.hostId == uid) ||
         createdBy == uid;
   }

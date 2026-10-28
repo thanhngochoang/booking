@@ -46,7 +46,9 @@ String? safeTarget(String raw) {
         ['verify', 'start'] ||
         ['verify', 'business'] ||
         ['help', 'chat'] ||
-        ['me', 'payments']:
+        ['me', 'payments'] ||
+        ['organizer', 'spots', 'claim'] ||
+        ['organizer', 'gate-staff']:
       return plain();
     case ['b', final seg] ||
         ['chat', final seg] ||
@@ -60,7 +62,9 @@ String? safeTarget(String raw) {
         ['b', final seg, 'delivery'] ||
         ['disputes', final seg] ||
         ['recruit', final seg] ||
-        ['u', final seg, 'badges']:
+        ['u', final seg, 'badges'] ||
+        ['organizer', 'spots', final seg] ||
+        ['spots', final seg]:
       return id(seg) ? plain() : null;
     case ['u', final uid]:
       if (!id(uid)) {

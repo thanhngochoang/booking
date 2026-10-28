@@ -11758,4 +11758,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailRefundAccountBody => 'Chọn tài khoản để nhận tiền hoàn.';
+
+  @override
+  String get statusShooting => 'Đang chụp';
+
+  @override
+  String get eventTypeEntry => 'Vé vào cửa';
 }

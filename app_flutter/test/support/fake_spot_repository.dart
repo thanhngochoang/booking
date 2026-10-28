@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_repository.dart';
 
@@ -50,6 +51,26 @@ class FakeSpotRepository implements SpotRepository {
   void seedSpotDay(SpotDay d) => spotDays['${d.scheduleId}_${d.day}'] = d;
   void seedPosts(String spotId, List<PostSummary> list) => posts[spotId] = list;
   void seedEvents(String spotId, List<EventSummary> list) => events[spotId] = list;
+
+  /// S30: residents and the entry event on sale, by spot id.
+  final Map<String, List<Resident>> residents = {};
+  final Map<String, EntryEvent> entryEvents = {};
+  final _s30Changes = StreamController<String>.broadcast();
+
+  void seedResidents(String spotId, List<Resident> list) {
+    residents[spotId] = list;
+    _s30Changes.add(spotId);
+  }
+
+  /// [e] null takes the spot's entry event off sale.
+  void seedEntryEvent(String spotId, EntryEvent? e) {
+    if (e == null) {
+      entryEvents.remove(spotId);
+    } else {
+      entryEvents[spotId] = e;
+    }
+    _s30Changes.add(spotId);
+  }
 
   @override
   Future<List<SpotEntry>> hot(String key) async {
@@ -135,6 +156,24 @@ class FakeSpotRepository implements SpotRepository {
         .take(limit)
         .toList();
   }
+
+  @override
+  Stream<List<Resident>> watchResidents(String spotId) => _startWith(
+    () => List.of(residents[spotId] ?? const <Resident>[]),
+    _s30Changes.stream.where((id) => id == spotId),
+  );
+
+  @override
+  Stream<EntryEvent?> watchEntryEvent(String spotId) => _startWithValue(
+    () {
+      final e = entryEvents[spotId];
+      return e != null &&
+              (e.status == EventStatus.open || e.status == EventStatus.full)
+          ? e
+          : null;
+    },
+    _s30Changes.stream.where((id) => id == spotId),
+  );
 
   @override
   Stream<List<SpotSchedule>> watchMine(String uid) {
@@ -247,6 +286,14 @@ class FakeSpotRepository implements SpotRepository {
   /// The current list now, then again after every change.
   static Stream<List<T>> _startWith<T>(
     List<T> Function() current,
+    Stream<String> changes,
+  ) async* {
+    yield current();
+    yield* changes.map((_) => current());
+  }
+
+  static Stream<T> _startWithValue<T>(
+    T Function() current,
     Stream<String> changes,
   ) async* {
     yield current();
