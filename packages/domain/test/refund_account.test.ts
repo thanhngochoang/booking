@@ -637,6 +637,40 @@ describe('dispute refunds resolved through their booking or ticket (S22.01 rows)
     await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: cancel.id, use: 'payer' });
     assert.equal((await pendingRefundFor(w.deps, { uid: 'c1' }, { bookingId }))?.refundId, 'rf_dispute_a');
   });
+
+  test('chooseRefundAccount on an awaiting_account late_delivery booking refund moves it to pending and dispatches it', async () => {
+    const w = world();
+    const draft = await newDraft(w.b);
+    const p = await createPayment(w.b.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
+    await handleTransferNotification(w.b.deps, transferOf(w.b, { content: p.checkout.transferCode, amount: p.checkout.amount, payer: null }));
+    const at = w.b.clock.now().toISOString();
+    const refund: Refund = {
+      id: 'rf_late_1',
+      paymentId: p.paymentId,
+      subjectType: 'booking',
+      amount: 500_000,
+      percent: 50,
+      status: 'awaiting_account',
+      manual: false,
+      fromEscrow: true,
+      method: 'bank_transfer',
+      destination: null,
+      reason: 'late_delivery',
+      attempts: 0,
+      createdAt: at,
+      updatedAt: at,
+    };
+    await w.b.store.runTransaction(async (tx) => {
+      await tx.addRefund(refund);
+    });
+
+    await lookupRefundAccount(w.deps, { uid: 'c1' }, { refundId: 'rf_late_1', bankCode: 'TCB', accountNumber: '1903 5555 1234' });
+    w.b.gateway.refundPendingIds.add('rf_late_1');
+    const out = await chooseRefundAccount(w.deps, { uid: 'c1' }, { refundId: 'rf_late_1', use: 'candidate', bankCode: 'TCB', accountLast4: '1234' });
+    assert.deepEqual(out, { status: 'pending' });
+    assert.deepEqual(w.b.gateway.refundCalls, ['rf_late_1']);
+    assert.equal((await stored(w, 'rf_late_1')).status, 'pending');
+  });
 });
 
 describe('subjects outside S22.04', () => {

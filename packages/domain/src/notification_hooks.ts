@@ -363,6 +363,20 @@ export async function notifyDeliveryExtraRound(
   });
 }
 
+export async function notifyDeliveryCancelledLate(
+  deps: NotifyDeps,
+  e: { bookingId: string; customerId: string; providerId: string; amount: number },
+): Promise<NotifyResult> {
+  const c = await actorOf(deps, e.customerId, CUSTOMER);
+  return notify(deps, {
+    userId: e.providerId,
+    content: { type: 'delivery_cancelled_late', customer: c.name, amount: e.amount },
+    target: `/b/${e.bookingId}`,
+    dedupeKey: `delivery_cancelled_late_${e.bookingId}`,
+    ...from(c),
+  });
+}
+
 // ── #136 studio members and assignment ───────────────────────────────────────────────────────
 
 export async function notifyStudioInvite(

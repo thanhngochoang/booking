@@ -1,6 +1,6 @@
 import { DomainError } from './errors.js';
 import type { EscrowStatus } from './booking.js';
-import type { LedgerEntry, Payment } from './escrow.js';
+import { refundMethodOf, type LedgerEntry, type Payment, type Refund, type RefundDestination } from './escrow.js';
 
 export const MILESTONE_KINDS = ['shoot', 'delivery'] as const;
 export type MilestoneKind = (typeof MILESTONE_KINDS)[number];
@@ -240,3 +240,76 @@ export function disputeMilestone(p: Payment, kind: MilestoneKind, now: Date): Pa
 
   return withMilestones(p, updatedMilestones, at);
 }
+
+/**
+ * Refunds a single held milestone of `p` to the customer (`status: 'refunded'` on that milestone,
+ * `payment.status: 'partially_refunded'`, `payment.refundedAmount += amount`, `escrowStatus` recomputed
+ * via `withMilestones`), returning the updated payment, the `Refund` row, and the `refund_issued` ledger entry.
+ */
+export function refundMilestone(
+  p: Payment,
+  kind: MilestoneKind,
+  refundId: string,
+  ledgerEntryId: string,
+  now: Date,
+  reason: string,
+): { payment: Payment; refund: Refund; ledgerEntry: LedgerEntry } {
+  if (!p.milestones) {
+    throw new DomainError('conflict');
+  }
+  const target = p.milestones.find((m) => m.kind === kind);
+  if (!target || target.status !== 'held') {
+    throw new DomainError('conflict');
+  }
+
+  const at = now.toISOString();
+  const updatedMilestones: PaymentMilestone[] = p.milestones.map((m) =>
+    m.kind === kind ? { ...m, status: 'refunded' as const } : m,
+  );
+
+  const withRecomputed = withMilestones(p, updatedMilestones, at);
+  const updatedPayment: Payment = {
+    ...withRecomputed,
+    status: 'partially_refunded',
+    refundedAmount: (p.refundedAmount ?? 0) + target.amount,
+  };
+
+  const method = refundMethodOf(p.method);
+  const destination: RefundDestination | null = p.payer ? { ...p.payer, source: 'payer' } : null;
+  const isAwaiting = method === 'bank_transfer' && !destination;
+  const percent = p.amount > 0 ? Math.round((target.amount / p.amount) * 100) : 0;
+
+  const refund: Refund = {
+    id: refundId,
+    paymentId: p.id,
+    subjectType: p.subjectType,
+    amount: target.amount,
+    percent,
+    status: isAwaiting ? 'awaiting_account' : 'pending',
+    manual: false,
+    fromEscrow: true,
+    method,
+    destination,
+    attempts: 0,
+    ...(isAwaiting ? {} : { lastAttemptAt: at }),
+    reason,
+    createdAt: at,
+    updatedAt: at,
+  };
+
+  const ledgerEntry: LedgerEntry = {
+    id: ledgerEntryId,
+    type: 'refund_issued',
+    paymentId: p.id,
+    refundId,
+    subjectType: p.subjectType,
+    subjectId: p.subjectId,
+    accountOwnerId: p.payerId,
+    amount: -target.amount,
+    note: reason,
+    at,
+  };
+
+  return { payment: updatedPayment, refund, ledgerEntry };
+}
+

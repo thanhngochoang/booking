@@ -150,6 +150,7 @@ const PLAN_META: Record<string, readonly [string, string, boolean]> = {
   delivery_approved: ['booking', 'activity', false],
   delivery_auto_approve_soon: ['booking', 'activity', false],
   delivery_extra_round: ['booking', 'activity', false],
+  delivery_cancelled_late: ['booking', 'activity', true],
   studio_invite: ['booking', 'system', false],
   studio_join_request: ['booking', 'system', false],
   studio_invite_accepted: ['booking', 'system', false],
