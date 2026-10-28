@@ -101,6 +101,9 @@ export type NotificationContent =
   | { type: 'spot_resident_added'; organizer: string; spot: string }
   | { type: 'gate_staff_invited'; organizer: string }
   | { type: 'entry_day_closed'; spot: string; day: string }
+  // S30 Decision 16: `host` asks the spot's manager; the answer goes back to the host.
+  | { type: 'event_venue_requested'; title: string; host: string; spot: string }
+  | { type: 'event_venue_answered'; title: string; spot: string; accepted: boolean }
   // S30 Decision 10 (S05.02-askshot): `provider` is the shooter's name.
   | { type: 'shoot_question'; provider: string; day: string }
   // S30 Decision 7: the customer's pass exists (`kind` booking: "Mã gặp thợ"; entry: entry tickets).
@@ -518,6 +521,15 @@ export function renderNotification(c: NotificationContent): { title: string; bod
         title: `${c.spot} đóng cửa ${formatDayShortVi(c.day)}`,
         body: 'Vé vào cửa ngày này được hoàn 100%. Xem trạng thái hoàn tiền trong mục Vé.',
       };
+    case 'event_venue_requested':
+      return {
+        title: `Sự kiện xin tổ chức tại ${c.spot}`,
+        body: `${c.host} · “${truncateGraphemes(c.title, 60)}”. Trả lời trong 72 giờ, quá hạn sự kiện bị huỷ.`,
+      };
+    case 'event_venue_answered':
+      return c.accepted
+        ? { title: `${c.spot} đồng ý sự kiện của bạn`, body: `“${truncateGraphemes(c.title, 60)}” đã có thể đăng.` }
+        : { title: `${c.spot} từ chối sự kiện của bạn`, body: `“${truncateGraphemes(c.title, 60)}” đã bị huỷ.` };
     case 'shoot_question':
       return {
         title: 'Buổi chụp có diễn ra không?',

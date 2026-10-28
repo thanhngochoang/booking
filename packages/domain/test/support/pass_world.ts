@@ -9,6 +9,7 @@ import { scanPass, type ScanDeps, type ScanResult } from '../../src/pass_scan.js
 import { makeTestBooking } from './booking_fixtures.js';
 import { ENTRY_ID, createBookingEntryWorld, type BookingEntryWorld } from './booking_entry_world.js';
 import { eventRecord, must, registrationDoc } from './event_world.js';
+import { ORGANIZER_TERMS_VERSION } from '../../src/organizer.js';
 
 export { ENTRY_ID };
 
@@ -121,7 +122,9 @@ export async function createPassWorld(): Promise<PassWorld> {
   for (const r of regs) events.registrations.set(`${r.eventId}/${r.id}`, r);
 
   events.seedEvent(normalEvent('e1', 'h1'));
-  events.seedEvent({ ...normalEvent('e2', 'h2'), venue: { spotId: 's1' } });
+  events.seedEvent({ ...normalEvent('e2', 'h2'), venue: {
+    kind: 'managed_spot', spotId: 's1', entryFee: { included: true, amountVnd: null }, commitmentAt: null, termsVersion: ORGANIZER_TERMS_VERSION,
+  } });
   events.seedRegistration(registrationDoc({ id: 'r4', eventId: 'e1', userId: 'c1', userName: 'Nguyễn An', quantity: 1, ticketCode: E1_TICKET }));
   events.seedRegistration(registrationDoc({ id: 'r3', eventId: 'e2', userId: 'c2', userName: 'Trần Hai', quantity: 3, ticketCode: E2_TICKET }));
 

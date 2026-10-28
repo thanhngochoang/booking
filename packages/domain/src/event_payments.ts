@@ -483,14 +483,17 @@ export async function refundTicket(
     readonly unusedOnly?: boolean;
   } = {},
 ): Promise<'refunded' | 'skipped'> {
-  let pendingRefund: { refund: Refund; payment: Payment } | null = null;
+  let pendingRefunds: { refund: Refund; payment: Payment }[] = [];
   const out = await deps.events.runTransaction(async (tx): Promise<'refunded' | 'skipped'> => {
-    pendingRefund = null;
+    pendingRefunds = [];
     const now = deps.clock.now();
     const reg = await tx.getRegistration(eventId, regId);
     if (reg === null || reg.status === 'refunded' || reg.paymentId === null || reg.amount <= 0) return 'skipped';
     const ev = await tx.getEvent(eventId);
     const p = await tx.getPayment(reg.paymentId);
+    // S30 Decision 16: the ticket's venue-fee line (same group, same registration) goes back with it.
+    const riders = p?.groupId === undefined ? [] : (await tx.heldTicketPayments(eventId))
+      .filter((x) => x.groupId === p.groupId && x.subjectId === regId && x.id !== p.id && x.lineKind === 'venue_fee');
     const days = reg.status === 'paid' ? await readEntryDays(tx, ev, [reg]) : NO_ENTRY_DAYS;
     const held = p !== null && p.status === 'paid'
       && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded');
@@ -514,6 +517,15 @@ export async function refundTicket(
     tx.putPayment(res.payment);
     tx.putRefund(res.refund);
     tx.putLedgerEntry(res.ledgerEntry);
+    for (const rider of riders) {
+      const r2 = applyRefundToPayment({
+        payment: rider, refundId: deps.ids.newId(), percent, ledgerEntryId: deps.ids.newId(), reason, now, waitForAccount: true,
+      });
+      tx.putPayment(r2.payment);
+      tx.putRefund(r2.refund);
+      tx.putLedgerEntry(r2.ledgerEntry);
+      if (r2.refund.status !== 'awaiting_account') pendingRefunds.push({ refund: r2.refund, payment: r2.payment });
+    }
     tx.putRegistration({
       ...reg, status: 'refunded', refundPercent: percent, refundDue: false, cancelledAt: reg.cancelledAt ?? now,
       ...((reg.bookingLineDue ?? null) !== null ? { bookingLineDue: null } : {}),
@@ -525,10 +537,10 @@ export async function refundTicket(
       const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
       tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
     }
-    if (res.refund.status !== 'awaiting_account') pendingRefund = { refund: res.refund, payment: res.payment };
+    if (res.refund.status !== 'awaiting_account') pendingRefunds.unshift({ refund: res.refund, payment: res.payment });
     return 'refunded';
   });
-  if (pendingRefund !== null) await dispatchTicketRefund(deps, (pendingRefund as { refund: Refund; payment: Payment }).refund, (pendingRefund as { refund: Refund; payment: Payment }).payment);
+  for (const r of pendingRefunds) await dispatchTicketRefund(deps, r.refund, r.payment);
   return out;
 }
 

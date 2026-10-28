@@ -1803,6 +1803,26 @@ alter table events
   add column host_organizer_id text references organizers(user_id),
   add constraint ck_events_host_organizer check (host_type <> 'organizer' or host_organizer_id is not null);
 
+-- Địa điểm của sự kiện (S30, Decision 16): bắt buộc để đăng sự kiện tạo từ VENUE_REQUIRED_FROM; chủ điểm
+-- đồng ý trong 72 giờ khi host không phải chủ điểm; phí quản lý mỗi khách nằm trong giá vé (dòng venue_fee).
+alter table events
+  add column venue_kind          text check (venue_kind in ('managed_spot','paid_place','public')),
+  add column venue_spot_id       text references spots(id),
+  add column venue_fee_included  boolean,
+  add column venue_fee_amount    bigint check (venue_fee_amount is null or venue_fee_amount > 0),  -- giá vào cửa tham khảo
+  add column venue_commitment_at timestamptz,                                                     -- public: lúc tick cam kết
+  add column venue_terms_version text,
+  add column venue_consent       text not null default 'not_required'
+    check (venue_consent in ('not_required','pending','accepted','declined','expired')),
+  add column venue_consent_expires_at timestamptz,                                                -- lúc xin + 72 giờ
+  add column venue_fee_per_guest bigint not null default 0 check (venue_fee_per_guest >= 0),
+  add column venue_manager_id    text references organizers(user_id),                             -- chủ điểm đã đồng ý
+  add constraint ck_events_venue_managed check (venue_kind is distinct from 'managed_spot' or venue_spot_id is not null),
+  add constraint ck_events_venue_public check (venue_kind is distinct from 'public' or venue_commitment_at is not null),
+  add constraint ck_events_venue_fee check (venue_fee_per_guest = 0 or (venue_manager_id is not null and venue_fee_per_guest < price));
+create index ix_events_venue_consent on events (venue_spot_id, venue_consent);
+create index ix_events_venue_consent_due on events (venue_consent_expires_at) where venue_consent = 'pending';
+
 -- Vé vào cửa (S30, Decision 11): sự kiện type = 'entry' của chủ sự kiện ở điểm họ quản lý; khoảng bán
 -- là starts_at/ends_at (≤ 180 ngày), sức chứa theo ngày ở entry_days; capacity/price/day_key rỗng.
 alter table events

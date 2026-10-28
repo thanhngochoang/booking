@@ -31,6 +31,19 @@ import {
 } from './entry_tickets.js';
 import { readEntryDays, releaseDeltas, writeEntryDays } from './entry_days.js';
 import { canSell } from './organizer.js';
+import type { NotifyDeps } from './notification_ports.js';
+import {
+  NO_VENUE_CONSENT,
+  readVenue,
+  tellVenueRequested,
+  venueConsentNeeded,
+  venueConsentOf,
+  venueConsentRequest,
+  venueRequired,
+  venueSpot,
+  type Venue,
+  type VenueRequest,
+} from './event_venue.js';
 
 const HOUR_MS = 3_600_000;
 const CLIENT_EVENT_ID = /^[A-Za-z0-9_-]{20,64}$/;
@@ -45,14 +58,25 @@ function idOf(v: unknown): string {
   return v;
 }
 
-/** Event state is only ever written by the server, so the host fields are looked up, never trusted. */
+/**
+ * Event state is only ever written by the server, so the host fields are looked up, never trusted.
+ * A signed-in user hosts as a photographer (an onboarded profile) or, without one or with
+ * `hostAs: 'organizer'`, as an active organizer (S30 Decision 3: `host.type 'organizer'`, the
+ * organizer document's name and avatar, `verified` = its verified business).
+ */
 async function resolveHost(
   deps: EventDeps,
+  tx: EventTx,
   caller: EventCaller,
   hostPhotographerId: unknown,
+  hostAs: unknown,
 ): Promise<{ host: EventHost; createdByRole: EventRecord['createdByRole']; consent: boolean }> {
   const requested = hostPhotographerId === undefined || hostPhotographerId === null ? null : idOf(hostPhotographerId);
+  if (hostAs !== undefined && hostAs !== null && hostAs !== 'photographer' && hostAs !== 'organizer') {
+    throw new DomainError('invalid_argument', 'hostAs');
+  }
   if (caller.staffRole !== null) {
+    if (hostAs === 'organizer') throw new DomainError('invalid_argument', 'hostAs');
     if (requested === null) {
       return {
         host: { type: 'platform', id: null, name: null, avatarUrl: null, verified: true },
@@ -70,13 +94,49 @@ async function resolveHost(
     };
   }
   if (requested !== null && requested !== caller.uid) throw new DomainError('permission_denied');
-  const p = await deps.people.photographer(caller.uid);
-  if (p === null || !p.onboardingComplete) throw new DomainError('permission_denied');
+  const p = hostAs === 'organizer' ? null : await deps.people.photographer(caller.uid);
+  if (p !== null && p.onboardingComplete) {
+    return {
+      host: { type: 'photographer', id: caller.uid, name: p.name, avatarUrl: p.avatarUrl, verified: p.verified },
+      createdByRole: 'photographer',
+      consent: false,
+    };
+  }
+  if (hostAs === 'photographer' || requested !== null) throw new DomainError('permission_denied');
+  const org = await tx.getOrganizer(caller.uid);
+  if (org === null || org.status !== 'active') throw new DomainError('permission_denied');
   return {
-    host: { type: 'photographer', id: caller.uid, name: p.name, avatarUrl: p.avatarUrl, verified: p.verified },
+    host: { type: 'organizer', id: org.id, name: org.name, avatarUrl: org.avatarUrl, verified: org.businessVerified },
     createdByRole: 'photographer',
     consent: false,
   };
+}
+
+/**
+ * Decision 3: an organizer host must be active; a priced event needs it to be able to sell
+ * (`business_required`), a free one only `active`. Reads only.
+ */
+async function checkOrganizerHost(tx: EventTx, host: EventHost, price: number | null): Promise<void> {
+  if (host.type !== 'organizer') return;
+  const org = host.id === null ? null : await tx.getOrganizer(host.id);
+  if (org === null || org.status !== 'active') throw new DomainError('permission_denied');
+  if ((price ?? 0) > 0 && !canSell(org)) throw new DomainError('business_required');
+}
+
+/** The venue's fields after a save: a new venue starts over (nothing asked, no fee). */
+function venueFieldsOf(existing: EventRecord | null, next: Venue | null | undefined): Partial<EventRecord> {
+  if (next === undefined) return existing === null ? { venue: null, ...NO_VENUE_CONSENT } : {};
+  if (existing !== null && JSON.stringify(existing.venue ?? null) === JSON.stringify(next)) return {};
+  return { venue: next, ...NO_VENUE_CONSENT };
+}
+
+/** §7.2: what the spot's manager agreed to: the day and hours, the seats and the price. */
+function venueMaterialChange(e: EventRecord, f: EventFields): string | null {
+  if (!sameInstant(f.startAt, e.startAt)) return 'startAt';
+  if (!sameInstant(f.endAt, e.endAt)) return 'endAt';
+  if (f.capacity !== e.capacity) return 'capacity';
+  if (f.price !== e.price) return 'price';
+  return null;
 }
 
 function checkCoverAndFaq(deps: EventDeps, caller: EventCaller, f: EventFields, host: EventHost, createdBy: string, eventId: string): void {
@@ -326,13 +386,15 @@ async function updateEntry(deps: EventDeps, tx: EventTx, ev: EventRecord, r: Rec
 }
 
 export async function saveEventDraft(
-  deps: EventDeps,
+  deps: EventDeps & { readonly notify?: NotifyDeps },
   caller: EventCaller,
   raw: unknown,
 ): Promise<{ eventId: string; hashtag: string }> {
   const r = obj(raw);
   const eventId = r.eventId === undefined ? deps.ids.newId() : idOf(r.eventId);
-  return deps.events.runTransaction(async (tx) => {
+  let request: VenueRequest | null = null;
+  const out = await deps.events.runTransaction(async (tx) => {
+    request = null;
     const now = deps.clock.now();
     const existing = await tx.getEvent(eventId);
     // A client-chosen id must be unguessable (ULID-like), so nobody can squat a predictable one.
@@ -347,12 +409,19 @@ export async function saveEventDraft(
         throw new DomainError('invalid_argument');
       }
     }
-    const created = existing === null ? await resolveHost(deps, caller, r.hostPhotographerId) : null;
+    const created = existing === null ? await resolveHost(deps, tx, caller, r.hostPhotographerId, r.hostAs) : null;
     const f = validateEventFields(raw, 'draft', now, existing);
     const host = existing?.host ?? (created as NonNullable<typeof created>).host;
     checkCoverAndFaq(deps, caller, f, host, existing?.createdBy ?? caller.uid, eventId);
     const plan = await planHashtag(tx, existing, f, eventId, now);
     if (spotNeedsCheck(existing, f)) await checkSpot(tx, f);
+    // S30 Decision 16: the venue is saved as sent (checked whole); a new venue starts over, and a
+    // material edit of a draft its spot's manager accepted asks the manager again (72 h).
+    const venueIn = await readVenue(tx, r.venue, now);
+    const venue = venueFieldsOf(existing, venueIn?.venue);
+    const askAgain = existing !== null && venue.venue === undefined && venueConsentOf(existing) === 'accepted'
+      && venueMaterialChange(existing, f) !== null;
+    const askSpot = askAgain && existing?.venue?.spotId != null ? await tx.getSpot(existing.venue.spotId) : null;
 
     const base = {
       title: f.title, description: f.description, type: f.type,
@@ -367,13 +436,16 @@ export async function saveEventDraft(
     if (existing !== null) {
       // O1: material edits by staff to a draft the photographer already accepted need a new answer.
       const reset = caller.staffRole !== null && existing.hostConsent === 'accepted' && materialChange(existing, f);
-      tx.putEvent({
-        ...existing, ...base,
+      const next: EventRecord = {
+        ...existing, ...base, ...venue,
         ...(reset
           ? { hostConsent: 'pending' as const, hostConsentExpiresAt: new Date(now.getTime() + HOST_CONSENT_HOURS * HOUR_MS) }
           : {}),
+        ...(askSpot?.managedBy != null ? venueConsentRequest(now) : {}),
         version: existing.version + 1,
-      });
+      };
+      tx.putEvent(next);
+      if (askSpot?.managedBy != null) request = { managerId: askSpot.managedBy, event: next, spot: askSpot.name };
     } else {
       const c = created as NonNullable<typeof created>;
       tx.putEvent({
@@ -384,6 +456,7 @@ export async function saveEventDraft(
         hostConsent: c.consent ? 'pending' : 'not_required',
         hostConsentExpiresAt: c.consent ? new Date(now.getTime() + HOST_CONSENT_HOURS * HOUR_MS) : null,
         ...base,
+        ...venue,
         hashtagLocked: false,
         status: 'draft',
         registeredCount: 0,
@@ -399,11 +472,36 @@ export async function saveEventDraft(
     }
     return { eventId, hashtag: plan.tag };
   });
+  await tellVenueRequested(deps.notify, request);
+  return out;
 }
 
-export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: unknown): Promise<void> {
+/**
+ * Reads only (S30 Decision 16): the venue gate of a publish. No venue: refused (`invalid_argument`
+ * venue) for events created on or after VENUE_REQUIRED_FROM. A managed spot whose manager is not the
+ * host: published only once that manager `accepted` (and is still the manager); while `pending`,
+ * `venue_consent_required`; otherwise the request to ask (the publish then keeps the draft).
+ */
+async function venueGate(tx: EventTx, ev: EventRecord): Promise<{ managerId: string; spot: string } | null> {
+  const v = ev.venue ?? null;
+  if (v === null) {
+    if (venueRequired(ev)) throw new DomainError('invalid_argument', 'venue');
+    return null;
+  }
+  const spot = await venueSpot(tx, v);
+  const managedBy = spot?.managedBy ?? null;
+  if (spot === null || managedBy === null || !venueConsentNeeded(v, ev.host.id, managedBy)) return null;
+  const consent = venueConsentOf(ev);
+  if (consent === 'pending') throw new DomainError('venue_consent_required');
+  if (consent === 'accepted' && ev.venueManagerId === managedBy) return null;
+  return { managerId: managedBy, spot: spot.name };
+}
+
+export async function publishEvent(deps: EventDeps & { readonly notify?: NotifyDeps }, caller: EventCaller, raw: unknown): Promise<void> {
   const eventId = idOf(obj(raw).eventId);
+  let request: VenueRequest | null = null;
   await deps.events.runTransaction(async (tx) => {
+    request = null;
     const now = deps.clock.now();
     const ev = await tx.getEvent(eventId);
     if (ev === null) throw new DomainError('not_found');
@@ -419,11 +517,22 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
     const av = hostId === null ? null : await tx.availability(hostId, dayKey);
     if (av !== null && (av.state === 'booked' || av.state === 'pending' || av.state === 'spot')) throw new DomainError('day_taken');
     await checkSpot(tx, f);
+    await checkOrganizerHost(tx, ev.host, ev.price);
+    const ask = await venueGate(tx, ev);
+    if (ask !== null) {
+      // §7.2: the spot's manager is asked; the event stays a draft until they accept.
+      const next: EventRecord = { ...ev, ...venueConsentRequest(now), venueFeePerGuest: 0, venueManagerId: null, version: ev.version + 1, updatedAt: now };
+      tx.putEvent(next);
+      request = { managerId: ask.managerId, event: next, spot: ask.spot };
+      return;
+    }
 
     const chatId = `event_${ev.id}`;
-    const moderators = [...new Set([hostId, ev.createdBy].filter((x): x is string => x !== null))];
-    const creator = ev.createdBy === hostId ? null : await deps.people.user(ev.createdBy);
-    const memberProfiles = moderators.map((uid) => uid === hostId
+    // The host (photographer or organizer) moderates the group chat; only a photographer's day is booked.
+    const memberHost = ev.host.type === 'platform' ? null : ev.host.id;
+    const moderators = [...new Set([memberHost, ev.createdBy].filter((x): x is string => x !== null))];
+    const creator = ev.createdBy === memberHost ? null : await deps.people.user(ev.createdBy);
+    const memberProfiles = moderators.map((uid) => uid === memberHost
       ? { uid, name: ev.host.name ?? 'Ban tổ chức', avatarUrl: ev.host.avatarUrl }
       : { uid, name: creator?.name ?? 'Ban tổ chức', avatarUrl: creator?.avatarUrl ?? null });
     const chat: EventGroupChatSeed = {
@@ -445,6 +554,7 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
       updatedAt: now,
     });
   });
+  await tellVenueRequested(deps.notify, request);
 }
 
 export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unknown): Promise<void> {
@@ -468,6 +578,18 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
     if (f.capacity !== null && f.capacity < sold) throw new DomainError('conflict');
     if (f.price !== ev.price && sold > 0) throw new DomainError('conflict');
 
+    if (f.price !== ev.price) await checkOrganizerHost(tx, ev.host, f.price);
+    // S30 Decision 16: what a spot's manager agreed to stays (a published event cannot ask again).
+    const venueIn = await readVenue(tx, r.venue, now);
+    const venue = venueFieldsOf(ev, venueIn?.venue);
+    if (venue.venue === null && venueRequired(ev)) throw new DomainError('invalid_argument', 'venue');
+    const asked = venueConsentOf(ev) === 'accepted';
+    const moved = asked ? venueMaterialChange(ev, f) : null;
+    if (moved !== null) throw new DomainError('venue_consent_required', moved);
+    if (venue.venue !== undefined && venue.venue !== null) {
+      const managedBy = venueIn?.spot?.managedBy ?? null;
+      if (venueConsentNeeded(venue.venue, ev.host.id, managedBy)) throw new DomainError('venue_consent_required', 'venue');
+    }
     const plan = await planHashtag(tx, ev, f, ev.id, now);
     if (spotNeedsCheck(ev, f)) await checkSpot(tx, f);
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
@@ -492,6 +614,7 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
       registrationDeadline: f.registrationDeadline, faq: f.faq, spotId: f.spotId,
       spotDecided: f.touched.has('spotId') || (ev.spotDecided ?? false),
       hashtag: plan.tag, hashtagKey: plan.key,
+      ...venue,
       version: ev.version + 1, updatedAt: now,
     };
     tx.putEvent({ ...next, status: statusAfterSeats(next, now) });

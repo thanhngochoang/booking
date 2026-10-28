@@ -26,6 +26,8 @@ import {
   notifyDisputeOpened,
   notifyDisputeResolved,
   notifyEntryDayClosed,
+  notifyEventVenueAnswered,
+  notifyEventVenueRequested,
   notifyGateStaffInvited,
   notifyInstantArrived,
   notifyInstantAssigned,
@@ -142,6 +144,19 @@ const CASES: readonly HookCase[] = [
     name: 'notifyEntryDayClosed',
     run: (d) => notifyEntryDayClosed(d, { userId: 'c1', eventId: 'ev1', registrationId: 'rg1', spot: 'Bãi đá', day: '2026-10-12' }),
     rows: [row('c1', 'entry_day_closed', '/e/ev1', 'n_entry_day_closed_ev1_2026-10-12_rg1', 'Bãi đá đóng cửa T2 12/10')],
+  },
+  {
+    name: 'notifyEventVenueRequested',
+    run: (d) => notifyEventVenueRequested(d, {
+      managerId: 'o1', eventId: 'ev1', title: 'Photo walk', spot: 'Bãi đá', expiresAt: AT,
+      host: { id: 'p1', name: 'Minh', avatarUrl: null },
+    }),
+    rows: [row('o1', 'event_venue_requested', '/e/ev1', 'n_event_venue_requested_ev1_2026-10-10T10_00_00.000Z', 'Sự kiện xin tổ chức tại Bãi đá')],
+  },
+  {
+    name: 'notifyEventVenueAnswered',
+    run: (d) => notifyEventVenueAnswered(d, { hostId: 'p1', eventId: 'ev1', title: 'Photo walk', spot: 'Bãi đá', accepted: true, requestExpiresAt: AT }),
+    rows: [row('p1', 'event_venue_answered', '/events/ev1/manage', 'n_event_venue_answered_ev1_2026-10-10T10_00_00.000Z', 'Bãi đá đồng ý sự kiện của bạn')],
   },
   {
     name: 'notifyQuoteWithdrawn',

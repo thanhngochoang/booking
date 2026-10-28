@@ -327,6 +327,13 @@ const isHeldFor = (reg: RegistrationDoc | null, child: Payment): reg is Registra
   reg !== null && reg.status === 'held' && reg.paymentId === child.id;
 
 /**
+ * A `venue_fee` line (S30 Decision 16) rides on its registration's `event_ticket` line: the registration's
+ * own payment is the ticket line, so the subject's effects (seats, paid, contact, hold release) come
+ * from that line only; the venue line is paid and expires with the group like any other.
+ */
+const ridesOnTicket = (l: LineState): boolean => l.kind === 'ticket' && l.payment.lineKind === 'venue_fee';
+
+/**
  * Writes only: the group (already `expired` or refunded by the caller) takes its children with it:
  * every `awaiting_group` child expires, every registration still held for it is released (seats and
  * `entry_days.held` back, through `fold`), the view says `expired`.
@@ -337,7 +344,7 @@ export async function expireGroupLines(tx: GroupSettlementTx, read: GroupRead, f
     if (c.status === 'awaiting_group') await tx.setPayment({ ...c, status: 'expired', escrowStatus: 'refunded', updatedAt: at });
   }
   for (const l of read.lines) {
-    if (l.kind !== 'ticket' || l.eventId === null || !isHeldFor(l.reg, l.payment)) continue;
+    if (l.kind !== 'ticket' || ridesOnTicket(l) || l.eventId === null || !isHeldFor(l.reg, l.payment)) continue;
     const ev = fold.event(l.eventId);
     if (ev === null) {
       await tx.putRegistration({ ...l.reg, status: 'cancelled', cancelledAt: now, updatedAt: now, version: l.reg.version + 1 });
@@ -359,6 +366,7 @@ async function lateReason(deps: BookingDeps, read: GroupRead, fold: EntryFold, n
       if (!(await deps.providers.acceptsOrders(l.payment.payeeId))) return 'provider_not_accepting';
       continue;
     }
+    if (ridesOnTicket(l)) continue;
     const ev = l.eventId === null ? null : fold.event(l.eventId);
     const reg = l.reg;
     const closed = ev !== null && reg !== null && typeof reg.visitDay === 'string' && fold.day(ev.id, reg.visitDay)?.closed === true;
@@ -370,11 +378,20 @@ async function lateReason(deps: BookingDeps, read: GroupRead, fold: EntryFold, n
   return null;
 }
 
-/** The group's one pass (Decision 7): its booking (if any) and every ticket line's registration, on the booking's or visit day. */
+/**
+ * Decision 7: a group gets a pass when it holds a booking or an entry ticket. A normal event's ticket
+ * (with its venue fee, Decision 16) keeps its public ticket code and gets none.
+ */
+function groupGetsPass(read: GroupRead, fold: EntryFold): boolean {
+  return read.lines.some((l) => l.kind === 'booking'
+    || (l.eventId !== null && fold.event(l.eventId)?.type === 'entry'));
+}
+
+/** The group's one pass (Decision 7): its booking (if any) and every ticket line's registration (once each), on the booking's or visit day. */
 function groupPass(read: GroupRead, group: Payment, code8: string, now: Date) {
   const booking = read.lines.find((l): l is Extract<LineState, { kind: 'booking' }> => l.kind === 'booking')?.booking ?? null;
   const tickets = read.lines.filter((l): l is Extract<LineState, { kind: 'ticket' }> => l.kind === 'ticket');
-  const regs = tickets.map((l) => l.reg).filter((r): r is RegistrationDoc => r !== null);
+  const regs = [...new Map(tickets.map((l) => l.reg).filter((r): r is RegistrationDoc => r !== null).map((r) => [r.id, r])).values()];
   const day = booking?.day ?? regs.map((r) => r.visitDay).find((d): d is string => typeof d === 'string') ?? formatVnDate(now);
   return newPass({
     code8, customerId: group.payerId, day, bookingId: booking?.id ?? null, eventId: regs[0]?.eventId ?? null,
@@ -422,7 +439,7 @@ export function groupSettler(deps: BookingDeps, groups: GroupSettlementStore = d
         const applied = applyTransfer({ payment: group, transfer, ledgerEntryId: deps.ids.newId(), now });
         const late = applied.decision.kind === 'paid' ? await lateReason(deps, read, fold, now) : null;
         // Decision 7: the paid group's lines share one pass; its code is drawn (a read) before any write.
-        const passCode = applied.decision.kind === 'paid' && late === null
+        const passCode = applied.decision.kind === 'paid' && late === null && groupGetsPass(read, fold)
           ? await freshPassCode(deps.random ?? systemRandom, (c) => tx.passTaken(c))
           : null;
         const contact = applied.decision.kind === 'paid' && late === null && read.lines.some((l) => l.kind === 'ticket')
@@ -506,6 +523,7 @@ export function groupSettler(deps: BookingDeps, groups: GroupSettlementStore = d
             await moveDraftToRequested(tx, deps, l.booking as Booking, paid, now, passCode);
             continue;
           }
+          if (ridesOnTicket(l)) continue;
           const ev = fold.event(l.eventId as string) as EventRecord;
           const ticket = ticketPaidUpdate({ ev, reg: l.reg as RegistrationDoc, paymentId: paid.id, contact, now, passCode });
           await tx.putRegistration(ticket.registration);

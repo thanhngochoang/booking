@@ -1044,6 +1044,42 @@ export async function notifyEntryDayClosed(
   });
 }
 
+/**
+ * Emitter: `publishEvent` (or a material edit of an accepted draft) when an event at a managed spot
+ * whose host is someone else asks the spot's manager (S30 Decision 16). Opens the event (S11.02), which
+ * shows the S11.02-venue-consent sheet to the manager. One notice per 72 h window.
+ */
+export async function notifyEventVenueRequested(
+  deps: NotifyDeps,
+  e: {
+    managerId: string; eventId: string; title: string; spot: string; expiresAt: string;
+    /** The event's host as stored on it (an organizer's own name, not its user profile's). */
+    host: { id: string | null; name: string | null; avatarUrl: string | null };
+  },
+): Promise<NotifyResult> {
+  const name = e.host.name ?? 'Ban tổ chức';
+  return notify(deps, {
+    userId: e.managerId,
+    content: { type: 'event_venue_requested', title: e.title, host: name, spot: e.spot },
+    target: `/e/${e.eventId}`,
+    dedupeKey: `event_venue_requested:${e.eventId}_${e.expiresAt}`,
+    ...(e.host.id === null ? {} : from({ id: e.host.id, name, avatarUrl: e.host.avatarUrl })),
+  });
+}
+
+/** Emitter: `respondVenueConsent`. Opens the host's S12.03 (the venue status line). */
+export async function notifyEventVenueAnswered(
+  deps: NotifyDeps,
+  e: { hostId: string; eventId: string; title: string; spot: string; accepted: boolean; requestExpiresAt: string },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.hostId,
+    content: { type: 'event_venue_answered', title: e.title, spot: e.spot, accepted: e.accepted },
+    target: `/events/${e.eventId}/manage`,
+    dedupeKey: `event_venue_answered:${e.eventId}_${e.requestExpiresAt}`,
+  });
+}
+
 // ── S30 passes and the shoot question (#223 Decisions 7, 10) ─────────────────────────────────
 
 /**

@@ -6,6 +6,7 @@ import { isValidHashtag } from './event_hashtag.js';
 import type { RefundStatus } from './escrow.js';
 import type { EntryLine, OpenHours, TicketType } from './entry_tickets.js';
 import type { UserContactRecord } from './ports.js';
+import type { Venue } from './event_venue.js';
 
 /** `entry` (S30, #223): entry tickets per visit day at a managed spot, hosted by an organizer (Decision 11). */
 export const EVENT_TYPES = ['photo_walk', 'mini_session', 'workshop', 'cosplay', 'other', 'entry'] as const;
@@ -137,11 +138,21 @@ export interface EventRecord {
   readonly dailyCapacity?: number | null;
   readonly refundCutoffHours?: number;
   /**
-   * S30 §7.2: where the event takes place. Task 4 reads only `spotId` (a managed spot: its manager and
-   * gate staff check tickets in at the gate, `gateCheckedInAt`); Task 5 completes the block (`Venue`).
-   * Absent or null on older events.
+   * S30 §7.1 (Decision 16): where the event takes place (`event_venue.ts`). A managed spot's manager and
+   * gate staff check tickets in at the gate (`gateCheckedInAt`). Required to publish an event created on
+   * or after `VENUE_REQUIRED_FROM`; absent or null on older events and on entry events (their spot).
    */
-  readonly venue?: { readonly spotId: string | null } | null;
+  readonly venue?: Venue | null;
+  /**
+   * §7.2: the spot manager's answer when the host is someone else (`pending` → `accepted` | `declined` |
+   * `expired`, 72 h). Absent = `not_required`.
+   */
+  readonly venueConsent?: HostConsent;
+  readonly venueConsentExpiresAt?: Date | null;
+  /** Part of the ticket price paid to the spot manager per guest (the `venue_fee` line); absent = 0. */
+  readonly venueFeePerGuest?: number;
+  /** The manager who accepted (the `venue_fee` payee); null until accepted. */
+  readonly venueManagerId?: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

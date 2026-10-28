@@ -191,6 +191,7 @@ export * from './pass.js';
 export * from './pass_scan.js';
 export * from './memory_scan_store.js';
 export * from './shoot_question.js';
+export * from './event_venue.js';
 export * from './geo.js';
 export * from './instant.js';
 export * from './instant_settle.js';

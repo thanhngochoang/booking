@@ -29,6 +29,7 @@ import {
   type RegistrationDoc,
   type RegistrationReader,
   type TransferRecord,
+  type Venue,
 } from '@photobooking/domain';
 import { PASSES_COLLECTION, passFromFirestore, passToFirestore, privatePassRef } from './pass_firestore.js';
 import {
@@ -43,6 +44,8 @@ import {
   refundToFirestore,
   transferRecordFromFirestore,
   transferRecordToFirestore,
+  PAYMENT_GROUPS_COLLECTION,
+  paymentGroupToFirestore,
 } from './booking_firestore.js';
 import { SPOTS_COLLECTION, spotFromFirestore } from './spot_firestore.js';
 import { ORGANIZERS_COLLECTION, RESIDENTS_SUBCOLLECTION, organizerFromFirestore, residentFromFirestore } from './organizer_firestore.js';
@@ -72,6 +75,58 @@ const asObj = (v: unknown): Obj => (typeof v === 'object' && v !== null && !Arra
 /** `host.type` as stored; anything unknown reads as the platform (older documents). */
 const hostTypeOf = (v: unknown): EventHost['type'] =>
   v === 'photographer' || v === 'organizer' ? v : 'platform';
+
+/**
+ * S30 Decision 16: the venue block and its consent. `venueConsent` is always written (default
+ * `not_required`) so the 72 h expiry query (`venueConsent == pending`) matches it.
+ */
+function venueFieldsToFirestore(e: EventRecord): DocumentData {
+  const v = e.venue ?? null;
+  return {
+    venue: v === null
+      ? null
+      : {
+        kind: v.kind,
+        spotId: v.spotId,
+        entryFee: { included: v.entryFee.included, amountVnd: v.entryFee.amountVnd },
+        commitmentAt: v.commitmentAt,
+        termsVersion: v.termsVersion,
+      },
+    venueConsent: e.venueConsent ?? 'not_required',
+    venueConsentExpiresAt: ts(e.venueConsentExpiresAt ?? null),
+    venueFeePerGuest: e.venueFeePerGuest ?? 0,
+    venueManagerId: e.venueManagerId ?? null,
+  };
+}
+
+const VENUE_KIND_VALUES: readonly string[] = ['managed_spot', 'paid_place', 'public'];
+const CONSENT_VALUES: readonly string[] = ['not_required', 'pending', 'accepted', 'declined', 'expired'];
+
+function venueFromFirestore(v: unknown): Venue | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;
+  const o = asObj(v);
+  const kind = str(o.kind);
+  if (kind === null || !VENUE_KIND_VALUES.includes(kind)) return null;
+  const fee = asObj(o.entryFee);
+  return {
+    kind: kind as Venue['kind'],
+    spotId: str(o.spotId),
+    entryFee: { included: fee.included !== false, amountVnd: num(fee.amountVnd) },
+    commitmentAt: str(o.commitmentAt),
+    termsVersion: String(o.termsVersion ?? ''),
+  };
+}
+
+function venueFieldsFromFirestore(d: DocumentData): Partial<EventRecord> {
+  const consent = str(d.venueConsent);
+  return {
+    venue: venueFromFirestore(d.venue),
+    venueConsent: (consent !== null && CONSENT_VALUES.includes(consent) ? consent : 'not_required') as EventRecord['hostConsent'],
+    venueConsentExpiresAt: toDate(d.venueConsentExpiresAt),
+    venueFeePerGuest: int(d.venueFeePerGuest),
+    venueManagerId: str(d.venueManagerId),
+  };
+}
 
 /** S30 entry events only (Decision 11): the per-day rules; absent on every other event. */
 function entryFieldsToFirestore(e: EventRecord): DocumentData {
@@ -162,6 +217,7 @@ export function eventToFirestore(e: EventRecord): DocumentData {
     soonNoticeAt: ts(e.soonNoticeAt ?? null),
     // S17 Ruling 7: server-only list of registrations already reminded while the marker is unset.
     soonNotifiedRegIds: [...(e.soonNotifiedRegIds ?? [])],
+    ...venueFieldsToFirestore(e),
     ...entryFieldsToFirestore(e),
     createdAt: Timestamp.fromDate(e.createdAt),
     updatedAt: Timestamp.fromDate(e.updatedAt),
@@ -227,6 +283,7 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
     soonNotifiedRegIds: Array.isArray(d.soonNotifiedRegIds)
       ? d.soonNotifiedRegIds.filter((x: unknown): x is string => typeof x === 'string')
       : [],
+    ...venueFieldsFromFirestore(d),
     ...entryFieldsFromFirestore(d),
     createdAt: toDate(d.createdAt) ?? new Date(0),
     updatedAt: toDate(d.updatedAt) ?? new Date(0),
@@ -562,6 +619,9 @@ export class FirestoreEventStore implements EventStore {
         putPayment: (p) => {
           writes.push(() => fTx.set(fs.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p)));
         },
+        putGroupView: (g) => {
+          writes.push(() => fTx.set(fs.collection(PAYMENT_GROUPS_COLLECTION).doc(g.id), paymentGroupToFirestore(g)));
+        },
         putRefund: (r) => {
           writes.push(() => fTx.set(fs.collection(REFUNDS_COLLECTION).doc(r.id), refundToFirestore(r)));
         },
@@ -662,6 +722,17 @@ export class FirestoreEventStore implements EventStore {
         .where('soonNoticeAt', '==', null)
         .where('startAt', '>', Timestamp.fromDate(now))
         .where('startAt', '<=', Timestamp.fromDate(horizon)),
+      limit,
+    );
+  }
+
+  /** S30 Decision 16. Needs the composite index `events(status, venueConsent, venueConsentExpiresAt)` (Task 6). */
+  dueForVenueConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {
+    return this.due(
+      this.firestore.collection(EVENTS_COLLECTION)
+        .where('status', '==', 'draft')
+        .where('venueConsent', '==', 'pending')
+        .where('venueConsentExpiresAt', '<=', Timestamp.fromDate(now)),
       limit,
     );
   }

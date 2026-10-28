@@ -13,6 +13,7 @@ import { entryDayId, type EntryDay } from './entry_tickets.js';
 import type { Organizer, Resident } from './organizer.js';
 import type { PaymentSource } from './memory_payment_lookup.js';
 import type { PassRecord, PrivatePassRef } from './pass.js';
+import type { PaymentGroupView } from './group_settlement.js';
 
 /** Memory key of a customer's pass copy: `booking:{id}` or `reg:{eventId}/{regId}`. */
 export const privatePassKey = (ref: PrivatePassRef): string =>
@@ -41,6 +42,8 @@ export class MemoryEventStore implements EventStore, PaymentSource {
   readonly chats = new Map<string, EventGroupChatSeed>();
   readonly chatReadOnlyAt = new Map<string, Date>();
   readonly payments = new Map<string, Payment>();
+  /** `payment_groups/{id}` of tickets with a venue fee (S30 Decision 16). */
+  readonly paymentGroups = new Map<string, PaymentGroupView>();
   readonly refunds = new Map<string, Refund>();
   readonly transferRecords = new Map<string, TransferRecord>();
   readonly ledger: LedgerEntry[] = [];
@@ -250,6 +253,7 @@ export class MemoryEventStore implements EventStore, PaymentSource {
       putRegistrationContact: (eventId, regId, c) => write(() => { this.contacts.set(key(eventId, regId), c); }),
       deleteRegistrationContact: (eventId, regId) => write(() => { this.contacts.delete(key(eventId, regId)); }),
       putPayment: (p) => write(() => { this.payments.set(p.id, p); }, ...payWrite(p)),
+      putGroupView: (g) => write(() => { this.paymentGroups.set(g.id, { ...g, lines: g.lines.map((l) => ({ ...l })) }); }),
       putRefund: (r) => write(() => { this.refunds.set(r.id, r); }, `refund:${r.id}`),
       putLedgerEntry: (e) => write(() => { this.ledger.push(e); }),
       putTransferRecord: (r) => write(() => { this.transferRecords.set(r.id, r); }, `transfer:${r.id}`),
@@ -307,6 +311,13 @@ export class MemoryEventStore implements EventStore, PaymentSource {
     return [...this.events.values()]
       .filter((e) => e.status === 'draft' && e.hostConsent === 'pending'
         && e.hostConsentExpiresAt !== null && e.hostConsentExpiresAt.getTime() <= now.getTime())
+      .slice(0, limit);
+  }
+
+  async dueForVenueConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {
+    return [...this.events.values()]
+      .filter((e) => e.status === 'draft' && e.venueConsent === 'pending'
+        && (e.venueConsentExpiresAt ?? null) !== null && (e.venueConsentExpiresAt as Date).getTime() <= now.getTime())
       .slice(0, limit);
   }
 }

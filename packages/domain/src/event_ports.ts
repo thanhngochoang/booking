@@ -9,6 +9,7 @@ import type { Spot } from './spot.js';
 import type { EntryDay } from './entry_tickets.js';
 import type { Organizer, Resident } from './organizer.js';
 import type { PassRecord, PrivatePassRef } from './pass.js';
+import type { PaymentGroupView } from './group_settlement.js';
 
 /** Thrown inside a transaction to ask the adapter to run it again (it holds no state of its own). */
 export class RetryableConflict extends Error {
@@ -94,6 +95,8 @@ export interface EventTx {
   /** The phone snapshot goes when the ticket stops unlocking contact (cancelled or refunded). */
   deleteRegistrationContact(eventId: string, regId: string): void;
   putPayment(p: Payment): void;
+  /** `payment_groups/{id}` (S30 Decision 6): a ticket with a venue fee is paid as a group (Decision 16). */
+  putGroupView(g: PaymentGroupView): void;
   putRefund(r: Refund): void;
   putLedgerEntry(e: LedgerEntry): void;
   getTransferRecord(id: string): Promise<TransferRecord | null>;
@@ -113,6 +116,8 @@ export interface EventStore {
   dueForCompletion(now: Date, limit: number): Promise<EventRecord[]>;
   /** O1: drafts with `hostConsent = pending` and `hostConsentExpiresAt <= now`. */
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]>;
+  /** S30 Decision 16: drafts with `venueConsent = pending` and `venueConsentExpiresAt <= now`. */
+  dueForVenueConsentExpiry(now: Date, limit: number): Promise<EventRecord[]>;
   /** S17: open | full | closed, `soonNoticeAt == null`, `now < startAt <= horizon` (the 48-hour reminder). */
   dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]>;
   /** `held` registrations of any event with `holdExpiresAt <= now` (the 1-minute hold sweep). */

@@ -147,9 +147,13 @@ export class MemoryBookingStore implements StudioBookingStore {
         getPayment: async (id) => (await this.getPayment(id)) ?? (ev === null ? null : await ev.tx.getPayment(id)),
         getPaymentByIdempotencyKey: async (key) => this.getPaymentByIdempotencyKey(key),
         setPayment: async (payment) => {
-          // A ticket line lives with the event's payments (one `payments` collection on Firestore).
-          if (ev !== null && payment.subjectType === 'event_registration') ev.tx.putPayment({ ...payment });
-          else this.payments.set(payment.id, { ...payment });
+          // A ticket line lives with the event's payments (one `payments` collection on Firestore), and so
+          // does a group the event store opened (a ticket with a venue fee, S30 Decision 16).
+          if (ev !== null && (payment.subjectType === 'event_registration' || this.entry?.payments.has(payment.id) === true)) {
+            ev.tx.putPayment({ ...payment });
+          } else {
+            this.payments.set(payment.id, { ...payment });
+          }
         },
         getRefund: async (id) => (await this.getRefund(id)) ?? (ev === null ? null : await ev.tx.getRefund(id)),
         addRefund: async (refund) => {
@@ -217,7 +221,8 @@ export class MemoryBookingStore implements StudioBookingStore {
         putRegistration: async (r) => evTx().putRegistration(r),
         putRegistrationContact: async (eventId, regId, c) => evTx().putRegistrationContact(eventId, regId, c),
         putGroupView: async (g) => {
-          this.paymentGroups.set(g.id, { ...g, lines: g.lines.map((l) => ({ ...l })) });
+          if (ev !== null && this.entry?.paymentGroups.has(g.id) === true) ev.tx.putGroupView(g);
+          else this.paymentGroups.set(g.id, { ...g, lines: g.lines.map((l) => ({ ...l })) });
         },
         passTaken: async (code8) => (ev === null ? this.passes.has(code8) : ev.tx.passTaken(code8)),
         putPass: async (p) => {

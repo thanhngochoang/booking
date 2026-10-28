@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { readFileSync } from 'node:fs';
 import { Timestamp, type DocumentData } from 'firebase-admin/firestore';
 import type { EventRecord, Refund, RegistrationDoc } from '@photobooking/domain';
 import { paymentFromFirestore, paymentToFirestore, refundFromFirestore, refundToFirestore } from '../../src/infra/booking_firestore.js';
@@ -52,6 +53,11 @@ const event = (over: Partial<EventRecord> = {}): EventRecord => ({
   cancelledAt: null,
   soonNoticeAt: null,
   soonNotifiedRegIds: [],
+  venue: null,
+  venueConsent: 'not_required',
+  venueConsentExpiresAt: null,
+  venueFeePerGuest: 0,
+  venueManagerId: null,
   createdAt: D('2026-10-06T03:00:00.000Z'),
   updatedAt: D('2026-10-06T03:00:00.000Z'),
   ...over,
@@ -93,6 +99,32 @@ describe('Firestore mapping for events', () => {
     assert.equal(doc.hostId, 'ph1');
     assert.equal(doc.publishedAt, null);
     assert.deepEqual(eventFromFirestore('ev1', doc), e);
+  });
+
+  it('the venue block, its consent and fee round-trip (S30 Decision 16); an old event reads no venue', () => {
+    const e = event({
+      venue: { kind: 'managed_spot', spotId: 's1', entryFee: { included: true, amountVnd: null }, commitmentAt: null, termsVersion: '2026-10-18' },
+      venueConsent: 'pending', venueConsentExpiresAt: D('2026-10-09T03:00:00.000Z'), venueFeePerGuest: 20_000, venueManagerId: 'org1',
+    });
+    const doc = eventToFirestore(e);
+    assert.ok(doc.venueConsentExpiresAt instanceof Timestamp);
+    assert.equal(doc.venue.spotId, 's1');
+    assert.deepEqual(eventFromFirestore('ev1', doc), e);
+    const pub = event({ venue: { kind: 'public', spotId: null, entryFee: { included: true, amountVnd: null }, commitmentAt: '2026-10-06T02:00:00.000Z', termsVersion: '2026-10-18' } });
+    assert.deepEqual(eventFromFirestore('ev1', eventToFirestore(pub)), pub);
+    const venueKeys = new Set(['venue', 'venueConsent', 'venueConsentExpiresAt', 'venueFeePerGuest', 'venueManagerId']);
+    const old = Object.fromEntries(Object.entries(eventToFirestore(event())).filter(([k]) => !venueKeys.has(k)));
+    const back = eventFromFirestore('ev1', old);
+    assert.deepEqual([back.venue, back.venueConsent, back.venueFeePerGuest], [null, 'not_required', 0]);
+  });
+
+  it('the venue consent expiry query has its composite index', () => {
+    const json = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as {
+      indexes: { collectionGroup: string; fields: { fieldPath: string }[] }[];
+    };
+    const has = json.indexes.some((i) => i.collectionGroup === 'events'
+      && i.fields.map((f) => f.fieldPath).join(',') === 'status,venueConsent,venueConsentExpiresAt');
+    assert.equal(has, true);
   });
 
   it('a platform event has a null hostId', () => {
