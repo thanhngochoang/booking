@@ -40,8 +40,9 @@ class MyJobsTab extends ConsumerWidget {
 
     return ScreenCode(
       ScreenCodes.myJobs,
-      child: myJobsAsync.when(
-        data: (allJobs) {
+      child: AsyncView<List<Job>>(
+        value: myJobsAsync,
+        data: (context, allJobs) {
           final sorted = _sortJobs(allJobs);
           if (sorted.isEmpty) {
             return Padding(
@@ -90,7 +91,7 @@ class MyJobsTab extends ConsumerWidget {
             },
           );
         },
-        loading: () => ListView(
+        skeleton: (_) => ListView(
           padding: const EdgeInsets.all(AppSpace.s4),
           children: [
             for (var i = 0; i < 3; i++) ...[
@@ -99,7 +100,7 @@ class MyJobsTab extends ConsumerWidget {
             ],
           ],
         ),
-        error: (err, _) => Center(
+        error: (_, err, _) => Center(
           child: Text('Lỗi: $err'),
         ),
       ),

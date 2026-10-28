@@ -307,7 +307,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
                       shape: BoxShape.circle,
                     ),
                     padding: const EdgeInsets.all(2),
-                    child: const Icon(Icons.close, size: 14, color: Colors.white),
+                    child: const AppIcon(AppIcons.close, size: 14, color: Colors.white),
                   ),
                 ),
               ),

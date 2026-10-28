@@ -19,8 +19,9 @@ class MyQuotesTab extends ConsumerWidget {
     return ScreenCode(
       ScreenCodes.openJobs,
       label: 'quotes',
-      child: quotesAsync.when(
-        data: (quotes) {
+      child: AsyncView<List<Quote>>(
+        value: quotesAsync,
+        data: (context, quotes) {
           if (quotes.isEmpty) {
             return EmptyState(
               title: l.myQuotesEmpty,
@@ -58,8 +59,7 @@ class MyQuotesTab extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(err.toString())),
+        error: (_, err, _) => Center(child: Text(err.toString())),
       ),
     );
   }

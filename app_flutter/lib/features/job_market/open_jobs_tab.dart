@@ -140,8 +140,9 @@ class _OpenJobsTabState extends ConsumerState<OpenJobsTab> {
               onRefresh: () async {
                 ref.invalidate(openJobsProvider(filter));
               },
-              child: openJobsAsync.when(
-                data: (rawItems) {
+              child: AsyncView(
+                value: openJobsAsync,
+                data: (context, rawItems) {
                   final items = rawItems.where((item) {
                     if (item.job.allowedProviders == AllowedProviders.studio &&
                         me.providerType == ProviderType.individual) {
@@ -189,7 +190,7 @@ class _OpenJobsTabState extends ConsumerState<OpenJobsTab> {
                     },
                   );
                 },
-                loading: () => ListView.builder(
+                skeleton: (_) => ListView.builder(
                   padding: const EdgeInsets.all(AppSpace.s4),
                   itemCount: 4,
                   itemBuilder: (_, _) => Padding(
@@ -197,7 +198,7 @@ class _OpenJobsTabState extends ConsumerState<OpenJobsTab> {
                     child: JobCard.skeleton(variant: JobCardVariant.photographer),
                   ),
                 ),
-                error: (err, _) => Center(child: Text(err.toString())),
+                error: (_, err, _) => Center(child: Text(err.toString())),
               ),
             ),
           ),

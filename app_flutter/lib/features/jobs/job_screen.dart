@@ -4,8 +4,9 @@
 // Replaced with full implementations in Tasks 7 and 9.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photobooking/core/widgets/empty_state.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/jobs/job.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
 import 'package:photobooking/features/job_market/job_photographer_detail.dart';
 import 'package:photobooking/features/jobs/job_owner_detail.dart';
@@ -25,8 +26,9 @@ class JobScreen extends ConsumerWidget {
     final currentUid = ref.watch(authStateProvider).value?.uid;
     final jobAsync = ref.watch(jobProvider(jobId));
 
-    return jobAsync.when(
-      data: (job) {
+    return AsyncView<Job?>(
+      value: jobAsync,
+      data: (context, job) {
         if (job == null) {
           return Scaffold(
             appBar: AppBar(
@@ -49,13 +51,13 @@ class JobScreen extends ConsumerWidget {
           openQuote: openQuote,
         );
       },
-      loading: () => Scaffold(
+      skeleton: (_) => Scaffold(
         appBar: AppBar(
           title: const Text('Chi tiết công việc'),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: DotRingLoader()),
       ),
-      error: (err, _) => Scaffold(
+      error: (_, err, _) => Scaffold(
         appBar: AppBar(
           title: const Text('Chi tiết công việc'),
         ),

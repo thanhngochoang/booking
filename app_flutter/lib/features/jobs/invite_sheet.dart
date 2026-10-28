@@ -146,7 +146,7 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
                     ),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(child: DotRingLoader(size: LoaderSize.block));
                       }
                       final items = snapshot.data?.items ?? [];
                       final eligible = items.map((i) => i.photographer).where(_isEligible).toList();

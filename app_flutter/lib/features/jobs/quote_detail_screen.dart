@@ -98,8 +98,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               ),
           ],
         ),
-        body: jobAsync.when(
-          data: (job) {
+        body: AsyncView<Job?>(
+          value: jobAsync,
+          data: (context, job) {
             if (job == null) {
               return const Center(child: Text('Không tìm thấy công việc'));
             }
@@ -117,8 +118,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
               },
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('Lỗi: $err')),
+          error: (_, err, _) => Center(child: Text('Lỗi: $err')),
         ),
       ),
     );

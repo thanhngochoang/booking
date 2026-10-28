@@ -93,8 +93,9 @@ class _QuoteCheckoutScreenState extends ConsumerState<QuoteCheckoutScreen> {
         appBar: AppBar(
           title: Text(l.quotePayTitle),
         ),
-        body: jobAsync.when(
-          data: (job) {
+        body: AsyncView<Job?>(
+          value: jobAsync,
+          data: (context, job) {
             if (job == null) {
               return const Center(child: Text('Không tìm thấy công việc'));
             }
@@ -117,8 +118,7 @@ class _QuoteCheckoutScreenState extends ConsumerState<QuoteCheckoutScreen> {
               controller: controller,
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('Lỗi: $err')),
+          error: (_, err, _) => Center(child: Text('Lỗi: $err')),
         ),
       ),
     );
