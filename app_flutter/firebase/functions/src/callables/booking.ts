@@ -3,7 +3,6 @@ import * as logger from 'firebase-functions/logger';
 import {
   createBookingDraft,
   transitionBooking,
-  openDispute,
   type Booking,
   type BookingDeps,
   type TransitionAction,
@@ -55,20 +54,5 @@ export async function handleTransitionBooking(request: CallableInput, deps: Book
     });
   } catch (e) {
     handleCallableError('transitionBooking', e);
-  }
-}
-
-export async function handleOpenDispute(request: CallableInput, deps: BookingDeps): Promise<Booking> {
-  const uid = request.auth?.uid;
-  if (uid === undefined) throw new HttpsError('unauthenticated', 'permission_denied', { code: 'permission_denied' });
-  try {
-    const data = (request.data && typeof request.data === 'object' ? request.data : {}) as Record<string, unknown>;
-    return await openDispute(deps, {
-      bookingId: String(data.bookingId ?? ''),
-      customerId: uid,
-      reason: String(data.reason ?? ''),
-    });
-  } catch (e) {
-    handleCallableError('openDispute', e);
   }
 }

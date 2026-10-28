@@ -26,6 +26,14 @@ export class MemorySupportStore implements SupportStore {
         return this.messages.get(threadId)?.get(id) ?? null;
       },
 
+      // A support-only store has no disputes (MemoryDisputeStore has).
+      getDispute: async () => {
+        if (hasWritten) {
+          throw new Error('Read after write in transaction');
+        }
+        return null;
+      },
+
       putThread: (t) => {
         hasWritten = true;
         stagedThreads.set(t.id, t);

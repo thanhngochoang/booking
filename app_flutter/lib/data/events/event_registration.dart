@@ -85,6 +85,7 @@ class EventRegistration {
     this.contactEligible = false,
     this.refundDue = false,
     this.refundStatus,
+    this.disputeId,
   });
 
   final String id;
@@ -120,6 +121,9 @@ class EventRegistration {
   /// ticket, or a cancelled one whose payment arrived after the hold). Null
   /// on an older refunded ticket: treated as done.
   final TicketRefundStatus? refundStatus;
+
+  /// The open or resolved dispute of this ticket (S18, server mirror).
+  final String? disputeId;
   final EventTicketSnapshot event;
   final DateTime createdAt;
 

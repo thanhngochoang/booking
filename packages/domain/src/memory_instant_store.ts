@@ -1,4 +1,5 @@
 import type { BookingContactSnapshot } from './booking.js';
+import type { TransferRecord } from './booking_ports.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import type { InstantOffer, InstantPresence, InstantRequest } from './instant.js';
 import type { InstantStore, InstantTrackDoc, InstantTx, PresenceDirectory } from './instant_ports.js';
@@ -18,6 +19,8 @@ export class MemoryInstantStore implements InstantStore {
   readonly payments = new Map<string, Payment>();
   readonly refunds = new Map<string, Refund>();
   readonly ledger = new Map<string, LedgerEntry>();
+  /** V1's transfer records (a `PaymentSource` with `payments` for MemoryPaymentLookup). */
+  readonly transferRecords = new Map<string, TransferRecord>();
   /** `instant_requests/{id}/private/contact`, key = request id. */
   readonly contacts = new Map<string, BookingContactSnapshot>();
   /** `instant_tracks/{requestId}`. */
@@ -69,6 +72,10 @@ export class MemoryInstantStore implements InstantStore {
       getPresence: (uid) => read('getPresence', () => this.presences.get(uid) ?? null),
       getPayment: (id) => read('getPayment', () => this.payments.get(id) ?? null),
       getRefund: (id) => read('getRefund', () => this.refunds.get(id) ?? null),
+      getTransferRecord: (id) => read('getTransferRecord', () => this.transferRecords.get(id) ?? null),
+      paymentsOfRequest: (requestId) =>
+        read('paymentsOfRequest', () =>
+          [...this.payments.values()].filter((p) => p.subjectType === 'instant_request' && p.subjectId === requestId)),
       findActiveRequestOfCustomer: (customerId) =>
         read('findActiveRequestOfCustomer', () => [...this.requests.values()].find((r) => r.customerId === customerId && r.active) ?? null),
       putRequest: (r) => write(() => this.requests.set(r.id, r)),
@@ -77,6 +84,7 @@ export class MemoryInstantStore implements InstantStore {
       putPayment: (p) => write(() => this.payments.set(p.id, p)),
       putRefund: (r) => write(() => this.refunds.set(r.id, r)),
       putLedgerEntry: (e) => write(() => this.ledger.set(e.id, e)),
+      putTransferRecord: (r) => write(() => this.transferRecords.set(r.id, r)),
       putContact: (id, c) => write(() => this.contacts.set(id, c)),
       deleteContact: (id) => write(() => this.contacts.delete(id)),
       putTrack: (id, t) => write(() => this.tracks.set(id, t)),

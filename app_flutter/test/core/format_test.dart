@@ -44,6 +44,12 @@ void main() {
     expect(formatDay(DateTime.utc(2026, 12, 25)), 'T6 25/12');
   });
 
+  test('formatHm pads hours and minutes of a Vietnamese wall-clock time', () {
+    expect(formatHm(DateTime.utc(2026, 10, 3, 7, 5)), '07:05');
+    // 08:30 UTC is 15:30 in Vietnam.
+    expect(formatHm(toVn(DateTime.utc(2026, 10, 3, 8, 30))), '15:30');
+  });
+
   test('formatDay of a Vietnamese date shifted past midnight', () {
     // 17:30 UTC on Fri 2 Oct is 00:30 on Sat 3 Oct in Vietnam.
     expect(formatDay(toVn(DateTime.utc(2026, 10, 2, 17, 30))), 'T7 03/10');

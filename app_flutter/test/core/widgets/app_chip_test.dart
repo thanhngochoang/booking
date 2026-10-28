@@ -199,4 +199,44 @@ void main() {
     expect(style.color, AppColorsDark.foregroundSecondary);
     expect(style.fontWeight, FontWeight.w500);
   });
+
+  testWidgets('a disabled chip ignores taps, is dimmed and announced as '
+      'disabled', (tester) async {
+    bool? seen;
+    await tester.pumpWidget(
+      hostWidget(
+        AppChip(
+          label: 'Quận 7',
+          selected: false,
+          enabled: false,
+          onChanged: (v) => seen = v,
+        ),
+      ),
+    );
+    await tester.tap(find.text('Quận 7'), warnIfMissed: false);
+    expect(seen, isNull);
+    expect(
+      find.descendant(
+        of: find.byType(AppChip),
+        matching: find.byWidgetPredicate(
+          (w) => w is Opacity && w.opacity == 0.5,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .getSemantics(
+            find
+                .descendant(
+                  of: find.byType(AppChip),
+                  matching: find.byType(Semantics),
+                )
+                .first,
+          )
+          .flagsCollection
+          .isEnabled,
+      Tristate.isFalse,
+    );
+  });
 }

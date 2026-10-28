@@ -115,7 +115,7 @@ export interface BookingPickup {
 /** Why the customer of a studio booking may cancel with a 100% refund (#136 Decision 12). */
 export type StudioFaultKind = 'assign_overdue' | 'change_declined' | 'change_expired' | 'late_reassign';
 
-/** One line of a studio booking's assignment log (S27 adds offer timestamps without migration). */
+/** One line of a studio booking's assignment log (S27 adds the offer fields, collaborators only). */
 export interface StudioAssignment {
   readonly assigneeId: string;
   readonly assigneeKind: AssigneeKind;
@@ -125,6 +125,10 @@ export interface StudioAssignment {
   readonly reason: string | null;
   /** Reassigned after assignDeadline. */
   readonly late: boolean;
+  /** S27 collaborator offer: when it lapses unanswered (ISO). The agreed fee is never here (#151 Decision 3). */
+  readonly offerExpiresAt?: string;
+  readonly acceptedAt?: string;
+  readonly declinedAt?: string;
 }
 
 /** The customer's one request to change the assignee (S26.05). */
@@ -169,10 +173,17 @@ export interface Booking {
   readonly depositProvider?: PaymentProvider;
   readonly depositPaidAt?: string;
   readonly depositRefundedAt?: string;
+  /**
+   * Server-written (#141 Decision 6): the booking's cancel/decline/expiry refund waits in
+   * `awaiting_account` for the customer to confirm an account (S05.02 row, S22.04); false once chosen.
+   */
+  readonly refundAccountNeeded?: boolean;
   readonly acceptDeadline?: string;
   readonly cancel?: BookingCancel;
   readonly completedAt?: string;
   readonly reviewedAt?: string;
+  /** The booking's latest dispute (S18), open or resolved; written only by the dispute transaction (server). */
+  readonly disputeId?: string | null;
   readonly chatId?: string;
   readonly source?: BookingSource;
   readonly spotId?: string;
@@ -210,6 +221,12 @@ export interface Booking {
   /** Who shoots for the studio; kept after "Trả việc" until the studio reassigns. */
   readonly assigneeId?: string | null;
   readonly assigneeKind?: AssigneeKind | null;
+  /**
+   * S27: false while a collaborator's offer waits for an answer (the booking stays unassigned, the collaborator
+   * has no calendar block, chat membership or contact); true once accepted, and for a member.
+   */
+  readonly assigneeAccepted?: boolean;
+  /** `assigned` once the assignee is confirmed (a member, or a collaborator who accepted). */
   readonly assignStatus?: 'unassigned' | 'assigned';
   /** ISO; max(startAt − 24 h, createdAt + 2 h), never after startAt. */
   readonly assignDeadline?: string;

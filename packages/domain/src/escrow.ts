@@ -31,8 +31,11 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
   typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 
-/** `verification_fee`: the S21 fee, platform revenue (payee `platform`), never earnings or payouts (#203). */
-export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee'] as const;
+/**
+ * `verification_fee`: the S21 fee, platform revenue (payee `platform`), never earnings or payouts (#203).
+ * `instant_request`: a Chụp ngay request (#202); payee `''` until a photographer is assigned.
+ */
+export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee', 'instant_request'] as const;
 export type PaymentSubject = (typeof PAYMENT_SUBJECTS)[number];
 export const isPaymentSubject = (v: unknown): v is PaymentSubject =>
   typeof v === 'string' && (PAYMENT_SUBJECTS as readonly string[]).includes(v);
@@ -68,8 +71,13 @@ export interface Payment {
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;
-  /** Set by openDispute; server-only. */
-  readonly dispute?: { readonly reason: string; readonly openedAt: string } | null;
+  /**
+   * The last dispute on this payment (S18, `openDispute`); server-only, kept after resolution as history.
+   * `milestone`: the frozen milestone (its own status is `disputed`); null for a payment without
+   * milestones, which is frozen whole and keeps `prevEscrowStatus` to restore on resolution.
+   * Rows from before S18 carry only `reason` (free text) and `openedAt`.
+   */
+  readonly dispute?: PaymentDispute | null;
   /** Current payout batch; cleared when that batch fails. */
   readonly payoutId?: string | null;
   /** Payer account info captured from notification (server-only). */
@@ -80,8 +88,21 @@ export interface Payment {
   readonly milestones?: readonly import('./milestones.js').PaymentMilestone[];
   /** VND of released, unbatched milestones available for payout. */
   readonly payableAmount?: number;
+  /**
+   * The platform fee rate this payment's payout takes, basis points (Decision 6 of #140/#202: an
+   * `instant_request` payment snapshots its request's `platformFeeBp`); absent → the payout policy's.
+   */
+  readonly feeBp?: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+export interface PaymentDispute {
+  readonly reason: string;
+  readonly openedAt: string;
+  readonly disputeId?: string;
+  readonly milestone?: import('./milestones.js').MilestoneKind | null;
+  readonly prevEscrowStatus?: 'held' | 'partially_refunded';
 }
 
 export const REFUND_STATUSES = ['awaiting_account', 'pending', 'done', 'failed'] as const;
@@ -89,6 +110,23 @@ export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
 export const REFUND_METHODS = ['gateway', 'bank_transfer'] as const;
 export type RefundMethod = (typeof REFUND_METHODS)[number];
+
+/** S22.04 (#141 Decision 5): hours a waiting policy refund with a payer account gives the customer to choose. */
+export const REFUND_ACCOUNT_CONFIRM_HOURS = 24;
+
+/** A policy refund paid back by bank transfer waits for the customer's account choice (#141 Decision 5). */
+export function needsAccountChoice(r: Pick<Refund, 'fromEscrow' | 'method'>): boolean {
+  return r.fromEscrow && r.method === 'bank_transfer';
+}
+
+/**
+ * Whether S22.04 settles this waiting refund (#141): bookings and tickets, a dispute refund being one
+ * of them (a refund without a subject is a booking's, stored before the field). Chụp ngay and S21-fee
+ * refunds are not (no 24-hour window; a waiting one is staff work).
+ */
+export function canChooseRefundAccount(r: Pick<Refund, 'subjectType'>): boolean {
+  return r.subjectType === undefined || r.subjectType === 'booking' || r.subjectType === 'event_registration';
+}
 
 export function refundMethodOf(method: PaymentMethod | undefined): RefundMethod {
   return method === 'bank_qr' ? 'bank_transfer' : 'gateway';
@@ -124,7 +162,22 @@ export interface Refund {
   readonly fromEscrow: boolean;
   readonly method: RefundMethod;
   readonly destination?: RefundDestination | null;
+  /**
+   * `awaiting_account` with a payer destination (#141 Decision 5): the 24-hour default sends it to
+   * the payer at this instant (`confirmDueRefundAccounts`); null when there is no payer (waits).
+   */
   readonly confirmBy?: string | null;
+  /**
+   * Another account the customer looked up on S22.04 (`lookupRefundAccount`, number encrypted),
+   * committed by `chooseRefundAccount({use: 'candidate'})`; cleared when the refund leaves
+   * `awaiting_account`. Server-only, never in a customer-readable document.
+   */
+  readonly candidate?: StoredBankAccount | null;
+  /**
+   * S22.04 holder-name lookups charged to this refund on one Vietnam day (`lookupRefundAccount`,
+   * capped at `NAME_LOOKUPS_PER_DAY` like the payout lookup); every attempt counts. Server-only.
+   */
+  readonly accountLookups?: { readonly day: string; readonly count: number } | null;
   readonly attempts: number;
   readonly lastAttemptAt?: string;
   readonly failureReason?: string;
@@ -233,6 +286,16 @@ export function createDepositPayment(params: {
 
 /**
  * Applies a refund to an escrow payment (Invariant 12: only held or partially_refunded).
+ * Without `amount`: `percent` of `payment.amount`. With `amount` (a dispute outcome): exactly that,
+ * an integer from 1 to what escrow still holds (`payment.amount − escrowRefunded`, where
+ * `escrowRefunded` is `escrowRefundedTotal` of the payment's refunds); the payment is fully refunded
+ * once escrow refunds reach `payment.amount`. `percent` is then only recorded on the refund.
+ *
+ * `waitForAccount` (#141 Decision 5: a customer cancel, decline, expired request, event cancel or
+ * dispute outcome): a bank-transfer refund starts `awaiting_account` (the customer confirms the
+ * account on S22.04), prefilled with the payer and `confirmBy = now + 24 h`, or without a payer and
+ * no `confirmBy`. Without it (late payments, Chụp ngay, the S21 fee) V2's rule stands: sent to the
+ * payer at once, waiting only when there is no payer.
  */
 export function applyRefundToPayment(params: {
   readonly payment: Payment;
@@ -241,7 +304,11 @@ export function applyRefundToPayment(params: {
   readonly ledgerEntryId: string;
   readonly reason?: string;
   readonly now: Date;
-}): {
+  readonly waitForAccount?: boolean;
+} & (
+  | { readonly amount?: undefined; readonly escrowRefunded?: undefined }
+  | { readonly amount: number; readonly escrowRefunded: number }
+)): {
   readonly payment: Payment;
   readonly refund: Refund;
   readonly ledgerEntry: LedgerEntry;
@@ -253,17 +320,34 @@ export function applyRefundToPayment(params: {
     throw new DomainError('conflict');
   }
 
-  const refundAmount = computeRefund(payment.amount, percent);
+  let refundAmount: number;
+  let isFullRefund: boolean;
+  if (params.amount === undefined) {
+    refundAmount = computeRefund(payment.amount, percent);
+    isFullRefund = percent === 100 || refundAmount === payment.amount;
+  } else {
+    const before = params.escrowRefunded;
+    const held = payment.amount - before;
+    if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(params.amount) || params.amount < 1 || params.amount > held) {
+      throw new DomainError('invalid_argument');
+    }
+    refundAmount = params.amount;
+    isFullRefund = before + refundAmount === payment.amount;
+  }
   const at = now.toISOString();
 
-  const isFullRefund = percent === 100 || refundAmount === payment.amount;
   const newStatus: PaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
   const newEscrowStatus: EscrowStatus = isFullRefund ? 'refunded' : 'partially_refunded';
 
   const method = refundMethodOf(payment.method);
   const destination: RefundDestination | null =
     payment.payer ? { ...payment.payer, source: 'payer' } : null;
-  const isAwaiting = method === 'bank_transfer' && !destination;
+  const waits = params.waitForAccount === true && needsAccountChoice({ fromEscrow: true, method });
+  const isAwaiting = method === 'bank_transfer' && (!destination || waits);
+  const confirmBy =
+    isAwaiting && destination && waits
+      ? new Date(now.getTime() + REFUND_ACCOUNT_CONFIRM_HOURS * 3_600_000).toISOString()
+      : null;
 
   const updatedPayment: Payment = {
     ...payment,
@@ -284,6 +368,7 @@ export function applyRefundToPayment(params: {
     fromEscrow: true,
     method,
     destination,
+    ...(confirmBy !== null ? { confirmBy } : {}),
     attempts: 0,
     ...(isAwaiting ? {} : { lastAttemptAt: at }),
     reason,

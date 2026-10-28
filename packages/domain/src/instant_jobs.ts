@@ -20,7 +20,7 @@ import {
   type InstantRequest,
   type InstantStatus,
 } from './instant.js';
-import { quoteInstantNoShow } from './instant_cancel.js';
+import { quoteInstantNoShow, type InstantCancelQuote } from './instant_cancel.js';
 import { dayBlocksInstant } from './instant_match.js';
 import type { InstantCaller, InstantDeps } from './instant_ports.js';
 import {
@@ -31,7 +31,8 @@ import {
   instantRequestId,
   type InstantLocation,
 } from './instant_requests.js';
-import { peekInstantRequest, runInstant } from './instant_work.js';
+import { mirrorRefund, refundInstantShare, sendInstantRefunds } from './instant_payments.js';
+import { peekInstantRequest, runInstant, type InstantRefundSend } from './instant_work.js';
 import { orderBlocker } from './order_gate.js';
 import { isVnE164 } from './phone.js';
 
@@ -202,6 +203,8 @@ export async function answerInstantOffer(
     if (blocker !== null) throw new DomainError(blocker);
     if (dayBlocksInstant(day)) throw new DomainError('not_eligible');
     const status = nextInstantStatus(r.status, 'accept');
+    // #202: the held money now has a payee (read before anything is written).
+    const payment = r.paidAt !== null && r.paymentId !== null ? await w.payment(r.paymentId) : null;
     // ---- writes
     for (const row of r.offers) {
       if (row.outcome === 'pending' && row.offerId !== offerId) await w.closeOffer(row, 'withdrawn');
@@ -231,7 +234,8 @@ export async function answerInstantOffer(
       startedRouteAt: null, arrivedAt: null, forcedArrivalAccuracyM: null,
       cancelledAt: null, cancelledBy: null, cancelRule: null, refundPercent: null, feeVnd: null,
     });
-    // Decision 22: the customer's number reaches the photographer only for a paid request (never in #140).
+    if (payment !== null) w.setPayment({ ...payment, payeeId: uid, updatedAt: now.toISOString() });
+    // Decision 22: the customer's number reaches the photographer only for a paid request.
     if (r.paidAt !== null && contact !== null && isVnE164(contact.phone)) {
       const copy: BookingContactSnapshot = {
         name: contact.name ?? r.customerName, phone: contact.phone,
@@ -275,16 +279,25 @@ const isJobAction = (v: unknown): v is InstantJobAction => (INSTANT_JOB_ACTIONS 
  * S14.03 steps of the assigned photographer: start the route (needs a position; the track starts),
  * arrive (within 200 m, or forced when the fix is worse than 100 m; the track goes), start the shoot
  * (`shootEndsAt` from the package), finish (the photographer is free for new offers at once), and
- * report the customer absent after 15 minutes (`no_show_customer`; #140: rule recorded, no money;
- * the photographer's reliability is untouched).
+ * report the customer absent after 15 minutes (`no_show_customer`; paid: 50% back to the customer, the
+ * rest released to the photographer 24 h later, #202; the photographer's reliability is untouched).
+ * `dryRun` (only with `no_show`) answers the server's quote and writes nothing: the S14.03 sheet shows
+ * these amounts, never its own arithmetic (#202).
  */
-export async function updateInstantJob(deps: InstantDeps, caller: InstantCaller, raw: unknown): Promise<{ status: InstantStatus }> {
+export async function updateInstantJob(
+  deps: InstantDeps,
+  caller: InstantCaller,
+  raw: unknown,
+): Promise<{ status: InstantStatus } | (InstantCancelQuote & { status: InstantStatus })> {
   const d = instantInput(raw);
   const requestId = instantRequestId(d);
   const action = isJobAction(d.action) ? d.action : invalid();
   const location = instantLocation(d.location);
   const force = d.force === undefined ? false : typeof d.force === 'boolean' ? d.force : invalid();
-  return runInstant(deps, async (w) => {
+  const dryRun = d.dryRun === undefined ? false : d.dryRun === true && action === 'no_show' ? true : d.dryRun === false ? false : invalid();
+  let sends: InstantRefundSend[] = [];
+  const result = await runInstant(deps, async (w): Promise<{ status: InstantStatus } | (InstantCancelQuote & { status: InstantStatus })> => {
+    sends = [];
     const first = await w.request(requestId);
     if (first === null) throw new DomainError('not_found');
     if (first.photographerId !== caller.uid) throw new DomainError('permission_denied');
@@ -324,14 +337,26 @@ export async function updateInstantJob(deps: InstantDeps, caller: InstantCaller,
         break;
       case 'no_show': {
         const q = quoteInstantNoShow(r, now);
+        if (dryRun) {
+          w.discard();
+          return { ...q, status: r.status };
+        }
         const status = nextInstantStatus(r.status, 'no_show');
+        const payment = q.amountVnd > 0 && r.paymentId !== null ? await w.payment(r.paymentId) : null;
         await w.freePresence(caller.uid, r.id);
         w.deleteTrack(r.id);
         next = { ...r, status, cancelRule: q.rule, refundPercent: q.refundPercent, feeVnd: q.feeVnd, cancelledAt: now };
+        if (payment !== null) {
+          if (q.refundVnd > 0) next = mirrorRefund(next, refundInstantShare(w, deps, payment, q.refundPercent, q.rule).refund);
+          if (q.feeVnd > 0) await w.stampRelease(next, now);
+        }
         break;
       }
     }
     w.setRequest(next);
+    sends = w.refundSends();
     return { status: next.status };
   });
+  await sendInstantRefunds(deps, sends);
+  return result;
 }

@@ -816,6 +816,17 @@ void main() {
       expect(mine.single.refundDue, isTrue);
     });
 
+    test('EventRegistration maps disputeId', () async {
+      await db
+          .doc('events/ev1/registrations/r-u1')
+          .set(registrationDoc(amount: 250000));
+      expect((await repo.watchMyTickets().first).single.disputeId, isNull);
+      await db.doc('events/ev1/registrations/r-u1').update({
+        'disputeId': 'd1',
+      });
+      expect((await repo.watchMyTickets().first).single.disputeId, 'd1');
+    });
+
     test('a refund state parses; an unknown one is no state', () async {
       final doc = registrationDoc(amount: 250000)
         ..['status'] = 'refunded'

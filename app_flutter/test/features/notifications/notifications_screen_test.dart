@@ -431,6 +431,25 @@ void main() {
     expect(find.text('stub /events/e1/manage'), findsOneWidget);
   });
 
+  testWidgets('an instant_cancelled row opens /instant/{id}', (tester) async {
+    final w = NotificationsWorld();
+    await _open(
+      tester,
+      rows: [
+        w.note(
+          'i',
+          type: 'instant_cancelled',
+          category: NotificationCategory.instant,
+          target: '/instant/req1',
+        ),
+      ],
+    );
+    await tester.tap(find.text('Tiêu đề i'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nội dung này không còn'), findsNothing);
+    expect(find.text('stub /instant/req1'), findsOneWidget);
+  });
+
   testWidgets('an event_soon row shows the cover thumbnail', (tester) async {
     final w = NotificationsWorld();
     const cover = 'https://example.test/cover.jpg';

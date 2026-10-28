@@ -383,6 +383,44 @@ describe('studio membership use cases', () => {
     });
   });
 
+  describe('an active S27 collaborator of the same studio (Decision 12, S26 direction)', () => {
+    it('inviteMember of an active collaborator of this studio is membership_conflict', async () => {
+      w.store.seedActiveCollaboration('s1', 'm1');
+      await refused(inviteMember(w.deps, 's1', { memberId: 'm1' }), 'membership_conflict');
+      assert.equal(w.store.quotas.get('s1'), undefined);
+    });
+
+    it('requestToJoin by an active collaborator of that studio is membership_conflict', async () => {
+      w.store.seedActiveCollaboration('s1', 'm1');
+      await refused(requestToJoin(w.deps, 'm1', { studioId: 's1' }), 'membership_conflict');
+    });
+
+    it('S26 respondInvite refuses an active collaborator of this studio with membership_conflict', async () => {
+      const inv = await inviteMember(w.deps, 's1', { memberId: 'm1' });
+      w.store.seedActiveCollaboration('s1', 'm1');
+      tick();
+      await refused(respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: true }), 'membership_conflict');
+      assert.equal(w.store.relations.get(inv.after.id)?.status, 'invited');
+      // declining stays possible
+      const no = await respondInvite(w.deps, 'm1', { relationId: inv.after.id, accept: false });
+      assert.equal(no.after.status, 'declined');
+    });
+
+    it('S26 respondJoinRequest refuses an active collaborator of this studio with membership_conflict', async () => {
+      const req = await requestToJoin(w.deps, 'm1', { studioId: 's1' });
+      w.store.seedActiveCollaboration('s1', 'm1');
+      tick();
+      await refused(respondJoinRequest(w.deps, 's1', { relationId: req.after.id, accept: true }), 'membership_conflict');
+      assert.equal(w.store.profiles.get('m1')?.studioId, null);
+    });
+
+    it('a collaborator of another studio may join this one (R6)', async () => {
+      w.store.seedActiveCollaboration('s2', 'm1');
+      const joined = await joinByInvite('s1', 'm1');
+      assert.equal(joined.status, 'active');
+    });
+  });
+
   describe('leaveStudio / removeMember', () => {
     it('leave sets left, cooldown until +7 days, memberCount −1', async () => {
       await joinByInvite('s1', 'm1');

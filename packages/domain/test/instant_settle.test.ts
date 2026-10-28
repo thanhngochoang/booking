@@ -194,7 +194,8 @@ describe('nextDeadlineOf', () => {
     ['choosing uncommitted: abandon after 30 min idle', { lastActivityAt: at(5 * MIN) }, at(35 * MIN)],
     ['choosing committed: the search window', { ...committed, roundEnded: true }, at(10 * MIN)],
     ['pending_payment: the payment window when earlier', { status: 'pending_payment', paymentDeadlineAt: at(15 * MIN), lastActivityAt: at(10 * MIN) }, at(15 * MIN)],
-    ['pending_payment: abandon when earlier', { status: 'pending_payment', paymentDeadlineAt: at(15 * MIN), lastActivityAt: at(-20 * MIN) }, at(10 * MIN)],
+    // #202 (ledger of #140): never abandoned while the payment window is open; its end settles first.
+    ['pending_payment: the payment window even when the abandon time is earlier', { status: 'pending_payment', paymentDeadlineAt: at(15 * MIN), lastActivityAt: at(-20 * MIN) }, at(15 * MIN)],
     ['searching: the first pending offer expiry', { ...committed, status: 'searching', offers: [row('o1', 'p1', at(60 * SEC), 'declined'), row('o2', 'p2', at(90 * SEC)), row('o3', 'p3', at(75 * SEC))] }, at(75 * SEC)],
     ['searching: the search window when earlier', { ...committed, status: 'searching', offers: [row('o1', 'p1', at(11 * MIN))] }, at(10 * MIN)],
     ['assigned: no timer', { ...committed, status: 'assigned', photographerId: 'p1', freeCancelUntil: at(2 * MIN), lateDeadlineAt: at(25 * MIN) }, null],
@@ -217,5 +218,21 @@ describe('nextDeadlineOf', () => {
   it('refund fields never set a deadline', () => {
     const r = aRequest({ ...committed, status: 'no_match', refundId: 'rf1', refundStatus: 'pending' });
     assert.equal(nextDeadlineOf(r), null);
+  });
+});
+
+describe('pending_payment and the abandon timer (#202)', () => {
+  it('pending_payment is not abandoned while the payment window is open', () => {
+    const r = aRequest({
+      status: 'pending_payment', lastActivityAt: at(-20 * MIN), paymentDeadlineAt: at(15 * MIN), paymentId: 'pay_1',
+      pendingInviteIds: ['p1'],
+    });
+    assert.deepEqual(nextDeadlineOf(r), at(15 * MIN));
+    const open = settleInstant(r, at(10 * MIN));
+    assert.equal(open.changed, false);
+    assert.equal(open.request.status, 'pending_payment');
+    // Once the window closes the request is back to choosing, idle for 35 minutes: abandoned.
+    const closed = settleInstant(r, at(15 * MIN));
+    assert.equal(closed.request.status, 'abandoned');
   });
 });

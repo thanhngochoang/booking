@@ -49,7 +49,7 @@ Nhãn mã màn ở góc trên trái, chỉ ở chế độ debug. `ScreenCode(St
 **Chiều cao cố định**: nút chính luôn cao đúng `controlHeight` (52dp) ở mọi vị trí (thanh dưới, sheet, thẻ). Không đặt nút trong `Expanded`/`Flexible` theo trục dọc và không để nút co theo nội dung; trong `Column` của sheet bọc `SizedBox(height: controlHeight)` hoặc dùng `BottomActionBar`. Nút "thấp" (38dp) chỉ dùng trong hàng nút phụ của thẻ. Mọi `AppBottomSheet` và màn có thanh dưới (S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04…) phải qua golden test kiểm chiều cao nút bằng nhau.
 
 ### AppChip (FilterChip) · Mới
-`AppChip({required String label, required bool selected, required ValueChanged<bool> onChanged, AppChipKind kind = filter, Widget? leading})`. `kind: filter` đã chọn = nền primary đặc, chữ trên primary (bộ lọc: S02.06, S02.04; S11.01 lọc loại bằng hàng tag chữ `#workshop`, xem `screens/events.md`, chỉ chip “Không thu phí” dùng `AppChip`); `kind: context` đã chọn = nền `primarySubtle`, viền + chữ primary (danh mục ngữ cảnh/lựa chọn đơn: S02.01, S04.02, S12.01, S08.04). Cao 32 (vùng chạm 48), radius tròn, `Semantics(selected)`. Hàng chip dùng `Wrap` khi cần xuống dòng, cuộn ngang khi là bộ lọc.
+`AppChip({required String label, required bool selected, required ValueChanged<bool> onChanged, AppChipKind kind = filter, Widget? leading, Widget? trailing, String? semanticsLabel, bool enabled = true})`. `kind: filter` đã chọn = nền primary đặc, chữ trên primary (bộ lọc: S02.06, S02.04; S11.01 lọc loại bằng hàng tag chữ `#workshop`, xem `screens/events.md`, chỉ chip “Không thu phí” dùng `AppChip`); `kind: context` đã chọn = nền `primarySubtle`, viền + chữ primary (danh mục ngữ cảnh/lựa chọn đơn: S02.01, S04.02, S12.01, S08.04). Cao 32 (vùng chạm 48), radius tròn, `Semantics(selected)`. Hàng chip dùng `Wrap` khi cần xuống dòng, cuộn ngang khi là bộ lọc. `trailing` (S27, #151): biểu tượng sau nhãn, cỡ 16 cùng màu chữ, cho chip mở bộ chọn ("Khu vực ▾" ở S27.01 với `AppIcons.expandMore`). `enabled: false` (S27, #151): lựa chọn chưa chọn được lúc này (thể loại thứ 5, khu vực thứ 6 ở S27.04) mờ 50% như `AppOptionTile`, không nhận chạm, trình đọc màn hình đọc là bị tắt; chip bật giữ nguyên nút ngữ nghĩa cũ.
 
 ### SegmentedTabs · Mới
 `SegmentedTabs<T>({required List<SegmentOption<T>> options, required T value, required ValueChanged<T> onChanged})`. Nền ô nhập, ô chọn nền `primarySubtle` + viền primary; chia đều chiều ngang, cao 40; nhãn một dòng thu nhỏ khi hẹp. `Semantics` kiểu tab. Dùng ở S03.01 (4), S05.01 (3 + 2), S11.04, S06.01, S10.01, S09.02 (3 + 2).
@@ -128,7 +128,8 @@ Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Ch
 Lớp view-data: `EventCardData(id, title, hostName, placeName, category, day, priceVnd, spotsLeft, coverUrl, distanceKm)` và hàm chuyển đổi `eventCardDataOf(Event e, AppLocalizations l)`.
 
 ### TicketCard · Đã có
-`TicketCard({required TicketCardData ticket, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onOpenChat, VoidCallback? onPay, VoidCallback? onQrTap, …})`. `GlassCard(highlight)` cho vé sắp diễn ra (mock S11.04, 2026-10-07): `EventTypeTag` loại, tên, một dòng "thứ dd/MM · HH:mm · n vé", badge; hàng **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M) bên trái, bên phải lời nhắc "Đưa mã này cho chủ sự kiện khi đến điểm hẹn." và mã vé chọn‑copy; hàng "Chỉ đường" (viền) + "Thêm vào lịch" (phụ, nền kính có viền); "Vào nhóm chat" (viền, nhỏ, cả chiều rộng) khi có `onOpenChat`; nút chữ đỏ "Huỷ vé · hoàn {x}%" **dưới thẻ**; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `compact: true` là hàng gọn của mock S11.04 cho mọi vé trừ vé sắp diễn ra (chờ thanh toán, hết hạn, đã qua, đã huỷ, đã hoàn): `DateBlock`, tên, "n vé · địa điểm", badge; vé chờ thanh toán có nút nhỏ "Thanh toán tiếp" dưới chữ. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.  
+`TicketCard({required TicketCardData ticket, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onOpenChat, VoidCallback? onPay, VoidCallback? onQrTap, …})`. `GlassCard(highlight)` cho vé sắp diễn ra (mock S11.04, 2026-10-07): `EventTypeTag` loại, tên, một dòng "thứ dd/MM · HH:mm · n vé", badge; hàng **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M) bên trái, bên phải lời nhắc "Đưa mã này cho chủ sự kiện khi đến điểm hẹn." và mã vé chọn‑copy; hàng "Chỉ đường" (viền) + "Thêm vào lịch" (phụ, nền kính có viền); "Vào nhóm chat" (viền, nhỏ, cả chiều rộng) khi có `onOpenChat`; nút chữ đỏ "Huỷ vé · hoàn {x}%" **dưới thẻ**; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `compact: true` là hàng gọn của mock S11.04 cho mọi vé trừ vé sắp diễn ra (chờ thanh toán, hết hạn, đã qua, đã huỷ, đã hoàn): `DateBlock`, tên, "n vé · địa điểm", badge; vé chờ thanh toán có nút nhỏ "Thanh toán tiếp" dưới chữ. `Semantics` của QR: "Mã vé {code}". `onReportProblem` (+ `reportProblemLabel`, mặc định "Báo vấn đề", #142): nút chữ đỏ nhỏ dưới hàng gọn (không mờ theo vé đã qua), chỉ khi vé có phí còn trong cửa sổ khiếu nại → S18.01. Dùng ở S11.04.
+
 Lớp view-data: `TicketCardData(ticketCode, eventTitle, typeLabel, startsAt, quantity, state, placeName?)`, `TicketState` (upcoming | pendingPayment | past | attended | cancelled).
 
 ### StatusTimeline · Đã có
@@ -242,16 +243,22 @@ Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget
 Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa có đặc tả. Viết thành widget dùng chung trước khi làm màn (thứ tự ở mục 7).
 
 #### EscrowNotice · Đã có
-`EscrowNotice({required String text})`: biểu tượng khoá + chữ trên nền `primarySubtle` (lớp `.esc` của mock), `Semantics(container)`. Chữ (không còn "cọc" từ #129, khách trả 100%): khách "Đã thanh toán {số tiền}, tiền được giữ an toàn" (S05.02); nhiếp ảnh gia "{số tiền} đang được giữ, chuyển cho bạn theo 2 mốc"; vé "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc." (S11.03). S04.03 không dùng `EscrowNotice`: câu giữ tiền nằm trong dòng chữ phụ dưới bảng tiền. Dùng ở S05.02, S11.03, S11.04, S06.05, S13.01, S13.07.
+`EscrowNotice({required String text, int? maxLines = 2, IconData icon = AppIcons.lock, String? title, Widget? trailing, VoidCallback? onTap})`: biểu tượng khoá + chữ trên nền `primarySubtle` (lớp `.esc` của mock), `Semantics(container)`. Từ #142: `icon` đổi biểu tượng đầu (đồng hồ `AppIcons.schedule` cho cửa sổ khiếu nại ở S18.01, cờ `AppIcons.flag` cho dải khiếu nại ở S05.02, `info` cho ghi chú của hỗ trợ ở S18.02); `title` là dòng đậm trên `text`; `trailing` nằm cuối hàng (liên kết "Xem khiếu nại"); `onTap` làm cả khối bấm được (gợn mực trên chính nền của khối). Không truyền bốn tham số mới thì hiển thị như cũ. Chữ (không còn "cọc" từ #129, khách trả 100%): khách "Đã thanh toán {số tiền}, tiền được giữ an toàn" (S05.02); nhiếp ảnh gia "{số tiền} đang được giữ, chuyển cho bạn theo 2 mốc"; vé "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc." (S11.03). S04.03 không dùng `EscrowNotice`: câu giữ tiền nằm trong dòng chữ phụ dưới bảng tiền. `maxLines: null` cho câu dài xuống dòng hết (ghi chú ba vế của S13.01). Dùng ở S05.02 (cả dải "Đang khiếu nại" / "Khiếu nại đã có kết quả", `DisputeBanner`), S11.03, S11.04, S06.05, S13.01, S13.07, S18.01, S18.02.
 
 #### MoneyBreakdown · Đã có
 `MoneyBreakdown({required List<MoneyLine> lines})`, `MoneyLine({required String label, required int vnd, MoneyLineStyle style = normal /*normal | strong | muted*/})`. Các hàng nhãn trái, số phải `tabularFigures`, định dạng `formatMoney`; hàng `strong` đậm ("Thanh toán 100%", tổng thanh toán), `muted` chữ phụ. Không còn hàng cọc hay "còn lại trả tại buổi chụp": S04.03 chỉ có hai hàng, "Gói {tên}" và "Thanh toán 100%". Dùng ở S04.03 (giá gói, thanh toán 100%), S11.03 (số vé × giá, tổng), S06.05 (các khoản), S13.08 (hoàn, phí).
 
 #### PolicyTable · Đã có
-`PolicyTable({required List<PolicyRow> rows, required int activeIndex})`, `PolicyRow({required String when, required String outcome})`. Các hàng chọn đơn không bấm được, hàng đang áp dụng tô `AppOptionTile` đã chọn; đọc màn hình "Đang áp dụng: …". Dùng ở S05.03 (huỷ ≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%), S13.08 (mốc huỷ chụp ngay).
+`PolicyTable({required List<PolicyRow> rows, required int activeIndex, int whenMaxLines = 1})`, `PolicyRow({required String when, required String outcome})`. Các hàng chọn đơn không bấm được, hàng đang áp dụng tô `AppOptionTile` đã chọn; đọc màn hình "Đang áp dụng: …". `activeIndex` ngoài khoảng (ví dụ -1) thì không tô hàng nào (S13.08 khi chưa thanh toán). `whenMaxLines` cho điều kiện dài xuống dòng (S13.08 dùng 3; S05.03 giữ 1). Dùng ở S05.03 (huỷ ≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%), S13.08 (mốc huỷ chụp ngay).
 
 #### ReasonPicker · Đã có
-`ReasonPicker({required List<String> reasons, required int? selected, required ValueChanged<int> onSelected, ReasonPickerStyle style = chips /*chips | radio*/, String? otherLabel, ValueChanged<String>? onOtherText, int otherMinLength = 0, int otherMaxLength = 200})`. Kiểu `chips` (S05.03 huỷ, S13.08) hoặc `radio` (S06.03 từ chối) dùng `AppOptionTile`; chọn "Lý do khác" hiện ô nhập ngắn có đếm, kiểm độ dài tối thiểu.
+`ReasonPicker({required List<String> reasons, required int? selected, required ValueChanged<int> onSelected, ReasonPickerStyle style = chips /*chips | radio*/, String? otherLabel, ValueChanged<String>? onOtherText, int otherMinLength = 0, int otherMaxLength = 200, bool otherField = true})`. Kiểu `chips` (S05.03 huỷ, S13.08, S18.01) hoặc `radio` (S06.03 từ chối) dùng `AppOptionTile`; chọn "Lý do khác" hiện ô nhập ngắn có đếm, kiểm độ dài tối thiểu. `otherField: false` (#142, S18.01) giữ chip "Lý do khác" nhưng không mở ô nhập riêng, vì màn đã có ô Mô tả bắt buộc.
+
+#### KeyValueBox và KeyValueRow · Đã có (#142)
+`KeyValueBox({required List<KeyValueRow> rows})`, `KeyValueRow({required String label, required String value, String? note, Widget? trailing})` (`lib/core/widgets/key_value_box.dart`, lớp `.kv` của mock): hộp có viền, mỗi hàng nhãn mờ bên trái, giá trị đậm (số đều) bên phải, `note` nhỏ dưới giá trị, `trailing` cuối hàng (ví dụ chip sao chép). Chuyển từ `_KeyValueBox` riêng của S04.04 vào core khi S18.02 cần cùng hình. Dùng ở S04.04 (thông tin chuyển khoản), S18.02 ("Tiền đang giữ", "Gửi lúc"; khối "Kết quả" của `DisputeOutcomeCard`).
+
+#### InlineToast · Đã có (#142)
+`InlineToast(String text)` (`lib/core/widgets/inline_toast.dart`, lớp `.toast` của mock): một dòng kết quả có dấu tích xanh trên nền `surface` viền mảnh, `Semantics(liveRegion)`. Chuyển từ `_PaidToast` riêng của S05.02. Dùng ở S05.02 ("đã thanh toán") và S18.02 ("Đã có kết quả · {HH:mm dd/MM}").
 
 #### PayMethodSelector và PayMethodPicker · Đã có
 `PayMethodSelector({required PayMethod value, required ValueChanged<PayMethod> onChanged, bool enabled = true})` (S04.03, #129): danh sách radio chọn đơn, nhóm `Semantics` "Phương thức thanh toán". Hàng đầy chiều rộng "Chuyển khoản QR" (biểu tượng `qr_code_2`, phụ đề "Miễn phí · xác nhận ngay"), dưới là hai ô nửa chiều rộng "MoMo" và "ZaloPay" (biểu tượng ví, không phụ đề); luôn có một lựa chọn (mặc định `bank_qr`); `enabled = false` khi đang tạo thanh toán thì chạm không có tác dụng. Khoá phím `pay-method-{code}`. `PayMethod` (`bankQr`, `momo`, `zaloPay`) có `code` khớp `PaymentMethod` ở miền (`bank_qr`, `momo`, `zalopay`). Thẻ `domestic_card`, `intl_card` chưa hiện (cờ cấu hình tắt).
@@ -264,13 +271,16 @@ Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa c�
 `CountdownPill({required Duration remaining})` (S04.04, #129): viên thuốc nhỏ (mock `.st.live`) "Còn mm:ss", về 0 thì đổi thành "Hết hạn" chữ màu lỗi. Không tự đếm: chủ màn giữ đồng hồ và truyền `remaining`. `Semantics.label` đổi mỗi giây ("QR còn hiệu lực {m} phút {s} giây") nhưng `liveRegion` chỉ bật ở các mốc 5:00, 1:00, 0:10 và 0 (`isCountdownAnnounceSecond`, dùng chung với `CountdownRing`), để trình đọc màn hình không bị ngắt mỗi giây (WCAG 4.1.3).
 
 #### CountdownRing và CountdownText · Đã có
-`CountdownRing({required DateTime deadline, required Duration total, double size = 96, VoidCallback? onExpired, DateTime Function()? now})`: vòng tiến độ + số lớn ở giữa và đơn vị nhỏ (mock `.cd`), cập nhật mỗi giây khi còn < 1 giờ, mỗi phút khi dài hơn; `Semantics(role: timer)` đọc "Còn {n} giây"; giảm chuyển động: vòng nhảy theo giây, không nội suy. `CountdownText` cùng logic cho chữ trong nút ("Nhận · còn 22 giờ"). `onExpired` gọi đúng một lần khi về 0 (S14.03 dùng để gọi `tickInstantRequest`); `now` cho test và đồng hồ chung (`clockProvider`). Số là giờ khi còn ≥ 1 giờ, phút khi còn ≥ 1 phút ("38" + "phút"), giây khi dưới 1 phút; chưa có dạng `mm:ss` như mock S14.03-shooting ("38:12"; hoãn, #140). Dùng ở S14.02 (60 giây), S14.03 (thời gian buổi chụp, 132dp), S13.03, S13.06, S06.01 (hạn nhận yêu cầu).
+`CountdownRing({required DateTime deadline, required Duration total, double size = 96, VoidCallback? onExpired, DateTime Function()? now})`: vòng tiến độ + số lớn ở giữa và đơn vị nhỏ (mock `.cd`), cập nhật mỗi giây khi còn < 1 giờ, mỗi phút khi dài hơn; `Semantics(role: timer)` đọc "Còn {n} giây"; giảm chuyển động: vòng nhảy theo giây, không nội suy. `CountdownText` cùng logic cho chữ trong nút ("Nhận · còn 22 giờ"); `interval` buộc nhịp cập nhật cố định cho chữ có giây (S13.06-confirm "1:52:10"). `onExpired` gọi đúng một lần khi về 0 (S14.03 dùng để gọi `tickInstantRequest`); `now` cho test và đồng hồ chung (`clockProvider`). Số là giờ khi còn ≥ 1 giờ, phút khi còn ≥ 1 phút ("38" + "phút"), giây khi dưới 1 phút; chưa có dạng `mm:ss` như mock S14.03-shooting ("38:12"; hoãn, #140). Dùng ở S14.02 (60 giây), S14.03 (thời gian buổi chụp, 132dp), S13.03, S13.06, S06.01 (hạn nhận yêu cầu).
 
 #### ChatBubble, ChatComposer, ConversationRow · Đã có
-`ChatBubble({required ChatBubbleContent content, required bool mine, BubbleSendState state = sent, String? senderName, VoidCallback? onRetry})`: của mình gradient bên phải, người kia kính bên trái, ảnh, vị trí, tin hệ thống ở giữa; `sending` mờ + đồng hồ, `failed` có "Gửi lại". `ChatComposer({required ValueChanged<String> onSend, VoidCallback? onPickImage, bool enabled = true, String? disabledReason})`: nút ảnh, ô tin bo tròn, nút gửi gradient; không gửi tin rỗng. `ConversationRow({required String name, String? avatarUrl, required String preview, required String timeLabel, int unread = 0, Widget? badge, VoidCallback? onTap})` (mock S07.02). Dùng ở S07.01, S07.02, S11.06.
+`ChatBubble({required ChatBubbleContent content, required bool mine, BubbleSendState state = sent, String? senderName, VoidCallback? onRetry})`: của mình gradient bên phải, người kia kính bên trái, ảnh, vị trí, tin hệ thống ở giữa; `sending` mờ + đồng hồ, `failed` có "Gửi lại". `ChatComposer({required ValueChanged<String> onSend, VoidCallback? onPickImage, bool enabled = true, String? disabledReason})`: nút ảnh, ô tin bo tròn, nút gửi gradient; không gửi tin rỗng. `ConversationRow({required String name, String? avatarUrl, required String preview, required String timeLabel, int unread = 0, Widget? badge, VoidCallback? onTap})` (mock S07.02). Dùng ở S07.01, S07.02, S11.06, S18.02 và chat hỗ trợ S18.03 (qua `SupportThreadView`).
 
-#### SwipeDeck · Mới
-`SwipeDeck<T>({required List<T> items, required Widget Function(BuildContext, T) cardBuilder, required ValueChanged<T> onLike, required ValueChanged<T> onSkip, VoidCallback? onUndo, VoidCallback? onEmpty})`: chồng thẻ (3 thẻ hiện, thẻ sau thu nhỏ và mờ), vuốt phải/trái có dấu "CHỌN", nút Hoàn tác / ✕ / ♥ luôn có (≥ 48dp, nhãn đọc màn hình), giảm chuyển động thì thẻ đổi tức thì.
+#### SupportThreadView · Đã có (#204, mở rộng #142; riêng hỗ trợ)
+`SupportThreadView({required String threadId, required bool enabled, String? disabledReason, required String hint, required String Function(SupportMessage) senderLabel, Widget? emptyPlaceholder, Widget? header, bool scrollHeader = false})` (`lib/features/help/support_thread_view.dart`, không ở `core/`): danh sách tin của một `support_threads/{id}` (`limit(30)`) bằng `ChatBubble` + `ChatComposer`, gửi qua `sendSupportMessage`, lỗi gửi là SnackBar "Chưa gửi được tin nhắn. Thử lại." / "Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.". `senderLabel` trả nhãn của từng tin (trả `''` cho tin của mình). Từ #142: tin `senderRole = system` hiện là tin hệ thống ở giữa (`SystemContent`; luồng help không có tin này); `scrollHeader: true` cho `header` cuộn cùng tin nhắn và mở ở đầu trang, chỉ cuộn xuống cuối sau khi người dùng gửi (S18.02: chi tiết khiếu nại ở trên, Trao đổi ở dưới); mặc định `false` giữ `header` cố định và luôn theo tin mới nhất (chat hỗ trợ S18.03). `enabled: false` bỏ ô nhắn, hiện `disabledReason` ở chỗ đó nếu có (khiếu nại đã có kết quả).
+
+#### SwipeDeck · Đã có
+`SwipeDeck<T>({required List<T> items, required Widget Function(BuildContext, T) cardBuilder, required ValueChanged<T> onLike, required ValueChanged<T> onSkip, VoidCallback? onUndo, VoidCallback? onEmpty, required String likeStampLabel, required String likeLabel, required String skipLabel, required String undoLabel, int initialIndex = 0, int initialUndoDepth = 0, Widget? belowCards})` (`lib/core/widgets/swipe_deck.dart`, #140 PR 2): chồng thẻ (3 thẻ hiện; thẻ 2: dịch 12, thu 0,94, mờ 0,55; thẻ 3: 24, 0,88, 0,3), kéo phải quá 30% chiều rộng hoặc ♥ là chọn, kéo trái hoặc ✕ là bỏ qua, dấu `likeStampLabel` ("CHỌN") hiện dần khi kéo; Hoàn tác trả lại thẻ vừa trả lời. Nút ♥ / ✕ 56dp, Hoàn tác 44dp + đệm (vùng chạm ≥ 48dp), luôn có, nhãn đọc màn hình `likeLabel` / `skipLabel` / `undoLabel` (S13.02: "Chọn người này", "Bỏ qua", "Hoàn tác", theo mock). Giảm chuyển động thì thẻ đổi tức thì, không bay. `initialIndex` là vị trí bắt đầu (các thẻ trước đã trả lời) và `initialUndoDepth` là số thẻ trước đó Hoàn tác còn trả lại được: dùng khi bộ thẻ dựng lại (S13.02 quay về từ tóm tắt). `belowCards` nằm giữa thẻ và hàng nút (S13.02: người đã chọn và "Xong"). `onEmpty` gọi sau thẻ cuối. Ảnh trong thẻ đổi bằng chạm nửa trái/phải (vuốt ngang là chọn/bỏ qua) — phần của thẻ S13.02, không của `SwipeDeck`.
 
 #### MatchOverlay · Đã có
 `MatchOverlay({required String name, required String body, String? myAvatarUrl, String? theirAvatarUrl, required VoidCallback onContinue, Duration autoContinueAfter = 3 s})` (`lib/core/widgets/match_overlay.dart`, #140; `body` là dòng phụ của từng phía, màn tự viết): **một nét liền vẽ chiếc máy ảnh** (continuous line art, theo hình người dùng đưa 2026-10-02; không trái tim, không icon tròn): `CustomPainter` vẽ path thân máy + ống kính xoáy vào tâm bằng `PathMetric.extractPath` theo tiến độ (0–1,8 s, `Curves.easeInOutCubic`), nét `onSurface` dày 4 (theo hộp 420×250), đầu/khớp tròn; hai nút chụp vẽ tiếp (1,5–1,95 s); vệt màu `primary` 16% sau ống kính hiện dần (1,2–2,1 s); ống kính "chớp" một vòng sáng `primary` nở 0,55→1,35 và mờ (1,75–2,45 s, kèm `HapticFeedback.lightImpact`); hai avatar 40dp **đáp vào giữa ống kính** (phóng 0,6→1, lò xo nhẹ, lệch 100 ms): hai người cùng lọt khung. Rồi "Đã match với {tên}" và dòng phụ hiện lên (2,1 s). Rộng `min(240dp, 78%)`, tỉ lệ 420:250. Tự sang màn kế sau khoảng 3 giây; nút "Tiếp tục" luôn có; chạm bất kỳ đâu bỏ qua hiệu ứng (nhảy tới khung cuối). Giảm chuyển động: hiện ngay khung cuối, không chớp, không rung. `Semantics(label: 'Đã match với {tên}', liveRegion)`. Path gốc ở `docs/design/ui-mock.html` (`.mcam`). Dùng ở S13.04: phía khách (S13.05, kế hoạch khách) và phía nhiếp ảnh gia trên S14.02 sau khi nhận (khung `#S13.04-provider`), rồi sang S14.03.
@@ -279,8 +289,10 @@ Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa c�
 `OfferStack({required List<Widget> offers})` (`lib/core/widgets/offer_stack.dart`, #140): chồng tối đa 3 thẻ lời mời, thẻ trên đầy đủ, hai mép thẻ sau lộ ra phía trên (mock S14.02 `.ostk`: lùi vào 12/24, nhô lên 8/15, mép thứ hai mờ 60%). Chỉ thẻ đầu được dựng; các mép không đọc màn hình (số lời mời nằm ở dòng phụ của thanh tiêu đề).
 
 #### MapPreview · Đã có
-`MapPreview({required List<MapPin> pins, double height = 250, bool route = false, VoidCallback? onRecenter, BorderRadius? borderRadius})`, `MapPin({required double lat, required double lng, required String label, bool self = false})` (`lib/core/widgets/map_preview.dart`, #140, plan Decision 30): bản đồ **sơ đồ**, không tile, không SDK bản đồ, không API trả phí. Nền vẽ lại `svg.base` của mock `.map` (khối nhà, đường, nước, công viên; hộp 260×200 phủ kín như `xMidYMid slice`) bằng các token `map-bg`, `map-block`, `map-road`, `map-water`, `map-park` (sáng/tối); đường phố chỉ để trang trí, chỉ vị trí tương đối của các ghim là thật. Ghim đặt bằng phép chiếu equirectangular (kinh độ nhân cos vĩ độ, bắc ở trên, khung vừa khít và căn giữa): khung là hộp bao các ghim, nới cho mỗi chiều ít nhất 0,0036° (~400 m, hai ghim cách vài mét không bị kéo ra mép), rồi chừa thêm 20% mỗi bên; một ghim nằm giữa. Ghim (mock `.mpin`): chấm 14 px viền trắng 3 px, `self` màu `map-self` (xanh), còn lại màu chữ phụ; nhãn chữ trong thẻ nhỏ dưới chấm. `route`: đường chấm (nét 1, cách 7, dày 4, màu `accent`) cong nhẹ giữa hai ghim đầu. `onRecenter`: nút tròn 34 px góc dưới phải (vùng chạm 48dp), tooltip "Về vị trí của tôi". Đọc màn hình: một nút "Bản đồ: {nhãn các ghim}" (`mapSemantics`), nhãn ghim không đọc lại. Bo góc mặc định 16 (`--r2`); `BorderRadius.zero` cho bản đồ tràn viền (S13.05). Không có skeleton riêng (màn dùng skeleton thẻ 150/250). Dùng ở S14.03 (ghim khách tại điểm hẹn + "Bạn" từ vị trí mới nhất, có đường), S13.05 và S13.01 (kế hoạch khách), nền mờ của S13.08.
+`MapPreview({required List<MapPin> pins, double height = 250, bool route = false, VoidCallback? onRecenter, BorderRadius? borderRadius, MapCenter? center})`, `MapPin({required double lat, required double lng, required String label, bool self = false})` (`lib/core/widgets/map_preview.dart`, #140, plan Decision 30): bản đồ **sơ đồ**, không tile, không SDK bản đồ, không API trả phí. Nền vẽ lại `svg.base` của mock `.map` (khối nhà, đường, nước, công viên; hộp 260×200 phủ kín như `xMidYMid slice`) bằng các token `map-bg`, `map-block`, `map-road`, `map-water`, `map-park` (sáng/tối); đường phố chỉ để trang trí, chỉ vị trí tương đối của các ghim là thật. Ghim đặt bằng phép chiếu equirectangular (kinh độ nhân cos vĩ độ, bắc ở trên, khung vừa khít và căn giữa): khung là hộp bao các ghim, nới cho mỗi chiều ít nhất 0,0036° (~400 m, hai ghim cách vài mét không bị kéo ra mép), rồi chừa thêm 20% mỗi bên; một ghim nằm giữa. Ghim (mock `.mpin`): chấm 14 px viền trắng 3 px, `self` màu `map-self` (xanh), còn lại màu chữ phụ; nhãn chữ trong thẻ nhỏ dưới chấm. `route`: đường chấm (nét 1, cách 7, dày 4, màu `accent`) cong nhẹ giữa hai ghim đầu. `onRecenter`: nút tròn 34 px góc dưới phải (vùng chạm 48dp), tooltip "Về vị trí của tôi". `center` (`({lat, lng})`): khung được lấy đối xứng quanh điểm đó nên điểm nằm giữa bản đồ mà mọi ghim vẫn trong khung (S13.05: sau "Về vị trí của tôi" điểm hẹn về giữa). Đọc màn hình: một nút "Bản đồ: {nhãn các ghim}" (`mapSemantics`), nhãn ghim không đọc lại. Bo góc mặc định 16 (`--r2`); `BorderRadius.zero` cho bản đồ tràn viền (S13.05). Không có skeleton riêng (màn dùng skeleton thẻ 150/250). Dùng ở S14.03 (ghim khách tại điểm hẹn + "Bạn" từ vị trí mới nhất, có đường), S13.05 và S13.01 (kế hoạch khách), nền mờ của S13.08.
 
+#### InstantIconDisc và InstantBoldPart · Đã có (riêng Chụp ngay)
+`InstantIconDisc(IconData icon)` (`lib/features/instant/instant_icon_disc.dart`, #140 PR 2): đĩa 96dp nền `secondary` với một biểu tượng 40 màu chữ phụ (mock `.empty .idill`), trang trí (`ExcludeSemantics`), đặt trên tiêu đề của các màn trống/kết thúc của Chụp ngay: S13.02 trống, S13.07, S13.06 xong, S13.08 đã đóng. `InstantBoldPart(String text, {required String part, TextStyle? style, TextAlign? textAlign})` (`instant_bold_part.dart`): một câu có đúng một phần in đậm số đều (mock `<b class="tn">`), cho thời gian và số tiền trong chữ của Chụp ngay (S13.03 "Mỗi lời mời còn **0:42**", S13.06 "Tự hoàn thành sau **1:52:10**"); không thấy `part` thì in thường. Hai widget ở thư mục tính năng, không ở `core/`: chưa màn nào khác dùng.
 
 ### Component của spec 10-05 (loại nhà cung cấp, album, giải thưởng, Đăng việc) · Mới
 
@@ -299,7 +311,10 @@ Nhãn "Chưa nhận đơn" (`profileOrdersClosedTag`) ở S03.01 cho thợ có `
 `AwardChip` (S03.01): thẻ 178dp, viền và nền vàng nhạt, đĩa biểu tượng giải vàng, kết quả (đậm) + "cuộc thi năm · hạng mục" một dòng. `AwardRow` (S25.01): đĩa biểu tượng (vàng khi `approved`, xám khi khác), tiêu đề "kết quả · cuộc thi năm", `StatusBadge` + dòng phụ (hạng mục hoặc lý do).
 
 #### EarningRow · Mới
-Hàng khoản thu của S06.05 và lịch sử thanh toán S22.01 (mock `.card`): trái là tiêu đề đậm "Tên khách · gói" (tối đa 2 dòng) và ngày `T7 12/10`; phải là số tiền ngắn (`450K`, `tabularFigures`, màu chữ thường, không dùng màu nhấn cho tiền) và `StatusBadge` trạng thái; dòng ghi chú tuỳ chọn bên dưới với biểu tượng (lý do tạm giữ, chữ cố định theo mã, không phải lời khách). `Semantics`: "tiêu đề, ngày, số tiền đầy đủ, ghi chú" (nút khi có `onTap`); ≥ 48dp. `EarningRow.skeleton()` cùng hình khối. Dùng ở S06.05 và S22.01.
+Hàng khoản thu của S06.05 và lịch sử thanh toán S22.01 (mock `.card`): trái là tiêu đề đậm "Tên khách · gói" (tối đa 2 dòng) và ngày `T7 12/10`; phải là số tiền ngắn (`450K`, `tabularFigures`, màu chữ thường, không dùng màu nhấn cho tiền) và `StatusBadge` trạng thái; dòng ghi chú tuỳ chọn bên dưới với biểu tượng (lý do tạm giữ, chữ cố định theo mã, không phải lời khách). `Semantics`: "tiêu đề, ngày, số tiền đầy đủ, ghi chú" (nút khi có `onTap`); ≥ 48dp. `EarningRow.skeleton()` cùng hình khối. Dùng ở S06.05 và S22.01. S22.01 (#141) dùng thêm ba chỗ tuỳ chọn: `statusLabel` (chữ của nhãn trạng thái, đọc cùng hàng), `action` (nút viền nhỏ dưới dòng ngày, "Chọn tài khoản nhận hoàn") và `footer` (liên kết chữ dưới phần bung, "Xem buổi chụp"); khi có `action`/`footer` chúng vẫn là nút riêng cho trình đọc màn hình. Nhãn trạng thái của S22.01 là viên `.st` của mock (chữ thường), không phải `StatusBadge`.
+
+#### MonthHeader và groupByVnMonth · Đã có (#141)
+Trong `core` (xuất qua `core.dart`), dùng ở S06.05 và S22.01. `MonthHeader.first(title, trailing)`: dòng `.sec` của mock, tiêu đề ("Các khoản") và tháng ở bên phải. `MonthHeader.month(month)`: nhãn `.nsec` của các tháng sau, viết hoa, chữ nhỏ, màu mờ, giãn chữ 0,08em. `monthLabel(l, monthKey, thisYear)` cho "Tháng 10" / "Tháng 10/2025" (dùng khoá `earningsMonth*`). `groupByVnMonth(items, dayKey)` nhóm liên tiếp theo tháng của ngày giờ Việt Nam (khoá `YYYY-MM`), giữ thứ tự truy vấn.
 
 #### PortfolioViewToggle · Mới
 Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), biểu tượng + chữ, `Semantics` vai trò tab có trạng thái chọn.
@@ -311,7 +326,7 @@ Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), bi
 Hàng có tay nắm ≡ (vùng chạm 48dp, nhấn giữ để kéo), ảnh, tên, phụ đề, menu "…" có Chuyển lên / Chuyển xuống / Lên đầu / Xuống cuối (đường thay thế không cần kéo). Đọc vị trí "n trên m"; trạng thái đang kéo: viền primary, nền accent nhạt, bóng.
 
 #### PostPickerGrid · Mới
-Lưới 3 cột chọn nhiều, ô chọn có số thứ tự (thứ tự chọn), nhãn góc dưới ("4 ảnh", tên album hiện tại). Giới hạn số ô chọn; ô vượt giới hạn vô hiệu.
+Lưới 3 cột chọn nhiều, ô chọn có số thứ tự (thứ tự chọn), nhãn góc dưới ("4 ảnh", tên album hiện tại). Giới hạn số ô chọn; ô vượt giới hạn vô hiệu. Tham số `crossAxisCount` (mặc định `PostPickerGrid.columns` = 3; S27.03 dùng 5 ô nhỏ mỗi hàng như mock, #151).
 
 #### JobCard · Mới
 `JobCard({super.key, required this.data, this.onTap, this.variant = JobCardVariant.customer})`
@@ -338,7 +353,7 @@ Mọi màn tải ảnh lên (S10.01, S05.05, S11.05, S12.01, S25 minh chứng, S
 ## 5. Công cụ không phải widget
 
 ### Định dạng · Mới
-`formatMoney(int vnd, {bool short = false})` → `1.500.000₫` hoặc `1,5M`; `eventPriceLabel(int vnd)` → `250.000₫` hoặc, khi 0, **“Không thu phí”** (không bao giờ “0₫”); `formatDay(DateTime)` → `T7 12/10`; `formatTimeRange(start, end)` → `15:30–17:30`; `formatDistance(double km)` → `1,2 km`. Có test đơn vị với múi giờ Asia/Ho_Chi_Minh.
+`formatMoney(int vnd, {bool short = false})` → `1.500.000₫` hoặc `1,5M`; `eventPriceLabel(int vnd)` → `250.000₫` hoặc, khi 0, **“Không thu phí”** (không bao giờ “0₫”); `formatDay(DateTime)` → `T7 12/10`; `formatTimeRange(start, end)` → `15:30–17:30`; `formatHm(DateTime)` → `07:05` (#142; đọc nguyên trường giờ/phút, nên truyền giờ VN `toVn(...)`; S11.04 và S18.02 dùng chung thay cho hàm riêng); `formatDistance(double km)` → `1,2 km`. Có test đơn vị với múi giờ Asia/Ho_Chi_Minh.
 
 ### ContactLauncher · Mới
 `ContactLauncher.open(ContactChannel, {required ContactSubject subject})` (trả `ContactOpenResult`: `opened | locked | unavailable | cannotLaunch`) xin URL từ `ContactLinkRepository.link(...)` (gọi hàm callable `getContactLink`, lỗi `contact_locked` nếu chưa mở khoá) rồi mở bằng `url_launcher` (`LaunchMode.externalApplication`); `canOpen(channel)` kiểm `canLaunchUrl` để ẩn kênh không dùng được. Số không bao giờ nằm trong ứng dụng ngoài khoảnh khắc mở URL; không ghi vào log hay phân tích. Có bản giả trong test. Chỉ mở URL đúng dạng `tel:+…`, `https://zalo.me/<số>`, `https://wa.me/<số>` (không query, cổng, user info); URL khác bị từ chối.
@@ -346,8 +361,8 @@ Mọi màn tải ảnh lên (S10.01, S05.05, S11.05, S12.01, S25 minh chứng, S
 ### RecommendationRepository · Mới
 Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQuery) → RecommendationPage`, `similar(photographerId)`, `recommendPosts(...)`, `sendFeedback(List<RecommendationSignal>)`. Cài đặt `RemoteRecommendationRepository` (gọi hàm callable `recommend`, hạn 800 ms) và `LocalRecommender` (sao đã làm mượt + khoảng cách; dự phòng và test). Hai bản qua cùng bộ test hợp đồng.
 
-### LocationRepository · Mới
-`currentApproxLocation()` (độ chính xác thấp, hạn 8 giây), `permissionStatus()`, `request()`, `openSettings()`. Trả `geohash` thay vì toạ độ cho phần gửi mạng. Bản giả cho test.
+### LocationRepository · Đã có
+`currentApproxLocation()` (độ chính xác thấp, hạn 8 giây), `currentPosition()`, `currentFix({highAccuracy})` (vị trí kèm sai số thật, #140), `permissionStatus()`, `request()`, `openSettings()` (cài đặt của app), `openLocationSettings()` (cài đặt vị trí của máy khi công tắc vị trí tắt, `serviceOff`; S13.01 "Cho phép vị trí", #140 PR 2). Trả `geohash` thay vì toạ độ cho phần gửi mạng. Bản giả cho test.
 
 ---
 
@@ -371,7 +386,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 `TomatoRatioBar({required int tomatoCount, required int brickCount})`. Thanh 8dp bo tròn (mock `.vratio`), đoạn cà chua trước, cách 2dp, rộng tỷ lệ với số lượng (56 : 2 thì đoạn gạch rất hẹp); một phe bằng 0 thì phe kia chiếm cả thanh; không có đánh giá thì vẽ nền trống. `Semantics.label`: "{t} cà chua, {b} gạch". Dùng ở đầu tab Đánh giá của S03.01, kèm "% cà chua" lớn và dòng "56 cà chua · 2 gạch · 58 đánh giá".
 
 #### MetaLine · Mới
-`MetaLine(List<MetaPart> parts, {TextStyle? style, int maxLines = 1})`; `MetaPart.text(String)` và `MetaPart.tomato(int pct, {int? count})` (có `count` thì "97% (58)", dùng ở thẻ ảnh S02.01). Nối các phần bằng " · " thành một `Text.rich`, phần cà chua là `VerdictIcon(12)` + "97%" (`formatTomatoPct`) nằm giữa dòng chữ; cắt bằng dấu "…" khi quá `maxLines`. Mặc định cỡ 12 màu `foregroundSecondary`. Thay các chuỗi ghép sẵn có số sao (thẻ thợ, hàng kết quả tìm, dòng chủ sự kiện, dòng tin cậy của báo giá). Ẩn phần cà chua khi chưa đủ 5 đánh giá (`hasTomatoPct`); `MetaPart` của phần đánh giá do helper dùng chung của lõi `reviewMetaPart(summary, l10n, {withCount})` (`lib/core/review_meta.dart`) dựng, các phần chữ khác do tính năng tạo: từ 5 đánh giá là phần cà chua, 1–4 là chữ "Mới · {count} đánh giá" (`photographerReviewsNew`), 0 thì không có gì. Đọc cho trình đọc màn hình chỉ là "97%" (biểu tượng không có nhãn).
+`MetaLine(List<MetaPart> parts, {TextStyle? style, int maxLines = 1})`; `MetaPart.text(String, {String? bold})` (phần `bold` trong chữ in đậm, số đều nhau như mock `<b class="tn">`, S13.05 "đến trong khoảng **9 phút**") và `MetaPart.tomato(int pct, {int? count})` (có `count` thì "97% (58)", dùng ở thẻ ảnh S02.01). Nối các phần bằng " · " thành một `Text.rich`, phần cà chua là `VerdictIcon(12)` + "97%" (`formatTomatoPct`) nằm giữa dòng chữ; cắt bằng dấu "…" khi quá `maxLines`. Mặc định cỡ 12 màu `foregroundSecondary`. Thay các chuỗi ghép sẵn có số sao (thẻ thợ, hàng kết quả tìm, dòng chủ sự kiện, dòng tin cậy của báo giá). Ẩn phần cà chua khi chưa đủ 5 đánh giá (`hasTomatoPct`); `MetaPart` của phần đánh giá do helper dùng chung của lõi `reviewMetaPart(summary, l10n, {withCount})` (`lib/core/review_meta.dart`) dựng, các phần chữ khác do tính năng tạo: từ 5 đánh giá là phần cà chua, 1–4 là chữ "Mới · {count} đánh giá" (`photographerReviewsNew`), 0 thì không có gì. Đọc cho trình đọc màn hình chỉ là "97%" (biểu tượng không có nhãn).
 
 ---
 
@@ -384,7 +399,25 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 `MemberStrip({required List<MemberStripItem> members, required int total, required String label, ValueChanged<String>? onTap})` · `MemberStripItem({required String id, required String name, String? avatarUrl, int? tomatoPct})` · `MemberStrip.skeleton()`. Hàng thành viên của hồ sơ studio (mock `.mems`, S03.01-studio): tối đa 4 người, mỗi ô rộng tối đa 54dp gồm `AppAvatar` 40 (trang trí), tên (một dòng, cắt "…") và `MetaLine` cà chua (bỏ khi `tomatoPct` null, tức chưa đủ 5 đánh giá); còn lại của `total` (`memberCount`) là vòng "+n" nền field. Các ô co lại cùng nhau khi hẹp (320dp, chữ 1,3). Trình đọc màn hình: một danh sách (`SemanticsRole.list`) tên `label` ("Thành viên Studio Mây"), mỗi người là một mục đọc "tên, 97% cà chua" và bấm được (mở hồ sơ thợ qua `onTap(id)`), mục "+n" đọc "và {n} thành viên khác". Skeleton: bốn vòng avatar và một dòng. Dùng ở S03.01 (studio).
 
 #### AssigneeCard · Đã có
-`AssigneeCard({required AssigneeSummary summary, required String studioName, required VoidCallback onViewProfile, String? changeLabel, VoidCallback? onChange})` · `AssigneeSummary({required String id, required String name, String? avatarUrl, bool verified = false, int? tomatoPct, int shoots = 0})` · `AssigneeCard.skeleton()`. Thẻ "Thợ chụp cho bạn" của booking studio phía khách (mock `#S05.02-studio`): `AppAvatar` 48 (trang trí), tên đậm kèm tích xanh khi `verified`, `MetaLine` "🍅 97% · 112 buổi · thợ của Studio Mây" (bỏ phần cà chua khi `tomatoPct` null, tức chưa đủ 5 đánh giá; `studioName` rỗng thì chỉ "112 buổi"), nút viền xsmall "Xem hồ sơ" bên phải (rộng tối đa nửa hàng), và dưới cùng nút viền small `changeLabel` ("Xin đổi thợ (1 lần)"; `onChange` null thì tắt, ví dụ "Đã xin đổi · chờ studio"; `changeLabel` null thì không có nút). Nhãn "Giao {ngày}" và tiêu đề khối nằm ở màn hình (`StudioAssigneeBlock` của S05.02), không trong thẻ. Trình đọc màn hình đọc người là một nhãn "tên, Đã xác minh, 97% cà chua · 112 buổi · thợ của Studio Mây"; mỗi nút giữ nhãn riêng và vùng chạm 48dp. Skeleton: vòng avatar và hai dòng trong khung thẻ (khi hồ sơ thợ đang tải). Dùng ở S05.02 (booking studio, phía khách).
+`AssigneeCard({required AssigneeSummary summary, required String studioName, required VoidCallback onViewProfile, String? changeLabel, VoidCallback? onChange, bool collaborator = false})` · `AssigneeSummary({required String id, required String name, String? avatarUrl, bool verified = false, int? tomatoPct, int shoots = 0})` · `AssigneeCard.skeleton()`. Thẻ "Thợ chụp cho bạn" của booking studio phía khách (mock `#S05.02-studio`): `AppAvatar` 48 (trang trí), tên đậm kèm tích xanh khi `verified`, `MetaLine` "🍅 97% · 112 buổi · thợ của Studio Mây" (bỏ phần cà chua khi `tomatoPct` null, tức chưa đủ 5 đánh giá; `studioName` rỗng thì chỉ "112 buổi"), nút viền xsmall "Xem hồ sơ" bên phải (rộng tối đa nửa hàng), và dưới cùng nút viền small `changeLabel` ("Xin đổi thợ (1 lần)"; `onChange` null thì tắt, ví dụ "Đã xin đổi · chờ studio"; `changeLabel` null thì không có nút). Nhãn "Giao {ngày}" và tiêu đề khối nằm ở màn hình (`StudioAssigneeBlock` của S05.02), không trong thẻ. Trình đọc màn hình đọc người là một nhãn "tên, Đã xác minh, 97% cà chua · 112 buổi · thợ của Studio Mây"; mỗi nút giữ nhãn riêng và vùng chạm 48dp. Skeleton: vòng avatar và hai dòng trong khung thẻ (khi hồ sơ thợ đang tải). Dùng ở S05.02 (booking studio, phía khách). `collaborator: true` (S27, #151, mock `#S05.02-studio-collab`): meta chỉ "{n} buổi" và thêm dòng "Cộng tác với {Studio}" dưới meta (khoá `assignee-collab-label`, cũng nằm trong nhãn đọc); `StudioAssigneeBlock` bật cờ khi thợ đã nhận là cộng tác viên.
+
+---
+
+### Component của S27 (tuyển thợ, cộng tác viên) · Đã có (#151)
+
+Không có widget mới trong `lib/core/`: lõi chỉ thêm tham số (`AppChip.trailing`, `AppChip.enabled`, `PostPickerGrid.crossAxisCount`, `AssigneeCard.collaborator`), hai biểu tượng (`AppIcons.handshake`, `AppIcons.campaign`) và hàm `vnDaysBetween(from, to)` (`lib/core/vn_time.dart`: số ngày lịch Việt Nam giữa hai thời điểm, có dấu; dùng cho "hôm qua", "{n} tuần trước", "còn {n} ngày"). Các widget dưới đây nằm trong feature (không dùng ở use case khác nên chưa rút vào lõi; rút khi có màn thứ hai cần).
+
+#### CollabTermsCard · Đã có (feature)
+`CollabTermsCard({required bool agreed, required ValueChanged<bool>? onChanged})` (`lib/features/recruit/collab_terms_card.dart`). Khối "Điều khoản cộng tác" (mock S27.03): tiêu đề, ba gạch đầu dòng `collabTerm1–3` (mẫu tối thiểu, chờ luật sư duyệt), ô "Tôi đồng ý điều khoản cộng tác" (khoá `collab-terms-agree`). `onChanged` null thì ô tắt (đang gửi). Màn giữ nút chính tắt cho tới khi `agreed`. Dùng ở S27.03 (tin cộng tác) và sheet "Cộng tác với {Studio}" của S27.06 (thợ).
+
+#### RecruitCard, RecruitKindTag, RecruitMatchTag, RecruitNote · Đã có (feature)
+`RecruitCard({required RecruitPost post, required bool match, required DateTime now, required VoidCallback onTap})` · `RecruitCard.skeleton()` (`lib/features/recruit/recruit_card.dart`, mock `.jcard`): tag loại (`RecruitKindTag`, mock `.tag`) + "Hợp với bạn" (`RecruitMatchTag`, mock `.fit`) khi điểm khớp 2, tiêu đề đậm, dòng "Studio · khu vực · thể loại" kèm con dấu studio, hàng thù lao ("800.000₫/buổi" / "Thoả thuận") + "{tần suất} · {bao lâu trước}". `RecruitNote(text, {icon = AppIcons.lock})` là dòng ghi chú mock `.lockn` (khoá hoặc info). Dùng ở S27.01, S27.02, S27.05.
+
+#### CollabPayBadge, CollabTitleMeta · Đã có (feature)
+`CollabPayBadge(PayStatus status)` (`lib/features/collab/collab_controller.dart`): `StatusBadge.custom` chữ in hoa như mock `.badge`, "Cần trả" (vàng), "Chưa nhận" (đỏ), "Đã báo trả" (tím), "Đã nhận" (xanh); màu lấy cặp subtle/ink của theme tối hoặc sáng. `CollabTitleMeta({required String title, required String meta})`: hai dòng tiêu đề + meta của thẻ việc (mock `.irow2`). Dùng ở S27.06 (studio và thợ).
+
+#### StudioOfferLine · Đã có (feature)
+`StudioOfferLine({required Booking booking})` (`lib/features/booking/widgets/studio_offer_line.dart`): phía studio của booking có offer CTV, dựa trên `studioOfferOf(booking, now)`: "Chờ {tên} nhận · còn {thời gian}" (đếm lùi bằng đồng hồ tiêm vào) hoặc dòng đỏ "{tên} đã từ chối. Giao người khác trước {hạn}."; không hiện khi booking đã huỷ, xong hoặc offer không còn liên quan. Dùng ở S05.02 (studio) và trong `StudioJobCard` của S06.01.
 
 ---
 
@@ -404,18 +437,18 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | Widget | Màn |
 |--------|-----|
 | `CtaSurface`/`AppButton` | mọi màn có nút chính, đĩa tab giữa |
-| `AppChip`, `SegmentedTabs` | S02.01, S03.01, S02.06, S04.02, S05.01, S11.01, S11.04, S06.01, S10.01, S12.01, S09.01, S09.02, S02.04 |
+| `AppChip`, `SegmentedTabs` | S02.01, S03.01, S02.06, S04.02, S05.01, S11.01, S11.04, S06.01, S10.01, S12.01, S09.01, S09.02, S02.04, S27.01, S27.04, S27.06 (sheet đã trả) |
 | `PhotoCard` | S02.01, S03.01, S02.03, S10.01 |
 | `PhotographerCard`, `ReasonChips` | S02.01, S02.06 |
 | `BookingCard` | S04.03, S04.04, S05.02, S07.01, S05.01, S06.01 |
 | `EventCard`, `DateBlock` | S02.03, S11.01, S12.02, S12.03, S02.04 |
-| `TicketCard` | S11.04 |
+| `TicketCard` | S11.04 (cả nút "Báo vấn đề" → S18.01) |
 | `AppBottomSheet` | S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04 |
 | `StepProgress` | S04.01–S04.03, S08.01, S12.01, S12.02, S08.05, S08.02 |
 | `AppFooterBar` | S08.05, S09.03 |
 | `AppOptionTile` | S02.05, S02.06, S08.01 và sheet hình thức ở Cài đặt (`icon`), S26.04 (`meta`, `enabled`) (sau: S04.02, S13.01) |
 | `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04, S29.04 |
-| `StatusTimeline` | S05.02 |
+| `StatusTimeline` | S05.02, S18.02 |
 | `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
 | `EarningRow` | S06.05, S22.01 |
 | `ContactDial`, `ContactLauncher` | S03.01, S05.02, S11.02, S06.01, S12.03 (S05.04) |
@@ -430,17 +463,20 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `PermissionPrimer` | S17.03 |
 | `BadgeChip`, `BadgeRow` (`alwaysShowSeeAll`), `BadgeTile` | S03.01 và S09.01 (hàng tối đa 3 chip + "Tất cả" → S03.02), S03.02 |
 | `SignatureLoader`, `AsyncView`, `DotRingLoader` | mọi màn có tải dữ liệu |
-| `EscrowNotice` | S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
+| `EscrowNotice` | S05.02 (cả dải khiếu nại), S11.03, S11.04, S06.05, S13.01, S13.07, S18.01, S18.02 |
+| `KeyValueBox`, `KeyValueRow` | S04.04, S18.02 |
+| `InlineToast` | S05.02, S18.02 |
 | `MoneyBreakdown` | S04.03, S11.03, S06.05, S13.08 |
 | `PolicyTable` | S05.03, S13.08 |
-| `ReasonPicker` | S05.03, S06.03, S13.08 |
+| `ReasonPicker` | S05.03, S06.03, S13.08, S18.01 (`otherField: false`) |
 | `PayMethodSelector` | S04.03 |
 | `PayMethodPicker` | S11.03 |
 | `CountdownPill` | S04.04 |
 | `PaymentScreen`, `QrCheckoutView`, `WalletWaitingView`, `FakeTransferSheet` (`features/payment/`) | S04.04 (mọi chủ thể thanh toán: booking, vé sự kiện, Chụp ngay, phí xác minh) |
 | `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08, S14.03 (GPS chưa chính xác, khách không có mặt) |
-| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03 |
-| `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06 |
+| `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02, S14.03, S27.07 (`CountdownText`: hạn trả lời offer) |
+| `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06; `ChatBubble`/`ChatComposer` cả S18.02, S18.03 (chat) |
+| `SupportThreadView` | S18.02 (`scrollHeader`), S18.03 chat |
 | `SwipeDeck` | S13.02 |
 | `MatchOverlay` | S13.04 (khách; nhiếp ảnh gia trên S14.02) |
 | `OfferStack` | S14.02 |
@@ -449,15 +485,19 @@ Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({
 | `AwardChip`, `AwardRow` | S03.01, S25.01 |
 | `ImagePurpose`, `MediaUploader.upload(purpose:)` | mọi màn tải ảnh: S10.01, S05.05, S11.05, S12.01, S25 (minh chứng), S07.01, S11.06, S09.03 |
 | `PortfolioViewToggle`, `AlbumTile` | S03.01, S24.02 |
-| `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp) |
+| `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp); `PostPickerGrid` cả S27.03 (5 cột) |
 | `JobCard` | S15.02, S16.02 |
 | `QuoteCard`, `DeliverableChips`, `FitPill`, `MilestoneTable` | S15.02, S15.03, S15.04, S16.01, S16.03 |
 | `VerdictIcon`, `MetaLine` | S02.01, S02.02, S02.06, S03.01, S12.02, S15.03, S26 |
 | `VerdictPad`, `VerdictLevel` | S05.05 (khối thợ và khối studio dùng `compact`) |
 | `VerdictBadge`, `TomatoRatioBar` | S03.01 (tab Đánh giá) |
-| `MemberRow` | S26.01, S26.02, S26.03 |
+| `MemberRow` | S26.01, S26.02 (cả S26.02-collab), S26.03, S27.06 (hàng CTV, studio cộng tác, lời mời) |
 | `MemberStrip` | S03.01 (studio) |
-| `AssigneeCard` | S05.02 (booking studio, phía khách) |
+| `AssigneeCard` | S05.02 (booking studio, phía khách; `collaborator` khi thợ là CTV) |
+| `CollabTermsCard` | S27.03, S27.06 (sheet nhận lời cộng tác) |
+| `RecruitCard`, `RecruitKindTag`, `RecruitMatchTag`, `RecruitNote` | S27.01, S27.02, S27.05 |
+| `CollabPayBadge`, `CollabTitleMeta` | S27.06 |
+| `StudioOfferLine` | S05.02 (studio), S06.01 (`StudioJobCard`) |
 | `SpotCard`, `SeasonTag` | S02.01, S02.03, S02.04, S29.01, S29.02 |
 | `SlotGrid` | S29.06 |
 | `ScreenCode` | mọi màn |
@@ -468,7 +508,7 @@ Người dùng quyết định: phân tích UI, thiết kế và viết các sha
 
 1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, **đã xong**): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
 2. **Nhóm B1** (kế hoạch `2026-10-02-shared-components-b1.md`, **đã xong**): `DateBlock`, `EventCard` (row, featured, compact) + `eventCardDataOf`, `TicketCard` (với mã QR `qr_flutter`), `BadgeChip` + `BadgeRow` + `BadgeTile`, `NotificationRow` + `NotificationBell`, `PermissionPrimer` + `PermissionPrimerPolicy`. Chuyển màn Khám phá sang dùng `EventCard` và xoá `NearbyEventTile`.
-3. **Nhóm B2** (Chụp ngay & bản đồ): `MatchOverlay`, `OfferStack`, `MapPreview` **đã có** (#140, plan `2026-10-07-s13-s14-dispatch-provider.md` Tasks 8–9); `SwipeDeck` thuộc app khách (plan `2026-10-07-s13-instant-customer.md`, #140 PR 2).
+3. **Nhóm B2** (Chụp ngay & bản đồ): `MatchOverlay`, `OfferStack`, `MapPreview` **đã có** (#140, plan `2026-10-07-s13-s14-dispatch-provider.md` Tasks 8–9); `SwipeDeck` **đã có** (app khách, plan `2026-10-07-s13-instant-customer.md`, #140 PR 2).
 
 
 ## Icons (Material Symbols Rounded)
@@ -551,6 +591,8 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.verified` | `verified` | (mới, chưa có trong mock) | `Icons.verified` |
 | `AppIcons.work` | `work` | `i-brief` | `Icons.work_outline` |
 | `AppIcons.store` | `storefront` | (mới, chưa có trong mock) | `Icons.storefront_outlined` |
+| `AppIcons.handshake` | `handshake` | (chỉ nêu trong chú thích S09.02 của mock) | — |
+| `AppIcons.campaign` | `campaign` | `campaign` (có trong mock, S03.01-studio) | — |
 | `AppIcons.verifiedUser` | `verified_user` | (mới, chưa có trong mock) | `Icons.verified_user` |
 | `AppIcons.people` | `group` | (mới, chưa có trong mock) | `Icons.people` |
 | `AppIcons.celebration` | `celebration` | (mới, chưa có trong mock) | `Icons.celebration` |

@@ -117,6 +117,19 @@ BookingErrorCode _codeToBookingError(String code) {
   }
 }
 
+/// The `assignBooking` payload: a member keeps S26's two fields; a
+/// collaborator adds `assigneeKind` and `agreedFee` (#151 Decision 13).
+Map<String, Object?> assignBookingPayload(
+  String bookingId,
+  String assigneeId, {
+  bool collaborator = false,
+  int? agreedFee,
+}) => {
+  'bookingId': bookingId,
+  'assigneeId': assigneeId,
+  if (collaborator) ...{'assigneeKind': 'collaborator', 'agreedFee': agreedFee},
+};
+
 /// Answer of `checkPayment`: whether the booking is paid and its current state.
 class CheckPaymentResponse {
   const CheckPaymentResponse({required this.paid, this.booking});
@@ -158,8 +171,10 @@ abstract class BookingRepository {
   /// Watches photographer's bookings (party = photographer).
   Stream<List<Booking>> watchPhotographerBookings(String photographerId);
 
-  /// Watches bookings a studio assigned to [uid] (`assigneeId == uid`),
-  /// drafts dropped. The studio stays the booking's `photographerId`.
+  /// Watches bookings a studio assigned to [uid] (`assigneeId == uid` and
+  /// `assignStatus == assigned`), drafts dropped. A collaborator's pending
+  /// S27 offer is not listed. The studio stays the booking's
+  /// `photographerId`.
   Stream<List<Booking>> watchAssignedBookings(String uid);
 
   /// Watches the private contact snapshot for a booking.
@@ -213,17 +228,18 @@ abstract class BookingRepository {
     String? reason,
   });
 
-  /// Opens dispute on completed/upcoming booking.
-  Future<Booking> openDispute({
-    required String bookingId,
-    required String reason,
-  });
-
   // ── Studio bookings (#136); refusals throw [BookingException] with the
   // server code (`day_taken`, `not_accepting_orders`, `conflict`, ...). ──
 
-  /// The studio names (or changes) who shoots (`assignBooking`, S26.04).
-  Future<Booking> assign(String bookingId, String assigneeId);
+  /// The studio names (or changes) who shoots (`assignBooking`, S26.04). A
+  /// [collaborator] (S27.04-collab) gets an offer with the [agreedFee]
+  /// (integer VND) instead; the fee is stored outside the booking.
+  Future<Booking> assign(
+    String bookingId,
+    String assigneeId, {
+    bool collaborator = false,
+    int? agreedFee,
+  });
 
   /// The customer's one request to change the assignee
   /// (`requestAssigneeChange`, S26.05).

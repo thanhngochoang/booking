@@ -378,6 +378,23 @@ describe('submitReview', () => {
       assert.equal(studio?.viaStudioId, undefined);
     });
 
+    it('a studio booking finished by a collaborator produces the photographer review for the collaborator tagged with the studio (S26 §6, #151 Decision 17)', async () => {
+      store.seedUserName('collab1', 'Lan Chi');
+      store.seedBooking(studioBooking({ assigneeId: 'collab1', assigneeKind: 'collaborator', assigneeAccepted: true }));
+      await submitReview(deps, 'cust1', studioInput());
+
+      const photographer = store.reviews.get('book1');
+      const studio = store.reviews.get('book1_studio');
+      assert.equal(photographer?.subjectType, 'photographer');
+      assert.equal(photographer?.subjectId, 'collab1');
+      assert.equal(photographer?.photographerId, 'collab1');
+      assert.equal(photographer?.viaStudioId, 'studio1');
+      assert.equal(photographer?.viaStudioName, 'Studio Ánh Sáng');
+      assert.equal(studio?.subjectId, 'studio1');
+      assert.equal(studio?.assigneeId, 'collab1');
+      assert.equal(studio?.assigneeName, 'Lan Chi');
+    });
+
     it('computes verdict, reasons, text and intensity per block', async () => {
       store.seedBooking(studioBooking());
       await submitReview(deps, 'cust1', studioInput());

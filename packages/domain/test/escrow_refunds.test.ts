@@ -12,12 +12,12 @@ import { createPayment } from '../src/create_payment.js';
 import { escrowRefundedTotal, isEscrowRefund, type Payment, type Refund } from '../src/escrow.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
-import { openDispute } from '../src/open_dispute.js';
 import { createPayout } from '../src/payout_use_cases.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { dispatchRefund, dispatchRefunds } from '../src/refunds.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { transferOf } from './support/booking_world.js';
+import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
 import { ADMIN, addAccount, createPayoutWorld, type PayoutWorld } from './support/payout_world.js';
 
 const PRICE = 1_000_000;
@@ -156,16 +156,6 @@ describe('unpaid booking payments', () => {
     assert.deepEqual(released(w, stray.id), []);
     assert.equal(w.store.payments.get(stray.id)?.releaseAfter, undefined);
   });
-
-  it('a dispute holds the paid payment, never a stray created one', async () => {
-    const w = createPayoutWorld();
-    const { bookingId, paymentId, stray } = await withStrayFirst(w);
-    w.clock.setTime(new Date('2026-10-16T09:30:00.000Z'));
-    await transitionBooking(w.deps, { bookingId, action: 'complete', actorId: 'p1' });
-    await openDispute(w.deps, { bookingId, customerId: 'c1', reason: 'Thiếu ảnh' });
-    assert.equal(w.store.payments.get(paymentId)?.escrowStatus, 'disputed');
-    assert.equal(w.store.payments.get(stray.id)?.escrowStatus, 'held');
-  });
 });
 
 describe('booking refund_done marker (depositRefundedAt)', () => {
@@ -180,6 +170,11 @@ describe('booking refund_done marker (depositRefundedAt)', () => {
     const { bookingId, paymentId } = await bookingPaidWith(w, [PRICE]);
     w.clock.setTime(new Date('2026-10-14T01:00:00.000Z'));
     await transitionBooking(w.deps, { bookingId, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    // #141: the bank-QR refund waits until the customer confirms the paying account (S22.04).
+    assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, undefined);
+    const [waiting] = [...w.store.refunds.values()].filter((r) => r.paymentId === paymentId && r.fromEscrow);
+    assert.ok(waiting);
+    await confirmRefundToPayer(refundAccountDepsOf({ bookings: w.deps }), waiting.id);
     const after = w.store.bookings.get(bookingId);
     assert.ok(after);
     assert.equal(after.depositRefundedAt, '2026-10-14T01:00:00.000Z');

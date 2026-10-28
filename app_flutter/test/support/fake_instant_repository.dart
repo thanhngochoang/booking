@@ -149,9 +149,19 @@ class FakeInstantRepository implements InstantRepository {
 
   /// Makes a stream fail (e.g. a listener refused), to test error states.
   void failRequest(String id, Object error) => _slot(_requests, id).fail(error);
+  void failTrack(String requestId, Object error) =>
+      _slot(_tracks, requestId).fail(error);
   void failPresence(Object error) => _presence.fail(error);
   void failOffers(Object error) => _offers.fail(error);
   void failActiveJob(Object error) => _activeJob.fail(error);
+
+  /// How often [watchRequest] was asked for [requestId] (a refresh asks again).
+  int requestWatches(String requestId) => _requestWatches[requestId] ?? 0;
+  final _requestWatches = <String, int>{};
+
+  /// Someone listens to the track of [requestId] (S13.05 while en route).
+  bool isTrackWatched(String requestId) =>
+      _tracks[requestId]?._controller.hasListener ?? false;
 
   LiveShutterState? get presence => _presence.value;
   List<InstantOffer> get offers => _offers.value;
@@ -221,6 +231,15 @@ class FakeInstantRepository implements InstantRepository {
     return inviteResult;
   }
 
+  /// `checkPayment`'s answer (V1's S04.04 resume).
+  bool checkPaymentResult = false;
+
+  @override
+  Future<bool> checkPayment(String requestId) async {
+    await _record('checkPayment', {'requestId': requestId});
+    return checkPaymentResult;
+  }
+
   @override
   Future<void> confirmComplete(String requestId) =>
       _record('confirmComplete', {'requestId': requestId});
@@ -236,15 +255,22 @@ class FakeInstantRepository implements InstantRepository {
       _slot(_tracks, requestId).stream;
 
   @override
-  Stream<InstantRequest?> watchRequest(String requestId) =>
-      _slot(_requests, requestId).stream;
+  Stream<InstantRequest?> watchRequest(String requestId) {
+    _requestWatches.update(requestId, (n) => n + 1, ifAbsent: () => 1);
+    return _slot(_requests, requestId).stream;
+  }
 
   @override
   Future<InstantCancelQuote> cancel(
     String requestId, {
     required bool dryRun,
+    InstantCancelQuote? expected,
   }) async {
-    await _record('cancel', {'requestId': requestId, 'dryRun': dryRun});
+    await _record('cancel', {
+      'requestId': requestId,
+      'dryRun': dryRun,
+      'expected': ?expected,
+    });
     return cancelQuote;
   }
 
@@ -313,6 +339,21 @@ class FakeInstantRepository implements InstantRepository {
     }
     await _record('answerOffer', {'offerId': offerId, 'accept': accept});
     return answeredRequestId ?? requestId ?? 'req1';
+  }
+
+  /// `noShowQuote`'s answer (the server's dry run).
+  InstantCancelQuote noShowQuoteValue = const InstantCancelQuote(
+    rule: InstantCancelRule.noShow,
+    refundPercent: 50,
+    refundVnd: 345000,
+    feeVnd: 345000,
+    amountVnd: 690000,
+  );
+
+  @override
+  Future<InstantCancelQuote> noShowQuote(String requestId) async {
+    await _record('noShowQuote', {'requestId': requestId});
+    return noShowQuoteValue;
   }
 
   @override

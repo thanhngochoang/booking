@@ -23,6 +23,8 @@ Trạng thái: **ĐK** = cần trong điều khoản, **FAQ** = cần trong tr�
 | P12 | Chi trả cho thợ/studio: tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu của mỗi tài khoản do nhân viên duyệt. Tên chủ tài khoản phải khớp tên đã xác minh; đổi tài khoản cần OTP và có hiệu lực sau 72 giờ. | thanh toán §6 | ĐK (điều khoản cho thợ), FAQ |
 | P13 | Thợ cá nhân: nền tảng **khấu trừ và nộp thay thuế** trên phần chi (tỉ lệ theo quy định hiện hành). | thanh toán §7 | ĐK, FAQ |
 | P14 | Phí của nền tảng: hiện chưa thu hoa hồng (0%); nếu áp dụng sẽ báo trước 30 ngày và chỉ tính cho booking tạo sau ngày hiệu lực. Phí cổng thanh toán và phí chi do nền tảng chịu. | thanh toán §8 | ĐK |
+| P15 | **Chọn tài khoản nhận hoàn (S22.04):** khi đơn trả bằng chuyển khoản QR được hoàn (huỷ, bị từ chối, hết hạn, sự kiện huỷ, kết quả khiếu nại), bạn chọn hoàn về tài khoản đã chuyển hoặc một tài khoản khác. Với tài khoản khác, ngân hàng tra tên chủ tài khoản và app hiện tên đó để bạn kiểm tra trước khi xác nhận (bạn không cần gõ tên; tài khoản có thể đứng tên người khác). Tra tên tối đa 20 lần mỗi ngày cho mỗi khoản hoàn. Tiền về ví MoMo/ZaloPay thì hoàn về ví, không cần chọn. | thanh toán §5 (#141) | ĐK, FAQ |
+| P16 | **Mặc định sau 24 giờ:** nếu bạn không chọn trong 24 giờ, tiền tự hoàn về tài khoản đã chuyển. Nếu không có thông tin tài khoản đã chuyển, khoản hoàn chờ tới khi bạn khai tài khoản (thông báo "Chọn tài khoản nhận hoàn", mục Lịch sử thanh toán). Bạn chọn sau khi tiền đã được gửi thì không đổi được nơi nhận; app cho biết tiền đã về tài khoản nào. | thanh toán §5 (#141); câu hỏi chủ 3 kế hoạch S22 | ĐK, FAQ |
 
 ## Xác minh để nhận đơn
 

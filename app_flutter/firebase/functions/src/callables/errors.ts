@@ -57,6 +57,9 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   offer_expired: 'failed-precondition',
   already_assigned: 'failed-precondition',
   outside_service_area: 'failed-precondition',
+  // S27 recruiting (#151): collaboration caps reached; studio temporarily blocked after unpaid-fee flags.
+  collab_full: 'resource-exhausted',
+  recruit_blocked: 'failed-precondition',
 };
 
 /**

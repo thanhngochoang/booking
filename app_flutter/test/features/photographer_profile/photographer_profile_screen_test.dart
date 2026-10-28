@@ -12,6 +12,7 @@ import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/recruit/recruit_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/safety/safety.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
@@ -21,6 +22,7 @@ import 'package:photobooking/features/safety/blocked_profile_view.dart';
 import '../../support/content_fixtures.dart';
 import '../../support/fake_safety_repository.dart';
 import '../../support/profile_world.dart';
+import '../../support/recruit_world.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
 
@@ -1148,6 +1150,67 @@ void main() {
       expect(find.byType(BlockedProfileView), findsOneWidget);
       expect(find.text('Bạn đã chặn Minh Trí'), findsOneWidget);
       expect(find.text('Bỏ chặn'), findsOneWidget);
+    });
+  });
+
+  group('S03.01-studio "Đang tuyển" (S27)', () {
+    PhotographerSummary studio() => fixturePhotographer(
+      'cuc',
+      name: 'Studio Mây',
+      verified: true,
+      businessVerified: true,
+      providerType: ProviderType.studio,
+    );
+
+    Future<ProfileWorld> open(
+      WidgetTester tester, {
+      required UserRole role,
+      int openPosts = 2,
+      bool providerFacts = true,
+    }) async {
+      final w = await _world(tester, role: role, photographers: [studio()]);
+      for (var i = 0; i < openPosts; i++) {
+        w.recruits.seedPost(makeRecruitPost(id: 'r$i'));
+      }
+      w.recruits.seedPost(
+        makeRecruitPost(id: 'closed', status: RecruitPostStatus.closed),
+      );
+      if (providerFacts) {
+        w.recruits.setFacts(
+          w.uid,
+          makeProviderFacts(
+            role: role == UserRole.photographer ? 'photographer' : 'customer',
+          ),
+        );
+      }
+      await tester.pumpWidget(w.app('/u/cuc'));
+      await tester.pumpAndSettle();
+      return w;
+    }
+
+    testWidgets('a provider viewing a studio with 2 open posts sees "Đang '
+        'tuyển · 2 tin" and it opens /recruit?studioId=…', (tester) async {
+      final w = await open(tester, role: UserRole.photographer);
+      final line = find.text('Đang tuyển · 2 tin');
+      expect(line, findsOneWidget);
+      expect(w.recruits.openCountCalls, ['cuc']);
+      await tester.ensureVisible(line);
+      await tester.tap(line);
+      await tester.pumpAndSettle();
+      expect(w.router.state.uri.toString(), '/recruit?studioId=cuc');
+    });
+
+    testWidgets('a customer viewer sees no line and the repository count is '
+        'never called', (tester) async {
+      final w = await open(tester, role: UserRole.customer);
+      expect(find.textContaining('Đang tuyển'), findsNothing);
+      expect(w.recruits.openCountCalls, isEmpty);
+    });
+
+    testWidgets('zero open posts shows nothing', (tester) async {
+      final w = await open(tester, role: UserRole.photographer, openPosts: 0);
+      expect(w.recruits.openCountCalls, ['cuc']);
+      expect(find.textContaining('Đang tuyển'), findsNothing);
     });
   });
 }

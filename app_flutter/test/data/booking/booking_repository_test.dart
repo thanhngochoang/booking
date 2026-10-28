@@ -136,17 +136,6 @@ void main() {
       expect(completed.completedAt, isNotNull);
     });
 
-    test('dispute updates escrowStatus to disputed', () async {
-      final b = makeTestBooking(id: 'b1', status: BookingStatus.completed);
-      repo.seedBooking(b);
-
-      final disputed = await repo.openDispute(
-        bookingId: 'b1',
-        reason: 'Chất lượng không tốt',
-      );
-      expect(disputed.escrowStatus, EscrowStatus.disputed);
-    });
-
     test('watchCustomerBookings filters out drafts', () async {
       final b1 = makeTestBooking(id: 'b1', status: BookingStatus.requested);
       final b2 = makeTestBooking(id: 'b2', status: BookingStatus.draft);
@@ -160,7 +149,12 @@ void main() {
   });
 
   group('watchAssignedBookings', () {
-    Map<String, dynamic> doc(String status, {String? assigneeId}) => {
+    Map<String, dynamic> doc(
+      String status, {
+      String? assigneeId,
+      String? assignStatus = 'assigned',
+      Map<String, dynamic> extra = const {},
+    }) => {
       'customerId': 'c1',
       'photographerId': 'studio1',
       'serviceId': 's1',
@@ -173,6 +167,8 @@ void main() {
       'deposit': 1000000,
       'remaining': 0,
       'assigneeId': ?assigneeId,
+      'assignStatus': ?assignStatus,
+      ...extra,
     };
 
     test(
@@ -189,6 +185,35 @@ void main() {
         expect([for (final b in list) b.id], ['a1']);
       },
     );
+
+    test('a pending collaborator offer is not an assigned job (S27)', () async {
+      final db = FakeFirebaseFirestore();
+      final repo = FirestoreBookingRepository(firestore: db);
+      final col = db.collection('bookings');
+      const collab = {'assigneeKind': 'collaborator'};
+      await col
+          .doc('pending')
+          .set(
+            doc(
+              'accepted',
+              assigneeId: 'p1',
+              assignStatus: 'unassigned',
+              extra: {...collab, 'assigneeAccepted': false},
+            ),
+          );
+      await col
+          .doc('accepted')
+          .set(
+            doc(
+              'upcoming',
+              assigneeId: 'p1',
+              extra: {...collab, 'assigneeAccepted': true},
+            ),
+          );
+      await col.doc('member').set(doc('accepted', assigneeId: 'p1'));
+      final list = await repo.watchAssignedBookings('p1').first;
+      expect([for (final b in list) b.id]..sort(), ['accepted', 'member']);
+    });
 
     test('the fake emits assigned lists and errors', () async {
       final repo = FakeBookingRepository();
@@ -252,6 +277,46 @@ void main() {
       expect(b?.place.lat, 21.0285);
       expect(b?.place.lng, 105.8542);
       expect(b?.escrowStatus, EscrowStatus.held);
+    });
+
+    test('Booking maps disputeId', () {
+      final docData = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'completed',
+        'deposit': 1000000,
+        'remaining': 0,
+        'escrowStatus': 'disputed',
+      };
+      expect(bookingFromFirestore('b', docData)?.disputeId, isNull);
+      final b = bookingFromFirestore('b', {...docData, 'disputeId': 'd1'});
+      expect(b?.disputeId, 'd1');
+      expect(b?.escrowStatus, EscrowStatus.disputed);
+    });
+
+    test('Booking parses refundAccountNeeded (missing → false)', () {
+      final docData = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'cancelled',
+        'deposit': 1000000,
+        'remaining': 0,
+      };
+      expect(bookingFromFirestore('b', docData)?.refundAccountNeeded, isFalse);
+      expect(
+        bookingFromFirestore('b', {...docData, 'refundAccountNeeded': true})
+            ?.refundAccountNeeded,
+        isTrue,
+      );
+      expect(
+        bookingFromFirestore('b', {...docData, 'refundAccountNeeded': 'yes'})
+            ?.refundAccountNeeded,
+        isFalse,
+      );
     });
 
     test('bookingFromFirestore reads spotId, spotScheduleId, slotOfferId, source', () {

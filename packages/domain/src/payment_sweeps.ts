@@ -3,18 +3,27 @@
  * 1. reconcile: ask the provider about `created` payments older than 3 minutes and handle every
  *    transfer it reports (a missed webhook); repeats are no-ops;
  * 2. expire: `created` payments past `expiresAt` become `expired` and what they received goes back;
- * 3. resend: refunds left `pending` (a gateway call threw) are sent again under the same refund id.
+ * 3. resend: refunds left `pending` (a gateway call threw) are sent again under the same refund id;
+ * 4. confirmDueRefundAccounts (#141): refunds waiting in `awaiting_account` past their 24-hour
+ *    `confirmBy` go to the paying account (S22.04's default).
+ * Each step runs in its own try/catch: a failing step is counted and the next one still runs.
  */
 
 import { PAYMENT_RECONCILE_AFTER_MINUTES } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { asSettlement, bookingDepsOf } from './handle_transfer.js';
 import { type SettlementDeps, settleTransfer } from './payment_settlement.js';
+import { confirmDueRefundAccounts, type RefundAccountDeps } from './refund_account.js';
 import { resendPendingRefunds, type RefundSubjects } from './refund_subjects.js';
+
+/** Refunds the 24-hour default moves per run (the clock runs every 5 minutes). */
+export const REFUND_ACCOUNT_CONFIRM_BATCH = 100;
 
 export interface PaymentSweepExtras {
   /** Handlers for refunds whose subject is not a booking (tickets, later subjects); see `liveRefundSubjects()`. */
   readonly refundSubjects?: RefundSubjects;
+  /** #141: the deps of `confirmDueRefundAccounts`; without them the step does nothing. */
+  readonly refundAccounts?: RefundAccountDeps;
 }
 
 export interface PaymentSweepResults {
@@ -34,6 +43,10 @@ export interface PaymentSweepResults {
   readonly resendFailed: number;
   /** Pending refunds skipped because no subject handler was registered. */
   readonly skippedRefunds: number;
+  /** #141: waiting refunds past `confirmBy` sent to the paying account. */
+  readonly refundAccountsConfirmed: number;
+  /** #141: waiting refunds whose default send threw (or the step's query failed); the next run retries. */
+  readonly confirmFailed: number;
 }
 
 export async function runPaymentSweeps(
@@ -111,6 +124,24 @@ export async function runPaymentSweeps(
     }
   }
 
+  // 4. The 24-hour default of S22.04 (#141), last: its own try/catch, a failure never stops the steps above.
+  let refundAccountsConfirmed = 0;
+  let confirmFailed = 0;
+  if (extras?.refundAccounts) {
+    try {
+      refundAccountsConfirmed = await confirmDueRefundAccounts(
+        extras.refundAccounts,
+        now,
+        REFUND_ACCOUNT_CONFIRM_BATCH,
+        () => {
+          confirmFailed += 1;
+        },
+      );
+    } catch {
+      confirmFailed += 1;
+    }
+  }
+
   return {
     reconciled,
     expired,
@@ -120,5 +151,7 @@ export async function runPaymentSweeps(
     expireFailed,
     resendFailed,
     skippedRefunds,
+    refundAccountsConfirmed,
+    confirmFailed,
   };
 }

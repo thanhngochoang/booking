@@ -167,16 +167,28 @@ class FirestoreJobRepository implements JobRepository {
     FirebaseFunctions? functions,
     FirebaseAuth? auth,
     required this.mediaUploader,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _functions = functions ?? FirebaseFunctions.instanceFor(region: functionsRegion),
-        _auth = auth ?? FirebaseAuth.instance;
+  })  : _customFirestore = firestore,
+        _customFunctions = functions,
+        _customAuth = auth;
 
-  final FirebaseFirestore _firestore;
-  final FirebaseFunctions _functions;
-  final FirebaseAuth _auth;
+  final FirebaseFirestore? _customFirestore;
+  final FirebaseFunctions? _customFunctions;
+  final FirebaseAuth? _customAuth;
   final MediaUploader mediaUploader;
 
-  String? get _uid => _auth.currentUser?.uid;
+  FirebaseFirestore get _firestore =>
+      _customFirestore ?? FirebaseFirestore.instance;
+  FirebaseFunctions get _functions =>
+      _customFunctions ?? FirebaseFunctions.instanceFor(region: functionsRegion);
+  FirebaseAuth get _auth => _customAuth ?? FirebaseAuth.instance;
+
+  String? get _uid {
+    try {
+      return _auth.currentUser?.uid;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<Map<String, dynamic>> _call(String name, Map<String, dynamic> data, {int timeoutSeconds = 15}) async {
     try {

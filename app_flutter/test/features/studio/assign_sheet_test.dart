@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/recruit/recruit_post.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
+import 'package:photobooking/features/collab/collab_controller.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 
+import '../../support/meta_finders.dart';
+import '../../support/recruit_world.dart';
 import '../../support/screen_host.dart';
 import '../../support/studio_world.dart';
 
@@ -54,11 +65,14 @@ class _Host {
 Future<_Host> _open(
   WidgetTester tester, {
   List<AssignmentOption> options = _options,
+  List<Collaboration> collaborators = const [],
   Booking? booking,
   DateTime? now,
   double width = 390,
   double height = 900,
   double textScale = 1.0,
+  RecruitCounters counters = RecruitCounters.empty,
+  List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
@@ -66,6 +80,10 @@ Future<_Host> _open(
   final w = StudioWorld(now: now);
   w.bookings.seedBooking(booking ?? makeStudioBooking());
   w.studios.options = options;
+  w.recruitCounters = counters;
+  for (final c in collaborators) {
+    w.collabs.seedCollaboration(c);
+  }
   final host = _Host(w);
   final router = GoRouter(
     routes: [
@@ -86,7 +104,7 @@ Future<_Host> _open(
   await tester.pumpWidget(
     screenRouterApp(
       router: router,
-      overrides: w.screenOverrides,
+      overrides: [...w.screenOverrides, ...extraOverrides],
       textScale: textScale,
     ),
   );
@@ -94,6 +112,21 @@ Future<_Host> _open(
   await tester.tap(find.text('open'));
   await _settle(tester);
   return host;
+}
+
+/// Scrolls the sheet's list until [key] is built and on screen.
+Future<void> _reveal(WidgetTester tester, String key) async {
+  await tester.scrollUntilVisible(
+    _key(key),
+    80,
+    scrollable: find
+        .descendant(
+          of: find.byType(AssignSheet),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
+  await tester.pump();
 }
 
 AppButton _submit(WidgetTester tester) =>
@@ -256,6 +289,273 @@ void main() {
     await _open(tester, width: 320, height: 640, textScale: 1.3);
     expect(tester.takeException(), isNull);
     expect(_key('assign-submit'), findsOneWidget);
+  });
+
+  group('S26.04-collab', () {
+    final collaborators = [
+      makeCollaboration(
+        collaboratorId: 'lan',
+        collaboratorName: 'Lan Phương',
+        defaultFee: 800000,
+      ),
+      makeCollaboration(
+        collaboratorId: 'hoa',
+        collaboratorName: 'Hòa',
+        defaultFee: null,
+      ),
+      // An invite is not a collaborator yet.
+      makeCollaboration(
+        collaboratorId: 'yen',
+        collaboratorName: 'Hoàng Yến',
+        status: CollabStatus.invited,
+      ),
+    ];
+
+    testWidgets('members and collaborators in two groups', (tester) async {
+      await _open(tester, collaborators: collaborators);
+      expect(
+        find.descendant(
+          of: _key('assign-group-members'),
+          matching: find.text('Thành viên'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _key('assign-group-collaborators'),
+          matching: find.text('Cộng tác viên'),
+        ),
+        findsOneWidget,
+      );
+      expect(_key('assign-option-minh'), findsOneWidget);
+      // Members come first.
+      final memberY = tester.getTopLeft(_key('assign-option-minh')).dy;
+      await _reveal(tester, 'assign-option-lan');
+      expect(
+        tester.getTopLeft(_key('assign-option-lan')).dy,
+        greaterThan(memberY),
+      );
+      await _reveal(tester, 'assign-option-hoa');
+      expect(_key('assign-option-yen'), findsNothing);
+    });
+
+    testWidgets('choosing a collaborator shows "Thù lao" prefilled with '
+        'defaultFee and the note', (tester) async {
+      await _open(tester, collaborators: collaborators);
+      expect(_key('assign-fee'), findsNothing);
+      await tester.tap(_key('assign-option-lan'));
+      await tester.pump();
+      expect(find.text('Thù lao'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(_key('assign-fee')).controller!.text,
+        '800.000',
+      );
+      expect(
+        find.text(
+          'Lan Phương có 6 giờ để nhận việc; khách chỉ thấy thợ khi Lan '
+          'Phương đã nhận.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('empty fee shows "Nhập thù lao cho cộng tác viên"', (
+      tester,
+    ) async {
+      final h = await _open(tester, collaborators: collaborators);
+      await _reveal(tester, 'assign-option-hoa');
+      await tester.tap(_key('assign-option-hoa'));
+      await tester.pump();
+      expect(tester.widget<TextField>(_key('assign-fee')).controller!.text, '');
+      await tester.ensureVisible(_key('assign-submit'));
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      expect(find.text('Nhập thù lao cho cộng tác viên'), findsOneWidget);
+      expect(h.world.bookings.studioCalls, isEmpty);
+    });
+
+    testWidgets('primary reads "Gửi việc cho {name}" and calls assignBooking '
+        'with assigneeKind collaborator and the fee', (tester) async {
+      final h = await _open(tester, collaborators: collaborators);
+      await tester.tap(_key('assign-option-lan'));
+      await tester.pump();
+      expect(_submit(tester).label, 'Gửi việc cho Lan Phương');
+      // The sheet's only gradient button.
+      expect(find.byType(CtaSurface), findsOneWidget);
+      await tester.enterText(_key('assign-fee'), '900000');
+      await tester.pump();
+      await tester.ensureVisible(_key('assign-submit'));
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      final (call, payload) = h.world.bookings.studioCalls.single;
+      expect(call, 'assignBooking');
+      expect(payload, {
+        'bookingId': 'sb1',
+        'assigneeId': 'lan',
+        'assigneeKind': 'collaborator',
+        'agreedFee': 900000,
+      });
+      expect(h.result, isTrue);
+    });
+
+    testWidgets('choosing a member keeps S26 behaviour ("Giao cho {name}", '
+        'no fee)', (tester) async {
+      final h = await _open(tester, collaborators: collaborators);
+      await tester.tap(_key('assign-option-lan'));
+      await tester.pump();
+      await tester.tap(_key('assign-option-nhung'));
+      await tester.pump();
+      expect(_submit(tester).label, 'Giao cho Hồng Nhung');
+      expect(_key('assign-fee'), findsNothing);
+      await tester.ensureVisible(_key('assign-submit'));
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      expect(h.world.bookings.studioCalls.single.$2, {
+        'bookingId': 'sb1',
+        'assigneeId': 'nhung',
+      });
+    });
+
+    testWidgets('a collaborator row shows their % next to the fee', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        collaborators: collaborators,
+        extraOverrides: [
+          photographerProfileProvider('lan').overrideWithValue(
+            const AsyncData(
+              PhotographerProfile(
+                summary: PhotographerSummary(
+                  id: 'lan',
+                  displayName: 'Lan Phương',
+                  reviewCount: 20,
+                  tomatoCount: 19,
+                  brickCount: 1,
+                  tomatoPct: 95,
+                ),
+                intro: PhotographerIntro(),
+              ),
+            ),
+          ),
+        ],
+      );
+      await _reveal(tester, 'assign-option-lan');
+      expect(findMeta('95% · 800.000₫/buổi'), findsOneWidget);
+    });
+
+    testWidgets('a failing collaborations listener keeps the members-only '
+        'sheet', (tester) async {
+      final h = await _open(
+        tester,
+        collaborators: collaborators,
+        extraOverrides: [
+          studioCollaborationsProvider.overrideWith(
+            (ref) => Stream.error(StateError('denied')),
+          ),
+        ],
+      );
+      expect(find.byType(ErrorState), findsNothing);
+      expect(_key('assign-group-collaborators'), findsNothing);
+      expect(_key('assign-option-lan'), findsNothing);
+      expect(_submit(tester).label, 'Giao cho Minh Trí');
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      expect(h.world.bookings.studioCalls.single.$2, {
+        'bookingId': 'sb1',
+        'assigneeId': 'minh',
+      });
+    });
+
+    for (final (code, text) in [
+      (
+        'deadline_passed',
+        'Không còn đủ thời gian để cộng tác viên nhận. Giao cho thành viên.',
+      ),
+      ('blocked', 'Không giao việc được: hai bên đã chặn nhau.'),
+      ('not_found', 'Cộng tác với Lan Phương đã kết thúc.'),
+    ]) {
+      testWidgets('an offer refused $code says why, not "Thử lại"', (
+        tester,
+      ) async {
+        final h = await _open(tester, collaborators: collaborators);
+        await tester.tap(_key('assign-option-lan'));
+        await tester.pump();
+        h.world.bookings.nextErrorCode = code;
+        await tester.ensureVisible(_key('assign-submit'));
+        await tester.tap(_key('assign-submit'));
+        await _settle(tester);
+        expect(find.text(text), findsOneWidget);
+        expect(find.text('Chưa thực hiện được. Thử lại.'), findsNothing);
+        expect(find.byType(AssignSheet), findsOneWidget);
+        expect(h.result, isNull);
+      });
+    }
+
+    testWidgets('an offer refused recruit_blocked names the end date', (
+      tester,
+    ) async {
+      await _open(tester, collaborators: collaborators);
+      expect(
+        assignOfferErrorText(
+          tester.element(find.byType(AssignSheet)),
+          const BookingException('recruit_blocked'),
+          name: 'Lan Phương',
+          blockedUntil: DateTime.utc(2026, 11, 12, 3),
+        ),
+        'Bạn tạm không đăng tin và mời cộng tác viên tới 12/11 vì chưa trả '
+        'thù lao cho cộng tác viên.',
+      );
+    });
+
+    testWidgets('a studio blocked from recruiting sees the collaborators '
+        'dimmed with the block line', (tester) async {
+      final h = await _open(
+        tester,
+        collaborators: collaborators,
+        counters: RecruitCounters(
+          recruitBlockedUntil: studioNow.add(const Duration(days: 3)),
+        ),
+      );
+      await _reveal(tester, 'assign-collab-blocked');
+      expect(
+        find.textContaining('Bạn tạm không đăng tin và mời cộng tác viên tới'),
+        findsOneWidget,
+      );
+      await _reveal(tester, 'assign-option-lan');
+      expect(
+        tester.widget<AppOptionTile>(_key('assign-option-lan')).enabled,
+        isFalse,
+      );
+      await tester.tap(_key('assign-option-lan'), warnIfMissed: false);
+      await tester.pump();
+      expect(_key('assign-fee'), findsNothing);
+      // Members can still be given the booking.
+      expect(_submit(tester).label, 'Giao cho Minh Trí');
+      await tester.ensureVisible(_key('assign-submit'));
+      await tester.tap(_key('assign-submit'));
+      await _settle(tester);
+      expect(h.world.bookings.studioCalls.single.$2, {
+        'bookingId': 'sb1',
+        'assigneeId': 'minh',
+      });
+    });
+
+    testWidgets('fits 320dp at 1.3x text with a collaborator picked', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        collaborators: collaborators,
+        width: 320,
+        height: 640,
+        textScale: 1.3,
+      );
+      await _reveal(tester, 'assign-option-lan');
+      await tester.tap(_key('assign-option-lan'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

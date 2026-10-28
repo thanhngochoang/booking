@@ -617,4 +617,30 @@ void main() {
       expect(find.text('3'), findsNothing);
     });
   });
+
+  testWidgets('a collab chat row shows the label "Cộng tác" and the '
+      'counterpart name for each side', (tester) async {
+    // S27 Decision 16: the studio (p1) sits in the customer slot, the
+    // collaborator (p2) in the photographer slot.
+    fakeChat.seedThread(
+      ChatThread(
+        id: 'collab_p1_p2',
+        kind: ChatKind.collab,
+        customerId: 'p1',
+        photographerId: 'p2',
+        lastMessageAt: DateTime.utc(2026, 10, 5, 9),
+        lastMessagePreview: 'Chiều mai em rảnh không?',
+      ),
+    );
+
+    await pumpChatList(tester, currentUid: 'p1');
+    await settle(tester);
+    expect(find.text('Hồng Nhung'), findsOneWidget);
+    expect(find.text('CỘNG TÁC'), findsOneWidget);
+
+    await pumpChatList(tester, currentUid: 'p2');
+    await settle(tester);
+    expect(find.text('Minh Trí'), findsOneWidget);
+    expect(find.text('CỘNG TÁC'), findsOneWidget);
+  });
 }

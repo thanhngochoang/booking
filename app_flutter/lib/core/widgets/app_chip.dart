@@ -21,7 +21,9 @@ class AppChip extends StatelessWidget {
     required this.onChanged,
     this.kind = AppChipKind.filter,
     this.leading,
+    this.trailing,
     this.semanticsLabel,
+    this.enabled = true,
   });
 
   final String label;
@@ -35,6 +37,17 @@ class AppChip extends StatelessWidget {
   final ValueChanged<bool> onChanged;
   final AppChipKind kind;
   final Widget? leading;
+
+  /// After the label, e.g. `expand_more` on a chip that opens a picker
+  /// (S27.01 "Khu vực ▾").
+  final Widget? trailing;
+
+  /// False: a choice that cannot be picked now (S27.04's sixth area) is
+  /// dimmed like `AppOptionTile`, ignores taps and is announced as disabled.
+  final bool enabled;
+
+  /// Mock `.dis { opacity: .5 }`.
+  static const double _dimmed = 0.5;
 
   @override
   Widget build(BuildContext context) {
@@ -51,15 +64,18 @@ class AppChip extends StatelessWidget {
         : kind == AppChipKind.filter
         ? (scheme.primary, scheme.onPrimary, scheme.primary)
         : (subtle, scheme.primary, scheme.primary);
-    return Semantics(
+    final VoidCallback? tap = enabled ? () => onChanged(!selected) : null;
+    final chip = Semantics(
       button: true,
+      // Only a disabled chip says so; an enabled one keeps its old node.
+      enabled: enabled ? null : false,
       selected: selected,
       label: semanticsLabel ?? label,
       excludeSemantics: true,
-      onTap: () => onChanged(!selected),
+      onTap: tap,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => onChanged(!selected),
+        onTap: tap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           child: Center(
@@ -70,7 +86,7 @@ class AppChip extends StatelessWidget {
               shape: StadiumBorder(side: BorderSide(color: edge)),
               child: InkWell(
                 customBorder: const StadiumBorder(),
-                onTap: () => onChanged(!selected),
+                onTap: tap,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 34),
                   child: Padding(
@@ -99,6 +115,13 @@ class AppChip extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (trailing != null) ...[
+                          const SizedBox(width: 2),
+                          IconTheme(
+                            data: IconThemeData(color: text, size: 16),
+                            child: trailing!,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -109,5 +132,6 @@ class AppChip extends StatelessWidget {
         ),
       ),
     );
+    return enabled ? chip : Opacity(opacity: _dimmed, child: chip);
   }
 }

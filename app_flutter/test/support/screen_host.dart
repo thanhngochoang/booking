@@ -42,6 +42,7 @@ Widget screenRouterApp({
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
   bool defaultRetry = false,
+  bool disableAnimations = false,
 }) {
   return ProviderScope(
     retry: defaultRetry ? null : (_, _) => null,
@@ -55,8 +56,11 @@ Widget screenRouterApp({
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context)
-            .copyWith(textScaler: TextScaler.linear(textScale)),
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+          // Only switches it on: a test may set it through the platform.
+          disableAnimations: disableAnimations ? true : null,
+        ),
         child: testPhotoScope(child: child!),
       ),
     ),

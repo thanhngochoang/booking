@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/push/push_providers.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
@@ -16,6 +19,7 @@ import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
+import 'package:photobooking/features/collab/collab_controller.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
 import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
@@ -109,6 +113,12 @@ class SettingsScreen extends ConsumerWidget {
           const _StudioMembersTile()
         else if (studioReady && type != null)
           const _MyStudioTile(),
+        // S27 (#151): after the studio rows, before the public profile.
+        if (type == ProviderType.studio) ...[
+          const _CollabStudioTile(),
+          const _RecruitTile(),
+        ] else if (type != null)
+          const _CollabMemberTile(),
         _LinkTile(
           key: const Key('profile-public'),
           icon: AppIcons.store,
@@ -282,14 +292,26 @@ class SettingsScreen extends ConsumerWidget {
                   guard(
                     GlassCard(
                       highlight: false,
-                      child: _LinkTile(
-                        key: const Key('settings-privacy'),
-                        icon: AppIcons.privacy,
-                        title: l.settingsPrivacy,
-                        subtitle: isPhotographer
-                            ? l.settingsPrivacyBody
-                            : l.settingsPrivacyBodyCustomer,
-                        path: '/settings/privacy',
+                      child: Column(
+                        children: [
+                          _LinkTile(
+                            key: const Key('settings-payment-history'),
+                            icon: AppIcons.receipt,
+                            title: l.settingsPaymentHistory,
+                            subtitle: l.settingsPaymentHistoryBody,
+                            path: '/me/payments',
+                          ),
+                          const _RowDivider(),
+                          _LinkTile(
+                            key: const Key('settings-privacy'),
+                            icon: AppIcons.privacy,
+                            title: l.settingsPrivacy,
+                            subtitle: isPhotographer
+                                ? l.settingsPrivacyBody
+                                : l.settingsPrivacyBodyCustomer,
+                            path: '/settings/privacy',
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -589,6 +611,74 @@ class _StudioMembersTile extends ConsumerWidget {
               studioMaxMembers(businessVerified: intro.businessVerified),
             ),
       path: '/studio/members',
+    );
+  }
+}
+
+/// "Cộng tác" (S27.06) for an individual or artist: "{n} studio · {m} việc
+/// chờ nhận" once both listeners load.
+class _CollabMemberTile extends ConsumerWidget {
+  const _CollabMemberTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final collabs = ref.watch(myCollaborationsProvider).value;
+    final jobs = ref.watch(myCollabJobsProvider).value;
+    final now = ref.watch(clockProvider)();
+    return _LinkTile(
+      key: const Key('settings-collab'),
+      icon: AppIcons.handshake,
+      title: l.settingsCollab,
+      subtitle: collabs == null || jobs == null
+          ? null
+          : l.settingsCollabProviderMeta(
+              collabs.where((c) => c.status == CollabStatus.active).length,
+              liveOffers(jobs, now).length,
+            ),
+      path: '/collab',
+    );
+  }
+}
+
+/// "Cộng tác" (S27.06) for a studio: "{n} cộng tác viên".
+class _CollabStudioTile extends ConsumerWidget {
+  const _CollabStudioTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final collabs = ref.watch(studioCollaborationsProvider).value;
+    return _LinkTile(
+      key: const Key('settings-collab'),
+      icon: AppIcons.handshake,
+      title: l.settingsCollab,
+      subtitle: collabs == null
+          ? null
+          : l.settingsCollabStudioMeta(
+              collabs.where((c) => c.status == CollabStatus.active).length,
+            ),
+      path: '/collab',
+    );
+  }
+}
+
+/// "Tin tuyển" (S27.05) for a studio: "{n}/3 tin mở".
+class _RecruitTile extends ConsumerWidget {
+  const _RecruitTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final counters = ref.watch(myRecruitCountersProvider).value;
+    return _LinkTile(
+      key: const Key('settings-recruit'),
+      icon: AppIcons.campaign,
+      title: l.settingsRecruit,
+      subtitle: counters == null
+          ? null
+          : l.settingsRecruitMeta(counters.openPostCount),
+      path: '/studio/recruit',
     );
   }
 }

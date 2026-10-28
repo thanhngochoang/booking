@@ -5,7 +5,7 @@ import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 
-/// Paths of services/api/api/openapi.yaml. Ids are opaque [A-Za-z0-9_-].
+/// Paths of the booking-be contract. Ids are opaque [A-Za-z0-9_-].
 abstract final class ApiPaths {
   static const me = '/v1/me';
   static String user(String id) => '/v1/users/${Uri.encodeComponent(id)}';

@@ -6,8 +6,10 @@ import { handleGetContactLink } from './callables/get_contact_link.js';
 import {
   handleCreateBooking,
   handleTransitionBooking,
-  handleOpenDispute,
 } from './callables/booking.js';
+import { handleOpenDispute, handleResolveDispute } from './callables/dispute.js';
+import { liveDisputeDeps } from './infra/live_dispute.js';
+import { handleDisputeWrite } from './triggers/dispute_write.js';
 import {
   handleSubmitDelivery,
   handleApproveDelivery,
@@ -17,7 +19,7 @@ import {
 import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment, handleGetPaymentInstructions } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
-import { liveSettlementDeps } from './infra/live_payments.js';
+import { livePayerHistoryDeps, liveSettlementDeps } from './infra/live_payments.js';
 import { handleCreatePayouts } from './scheduled/create_payouts.js';
 import {
   handleOpenInquiry,
@@ -65,7 +67,16 @@ import {
   handleRequestPayoutOtp,
   handleSavePayoutAccount,
 } from './callables/payout_account.js';
+import {
+  handleChooseRefundAccount,
+  handleLookupRefundAccount,
+  handlePendingRefund,
+} from './callables/refund_account.js';
+import { liveRefundAccountDeps } from './infra/live_refund_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
+import { handleRefundWrite } from './triggers/refund_write.js';
+import { handleBookingPayerRows } from './triggers/booking_payer_rows.js';
+import { handleInstantPayerRows } from './triggers/instant_payer_rows.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
@@ -74,8 +85,33 @@ import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
 import {
+  handleApplyToRecruitPost,
+  handleCloseRecruitPost,
+  handleCreateRecruitPost,
+  handleRenewRecruitPost,
+  handleRespondRecruitApplication,
+  handleUpdateRecruitPost,
+  handleWithdrawRecruitApplication,
+} from './callables/recruit.js';
+import {
+  handleCancelCollabInvite,
+  handleConfirmCollabPay,
+  handleEndCollaboration,
+  handleInviteCollaborator,
+  handleOpenCollabChat,
+  handleReportCollabPaid,
+  handleRespondCollabInvite,
+  handleRespondCollabOffer,
+  handleSetCollabDefaultFee,
+} from './callables/collab.js';
+import { handleRecruitPostCreated } from './triggers/recruit_post_created.js';
+import { liveCollabBookingSync, liveCollabChatDeps, liveRecruitDeps, liveRecruitSweepDeps } from './infra/live_recruit.js';
+import { FirestoreRecruitMatchKeys } from './infra/recruit_firestore.js';
+import { FirestoreChatStore } from './infra/chat_firestore.js';
+import {
   handleAnswerInstantOffer,
   handleCancelInstantRequest,
+  handleCheckInstantPayment,
   handleConfirmInstantComplete,
   handleCreateInstantRequest,
   handleInviteInstant,
@@ -88,7 +124,13 @@ import {
 import { liveInstantDeps } from './infra/live_instant.js';
 import { instantRequestFromFirestore, instantTrackPath } from './infra/instant_firestore.js';
 import { handleInstantRequestWrite } from './triggers/instant_request_write.js';
-import { handlePhotographerEvent, healNameKey, studiosToRecompute } from './triggers/photographer_write.js';
+import {
+  handlePhotographerEvent,
+  healNameKey,
+  refreshRecruitMatchKeys,
+  studiosToRecompute,
+  syncRecruitMatchKeys,
+} from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
 import { handleReviewWrite } from './triggers/review_write.js';
@@ -273,7 +315,10 @@ export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) =>
   servePaymentWebhook(req, res, liveSettlementDeps(), undefined, liveRefundSubjects()),
 );
 
-/** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
+/**
+ * Every 5 minutes: reconcile open payments with the provider, expire unpaid QRs, re-send pending
+ * refunds and (#141) send refunds still waiting for an account after 24 hours to the paying account.
+ */
 export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
   await handlePaymentClock(liveSettlementDeps());
 });
@@ -281,8 +326,19 @@ export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
 /** Booking lifecycle transition */
 export const transitionBooking = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
 
-/** Open dispute on completed/upcoming booking */
-export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
+/** S18.01: the customer opens a dispute on a booking or a paid ticket (freezes the held money). */
+export const openDispute = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveDisputeDeps()));
+
+/** S18 staff (claim `staffRole == 'admin'`): release / refund / split; the refund goes out on the fake rails. */
+export const resolveDispute = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleResolveDispute(request, liveDisputeDeps()));
+
+/** S18 (#142 Decision 11): `dispute_opened` to the provider on create, `dispute_resolved` to both parties on resolve. */
+export const onDisputeWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'disputes/{disputeId}' }, async (event) => {
+  const before = event.data?.before.exists ? event.data.before.data() : undefined;
+  const after = event.data?.after.exists ? event.data.after.data() : undefined;
+  await handleDisputeWrite(before, after, liveNotifyDeps());
+});
+
 
 /** Delivery: provider submits preview round */
 export const submitDelivery = onCall(CALLABLE_OPTIONS, (request) => handleSubmitDelivery(request, liveBookingDeps()));
@@ -305,6 +361,8 @@ export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
       purge: { db: db(), bucket: (await import('firebase-admin/storage')).getStorage().bucket(), now: new Date() },
     },
     studio: liveStudioClockExtras(),
+    // S27 (#151): runs before the studio steps; no scheduler job of its own.
+    recruit: liveRecruitSweepDeps(),
     jobs: liveJobDeps(),
   });
 });
@@ -333,6 +391,8 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   // S26 (#136): a missing invite-search key is healed once; membership and gate changes move studio capacity.
   const write = { uid, before: event.data?.before.data(), after: live?.data() };
   await healNameKey(write, new FirestoreNameKeys(db()));
+  // S27 (#151 Decision 7): server-only match keys for the recruit fan-out; written only when they change.
+  await syncRecruitMatchKeys(write, new FirestoreRecruitMatchKeys(db()));
   for (const studioId of studiosToRecompute(write)) {
     await refreshAssignableMembers(db(), studioId);
     // A member who just left or was removed: their own days may now change the studio's answer.
@@ -375,10 +435,14 @@ export const onBookingWrite = onDocumentWritten(
         notify: liveNotifyDeps(),
         badges: liveBadgeDeps(),
         studioDays: (studioId, day) => recomputeStudioDay(db(), studioId, day),
+        // S27 (#151): collab jobs follow the booking; a new personal booking may raise the poaching flag.
+        collab: liveCollabBookingSync(),
         jobs: liveJobDeps(),
       },
       liveDiscoveryDeps(),
     );
+    // S22.01 (#141): after the booking's own work; a cancel with no refund or a reschedule touches no payment.
+    await handleBookingPayerRows(bookingId, before, after, livePayerHistoryDeps());
   },
 );
 
@@ -465,7 +529,10 @@ export const assignmentOptions = onCall(CALLABLE_OPTIONS, (request) =>
   handleAssignmentOptions(request, liveAssignmentOptionsDeps()),
 );
 
-/** Studio assigns or reassigns a member: `{bookingId, assigneeId}` → Booking. */
+/**
+ * Studio assigns or reassigns a member, or offers the booking to an active collaborator (S27):
+ * `{bookingId, assigneeId, assigneeKind?, agreedFee?}` → Booking.
+ */
 export const assignBooking = onCall(CALLABLE_OPTIONS, (request) =>
   handleAssignBooking(request, liveStudioBookingDeps()),
 );
@@ -483,6 +550,72 @@ export const declineAssigneeChange = onCall(CALLABLE_OPTIONS, (request) =>
 /** "Trả việc", assignee: `{bookingId, reason?}` → Booking; the studio is told. */
 export const returnAssignment = onCall(CALLABLE_OPTIONS, (request) =>
   handleReturnAssignment(request, liveStudioBookingDeps()),
+);
+
+// ---- studio recruiting and collaborators (S27, #151) ----
+
+/** S27.04: `{kind, title, specialties, areas, frequency, feeHint, requirements}` → `{postId}`. */
+export const createRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleCreateRecruitPost(request, liveRecruitDeps()));
+
+/** S27.04: `{postId, …fields}` → `{}`; open posts only, `kind` fixed. */
+export const updateRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleUpdateRecruitPost(request, liveRecruitDeps()));
+
+/** S27.05: `{postId}` → `{}`; applied applications are declined. */
+export const closeRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleCloseRecruitPost(request, liveRecruitDeps()));
+
+/** S27.05: `{postId}` → `{expiresAt}`; once, +30 days. */
+export const renewRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleRenewRecruitPost(request, liveRecruitDeps()));
+
+/** S27.03: `{postId, message, samplePostIds, acceptTerms}` → `{applicationId}`. */
+export const applyToRecruitPost = onCall(CALLABLE_OPTIONS, (request) => handleApplyToRecruitPost(request, liveRecruitDeps()));
+
+/** S27.02: `{postId}` → `{}`. */
+export const withdrawRecruitApplication = onCall(CALLABLE_OPTIONS, (request) =>
+  handleWithdrawRecruitApplication(request, liveRecruitDeps()),
+);
+
+/** S27.05: `{postId, applicantId, accept}` → `{status}`. */
+export const respondRecruitApplication = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondRecruitApplication(request, liveRecruitDeps(), new FirestoreChatStore(db())),
+);
+
+/** S27.06 studio: `{collaboratorId, defaultFee?}` → `{}`. */
+export const inviteCollaborator = onCall(CALLABLE_OPTIONS, (request) => handleInviteCollaborator(request, liveRecruitDeps()));
+
+/** S27.06 studio: `{collaboratorId}` → `{}`. */
+export const cancelCollabInvite = onCall(CALLABLE_OPTIONS, (request) => handleCancelCollabInvite(request, liveRecruitDeps()));
+
+/** S27.06 photographer: `{studioId, accept, acceptTerms}` → `{status}`. */
+export const respondCollabInvite = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondCollabInvite(request, liveRecruitDeps(), new FirestoreChatStore(db())),
+);
+
+/** S27.06 either side: `{studioId}` or `{collaboratorId}` → `{}`; the collab chat turns read-only. */
+export const endCollaboration = onCall(CALLABLE_OPTIONS, (request) =>
+  handleEndCollaboration(request, liveRecruitDeps(), new FirestoreChatStore(db())),
+);
+
+/** S27.06 studio: `{collaboratorId, defaultFee}` → `{}`. */
+export const setCollabDefaultFee = onCall(CALLABLE_OPTIONS, (request) => handleSetCollabDefaultFee(request, liveRecruitDeps()));
+
+/** S27.07 collaborator: `{bookingId, accept}` → `{offerStatus}`. */
+export const respondCollabOffer = onCall(CALLABLE_OPTIONS, (request) => handleRespondCollabOffer(request, liveStudioBookingDeps()));
+
+/** S27.06 studio "Đã trả": `{bookingId, collaboratorId, paidOn, method}` → `{}`. */
+export const reportCollabPaid = onCall(CALLABLE_OPTIONS, (request) => handleReportCollabPaid(request, liveRecruitDeps()));
+
+/** S27.06 collaborator "Đã nhận" / "Chưa nhận": `{bookingId, received}` → `{payStatus}`. */
+export const confirmCollabPay = onCall(CALLABLE_OPTIONS, (request) => handleConfirmCollabPay(request, liveRecruitDeps()));
+
+/** S27.06 "Nhắn tin": `{studioId}` or `{collaboratorId}` → `{chatId}`. */
+export const openCollabChat = onCall(CALLABLE_OPTIONS, (request) => handleOpenCollabChat(request, liveCollabChatDeps()));
+
+/** A new recruit post notifies matching providers (≤ 200, 3 per provider per VN day; Decision 8). */
+export const onRecruitPostCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'recruitPosts/{postId}' },
+  async (event) => {
+    await handleRecruitPostCreated({ postId: event.params.postId, time: event.time }, liveRecruitDeps());
+  },
 );
 
 // ---- service add-ons (S08.06, #190) ----
@@ -730,6 +863,15 @@ export const onUserWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'us
     },
     new FirestoreNameKeys(db()),
   );
+  // S27 (#151): a role switch (S09.02 "Chế độ") re-syncs the recruit match keys of the photographer doc.
+  await refreshRecruitMatchKeys(
+    {
+      uid: event.params.uid,
+      before: event.data?.before.exists ? event.data.before.data() : undefined,
+      after: event.data?.after.exists ? event.data.after.data() : undefined,
+    },
+    new FirestoreRecruitMatchKeys(db()),
+  );
 });
 
 /** Package changes can complete `complete_profile` and refresh discovery starting price and catalog. */
@@ -801,13 +943,55 @@ export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_
   handleSavePayoutAccount(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
 );
 
-/** A payment write refreshes the payee's earnings rows and totals. */
+// ---- refund account (S22.04, #141) ----
+
+/**
+ * S22.04 `{bookingId}` | `{eventId, registrationId}` | `{disputeId}` → the caller's refund waiting
+ * for an account (amount, paying account masked, `confirmBy`), or null. No secret: nothing is decrypted.
+ */
+export const pendingRefund = onCall(CALLABLE_OPTIONS, (request) =>
+  handlePendingRefund(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/**
+ * S22.04 `{refundId, bankCode, accountNumber}` → `{holderName, bankName, accountLast4}`: the bank's
+ * holder name for another account (fake lookup on the emulator/dev only, else `not_eligible`); the
+ * account is kept on the refund encrypted with PAYOUT_ACCOUNT_KEY until the customer chooses it.
+ */
+export const lookupRefundAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
+  handleLookupRefundAccount(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/**
+ * S22.04 `{refundId, use: 'payer' | 'candidate'}` → `{status}`: sends the waiting refund to the paying
+ * account or the looked-up one, once (the 24-hour default of `paymentClock` racing it never pays twice).
+ */
+export const chooseRefundAccount = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleChooseRefundAccount(request, liveRefundAccountDeps({ uid: request.auth?.uid ?? '' })),
+);
+
+/** A payment write refreshes the payee's earnings rows and totals and the payer's S22.01 row (#141). */
 export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payments/{paymentId}' }, async (event) => {
   await handlePaymentWrite(
     event.params.paymentId,
     event.data?.before.exists ? event.data.before.data() : undefined,
     event.data?.after.exists ? event.data.after.data() : undefined,
     liveEarningsDeps(),
+    livePayerHistoryDeps(),
+  );
+});
+
+/**
+ * S22.01 (#141): every refund write refreshes the payer's row of its payment and their totals; a
+ * refund entering `awaiting_account` tells its payer to choose the account (S22.04, `refund_account_needed`).
+ */
+export const onRefundWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'refunds/{refundId}' }, async (event) => {
+  await handleRefundWrite(
+    event.params.refundId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    livePayerHistoryDeps(),
+    { notify: liveNotifyDeps(), payments: liveBookingDeps().store },
   );
 });
 
@@ -1084,19 +1268,25 @@ export const rankSpots = onSchedule(
 );
 
 // ---------------------------------------------------------------- Chụp ngay (S13–S14, #140)
-// Contended callables use CONTENDED_CALLABLE_OPTIONS (30 s, no payment secrets: #140 moves no money), the
-// others CALLABLE_OPTIONS; #202 moves cancelInstantRequest and confirmInstantComplete to PAYMENT_CALLABLE_OPTIONS.
+// Callables that move money (#202: open a payment, refund, release) use PAYMENT_CALLABLE_OPTIONS (30 s and
+// PAYOUT_ACCOUNT_KEY: a refund reveals the payer's account): inviteInstant (a replaced QR refunds what it
+// received), checkInstantPayment, cancelInstantRequest, confirmInstantComplete, updateInstantJob (no-show);
+// answerInstantOffer stays contended without secrets (it only sets the payee), the others CALLABLE_OPTIONS.
 // The 15-minute `bookingClock` settles due requests (step `instantSweep`); no scheduler of its own.
 
 export const createInstantRequest = onCall(CALLABLE_OPTIONS, (request) => handleCreateInstantRequest(request, liveInstantDeps()));
 
 export const nextInstantCandidates = onCall(CALLABLE_OPTIONS, (request) => handleNextInstantCandidates(request, liveInstantDeps()));
 
-export const inviteInstant = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
+export const inviteInstant = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleInviteInstant(request, liveInstantDeps()));
 
-export const cancelInstantRequest = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+export const checkInstantPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCheckInstantPayment(request, { ...liveInstantDeps(), settlement: liveSettlementDeps() }),
+);
 
-export const confirmInstantComplete = onCall(CONTENDED_CALLABLE_OPTIONS, (request) =>
+export const cancelInstantRequest = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleCancelInstantRequest(request, liveInstantDeps()));
+
+export const confirmInstantComplete = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
   handleConfirmInstantComplete(request, liveInstantDeps()),
 );
 
@@ -1108,26 +1298,25 @@ export const saveInstantSettings = onCall(CALLABLE_OPTIONS, (request) => handleS
 
 export const answerInstantOffer = onCall(CONTENDED_CALLABLE_OPTIONS, (request) => handleAnswerInstantOffer(request, liveInstantDeps()));
 
-export const updateInstantJob = onCall(CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
+export const updateInstantJob = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleUpdateInstantJob(request, liveInstantDeps()));
 
 /** Notices (#138's hooks), the pair chat and the track clean-up of every request write (Decisions 11, 20, 21). */
 export const onInstantRequestWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'instant_requests/{requestId}' },
   async (event) => {
     const requestId = event.params.requestId;
+    const before = instantRequestFromFirestore(requestId, event.data?.before.data());
+    const after = instantRequestFromFirestore(requestId, event.data?.after.data());
     await handleInstantRequestWrite(
-      {
-        requestId,
-        time: event.time,
-        before: instantRequestFromFirestore(requestId, event.data?.before.data()),
-        after: instantRequestFromFirestore(requestId, event.data?.after.data()),
-      },
+      { requestId, time: event.time, before, after },
       {
         notify: liveNotifyDeps(),
         chat: liveChatDeps(),
         deleteTrack: async (id) => { await db().doc(instantTrackPath(id)).delete(); },
       },
     );
+    // S22.01 (#141): after the request's own work; no_match <-> choosing/searching touches no payment.
+    await handleInstantPayerRows(requestId, before, after, livePayerHistoryDeps());
   },
 );
 

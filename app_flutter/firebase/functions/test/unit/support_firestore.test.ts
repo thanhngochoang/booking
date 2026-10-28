@@ -31,6 +31,26 @@ describe('support firestore mapping', () => {
     assert.deepEqual(roundtrip, original);
   });
 
+  it('the opening marker of a dispute description round-trips, and is absent elsewhere', () => {
+    const opening: SupportMessage = {
+      id: 'msg_open',
+      threadId: 'dispute_d1',
+      senderId: 'c1',
+      senderRole: 'customer',
+      senderName: 'An',
+      body: 'Thiếu 20 ảnh so với gói đã đặt.',
+      createdAt: '2026-10-20T10:00:00.001Z',
+      opening: true,
+    };
+    const doc = supportMessageToFirestore(opening);
+    assert.equal(doc.opening, true);
+    assert.deepEqual(supportMessageFromFirestore(doc), opening);
+
+    const plainDoc = supportMessageToFirestore({ ...opening, id: 'msg_later', opening: undefined });
+    assert.equal('opening' in plainDoc, false);
+    assert.equal('opening' in (supportMessageFromFirestore(plainDoc) ?? {}), false);
+  });
+
   it('thread round-trips (Timestamps ↔ ISO)', () => {
     const thread: SupportThread = {
       id: 'help_u1',

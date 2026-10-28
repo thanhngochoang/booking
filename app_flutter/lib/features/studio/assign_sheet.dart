@@ -6,9 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
+import 'package:photobooking/features/collab/collab_controller.dart';
 import 'package:photobooking/features/studio/studio_common.dart';
 import 'package:photobooking/features/studio/studio_errors.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -21,6 +26,32 @@ final assignmentOptionsProvider = FutureProvider.autoDispose
           ref.watch(studioRepositoryProvider).assignmentOptions(bookingId),
       retry: (_, _) => null,
     );
+
+/// What to say when a collaborator offer ([name]) is refused: the codes a
+/// retry never fixes have their own line (offer window too short, recruiting
+/// block, blocked pair, collaboration ended); the rest read like S26.
+String assignOfferErrorText(
+  BuildContext context,
+  Object error, {
+  required String name,
+  DateTime? blockedUntil,
+}) {
+  final l = context.l10n;
+  final code = switch (error) {
+    StudioError(:final code) => code,
+    BookingException(:final code) => code,
+    _ => '',
+  };
+  return switch (code) {
+    'deadline_passed' => l.assignCollabErrDeadline,
+    'recruit_blocked' when blockedUntil != null => l.recruitBlocked(
+      formatDayMonth(toVn(blockedUntil)),
+    ),
+    'blocked' => l.assignCollabErrBlocked,
+    'not_found' => l.assignCollabErrEnded(name),
+    _ => studioErrorText(context, code),
+  };
+}
 
 /// Opens S26.04 "Giao thợ" for [bookingId] over S06.01 or S05.02; true once
 /// the server took the assignment.
@@ -39,6 +70,13 @@ Future<bool> showAssignSheet(BuildContext context, String bookingId) =>
 /// names the pick, and the one primary "Giao cho {name}" assigns and closes.
 /// Changing the assignee after the deadline warns that the customer may
 /// cancel with a full refund (Decision 10).
+///
+/// A studio with active collaborators (S27, mock `#S26.04-collab`) sees two
+/// groups, "Thành viên" and "Cộng tác viên". Picking a collaborator shows the
+/// required "Thù lao" (the suggested fee filled in), the 6-hour note, and the
+/// primary "Gửi việc cho {name}" sends an offer with the fee (never stored
+/// on the booking, so the customer never sees it). The collaborator's own
+/// day is checked by the server when the offer is sent and accepted.
 class AssignSheet extends ConsumerStatefulWidget {
   const AssignSheet({super.key, required this.bookingId});
 
@@ -51,7 +89,18 @@ class AssignSheet extends ConsumerStatefulWidget {
 class _AssignSheetState extends ConsumerState<AssignSheet> {
   /// The member picked by hand; null keeps the first free one.
   String? _picked;
+
+  /// The collaborator picked by hand (S27); wins over [_picked].
+  Collaboration? _collaborator;
+  final _fee = TextEditingController();
+  String? _feeError;
   bool _sending = false;
+
+  @override
+  void dispose() {
+    _fee.dispose();
+    super.dispose();
+  }
 
   AssignmentOption? _choice(List<AssignmentOption> options) {
     final free = [
@@ -62,13 +111,82 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
     return free.firstWhere((o) => o.uid == _picked, orElse: () => free.first);
   }
 
-  Future<void> _assign(AssignmentOption o) async {
-    setState(() => _sending = true);
-    final navigator = Navigator.of(context);
-    final ok = await runStudioAction(
-      context,
-      () => ref.read(bookingRepositoryProvider).assign(widget.bookingId, o.uid),
+  void _pickMember(String uid) => setState(() {
+    _picked = uid;
+    _collaborator = null;
+    _feeError = null;
+  });
+
+  void _pickCollaborator(Collaboration c) => setState(() {
+    _collaborator = c;
+    _feeError = null;
+    _fee.text = switch (c.defaultFee) {
+      final fee? => groupVnd(fee),
+      null => '',
+    };
+  });
+
+  Future<void> _offer(Collaboration c) async {
+    final l = context.l10n;
+    final text = _fee.text.trim();
+    final fee = parseVnd(text);
+    if (!isValidCollabFee(fee)) {
+      setState(
+        () =>
+            _feeError = text.isEmpty ? l.assignFeeRequired : l.collabFeeInvalid,
+      );
+      return;
+    }
+    await _send(
+      () => ref
+          .read(bookingRepositoryProvider)
+          .assign(
+            widget.bookingId,
+            c.collaboratorId,
+            collaborator: true,
+            agreedFee: fee,
+          ),
+      errorText: (context, e) => assignOfferErrorText(
+        context,
+        e,
+        name: c.collaboratorName,
+        blockedUntil: ref
+            .read(myRecruitCountersProvider)
+            .value
+            ?.recruitBlockedUntil,
+      ),
     );
+  }
+
+  Future<void> _assign(AssignmentOption o) => _send(
+    () => ref.read(bookingRepositoryProvider).assign(widget.bookingId, o.uid),
+  );
+
+  Future<void> _send(
+    Future<void> Function() action, {
+    String Function(BuildContext context, Object error)? errorText,
+  }) async {
+    setState(() {
+      _sending = true;
+      _feeError = null;
+    });
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    var ok = true;
+    try {
+      await action();
+    } catch (e) {
+      ok = false;
+      if (mounted) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text((errorText ?? studioFailureText)(context, e)),
+            ),
+          );
+      }
+    }
     if (!mounted) return;
     if (ok) {
       navigator.pop(true);
@@ -85,6 +203,12 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
     final theme = Theme.of(context);
     final booking = ref.watch(bookingProvider(widget.bookingId));
     final options = ref.watch(assignmentOptionsProvider(widget.bookingId));
+    // Read alongside the options, not after them (S27 collaborators). A
+    // failing listener leaves the members-only sheet of S26 working.
+    final watched = ref.watch(studioCollaborationsProvider);
+    final collaborations = watched.hasError && !watched.hasValue
+        ? const AsyncValue<List<Collaboration>>.data([])
+        : watched;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.s4,
@@ -130,8 +254,23 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
                       onRetry: () => ref.invalidate(
                         assignmentOptionsProvider(widget.bookingId),
                       ),
-                      data: (context, o) =>
-                          _body(context, b, o.deadline, [...o.options]),
+                      data: (context, o) => AsyncView<List<Collaboration>>(
+                        value: collaborations,
+                        loaderSize: LoaderSize.inline,
+                        skeleton: (_) => _skeleton(),
+                        onRetry: () =>
+                            ref.invalidate(studioCollaborationsProvider),
+                        data: (context, collabs) => _body(
+                          context,
+                          b,
+                          o.deadline,
+                          [...o.options],
+                          [
+                            for (final c in collabs)
+                              if (c.status == CollabStatus.active) c,
+                          ],
+                        ),
+                      ),
                     ),
             ),
           ),
@@ -158,20 +297,94 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
     Booking b,
     DateTime deadline,
     List<AssignmentOption> options,
+    List<Collaboration> collaborators,
   ) {
     final l = context.l10n;
     final now = ref.read(clockProvider)();
-    final choice = _choice(options);
-    final name = choice?.name ?? '';
-    final reassign = b.studio?.assigneeId != null;
+    // Decision 15: a studio blocked from recruiting cannot offer work to its
+    // collaborators either (the server refuses `recruit_blocked`).
+    final blockedUntil = switch (ref.watch(myRecruitCountersProvider).value) {
+      final c? when c.isBlocked(now) => c.recruitBlockedUntil,
+      _ => null,
+    };
+    final collaborator = blockedUntil != null
+        ? null
+        : collaborators
+              .where((c) => c.collaboratorId == _collaborator?.collaboratorId)
+              .firstOrNull;
+    final choice = collaborator == null ? _choice(options) : null;
+    final name = collaborator?.collaboratorName ?? choice?.name ?? '';
+    // A pending collaborator offer is not an assignee to replace (S27).
+    final reassign = b.studio?.confirmedAssigneeId != null;
     final late = reassign && !now.isBefore(deadline);
+    final grouped = collaborators.isNotEmpty;
+    Widget memberTile(AssignmentOption o) => AppOptionTile(
+      key: Key('assign-option-${o.uid}'),
+      label: o.name,
+      meta: _meta(l, o),
+      leading: AppAvatar(
+        url: o.avatarUrl,
+        name: o.name,
+        size: AppAvatarSize.sm,
+        decorative: true,
+      ),
+      selected: collaborator == null && o.uid == choice?.uid,
+      enabled: o.selectable && !_sending,
+      onTap: () => _pickMember(o.uid),
+    );
+    Widget collaboratorTile(Collaboration c) => AppOptionTile(
+      key: Key('assign-option-${c.collaboratorId}'),
+      label: c.collaboratorName,
+      meta: [
+        if (ref
+                .watch(photographerProfileProvider(c.collaboratorId))
+                .value
+                ?.summary
+            case final summary? when summary.hasTomatoPct)
+          MetaPart.tomato(summary.tomatoPct),
+        if (c.defaultFee case final fee?)
+          MetaPart.text(l.recruitFeePerShoot(formatMoney(fee))),
+      ],
+      leading: AppAvatar(
+        url: c.collaboratorAvatarUrl,
+        name: c.collaboratorName,
+        size: AppAvatarSize.sm,
+        decorative: true,
+      ),
+      selected: c.collaboratorId == collaborator?.collaboratorId,
+      enabled: !_sending && blockedUntil == null,
+      onTap: () => _pickCollaborator(c),
+    );
+    final tiles = <Widget>[
+      if (grouped)
+        _GroupLabel(
+          l.assignGroupMembers,
+          key: const Key('assign-group-members'),
+        ),
+      if (options.isEmpty && grouped)
+        StudioNote(l.assignNoMembers, key: const Key('assign-no-members')),
+      for (final o in options) memberTile(o),
+      if (grouped) ...[
+        _GroupLabel(
+          l.assignGroupCollaborators,
+          key: const Key('assign-group-collaborators'),
+        ),
+        if (blockedUntil != null)
+          StudioNote(
+            l.recruitBlocked(formatDayMonth(toVn(blockedUntil))),
+            key: const Key('assign-collab-blocked'),
+            icon: AppIcons.warning,
+          ),
+        for (final c in collaborators) collaboratorTile(c),
+      ],
+    ];
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Summary(booking: b, deadline: deadline, now: now),
         const SizedBox(height: AppSpace.s3),
-        if (options.isEmpty)
+        if (options.isEmpty && !grouped)
           StudioNote(l.assignNoMembers, key: const Key('assign-no-members'))
         else
           Flexible(
@@ -181,29 +394,39 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
               explicitChildNodes: true,
               child: ListView.separated(
                 shrinkWrap: true,
-                itemCount: options.length,
+                itemCount: tiles.length,
                 separatorBuilder: (_, _) => const SizedBox(height: AppSpace.s2),
-                itemBuilder: (context, i) {
-                  final o = options[i];
-                  return AppOptionTile(
-                    key: Key('assign-option-${o.uid}'),
-                    label: o.name,
-                    meta: _meta(l, o),
-                    leading: AppAvatar(
-                      url: o.avatarUrl,
-                      name: o.name,
-                      size: AppAvatarSize.sm,
-                      decorative: true,
-                    ),
-                    selected: o.uid == choice?.uid,
-                    enabled: o.selectable && !_sending,
-                    onTap: () => setState(() => _picked = o.uid),
-                  );
-                },
+                itemBuilder: (context, i) => tiles[i],
               ),
             ),
           ),
-        if (name.isNotEmpty) StudioNote(l.assignNote(name)),
+        if (collaborator != null) ...[
+          const SizedBox(height: AppSpace.s3),
+          TextField(
+            key: const Key('assign-fee'),
+            controller: _fee,
+            enabled: !_sending,
+            keyboardType: TextInputType.number,
+            inputFormatters: const [VndInputFormatter()],
+            onChanged: (_) {
+              if (_feeError != null) setState(() => _feeError = null);
+            },
+            style: const TextStyle(
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+            decoration: InputDecoration(
+              labelText: l.assignFeeLabel,
+              suffixText: l.recruitFeeAmountSuffix,
+              errorText: _feeError,
+            ),
+          ),
+        ],
+        if (name.isNotEmpty)
+          StudioNote(
+            collaborator != null
+                ? l.assignCollabNote(name)
+                : l.assignNote(name),
+          ),
         if (late)
           StudioNote(
             l.assignLateWarning,
@@ -212,10 +435,20 @@ class _AssignSheetState extends ConsumerState<AssignSheet> {
           ),
         const SizedBox(height: AppSpace.s2),
         AppButton.primary(
-          name.isEmpty ? l.assignTitle : l.assignAction(name),
+          name.isEmpty
+              ? l.assignTitle
+              : collaborator != null
+              ? l.assignSendTo(name)
+              : l.assignAction(name),
           key: const Key('assign-submit'),
           loading: _sending,
-          onPressed: choice == null || _sending ? null : () => _assign(choice),
+          onPressed: _sending
+              ? null
+              : collaborator != null
+              ? () => _offer(collaborator)
+              : choice == null
+              ? null
+              : () => _assign(choice),
         ),
       ],
     );
@@ -308,6 +541,29 @@ class _Summary extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Thành viên" / "Cộng tác viên" above each group (mock `.sec`, small).
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      header: true,
+      child: Text(
+        text,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.brightness == Brightness.dark
+              ? AppColorsDark.foregroundSecondary
+              : AppColors.foregroundSecondary,
         ),
       ),
     );

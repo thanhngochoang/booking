@@ -92,12 +92,13 @@ void main() {
     );
     expect(find.text('Các khoản'), findsOneWidget);
     expect(find.text('Tháng 10'), findsOneWidget);
-    expect(find.text('Tháng 9'), findsOneWidget);
-    await tester.ensureVisible(find.text('Tháng 12/2025'));
+    // Later months are the mock's `.nsec`: upper-case section labels.
+    expect(find.text('THÁNG 9'), findsOneWidget);
+    await tester.ensureVisible(find.text('THÁNG 12/2025'));
     await tester.pumpAndSettle();
-    expect(find.text('Tháng 12/2025'), findsOneWidget);
-    final y = tester.getTopLeft(find.text('Tháng 9')).dy;
-    expect(y, lessThan(tester.getTopLeft(find.text('Tháng 12/2025')).dy));
+    expect(find.text('THÁNG 12/2025'), findsOneWidget);
+    final y = tester.getTopLeft(find.text('THÁNG 9')).dy;
+    expect(y, lessThan(tester.getTopLeft(find.text('THÁNG 12/2025')).dy));
   });
 
   testWidgets('a held row shows Đang giữ', (tester) async {
@@ -351,6 +352,34 @@ void main() {
     expect(w.events.last.$1, 'earnings_item_open');
     expect(w.events.last.$2, {'state': 'held'});
   });
+
+  testWidgets(
+    'an instant_request row expands to Hoa hồng / Thuế khấu trừ / Thực nhận like a booking row',
+    (tester) async {
+      final w = await _open(
+        tester,
+        seed: (w) => w.repo.emitItems([
+          w.item(
+            'pay_i',
+            subjectType: 'instant_request',
+            subjectId: 'ir_1',
+            label: 'Chụp ngay · 1 giờ',
+            amount: 690000,
+            fee: 69000,
+            feeRateBp: 1000,
+            tax: 43470,
+            taxRateBp: 700,
+            net: 577530,
+          ),
+        ]),
+      );
+      await _expand(tester, 'Lan Anh · Chụp ngay · 1 giờ');
+      expect(w.router.state.uri.path, '/work/earnings');
+      expect(find.text('Hoa hồng (10%)'), findsOneWidget);
+      expect(find.text('Thuế khấu trừ (7%)'), findsOneWidget);
+      expect(find.text('577.530₫'), findsOneWidget);
+    },
+  );
 
   testWidgets('a row without a customer name says Khách', (tester) async {
     await _open(tester, seed: (w) => w.repo.emitItems([w.item('a', name: '')]));

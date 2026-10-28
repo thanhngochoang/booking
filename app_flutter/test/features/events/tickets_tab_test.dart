@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
+import 'package:photobooking/data/disputes/dispute.dart';
+import 'package:photobooking/data/disputes/dispute_providers.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
@@ -14,6 +17,7 @@ import 'package:photobooking/features/events/tickets_tab.dart';
 import 'package:photobooking/l10n/app_localizations_vi.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../support/dispute_world.dart';
 import '../../support/event_world.dart';
 import '../../support/fake_push.dart';
 
@@ -469,6 +473,95 @@ void main() {
     expect(find.byType(QrImageView), findsNothing);
   });
 
+  testWidgets('a paid past ticket inside its window shows "Báo vấn đề"; a '
+      'free one does not', (tester) async {
+    final w = DisputeWorld(now: eventNow);
+    await _open(
+      tester,
+      [
+        // Ended 3 hours ago.
+        _reg('paid', amount: 300000, startsIn: const Duration(hours: -5)),
+        _reg('free', startsIn: const Duration(hours: -5)),
+        // Ended 2 days ago: the window is over.
+        _reg('old', amount: 300000, startsIn: const Duration(days: -2)),
+      ],
+      extra: [
+        disputeRepositoryProvider.overrideWithValue(w.repo),
+      ],
+    );
+    expect(find.text('Báo vấn đề'), findsOneWidget);
+    final report = find.byKey(const Key('ticket-report-problem'));
+    expect(
+      find.ancestor(of: report, matching: find.byKey(const ValueKey('paid'))),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('"Báo vấn đề" appears when the event ends and goes 24 hours '
+      'later while the tab stays open', (tester) async {
+    var now = eventNow;
+    final w = DisputeWorld(now: eventNow);
+    // Ends one minute from now.
+    await _open(
+      tester,
+      [
+        _reg(
+          'paid',
+          amount: 300000,
+          startsIn: const Duration(hours: -2, minutes: 1),
+        ),
+      ],
+      clock: () => now,
+      extra: [disputeRepositoryProvider.overrideWithValue(w.repo)],
+    );
+    expect(find.byKey(const Key('ticket-report-problem')), findsNothing);
+
+    now = eventNow.add(const Duration(minutes: 2));
+    await tester.pump(ticketsTick);
+    await tester.pump();
+    expect(find.byKey(const Key('ticket-report-problem')), findsOneWidget);
+
+    now = eventNow.add(const Duration(hours: 24, minutes: 2));
+    await tester.pump(ticketsTick);
+    await tester.pump();
+    expect(find.byKey(const Key('ticket-report-problem')), findsNothing);
+  });
+
+  testWidgets('"Báo vấn đề" opens S18.01 for the ticket and a success pushes '
+      '/disputes/:id', (tester) async {
+    final w = DisputeWorld(now: eventNow);
+    final world = await _open(
+      tester,
+      [_reg('paid', amount: 300000, startsIn: const Duration(hours: -5))],
+      extra: [
+        disputeRepositoryProvider.overrideWithValue(w.repo),
+      ],
+    );
+    await tester.tap(find.byKey(const Key('ticket-report-problem')));
+    await settle(tester);
+    expect(
+      find.text(
+        'Còn 21 giờ để báo vấn đề. Tiền vé được giữ tới khi có kết quả.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Sự kiện không diễn ra'));
+    await tester.enterText(
+      find.byKey(const Key('dispute-description')),
+      'Tới nơi không có ai tổ chức cả.',
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('dispute-submit')));
+    await tester.tap(find.byKey(const Key('dispute-submit')));
+    await settle(tester);
+
+    final draft = w.repo.opened.single;
+    expect(draft.subjectType, DisputeSubjectType.ticket);
+    expect(draft.subjectId, 'paid');
+    expect(draft.eventId, 'ev1');
+    expect(world.router.state.uri.toString(), '/disputes/${draft.disputeId}');
+  });
+
   testWidgets('cancelled and refunded tickets are compact with their label', (
     tester,
   ) async {
@@ -739,6 +832,101 @@ void main() {
     await settle(tester);
     expect(w.repo.registrations.single.status, RegistrationStatus.refunded);
     expect(find.text('ĐÃ HOÀN TIỀN'), findsOneWidget);
+  });
+
+  testWidgets('a bank_qr ticket cancelled ≥ 48 h opens the sheet', (
+    tester,
+  ) async {
+    final w = EventsWorld(
+      events: [detailOf('ev1', priceVnd: 250000)],
+      registrations: [_reg('a', amount: 500000, quantity: 2)],
+    );
+    w.payments.pendingBySubject[const TicketRefund('ev1', 'a')] =
+        const PendingRefund(
+          refundId: 'r1',
+          amount: 500000,
+          payer: (
+            bankName: 'Vietcombank',
+            accountLast4: '6789',
+            holderName: 'NGUYEN THANH HA',
+          ),
+        );
+    await w.pump(
+      tester,
+      path: '/bookings',
+      size: const Size(390, 1400),
+      bookings: (_) => const Scaffold(body: EventTicketsTab()),
+    );
+    await tester.tap(find.text('Huỷ vé · hoàn 100%'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+
+    expect(w.payments.pendingCalls, [const TicketRefund('ev1', 'a')]);
+    expect(find.text('Đã huỷ vé'), findsOneWidget);
+    expect(find.text('Tài khoản nhận hoàn'), findsOneWidget);
+    expect(find.text('Vietcombank •••• 6789'), findsOneWidget);
+  });
+
+  testWidgets('a wallet ticket cancel asks once and opens no sheet', (
+    tester,
+  ) async {
+    final w = await _open(tester, [
+      _reg('a', amount: 250000),
+    ], priceVnd: 250000);
+    await tester.tap(find.text('Huỷ vé · hoàn 100%'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+    // The registration does not carry the method: the server says nothing
+    // waits for a wallet payment.
+    expect(w.payments.pendingCalls, [const TicketRefund('ev1', 'a')]);
+    expect(find.text('Tài khoản nhận hoàn'), findsNothing);
+  });
+
+  testWidgets('a no-refund ticket cancel never asks for a refund account', (
+    tester,
+  ) async {
+    final late = await _open(
+      tester,
+      [_reg('b', amount: 250000)],
+      priceVnd: 250000,
+      now: eventNow.add(const Duration(days: 2)),
+    );
+    await tester.tap(find.text('Huỷ vé · không hoàn tiền'));
+    await settle(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+    expect(late.payments.pendingCalls, isEmpty);
+  });
+
+  testWidgets('a ticket whose refund waits for an account stays "Đang hoàn" '
+      '(S11.04-pending)', (tester) async {
+    await _open(tester, [
+      _reg(
+        'a',
+        amount: 250000,
+        status: RegistrationStatus.refunded,
+        refundPercent: 100,
+        refundStatus: TicketRefundStatus.awaitingAccount,
+      ),
+    ], priceVnd: 250000);
+    expect(find.text('ĐANG HOÀN'), findsOneWidget);
   });
 
   testWidgets('cancel within 48 hours warns there is no refund', (

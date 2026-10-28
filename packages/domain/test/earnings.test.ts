@@ -11,13 +11,13 @@ import {
 import type { Payment } from '../src/escrow.js';
 import type { Payout } from '../src/payout.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
-import { openDispute } from '../src/open_dispute.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { approvePayout, createPayout, executePayout } from '../src/payout_use_cases.js';
 import { DEFAULT_PAYOUT_POLICY } from '../src/payout_policy.js';
 import type { ProviderType } from '../src/provider_type.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { ADMIN, addAccount, createPayoutWorld, paidBooking } from './support/payout_world.js';
+import { freezeBookingPayment } from './support/dispute_world.js';
 
 const NOW = new Date('2026-10-20T10:00:00.000Z');
 const subject = { counterpartName: 'Khách Hàng Một', label: 'Gói Chân dung', day: '2026-10-15', milestones: null };
@@ -213,7 +213,7 @@ describe('earnings summary', () => {
     await transitionBooking(w.deps, { bookingId: b.bookingId, action: 'complete', actorId: 'p1' });
     await transitionBooking(w.deps, { bookingId: c.bookingId, action: 'complete', actorId: 'p1' });
     w.clock.setTime(new Date('2026-10-17T10:00:00.000Z'));
-    await openDispute(w.deps, { bookingId: c.bookingId, customerId: 'c1', reason: 'Thiếu ảnh' });
+    freezeBookingPayment(w.store, c.bookingId, w.clock.now());
     w.clock.setTime(new Date('2026-10-18T10:00:00.000Z'));
     await runBookingSweeps(w.deps);
 
@@ -241,5 +241,36 @@ describe('earnings summary', () => {
     );
     assert.deepEqual([summary.heldAmount, summary.soonAmount, summary.receivedAmount], [held, soon, received]);
     assert.equal(w.earningsStore.items.get(`p1/${c.paymentId}`)?.holdReason, HOLD_REASON_DISPUTE);
+  });
+});
+
+describe('instant payments (#202)', () => {
+  it("an instant_request row is estimated with the payment's own fee rate", () => {
+    const item = earningItemOf({
+      payment: payment({ subjectType: 'instant_request', subjectId: 'ir1', amount: 690_000, feeBp: 1_000 }),
+      refunded: 0,
+      subject: { counterpartName: 'Lan Anh', label: 'Chụp ngay · 1 giờ', day: '2026-10-22', milestones: null },
+      payout: null,
+      payeeType: 'studio',
+      policy: DEFAULT_PAYOUT_POLICY,
+      now: NOW,
+    });
+    assert.deepEqual(
+      [item?.subjectType, item?.amount, item?.platformFee, item?.netAmount, item?.feeRateBp],
+      ['instant_request', 690_000, 69_000, 621_000, 1_000],
+    );
+  });
+
+  it("a paid-out instant row reads its item's fee and the rate of that fee, not the payout's", () => {
+    const po = payout({
+      amount: 690_000,
+      items: [{ paymentId: 'pay1', amount: 690_000, fee: 69_000, tax: 0, net: 621_000 }],
+      platformFee: 69_000, taxWithheld: 0, amountNet: 621_000, feeRateBp: 0, taxRateBp: 0, status: 'paid',
+    });
+    const row = item(payment({ subjectType: 'instant_request', amount: 690_000, feeBp: 1_000, escrowStatus: 'paid_out', payoutId: 'po1' }), 0, po, 'studio');
+    assert.deepEqual([row?.state, row?.platformFee, row?.feeRateBp, row?.estimated], ['paid_out', 69_000, 1_000, false]);
+    // A booking keeps the payout's rate.
+    const booking = item(payment({ escrowStatus: 'paid_out', payoutId: 'po1', amount: 690_000 }), 0, { ...po, feeRateBp: 500 }, 'studio');
+    assert.equal(booking?.feeRateBp, 500);
   });
 });

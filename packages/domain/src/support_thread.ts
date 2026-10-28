@@ -31,6 +31,11 @@ export interface SupportMessage {
   readonly senderName: string;
   readonly body: string;
   readonly createdAt: string;
+  /**
+   * The customer's description written by `openDispute` as the thread's first message (S18, #142):
+   * the provider already hears about it through `dispute_opened`, so it is never a `dispute_message`.
+   */
+  readonly opening?: true;
 }
 
 export const SUPPORT_TEXT_MAX = 1000;

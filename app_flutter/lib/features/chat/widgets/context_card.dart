@@ -20,6 +20,10 @@ class ChatContextCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // S27 Decision 16: a studio–collaborator chat has no booking and no
+    // service card (the collaborator's services are not the studio's
+    // business here); a slim tag leads to S27.06.
+    if (thread.kind == ChatKind.collab) return const _CollabContextCard();
     if (thread.kind == ChatKind.booking && thread.bookingId != null) {
       return _BookingContextCard(
         bookingId: thread.bookingId!,
@@ -30,6 +34,56 @@ class ChatContextCard extends ConsumerWidget {
     return _InquiryContextCard(
       photographerId: thread.photographerId,
       serviceId: serviceId,
+    );
+  }
+}
+
+class _CollabContextCard extends StatelessWidget {
+  const _CollabContextCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final secondary = dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    return Padding(
+      key: const Key('chat-collab-card'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s3,
+        vertical: AppSpace.s2,
+      ),
+      child: Material(
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push('/collab'),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.s2),
+            child: Row(
+              children: [
+                AppIcon(AppIcons.handshake, color: secondary),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(
+                  child: Text(
+                    l10n.chatKindCollab,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const AppIcon(AppIcons.chevron, size: AppIconSize.sm),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -161,7 +215,7 @@ class _InquiryContextCard extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const AppIcon(AppIcons.chevron, size: 20),
+                      const AppIcon(AppIcons.chevron, size: AppIconSize.sm),
                     ],
                   ),
                 ),

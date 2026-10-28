@@ -258,9 +258,11 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
   source: json['source'] as String?,
   jobId: json['jobId'] as String?,
   quoteId: json['quoteId'] as String?,
+  disputeId: json['disputeId'] as String?,
   studio: json['studio'] == null
       ? null
       : StudioBookingInfo.fromJson(json['studio'] as Map<String, dynamic>),
+  refundAccountNeeded: json['refundAccountNeeded'] as bool? ?? false,
   version: (json['version'] as num?)?.toInt() ?? 1,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -311,7 +313,9 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'source': instance.source,
   'jobId': instance.jobId,
   'quoteId': instance.quoteId,
+  'disputeId': instance.disputeId,
   'studio': instance.studio,
+  'refundAccountNeeded': instance.refundAccountNeeded,
   'version': instance.version,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),

@@ -12,14 +12,15 @@ import type { Booking } from '../src/booking.js';
 import { assignBooking, declineAssigneeChange, requestAssigneeChange } from '../src/studio_assignment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
-import { openDispute } from '../src/open_dispute.js';
+import { commitTransition } from '../src/commit_transition.js';
+import { freezeBookingPayment } from './support/dispute_world.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
 import { DomainError } from '../src/errors.js';
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
 
-describe('Task 5: transitionBooking and openDispute', () => {
+describe('Task 5: transitionBooking', () => {
   it('accepts requested booking and marks availability day as booked', async () => {
     const world = createBookingWorld();
     const draft = await createBookingDraft(world.deps, {
@@ -92,123 +93,37 @@ describe('Task 5: transitionBooking and openDispute', () => {
     assert.ok(payment);
     assert.equal(verifyPaymentLedgerInvariant(payment, refunds, entries), true);
   });
+});
 
-  it('openDispute: customer opens dispute within 24h window of completion', async () => {
+describe('completion while a milestone is disputed (#142)', () => {
+  it('completion releases the held delivery milestone while the shoot milestone is disputed, never the disputed one', async () => {
     const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
     const draft = await createBookingDraft(world.deps, {
-      customerId: 'c1',
-      photographerId: 'p1',
-      serviceId: 'srv_01',
-      day: '2026-10-15',
-      start: '14:00',
-      place: { name: 'Nhà thờ Lớn' },
+      customerId: 'c1', photographerId: 'p1', serviceId: 'srv_01', day: '2026-10-15', start: '14:00', place: { name: 'Nhà thờ Lớn' },
     });
-    await payDraft(world, draft.id);
+    const { paymentId } = await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
-
-    // Set time after shoot end (shoot ends 16:00 VN = 09:00 UTC)
-    world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
-    await transitionBooking(world.deps, { bookingId: draft.id, action: 'complete', actorId: 'p1' });
-
-    // 10 hours after completion, customer opens dispute
-    world.clock.setTime(new Date('2026-10-15T19:30:00.000Z'));
-    const disputed = await openDispute(world.deps, {
-      bookingId: draft.id,
-      customerId: 'c1',
-      reason: 'Nhiếp ảnh gia giao ảnh muộn và thiếu file RAW',
-    });
-
-    assert.equal(disputed.escrowStatus, 'disputed');
-    const payment = (await world.store.getPaymentsForBooking(draft.id))[0];
-    assert.equal(payment?.escrowStatus, 'disputed');
-  });
-
-  it('openDispute accepts shot within 24 h of shotAt and approved before checkUntil, refuses approved after checkUntil', async () => {
-    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
-    const draft = await createBookingDraft(world.deps, {
-      customerId: 'c1',
-      photographerId: 'p1',
-      serviceId: 'srv_01',
-      day: '2026-10-15',
-      start: '14:00',
-      place: { name: 'Nhà thờ Lớn' },
-    });
-    await payDraft(world, draft.id);
-    await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
-
-    // Mark shot at 2026-10-15 09:30 UTC
     world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'mark_shot', actorId: 'p1' });
+    freezeBookingPayment(world.store, draft.id, world.clock.now(), 'shoot');
+    const approved = await world.store.getBooking(draft.id);
+    assert.ok(approved);
+    world.store.bookings.set(draft.id, { ...approved, status: 'approved', checkUntil: '2026-10-17T09:30:00.000Z' });
+    world.clock.setTime(new Date('2026-10-17T10:00:00.000Z'));
 
-    // 10 hours after shotAt: customer opens dispute on shot
-    world.clock.setTime(new Date('2026-10-15T19:30:00.000Z'));
-    const disputedShot = await openDispute(world.deps, {
-      bookingId: draft.id,
-      customerId: 'c1',
-      reason: 'Vấn đề buổi chụp',
-    });
-    assert.equal(disputedShot.status, 'shot'); // status unchanged
-    assert.equal(disputedShot.escrowStatus, 'disputed');
+    const before = await world.store.getBooking(draft.id);
+    assert.ok(before);
+    const done = await commitTransition(world.deps, before, { nextStatus: 'completed', refundPercent: 0 });
 
-    // Test approved state:
-    world.clock.setTime(new Date('2026-10-10T10:00:00.000Z'));
-    const draft2 = await createBookingDraft(world.deps, {
-      customerId: 'c1',
-      photographerId: 'p1',
-      serviceId: 'srv_01',
-      day: '2026-10-16',
-      start: '14:00',
-      place: { name: 'Nhà thờ Lớn' },
-    });
-    await payDraft(world, draft2.id);
-    const b2 = await world.store.getBooking(draft2.id);
-    assert.ok(b2);
-    world.store.bookings.set(draft2.id, {
-      ...b2,
-      status: 'approved',
-      approvedAt: '2026-10-16T10:00:00.000Z',
-      checkUntil: '2026-10-18T10:00:00.000Z',
-    });
-
-    // Before checkUntil: accepts
-    world.clock.setTime(new Date('2026-10-18T09:00:00.000Z'));
-    const disputedApproved = await openDispute(world.deps, {
-      bookingId: draft2.id,
-      customerId: 'c1',
-      reason: 'Bộ ảnh gốc link hỏng',
-    });
-    assert.equal(disputedApproved.status, 'approved');
-    assert.equal(disputedApproved.escrowStatus, 'disputed');
-
-    // After checkUntil: refuses
-    world.clock.setTime(new Date('2026-10-10T10:00:00.000Z'));
-    const draft3 = await createBookingDraft(world.deps, {
-      customerId: 'c1',
-      photographerId: 'p1',
-      serviceId: 'srv_01',
-      day: '2026-10-17',
-      start: '14:00',
-      place: { name: 'Nhà thờ Lớn' },
-    });
-    await payDraft(world, draft3.id);
-    const b3 = await world.store.getBooking(draft3.id);
-    assert.ok(b3);
-    world.store.bookings.set(draft3.id, {
-      ...b3,
-      status: 'approved',
-      approvedAt: '2026-10-16T10:00:00.000Z',
-      checkUntil: '2026-10-18T10:00:00.000Z',
-    });
-    world.clock.setTime(new Date('2026-10-18T10:00:01.000Z'));
-    await assert.rejects(
-      () =>
-        openDispute(world.deps, {
-          bookingId: draft3.id,
-          customerId: 'c1',
-          reason: 'Báo muộn sau 48h',
-        }),
-      (err: unknown) => err instanceof DomainError && err.code === 'conflict',
-    );
+    const p = world.store.payments.get(paymentId);
+    const status = (k: string) => p?.milestones?.find((m) => m.kind === k)?.status;
+    assert.equal(status('shoot'), 'disputed');
+    assert.equal(status('delivery'), 'released');
+    assert.equal(p?.escrowStatus, 'disputed');
+    assert.equal(done.status, 'completed');
+    assert.equal(done.escrowStatus, 'disputed');
+    const released = (await world.store.getLedgerEntriesForPayment(paymentId)).filter((e) => e.type === 'escrow_released');
+    assert.deepEqual(released.map((e) => e.amount), [PAID / 2]);
   });
 });
 

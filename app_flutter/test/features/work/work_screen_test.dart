@@ -15,6 +15,8 @@ import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
+import 'package:photobooking/data/recruit/recruit_repository.dart';
 import 'package:photobooking/features/instant_work/live_shutter_card.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
@@ -23,6 +25,7 @@ import '../../support/booking_world.dart';
 import '../../support/event_world.dart' as ev;
 import '../../support/fake_instant_repository.dart';
 import '../../support/fake_spot_repository.dart';
+import '../../support/recruit_world.dart';
 
 /// Thursday 08/10 09:00 in Vietnam.
 final _now = DateTime.utc(2026, 10, 8, 2);
@@ -123,6 +126,8 @@ Future<BookingsTabHandles> _pump(
   List<AuthUser> otherUsers = const [],
 }) => pumpBookingsTab(
   tester,
+  // The Live Shutter card (Chụp ngay, on since #202) has its own group.
+  extraOverrides: [instantEnabledProvider.overrideWithValue(false)],
   uid: detailPhotographerUid,
   role: UserRole.photographer,
   bookings: repo,
@@ -144,6 +149,9 @@ Future<void> _settle(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 100));
   }
 }
+
+/// The "Hôm nay" section header (the segment of the same name sits above).
+final _todayHeader = find.widgetWithText(SectionHeader, 'Hôm nay');
 
 Finder _codeFinder(String code) =>
     find.byWidgetPredicate((w) => w is ScreenCode && w.code == code);
@@ -227,7 +235,7 @@ void main() {
     expect(find.byKey(const Key('open-calendar')), findsOneWidget);
 
     // Today's shoot: the only highlighted card.
-    expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsOneWidget);
+    expect(_todayHeader, findsOneWidget);
     final today = tester.widget<BookingCard>(
       find.ancestor(
         of: find.text('Lan Anh · Kỷ yếu nửa ngày'),
@@ -432,7 +440,7 @@ void main() {
     await _pump(tester, _repo([_busy()[1], _busy()[2]]));
     await _settle(tester);
 
-    expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsNothing);
+    expect(_todayHeader, findsNothing);
     expect(
       tester
           .widgetList<BookingCard>(find.byType(BookingCard))
@@ -467,13 +475,34 @@ void main() {
       await _pump(tester, repo, otherUsers: const [studio]);
       await _settle(tester);
 
-      expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsOneWidget);
+      expect(_todayHeader, findsOneWidget);
       expect(find.byKey(const Key('booking-card-tag')), findsOneWidget);
       expect(find.text('Giao bởi Studio Ánh Dương'), findsOneWidget);
       // The studio gets the money: nothing in Đang giữ, one in Buổi sắp tới.
       expect(find.text('Yêu cầu mới'), findsOneWidget);
       expect(find.text('Không có yêu cầu mới'), findsOneWidget);
       expect(_codeFinder(ScreenCodes.workEmpty), findsNothing);
+    });
+
+    testWidgets('an accepted collaborator job shows "Cộng tác · {Studio}"', (
+      tester,
+    ) async {
+      final b = assigned();
+      final collab = b.copyWith(
+        studio: StudioBookingInfo(
+          assigneeId: detailPhotographerUid,
+          assigneeKind: 'collaborator',
+          assigneeAccepted: true,
+          assignStatus: StudioAssignStatus.assigned,
+          assignDeadline: DateTime.utc(2026, 10, 7, 2),
+        ),
+      );
+      final repo = _repo([])..emitAssigned([collab]);
+      await _pump(tester, repo, otherUsers: const [studio]);
+      await _settle(tester);
+
+      expect(find.text('Cộng tác · Studio Ánh Dương'), findsOneWidget);
+      expect(find.text('Giao bởi Studio Ánh Dương'), findsNothing);
     });
 
     testWidgets('a failing assigned stream still shows the dashboard', (
@@ -757,6 +786,9 @@ void main() {
     );
     expect(find.text('Lịch tại điểm'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    // The S06.01 segments sit above the list: bring the entry fully in.
+    await tester.ensureVisible(entry);
+    await tester.pump();
     await tester.tap(entry);
     await _settle(tester);
     expect(h.location, '/me/spot-schedules');
@@ -766,7 +798,7 @@ void main() {
     testWidgets('flag off: no Live Shutter card', (tester) async {
       await _pump(tester, _repo(_busy()));
       await _settle(tester);
-      expect(find.widgetWithText(SectionHeader, 'Hôm nay'), findsOneWidget);
+      expect(_todayHeader, findsOneWidget);
       expect(find.byType(LiveShutterCard), findsNothing);
       expect(find.text('Live Shutter'), findsNothing);
     });
@@ -800,7 +832,7 @@ void main() {
       );
       expect(
         tester.getTopLeft(find.text('Live Shutter')).dy,
-        lessThan(tester.getTopLeft(find.widgetWithText(SectionHeader, 'Hôm nay')).dy),
+        lessThan(tester.getTopLeft(_todayHeader).dy),
       );
 
       await pumpBookingsTab(
@@ -813,6 +845,117 @@ void main() {
       );
       await _settle(tester);
       expect(find.byType(LiveShutterCard), findsOneWidget);
+    });
+  });
+
+  group('S27.01 "Tuyển thợ" segment (Decision 20)', () {
+    FakeRecruitRepository recruits() {
+      final r = FakeRecruitRepository(uid: detailPhotographerUid)
+        ..setFacts(detailPhotographerUid, makeProviderFacts())
+        ..seedPost(makeRecruitPost());
+      return r;
+    }
+
+    Finder segment(String label) => find.descendant(
+      of: find.byType(SegmentedTabs<WorkSegment>),
+      matching: find.text(label),
+    );
+
+    testWidgets('a photographer sees the "Tuyển thợ" segment last and it '
+        'shows the list', (tester) async {
+      final r = recruits();
+      await pumpBookingsTab(
+        tester,
+        uid: detailPhotographerUid,
+        role: UserRole.photographer,
+        bookings: _repo(_busy()),
+        clock: TestClock(_now),
+        extraOverrides: [recruitRepositoryProvider.overrideWithValue(r)],
+      );
+      await _settle(tester);
+      final tabs = tester.widget<SegmentedTabs<WorkSegment>>(
+        find.byType(SegmentedTabs<WorkSegment>),
+      );
+      expect(tabs.options.map((o) => o.label), [
+        'Hôm nay',
+        'Việc đang tuyển · 0',
+        'Báo giá của tôi',
+        'Tuyển thợ',
+      ]);
+      await tester.tap(segment('Tuyển thợ'));
+      await _settle(tester);
+      expect(_codeFinder(ScreenCodes.recruitList), findsOneWidget);
+      expect(find.text('Tuyển CTV chụp cưới cuối tuần'), findsOneWidget);
+      expect(r.listedKeys, ['']);
+      // Mock S27.01: "Công việc" over "Tuyển thợ" in the bar.
+      expect(find.text('Công việc'), findsWidgets);
+      expect(find.byKey(const Key('open-calendar')), findsNothing);
+      await tester.tap(segment('Hôm nay'));
+      await _settle(tester);
+      expect(_todayHeader, findsOneWidget);
+    });
+
+    testWidgets('the default segment is still "Hôm nay"', (tester) async {
+      final r = recruits();
+      await pumpBookingsTab(
+        tester,
+        uid: detailPhotographerUid,
+        role: UserRole.photographer,
+        bookings: _repo(_busy()),
+        clock: TestClock(_now),
+        extraOverrides: [recruitRepositoryProvider.overrideWithValue(r)],
+      );
+      await _settle(tester);
+      final tabs = tester.widget<SegmentedTabs<WorkSegment>>(
+        find.byType(SegmentedTabs<WorkSegment>),
+      );
+      expect(tabs.value, WorkSegment.today);
+      expect(_todayHeader, findsOneWidget);
+      expect(_codeFinder(ScreenCodes.recruitList), findsNothing);
+      expect(r.listedKeys, isEmpty);
+    });
+
+    testWidgets('the recruit filter survives a switch to "Hôm nay" and back, '
+        'without a new query', (tester) async {
+      final r = recruits();
+      await pumpBookingsTab(
+        tester,
+        uid: detailPhotographerUid,
+        role: UserRole.photographer,
+        bookings: _repo(_busy()),
+        clock: TestClock(_now),
+        extraOverrides: [recruitRepositoryProvider.overrideWithValue(r)],
+      );
+      await _settle(tester);
+      await tester.tap(segment('Tuyển thợ'));
+      await _settle(tester);
+      final member = find.byKey(const Key('recruit-filter-kind-member'));
+      await tester.ensureVisible(member);
+      await tester.tap(member);
+      await _settle(tester);
+      expect(r.listedKeys, ['', 'k=member']);
+      await tester.tap(segment('Hôm nay'));
+      await _settle(tester);
+      await tester.tap(segment('Tuyển thợ'));
+      await _settle(tester);
+      final chip = tester.widget<AppChip>(
+        find.byKey(const Key('recruit-filter-kind-member')),
+      );
+      expect(chip.selected, isTrue);
+      expect(r.listedKeys, ['', 'k=member']);
+    });
+
+    testWidgets('a customer never reaches WorkScreen', (tester) async {
+      final r = recruits();
+      await pumpBookingsTab(
+        tester,
+        extraOverrides: [recruitRepositoryProvider.overrideWithValue(r)],
+      );
+      await _settle(tester);
+      expect(find.byType(WorkScreen), findsNothing);
+      expect(find.byType(SegmentedTabs<WorkSegment>), findsNothing);
+      expect(r.listedKeys, isEmpty);
+      expect(r.getCalls, isEmpty);
     });
   });
 }

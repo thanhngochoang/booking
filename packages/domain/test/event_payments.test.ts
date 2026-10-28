@@ -29,6 +29,7 @@ import {
   type TicketPaymentWorld,
 } from './support/event_world.js';
 import { settleTransfer } from '../src/payment_settlement.js';
+import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
 
 const EV = 'ev1_aaaaaaaaaaaaaaaaaaaa';
 const PRICE = 150_000;
@@ -50,9 +51,12 @@ const ev = (w: EventWorld) => must(w.store.events.get(EV));
 const reg = (w: EventWorld, id: string) => must(w.store.registrations.get(`${EV}/${id}`));
 const pay = (w: EventWorld, id: string | null) => must(w.store.payments.get(must(id)));
 
-/** Registers and confirms through payTicket; returns the registration id. */
-async function bought(w: PaidWorld, who: EventCaller, quantity = 1): Promise<string> {
-  const r = await buy(w, who, quantity);
+/**
+ * Registers and confirms through payTicket; returns the registration id. A wallet (`momo`) ticket's
+ * refund is sent at once; a bank-QR one waits for the customer's account choice (#141, S22.04).
+ */
+async function bought(w: PaidWorld, who: EventCaller, quantity = 1, method = 'bank_qr'): Promise<string> {
+  const r = await buy(w, who, quantity, method);
   await w.payTicket(must(r.paymentId), 'exact', who);
   return r.registrationId;
 }
@@ -66,7 +70,7 @@ describe('ticket refunds', () => {
 
   test('cancel 48 hours before refunds 100%', async () => {
     const w = await paidWorld();
-    const id = await bought(w, cu1, 2);
+    const id = await bought(w, cu1, 2, 'momo');
     w.clock.set(new Date(new Date(START).getTime() - 48 * HOUR));
     assert.deepEqual(await cancelRegistration(w.pay, cu1, { eventId: EV, registrationId: id }), { status: 'refunded', refundPercent: 100 });
     const doc = reg(w, id);
@@ -126,7 +130,7 @@ describe('ticket refunds', () => {
 
   test('a gateway failure leaves the refund to staff and never doubles', async () => {
     const w = await paidWorld();
-    const id = await bought(w, cu1);
+    const id = await bought(w, cu1, 1, 'momo');
     w.gateway.issueRefund = async () => ({ success: false, error: 'down' });
     assert.equal(await refundTicket(w.pay, EV, id, 100, 'customer_cancel'), 'refunded');
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
@@ -158,8 +162,8 @@ describe('ticket refunds', () => {
 
   test('a refund failure is retried by the clock and never doubles', async () => {
     const w = await paidWorld();
-    const a = await bought(w, cu1);
-    const b = await bought(w, cu2);
+    const a = await bought(w, cu1, 1, 'momo');
+    const b = await bought(w, cu2, 1, 'momo');
     // The 4th transaction (b's refund) dies: cancel, a's refund, a's gateway result, then b.
     let calls = 0;
     const flakyStore = Object.assign(Object.create(w.store) as MemoryEventStore, {
@@ -211,7 +215,7 @@ describe('refund state on the ticket', () => {
 
   test('the ticket mirrors its refund: pending until the gateway says done', async () => {
     const w = await paidWorld();
-    const id = await bought(w, cu1);
+    const id = await bought(w, cu1, 1, 'momo');
     w.clock.set(new Date(new Date(START).getTime() - 72 * HOUR));
     await cancelRegistration(w.pay, cu1, { eventId: EV, registrationId: id });
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
@@ -221,7 +225,7 @@ describe('refund state on the ticket', () => {
 
   test('a throwing ticket refund stays pending and the registration still says pending', async () => {
     const w = await paidWorld();
-    const id = await bought(w, cu1);
+    const id = await bought(w, cu1, 1, 'momo');
     w.gateway.refundThrowCount = 1;
     await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
@@ -234,6 +238,10 @@ describe('refund state on the ticket', () => {
     const p = pay(w, reg(w, id).paymentId);
     assert.deepEqual([p.payer?.bankCode, p.payer?.accountLast4], ['VCB', '3456']);
     await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
+    const [waiting] = w.store.refundsOf(p.id);
+    // #141: the refund waits for cu1 to confirm the paying account on S22.04, then goes there.
+    assert.deepEqual([waiting?.status, reg(w, id).refundStatus, w.gateway.refundCalls], ['awaiting_account', 'awaiting_account', []]);
+    assert.equal(await confirmRefundToPayer(refundAccountDepsOf({ events: w.pay }), must(waiting).id, 'cu1'), 'done');
     const [refund] = w.store.refundsOf(p.id);
     assert.deepEqual(
       [refund?.status, refund?.method, refund?.destination?.accountLast4, reg(w, id).refundStatus],
@@ -261,7 +269,7 @@ describe('refund state on the ticket', () => {
 
   test('ticketRefundHandler.record mirrors done on the registration', async () => {
     const w = await paidWorld();
-    const id = await bought(w, cu1);
+    const id = await bought(w, cu1, 1, 'momo');
     w.gateway.refundThrowCount = 1;
     await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
@@ -273,9 +281,33 @@ describe('refund state on the ticket', () => {
     assert.equal(reg(w, id).refundStatus, 'done');
   });
 
-  test('ticketRefundHandler.resend sends under the same id', async () => {
+  test('a pending dispute refund re-sent by ticketRefundHandler only mirrors refundStatus, the ticket stays paid', async () => {
     const w = await paidWorld();
     const id = await bought(w, cu1);
+    const paid = reg(w, id);
+    const payment = pay(w, paid.paymentId);
+    const at = w.clock.now().toISOString();
+    // S18: resolveDispute refunded out of escrow; the first send threw, so the refund waits for the clock.
+    w.store.refunds.set('rf_dispute', {
+      id: 'rf_dispute', paymentId: payment.id, subjectType: 'event_registration', amount: PRICE, percent: 100,
+      status: 'pending', manual: false, fromEscrow: true, method: 'gateway', attempts: 1, reason: 'dispute:d1',
+      createdAt: at, updatedAt: at,
+    });
+    w.store.registrations.set(`${EV}/${id}`, { ...paid, disputeId: 'd1', refundId: 'rf_dispute', refundStatus: 'pending' });
+
+    const out = await ticketRefundHandler(w.pay).resend(must(w.store.refunds.get('rf_dispute')));
+    assert.equal(out.status, 'done');
+    const after = reg(w, id);
+    assert.equal(after.refundStatus, 'done');
+    assert.equal(after.status, 'paid');
+    assert.equal(after.cancelledAt, null);
+    assert.equal(after.disputeId, 'd1');
+    assert.equal(after.refundPercent, paid.refundPercent);
+  });
+
+  test('ticketRefundHandler.resend sends under the same id', async () => {
+    const w = await paidWorld();
+    const id = await bought(w, cu1, 1, 'momo');
     w.gateway.refundThrowCount = 1;
     await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
@@ -292,7 +324,7 @@ describe('refund state on the ticket', () => {
   test('a ticket resend re-checks pending: a done or failed refund is never sent again', async () => {
     for (const settled of ['done', 'failed'] as const) {
       const w = await paidWorld();
-      const id = await bought(w, cu1);
+      const id = await bought(w, cu1, 1, 'momo');
       w.gateway.refundThrowCount = 1;
       await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
       const [queried] = w.store.refundsOf(must(reg(w, id).paymentId));

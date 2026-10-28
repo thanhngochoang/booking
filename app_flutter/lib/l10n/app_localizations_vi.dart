@@ -7051,26 +7051,264 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deliveryExtraRoundSend => 'Gửi đề nghị';
 
   @override
-  String get deliveryReportSheetTitle => 'Báo vấn đề với ảnh gốc';
+  String get disputeErrNotEligible => 'Khoản này không còn mở khiếu nại được.';
 
   @override
-  String get deliveryReportReasonBrokenLink =>
-      'Link hỏng hoặc không truy cập được';
+  String get disputeErrDeadline => 'Đã quá thời hạn báo vấn đề.';
 
   @override
-  String get deliveryReportReasonMissingFiles => 'Thiếu ảnh so với cam kết';
+  String get disputeErrConflict => 'Đã có một khiếu nại đang mở cho khoản này.';
 
   @override
-  String get deliveryReportReasonWrongFiles => 'Ảnh không đúng buổi chụp';
+  String get disputeErrGeneric =>
+      'Chưa gửi được. Kiểm tra kết nối rồi thử lại.';
 
   @override
-  String get deliveryReportReasonOther => 'Lý do khác';
+  String get disputeSheetTitle => 'Báo vấn đề';
 
   @override
-  String get deliveryReportButton => 'Báo vấn đề';
+  String get disputeSheetTitleDelivery => 'Báo vấn đề với ảnh gốc';
 
   @override
-  String get deliveryReportSuccess => 'Đã báo vấn đề. Hỗ trợ sẽ liên hệ bạn.';
+  String disputeWindowLeft(int hours) {
+    return 'Còn $hours giờ để báo vấn đề. Tiền của buổi chụp được giữ tới khi có kết quả.';
+  }
+
+  @override
+  String disputeWindowLeftTicket(int hours) {
+    return 'Còn $hours giờ để báo vấn đề. Tiền vé được giữ tới khi có kết quả.';
+  }
+
+  @override
+  String disputeWindowLeftDelivery(int hours) {
+    return 'Còn $hours giờ để kiểm tra bộ ảnh gốc. Đợt thanh toán thứ hai được giữ tới khi có kết quả.';
+  }
+
+  @override
+  String get disputeReasonTitle => 'Vấn đề là gì?';
+
+  @override
+  String get disputeReasonNoShow => 'Thợ không đến';
+
+  @override
+  String get disputeReasonNotAsAgreed => 'Không đúng thoả thuận';
+
+  @override
+  String get disputeReasonPhotosMissing => 'Thiếu ảnh';
+
+  @override
+  String get disputeReasonNotAsSample => 'Khác ảnh mẫu';
+
+  @override
+  String get disputeReasonLinkBroken => 'Link hỏng';
+
+  @override
+  String get disputeReasonEventNotHeld => 'Sự kiện không diễn ra';
+
+  @override
+  String get disputeReasonNotAsDescribed => 'Khác mô tả';
+
+  @override
+  String get disputeReasonOther => 'Lý do khác';
+
+  @override
+  String get disputeDescriptionLabel => 'Mô tả';
+
+  @override
+  String get disputeDescriptionHint =>
+      'Chuyện gì đã xảy ra? Càng cụ thể, hỗ trợ xử lý càng nhanh.';
+
+  @override
+  String get disputeDescriptionTooShort => 'Viết ít nhất 10 ký tự';
+
+  @override
+  String disputeEvidenceTitle(int count) {
+    return 'Ảnh bằng chứng · $count/5';
+  }
+
+  @override
+  String get disputeEvidenceAdd => 'Thêm ảnh';
+
+  @override
+  String get disputeEvidenceRemove => 'Bỏ ảnh';
+
+  @override
+  String get disputeEvidenceNote =>
+      'Ảnh chỉ bạn, người bị khiếu nại và đội hỗ trợ xem được.';
+
+  @override
+  String get disputeEvidenceFailed =>
+      'Một ảnh chưa tải lên được. Chạm để thử lại.';
+
+  @override
+  String get disputeSubmit => 'Gửi khiếu nại';
+
+  @override
+  String get disputeSent =>
+      'Đã gửi khiếu nại. Tiền được giữ tới khi có kết quả.';
+
+  @override
+  String get disputeDiscardTitle => 'Bỏ nội dung đang viết?';
+
+  @override
+  String get disputeDiscardConfirm => 'Bỏ';
+
+  @override
+  String get disputeDiscardKeep => 'Viết tiếp';
+
+  @override
+  String get disputeSheetClose => 'Đóng';
+
+  @override
+  String disputeReportProblem(int hours) {
+    return 'Báo vấn đề · còn $hours giờ';
+  }
+
+  @override
+  String get ticketReportProblem => 'Báo vấn đề';
+
+  @override
+  String get disputeBannerOpen => 'Đang khiếu nại';
+
+  @override
+  String get disputeBannerOpenBody => 'Tiền được giữ tới khi có kết quả.';
+
+  @override
+  String get disputeBannerResolved => 'Khiếu nại đã có kết quả';
+
+  @override
+  String get disputeBannerView => 'Xem khiếu nại';
+
+  @override
+  String disputeTitle(String code) {
+    return 'Khiếu nại #$code';
+  }
+
+  @override
+  String get disputeStatusOpen => 'Đang xem xét';
+
+  @override
+  String get disputeStatusResolved => 'Đã xử lý';
+
+  @override
+  String get disputeHeld => 'Tiền đang giữ';
+
+  @override
+  String get disputeHeldNote => 'Tạm dừng chuyển cho tới khi có kết quả';
+
+  @override
+  String get disputeOpenedAt => 'Gửi lúc';
+
+  @override
+  String get disputeStepSent => 'Đã gửi khiếu nại';
+
+  @override
+  String disputeStepSentBody(int count) {
+    return 'Mô tả và $count ảnh bằng chứng';
+  }
+
+  @override
+  String get disputeStepReview => 'Hỗ trợ đang xem xét';
+
+  @override
+  String get disputeStepReviewBody =>
+      'Hai bên trao đổi và gửi thêm bằng chứng ở mục Trao đổi';
+
+  @override
+  String get disputeStepOutcome => 'Kết quả';
+
+  @override
+  String get disputeStepOutcomeBody =>
+      'Chuyển cho người nhận, hoàn cho bạn, hoặc chia';
+
+  @override
+  String get disputeDetailsTitle => 'Mô tả & ảnh';
+
+  @override
+  String get disputeThreadTitle => 'Trao đổi';
+
+  @override
+  String get disputeThreadHint => 'Nhắn cho hỗ trợ…';
+
+  @override
+  String get disputeThreadClosed =>
+      'Khiếu nại đã đóng. Cần thêm hỗ trợ? Liên hệ ở mục Trợ giúp.';
+
+  @override
+  String get disputeSenderSupport => 'Hỗ trợ';
+
+  @override
+  String disputeSenderProvider(String name) {
+    return '$name · nhiếp ảnh gia';
+  }
+
+  @override
+  String disputeSenderHost(String name) {
+    return '$name · chủ sự kiện';
+  }
+
+  @override
+  String disputeSenderCustomer(String name) {
+    return '$name · khách';
+  }
+
+  @override
+  String disputeResolvedToast(String when) {
+    return 'Đã có kết quả · $when';
+  }
+
+  @override
+  String get disputeOutcome => 'Kết quả';
+
+  @override
+  String disputeOutcomeRelease(String name) {
+    return 'Chuyển tiền cho $name';
+  }
+
+  @override
+  String get disputeOutcomeRefund => 'Hoàn 100%';
+
+  @override
+  String disputeOutcomeSplit(int percent) {
+    return 'Chia: hoàn $percent%';
+  }
+
+  @override
+  String get disputeRefundToYou => 'Hoàn cho bạn';
+
+  @override
+  String get disputeRefundToCustomer => 'Hoàn cho khách';
+
+  @override
+  String disputeReleaseTo(String name) {
+    return 'Chuyển cho $name';
+  }
+
+  @override
+  String get disputeReleaseToYou => 'Chuyển cho bạn';
+
+  @override
+  String get disputeRefundWhere => 'Về tài khoản hoặc ví đã thanh toán';
+
+  @override
+  String disputeStaffNote(String note) {
+    return 'Ghi chú của hỗ trợ: $note';
+  }
+
+  @override
+  String get disputePlatformName => 'ứng dụng';
+
+  @override
+  String get disputeNotFound => 'Không tìm thấy khiếu nại';
+
+  @override
+  String get disputeNotFoundBody =>
+      'Khiếu nại này không tồn tại hoặc bạn không có quyền xem.';
+
+  @override
+  String disputeEvidencePhoto(int index) {
+    return 'Ảnh bằng chứng $index';
+  }
 
   @override
   String get settingsPaymentsData => 'Thanh toán và dữ liệu';
@@ -7080,6 +7318,122 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsPaymentHistoryBody => 'Khoản đã trả, đang giữ, đang hoàn';
+
+  @override
+  String get paymentsTitle => 'Lịch sử thanh toán';
+
+  @override
+  String get paymentsHeld => 'Đang giữ';
+
+  @override
+  String get paymentsRefunding => 'Đang hoàn';
+
+  @override
+  String get paymentsHeldNote =>
+      'Tiền bạn trả được trung gian thanh toán giữ, chỉ chuyển cho thợ theo 2 mốc.';
+
+  @override
+  String get paymentsItems => 'Các khoản';
+
+  @override
+  String get paymentsMore => 'Xem thêm';
+
+  @override
+  String get paymentsEmptyTitle => 'Chưa có khoản thanh toán nào';
+
+  @override
+  String get paymentsEmptyBody =>
+      'Khi bạn đặt lịch hay mua vé, các khoản sẽ hiện ở đây.';
+
+  @override
+  String get paymentsLoadError => 'Không tải được lịch sử thanh toán';
+
+  @override
+  String get payStatusHeld => 'Đang giữ';
+
+  @override
+  String get payStatusDisputed => 'Đang khiếu nại';
+
+  @override
+  String get payStatusReleasedBooking => 'Đã chuyển cho thợ';
+
+  @override
+  String get payStatusReleasedTicket => 'Đã chuyển cho chủ sự kiện';
+
+  @override
+  String get payStatusReleasedPlatform => 'Đã thanh toán';
+
+  @override
+  String get payStatusRefunding => 'Đang hoàn';
+
+  @override
+  String get payStatusNeedsAccount => 'Cần tài khoản';
+
+  @override
+  String get payStatusRefunded => 'Đã hoàn';
+
+  @override
+  String get payStatusPartlyRefunded => 'Đã hoàn một phần';
+
+  @override
+  String payMetaToday(String time) {
+    return 'Hôm nay $time';
+  }
+
+  @override
+  String get payMetaSearching => 'đang tìm thợ';
+
+  @override
+  String get payMetaCancelled => 'đã huỷ';
+
+  @override
+  String payTitleBooking(String photographer, String service) {
+    return '$photographer · $service';
+  }
+
+  @override
+  String payTitleTicket(String title, int n) {
+    return '$title · $n vé';
+  }
+
+  @override
+  String payTitleInstant(String area) {
+    return 'Chụp ngay · $area';
+  }
+
+  @override
+  String get payDetailPaid => 'Đã trả';
+
+  @override
+  String payDetailRefundTo(String destination) {
+    return 'Hoàn về $destination';
+  }
+
+  @override
+  String get payDetailRefund => 'Hoàn tiền';
+
+  @override
+  String payDetailWallet(String wallet) {
+    return 'ví $wallet';
+  }
+
+  @override
+  String get payDetailRefundPending => 'đang xử lý';
+
+  @override
+  String get payDetailRefundDone => 'đã về';
+
+  @override
+  String get payDetailWillGetBack => 'Sẽ nhận lại';
+
+  @override
+  String get payDetailOpenBooking => 'Xem buổi chụp';
+
+  @override
+  String get payDetailOpenTicket => 'Xem vé';
+
+  @override
+  String get payDetailOpenInstant => 'Xem yêu cầu Chụp ngay';
 
   @override
   String get settingsPrivacy => 'Quyền riêng tư & dữ liệu';
@@ -8773,6 +9127,450 @@ class AppLocalizationsVi extends AppLocalizations {
   String get instantErrorNetwork => 'Mất kết nối. Thử lại nhé.';
 
   @override
+  String get instantSubtitle => 'Nhiếp ảnh gia tới trong 30–90 phút';
+
+  @override
+  String get instantCardBody =>
+      'Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút';
+
+  @override
+  String get instantCardResumeTitle => 'Yêu cầu chụp ngay đang mở';
+
+  @override
+  String get instantCardResumeBody => 'Chạm để xem tiếp';
+
+  @override
+  String get instantFindButton => 'Chụp ngay · tới trong 30–90 phút';
+
+  @override
+  String instantMeetPointPin(String name) {
+    return 'Điểm hẹn · $name';
+  }
+
+  @override
+  String get instantMeetPointSelf => 'Vị trí của bạn';
+
+  @override
+  String get instantMeetPointLabel => 'Tên điểm hẹn';
+
+  @override
+  String get instantMeetPointHint =>
+      'Ví dụ: Cổng Trương Định, Công viên Tao Đàn';
+
+  @override
+  String get instantMeetPointRequired =>
+      'Nhập tên điểm hẹn để nhiếp ảnh gia dễ tìm.';
+
+  @override
+  String instantPhotosCount(int n) {
+    return '$n ảnh';
+  }
+
+  @override
+  String get instantNoteLabel => 'Ghi chú cho nhiếp ảnh gia';
+
+  @override
+  String get instantNoteHint => 'Mình mặc áo dài trắng, chụp ở hồ…';
+
+  @override
+  String get instantEscrowNote =>
+      'Xem 5 người phù hợp miễn phí. Chỉ trả khi gửi lời mời; tiền được giữ an toàn và hoàn 100% nếu bạn huỷ khi chưa có người nhận.';
+
+  @override
+  String get instantSeeMatches => 'Xem nhiếp ảnh gia phù hợp';
+
+  @override
+  String get instantLocationTitle => 'Bật vị trí để Chụp ngay';
+
+  @override
+  String get instantLocationBody =>
+      'Nhiếp ảnh gia cần biết bạn đang ở đâu để tới đúng chỗ.';
+
+  @override
+  String get instantLocationAllow => 'Cho phép vị trí';
+
+  @override
+  String get instantBookNormally => 'Đặt lịch thường';
+
+  @override
+  String get instantOutsideArea =>
+      'Chụp ngay chưa có ở khu vực này. Bạn có thể đặt lịch thường.';
+
+  @override
+  String get instantDisabled => 'Chụp ngay đang tạm dừng.';
+
+  @override
+  String get instantHasActive => 'Bạn đang có một yêu cầu chụp ngay.';
+
+  @override
+  String get chooseTitle => 'Chọn người bạn thích';
+
+  @override
+  String chooseSubtitle(String genre, String duration, String amount) {
+    return '$genre · $duration · $amount';
+  }
+
+  @override
+  String chooseCounter(int index, int total) {
+    return '$index / $total';
+  }
+
+  @override
+  String get chooseStamp => 'CHỌN';
+
+  @override
+  String chooseEta(int minutes) {
+    return 'đến khoảng $minutes phút';
+  }
+
+  @override
+  String get chooseLike => 'Chọn người này';
+
+  @override
+  String get chooseSkip => 'Bỏ qua';
+
+  @override
+  String get chooseUndo => 'Hoàn tác';
+
+  @override
+  String choosePicked(int n) {
+    return 'Đã chọn $n người';
+  }
+
+  @override
+  String get chooseDone => 'Xong';
+
+  @override
+  String get chooseSummaryTitle => 'Những người bạn đã chọn';
+
+  @override
+  String get chooseUnpick => 'Bỏ chọn';
+
+  @override
+  String chooseUnpickA11y(String name) {
+    return 'Bỏ chọn $name';
+  }
+
+  @override
+  String chooseUnavailable(String name) {
+    return '$name vừa nhận việc khác';
+  }
+
+  @override
+  String get chooseInvite => 'Gửi lời mời';
+
+  @override
+  String choosePayAndInvite(String amount) {
+    return 'Thanh toán $amount và gửi lời mời';
+  }
+
+  @override
+  String get choosePayContinue => 'Thanh toán tiếp';
+
+  @override
+  String get chooseMore => 'Xem 5 người khác';
+
+  @override
+  String get chooseEscrow =>
+      'Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.';
+
+  @override
+  String get chooseRoundEnded => 'Chưa ai nhận. Chọn thêm người nhé.';
+
+  @override
+  String get chooseEmptyTitle => 'Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn';
+
+  @override
+  String get chooseEmptyBody =>
+      'Bạn chưa phải trả gì. Thử lại sau ít phút hoặc đặt lịch thường.';
+
+  @override
+  String get chooseEmptyRetry => 'Thử lại';
+
+  @override
+  String choosePriceChanged(String amount) {
+    return 'Giá vừa đổi thành $amount. Kiểm tra lại trước khi thanh toán.';
+  }
+
+  @override
+  String get doneHome => 'Về trang chủ';
+
+  @override
+  String get instantNotFoundTitle => 'Không tìm thấy yêu cầu';
+
+  @override
+  String get instantNotFoundBody =>
+      'Yêu cầu này không còn hoặc không thuộc tài khoản của bạn.';
+
+  @override
+  String get trackingCancel => 'Huỷ';
+
+  @override
+  String get trackingSelf => 'Bạn';
+
+  @override
+  String trackingPin(String name, int minutes) {
+    return '$name · $minutes phút';
+  }
+
+  @override
+  String trackingEta(int minutes) {
+    return 'đến trong khoảng $minutes phút';
+  }
+
+  @override
+  String trackingEtaBold(int minutes) {
+    return '$minutes phút';
+  }
+
+  @override
+  String trackingNote(String name) {
+    return 'Đối chiếu ảnh đại diện khi gặp. Vị trí của $name chỉ hiện trong lúc đang đến.';
+  }
+
+  @override
+  String get trackingMessage => 'Nhắn tin';
+
+  @override
+  String trackingCancelFree(String time) {
+    return 'Huỷ (miễn phí thêm $time)';
+  }
+
+  @override
+  String get trackingCancelLate => 'Huỷ (hoàn 100%)';
+
+  @override
+  String get trackingStale => 'Đang chờ cập nhật vị trí';
+
+  @override
+  String trackingLate(String name) {
+    return '$name đến trễ. Bạn có thể huỷ và được hoàn 100%.';
+  }
+
+  @override
+  String trackingLateUnpaid(String name) {
+    return '$name đến trễ. Bạn có thể huỷ yêu cầu.';
+  }
+
+  @override
+  String get trackingArrived => 'Đã đến điểm hẹn';
+
+  @override
+  String trackingArrivedBody(String name, String place) {
+    return '$name đang chờ bạn ở $place.';
+  }
+
+  @override
+  String get shootingTitle => 'Đang chụp';
+
+  @override
+  String shootingCard(String name, String genre, String duration) {
+    return '$name · $genre $duration';
+  }
+
+  @override
+  String shootingMeta(String time, String place) {
+    return 'Bắt đầu $time · $place';
+  }
+
+  @override
+  String shootingStepDeliver(int photos) {
+    return 'Hoàn thành và giao $photos ảnh trong 48 giờ';
+  }
+
+  @override
+  String shootingNote(String name) {
+    return 'Khi $name bấm Hoàn thành, bạn xác nhận ở đây. Không xác nhận thì tự hoàn thành sau 2 giờ; có vấn đề thì báo trong 24 giờ.';
+  }
+
+  @override
+  String get shootingConfirm => 'Xác nhận hoàn thành';
+
+  @override
+  String get shootingFinishedTitle => 'Chờ bạn xác nhận';
+
+  @override
+  String shootingFinishedBody(String name, String time) {
+    return '$name đã hoàn thành buổi chụp. Tự hoàn thành sau $time nếu bạn không xác nhận.';
+  }
+
+  @override
+  String get doneTitle => 'Buổi chụp đã hoàn thành';
+
+  @override
+  String doneBody(String name, int photos) {
+    return '$name sẽ giao $photos ảnh trong 48 giờ.';
+  }
+
+  @override
+  String get cancelInstantTitle => 'Huỷ chụp ngay?';
+
+  @override
+  String get cancelRowFree =>
+      'Đang chọn, đang chờ trả lời, chưa tìm được, hoặc 2 phút đầu sau khi có người nhận';
+
+  @override
+  String get cancelRowEnRoute => 'Nhiếp ảnh gia đang đến';
+
+  @override
+  String get cancelRowArrived => 'Đã đến, bạn không có mặt sau 15 phút';
+
+  @override
+  String cancelRowNow(String row) {
+    return '$row (bây giờ)';
+  }
+
+  @override
+  String cancelOutcome(int percent) {
+    return 'Hoàn $percent%';
+  }
+
+  @override
+  String cancelInstantRefundFee(String refund, String fee, String name) {
+    return 'Bạn sẽ được hoàn $refund; $fee là phí đi lại trả cho $name.';
+  }
+
+  @override
+  String cancelInstantRefundAll(String refund) {
+    return 'Bạn sẽ được hoàn $refund.';
+  }
+
+  @override
+  String cancelInstantLate(String name) {
+    return '$name đến trễ hơn 15 phút nên bạn được hoàn đủ.';
+  }
+
+  @override
+  String get cancelInstantUnpaid =>
+      'Bạn chưa thanh toán nên không có khoản tiền nào.';
+
+  @override
+  String cancelInstantConfirm(String refund) {
+    return 'Huỷ và hoàn $refund';
+  }
+
+  @override
+  String get cancelInstantConfirmUnpaid => 'Huỷ yêu cầu';
+
+  @override
+  String get cancelInstantKeep => 'Giữ yêu cầu';
+
+  @override
+  String get cancelInstantQuoteChanged =>
+      'Số tiền hoàn vừa đổi, xem lại trước khi huỷ.';
+
+  @override
+  String get cancelledTitle => 'Đã huỷ yêu cầu';
+
+  @override
+  String cancelledRefund(String amount, String method) {
+    return 'Hoàn $amount về $method. Tiền thường về trong vài phút.';
+  }
+
+  @override
+  String get cancelledNoMoney => 'Không có khoản tiền nào.';
+
+  @override
+  String get abandonedTitle => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get abandonedBody =>
+      'Bạn chưa gửi lời mời trong 30 phút nên yêu cầu đã đóng.';
+
+  @override
+  String get noShowTitle => 'Nhiếp ảnh gia báo bạn không có mặt';
+
+  @override
+  String noShowBody(String amount, int percent) {
+    return 'Bạn được hoàn $amount ($percent%).';
+  }
+
+  @override
+  String get closedNewRequest => 'Tạo yêu cầu mới';
+
+  @override
+  String get refundToBankQr => 'tài khoản đã chuyển';
+
+  @override
+  String get refundToMomo => 'MoMo';
+
+  @override
+  String get refundToZaloPay => 'ZaloPay';
+
+  @override
+  String get waitingTitle => 'Đang chờ trả lời';
+
+  @override
+  String waitingSent(int n) {
+    return 'Đã gửi lời mời cho $n người';
+  }
+
+  @override
+  String waitingBody(String time) {
+    return 'Ai nhận trước sẽ tới chỗ bạn. Mỗi lời mời còn $time.';
+  }
+
+  @override
+  String waitingRowEta(int minutes) {
+    return 'khoảng $minutes phút';
+  }
+
+  @override
+  String get waitingViewing => 'Đang xem';
+
+  @override
+  String get waitingDeclined => 'Đã từ chối';
+
+  @override
+  String get waitingExpired => 'Hết hạn';
+
+  @override
+  String get waitingNotCounted => 'Không tính';
+
+  @override
+  String get waitingRowUnavailable => 'vừa nhận việc khác';
+
+  @override
+  String waitingRowSemantics(String name) {
+    return '$name đang xem lời mời';
+  }
+
+  @override
+  String get waitingNote =>
+      'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác, không trả thêm. Tiền vẫn được giữ cho tới khi có người nhận hoặc bạn huỷ.';
+
+  @override
+  String get waitingNoteUnpaid =>
+      'Chưa ai nhận thì bạn chọn tiếp trong 5 người khác.';
+
+  @override
+  String get waitingCancel => 'Huỷ yêu cầu';
+
+  @override
+  String get noMatchTitle => 'Chưa tìm được nhiếp ảnh gia';
+
+  @override
+  String noMatchBody(int invited, int rounds) {
+    return 'Bạn đã mời $invited người trong $rounds lượt; gần bạn lúc này ít người đang sẵn sàng.';
+  }
+
+  @override
+  String noMatchHeld(String amount, String method) {
+    return '$amount vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ về $method.';
+  }
+
+  @override
+  String get noMatchBookNormally => 'Đặt lịch thường với người bạn chọn';
+
+  @override
+  String noMatchCancel(String amount) {
+    return 'Huỷ yêu cầu và hoàn $amount';
+  }
+
+  @override
+  String get noMatchMore => 'Chọn thêm người';
+
+  @override
   String get liveShutterTitle => 'Live Shutter';
 
   @override
@@ -8912,6 +9710,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String matchBodyPhotographer(String name, String place) {
     return '$name đang chờ ở $place. Tiếp tục để xem đường đi.';
+  }
+
+  @override
+  String matchBodyCustomer(String name, String place, int minutes) {
+    return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place, khoảng $minutes phút.';
+  }
+
+  @override
+  String matchBodyCustomerNoEta(String name, String place) {
+    return '$name đã nhận lời mời của bạn và đang chuẩn bị tới $place.';
   }
 
   @override
@@ -9970,4 +10778,984 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get quoteErrProposal => 'Chọn ngày trong khoảng của khách';
+
+  @override
+  String get chatKindCollab => 'Cộng tác';
+
+  @override
+  String get recruitErrorGeneric => 'Chưa thực hiện được. Thử lại sau.';
+
+  @override
+  String get recruitErrorRateLimited =>
+      'Bạn đã dùng hết lượt hôm nay. Thử lại ngày mai.';
+
+  @override
+  String get recruitErrorApplyLimit =>
+      'Bạn đang có 10 ứng tuyển chờ trả lời. Chờ studio trả lời hoặc rút bớt.';
+
+  @override
+  String get recruitErrorPostLimit => 'Studio đã có 3 tin mở.';
+
+  @override
+  String get recruitErrorClosed => 'Tin đã đóng hoặc hết hạn.';
+
+  @override
+  String get recruitErrorDuplicate => 'Bạn đã ứng tuyển tin này.';
+
+  @override
+  String get collabErrorFull => 'Đã đủ số cộng tác cho phép.';
+
+  @override
+  String get collabErrorCooldown => 'Chưa mời lại được, chờ đủ 3 ngày.';
+
+  @override
+  String get collabErrorBusy => 'Còn việc được giao chưa xong.';
+
+  @override
+  String get collabErrorConflict =>
+      'Thợ này đang là thành viên của studio bạn.';
+
+  @override
+  String get collabErrorDayTaken => 'Bạn đã có lịch trong ngày này.';
+
+  @override
+  String get collabPayDue => 'Cần trả';
+
+  @override
+  String get collabPayDisputed => 'Chưa nhận';
+
+  @override
+  String get collabPayReported => 'Đã báo trả';
+
+  @override
+  String get collabPayReceived => 'Đã nhận';
+
+  @override
+  String get collabMethodBank => 'Chuyển khoản';
+
+  @override
+  String get collabMethodCash => 'Tiền mặt';
+
+  @override
+  String get collabMethodOther => 'Khác';
+
+  @override
+  String get collabCsvHeader =>
+      'Ngày chụp,Dịch vụ,Cộng tác viên,Thù lao,Trạng thái,Ngày trả,Cách trả';
+
+  @override
+  String get recruitTab => 'Tuyển thợ';
+
+  @override
+  String get recruitTitle => 'Tuyển thợ';
+
+  @override
+  String get recruitStudioPostsTooltip => 'Tin tuyển của studio';
+
+  @override
+  String get recruitFilterArea => 'Khu vực';
+
+  @override
+  String get recruitFilterSpecialty => 'Thể loại';
+
+  @override
+  String get recruitFilterAll => 'Tất cả';
+
+  @override
+  String get recruitKindCollaborator => 'Cộng tác theo việc';
+
+  @override
+  String get recruitKindMember => 'Vào studio';
+
+  @override
+  String get recruitMatch => 'Hợp với bạn';
+
+  @override
+  String recruitFeePerShoot(String amount) {
+    return '$amount/buổi';
+  }
+
+  @override
+  String get recruitFeeNegotiable => 'Thoả thuận';
+
+  @override
+  String get recruitFrequencyOccasional => 'Vài buổi/tháng';
+
+  @override
+  String get recruitFrequencyWeekly => 'Hằng tuần';
+
+  @override
+  String get recruitFrequencySeasonal => 'Theo mùa';
+
+  @override
+  String get recruitFrequencyOccasionalLong => 'Vài buổi mỗi tháng';
+
+  @override
+  String get recruitFrequencyWeeklyLong => 'Hằng tuần';
+
+  @override
+  String get recruitFrequencySeasonalLong => 'Theo mùa (cưới, Tết…)';
+
+  @override
+  String recruitCardFooter(String frequency, String ago) {
+    return '$frequency · $ago';
+  }
+
+  @override
+  String get recruitAgoYesterday => 'hôm qua';
+
+  @override
+  String recruitAgoWeeks(int n) {
+    return '$n tuần trước';
+  }
+
+  @override
+  String get recruitOnlyProvidersNote => 'Chỉ thợ ảnh và studio thấy mục này.';
+
+  @override
+  String get recruitEmpty => 'Chưa có tin tuyển nào hợp bộ lọc.';
+
+  @override
+  String get recruitLoadMore => 'Xem thêm';
+
+  @override
+  String get recruitSpecialtiesLabel => 'Thể loại';
+
+  @override
+  String get recruitAreasLabel => 'Khu vực làm việc';
+
+  @override
+  String get recruitFrequencyLabel => 'Tần suất';
+
+  @override
+  String get recruitFeeLabel =>
+      'Thù lao tham khảo · studio trả trực tiếp cho bạn, ngoài ứng dụng';
+
+  @override
+  String get recruitRequirements => 'Yêu cầu';
+
+  @override
+  String recruitStats(int count, int days) {
+    return '$count người đã ứng tuyển · còn $days ngày';
+  }
+
+  @override
+  String recruitStudioShoots(int n) {
+    return '$n buổi chụp';
+  }
+
+  @override
+  String get recruitViewStudio => 'Xem studio';
+
+  @override
+  String get recruitApply => 'Ứng tuyển';
+
+  @override
+  String get recruitVerifyToApply => 'Xác minh để ứng tuyển';
+
+  @override
+  String get recruitVerifyNote =>
+      'Bạn cần xác minh danh tính trước khi ứng tuyển.';
+
+  @override
+  String get recruitApplied => 'Đã ứng tuyển · chờ studio';
+
+  @override
+  String get recruitWithdraw => 'Rút ứng tuyển';
+
+  @override
+  String get recruitWithdrawConfirmTitle => 'Rút ứng tuyển?';
+
+  @override
+  String get recruitWithdrawConfirmBody =>
+      'Mỗi tin chỉ ứng tuyển một lần, rút rồi không gửi lại được.';
+
+  @override
+  String get recruitWithdrawKeep => 'Giữ lại';
+
+  @override
+  String recruitAlreadyMember(String studio) {
+    return 'Bạn đang là thành viên của $studio.';
+  }
+
+  @override
+  String get recruitStudioViewerNote =>
+      'Studio xem được tin nhưng không ứng tuyển.';
+
+  @override
+  String get recruitClosedNote => 'Tin đã đóng hoặc hết hạn.';
+
+  @override
+  String get recruitResultAccepted => 'Studio đã nhận bạn';
+
+  @override
+  String get recruitResultDeclined => 'Studio chưa nhận ứng tuyển này';
+
+  @override
+  String get recruitApplyTitle => 'Ứng tuyển';
+
+  @override
+  String recruitApplySubtitle(String title, String studio) {
+    return '$title · $studio';
+  }
+
+  @override
+  String get recruitSheetClose => 'Đóng';
+
+  @override
+  String get recruitMessageLabel => 'Lời nhắn cho studio';
+
+  @override
+  String get recruitMessageHint =>
+      'Giới thiệu ngắn về kinh nghiệm và thiết bị của bạn';
+
+  @override
+  String get recruitSamplesLabel => 'Ảnh tiêu biểu';
+
+  @override
+  String get recruitSamplesHint => 'Chọn tối đa 3 bài từ portfolio';
+
+  @override
+  String recruitSamplesCount(int n) {
+    return '$n/3';
+  }
+
+  @override
+  String get recruitSamplesEmpty => 'Chưa có bài nào trong portfolio.';
+
+  @override
+  String get collabTermsTitle => 'Điều khoản cộng tác';
+
+  @override
+  String get collabTerm1 =>
+      'Hợp đồng dịch vụ theo từng buổi chụp: bạn tự quyết cách làm, không có giờ làm cố định, không độc quyền.';
+
+  @override
+  String get collabTerm2 =>
+      'Thù lao do hai bên thoả thuận từng việc. Studio trả trực tiếp cho bạn ngoài ứng dụng; ứng dụng không bảo lãnh khoản này.';
+
+  @override
+  String get collabTerm3 =>
+      'Bạn không chào trực tiếp khách mà studio giao cho bạn trong 6 tháng.';
+
+  @override
+  String get collabTermsAgree => 'Tôi đồng ý điều khoản cộng tác';
+
+  @override
+  String get recruitNoContactNote =>
+      'Không ghi số điện thoại, Zalo hay link trong lời nhắn.';
+
+  @override
+  String recruitMemberNote(String studio) {
+    return 'Được nhận thì bạn vào $studio như thành viên (mỗi thợ ở một studio).';
+  }
+
+  @override
+  String get recruitSend => 'Gửi ứng tuyển';
+
+  @override
+  String get recruitSentToast => 'Đã gửi ứng tuyển';
+
+  @override
+  String get recruitContactError =>
+      'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung';
+
+  @override
+  String get recruitMessageInvalid => 'Lời nhắn tối đa 400 ký tự.';
+
+  @override
+  String get recruitSamplesInvalid =>
+      'Chỉ chọn tối đa 3 bài trong portfolio của bạn.';
+
+  @override
+  String get recruitNewTitle => 'Đăng tin tuyển';
+
+  @override
+  String get recruitEditTitle => 'Sửa tin tuyển';
+
+  @override
+  String recruitOpenSlots(int left) {
+    return 'Còn $left/3 tin mở';
+  }
+
+  @override
+  String get recruitKindLabel => 'Loại tin';
+
+  @override
+  String get recruitKindCollaboratorHint =>
+      'Thợ làm từng buổi, không vào studio';
+
+  @override
+  String get recruitKindMemberLabel => 'Thành viên studio';
+
+  @override
+  String get recruitKindMemberHint => 'Thợ vào studio của bạn';
+
+  @override
+  String get recruitTitleLabel => 'Tiêu đề';
+
+  @override
+  String get recruitSpecialtiesPick => 'Thể loại (tối đa 4)';
+
+  @override
+  String get recruitAreasPick => 'Khu vực (tối đa 5)';
+
+  @override
+  String get recruitFeePick => 'Thù lao tham khảo';
+
+  @override
+  String get recruitFeeKindPerShoot => 'Theo buổi';
+
+  @override
+  String get recruitFeeKindNegotiable => 'Thoả thuận';
+
+  @override
+  String get recruitFeeAmountHint => 'Số tiền mỗi buổi';
+
+  @override
+  String get recruitFeeAmountSuffix => '₫ / buổi';
+
+  @override
+  String get recruitRequirementsHint => 'Thiết bị, kinh nghiệm, cách làm việc';
+
+  @override
+  String get recruitFormNote =>
+      'Không ghi số điện thoại, Zalo hay link. Tin hiện 30 ngày, chỉ thợ ảnh và studio thấy.';
+
+  @override
+  String get recruitPublish => 'Đăng tin';
+
+  @override
+  String get recruitSave => 'Lưu thay đổi';
+
+  @override
+  String get recruitPostedToast => 'Đã đăng tin';
+
+  @override
+  String get recruitSavedToast => 'Đã lưu thay đổi';
+
+  @override
+  String get recruitTitleError => 'Tiêu đề 8–80 ký tự';
+
+  @override
+  String get recruitSpecialtiesError => 'Chọn 1–4 thể loại';
+
+  @override
+  String get recruitAreasError => 'Chọn 1–5 khu vực';
+
+  @override
+  String get recruitFeeError => 'Nhập số tiền mỗi buổi';
+
+  @override
+  String get recruitRequirementsError => 'Yêu cầu tối đa 600 ký tự';
+
+  @override
+  String get recruitVerifyToPostNote =>
+      'Studio cần xác minh trước khi đăng tin.';
+
+  @override
+  String get recruitStudioTitle => 'Tin tuyển của studio';
+
+  @override
+  String recruitStudioMeta(int open, int left) {
+    return '$open/3 tin mở · còn $left lượt đăng/đóng hôm nay';
+  }
+
+  @override
+  String get recruitStatusOpen => 'Đang mở';
+
+  @override
+  String get recruitStatusClosed => 'Đã đóng';
+
+  @override
+  String get recruitStatusExpired => 'Hết hạn';
+
+  @override
+  String recruitPostMeta(int count, int days) {
+    return '$count ứng viên · còn $days ngày';
+  }
+
+  @override
+  String recruitPostMetaEnded(int count) {
+    return '$count ứng viên';
+  }
+
+  @override
+  String get recruitEdit => 'Sửa';
+
+  @override
+  String get recruitRenew => 'Gia hạn 30 ngày';
+
+  @override
+  String recruitRenewedToast(String date) {
+    return 'Đã gia hạn tới $date';
+  }
+
+  @override
+  String get recruitClose => 'Đóng tin';
+
+  @override
+  String get recruitCloseConfirmTitle => 'Đóng tin này?';
+
+  @override
+  String get recruitCloseConfirmBody =>
+      'Ứng viên đang chờ được báo là chưa được nhận.';
+
+  @override
+  String get recruitCloseKeep => 'Giữ tin';
+
+  @override
+  String recruitApplicantsHeader(String title) {
+    return 'Ứng viên · $title';
+  }
+
+  @override
+  String recruitApplicantsPending(int n) {
+    return '$n chờ trả lời';
+  }
+
+  @override
+  String get recruitAccept => 'Nhận';
+
+  @override
+  String get recruitDecline => 'Từ chối';
+
+  @override
+  String recruitAcceptedToast(String name) {
+    return 'Đã nhận $name';
+  }
+
+  @override
+  String recruitDeclineConfirmTitle(String name) {
+    return 'Từ chối $name?';
+  }
+
+  @override
+  String recruitDeclineConfirmBody(String name) {
+    return '$name được báo là studio chưa nhận ứng tuyển này.';
+  }
+
+  @override
+  String get recruitDeclineKeep => 'Quay lại';
+
+  @override
+  String get recruitNewPost => 'Đăng tin mới';
+
+  @override
+  String get recruitFull => 'Đã đủ 3 tin mở';
+
+  @override
+  String get recruitVerifyToPost => 'Xác minh để đăng tin';
+
+  @override
+  String recruitBlocked(String date) {
+    return 'Bạn tạm không đăng tin và mời cộng tác viên tới $date vì chưa trả thù lao cho cộng tác viên.';
+  }
+
+  @override
+  String get recruitNoApplicants => 'Chưa có ai ứng tuyển.';
+
+  @override
+  String get recruitNoPosts =>
+      'Chưa có tin tuyển. Đăng tin để thợ ảnh khu vực của bạn thấy.';
+
+  @override
+  String recruitAcceptConflict(String name) {
+    return '$name đang ở studio khác hoặc đang cộng tác với studio bạn.';
+  }
+
+  @override
+  String recruitAcceptCooldown(String name) {
+    return '$name mới rời studio, chưa vào được studio mới.';
+  }
+
+  @override
+  String get recruitAcceptStudioFull => 'Studio đã đủ thành viên.';
+
+  @override
+  String get recruitAcceptCollabFull => 'Đã đủ số cộng tác viên.';
+
+  @override
+  String recruitAcceptNotAccepting(String name) {
+    return '$name hiện chưa nhận đơn được.';
+  }
+
+  @override
+  String profileRecruiting(int n) {
+    return 'Đang tuyển · $n tin';
+  }
+
+  @override
+  String get collabTitle => 'Cộng tác';
+
+  @override
+  String collabStudioMeta(int active, int max, int left) {
+    return '$active/$max cộng tác viên · còn $left thao tác hôm nay';
+  }
+
+  @override
+  String collabRowMeta(int jobs, String fee) {
+    return '$jobs việc đang giao · gợi ý $fee/buổi';
+  }
+
+  @override
+  String collabRowMetaNoFee(int jobs) {
+    return '$jobs việc đang giao';
+  }
+
+  @override
+  String collabRowOptions(String name) {
+    return 'Tuỳ chọn cho $name';
+  }
+
+  @override
+  String get collabMenuMessage => 'Nhắn tin';
+
+  @override
+  String get collabMenuFee => 'Sửa thù lao gợi ý';
+
+  @override
+  String get collabMenuEnd => 'Kết thúc cộng tác';
+
+  @override
+  String collabEndConfirmTitle(String name) {
+    return 'Kết thúc cộng tác với $name?';
+  }
+
+  @override
+  String get collabEndConfirmBody => 'Mời lại được sau 3 ngày.';
+
+  @override
+  String collabEndBusy(int n) {
+    return 'Còn $n việc được giao chưa xong.';
+  }
+
+  @override
+  String get collabKeep => 'Quay lại';
+
+  @override
+  String get collabPayDueHeader => 'Thù lao cần trả';
+
+  @override
+  String get collabMarkPaid => 'Đã trả';
+
+  @override
+  String get collabPendingHeader => 'Đang chờ';
+
+  @override
+  String collabInviteSent(int days) {
+    return 'Lời mời đã gửi · hết hạn sau $days ngày';
+  }
+
+  @override
+  String get collabCancelInvite => 'Huỷ';
+
+  @override
+  String get collabTaxNote =>
+      'Khoản từ 5.000.000đ/lần có thể phải khấu trừ thuế TNCN 10%; hãy hỏi kế toán.';
+
+  @override
+  String get collabTaxDismiss => 'Ẩn lưu ý thuế';
+
+  @override
+  String collabExportCsv(int month) {
+    return 'Sao chép bảng kê tháng $month (CSV)';
+  }
+
+  @override
+  String collabExportDone(int month) {
+    return 'Đã sao chép bảng kê tháng $month. Dán vào bảng tính để xem.';
+  }
+
+  @override
+  String collabExportEmpty(int month) {
+    return 'Tháng $month chưa có khoản thù lao nào.';
+  }
+
+  @override
+  String get collabInvite => 'Mời cộng tác viên';
+
+  @override
+  String get collabStudioEmpty =>
+      'Chưa có cộng tác viên. Mời thợ hoặc đăng tin tuyển ở Tin tuyển.';
+
+  @override
+  String get collabPaidSheetTitle => 'Đã trả thù lao';
+
+  @override
+  String get collabPaidDate => 'Ngày trả';
+
+  @override
+  String get collabPaidToday => 'Hôm nay';
+
+  @override
+  String get collabPaidYesterday => 'Hôm qua';
+
+  @override
+  String get collabPaidOtherDay => 'Ngày khác';
+
+  @override
+  String get collabPaidMethod => 'Cách trả';
+
+  @override
+  String get collabPaidConfirm => 'Xác nhận đã trả';
+
+  @override
+  String get collabFeeSheetTitle => 'Thù lao gợi ý';
+
+  @override
+  String collabFeeHint(String name) {
+    return 'Gợi ý sẵn khi giao việc cho $name';
+  }
+
+  @override
+  String get collabFeeInvalid =>
+      'Từ 1.000₫ tới 100.000.000₫, bội số của 1.000₫';
+
+  @override
+  String get collabFeeSave => 'Lưu';
+
+  @override
+  String get collabFeeSaved => 'Đã lưu thù lao gợi ý';
+
+  @override
+  String get collabInviteSearch => 'Tìm thợ theo tên';
+
+  @override
+  String get collabInviteRowMember => 'Thành viên của studio bạn';
+
+  @override
+  String get collabInviteRowMemberInvited => 'Đã mời làm thành viên';
+
+  @override
+  String get collabInviteRowActive => 'Đang cộng tác';
+
+  @override
+  String get collabInviteRowUnverified => 'Chưa xác minh';
+
+  @override
+  String collabInviteRowCooldown(String date) {
+    return 'Mời lại được từ $date';
+  }
+
+  @override
+  String get collabInviteFooter =>
+      'Lời mời hết hạn sau 7 ngày · tối đa 5 lời mời chờ';
+
+  @override
+  String get collabInviteAction => 'Mời';
+
+  @override
+  String get collabOffersHeader => 'Việc chờ nhận';
+
+  @override
+  String collabOfferLeft(String time) {
+    return 'Còn $time';
+  }
+
+  @override
+  String collabLeftHoursMinutes(int h, int m) {
+    return '$h giờ $m phút';
+  }
+
+  @override
+  String get collabStudiosHeader => 'Studio cộng tác';
+
+  @override
+  String collabStudiosCount(int n) {
+    return '$n / tối đa 5';
+  }
+
+  @override
+  String collabStudioRowMeta(String month, int jobs) {
+    return 'Từ $month · $jobs việc đang giao';
+  }
+
+  @override
+  String get collabInvitesHeader => 'Lời mời';
+
+  @override
+  String collabInviteRowMeta(int days) {
+    return 'Mời cộng tác · hết hạn sau $days ngày';
+  }
+
+  @override
+  String get collabAcceptInvite => 'Xem & nhận';
+
+  @override
+  String get collabDeclineInvite => 'Từ chối';
+
+  @override
+  String collabAcceptSheetTitle(String studio) {
+    return 'Cộng tác với $studio';
+  }
+
+  @override
+  String get collabAcceptSheetConfirm => 'Nhận lời cộng tác';
+
+  @override
+  String collabAcceptedToast(String studio) {
+    return 'Đã nhận lời cộng tác với $studio';
+  }
+
+  @override
+  String collabInviteDeclinedToast(String studio) {
+    return 'Đã từ chối lời mời của $studio';
+  }
+
+  @override
+  String get collabPayHeader => 'Thù lao';
+
+  @override
+  String collabPayReportedMeta(String date, String method) {
+    return 'Studio báo đã trả $date ($method)';
+  }
+
+  @override
+  String get collabConfirmReceived => 'Đã nhận';
+
+  @override
+  String get collabReportNotReceived => 'Chưa nhận';
+
+  @override
+  String get collabNotReceivedConfirmTitle => 'Báo chưa nhận thù lao?';
+
+  @override
+  String get collabNotReceivedConfirmBody =>
+      'Studio và bộ phận hỗ trợ được báo. Ứng dụng không bảo lãnh khoản này.';
+
+  @override
+  String get collabEmpty =>
+      'Chưa có studio cộng tác. Xem tin ở Công việc → Tuyển thợ.';
+
+  @override
+  String get collabOfferTitle => 'Nhận việc cộng tác';
+
+  @override
+  String get collabOfferStudioNote =>
+      'Studio chịu trách nhiệm với khách và lo bàn giao ảnh';
+
+  @override
+  String get collabOfferFeeNote =>
+      'Thù lao · studio trả trực tiếp cho bạn sau buổi chụp';
+
+  @override
+  String collabOfferDeadline(String time, String left) {
+    return 'Trả lời trước $time (còn $left)';
+  }
+
+  @override
+  String collabOfferTimeToday(String time) {
+    return '$time hôm nay';
+  }
+
+  @override
+  String get collabOfferDeadlineNote => 'Không trả lời coi như từ chối';
+
+  @override
+  String get collabOfferLockNote =>
+      'Nhận việc thì khung giờ này bị khoá trên lịch của bạn và bạn vào hội thoại với khách.';
+
+  @override
+  String get collabOfferAccept => 'Nhận việc';
+
+  @override
+  String get collabOfferDecline => 'Từ chối';
+
+  @override
+  String get collabOfferAcceptedToast => 'Đã nhận việc';
+
+  @override
+  String get collabOfferDeclinedToast => 'Đã từ chối, studio được báo';
+
+  @override
+  String get collabOfferExpired => 'Việc này đã hết hạn trả lời';
+
+  @override
+  String get collabOfferGone => 'Việc này không còn chờ bạn nhận.';
+
+  @override
+  String get assignGroupMembers => 'Thành viên';
+
+  @override
+  String get assignGroupCollaborators => 'Cộng tác viên';
+
+  @override
+  String get assignFeeLabel => 'Thù lao';
+
+  @override
+  String get assignFeeRequired => 'Nhập thù lao cho cộng tác viên';
+
+  @override
+  String get assignCollabErrDeadline =>
+      'Không còn đủ thời gian để cộng tác viên nhận. Giao cho thành viên.';
+
+  @override
+  String get assignCollabErrBlocked =>
+      'Không giao việc được: hai bên đã chặn nhau.';
+
+  @override
+  String assignCollabErrEnded(String name) {
+    return 'Cộng tác với $name đã kết thúc.';
+  }
+
+  @override
+  String assignCollabNote(String name) {
+    return '$name có 6 giờ để nhận việc; khách chỉ thấy thợ khi $name đã nhận.';
+  }
+
+  @override
+  String assignSendTo(String name) {
+    return 'Gửi việc cho $name';
+  }
+
+  @override
+  String assignOfferPending(String name, String left) {
+    return 'Chờ $name nhận · còn $left';
+  }
+
+  @override
+  String assignOfferDeclined(String name, String deadline) {
+    return '$name đã từ chối. Giao người khác trước $deadline.';
+  }
+
+  @override
+  String assigneeCollabLabel(String studio) {
+    return 'Cộng tác với $studio';
+  }
+
+  @override
+  String workCollabLabel(String studio) {
+    return 'Cộng tác · $studio';
+  }
+
+  @override
+  String get settingsCollab => 'Cộng tác';
+
+  @override
+  String settingsCollabProviderMeta(int studios, int offers) {
+    return '$studios studio · $offers việc chờ nhận';
+  }
+
+  @override
+  String settingsCollabStudioMeta(int n) {
+    return '$n cộng tác viên';
+  }
+
+  @override
+  String get settingsRecruit => 'Tin tuyển';
+
+  @override
+  String settingsRecruitMeta(int n) {
+    return '$n/3 tin mở';
+  }
+
+  @override
+  String get collabOfferAcceptedState => 'Bạn đã nhận việc này.';
+
+  @override
+  String get collabDeclineConfirmTitle => 'Từ chối việc này?';
+
+  @override
+  String get collabDeclineConfirmBody =>
+      'Từ chối không bị tính là vi phạm. Studio được báo để giao người khác.';
+
+  @override
+  String get refundAccountTitle => 'Tài khoản nhận hoàn';
+
+  @override
+  String get refundAccountYouGet => 'Bạn được hoàn';
+
+  @override
+  String get refundAccountToPayer => 'Tiền hoàn về tài khoản đã chuyển:';
+
+  @override
+  String get refundAccountConfirm => 'Hoàn về tài khoản này';
+
+  @override
+  String get refundAccountOther => 'Dùng tài khoản khác';
+
+  @override
+  String get refundAccountWalletNote =>
+      'Ví MoMo/ZaloPay: hoàn về ví, không cần chọn.';
+
+  @override
+  String get refundAccountAutoNote =>
+      'Không chọn thì sau 24 giờ tiền tự hoàn về tài khoản đã chuyển.';
+
+  @override
+  String get refundAccountNoPayer =>
+      'Chưa có thông tin tài khoản đã chuyển. Nhập tài khoản để nhận tiền hoàn.';
+
+  @override
+  String get refundAccountBank => 'Ngân hàng';
+
+  @override
+  String get refundAccountNumber => 'Số tài khoản';
+
+  @override
+  String get refundAccountLookup => 'Tra tên chủ tài khoản';
+
+  @override
+  String get refundAccountLookupNote =>
+      'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ.';
+
+  @override
+  String get refundAccountEncrypted =>
+      'Số tài khoản được mã hoá, chỉ hiện 4 số cuối.';
+
+  @override
+  String get refundAccountNotFound =>
+      'Không tìm thấy tài khoản này. Kiểm tra lại ngân hàng và số tài khoản.';
+
+  @override
+  String get refundAccountUnsupported =>
+      'Ngân hàng này chưa tra được tên chủ tài khoản. Chọn ngân hàng khác hoặc hoàn về tài khoản đã chuyển.';
+
+  @override
+  String get refundAccountLookupLimit =>
+      'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get refundAccountLookupError => 'Không tra được tên. Thử lại.';
+
+  @override
+  String get refundAccountLookupStale =>
+      'Tài khoản vừa thay đổi. Tra tên lại rồi xác nhận.';
+
+  @override
+  String get refundAccountBackToPayer => 'Hoàn về tài khoản đã chuyển';
+
+  @override
+  String refundAccountWentTo(String destination) {
+    return 'Tiền hoàn đã được gửi về $destination trước khi bạn chọn.';
+  }
+
+  @override
+  String get refundAccountSent => 'Đã gửi yêu cầu hoàn tiền';
+
+  @override
+  String get refundAccountAlreadySent =>
+      'Tiền hoàn đã được gửi đi trước khi bạn chọn. Xem nơi nhận ở Lịch sử thanh toán.';
+
+  @override
+  String get refundAccountFailed => 'Chưa gửi được, thử lại sau.';
+
+  @override
+  String get refundAccountLoadError =>
+      'Chưa mở được tài khoản nhận hoàn, thử lại sau.';
+
+  @override
+  String get refundAccountClose => 'Đóng';
+
+  @override
+  String get payChooseRefundAccount => 'Chọn tài khoản nhận hoàn';
+
+  @override
+  String detailRefundAccountTitle(String amount) {
+    return 'Bạn được hoàn $amount';
+  }
+
+  @override
+  String get detailRefundAccountBody => 'Chọn tài khoản để nhận tiền hoàn.';
 }

@@ -18,6 +18,7 @@ import 'package:photobooking/data/photographer/photographer_contact_providers.da
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/delivery/delivery_providers.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
@@ -26,21 +27,25 @@ import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
 import 'package:photobooking/features/booking/widgets/studio_assignee_block.dart';
+import 'package:photobooking/features/booking/widgets/studio_offer_line.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/delivery/delivery_review_screen.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/delivery/submit_delivery_sheet.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/change_request_sheet.dart';
 import 'package:photobooking/features/studio/return_job_sheet.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:photobooking/features/payments/refund_account_sheet.dart';
 import 'package:photobooking/features/review/review_screen.dart';
 
 /// A sheet S05.02 opens over itself after its first frame (deep links
-/// `/b/:id/cancel`, `/b/:id/decline`).
-enum DetailSheet { cancel, decline }
+/// `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/dispute`).
+enum DetailSheet { cancel, decline, dispute }
 
-/// `/b/:id`, `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/review`, `/b/:id/delivery`
+/// `/b/:id`, `/b/:id/cancel`, `/b/:id/decline`, `/b/:id/dispute`,
+/// `/b/:id/review`, `/b/:id/delivery`
 List<RouteBase> bookingDetailRoutes() => [
   GoRoute(
     path: '/b/:id',
@@ -61,6 +66,16 @@ List<RouteBase> bookingDetailRoutes() => [
     builder: (_, s) => BookingDetailScreen(
       bookingId: s.pathParameters['id']!,
       openSheet: DetailSheet.decline,
+    ),
+  ),
+  // S18.01 over S05.02 (Decision 13). `?from=delivery` comes from S05.06:
+  // the variant follows the booking's state (an approved booking is in its
+  // delivery check), so the query needs no handling of its own.
+  GoRoute(
+    path: '/b/:id/dispute',
+    builder: (_, s) => BookingDetailScreen(
+      bookingId: s.pathParameters['id']!,
+      openSheet: DetailSheet.dispute,
     ),
   ),
   GoRoute(
@@ -193,6 +208,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ? l10n.cancelDoneToast(formatMoney(refunded))
               : l10n.cancelDoneNoRefund,
         );
+        if (refunded > 0) await openRefundAccountAfterCancel(context, ref, b);
       case DetailAction.bookAgain:
         await context.push(
           bookingPath(photographerId: b.photographerId, serviceId: b.serviceId),
@@ -224,6 +240,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ref.read(bookingProvider(b.id)).value?.depositRefunded ??
             b.deposit;
         _say(l10n.cancelDoneToast(formatMoney(refunded)));
+        await openRefundAccountAfterCancel(context, ref, b);
+      case DetailAction.reportProblem:
+        await _reportProblem(b, counterpartName);
       case DetailAction.returnJob:
         await showReturnJobSheet(
           context,
@@ -233,6 +252,29 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               '',
         );
     }
+  }
+
+  /// S18.01 for [b]; a sent dispute opens S18.02.
+  Future<void> _reportProblem(Booking b, String counterpartName) async {
+    final closesAt = bookingDisputeClosesAt(b);
+    if (closesAt == null) return;
+    final l10n = context.l10n;
+    final summary = bookingSummaryFor(b, name: counterpartName);
+    final id = await showOpenDisputeSheet(
+      context,
+      subject: DisputeSubject.booking(b.id),
+      summary: DisputeSubjectSummary(
+        title: counterpartName.isEmpty
+            ? summary.serviceName
+            : '$counterpartName · ${summary.serviceName}',
+        subtitle: '${summary.day} · ${summary.start}–${summary.end}',
+      ),
+      closesAt: closesAt,
+      origin: bookingDisputeOrigin(b),
+    );
+    if (id == null || !mounted) return;
+    _say(l10n.disputeSent);
+    await context.push('/disputes/$id');
   }
 
   /// "Xin đổi thợ (1 lần)" → S26.05 (it confirms the request itself).
@@ -255,6 +297,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         DetailAction.cancelStudioFault,
       DetailSheet.cancel => DetailAction.cancel,
       DetailSheet.decline => DetailAction.decline,
+      DetailSheet.dispute => DetailAction.reportProblem,
     };
     if (!actions.contains(wanted)) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -389,9 +432,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         _ => true,
       };
 
-  /// The assigned member's name for the timeline; '' while unknown.
+  /// The assigned member's name for the timeline; '' while unknown (and for
+  /// a collaborator who has not accepted yet, S27).
   String _assigneeName(Booking b) {
-    final id = b.studio?.assigneeId;
+    final id = b.studio?.confirmedAssigneeId;
     if (id == null) return '';
     return ref
             .watch(photographerProfileProvider(id))
@@ -445,7 +489,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (paidToast) ...[
-            _PaidToast(l10n.detailPaidToast(formatMoney(b.deposit))),
+            InlineToast(l10n.detailPaidToast(formatMoney(b.deposit))),
             const SizedBox(height: AppSpace.s3),
           ] else if (b.escrowStatus == EscrowStatus.held && !assignee) ...[
             EscrowNotice(
@@ -459,6 +503,33 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
           const SizedBox(height: AppSpace.s4),
+          // Mock S05.02-refund: a policy refund of a bank transfer waits for
+          // the customer's account (server mirror) until S22.04 or 24 h.
+          if (customer && b.refundAccountNeeded) ...[
+            _RefundAccountCard(
+              amount: b.depositRefunded,
+              onChoose: () =>
+                  showRefundAccountSheet(context, ref, BookingRefund(b.id)),
+            ),
+            const SizedBox(height: AppSpace.s4),
+          ],
+          // Mock S05.02-disputed: under the card, for both parties. The
+          // dispute freezes the money (`escrowStatus: disputed`) until it is
+          // resolved, so the booking alone says which banner it is. A studio
+          // member assigned to the job is not a party of the dispute (it is
+          // the studio's), so S18.02 would not open for them: no banner.
+          if (b.disputeId != null && !assignee) ...[
+            DisputeBanner(
+              open: b.escrowStatus == EscrowStatus.disputed,
+              onTap: () => context.push('/disputes/${b.disputeId}'),
+            ),
+            const SizedBox(height: AppSpace.s4),
+          ],
+          // S27 studio side: a collaborator offer waiting or declined.
+          if (!customer && !assignee && b.studio != null) ...[
+            StudioOfferLine(booking: b),
+            const SizedBox(height: AppSpace.s2),
+          ],
           if (customer && _showsStudioBlock(b)) ...[
             StudioAssigneeBlock(
               booking: b,
@@ -754,6 +825,27 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
       );
     }
+    if (has(DetailAction.reportProblem)) {
+      // Mock S05.02-problem: red text under the actions, like the cancel.
+      final dark = Theme.of(context).brightness == Brightness.dark;
+      final now =
+          ref.watch(nowTickerProvider(_tick)).value ??
+          ref.read(clockProvider)();
+      final hours = disputeHoursLeft(bookingDisputeClosesAt(b)!, now) ?? 0;
+      add(
+        AppButton.text(
+          l10n.disputeReportProblem(hours),
+          key: const Key('detail-report-problem'),
+          size: AppButtonSize.small,
+          style: ButtonStyle(
+            foregroundColor: WidgetStatePropertyAll(
+              dark ? AppColorsDark.destructive : AppColors.destructive,
+            ),
+          ),
+          onPressed: busy ? null : () => run(DetailAction.reportProblem),
+        ),
+      );
+    }
     if (has(DetailAction.cancel)) {
       final dark = Theme.of(context).brightness == Brightness.dark;
       final now =
@@ -988,53 +1080,49 @@ class _ExtraRoundCard extends StatelessWidget {
   }
 }
 
-/// Inline result line after the payment (mock `.toast`).
-class _PaidToast extends StatelessWidget {
-  const _PaidToast(this.text);
+/// Mock S05.02-refund: "Bạn được hoàn {amount}", "Chọn tài khoản để nhận
+/// tiền hoàn." and the outline "Chọn tài khoản nhận hoàn" (S22.04). The
+/// amount is the server's refund; without it the title is left out.
+class _RefundAccountCard extends StatelessWidget {
+  const _RefundAccountCard({required this.amount, required this.onChoose});
 
-  final String text;
+  final int? amount;
+  final VoidCallback onChoose;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final success = dark ? AppColorsDark.success : AppColors.success;
-    return Semantics(
-      liveRegion: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: dark ? AppColorsDark.surface : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: dark ? AppColorsDark.border : AppColors.border,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s3,
-            vertical: AppSpace.s3,
-          ),
-          child: Row(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: success,
-                  shape: BoxShape.circle,
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.all(3),
-                  child: AppIcon(
-                    AppIcons.check,
-                    size: 12,
-                    color: AppColors.foregroundInverse,
-                  ),
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final a = amount;
+    return GlassCard(
+      key: const Key('detail-refund-account'),
+      highlight: false,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (a != null && a > 0)
+              Text(
+                l10n.detailRefundAccountTitle(formatMoney(a)),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(width: AppSpace.s2),
-              Expanded(
-                child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              l10n.detailRefundAccountBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpace.s2),
+            AppButton.outline(
+              l10n.payChooseRefundAccount,
+              key: const Key('detail-refund-account-choose'),
+              size: AppButtonSize.small,
+              onPressed: onChoose,
+            ),
+          ],
         ),
       ),
     );

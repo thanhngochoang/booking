@@ -193,6 +193,22 @@ describe('chat model and rules (Task 1)', () => {
     assert.doesNotThrow(() => assertCanSend(bookingChat, 'cust1', now));
   });
 
+  it('a collab chat has no inquiry limit', () => {
+    const now = new Date('2026-10-01T12:00:00Z');
+    // Studio in the customer slot, collaborator in the photographer slot (#151 Decision 16).
+    let chat: Chat = { ...baseChat, id: 'collab_s1_p1', kind: 'collab', customerId: 's1', photographerId: 'p1' };
+    for (let i = 1; i <= 4; i++) {
+      assert.doesNotThrow(() => assertCanSend(chat, 's1', now), `message ${i}`);
+      const m: Message = { id: `m${i}`, chatId: chat.id, senderId: 's1', type: 'text', body: `Tin ${i}`, imagePath: null,
+        point: null, system: null, createdAt: now };
+      chat = afterMessage(chat, m, now);
+    }
+    assert.equal(chat.customerMessagesBeforeReply, 0);
+    assert.equal(isInquiryClosed(chat, new Date('2026-12-01T00:00:00Z')), false);
+    assert.equal(roleInChat(chat, 's1'), 'customer');
+    assert.equal(roleInChat(chat, 'p1'), 'photographer');
+  });
+
   it('afterMessage: a photographer message in an inquiry sets photographerRepliedAt once; a customer message before any reply increments the counter; lastMessage fields follow', () => {
     const t1 = new Date('2026-10-01T10:00:00Z');
     const custMsg1: Message = {

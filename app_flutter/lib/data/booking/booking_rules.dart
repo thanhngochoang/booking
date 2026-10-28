@@ -6,7 +6,6 @@ class BookingRules {
   const BookingRules._();
 
   static const int upfrontPercent = 100;
-  static const int disputeWindowHours = 24;
   static const int draftExpiryMinutes = 30;
   static const int maxBookingDaysAhead = 365;
 
@@ -151,25 +150,6 @@ class BookingRules {
     if (studio != null && studio.assigneeId == null) return false;
     final endsAt = parseBookingDateTime(booking.day, booking.end);
     return now.isAfter(endsAt) || now.isAtSameMomentAs(endsAt);
-  }
-
-  /// Checks if customer can open a dispute within 24h after completion.
-  static bool canCustomerDispute(Booking booking, DateTime now) {
-    if (booking.status != BookingStatus.upcoming &&
-        booking.status != BookingStatus.completed) {
-      return false;
-    }
-    if (booking.escrowStatus != EscrowStatus.held &&
-        booking.escrowStatus != EscrowStatus.partiallyRefunded) {
-      return false;
-    }
-    if (booking.completedAt != null) {
-      final diff = now.difference(booking.completedAt!).inHours;
-      if (diff > disputeWindowHours) {
-        return false;
-      }
-    }
-    return true;
   }
 }
 

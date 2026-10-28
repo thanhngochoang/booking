@@ -8,6 +8,7 @@ import { createPayment } from '../src/create_payment.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { createBookingWorld, newDraft, transferOf, withAddons, type BookingWorld } from './support/booking_world.js';
+import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
 
 const T = '2026-10-01T00:00:00.000Z';
 const mk = (id: string, over: Partial<ServiceAddon>): ServiceAddon => ({
@@ -63,7 +64,11 @@ describe('booking with add-ons: money follows the total', () => {
     const { draft, paymentId } = await paid(world);
     world.clock.setTime(new Date('2026-10-12T10:00:00.000Z'));
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1' });
-    const [refund] = [...world.store.refunds.values()].filter((r) => r.paymentId === paymentId && r.fromEscrow);
+    const [waiting] = [...world.store.refunds.values()].filter((r) => r.paymentId === paymentId && r.fromEscrow);
+    assert.ok(waiting);
+    // #141: it waits for the customer to confirm the paying account on S22.04.
+    assert.equal(await confirmRefundToPayer(refundAccountDepsOf({ bookings: world.deps }), waiting.id), 'done');
+    const refund = world.store.refunds.get(waiting.id);
     assert.ok(refund);
     assert.deepEqual(
       [refund.amount, refund.method, refund.status, refund.destination?.accountLast4],

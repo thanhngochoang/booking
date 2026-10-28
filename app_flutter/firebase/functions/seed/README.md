@@ -16,7 +16,8 @@ Password for every account: `seed-password-1`
 | `cuc.studio@seed.test` | `seed-photographer-cuc` | photographer | studio (`providerType: studio`), TP.HCM; private studio address, public district Quận 1; Gọi only; `+84938000001` |
 | `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`, `approvedAwardCount: 3`), Huế; Gọi only; `+84905000001` |
 | `giang.pending@seed.test` | `seed-photographer-giang` | photographer | not verified, Cần Thơ; Gọi only; `+84976000001` (also her Auth phone); S21 verification submitted, waiting for staff (see "Verification (S21)") |
-| `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and is the `--actor` of `npm run awards` |
+| `hoa.ctv@seed.test` | `seed-photographer-hoa` | photographer | verified individual, TP.HCM (cưới, gia đình), in no studio; Gọi only; `+84909000001`; S27 applicant Cúc can accept (see "Studio recruiting (S27)") |
+| `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and `resolveDispute`, and is the `--actor` of `npm run awards` |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
 |---|---|---|---|
@@ -30,6 +31,7 @@ Password for every account: `seed-password-1`
 | `seed-booking-cancelled` | Lan ↔ An | cancelled | `contact_locked` |
 | `seed-booking-completed-recent` | Lan ↔ An | completed 3 days before seeding | unlocked |
 | `seed-booking-completed-old` | Lan ↔ An | completed 40 days before seeding | `contact_locked` |
+| `seed-booking-completed-window` | Lan ↔ An | completed 2 hours before seeding, payment still `held` (no milestones, `releaseAfter` = completion + 24 h): sign in as Lan to open S18.01 ("Báo vấn đề · còn 22 giờ") | unlocked |
 
 ### Delivery (two-layer)
 
@@ -77,8 +79,8 @@ Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data
 | `payoutAccounts/{uid}` + `accounts/seed-account-an-1` | An | VCB, `0123456789` (stored encrypted with the emulator key in `.secret.local`; the owner view shows `•••• 6789`), holder `NGUYEN VAN AN`; `nameStatus: matched`, active from the seed start (`SEED_CREATED_AT`) |
 | `users/{uid}/private/identity` | An | identity legalName (An): `Nguyễn Văn An`, `method`/`provider` `fake` (test value; the doc's full shape is #135's) |
 | Payout `seed-payout-an-1` | An | `paid`, the first payout to the account (approved by `seed-staff-admin`); 1 500 000 gross, tax 7% 105 000, net 1 395 000; its payment (`seed-payment-seed-booking-completed-old`) is `paid_out`, with `payout_paid` −1 395 000 and `tax_withheld` −105 000 ledger entries |
-| `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed`, reason "Ảnh giao thiếu so với gói" |
-| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 3 × 1 500 000, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
+| `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed` by `seed-dispute-lan-an` (see Disputes) |
+| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 4 × 1 500 000 among the legacy bookings plus Lan's 250 000 ticket of the past workshop, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
 | Payout account | Bình | none (the S06.05 add-account card) |
 
 ## Chats (S07)
@@ -176,7 +178,7 @@ hash and ciphertext of that number (`identity_hashes/{hash}` guards duplicates).
 |---|---|---|
 | Giang (`seed-photographer-giang`) | `verifications/{uid}` `submitted` 26 h before seeding (phone, fee paid by bank QR 30 min before that: `payments/seed-payment-vfee-giang`, 99 000 ₫, `released`, with `payment_received` and `fee_charged` ledger entries; fake identity `NGUYỄN T** G**`, rules done); `verified: false`, `acceptingOrders: false` | `list` shows her with `!` (over 24 h); `approve` → verified, accepting orders, push `verification_approved`; or `reject <uid> fake_avatar` → S21.02 rejected with one free resubmit |
 | Bình (`seed-photographer-binh`) | no verification record, no `fake_identities` override | sign in and walk S21.01 → fee (pay with the fake confirmation) → S21.03 → rules → submit; then `approve` with the CLI |
-| An, Cúc, Dũng | `approved` records from before the fee (match `verified: true`, `steps.fee` null) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
+| An, Cúc, Dũng, Hòa | `approved` records from before the fee (match `verified: true`, `steps.fee` null) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
 | Minh (`seed-customer-minh`) | `fake_identities` override `{dob: '2010-05-01'}` | the underage example (`underage`) if Minh switches to a photographer role |
 | Staff CLI (`tools/verifications.ts`, actor `seed-staff-admin`) | `scripts/verifications-local.sh list` · `show <uid>` · `approve <uid>` · `reject <uid> <reason> ["note"]` · `revoke <uid> "note"` · `business-approve <uid>` · `business-reject <uid> <reason> ["note"]`, each decision with `--actor seed-staff-admin` | decisions go through the same `reviewVerification` use case and notifications as the callable; reasons: `fake_avatar`, `stolen_portfolio`, `identity_mismatch`, `duplicate_account`, `underage`, `other` (business: `inactive`, `representative_mismatch`, `doc_unreadable`, `other`); `other` and `revoke` need a 5-500 character note |
 
@@ -218,6 +220,8 @@ npm run payouts -- approve <payoutId> --actor seed-staff-admin
 | Group chat of the walk | An, Lan | member docs (names only), a join line for Lan, An's announcement `seed-msg-announcement` pinned |
 | `seed-event-an-night-walk` | An | "Chụp phố đêm", open, free, starts **36 hours after seeding** (meeting point Nhà hát Thành phố), `soonNoticeAt` null: the next event clock run sends the S17 `event_soon` reminder; group chat with An and Lan |
 | `seed-registration-lan-night-walk` | Lan | free registration to the night walk: `paid`, ticket `VE-LANB-0000` |
+| `seed-event-an-past-workshop` | An | "Workshop chân dung ngoài trời", 250 000 VND, started 5 hours and **ended 3 hours before seeding**, `completed`; group chat with An and Lan |
+| `seed-registration-lan-past-paid` | Lan | paid ticket `VE-LANC-0000` of the past workshop, `contactEligible: true` with its `private/contact` snapshot; payment `seed-payment-ticket-lan-past` `held` until the end + 24 h: sign in as Lan to report a problem from S11.04 (21 hours left) |
 
 Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability
 (unless a seed booking already holds that day), and each registration its `ticket_codes/*` entry.
@@ -257,21 +261,40 @@ photographer carries `nameKey` (the S26.02 search key).
 |---|---|---|
 | `studio_members/seed-photographer-cuc_seed-photographer-an_…` | Cúc ↔ An | `active`, joined 30 days before seeding; `photographers/seed-photographer-an.studioId` is Cúc |
 | `studio_members/seed-photographer-cuc_seed-photographer-binh_…` | Cúc → Bình | `invited`, expires 5 days after seeding (sign in as Bình to answer in S26.03) |
-| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to approve in S26.01) |
+| `studio_members/seed-photographer-cuc_seed-photographer-dung_…` | Dũng → Cúc | `requested` (join request; sign in as Cúc to answer in S26.01: approving is refused `membership_conflict` while Dũng is Cúc's active collaborator (S27), declining works) |
 | `seed-booking-studio-assigned` | Lan ↔ Cúc | accepted, assigned to An, 3 days ahead (the next day An is free); An's day is `booked`; Cúc's day is `full` (its one member is taken) |
 | `seed-booking-studio-unassigned` | Lan ↔ Cúc | accepted, unassigned, starts about 20 h after seeding: its assign deadline has passed, so the first `npm run clock -- bookings` marks it overdue (`assign_overdue`, Lan may cancel with 100% back) |
 
 `studio_day_load/seed-photographer-cuc_{day}` holds both bookings' days (server only). Studio bookings never write
 the studio's own day as `booked`/`pending`; Cúc's `availability/{day}` only shows the derived `full`.
 
+## Studio recruiting (S27)
+
+Written with the domain's helpers (`recruitMatchKeys`, `recruitFilterKeys`) and the Functions mapping.
+
+| Document | Who | State |
+|---|---|---|
+| `recruitPosts/seed-recruit-cuc-ctv` | Cúc | open collaborator post "Tuyển CTV chụp cưới cuối tuần", Q1 + Q3 (TP.HCM), cưới + gia đình, 800 000 ₫/buổi, posted 2 days before seeding, 2 applications |
+| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-hoa` | Hòa → Cúc | `applied` (terms accepted). Hòa is verified and in no studio, so Cúc can accept her in S27.05 as a collaborator (the post's kind decides; the accept path) |
+| `recruitApplications/seed-recruit-cuc-ctv_seed-photographer-an` | An → Cúc | `applied` (terms accepted). An is also Cúc's S26 member, so Cúc can only decline it in S27.05 (accepting is `membership_conflict`; the refusal case) |
+| `studio_collaborations/seed-photographer-cuc_seed-photographer-dung` | Cúc ↔ Dũng | `active` collaborator since 10 days, default fee 600 000 ₫ (S27.06 on both sides; Cúc can offer a studio booking to Dũng in S26.04) |
+| `photographers/{uid}/private/recruit` | Cúc, Dũng, An, Hòa | Cúc `openPostCount` 1 and `activeCollabCount` 1; Dũng `activeCollabCount` 1; An and Hòa `openApplicationCount` 1 |
+| `photographers/{uid}.recruitMatchKeys` | every photographer | what `onPhotographerWrite` keeps: An (Hà Nội), Bình (Đà Nẵng), Dũng (Huế), Hòa (every TP.HCM area), Giang (Cần Thơ, no area → none); Cúc (studio) none |
+
+Who sees what: Lan and Minh (customers) see no "Tuyển thợ" tab and no "Đang tuyển" line on Cúc's profile (the rules
+refuse them `recruitPosts`); Bình (unverified) sees the post and "Xác minh để ứng tuyển" instead of "Ứng tuyển"; An and Hòa see
+the post with "Đã ứng tuyển"; Cúc sees it in "Tin tuyển của studio" (S27.05) with Hòa and An as applicants. Hòa is the
+only seeded provider serving TP.HCM, so a new HCM post by Cúc notifies Hòa (up to 3 notices per VN day).
+
 ## Discovery stats (S02)
 
 | Photographer | `startingPrice` | `stats.nextFreeDate` | `stats.completedCount` | Notes |
 |---|---|---|---|---|
-| An | 1 500 000 ₫ | computed from today & booked days | 3 | completed bookings: `recent`, `old`, `disputed` |
+| An | 1 500 000 ₫ | computed from today & booked days | 4 | completed bookings: `recent`, `old`, `disputed`, `completed-window` |
 | Bình | 1 200 000 ₫ | computed from today | 0 | unverified, `acceptingOrders: false` |
 | Cúc | 2 500 000 ₫ | computed from today and its `full` days | 0 | studio package `seed-service-studio-family` (S26) |
 | Dũng | `null` | computed from today | 0 | no services seeded |
+| Hòa | `null` | computed from today | 0 | no services seeded |
 
 | Item | Key / Path | Value | Notes |
 |---|---|---|---|
@@ -299,6 +322,48 @@ npm run clock -- events
 # eventClock: closed=0 completed=0 consentExpired=0 refunded=0 soonEvents=1 soonSent=1
 # Lan's inbox now has "Chụp phố đêm bắt đầu ngày mai" (or "sau 2 ngày"); a second run sends nothing.
 ```
+
+## Disputes (S18, #142)
+
+| Data | Parties | Notes |
+|---|---|---|
+| `disputes/seed-dispute-lan-an` | Lan ↔ An | `open`, reason `photos_missing`, opened 1 hour after `seed-booking-disputed` completed, built with the domain's dispute rules (window, whole-payment freeze: the payment has no milestones, so `dispute.prevEscrowStatus: held`); the booking carries `disputeId`, the payment `dispute.disputeId` |
+| `support_threads/dispute_seed-dispute-lan-an` + `messages/*` | Lan, An, staff | system line, Lan's description, a staff question (`seed-staff-admin`), An's answer: `awaitingStaff: true`, so it is listed by `npm run support -- list` |
+
+To try the other side of S18.01: `seed-booking-completed-window` (booking) and `seed-registration-lan-past-paid` (ticket) are inside their windows with the money held.
+
+### Staff CLI for disputes
+
+`resolveDispute` is callable by `seed-staff-admin` (claim `staffRole: 'admin'`). Until the S23.01
+dashboard exists, `tools/disputes.ts` is the staff side: `list [open|resolved]` (oldest first: id,
+opened at, subject, amount held, status), `show <id>` (the dispute, its evidence paths and the last 30
+thread messages) and `resolve`, which runs the same `resolveDispute` use case as the callable and then
+sends the refund through the live gateway, the fake rails until a licensed intermediary is wired
+(`dispatchDisputeRefund`). `--actor` must be a user with the
+admin claim; the note (5–500 characters) is shown to both parties. Staff answer in the dispute thread
+with `npm run support -- reply dispute_<id> "<text>" --actor seed-staff-admin`.
+
+The environment rules are those of `npm run awards`. Locally, `FIRESTORE_EMULATOR_HOST` and
+`FIREBASE_AUTH_EMULATOR_HOST` must both point at a local host and `GOOGLE_APPLICATION_CREDENTIALS`
+must be unset (a mixed environment is refused); `PAYOUT_ACCOUNT_KEY` defaults to the emulator key of
+`.secret.local`. On a real project (no emulator host) set `GOOGLE_APPLICATION_CREDENTIALS`,
+`GCLOUD_PROJECT` and `PAYOUT_ACCOUNT_KEY` (required there); the refund goes through the same live
+gateway as the callable. `npm run disputes -- --help` lists the commands; `list` shows at most 50 and
+says so when there are more.
+
+```bash
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>
+npm run disputes -- list
+npm run disputes -- show seed-dispute-lan-an
+npm run disputes -- resolve seed-dispute-lan-an split 40 "Thiếu một phần ảnh so với gói" --actor seed-staff-admin
+# seed-dispute-lan-an -> resolved split: refund 600.000₫, release 900.000₫
+# refund 01J…: done
+npm run disputes -- resolve <id> release "Ảnh đã giao đủ theo gói" --actor seed-staff-admin
+npm run disputes -- resolve <id> refund "Thợ không đến buổi chụp" --actor seed-staff-admin
+```
+
+Check: Lan and An each get "Khiếu nại đã có kết quả" (`onDisputeWrite`); the dispute thread is closed
+with the outcome line; the booking's `depositRefunded` grows by the refund.
 
 ## Staff CLI for support
 
@@ -339,6 +404,24 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
   ```
   The `onAccountDeletionUpdated` trigger will purge the account and tombstone `users/{uid}`.
 - To test data export: call `requestDataExport` to generate an export JSON under `exports/{uid}/{exportId}.json` in Storage.
+
+## Payment history (S22.01 · #141)
+
+`users/{uid}/payments/{paymentId}` (one row per payment that received money) and
+`users/{uid}/private/paymentTotals` (`held`, `refunding`), computed with the same pure functions as
+the `onPaymentWritten` / `onRefundWritten` triggers, so they exist before any trigger runs:
+
+| Payer | Rows |
+|---|---|
+| Lan | held (`seed-booking-accepted`, `-upcoming`, `-requested-binh`, the studio bookings; `-delivered` and `-revision` hold only the delivery milestone, 750 000), disputed (`seed-booking-disputed`), released (`seed-booking-completed-recent`, `-completed-old`, `-approved`), refunded to Vietcombank •••• 3456 (`seed-booking-cancelled`), her 250 000 ticket of the past workshop (held), and her Chụp ngay request `seed-instant-lan-cancelled` (Quận 1, TP.HCM; 690 000 by MoMo; no photographer found, cancelled by Lan, refunded in full: "đã huỷ", "Đã hoàn") |
+| Giang | her S21 fee, released to the platform ("Đã thanh toán") |
+
+Rows hold structured parts (`photographerName`, `serviceName`, `eventTitle`, `quantity`, `areaLabel`, `day`), never a composed title: the app writes the title in its own copy.
+
+The Chụp ngay request is real (request, payment, refund and ledger entries) and **terminal** on
+purpose: a seeded `searching` or `assigned` request would start the live matching clock or the job
+timers, hold money and block S22.02. To see "đang tìm thợ" and "Đang giữ" on a Chụp ngay row, pay a
+request on the emulators (S13).
 
 ## Điểm chụp (S29)
 

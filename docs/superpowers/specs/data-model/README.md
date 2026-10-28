@@ -116,7 +116,7 @@ Mọi ảnh người dùng tải lên đi qua `MediaUploader.upload(image, stora
 | `share` | `share` | 1600 px | 80 | ~300 KB | 2 MiB | `public, max-age=31536000` | `posts/…` (ảnh thực tế, ảnh sự kiện), `eventCovers/{uid}/{eventId}/{ulid}.jpg` |
 | `deliverySample` | `delivery_sample` | 1600 px | 75 | ~250 KB | 2 MiB | `private, max-age=31536000` | do #152 đặt |
 | `portfolio` | `portfolio` | 2048 px | 82 | ~500 KB | 3 MiB | `public, max-age=31536000` | `posts/{uid}/{postId}/{key}.jpg` |
-| `document` | `document` | 2048 px | 85 | ~600 KB | 3 MiB | `private, max-age=31536000` | `awardProofs/{uid}/{awardId}/{ulid}.jpg`; giấy tờ định danh do #135 đặt |
+| `document` | `document` | 2048 px | 85 | ~600 KB | 3 MiB | `private, max-age=31536000` | `awardProofs/{uid}/{awardId}/{ulid}.jpg`; `disputeEvidence/{uid}/{disputeId}/{ulid}.jpg` (#142, ≤ 5 mỗi khiếu nại, chỉ người tải và hai bên đọc); giấy tờ định danh do #135 đặt |
 
 Quy tắc:
 
@@ -157,6 +157,9 @@ Quy tắc:
 | `event_posts`, `post_hashtags` | U (bài `visible`); `pending/hidden` chỉ điều hành | Svc (`linkEventPosts`, `moderateEventContent`) |
 | `events` | U (không phải `draft`), người quản lý luôn | Svc (`create_event`/`update_event`): NAG host, A, X (sự kiện mình tạo) |
 | `event_registrations` | S, người quản lý sự kiện, A | Svc |
+| `disputes` | P (`parties`: khách và bên cung cấp), A | Svc (`open_dispute` của khách đã trả, `resolve_dispute` chỉ A) |
+| `dispute_evidence` (tệp) | người tải lên, P của khiếu nại, A | S tải lên dưới uid của mình trước khi khiếu nại tồn tại; xoá chỉ khi khiếu nại chưa tồn tại; sau đó giữ làm bằng chứng |
+| `support_threads`, `support_messages` | chủ luồng `help`; `participants` của luồng `dispute`; A, X | Svc (`send_support_message`) |
 | `badge_definitions` | U | A |
 | `user_badges` | U | Svc |
 | `badge_progress` | S | Svc |
@@ -181,7 +184,9 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 | `save_payout_account` | Nhiếp ảnh gia khai/đổi tài khoản nhận tiền (đổi cần đăng nhập lại ≤ 5 phút) | `savePayoutAccount` |
 | `refresh_earnings` | Tính lại các dòng Thu nhập và ba tổng của một người nhận | `onPaymentWritten`, `onPayoutWritten` |
 | `hold_payout`, `resume_payout` | Nhân viên giữ/tiếp tục một lô chưa chạy; CLI `payouts` gọi `create`/`execute`/`hold`/`resume` | CLI `payouts` |
-| `open_dispute`, `resolve_dispute` | Khiếu nại trong cửa sổ, admin xử lý | `openDispute`, `resolveDispute` |
+| `open_dispute` | Khách đã trả mở khiếu nại trong cửa sổ của booking (`shot` → mốc chụp, `approved` → mốc bàn giao, booking không có mốc → cả khoản) hoặc vé có phí (24 giờ sau khi sự kiện kết thúc): giữ mốc hoặc cả khoản (`disputed`), ghi bản sao `disputeId` lên booking/vé, mở luồng ba bên `dispute_{id}` với dòng hệ thống và mô tả. Một khiếu nại mở cho mỗi chủ thể (`conflict`); gửi lại cùng id trả về khiếu nại cũ (#142) | `openDispute` |
+| `resolve_dispute` | Staff `admin` quyết định thả / hoàn / chia (1–99%) số đang giữ trong một giao dịch: trả mốc/khoản về trạng thái trước, hoàn từ số đang giữ, thả phần còn lại; ghi `outcome` (ai, lúc nào, ghi chú), đóng luồng; sau khi ghi xong gửi lệnh hoàn qua cổng (`dispatch_dispute_refund`, quy tắc V2: lỗi ném thì giữ `pending` cho lần gửi lại) (#142) | `resolveDispute` (claim `staffRole == 'admin'`), CLI `npm run disputes -- resolve` (cùng use case; giao diện S23.01 ở phase 1.5) |
+| `notify_dispute_change` | Mở → `dispute_opened` cho bên cung cấp (không gửi với sự kiện nền tảng); có kết quả → `dispute_resolved` cho mọi bên (#142) | trigger `onDisputeWrite` |
 | `link_event_posts`, `moderate_event_content`, `join_event_chat` | Timeline theo hashtag, kiểm duyệt, nhóm chat sự kiện | `linkEventPosts`, `moderateEventContent`, `joinEventChat` |
 | `expire_requests`, `schedule_reminders` | Hết hạn 24 giờ, nhắc lịch | cron |
 | `submit_review` | Ghi đánh giá, tạo bài `real_shoot`, cập nhật thống kê, huy hiệu | `onReviewWrite` |
@@ -189,7 +194,7 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 | `register_event`, `cancel_registration`, `check_in_registration`, `release_expired_holds`, `close_events` | Đăng ký, vé, check‑in, dọn giữ chỗ | `registerEvent`, `cancelRegistration`, `checkInRegistration`, `releaseExpiredHolds`, `closeEvents` |
 | `get_contact_link` | Trả URL gọi/Zalo/WhatsApp nếu đã mở khoá | `getContactLink` |
 | `send_message_guard` | Áp hạn mức chat hỏi trước (3 tin tới khi nhiếp ảnh gia trả lời), đóng sau 14 ngày | trigger `messages` |
-| `send_support_message` | Gửi tin nhắn vào hộp thư hỗ trợ hoặc luồng khiếu nại (tự động tạo thread `help_{uid}` nếu chưa có) | `sendSupportMessage` |
+| `send_support_message` | Gửi tin nhắn vào hộp thư hỗ trợ hoặc luồng khiếu nại (tự động tạo thread `help_{uid}` nếu chưa có); luồng khiếu nại chỉ cho `parties` gửi khi khiếu nại còn mở (`not_eligible` sau khi có kết quả), vai `customer`/`provider`; tin của một bên báo `dispute_message` cho bên kia, tin của staff báo `support_reply` cho mọi bên (trigger `onSupportMessageCreated`) | `sendSupportMessage`, CLI `npm run support -- reply` (staff) |
 | `award_badges`, `reconcile_badges` | Trao/thu hồi huy hiệu | `onReviewWrite`, cron |
 | `recommend`, `record_recommendation_feedback` | Gợi ý và nhật ký | `recommend`, `recommendFeedback` |
 | `block_user`, `unblock_user` | Chặn/bỏ chặn người dùng, cập nhật chỉ mục hai chiều và đóng/mở chat 1-1 | `blockUser`, `unblockUser` |

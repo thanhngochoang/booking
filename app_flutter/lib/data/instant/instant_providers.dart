@@ -21,6 +21,13 @@ final instantConfigProvider = FutureProvider.autoDispose<InstantConfig>(
   (ref) => ref.watch(instantRepositoryProvider).config(),
 );
 
+/// The signed-in customer's open request (S02.01 card), read once while the
+/// card is shown: a `get`, not a listener (plan cost table). Invalidated when
+/// S13.01 creates one.
+final instantActiveRequestIdProvider = FutureProvider.autoDispose<String?>(
+  (ref) => ref.watch(instantRepositoryProvider).myActiveRequestId(),
+);
+
 /// The signed-in photographer's presence (S14.01, S06.01 card).
 final livePresenceProvider = StreamProvider.autoDispose<LiveShutterState?>(
   (ref) => ref.watch(instantRepositoryProvider).watchPresence(),

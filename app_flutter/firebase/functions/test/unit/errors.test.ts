@@ -57,6 +57,8 @@ describe('toHttpsError', () => {
       offer_expired: 'failed-precondition',
       already_assigned: 'failed-precondition',
       outside_service_area: 'failed-precondition',
+      collab_full: 'resource-exhausted',
+      recruit_blocked: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });
@@ -68,6 +70,25 @@ describe('toHttpsError', () => {
       assert.equal(e.message, code);
       assert.deepEqual(e.details, { code });
     }
+  });
+
+  // S27 (#151) Decision 10
+  test('collab_full → resource-exhausted', () => {
+    const e = toHttpsError(new DomainError('collab_full'));
+    assert.equal(e.code, 'resource-exhausted');
+    assert.deepEqual(e.details, { code: 'collab_full' });
+  });
+
+  test('recruit_blocked → failed-precondition', () => {
+    const e = toHttpsError(new DomainError('recruit_blocked'));
+    assert.equal(e.code, 'failed-precondition');
+    assert.deepEqual(e.details, { code: 'recruit_blocked' });
+  });
+
+  test('a field error carries details.field (S27 contact in a post title)', () => {
+    const e = toHttpsError(new DomainError('invalid_argument', 'title.contact'));
+    assert.equal(e.code, 'invalid-argument');
+    assert.deepEqual(e.details, { code: 'invalid_argument', field: 'title.contact' });
   });
 
   test('reauth_required maps to failed-precondition with details.code', () => {

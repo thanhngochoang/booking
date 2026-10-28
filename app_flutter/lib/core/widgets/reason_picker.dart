@@ -24,6 +24,7 @@ class ReasonPicker extends StatefulWidget {
     this.onOtherText,
     this.otherMinLength = 0,
     this.otherMaxLength = 200,
+    this.otherField = true,
   });
 
   final List<String> reasons;
@@ -42,6 +43,10 @@ class ReasonPicker extends StatefulWidget {
 
   /// Maximum character length allowed for the "other" explanation.
   final int otherMaxLength;
+
+  /// Whether selecting the "other" option reveals the free-text field. Off
+  /// when the screen has its own description field (S18.01).
+  final bool otherField;
 
   @override
   State<ReasonPicker> createState() => _ReasonPickerState();
@@ -72,7 +77,9 @@ class _ReasonPickerState extends State<ReasonPicker> {
   }
 
   bool get _isOtherSelected =>
-      widget.selected != null && _isOther(widget.selected!);
+      widget.otherField &&
+      widget.selected != null &&
+      _isOther(widget.selected!);
 
   @override
   Widget build(BuildContext context) {

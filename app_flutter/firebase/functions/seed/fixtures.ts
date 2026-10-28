@@ -25,6 +25,13 @@ import {
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  EMPTY_PAYER_SUBJECT,
+  payerRowOf,
+  payerTotals,
+  type InstantRequest,
+  type Refund,
+  type PayerPaymentRow,
+  type PayerSubjectView,
   emptyVerification,
   fakeIdNumberOf,
   feeFor,
@@ -45,7 +52,12 @@ import {
   afterMessage,
   chatIdFor,
   chatPreview,
+  EMPTY_COUNTERS,
+  recruitFilterKeys,
+  recruitMatchKeys,
+  recruitMatchKeysOf,
   type Chat,
+  type RecruitCounters,
   type EarningItem,
   type Message,
   type EventRecord,
@@ -66,7 +78,21 @@ import {
   type JobRecord,
   type QuoteRecord,
   type JobMatchRecord,
+  disputeOpenedText,
+  DISPUTE_WINDOW_HOURS,
+  disputeEscrowPayment,
+  disputeThreadId,
+  disputeWindow,
+  parseOpenDisputeInput,
+  ticketIdempotencyKey,
+  ticketPayeeOf,
+  truncateGraphemes,
+  type Dispute,
+  type DisputeReason,
+  type SupportMessage,
+  type SupportThread,
 } from '@photobooking/domain';
+import { Timestamp } from 'firebase-admin/firestore';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
@@ -74,9 +100,33 @@ import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
 import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
 import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
 import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
-import { ledgerEntryToFirestore, paymentToFirestore } from '../src/infra/booking_firestore.js';
+import {
+  bookingFromFirestore,
+  ledgerEntryToFirestore,
+  paymentFromFirestore,
+  paymentToFirestore,
+  refundFromFirestore,
+  refundToFirestore,
+} from '../src/infra/booking_firestore.js';
+import { instantRequestToFirestore } from '../src/infra/instant_firestore.js';
+import {
+  PAYER_PAYMENTS,
+  PAYMENT_TOTALS_DOC,
+  bookingSubjectOf,
+  instantSubjectOf,
+  payerRowToFirestore,
+  ticketSubjectOf,
+} from '../src/infra/payer_history_firestore.js';
+import { bookingDisputeView, disputeToFirestore } from '../src/infra/dispute_firestore.js';
+import { supportMessageToFirestore, supportThreadToFirestore } from '../src/infra/support_firestore.js';
 import { relationToFirestore } from '../src/infra/studio_firestore.js';
 import { jobToFirestore, quoteToFirestore, matchToFirestore } from '../src/infra/job_firestore.js';
+import {
+  applicationToDoc,
+  collaborationToDoc,
+  countersToDoc,
+  recruitPostToDoc,
+} from '../src/infra/recruit_mapping.js';
 import {
   spotToFirestore,
   scheduleToFirestore,
@@ -99,6 +149,8 @@ export const CUC = 'seed-photographer-cuc';
 export const DUNG = 'seed-photographer-dung';
 /** Unverified photographer whose S21 verification waits for staff (`npm run verifications -- approve`). */
 export const GIANG = 'seed-photographer-giang';
+/** Verified individual in TP.HCM, in no studio: the S27 applicant Cúc can accept (#151). */
+export const HOA = 'seed-photographer-hoa';
 /** Staff account with the custom claim `staffRole: 'admin'` (reviews awards; see `applySeed`). */
 export const ADMIN = 'seed-staff-admin';
 
@@ -121,6 +173,7 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: CUC, email: 'cuc.studio@seed.test', displayName: 'Cúc Studio (seed)', role: 'photographer' },
   { uid: DUNG, email: 'dung.artist@seed.test', displayName: 'Dũng (seed, nghệ sĩ)', role: 'photographer' },
   { uid: GIANG, email: 'giang.pending@seed.test', displayName: 'Giang (seed, chờ duyệt)', role: 'photographer', phoneNumber: '+84976000001' },
+  { uid: HOA, email: 'hoa.ctv@seed.test', displayName: 'Hòa (seed, CTV)', role: 'photographer' },
   { uid: ADMIN, email: 'admin.staff@seed.test', displayName: 'Admin (seed, nhân viên)', role: 'customer', staffRole: 'admin' },
 ];
 
@@ -196,6 +249,16 @@ export const SEED_PHOTOGRAPHERS: readonly SeedPhotographer[] = [
     channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
     numbers: { phone: '+84976000001' },
   },
+  {
+    uid: HOA,
+    verified: true,
+    bio: 'Chụp cưới và gia đình, nhận làm cộng tác viên.',
+    city: 'TP.HCM',
+    radiusKm: 20,
+    specialties: ['wedding', 'family'],
+    channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    numbers: { phone: '+84909000001' },
+  },
 ];
 
 export interface SeedService {
@@ -261,8 +324,10 @@ export interface SeedBooking {
   readonly place: string;
   /** Days between completion and seeding; null when not completed. */
   readonly completedDaysAgo: number | null;
-  /** The deposit is held back by a dispute; the text is what the customer wrote. */
-  readonly dispute?: { readonly reason: string };
+  /** Lan's open S18 dispute on it (`seedDispute`): the reason code and what she wrote. */
+  readonly dispute?: { readonly reason: DisputeReason; readonly description: string };
+  /** Completed inside the 24-hour dispute window: the money is still held (S18.01 to try). */
+  readonly heldInWindow?: true;
   /** A studio booking (#136): its member, or null while unassigned. */
   readonly studio?: { readonly assigneeId: string | null };
 }
@@ -274,8 +339,10 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-cancelled', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'cancelled', date: '2026-10-22', start: '08:00', end: '10:00', place: 'Văn Miếu, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-completed-recent', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-27', start: '08:00', end: '10:00', place: 'Hồ Tây, Hà Nội', completedDaysAgo: 3 },
   { id: 'seed-booking-completed-old', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-08-20', start: '08:00', end: '10:00', place: 'Phố cổ, Hà Nội', completedDaysAgo: 40 },
-  // Completed 10 hours before seeding, then disputed by Lan: the money stays on hold (S06.05 row with a reason).
-  { id: 'seed-booking-disputed', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-29', start: '08:00', end: '10:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: 10 / 24, dispute: { reason: 'Ảnh giao thiếu so với gói' } },
+  // Completed 10 hours before seeding, then disputed by Lan an hour later (`seed-dispute-lan-an`): the money stays on hold (S06.05 row with a reason).
+  { id: 'seed-booking-disputed', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-29', start: '08:00', end: '10:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: 10 / 24, dispute: { reason: 'photos_missing', description: 'Ảnh giao thiếu so với gói: gói 2 giờ có 40 ảnh chỉnh, mới nhận 20 ảnh.' } },
+  // S18.01 to try: completed 2 hours before seeding, money still held, 22 hours left to report a problem.
+  { id: 'seed-booking-completed-window', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-30', start: '14:00', end: '16:00', place: 'Nhà hát Lớn, Hà Nội', completedDaysAgo: 2 / 24, heldInWindow: true },
   // Two-layer delivery seed bookings (S05/S06):
   { id: 'seed-booking-shot', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'shot', date: '2026-10-14', start: '14:00', end: '16:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-delivered', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'delivered', date: '2026-10-13', start: '14:00', end: '16:00', place: 'Hồ Tây, Hà Nội', completedDaysAgo: null },
@@ -616,6 +683,121 @@ export function jobDocuments(now: Date): SeedDocument[] {
   return docs;
 }
 
+// ---- S27 studio recruiting (#151) ----
+
+export const SEED_RECRUIT_POST_CUC = 'seed-recruit-cuc-ctv';
+export const SEED_COLLAB_DEFAULT_FEE = 600_000;
+
+/**
+ * Cúc's open collaborator post (TP.HCM Q1/Q3, cưới and gia đình; keys computed by the domain), two applied
+ * applications to it: Hòa's (a verified individual in no studio: Cúc can accept it, the S27.05 accept path) and
+ * An's (An is also Cúc's S26 member, so Cúc can only decline it: accepting is membership_conflict), the active
+ * collaboration Cúc–Dũng (default fee 600.000₫) and the counters these imply.
+ */
+function recruitDocuments(now: Date): SeedDocument[] {
+  const createdAt = new Date(now.getTime() - 2 * DAY_MS);
+  const cuc = SEED_USERS.find((u) => u.uid === CUC)?.displayName ?? '';
+  const dung = SEED_USERS.find((u) => u.uid === DUNG)?.displayName ?? '';
+  const an = SEED_USERS.find((u) => u.uid === AN)?.displayName ?? '';
+  const hoa = SEED_USERS.find((u) => u.uid === HOA)?.displayName ?? '';
+  const areas = ['hcm-q1', 'hcm-q3'];
+  const specialties = ['wedding', 'family'];
+  const title = 'Tuyển CTV chụp cưới cuối tuần';
+  const appliedAt = new Date(now.getTime() - DAY_MS);
+  const hoaAppliedAt = new Date(now.getTime() - 3 * HOUR_MS);
+  const activeAt = new Date(now.getTime() - 10 * DAY_MS);
+  const counters = (patch: Partial<RecruitCounters>): Record<string, unknown> => countersToDoc({ ...EMPTY_COUNTERS, ...patch });
+  return [
+    {
+      path: `recruitPosts/${SEED_RECRUIT_POST_CUC}`,
+      data: recruitPostToDoc({
+        id: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        studio: { name: cuc, avatarUrl: null, businessVerified: false },
+        kind: 'collaborator',
+        title,
+        specialties,
+        areas,
+        frequency: 'weekly',
+        feeHint: { type: 'per_shoot', amount: 800_000 },
+        requirements: 'Có máy full-frame, đã chụp cưới ít nhất một năm.',
+        status: 'open',
+        renewed: false,
+        applicationCount: 2,
+        matchKeys: recruitMatchKeys(areas, specialties),
+        filterKeys: recruitFilterKeys({ kind: 'collaborator', areas, specialties }),
+        createdAt,
+        updatedAt: hoaAppliedAt,
+        expiresAt: new Date(createdAt.getTime() + 30 * DAY_MS),
+        closedAt: null,
+      }),
+    },
+    {
+      path: `recruitApplications/${SEED_RECRUIT_POST_CUC}_${AN}`,
+      data: applicationToDoc({
+        id: `${SEED_RECRUIT_POST_CUC}_${AN}`,
+        postId: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        applicantId: AN,
+        kind: 'collaborator',
+        postTitle: title,
+        applicant: { name: an, avatarUrl: null },
+        status: 'applied',
+        message: 'Em chụp cưới 3 năm, rảnh cuối tuần.',
+        samplePostIds: [],
+        termsAcceptedAt: appliedAt,
+        createdAt: appliedAt,
+        expiresAt: new Date(appliedAt.getTime() + 7 * DAY_MS),
+        respondedAt: null,
+      }),
+    },
+    {
+      path: `recruitApplications/${SEED_RECRUIT_POST_CUC}_${HOA}`,
+      data: applicationToDoc({
+        id: `${SEED_RECRUIT_POST_CUC}_${HOA}`,
+        postId: SEED_RECRUIT_POST_CUC,
+        studioId: CUC,
+        applicantId: HOA,
+        kind: 'collaborator',
+        postTitle: title,
+        applicant: { name: hoa, avatarUrl: null },
+        status: 'applied',
+        message: 'Em ở Quận 3, chụp cưới 2 năm, nhận được các buổi cuối tuần.',
+        samplePostIds: [],
+        termsAcceptedAt: hoaAppliedAt,
+        createdAt: hoaAppliedAt,
+        expiresAt: new Date(hoaAppliedAt.getTime() + 7 * DAY_MS),
+        respondedAt: null,
+      }),
+    },
+    {
+      path: `studio_collaborations/${CUC}_${DUNG}`,
+      data: collaborationToDoc({
+        id: `${CUC}_${DUNG}`,
+        studioId: CUC,
+        collaboratorId: DUNG,
+        studio: { name: cuc, avatarUrl: null },
+        collaborator: { name: dung, avatarUrl: null },
+        status: 'active',
+        initiatedBy: 'studio',
+        applicationId: null,
+        defaultFee: SEED_COLLAB_DEFAULT_FEE,
+        termsAcceptedAt: activeAt,
+        createdAt: new Date(activeAt.getTime() - DAY_MS),
+        expiresAt: new Date(activeAt.getTime() + 6 * DAY_MS),
+        activeAt,
+        endedAt: null,
+        endedBy: null,
+        updatedAt: activeAt,
+      }),
+    },
+    { path: `photographers/${CUC}/private/recruit`, data: counters({ openPostCount: 1, activeCollabCount: 1 }) },
+    { path: `photographers/${DUNG}/private/recruit`, data: counters({ activeCollabCount: 1 }) },
+    { path: `photographers/${AN}/private/recruit`, data: counters({ openApplicationCount: 1 }) },
+    { path: `photographers/${HOA}/private/recruit`, data: counters({ openApplicationCount: 1 }) },
+  ];
+}
+
 /** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
 export const SEED_AN_ACCOUNT = { id: 'seed-account-an-1', bankCode: 'VCB', number: '0123456789', holderName: 'NGUYEN VAN AN' } as const;
 export const SEED_PAYOUT_AN = 'seed-payout-an-1';
@@ -851,6 +1033,7 @@ const TIMELINE: Readonly<Record<string, readonly string[]>> = {
 
 function escrowOf(b: SeedBooking): string {
   if (b.dispute !== undefined) return 'disputed';
+  if (b.heldInWindow === true) return 'held';
   if (b.id === SEED_PAID_OUT_BOOKING) return 'released';
   return b.status === 'completed' || b.status === 'approved' ? 'released' : b.status === 'cancelled' ? 'refunded' : 'held';
 }
@@ -937,6 +1120,111 @@ function studioFieldsOf(b: SeedBooking, createdAt: Date, assignedAt: Date): Reco
   };
 }
 
+export const SEED_DISPUTE_LAN_AN = 'seed-dispute-lan-an';
+export const SEED_BOOKING_COMPLETED_WINDOW = 'seed-booking-completed-window';
+
+/**
+ * S18 (#142, Decision 17): Lan's open dispute on a seeded booking, opened an hour after completion and
+ * built with the domain's own rules (input parser, dispute window, whole-payment freeze of a payment
+ * without milestones, thread id), as `openDispute` would: the dispute, the payment's `dispute` record,
+ * and its thread with the system line, Lan's description, a staff question and An's answer (so the
+ * thread waits for staff).
+ */
+function seedDispute(
+  b: SeedBooking,
+  bData: Record<string, unknown>,
+  paymentData: Record<string, unknown>,
+  paymentId: string,
+): { dispute: Dispute; paymentDispute: unknown; docs: SeedDocument[] } {
+  if (b.dispute === undefined) throw new Error(`seed: ${b.id} has no dispute`);
+  const booking = bookingFromFirestore(b.id, bData);
+  if (booking === null) throw new Error(`seed: ${b.id} does not map to a booking`);
+  const nameOf = (uid: string) => SEED_USERS.find((u) => u.uid === uid)?.displayName ?? '';
+  const view = bookingDisputeView({ ...booking, disputeId: null }, { name: nameOf(b.photographerId), avatarUrl: null });
+  const completedAt = bData.completedAt as Date;
+  const openedAt = new Date(completedAt.getTime() + HOUR_MS);
+  const at = openedAt.toISOString();
+  disputeWindow(view, openedAt, false);
+  const input = parseOpenDisputeInput(
+    { disputeId: SEED_DISPUTE_LAN_AN, subjectType: 'booking', subjectId: b.id, reason: b.dispute.reason, description: b.dispute.description, evidencePaths: [] },
+    b.customerId,
+  );
+  const createdAt = (paymentData.createdAt as Date).toISOString();
+  const held: Payment = {
+    id: paymentId, subjectType: 'booking', subjectId: b.id, payerId: b.customerId, payeeId: b.photographerId, provider: 'fake',
+    amount: paymentData.amount as number, status: 'paid', escrowStatus: 'held', idempotencyKey: paymentData.idempotencyKey as string,
+    createdAt, updatedAt: createdAt,
+  };
+  const frozen: Payment = {
+    ...disputeEscrowPayment(held, openedAt),
+    dispute: { reason: input.reason, openedAt: at, disputeId: input.disputeId, milestone: null, prevEscrowStatus: 'held' },
+  };
+  if (frozen.escrowStatus !== paymentData.escrowStatus) throw new Error('seed: the disputed payment is not frozen');
+  const dispute: Dispute = {
+    id: input.disputeId,
+    subjectType: 'booking',
+    subjectId: b.id,
+    eventId: null,
+    paymentId,
+    customerId: b.customerId,
+    providerId: b.photographerId,
+    parties: [b.customerId, b.photographerId],
+    openedBy: 'customer',
+    reason: input.reason,
+    description: input.description,
+    evidencePaths: input.evidencePaths,
+    snapshot: view.snapshot,
+    amountHeld: held.amount,
+    status: 'open',
+    outcome: null,
+    threadId: disputeThreadId(input.disputeId),
+    createdAt: at,
+    updatedAt: at,
+    resolvedAt: null,
+    version: 1,
+  };
+  const msgAt = (ms: number) => new Date(openedAt.getTime() + ms).toISOString();
+  const message = (i: number, m: Omit<SupportMessage, 'id' | 'threadId'>): SupportMessage =>
+    ({ id: `seed-msg-${input.disputeId}-${i}`, threadId: dispute.threadId, ...m });
+  const messages: SupportMessage[] = [
+    message(1, { senderId: null, senderRole: 'system', senderName: 'Hệ thống', body: disputeOpenedText(at), createdAt: at }),
+    message(2, { senderId: b.customerId, senderRole: 'customer', senderName: nameOf(b.customerId), body: input.description, createdAt: msgAt(1), opening: true }),
+    message(3, {
+      senderId: ADMIN, senderRole: 'staff', senderName: 'Hỗ trợ',
+      body: 'Chào chị Lan, hỗ trợ đã nhận khiếu nại. Anh An gửi giúp danh sách ảnh đã giao nhé.', createdAt: msgAt(2 * HOUR_MS),
+    }),
+    message(4, {
+      senderId: b.photographerId, senderRole: 'provider', senderName: nameOf(b.photographerId),
+      body: 'Em đã giao 20 ảnh chỉnh, 20 ảnh còn lại em gửi trong hôm nay ạ.', createdAt: msgAt(3 * HOUR_MS),
+    }),
+  ];
+  const last = messages[messages.length - 1] as SupportMessage;
+  const thread: SupportThread = {
+    id: dispute.threadId,
+    kind: 'dispute',
+    ownerId: null,
+    disputeId: dispute.id,
+    participants: dispute.parties,
+    status: 'open',
+    awaitingStaff: true,
+    lastMessageAt: last.createdAt,
+    lastMessagePreview: truncateGraphemes(last.body, 80),
+    lastSenderRole: last.senderRole,
+    rate: {},
+    createdAt: at,
+    updatedAt: last.createdAt,
+  };
+  return {
+    dispute,
+    paymentDispute: paymentToFirestore(frozen).dispute,
+    docs: [
+      { path: `disputes/${dispute.id}`, data: disputeToFirestore(dispute) },
+      { path: `support_threads/${thread.id}`, data: supportThreadToFirestore(thread) },
+      ...messages.map((m) => ({ path: `support_threads/${thread.id}/messages/${m.id}`, data: supportMessageToFirestore(m) })),
+    ],
+  };
+}
+
 /** Every Firestore document of the seed, in write order. Pure: same `now`, same documents. */
 export function seedDocuments(now: Date): SeedDocument[] {
   const at = SEED_CREATED_AT;
@@ -1010,6 +1298,13 @@ export function seedDocuments(now: Date): SeedDocument[] {
         // S26: the invite-search key, Cúc's member counts (An is verified) and An's membership (#136).
         nameKey: foldNameKey(SEED_USERS.find((u) => u.uid === p.uid)?.displayName ?? ''),
         ...(p.uid === CUC ? { memberCount: 1, assignableMembers: 1 } : {}),
+        // S27 (#151 Decision 7): what onPhotographerWrite keeps (Cúc, a studio, matches nothing).
+        recruitMatchKeys: [...recruitMatchKeysOf({
+          role: SEED_USERS.find((u) => u.uid === p.uid)?.role,
+          providerType: p.providerType,
+          serviceArea: { city: p.city, radiusKm: p.radiusKm },
+          specialties: p.specialties,
+        })].sort(),
         ...(p.uid === AN
           ? { studioId: CUC, studioJoinedAt: new Date(now.getTime() - SEED_STUDIO_JOINED_DAYS_AGO * DAY_MS) }
           : {}),
@@ -1143,6 +1438,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       data: { userId: sp.userId, photographerId: sp.photographerId, createdAt: at },
     });
   }
+  const disputeDocs: SeedDocument[] = [];
   for (const b of [...SEED_BOOKINGS, ...studioSeedBookings(now)]) {
     const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
     if (!service) continue;
@@ -1199,10 +1495,17 @@ export function seedDocuments(now: Date): SeedDocument[] {
       payer: seedPayer,
       refundedAmount,
       ...(paidOut ? { payoutId: SEED_PAYOUT_AN } : {}),
-      ...(b.dispute !== undefined ? { dispute: { reason: b.dispute.reason, openedAt: new Date(updatedAt.getTime() + HOUR_MS) } } : {}),
+      // Legacy completion: released by the booking clock once the dispute window is over.
+      ...(b.heldInWindow === true ? { releaseAfter: new Date(updatedAt.getTime() + DISPUTE_WINDOW_HOURS * HOUR_MS) } : {}),
       createdAt,
       updatedAt,
     };
+    if (b.dispute !== undefined) {
+      const opened = seedDispute(b, bData, paymentData, paymentId);
+      paymentData.dispute = opened.paymentDispute;
+      bData.disputeId = opened.dispute.id;
+      disputeDocs.push(...opened.docs);
+    }
     docs.push({ path: `payments/${paymentId}`, data: paymentData });
 
     // Ledger entry for deposit
@@ -1220,7 +1523,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       },
     });
 
-    if (b.status === 'completed' && b.dispute === undefined) {
+    if (b.status === 'completed' && b.dispute === undefined && b.heldInWindow !== true) {
       docs.push({
         path: `ledger_entries/seed-ledger-${b.id}-rel`,
         data: {
@@ -1378,13 +1681,16 @@ export function seedDocuments(now: Date): SeedDocument[] {
       });
     }
   }
+  docs.push(...disputeDocs);
   docs.push(...reviewDocuments(now));
   docs.push(...notificationAndBadgeDocuments(now));
-  docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
+  // After the events: the projection also counts An's paid ticket payment.
+  docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
   docs.push(...verificationDocuments(now));
   docs.push(...studioMemberDocuments(now));
+  docs.push(...recruitDocuments(now));
   docs.push(...jobDocuments(now));
   for (const l of studioLoads(now)) {
     docs.push({
@@ -1393,6 +1699,9 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
     if (l.full) docs.push({ path: `availability/${CUC}/days/${l.day}`, data: { state: 'full', updatedAt: now } });
   }
+  // S22.01 (#141): Lan's refunded Chụp ngay request, then the history of every payment (bookings, tickets, the S21 fee, Chụp ngay).
+  docs.push(...instantHistoryDocuments(now));
+  docs.push(...payerHistoryDocuments(now, docs));
 
   // Chụp ngay server config (#140, plan Task 4): price list v1, fee 0, arrived-cancel split 50.
   docs.push({ path: 'instant_config/current', data: { ...SEED_INSTANT_CONFIG, updatedAt: at } });
@@ -1515,7 +1824,7 @@ function verificationDocuments(now: Date): SeedDocument[] {
   };
 
   // Approved: mirrors `verified: true` on photographers/{uid}. An's identity doc is the payout seed's.
-  for (const [uid, name] of [[AN, SEED_AN_LEGAL_NAME.toUpperCase()], [CUC, SEED_CUC_LEGAL_NAME], [DUNG, 'LÊ VĂN DŨNG']] as const) {
+  for (const [uid, name] of [[AN, SEED_AN_LEGAL_NAME.toUpperCase()], [CUC, SEED_CUC_LEGAL_NAME], [DUNG, 'LÊ VĂN DŨNG'], [HOA, 'PHẠM THỊ HÒA']] as const) {
     docs.push({ path: `verifications/${uid}`, data: verificationToFirestore(done(uid, name, at, 'approved')) });
   }
   identity(CUC, SEED_CUC_LEGAL_NAME, '1988-03-08', 'female', at);
@@ -1777,6 +2086,32 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
 
 
 /**
+ * The earnings row's subject of a seeded payment, as the live adapter reads it: a booking (Lan, the
+ * service, the day) or a paid ticket (the attendee, the event title, its Vietnam day); null otherwise.
+ */
+function earningSubjectOf(
+  x: Record<string, unknown>,
+  existing: readonly SeedDocument[],
+): { counterpartName: string; label: string; day: string } | null {
+  if (x.subjectType === 'event_registration') {
+    if (x.status !== 'paid' || typeof x.eventId !== 'string') return null;
+    const r = existing.find((d) => d.path === `events/${x.eventId as string}/registrations/${x.subjectId as string}`)?.data;
+    if (r === undefined) return null;
+    const ev = (r.event ?? {}) as { title?: unknown; startAt?: unknown };
+    const start = ev.startAt instanceof Timestamp ? ev.startAt.toDate() : ev.startAt instanceof Date ? ev.startAt : null;
+    return {
+      counterpartName: typeof r.userName === 'string' ? r.userName : '',
+      label: typeof ev.title === 'string' ? ev.title : '',
+      day: start === null ? '' : formatVnDate(start),
+    };
+  }
+  const booking = SEED_BOOKINGS.find((b) => b.id === x.subjectId);
+  const service = SEED_SERVICES.find((s) => s.id === booking?.serviceId);
+  if (booking === undefined || service === undefined) return null;
+  return { counterpartName: 'Lan (seed)', label: service.name, day: booking.date };
+}
+
+/**
  * An's payout account (matched, with her verified name), one paid payout with its tax line (#134),
  * and the `earnings` projection of every
  * photographer with payments, computed by the same pure functions the triggers use so the seed
@@ -1882,13 +2217,13 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     if (!/^payments\/[^/]+$/.test(d.path)) continue;
     const id = d.path.slice('payments/'.length);
     const x = d.data;
-    const booking = SEED_BOOKINGS.find((b) => b.id === x.subjectId);
-    const service = SEED_SERVICES.find((s) => s.id === booking?.serviceId);
-    if (booking === undefined || service === undefined) continue;
+    const subject = earningSubjectOf(x, existing);
+    if (subject === null) continue;
     const payment: Payment = {
       id,
-      subjectType: 'booking',
-      subjectId: booking.id,
+      subjectType: x.subjectType === 'event_registration' ? 'event_registration' : 'booking',
+      subjectId: x.subjectId as string,
+      ...(typeof x.eventId === 'string' ? { eventId: x.eventId } : {}),
       payerId: x.payerId as string,
       payeeId: x.payeeId as string,
       provider: 'fake',
@@ -1907,9 +2242,7 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
       payment,
       refunded,
       subject: {
-        counterpartName: 'Lan (seed)',
-        label: service.name,
-        day: booking.date,
+        ...subject,
         milestones: payment.milestones
           ? {
               done: payment.milestones.filter((m) => m.status === 'released' || m.status === 'paid_out').length,
@@ -1944,6 +2277,129 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
   return docs;
 }
 
+/** Lan's Chụp ngay request that found nobody (S13, S22.01): cancelled after no match, paid by MoMo and refunded in full. */
+export const SEED_INSTANT_LAN = 'seed-instant-lan-cancelled';
+export const SEED_INSTANT_LAN_PAYMENT = 'seed-payment-instant-lan';
+const SEED_INSTANT_LAN_REFUND = 'seed-refund-instant-lan';
+
+/**
+ * A real, terminal Chụp ngay request of Lan with its payment, refund and ledger entries, so S22.01
+ * shows a Chụp ngay row backed by real documents. Terminal on purpose (cancelled by Lan after no match,
+ * no deadline): a live `searching` or `assigned` request would start the matching clock or the job
+ * timers, hold money and block S22.02. Nothing is held, so the totals and S22.02 agree.
+ */
+function instantHistoryDocuments(now: Date): SeedDocument[] {
+  const created = new Date(now.getTime() - 3 * DAY_MS);
+  const paid = new Date(created.getTime() + 2 * 60_000);
+  const ended = new Date(paid.getTime() + 15 * 60_000);
+  const pkg = SEED_INSTANT_CONFIG.packages.find((x) => x.code === 'p60');
+  if (pkg === undefined) throw new Error('seed: instant package p60 is missing');
+  const amount = pkg.priceVnd;
+  const area = SEED_INSTANT_CONFIG.areas[0];
+  if (area === undefined) throw new Error('seed: instant area is missing');
+  const request: InstantRequest = {
+    id: SEED_INSTANT_LAN, customerId: LAN, customerName: 'Lan (seed)', customerAvatarUrl: null,
+    status: 'cancelled_by_customer', active: false,
+    packageCode: pkg.code, durationMin: pkg.durationMin, photos: pkg.photos, genre: 'portrait', note: '',
+    cityId: 'hcm', meetPoint: { lat: area.lat, lng: area.lng, name: 'Nhà hát Thành phố' }, areaLabel: area.name,
+    amountVnd: amount, earningVnd: amount,
+    priceListVersion: SEED_INSTANT_CONFIG.priceListVersion, platformFeeBp: SEED_INSTANT_CONFIG.platformFeeBp,
+    arrivedCancelPhotographerPercent: SEED_INSTANT_CONFIG.instantArrivedCancelPhotographerPercent,
+    committedAt: paid,
+    payMethod: 'momo', provider: 'fake', paymentId: SEED_INSTANT_LAN_PAYMENT, paidAt: paid, paymentDeadlineAt: null,
+    refundId: SEED_INSTANT_LAN_REFUND, refundStatus: 'done',
+    round: 1, invitedTotal: 0, roundsWithInvites: 0, candidates: [], offers: [], excludedIds: [], pendingInviteIds: [], roundEnded: true,
+    photographerId: null, photographer: null, chatId: null, etaMinutes: null,
+    assignedAt: null, freeCancelUntil: null, lateDeadlineAt: null, startedRouteAt: null, arrivedAt: null, forcedArrivalAccuracyM: null,
+    startedAt: null, shootEndsAt: null, finishedAt: null, completedAt: null,
+    cancelledAt: ended, cancelledBy: 'customer', cancelRule: 'full_refund', refundPercent: 100, feeVnd: 0,
+    searchDeadlineAt: null, lastActivityAt: ended, nextDeadlineAt: null, createdAt: created, updatedAt: ended, version: 1,
+  };
+  const at = (d: Date) => d.toISOString();
+  const payment: Payment = {
+    id: SEED_INSTANT_LAN_PAYMENT, subjectType: 'instant_request', subjectId: SEED_INSTANT_LAN, payerId: LAN, payeeId: '',
+    provider: 'fake', amount, status: 'refunded', escrowStatus: 'refunded', idempotencyKey: `seed_${SEED_INSTANT_LAN}_momo`,
+    method: 'momo', receivedAmount: amount, refundedAmount: amount, feeBp: 0,
+    paidAt: at(paid), createdAt: at(created), updatedAt: at(ended),
+  };
+  const refund: Refund = {
+    id: SEED_INSTANT_LAN_REFUND, paymentId: payment.id, subjectType: 'instant_request', amount, percent: 100, status: 'done',
+    manual: false, fromEscrow: true, method: 'gateway', destination: null, attempts: 1, lastAttemptAt: at(ended),
+    reason: 'full_refund', createdAt: at(ended), updatedAt: at(ended),
+  };
+  const entry = (suffix: string, type: 'payment_received' | 'refund_issued', owner: string, value: number, when: Date) => ({
+    path: `ledger_entries/seed-ledger-${SEED_INSTANT_LAN}-${suffix}`,
+    data: ledgerEntryToFirestore({
+      id: `seed-ledger-${SEED_INSTANT_LAN}-${suffix}`, type, paymentId: payment.id,
+      ...(type === 'refund_issued' ? { refundId: refund.id } : {}),
+      subjectType: 'instant_request', subjectId: SEED_INSTANT_LAN, accountOwnerId: owner, amount: value, at: at(when),
+    }) as Record<string, unknown>,
+  });
+  return [
+    { path: `instant_requests/${SEED_INSTANT_LAN}`, data: instantRequestToFirestore(request) as Record<string, unknown> },
+    { path: `payments/${payment.id}`, data: paymentToFirestore(payment) as Record<string, unknown> },
+    { path: `refunds/${refund.id}`, data: refundToFirestore(refund) as Record<string, unknown> },
+    entry('recv', 'payment_received', 'platform_escrow', amount, paid),
+    entry('ref', 'refund_issued', LAN, -amount, ended),
+  ];
+}
+
+/** What a seeded payment's S22.01 row shows about its subject, as the live adapter reads it; null when the subject is not seeded. */
+function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unknown> | undefined): PayerSubjectView | null {
+  switch (p.subjectType) {
+    case 'booking': {
+      const b = get(`bookings/${p.subjectId}`);
+      if (b === undefined) return null;
+      const name = get(`users/${String(b.photographerId)}`)?.displayName;
+      return bookingSubjectOf(b, typeof name === 'string' ? name : null);
+    }
+    case 'event_registration': {
+      const r = p.eventId === undefined ? undefined : get(`events/${p.eventId}/registrations/${p.subjectId}`);
+      return r === undefined || p.eventId === undefined ? null : ticketSubjectOf(r, p.eventId);
+    }
+    case 'instant_request': {
+      const r = get(`instant_requests/${p.subjectId}`);
+      return r === undefined ? null : instantSubjectOf(r);
+    }
+    case 'verification_fee':
+      return EMPTY_PAYER_SUBJECT;
+  }
+}
+
+/**
+ * S22.01 (#141): every payer's rows (`users/{uid}/payments/{paymentId}`) and totals
+ * (`users/{uid}/private/paymentTotals`) from the seeded payments and refunds, computed by the same
+ * pure functions the triggers use, so the seed does not depend on trigger timing. Lan gets held,
+ * released, paid-out and refunded bookings, her ticket and her refunded Chụp ngay request; Giang
+ * her S21 fee.
+ */
+function payerHistoryDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
+  const byPath = new Map(existing.map((d) => [d.path, d.data]));
+  const get = (path: string) => byPath.get(path);
+  const refunds = existing
+    .filter((d) => /^refunds\/[^/]+$/.test(d.path))
+    .flatMap((d) => refundFromFirestore(d.path.slice('refunds/'.length), d.data) ?? []);
+  const rows: PayerPaymentRow[] = [];
+  for (const d of existing) {
+    if (!/^payments\/[^/]+$/.test(d.path)) continue;
+    const p = paymentFromFirestore(d.path.slice('payments/'.length), d.data);
+    if (p === null || typeof p.payerId !== 'string' || p.payerId === '') continue;
+    const subject = seedPayerSubject(p, get);
+    if (subject === null) continue;
+    const row = payerRowOf(p, refunds.filter((r) => r.paymentId === p.id), subject, now);
+    if (row !== null) rows.push(row);
+  }
+
+  const docs: SeedDocument[] = [];
+  for (const payerId of [...new Set(rows.map((r) => r.payerId))]) {
+    const mine = rows.filter((r) => r.payerId === payerId);
+    const totals = payerTotals(mine);
+    docs.push({ path: `users/${payerId}/private/${PAYMENT_TOTALS_DOC}`, data: { held: totals.held, refunding: totals.refunding, updatedAt: now } });
+    for (const r of mine) docs.push({ path: `users/${payerId}/${PAYER_PAYMENTS}/${r.paymentId}`, data: payerRowToFirestore(r) });
+  }
+  return docs;
+}
+
 export const SEED_EVENT_FREE = 'seed-event-an-free-photowalk';
 export const SEED_EVENT_PAID = 'seed-event-an-paid-workshop';
 export const SEED_REGISTRATION_LAN = 'seed-registration-lan-free-walk';
@@ -1952,6 +2408,11 @@ export const SEED_TICKET_CODE_LAN = 'VE-LANA-0000';
 export const SEED_EVENT_SOON = 'seed-event-an-night-walk';
 export const SEED_REGISTRATION_LAN_SOON = 'seed-registration-lan-night-walk';
 export const SEED_TICKET_CODE_LAN_SOON = 'VE-LANB-0000';
+/** S18.01 (#142) to try on a ticket: a paid workshop that ended 3 hours before seeding, Lan's money still held. */
+export const SEED_EVENT_PAST = 'seed-event-an-past-workshop';
+export const SEED_REGISTRATION_LAN_PAST = 'seed-registration-lan-past-paid';
+export const SEED_TICKET_CODE_LAN_PAST = 'VE-LANC-0000';
+export const SEED_PAYMENT_TICKET_LAN_PAST = 'seed-payment-ticket-lan-past';
 
 /**
  * Three open events of An (a free photo walk, a paid workshop and, for the S17 reminder, a free
@@ -2015,6 +2476,18 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
       geohash: encodeGeohash(10.7769, 106.7032), areaId: null,
     },
   };
+  // S18: started 5 hours and ended 3 hours before seeding; completed, so the event clock leaves it alone.
+  const pastBase = make(SEED_EVENT_PAST, 'Workshop chân dung ngoài trời', 'workshop', -5, 250_000, 12);
+  const pastOpenedAt = new Date((pastBase.startAt as Date).getTime() - 7 * DAY_MS);
+  const past: EventRecord = {
+    ...pastBase,
+    status: 'completed',
+    completedAt: pastBase.endAt,
+    registrationDeadline: new Date((pastBase.startAt as Date).getTime() - 12 * HOUR_MS),
+    publishedAt: pastOpenedAt,
+    createdAt: pastOpenedAt,
+    updatedAt: pastBase.endAt as Date,
+  };
   const ticketOf = (id: string, ev: EventRecord, code: string): RegistrationDoc => ({
     id,
     eventId: ev.id,
@@ -2041,10 +2514,42 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
   });
   const registration = ticketOf(SEED_REGISTRATION_LAN, free, SEED_TICKET_CODE_LAN);
   const soonTicket = ticketOf(SEED_REGISTRATION_LAN_SOON, soon, SEED_TICKET_CODE_LAN_SOON);
-  const withLan = new Set([free.id, soon.id]);
+  // Lan's paid ticket of the past workshop, paid two days before it started (contact unlocked, O3).
+  const pastPaidAt = new Date((past.startAt as Date).getTime() - 2 * DAY_MS);
+  const pastTicket: RegistrationDoc = {
+    ...ticketOf(SEED_REGISTRATION_LAN_PAST, past, SEED_TICKET_CODE_LAN_PAST),
+    amount: past.price ?? 0,
+    paymentId: SEED_PAYMENT_TICKET_LAN_PAST,
+    contactEligible: true,
+    createdAt: pastPaidAt,
+    updatedAt: pastPaidAt,
+  };
+  const pastIso = pastPaidAt.toISOString();
+  const pastPayment: Payment = {
+    id: SEED_PAYMENT_TICKET_LAN_PAST,
+    subjectType: 'event_registration',
+    subjectId: pastTicket.id,
+    eventId: past.id,
+    payerId: LAN,
+    payeeId: ticketPayeeOf(past),
+    provider: 'fake',
+    method: 'bank_qr',
+    amount: pastTicket.amount,
+    status: 'paid',
+    escrowStatus: 'held',
+    idempotencyKey: ticketIdempotencyKey(pastTicket.id, 'bank_qr'),
+    transferCode: transferCodeFor(SEED_PAYMENT_TICKET_LAN_PAST),
+    receivedAmount: pastTicket.amount,
+    paidAt: pastIso,
+    // Stamped by the event clock at completion: the end plus the dispute window.
+    releaseAfter: new Date((past.endAt as Date).getTime() + DISPUTE_WINDOW_HOURS * HOUR_MS).toISOString(),
+    createdAt: pastIso,
+    updatedAt: pastIso,
+  };
+  const withLan = new Set([free.id, soon.id, past.id]);
   const taken = new Set(existing.map((d) => d.path));
   const docs: SeedDocument[] = [];
-  for (const e of [{ ...free, registeredCount: 1, postCount: 1 }, paid, { ...soon, registeredCount: 1 }]) {
+  for (const e of [{ ...free, registeredCount: 1, postCount: 1 }, paid, { ...soon, registeredCount: 1 }, { ...past, registeredCount: 1 }]) {
     docs.push({ path: `events/${e.id}`, data: eventToFirestore(e) as Record<string, unknown> });
     docs.push({ path: `event_hashtags/${e.hashtagKey}`, data: { eventId: e.id } });
     const dayPath = `availability/${AN}/days/${e.dayKey}`;
@@ -2118,6 +2623,22 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
   docs.push({ path: `ticket_codes/${registration.ticketCode}`, data: { eventId: free.id, registrationId: registration.id } });
   docs.push({ path: `events/${soon.id}/registrations/${soonTicket.id}`, data: registrationToFirestore(soonTicket) as Record<string, unknown> });
   docs.push({ path: `ticket_codes/${soonTicket.ticketCode}`, data: { eventId: soon.id, registrationId: soonTicket.id } });
+  docs.push({ path: `chats/${past.chatId as string}/members/${AN}`, data: memberDoc('moderator', 'An Studio (seed)') });
+  docs.push({ path: `chats/${past.chatId as string}/members/${LAN}`, data: memberDoc('member', 'Lan (seed)') });
+  docs.push({ path: `events/${past.id}/registrations/${pastTicket.id}`, data: registrationToFirestore(pastTicket) as Record<string, unknown> });
+  docs.push({
+    path: `events/${past.id}/registrations/${pastTicket.id}/private/contact`,
+    data: { name: 'Lan (seed)', phone: SEED_CUSTOMER_PHONES[LAN] ?? '+84903000001', allowZalo: true, allowWhatsApp: false },
+  });
+  docs.push({ path: `ticket_codes/${pastTicket.ticketCode}`, data: { eventId: past.id, registrationId: pastTicket.id } });
+  docs.push({ path: `payments/${pastPayment.id}`, data: paymentToFirestore(pastPayment) as Record<string, unknown> });
+  docs.push({
+    path: `ledger_entries/seed-ledger-${pastPayment.id}-recv`,
+    data: ledgerEntryToFirestore({
+      id: `seed-ledger-${pastPayment.id}-recv`, type: 'ticket_received', paymentId: pastPayment.id, subjectType: 'event_registration',
+      subjectId: pastTicket.id, accountOwnerId: 'platform_escrow', amount: pastPayment.amount, at: pastIso,
+    }) as Record<string, unknown>,
+  });
 
   // S20 Safety seed: Minh blocks Bình
   docs.push({

@@ -78,6 +78,7 @@ export async function commitTransition(
     // 2. Financial mutations
     let newEscrowStatus = current.escrowStatus;
     let depositRefunded = current.depositRefunded ?? 0;
+    let refundAccountNeeded = current.refundAccountNeeded;
 
     if (decision.refundPercent > 0) {
       const payments = await deps.store.getPaymentsForBooking(current.id);
@@ -93,6 +94,8 @@ export async function commitTransition(
           ledgerEntryId: deps.ids.newId(),
           reason: decision.cancelRecord?.reason ?? nextStatus,
           now,
+          // #141 Decision 5: a bank-QR refund waits for the customer's account choice (S22.04).
+          waitForAccount: true,
         });
 
         // If late cancel keeps partial deposit (e.g. 50%), the kept portion releases to photographer at start + 24h
@@ -111,7 +114,12 @@ export async function commitTransition(
 
         newEscrowStatus = updatedPayment.escrowStatus;
         depositRefunded += refundResult.refund.amount;
-        pendingRefund = { refund: refundResult.refund, provider: payment.provider };
+        if (refundResult.refund.status === 'awaiting_account') {
+          // Not sent: chooseRefundAccount or the 24-hour default sends it (refund_account.ts).
+          refundAccountNeeded = true;
+        } else {
+          pendingRefund = { refund: refundResult.refund, provider: payment.provider };
+        }
       }
     } else if (nextStatus === 'shot') {
       const payments = await deps.store.getPaymentsForBooking(current.id);
@@ -129,8 +137,15 @@ export async function commitTransition(
       }
     } else if (nextStatus === 'completed') {
       const payments = await deps.store.getPaymentsForBooking(current.id);
+      // A milestone payment whose shoot milestone is disputed (aggregate `disputed`) still gets its held
+      // delivery milestone released; the disputed milestone is never touched (S18 Decision 1).
       const payment = payments.find(
-        (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'released'),
+        (p) =>
+          isSettledPayment(p) &&
+          (p.escrowStatus === 'held' ||
+            p.escrowStatus === 'partially_refunded' ||
+            p.escrowStatus === 'released' ||
+            (p.milestones !== undefined && p.escrowStatus === 'disputed')),
       );
       if (payment) {
         if (payment.milestones) {
@@ -163,6 +178,7 @@ export async function commitTransition(
       status: nextStatus,
       escrowStatus: newEscrowStatus,
       depositRefunded: depositRefunded > 0 ? depositRefunded : undefined,
+      ...(refundAccountNeeded !== undefined ? { refundAccountNeeded } : {}),
       cancel: decision.cancelRecord ?? current.cancel,
       shotAt: nextStatus === 'shot' ? (current.shotAt ?? now.toISOString()) : current.shotAt,
       completedAt: nextStatus === 'completed' ? now.toISOString() : current.completedAt,

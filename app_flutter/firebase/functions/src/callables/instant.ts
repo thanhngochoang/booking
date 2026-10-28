@@ -8,6 +8,7 @@ import * as logger from 'firebase-functions/logger';
 import {
   answerInstantOffer,
   cancelInstantRequest,
+  checkInstantPayment,
   confirmInstantComplete,
   createInstantRequest,
   inviteInstant,
@@ -19,8 +20,9 @@ import {
   type InstantCaller,
   type InstantDeps,
   type InviteResult,
+  type SettlementDeps,
 } from '@photobooking/domain';
-import { fakePaymentsAllowed } from '../infra/fake_payments.js';
+import { checkoutGatewayAvailable } from '../infra/fake_payments.js';
 import { toHttpsError } from './errors.js';
 import type { CallableInput } from './get_contact_link.js';
 
@@ -55,9 +57,9 @@ export async function handleNextInstantCandidates(request: InstantCallableInput,
 }
 
 /**
- * #140 sends offers without any payment, so the free dispatch exists only where no real money could
- * be expected: the dev project or a `demo-*` emulator (`fakePaymentsAllowed`). #202 (Task 11) puts the
- * payment in front of the offers and removes this guard.
+ * The first invite opens a payment (#202, Decision 5): where no checkout gateway is available
+ * (V1's `checkoutGatewayAvailable`, today the fake rails' dev project and `demo-*` emulators only),
+ * payments are off and every invite is `not_eligible`, like `createPayment` and the S21 fee.
  */
 export async function handleInviteInstant(
   request: InstantCallableInput,
@@ -65,9 +67,17 @@ export async function handleInviteInstant(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<InviteResult> {
   return run('inviteInstant', request, (c) => {
-    if (!fakePaymentsAllowed(env)) throw new HttpsError('failed-precondition', 'not_eligible', { code: 'not_eligible' });
+    if (!checkoutGatewayAvailable(env)) throw new HttpsError('failed-precondition', 'not_eligible', { code: 'not_eligible' });
     return inviteInstant(deps, c, request.data);
   });
+}
+
+/** S04.04 on resume (payer only): V1's `checkSubjectPayments` over the request's open payments. */
+export async function handleCheckInstantPayment(
+  request: InstantCallableInput,
+  deps: InstantDeps & { readonly settlement: SettlementDeps },
+) {
+  return run('checkInstantPayment', request, (c) => checkInstantPayment(deps, c, request.data));
 }
 
 export async function handleCancelInstantRequest(request: InstantCallableInput, deps: InstantDeps) {

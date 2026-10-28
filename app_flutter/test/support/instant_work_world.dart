@@ -9,6 +9,7 @@ import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/data/instant/instant_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/instant_work/instant_job_screen.dart';
@@ -66,7 +67,9 @@ class InstantWorld {
     FakeInstantRepository? repo,
     FakeLocationRepository? location,
     InstantClock? clock,
+    this.repository,
     this.enabled = true,
+    this.extra = const [],
   }) : repo = repo ?? FakeInstantRepository(),
        location =
            location ??
@@ -77,18 +80,27 @@ class InstantWorld {
        clock = clock ?? InstantClock();
 
   final FakeInstantRepository repo;
+
+  /// What the screens talk to instead of [repo] (e.g. an
+  /// `InstantSimulator` facade in the two-party test).
+  final InstantRepository? repository;
   final FakeLocationRepository location;
   final InstantClock clock;
   final bool enabled;
+
+  /// More overrides; one of `notificationPermissionProvider` replaces the
+  /// granted default (so the S17.03 primer can show).
+  final List<Override> extra;
   final launcher = RecordingLauncher();
 
   List<Override> get overrides => [
-    instantRepositoryProvider.overrideWithValue(repo),
+    instantRepositoryProvider.overrideWithValue(repository ?? repo),
     externalLauncherProvider.overrideWithValue(launcher),
     instantEnabledProvider.overrideWithValue(enabled),
     locationRepositoryProvider.overrideWithValue(location),
     clockProvider.overrideWithValue(() => clock.now),
-    ...grantedNotificationPermissionUnless(const []),
+    ...grantedNotificationPermissionUnless(extra),
+    ...extra,
   ];
 
   /// Moves the clock and the fake timers together.

@@ -110,8 +110,11 @@ class _ChatRow extends ConsumerWidget {
 
     final l10n = context.l10n;
     final profile = profileAsync.value;
+    // A collab chat (S27) has a studio in the customer slot: no role name.
     final counterpartName = profile?.displayName ??
-        (currentUserId == thread.customerId
+        (thread.kind == ChatKind.collab
+            ? l10n.chatKindCollab
+            : currentUserId == thread.customerId
             ? l10n.profileRolePhotographer
             : l10n.profileRoleCustomer);
     final avatarUrl = profile?.avatarUrl;
@@ -148,8 +151,32 @@ class _ChatRow extends ConsumerWidget {
       preview: preview,
       timeLabel: timeLabel,
       unread: item.unreadCount,
-      badge: status == null ? null : StatusBadge(status),
+      badge: thread.kind == ChatKind.collab
+          ? _CollabTag(l10n.chatKindCollab)
+          : status == null
+          ? null
+          : StatusBadge(status),
       onTap: () => context.push('/chat/${thread.id}'),
+    );
+  }
+}
+
+/// "Cộng tác" on a studio–collaborator chat row (S27 Decision 16), where a
+/// booking chat shows its status.
+class _CollabTag extends StatelessWidget {
+  const _CollabTag(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return StatusBadge.custom(
+      label: label,
+      color: dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
+      onColor: dark
+          ? AppColorsDark.foregroundSecondary
+          : AppColors.foregroundSecondary,
     );
   }
 }

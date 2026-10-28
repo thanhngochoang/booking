@@ -16,6 +16,7 @@ import {
   MAX_MEMBERS_VERIFIED,
   OPEN_RELATION_STATUSES,
   RELATION_STATUSES,
+  collaborationId,
   foldNameKey,
   inviteCandidateState,
   isStudio,
@@ -36,6 +37,7 @@ import {
 import type { NameKeyStore } from '../triggers/user_write.js';
 import { AVAILABILITY_COLLECTION, BOOKINGS_COLLECTION } from './booking_firestore.js';
 import { SPOT_SCHEDULES_COLLECTION, scheduleFromFirestore } from './spot_firestore.js';
+import { STUDIO_COLLABORATIONS_COLLECTION } from './recruit_mapping.js';
 
 export const STUDIO_MEMBERS_COLLECTION = 'studio_members';
 export const STUDIO_QUOTA_COLLECTION = 'studio_quota';
@@ -212,6 +214,11 @@ export class FirestoreStudioStore implements StudioStore {
         getQuota: async (uid) => {
           const snap = await fTx.get(this.firestore.collection(STUDIO_QUOTA_COLLECTION).doc(uid));
           return snap.exists ? quotaFromFirestore(snap.data()) : null;
+        },
+        activeCollaborationOf: async (studioId, uid) => {
+          // Read in the transaction: an activation of the collaboration racing this join retries one side.
+          const snap = await fTx.get(this.firestore.collection(STUDIO_COLLABORATIONS_COLLECTION).doc(collaborationId(studioId, uid)));
+          return snap.exists && snap.data()?.status === 'active';
         },
         putRelation: (r) => {
           fTx.set(this.relations().doc(r.id), relationToFirestore(r));

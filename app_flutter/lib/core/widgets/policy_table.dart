@@ -15,10 +15,21 @@ class PolicyRow {
 /// non-clickable option tiles where the currently active milestone is highlighted
 /// and announced to assistive tech with "Đang áp dụng".
 class PolicyTable extends StatelessWidget {
-  const PolicyTable({super.key, required this.rows, required this.activeIndex});
+  const PolicyTable({
+    super.key,
+    required this.rows,
+    required this.activeIndex,
+    this.whenMaxLines = 1,
+  });
 
   final List<PolicyRow> rows;
+
+  /// The highlighted row; out of range (e.g. -1) highlights none.
   final int activeIndex;
+
+  /// Lines a row's [PolicyRow.when] may take before it is cut; more than one
+  /// lets a long condition wrap (S13.08).
+  final int whenMaxLines;
 
   static Widget skeleton({int rows = 3}) =>
       _PolicyTableSkeleton(rowsCount: rows);
@@ -85,7 +96,7 @@ class PolicyTable extends StatelessWidget {
                 Expanded(
                   child: Text(
                     row.when,
-                    maxLines: 1,
+                    maxLines: whenMaxLines,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12, color: fg, height: 1.25),
                   ),

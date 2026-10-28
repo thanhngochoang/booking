@@ -5,6 +5,7 @@ import {
   syncBookingChat,
   refreshCompletedCount,
   deliveryNotices,
+  poachingSignal,
   notifyDeliverySubmitted,
   notifyDeliveryRevisionRequested,
   notifyDeliveryApproved,
@@ -20,6 +21,13 @@ import {
 } from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { bookingFromFirestore } from '../infra/booking_firestore.js';
+import type { FirestoreCollabBookingSync } from '../infra/recruit_firestore.js';
+
+/** The S27 reads and writes of this trigger (`FirestoreCollabBookingSync` in production). */
+export type CollabBookingSync = Pick<
+  FirestoreCollabBookingSync,
+  'syncJobs' | 'acceptedJobsWith' | 'personalBookingTimes' | 'createPoachFlag'
+>;
 
 export async function handleBookingWrite(
   event: {
@@ -34,6 +42,8 @@ export async function handleBookingWrite(
     badges: BadgeDeps;
     /** #136 Decision 26: recompute a studio's derived `full` day after a studio booking change. */
     studioDays?: (studioId: string, day: string) => Promise<unknown>;
+    /** S27 (#151): collab jobs follow their booking; a new personal booking may raise the poaching flag. */
+    collab?: CollabBookingSync;
     jobs?: JobDeps;
   },
   discovery?: DiscoveryDeps,
@@ -57,6 +67,11 @@ export async function handleBookingWrite(
       for (const key of studioDaysOf(before, after)) {
         await extras.studioDays(key.studioId, key.day);
       }
+    }
+    // Both idempotent: a job re-read in its transaction, a flag created once.
+    if (extras.collab) {
+      await syncCollabJob(before, after, extras.collab);
+      await flagPoaching(before, after, extras.collab, new Date());
     }
     // Idempotent (deterministic notification ids, badge evaluation), so a retry of the event is safe.
     await notifyBookingChange(extras.notify, before, after);
@@ -145,4 +160,47 @@ export function studioDaysOf(before: Booking | null, after: Booking | null): { s
     if (b?.isStudio === true) keys.set(`${b.photographerId}_${b.day}`, { studioId: b.photographerId, day: b.day });
   }
   return [...keys.values()];
+}
+
+/**
+ * S27 (Decision 15): when a studio booking is cancelled, completed or reviewed, each live collab job of it is
+ * cancelled (before the shoot ended) or closed (`syncCollabJobOnBooking`). Other writes read nothing.
+ */
+export async function syncCollabJob(before: Booking | null, after: Booking | null, sync: Pick<CollabBookingSync, 'syncJobs'>): Promise<number> {
+  if (after === null || after.isStudio !== true || before?.status === after.status) return 0;
+  if (after.status !== 'cancelled' && after.status !== 'completed' && after.status !== 'reviewed') return 0;
+  return sync.syncJobs(after);
+}
+
+/**
+ * S27 Decision 18 (record only): a new non-studio booking whose photographer had an accepted collab job with
+ * the same customer in the last 183 days, and now has at least 2 personal bookings with them since, writes
+ * `staff_flags/poach_{photographerId}_{customerId}` once.
+ */
+export async function flagPoaching(
+  before: Booking | null,
+  after: Booking | null,
+  sync: Pick<CollabBookingSync, 'acceptedJobsWith' | 'personalBookingTimes' | 'createPoachFlag'>,
+  now: Date,
+): Promise<'none' | 'flagged' | 'exists'> {
+  if (before !== null || after === null || after.isStudio === true) return 'none';
+  const jobs = await sync.acceptedJobsWith(after.photographerId, after.customerId, now);
+  if (jobs.length === 0) return 'none';
+  const times = await sync.personalBookingTimes(after.photographerId, after.customerId);
+  const flagged = poachingSignal({
+    customerId: after.customerId,
+    jobs,
+    personalBookingsSince: (since) => times.filter((t) => t.getTime() >= since.getTime()).length,
+    now,
+  });
+  if (flagged === null) return 'none';
+  const earliest = [...flagged].sort((a, b) => (a.acceptedAt?.getTime() ?? 0) - (b.acceptedAt?.getTime() ?? 0))[0];
+  const created = await sync.createPoachFlag({
+    photographerId: after.photographerId,
+    customerId: after.customerId,
+    studioId: earliest?.studioId ?? '',
+    jobIds: flagged.map((j) => j.id),
+    createdAt: now,
+  });
+  return created ? 'flagged' : 'exists';
 }

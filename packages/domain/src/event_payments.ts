@@ -461,8 +461,10 @@ export async function refundTicket(
       if (reg.refundDue === true) tx.putRegistration({ ...reg, refundDue: false, updatedAt: now, version: reg.version + 1 });
       return 'skipped';
     }
+    // #141 Decision 5: a bank-QR ticket refund waits for the customer's account choice (S22.04);
+    // the registration mirrors `refundStatus: 'awaiting_account'` below.
     const res = applyRefundToPayment({
-      payment: p, refundId: deps.ids.newId(), percent, ledgerEntryId: deps.ids.newId(), reason, now,
+      payment: p, refundId: deps.ids.newId(), percent, ledgerEntryId: deps.ids.newId(), reason, now, waitForAccount: true,
     });
     tx.putPayment(res.payment);
     tx.putRefund(res.refund);
@@ -476,7 +478,7 @@ export async function refundTicket(
       const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
       tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
     }
-    pendingRefund = { refund: res.refund, payment: res.payment };
+    if (res.refund.status !== 'awaiting_account') pendingRefund = { refund: res.refund, payment: res.payment };
     return 'refunded';
   });
   if (pendingRefund !== null) await dispatchTicketRefund(deps, (pendingRefund as { refund: Refund; payment: Payment }).refund, (pendingRefund as { refund: Refund; payment: Payment }).payment);

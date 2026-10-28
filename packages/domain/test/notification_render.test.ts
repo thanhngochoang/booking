@@ -218,6 +218,7 @@ const CASES: readonly (readonly [NotificationContent, string, string])[] = [
   [{ type: 'collab_assignment_result', outcome: 'accepted', name: 'Minh Trí', service: 'Cưới', day: DAY, start: '08:00', deadline: '14:00 11/10' }, 'Minh Trí đã nhận việc', 'Cưới, T2 12/10 · 08:00.'],
   [{ type: 'collab_assignment_result', outcome: 'declined', name: 'Minh Trí', service: 'Cưới', day: DAY, start: '08:00', deadline: '14:00 11/10' }, 'Minh Trí từ chối việc', 'Giao người khác trước 14:00 11/10.'],
   [{ type: 'collab_assignment_result', outcome: 'expired', name: 'Minh Trí', service: 'Cưới', day: DAY, start: '08:00', deadline: '14:00 11/10' }, 'Minh Trí chưa trả lời', 'Giao người khác trước 14:00 11/10.'],
+  [{ type: 'collab_assignment_result', outcome: 'ended', name: 'Minh Trí', service: 'Cưới', day: DAY, start: '08:00', deadline: '14:00 11/10' }, 'Cộng tác với Minh Trí đã kết thúc', 'Giao người khác trước 14:00 11/10.'],
   [{ type: 'collab_pay_due', name: 'Minh Trí', amount: 1_500_000, service: 'Cưới', day: DAY }, 'Đến hạn trả thù lao', 'Trả Minh Trí 1.500.000₫ cho buổi Cưới T2 12/10.'],
   [{ type: 'collab_pay_reported', studio: 'Studio Mây', amount: 1_500_000, method: 'bank' }, 'Studio báo đã trả thù lao', 'Studio Mây báo đã trả 1.500.000₫ (chuyển khoản). Bấm Đã nhận hoặc Chưa nhận.'],
   [{ type: 'collab_pay_reported', studio: 'Studio Mây', amount: 1_500_000, method: 'cash' }, 'Studio báo đã trả thù lao', 'Studio Mây báo đã trả 1.500.000₫ (tiền mặt). Bấm Đã nhận hoặc Chưa nhận.'],

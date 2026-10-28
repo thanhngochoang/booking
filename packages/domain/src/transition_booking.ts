@@ -6,6 +6,7 @@
 import type { Booking } from './booking.js';
 import { decideTransition, roleOf, type TransitionAction } from './booking_machine.js';
 import type { BookingDeps } from './booking_ports.js';
+import { confirmedAssigneeId } from './collab_jobs.js';
 import { commitTransition } from './commit_transition.js';
 import { DomainError } from './errors.js';
 import { isId } from './ids.js';
@@ -33,7 +34,8 @@ export async function transitionBooking(
     throw new DomainError('not_found');
   }
 
-  // Determine actor role. A studio's assignee acts for the studio only to mark the shoot done (#136 Decision 15).
+  // Determine actor role. A studio's assignee acts for the studio only to mark the shoot done (#136 Decision 15);
+  // a collaborator only once the offer is accepted (S27).
   let role: 'customer' | 'photographer' | 'system';
   let actingId = input.actorId;
   if (!input.actorId) {
@@ -44,7 +46,7 @@ export async function transitionBooking(
       role = determinedRole;
     } else if (
       booking.isStudio === true &&
-      booking.assigneeId === input.actorId &&
+      confirmedAssigneeId(booking) === input.actorId &&
       ASSIGNEE_ACTIONS.includes(input.action)
     ) {
       role = 'photographer';

@@ -86,6 +86,7 @@ describe('Firestore <-> Domain booking mappers', () => {
     },
     samplesPurgeAfter: '2027-01-15T09:00:00.000Z',
     samplesPurged: false,
+    disputeId: 'dsp_01',
     version: 2,
     createdAt: '2026-10-10T09:00:00.000Z',
     updatedAt: '2026-10-10T10:00:00.000Z',
@@ -159,6 +160,10 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual(restored.extraRound, sampleBooking.extraRound);
     assert.equal(restored.samplesPurgeAfter, sampleBooking.samplesPurgeAfter);
     assert.equal(restored.samplesPurged, false);
+    // S18: the dispute mirror survives every booking write (Review Focus 5).
+    assert.equal(docData.disputeId, 'dsp_01');
+    assert.equal(restored.disputeId, 'dsp_01');
+    assert.equal(bookingToFirestore({ ...sampleBooking, disputeId: undefined }).disputeId, null);
     assert.equal(restored.version, sampleBooking.version);
     assert.deepEqual(restored.addons, sampleBooking.addons);
     assert.deepEqual(restored.pickup, sampleBooking.pickup);
@@ -215,6 +220,61 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(unassigned?.assigneeId, null);
     assert.equal(unassigned?.changeRequest, null);
     assert.deepEqual(unassigned?.assignments, []);
+
+    // S27 (#151, cross-plan review finding 41): a collaborator offer keeps its kind and acceptance, and each
+    // assignment entry its offer fields; a lost kind would make a pending collaborator look confirmed.
+    const collab: Booking = {
+      ...studio,
+      assigneeId: 'c_01',
+      assigneeKind: 'collaborator',
+      assigneeAccepted: false,
+      assignStatus: 'unassigned',
+      assignedAt: null,
+      assignments: [
+        { assigneeId: 'm_00', assigneeKind: 'member', at: '2026-10-11T08:00:00.000Z', by: 'photog_01', reason: null, late: false },
+        {
+          assigneeId: 'c_00', assigneeKind: 'collaborator', at: '2026-10-12T08:00:00.000Z', by: 'photog_01', reason: null,
+          late: false, offerExpiresAt: '2026-10-12T14:00:00.000Z', declinedAt: '2026-10-12T09:00:00.000Z',
+        },
+        {
+          assigneeId: 'c_01', assigneeKind: 'collaborator', at: '2026-10-12T10:00:00.000Z', by: 'photog_01', reason: null,
+          late: false, offerExpiresAt: '2026-10-12T16:00:00.000Z',
+        },
+      ],
+    };
+    const collabDoc = bookingToFirestore(collab);
+    assert.equal(collabDoc.assigneeKind, 'collaborator');
+    assert.equal(collabDoc.assigneeAccepted, false);
+    assert.ok(collabDoc.assignments[1].offerExpiresAt instanceof Timestamp);
+    assert.equal('agreedFee' in collabDoc.assignments[2], false);
+    const collabBack = bookingFromFirestore('b_01', collabDoc);
+    assert.ok(collabBack);
+    for (const key of ['assigneeId', 'assigneeKind', 'assigneeAccepted', 'assignStatus', 'assignments'] as const) {
+      assert.deepEqual(collabBack[key], collab[key], key);
+    }
+    const [first, declined, offer] = collab.assignments ?? [];
+    assert.ok(first && declined && offer);
+    const accepted: Booking = {
+      ...collab,
+      assigneeAccepted: true,
+      assignStatus: 'assigned',
+      assignedAt: '2026-10-12T11:00:00.000Z',
+      assignments: [first, declined, { ...offer, acceptedAt: '2026-10-12T11:00:00.000Z' }],
+    };
+    const acceptedBack = bookingFromFirestore('b_01', bookingToFirestore(accepted));
+    assert.equal(acceptedBack?.assigneeAccepted, true);
+    assert.deepEqual(acceptedBack?.assignments, accepted.assignments);
+    // A member booking written before S27 has no assigneeAccepted: it stays absent.
+    assert.equal('assigneeAccepted' in (bookingFromFirestore('b_01', studioDoc) ?? {}), false);
+
+    // #141 S22.04: the server flag while the cancel refund waits for the customer's account.
+    for (const flag of [true, false]) {
+      const flagged = bookingToFirestore({ ...sampleBooking, refundAccountNeeded: flag });
+      assert.equal(flagged.refundAccountNeeded, flag);
+      assert.equal(bookingFromFirestore('b_01', flagged)?.refundAccountNeeded, flag);
+    }
+    assert.equal('refundAccountNeeded' in docData, false);
+    assert.equal('refundAccountNeeded' in (restored ?? {}), false);
   });
 
   it('a booking without source reads as package', () => {
@@ -484,6 +544,7 @@ describe('Firestore <-> Domain booking mappers', () => {
     const minRestored = refundFromFirestore('ref_min', minimalDoc);
     assert.equal(minRestored?.method, 'gateway');
     assert.equal(minRestored?.attempts, 0);
+    assert.equal(minRestored?.candidate, undefined);
 
     const sampleEntry: LedgerEntry = {
       id: 'led_01',
@@ -520,6 +581,41 @@ describe('Firestore <-> Domain booking mappers', () => {
     },
     payableUntil: '2026-10-10T09:20:00.000Z',
   };
+
+  it('refund candidate and confirmBy round-trip', () => {
+    const waiting: Refund = {
+      id: 'ref_03',
+      paymentId: 'pay_01',
+      subjectType: 'booking',
+      amount: 1_000_000,
+      percent: 100,
+      status: 'awaiting_account',
+      method: 'bank_transfer',
+      destination: {
+        bankCode: 'VCB', bankName: 'Vietcombank', accountNumberEnc: 'v1:enc-payer', accountLast4: '3456',
+        holderName: 'NGUYEN THANH HA', source: 'payer',
+      },
+      confirmBy: '2026-10-13T10:00:00.000Z',
+      candidate: {
+        bankCode: 'MB', bankName: 'MBBank', accountNumberEnc: 'v1:enc-candidate', accountLast4: '4321', holderName: 'TRAN VAN B',
+      },
+      accountLookups: { day: '2026-10-12', count: 3 },
+      attempts: 0,
+      manual: false,
+      fromEscrow: true,
+      reason: 'Bận việc',
+      createdAt: '2026-10-12T10:00:00.000Z',
+      updatedAt: '2026-10-12T11:00:00.000Z',
+    };
+    const doc = refundToFirestore(waiting);
+    assert.ok(doc.confirmBy instanceof Timestamp);
+    assert.deepEqual(Object.keys(doc.candidate as object).sort(), ['accountLast4', 'accountNumberEnc', 'bankCode', 'bankName', 'holderName']);
+    assert.deepEqual(refundFromFirestore('ref_03', doc), waiting);
+    // Chosen: the candidate is cleared (null) and reads back as absent.
+    const chosen = refundToFirestore({ ...waiting, status: 'pending', candidate: null });
+    assert.equal(chosen.candidate, null);
+    assert.equal('candidate' in (refundFromFirestore('ref_03', chosen) ?? {}), false);
+  });
 
   it('round-trips the booking checkout mirror and payableUntil as Timestamps', () => {
     const docData = bookingToFirestore(checkoutBooking);
@@ -666,6 +762,33 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.ok(restored);
     assert.equal(restored.subjectType, 'event_registration');
   });
+
+  it('a refund with subjectType instant_request keeps it', () => {
+    const r: Refund = {
+      id: 'ref_inst_1', paymentId: 'pay_inst_1', subjectType: 'instant_request', amount: 552_000, percent: 80,
+      status: 'pending', manual: false, fromEscrow: true, method: 'gateway', attempts: 0, reason: 'en_route',
+      createdAt: '2026-10-10T09:00:00.000Z', updatedAt: '2026-10-10T09:00:00.000Z',
+    };
+    const restored = refundFromFirestore(r.id, refundToFirestore(r));
+    assert.equal(restored?.subjectType, 'instant_request');
+  });
+
+  it("an instant payment keeps its subject, empty payee and fee snapshot (feeBp); others have none", () => {
+    const p: Payment = {
+      id: 'pay_inst_1', subjectType: 'instant_request', subjectId: 'ir_1', payerId: 'c-lan', payeeId: '', provider: 'fake',
+      amount: 690_000, status: 'paid', escrowStatus: 'held', idempotencyKey: 'inst_ir_1_1', method: 'momo', feeBp: 1_000,
+      createdAt: '2026-10-10T09:00:00.000Z', updatedAt: '2026-10-10T09:00:00.000Z',
+    };
+    const doc = paymentToFirestore(p);
+    assert.equal(doc.feeBp, 1_000);
+    const back = paymentFromFirestore(p.id, doc);
+    assert.deepEqual([back?.subjectType, back?.payeeId, back?.feeBp], ['instant_request', '', 1_000]);
+    const plain = paymentFromFirestore('pay_b', paymentToFirestore({ ...p, subjectType: 'booking', feeBp: undefined }));
+    assert.equal(plain?.feeBp, undefined);
+    // Written only when set: a booking, ticket or fee payment carries no feeBp key at all.
+    assert.equal('feeBp' in paymentToFirestore({ ...p, feeBp: undefined }), false);
+    assert.equal('feeBp' in paymentToFirestore({ ...p, subjectType: 'booking', feeBp: undefined }), false);
+  });
 });
 
 /** Records the query a FirestoreBookingStore sweep builds and answers it with `docs`. */
@@ -732,6 +855,76 @@ describe('FirestoreBookingStore sweep queries', () => {
       ['payableUntil', '<=', CUTOFF.toISOString()],
     ]);
     assert.deepEqual(found.map((b) => [b.id, b.payableUntil]), [['b_9', '2026-10-10T08:30:00.000Z']]);
+  });
+
+  it('findReleasableEscrows also returns disputed milestone payments (another milestone may be due), never a disputed payment without milestones', async () => {
+    const base: Payment = {
+      id: 'pay_h', subjectType: 'booking', subjectId: 'b_h', payerId: 'c1', payeeId: 'p1', provider: 'fake', amount: 1_000_000,
+      status: 'paid', escrowStatus: 'held', idempotencyKey: 'k', releaseAfter: '2026-10-10T08:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const milestone = (kind: 'shoot' | 'delivery', status: 'held' | 'disputed', releaseAfter: string | null) =>
+      ({ kind, amount: 500_000, status, releaseAfter, releasedAt: null, payoutId: null });
+    const byStatus: Record<string, Payment[]> = {
+      'held,partially_refunded': [base],
+      disputed: [
+        { ...base, id: 'pay_legacy', escrowStatus: 'disputed' },
+        {
+          ...base, id: 'pay_ms', escrowStatus: 'disputed',
+          milestones: [milestone('shoot', 'held', '2026-10-10T08:00:00.000Z'), milestone('delivery', 'disputed', null)],
+        },
+      ],
+    };
+    const wheres: unknown[][] = [];
+    let statuses = '';
+    const query = {
+      where: (field: string, op: string, value: unknown) => {
+        wheres.push([field, op, value instanceof Timestamp ? value.toDate().toISOString() : value]);
+        if (field === 'escrowStatus') statuses = String(value);
+        return query;
+      },
+      limit: () => query,
+      get: async () => {
+        const docs = (byStatus[statuses] ?? []).map((p) => ({ id: p.id, data: () => paymentToFirestore(p) }));
+        return { empty: docs.length === 0, size: docs.length, docs };
+      },
+    };
+    const firestore = { collection: () => query } as unknown as Firestore;
+    const found = await new FirestoreBookingStore(firestore).findReleasableEscrows(CUTOFF);
+    assert.deepEqual(found.map((p) => p.id), ['pay_h', 'pay_ms']);
+    assert.deepEqual(wheres, [
+      ['escrowStatus', 'in', ['held', 'partially_refunded']],
+      ['releaseAfter', '<=', CUTOFF.toISOString()],
+      ['escrowStatus', 'in', ['disputed']],
+      ['releaseAfter', '<=', CUTOFF.toISOString()],
+    ]);
+  });
+
+  it('payment dispute keeps disputeId, milestone and prevStatus', () => {
+    const base: Payment = {
+      id: 'pay_d', subjectType: 'booking', subjectId: 'b_d', payerId: 'c1', payeeId: 'p1', provider: 'fake', amount: 1_000_000,
+      status: 'paid', escrowStatus: 'disputed', idempotencyKey: 'k', payoutId: null,
+      createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const legacy: Payment = {
+      ...base,
+      dispute: { reason: 'photos_missing', openedAt: '2026-10-02T00:00:00.000Z', disputeId: 'dsp_1', milestone: null, prevEscrowStatus: 'partially_refunded' },
+    };
+    const legacyDoc = paymentToFirestore(legacy);
+    assert.ok(legacyDoc.dispute.openedAt instanceof Timestamp);
+    assert.deepEqual(paymentFromFirestore('pay_d', legacyDoc)?.dispute, legacy.dispute);
+
+    const milestone: Payment = {
+      ...base,
+      dispute: { reason: 'no_show', openedAt: '2026-10-02T00:00:00.000Z', disputeId: 'dsp_2', milestone: 'shoot' },
+    };
+    assert.deepEqual(paymentFromFirestore('pay_d', paymentToFirestore(milestone))?.dispute, milestone.dispute);
+
+    // A dispute stored before S18 has only the reason and the time; nothing is invented on read.
+    const old: Payment = { ...base, dispute: { reason: 'Ảnh giao thiếu', openedAt: '2026-10-02T00:00:00.000Z' } };
+    const oldDoc = paymentToFirestore(old);
+    assert.deepEqual(Object.keys(oldDoc.dispute).sort(), ['openedAt', 'reason']);
+    assert.deepEqual(paymentFromFirestore('pay_d', oldDoc)?.dispute, old.dispute);
   });
 
   it('findPaymentsByTransferCode filters by the code only (any status)', async () => {

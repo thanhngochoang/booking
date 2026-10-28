@@ -37,11 +37,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initial != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(paymentControllerProvider(widget.subject).notifier).seed(widget.initial);
-      });
-    }
+    // Always, also without instructions: a Chụp ngay payment decides there
+    // whether anything waits here (#202).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(paymentControllerProvider(widget.subject).notifier)
+          .seed(widget.initial);
+    });
   }
 
   void _navigate(String path, {required bool paid}) {
@@ -114,9 +117,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           .renew();
       if (!mounted) return;
       final current = ref.read(paymentControllerProvider(widget.subject));
-      if (created != null &&
-          current is PayOpen &&
-          _shows(created, current.instructions)) {
+      // Nothing new (nothing to renew, or the subject moved on): the button
+      // comes back; a leaving screen does not mind.
+      if (created == null ||
+          (current is PayOpen && _shows(created, current.instructions))) {
         setState(() {
           _renewing = false;
           _created = null;
@@ -171,11 +175,18 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
     final isTicket = widget.subject is TicketPay;
     final isFee = widget.subject is VerificationFeePay;
+    final instant = widget.subject is InstantPay;
     final isWallet = state is PayOpen && state.instructions.method != PayMethod.bankQr;
 
     return ScreenCode(
       ScreenCodes.awaitingPayment,
-      label: isTicket ? 'ticket' : (isFee ? 'fee' : null),
+      label: isTicket
+          ? 'ticket'
+          : isFee
+          ? 'fee'
+          : instant
+          ? 'instant'
+          : null,
       child: Scaffold(
         appBar: AppBar(title: Text(isWallet ? l10n.payTitle : l10n.payQrTitle)),
         body: SafeArea(
@@ -240,11 +251,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                                     verifyFeeDonePath,
                                     paid: false,
                                   )
-                              : () => context.go(
-                                    isTicket
-                                        ? '/e/${(widget.subject as TicketPay).eventId}'
-                                        : '/home',
-                                  ),
+                              : () => context.go(switch (widget.subject) {
+                                    TicketPay(:final eventId) => '/e/$eventId',
+                                    InstantPay(:final requestId) =>
+                                      '/instant/$requestId',
+                                    _ => '/home',
+                                  }),
                         )
                       : WalletWaitingView(
                           instructions: instructions,

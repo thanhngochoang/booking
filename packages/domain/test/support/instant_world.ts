@@ -1,14 +1,19 @@
 import { formatVnDate } from '../../src/booking_policy.js';
 import type { CustomerContactRecord } from '../../src/booking_ports.js';
 import { FakeBlockGate } from '../../src/fake_block_gate.js';
+import { FakePaymentGateway, type FakeTransferKind } from '../../src/fake_payment_gateway.js';
 import type { InstantConfig, InstantProfile } from '../../src/instant.js';
 import type { InstantDayState } from '../../src/instant_match.js';
-import type { InstantDeps } from '../../src/instant_ports.js';
-import { createInstantRequest, inviteInstant } from '../../src/instant_requests.js';
+import { InstantPaymentSettler } from '../../src/instant_payments.js';
+import type { InstantCaller, InstantDeps } from '../../src/instant_ports.js';
+import { createInstantRequest, inviteInstant, type InviteResult } from '../../src/instant_requests.js';
 import { MemoryInstantStore, MemoryPresenceDirectory } from '../../src/memory_instant_store.js';
+import { MemoryPaymentLookup } from '../../src/memory_payment_lookup.js';
+import { confirmFakePayment, type SettlementDeps } from '../../src/payment_settlement.js';
 import type { PushMessage } from '../../src/notification_ports.js';
 import { acceptsOrders, type OrderEligibilityFields } from '../../src/provider_orders.js';
 import { T0, TAO_DAN, aConfig, aPresence, north, type PresenceOverrides } from './instant_fixtures.js';
+import { TEST_CIPHER } from './test_cipher.js';
 
 export interface InstantWorldClock {
   now(): Date;
@@ -35,6 +40,12 @@ export interface InstantWorld {
   /** Key `${uid}/${yyyy-MM-dd}` (Vietnam date). */
   readonly days: Map<string, InstantDayState>;
   readonly clock: InstantWorldClock;
+  /** #129's fake gateway (also `deps.gateway`); `pushTransfer` simulates a transfer `queryTransfers` finds. */
+  readonly gateway: FakePaymentGateway;
+  /** V1's settlement with `subjects.instant_request` registered (#202). */
+  readonly settlement: SettlementDeps;
+  /** V1's `confirmFakePayment` on the payer's own payment (default payer Lan). */
+  pay(paymentId: string, uid?: string, kind?: FakeTransferKind): ReturnType<typeof confirmFakePayment>;
   config: InstantConfig;
   /** Puts an online, fresh presence (heartbeat now) at a point; `overrides` win. */
   online(uid: string, at: { lat: number; lng: number }, overrides?: PresenceOverrides): void;
@@ -65,6 +76,8 @@ export function createInstantWorld(opts: { now?: Date } = {}): InstantWorld {
   const users = new Map<string, { name: string; avatarUrl: string | null }>();
   const profiles = new Map<string, InstantProfile>();
   const days = new Map<string, InstantDayState>();
+  const gateway = new FakePaymentGateway();
+  const payments = new MemoryPaymentLookup([store]);
   let counter = 0;
 
   const world: InstantWorld = {
@@ -79,6 +92,9 @@ export function createInstantWorld(opts: { now?: Date } = {}): InstantWorld {
     profiles,
     days,
     clock,
+    gateway,
+    settlement: undefined as unknown as SettlementDeps,
+    pay: (paymentId, uid = 'c-lan', kind = 'exact') => confirmFakePayment(world.settlement, { uid }, { paymentId, kind }),
     config: aConfig(),
     deps: undefined as unknown as InstantDeps,
     online(uid, at, overrides = {}) {
@@ -111,6 +127,9 @@ export function createInstantWorld(opts: { now?: Date } = {}): InstantWorld {
     profiles: { snapshot: async (uid) => profiles.get(uid) ?? null },
     days: { stateOf: async (uid, day) => days.get(`${uid}/${day}`) ?? null },
     users: { get: async (uid) => users.get(uid) ?? null },
+    gateway,
+    payments,
+    cipher: TEST_CIPHER,
     push: {
       send: async (uid, msg) => {
         pushes.set(uid, [...(pushes.get(uid) ?? []), msg]);
@@ -118,6 +137,12 @@ export function createInstantWorld(opts: { now?: Date } = {}): InstantWorld {
     },
     clock,
     ids: { newId: () => `id_${String(++counter).padStart(3, '0')}` },
+  };
+  (world as { settlement: SettlementDeps }).settlement = {
+    payments,
+    gateway,
+    clock,
+    subjects: { instant_request: new InstantPaymentSettler(world.deps) },
   };
 
   world.customer('c-lan', { name: 'Lan Anh', phone: '+84901234567' });
@@ -139,12 +164,33 @@ export async function lanRequests(w: InstantWorld, input: Record<string, unknown
   return res.requestId;
 }
 
-/** Lan's request with offers sent to `ids` (first invite, #140: no payment). */
+/**
+ * "Thanh toán … và gửi lời mời": the first invite opens the payment (bank QR) and V1's fake
+ * confirmation pays it, which sends the offers (#202); a later round sends at once.
+ */
+export async function inviteAndPay(
+  w: InstantWorld,
+  caller: InstantCaller,
+  requestId: string,
+  ids: readonly string[],
+  extra: Record<string, unknown> = {},
+): Promise<InviteResult> {
+  const r = w.store.requests.get(requestId);
+  const res = await inviteInstant(w.deps, caller, {
+    requestId, photographerIds: ids, skipped: [], expectedAmountVnd: r?.amountVnd ?? 0, payMethod: 'bank_qr', ...extra,
+  });
+  if (res.kind === 'payment') {
+    const out = await w.pay(res.instructions.paymentId, caller.uid);
+    if (out.outcome !== 'paid') throw new Error(`payment answered ${out.outcome}`);
+  }
+  return res;
+}
+
+/** Lan's request, paid, with offers sent to `ids`. */
 export async function lanInvites(w: InstantWorld, ids: readonly string[], requestId?: string): Promise<string> {
   const id = requestId ?? (await lanRequests(w));
-  const r = w.store.requests.get(id);
-  const res = await inviteInstant(w.deps, LAN, { requestId: id, photographerIds: ids, skipped: [], expectedAmountVnd: r?.amountVnd ?? 0 });
-  if (res.kind !== 'invited') throw new Error(`invite answered ${res.kind}`);
+  const res = await inviteAndPay(w, LAN, id, ids);
+  if (res.kind === 'price_changed') throw new Error(`invite answered ${res.kind}`);
   return id;
 }
 

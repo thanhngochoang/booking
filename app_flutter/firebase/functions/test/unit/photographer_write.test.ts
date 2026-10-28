@@ -5,7 +5,16 @@ import type { ScoreSkillsDeps, SkillsScoreUpdate } from '@photobooking/domain';
 import { REGION, TRIGGER_OPTIONS } from '../../src/config.js';
 import { firestoreSkillsScoreWriter, isStaleWriteError, skillsUpdateFields } from '../../src/infra/skills_firestore.js';
 import { liveAcceptingOrdersWriter } from '../../src/infra/live_skills.js';
-import { handlePhotographerWrite, syncAcceptingOrders, type AcceptingOrdersWriter } from '../../src/triggers/photographer_write.js';
+import {
+  handlePhotographerWrite,
+  refreshRecruitMatchKeys,
+  syncAcceptingOrders,
+  syncRecruitMatchKeys,
+  type AcceptingOrdersWriter,
+  type RecruitMatchKeyWriter,
+} from '../../src/triggers/photographer_write.js';
+import { FirestoreRecruitMatchKeys } from '../../src/infra/recruit_firestore.js';
+import { MemoryFirestore } from './support/memory_firestore.js';
 
 const serverTime = (v: unknown) => v instanceof FieldValue && v.isEqual(FieldValue.serverTimestamp());
 
@@ -204,5 +213,112 @@ describe('liveAcceptingOrdersWriter', () => {
       }),
     );
     await assert.rejects(writer.set('p1', true), /UNAVAILABLE/);
+  });
+});
+
+describe('syncRecruitMatchKeys (S27 Decision 7)', () => {
+  function recorder(roles: Record<string, string | null> = {}): {
+    writer: RecruitMatchKeyWriter;
+    calls: [string, string[]][];
+    roleReads: string[];
+  } {
+    const calls: [string, string[]][] = [];
+    const roleReads: string[] = [];
+    return {
+      calls,
+      roleReads,
+      writer: {
+        role: async (uid) => {
+          roleReads.push(uid);
+          return roles[uid] ?? 'photographer';
+        },
+        set: async (uid, keys) => void calls.push([uid, keys]),
+      },
+    };
+  }
+  const individual = { providerType: 'individual', specialties: ['wedding'], serviceArea: { city: 'TP.HCM' } };
+  const HCM_WEDDING = ['hcm-binh-thanh', 'hcm-q1', 'hcm-q3', 'hcm-q7', 'hcm-thu-duc'].map((a) => `a=${a}|s=wedding`).sort();
+
+  test('syncRecruitMatchKeys writes keys for an individual in TP.HCM with wedding', async () => {
+    const { writer, calls, roleReads } = recorder();
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: undefined, after: individual }, writer), 'written');
+    assert.deepEqual(calls, [['p1', HCM_WEDDING]]);
+    assert.deepEqual(roleReads, ['p1']);
+  });
+
+  test('writes [] for a studio', async () => {
+    const { writer, calls, roleReads } = recorder();
+    const after = { ...individual, providerType: 'studio', recruitMatchKeys: HCM_WEDDING };
+    assert.equal(await syncRecruitMatchKeys({ uid: 's1', before: undefined, after }, writer), 'written');
+    assert.deepEqual(calls, [['s1', []]]);
+    assert.deepEqual(roleReads, [], 'a studio never matches: no role read');
+  });
+
+  test('writes nothing when the keys already match (the re-fire of its own write)', async () => {
+    const { writer, calls } = recorder();
+    const after = { ...individual, recruitMatchKeys: [...HCM_WEDDING].reverse() };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: undefined, after }, writer), 'unchanged');
+    assert.equal(calls.length, 0);
+    // no stored keys and nothing to match: unchanged too (a missing field is an empty list)
+    const plain = { providerType: 'individual', specialties: [] };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p2', before: undefined, after: plain }, writer), 'unchanged');
+    assert.equal(calls.length, 0);
+  });
+
+  test('skips the role read when providerType, serviceArea and specialties are unchanged and keys exist', async () => {
+    const { writer, calls, roleReads } = recorder();
+    const before = { ...individual, bio: 'a', recruitMatchKeys: HCM_WEDDING };
+    const after = { ...individual, serviceArea: { city: 'TP.HCM' }, bio: 'b', recruitMatchKeys: HCM_WEDDING };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before, after }, writer), 'unchanged');
+    assert.deepEqual(roleReads, [], 'an unrelated edit reads nothing');
+    // An emptied list (customer mode) counts as existing keys.
+    const emptied = { ...individual, recruitMatchKeys: [] };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: emptied, after: { ...emptied, bio: 'c' } }, writer), 'unchanged');
+    assert.deepEqual(roleReads, []);
+    assert.equal(calls.length, 0);
+  });
+
+  test('still reads the role when a matching field changed or the keys were never written', async () => {
+    const { writer, calls, roleReads } = recorder();
+    const before = { ...individual, recruitMatchKeys: HCM_WEDDING };
+    const moreSpecialties = { ...before, specialties: ['wedding', 'family'] };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before, after: moreSpecialties }, writer), 'written');
+    const moved = { ...before, serviceArea: { city: 'Hà Nội' } };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p2', before, after: moved }, writer), 'written');
+    const nowStudio = { ...before, providerType: 'studio' };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p3', before, after: nowStudio }, writer), 'written');
+    const neverWritten = { ...individual, bio: 'x' };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p4', before: individual, after: neverWritten }, writer), 'written');
+    assert.deepEqual(roleReads, ['p1', 'p2', 'p4'], 'a studio reads no role');
+    assert.equal(calls.length, 4);
+  });
+
+  test('writes nothing for a deleted doc', async () => {
+    const { writer, calls, roleReads } = recorder();
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: individual, after: undefined }, writer), 'deleted');
+    assert.equal(calls.length, 0);
+    assert.equal(roleReads.length, 0);
+  });
+
+  test('a customer-mode role writes []', async () => {
+    const { writer, calls } = recorder({ p1: 'customer' });
+    const after = { ...individual, recruitMatchKeys: HCM_WEDDING };
+    assert.equal(await syncRecruitMatchKeys({ uid: 'p1', before: undefined, after }, writer), 'written');
+    assert.deepEqual(calls, [['p1', []]]);
+  });
+
+  test('a role switch (users/{uid}.role) re-syncs the keys of an existing photographer doc only', async () => {
+    const db = new MemoryFirestore();
+    const store = new FirestoreRecruitMatchKeys(db.asFirestore());
+    db.seed('users/p1', { role: 'customer' });
+    db.seed('photographers/p1', { ...individual, recruitMatchKeys: HCM_WEDDING });
+    assert.equal(await refreshRecruitMatchKeys({ uid: 'p1', before: { role: 'photographer' }, after: { role: 'customer' } }, store), 'written');
+    assert.deepEqual(db.data('photographers/p1')?.recruitMatchKeys, []);
+    db.seed('users/p1', { role: 'photographer' });
+    assert.equal(await refreshRecruitMatchKeys({ uid: 'p1', before: { role: 'customer' }, after: { role: 'photographer' } }, store), 'written');
+    assert.deepEqual(db.data('photographers/p1')?.recruitMatchKeys, HCM_WEDDING);
+    assert.equal(await refreshRecruitMatchKeys({ uid: 'p1', before: { role: 'photographer', displayName: 'a' }, after: { role: 'photographer' } }, store), 'unchanged');
+    assert.equal(await refreshRecruitMatchKeys({ uid: 'c9', before: { role: 'photographer' }, after: { role: 'customer' } }, store), 'deleted');
+    assert.equal(db.data('photographers/c9'), undefined, 'never creates a photographer doc');
   });
 });

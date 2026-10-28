@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/data/disputes/dispute.dart';
+import 'package:photobooking/data/disputes/dispute_providers.dart';
 import 'package:photobooking/data/support/support_providers.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/help/help_faq.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -42,7 +46,8 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
               vertical: AppSpace.s3,
             ),
             children: [
-              // Slot for "Khiếu nại của bạn" (#142 fills this; empty in #204)
+              // "Khiếu nại của bạn" (#142): only when the user has disputes.
+              const _MyDisputes(),
 
               // "Câu hỏi thường gặp" Section
               Text(
@@ -149,7 +154,9 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
               }
             });
           },
-          borderRadius: const BorderRadius.all(Radius.circular(28)),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(AppRadius.sheet),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: Column(
@@ -183,6 +190,130 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S18.03 "Khiếu nại của bạn": my latest disputes, newest first (one `get`).
+/// Shown only when there is at least one; while loading or when the read
+/// fails the section stays out, so the FAQ and "Liên hệ hỗ trợ" always work.
+class _MyDisputes extends ConsumerWidget {
+  const _MyDisputes();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final uid = ref.watch(authStateProvider).value?.uid;
+    return AsyncView<List<Dispute>>(
+      value: ref.watch(myDisputesProvider),
+      skeleton: (_) => const SizedBox.shrink(),
+      error: (_, _, _) => const SizedBox.shrink(),
+      isEmpty: (list) => list.isEmpty,
+      empty: (_) => const SizedBox.shrink(),
+      data: (context, list) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.helpMyDisputes,
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpace.s2),
+          for (final d in list) ...[
+            // The provider reads the booking; everyone else the receiver.
+            _DisputeRow(dispute: d, viewerIsProvider: d.providerId == uid),
+            const SizedBox(height: AppSpace.s2),
+          ],
+          const SizedBox(height: AppSpace.s2),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Khiếu nại #K7Q2 · Minh Trí" / "Đang xem xét · 14/10" → S18.02.
+class _DisputeRow extends StatelessWidget {
+  const _DisputeRow({required this.dispute, required this.viewerIsProvider});
+
+  final Dispute dispute;
+  final bool viewerIsProvider;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final d = dispute;
+    // The customer sees who receives the money; the provider (whose own name
+    // is in the title) the date and slot of the disputed booking or ticket.
+    final name = viewerIsProvider
+        ? (d.subtitle.isNotEmpty ? d.subtitle : d.title)
+        : disputeReceiverName(l, d);
+    final status = d.status == DisputeStatus.open
+        ? l.disputeStatusOpen
+        : l.disputeStatusResolved;
+    const radius = BorderRadius.all(Radius.circular(AppRadius.sheet));
+    return GlassCard(
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: Key('help-dispute-${d.id}'),
+          borderRadius: radius,
+          onTap: () => context.push('/disputes/${d.id}'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s3,
+              vertical: AppSpace.s2h,
+            ),
+            child: Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: dark
+                        ? AppColorsDark.surfaceMuted
+                        : AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpace.s2),
+                    child: AppIcon(
+                      AppIcons.flag,
+                      size: 20,
+                      color: dark
+                          ? AppColorsDark.foregroundSecondary
+                          : AppColors.foregroundSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.helpDisputeRow(disputeCode(d.id), name),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        l.helpDisputeRowMeta(
+                          status,
+                          formatDayMonth(toVn(d.createdAt)),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const AppIcon(AppIcons.chevron, size: 20),
               ],
             ),
           ),

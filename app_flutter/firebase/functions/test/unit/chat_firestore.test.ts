@@ -6,7 +6,9 @@ import {
   toFirestoreMessage,
   fromFirestoreMessage,
 } from '../../src/infra/chat_firestore.js';
+import { FirestoreChatStore } from '../../src/infra/chat_firestore.js';
 import { handleBookingWrite } from '../../src/triggers/booking_write.js';
+import { MemoryFirestore } from './support/memory_firestore.js';
 import type { Chat, ChatDeps, Message } from '@photobooking/domain';
 import { MemoryChatStore } from '@photobooking/domain';
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
@@ -55,6 +57,14 @@ describe('chat_firestore mapping and trigger unit tests', () => {
     const legacy: Record<string, unknown> = { ...fsNoAssignee };
     delete legacy.assigneeId;
     assert.equal(fromFirestoreChat('cust1_phot1', legacy).assigneeId, null);
+
+    // S27 (#151 Decision 16): a collab chat keeps its kind (studio in customerId, collaborator in photographerId)
+    const collab: Chat = { ...chat, id: 'collab_st1_c1', kind: 'collab', customerId: 'st1', photographerId: 'c1', assigneeId: null, bookingId: null, bookingStatus: null };
+    const fsCollab = toFirestoreChat(collab);
+    assert.equal(fsCollab.kind, 'collab');
+    assert.deepEqual(fsCollab.members, ['st1', 'c1']);
+    assert.deepEqual(fromFirestoreChat('collab_st1_c1', fsCollab), collab);
+    assert.equal(fromFirestoreChat('x', { ...fsCollab, kind: 'weird' }).kind, 'inquiry');
 
     // Also round-trip with blockedAt: null
     const chatNullBlocked = { ...chat, blockedAt: null };
@@ -110,6 +120,19 @@ describe('chat_firestore mapping and trigger unit tests', () => {
     assert.equal(firestoreSysMsg.senderId, null);
     const restoredSysMsg = fromFirestoreMessage('cust1_phot1', 'msg_sys_01', firestoreSysMsg);
     assert.deepEqual(restoredSysMsg, sysMsg);
+  });
+
+  it('setReadOnly sets and clears readOnlyAt of an existing chat and never creates one (S27 Decision 16)', async () => {
+    const db = new MemoryFirestore();
+    const store = new FirestoreChatStore(db.asFirestore());
+    const at = new Date('2026-10-20T10:00:00.000Z');
+    assert.equal(await store.setReadOnly('collab_st1_c1', at), false);
+    assert.equal(db.data('chats/collab_st1_c1'), undefined);
+    db.seed('chats/collab_st1_c1', { kind: 'collab', customerId: 'st1', photographerId: 'c1', readOnlyAt: null });
+    assert.equal(await store.setReadOnly('collab_st1_c1', at), true);
+    assert.equal((db.data('chats/collab_st1_c1')?.readOnlyAt as Timestamp).toMillis(), at.getTime());
+    assert.equal(await store.setReadOnly('collab_st1_c1', null), true);
+    assert.equal(db.data('chats/collab_st1_c1')?.readOnlyAt, null);
   });
 
   it('a missing or non-string bookingStatus reads as null', () => {

@@ -1,6 +1,6 @@
 # Dependabot version and security updates.
 #
-# One PR per ecosystem for every minor and patch bump: the four npm packages
+# One PR per ecosystem for every minor and patch bump: the three npm packages
 # share one entry (`directories`), so a package used in several of them is
 # bumped everywhere in the same PR. Security fixes are grouped the same way
 # (`applies-to: security-updates`). Major bumps stay one PR each, because
@@ -22,7 +22,6 @@ updates:
       - /packages/domain
       - /app_flutter/firebase/functions
       - /app_flutter/firebase/rules-test
-      - /services/api
     schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
     open-pull-requests-limit: 10
     groups:

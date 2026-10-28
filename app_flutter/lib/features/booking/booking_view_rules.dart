@@ -7,6 +7,7 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 import 'package:photobooking/features/studio/studio_common.dart'
     show studioDeadlineText;
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -43,6 +44,10 @@ enum DetailAction {
   /// "Trả việc": the assignee hands the job back before the start
   /// (Decision 14), once.
   returnJob,
+
+  /// "Báo vấn đề · còn {h} giờ" (S18.01): the customer while a dispute
+  /// window is open and its money held (`bookingDisputeClosesAt`, #142).
+  reportProblem,
 }
 
 bool _isActive(BookingStatus s) =>
@@ -122,6 +127,10 @@ List<DetailAction> detailActions(
     }
     if (BookingRules.isReviewed(b) && features.review) {
       out.add(DetailAction.viewReview);
+    }
+    final disputeClosesAt = bookingDisputeClosesAt(b);
+    if (disputeClosesAt != null && now.isBefore(disputeClosesAt)) {
+      out.add(DetailAction.reportProblem);
     }
     return out;
   }
@@ -754,4 +763,54 @@ bool canRequestAssigneeChange(Booking b, DateTime now) {
       _isActive(b.status) &&
       now.isBefore(startsAtOf(b)) &&
       s.changeRequest == null;
+}
+
+/// Where a studio's offer to a collaborator stands (S27, #151 Decision 13).
+enum StudioOfferState {
+  /// The collaborator has not answered yet: "Chờ {name} nhận · còn {left}".
+  pending,
+
+  /// They declined or let it lapse, the booking is unassigned and the
+  /// deadline is ahead: "{name} đã từ chối. Giao người khác trước …".
+  declined,
+}
+
+/// The studio's view of [b]'s latest collaborator offer at [now], or null
+/// when there is none to tell (a member is assigned, the offer was accepted,
+/// the booking is closed, or the S26 overdue line takes over past the
+/// deadline).
+({StudioOfferState state, String collaboratorId, DateTime? expiresAt})?
+studioOfferOf(Booking b, DateTime now) {
+  final s = b.studio;
+  final last = s?.lastAssignment;
+  if (s == null || last == null || last.assigneeKind != 'collaborator') {
+    return null;
+  }
+  // A closed booking has nothing left to staff.
+  if (const {
+    BookingStatus.declined,
+    BookingStatus.expired,
+    BookingStatus.cancelled,
+    BookingStatus.completed,
+    BookingStatus.reviewed,
+  }.contains(b.status)) {
+    return null;
+  }
+  if (s.hasPendingOffer && s.assigneeId == last.assigneeId) {
+    return (
+      state: StudioOfferState.pending,
+      collaboratorId: last.assigneeId,
+      expiresAt: last.offerExpiresAt,
+    );
+  }
+  if (s.assigneeId == null &&
+      last.acceptedAt == null &&
+      now.isBefore(s.assignDeadline)) {
+    return (
+      state: StudioOfferState.declined,
+      collaboratorId: last.assigneeId,
+      expiresAt: last.offerExpiresAt,
+    );
+  }
+  return null;
 }

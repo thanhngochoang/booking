@@ -1,8 +1,8 @@
 // S13.08 (photographer side): cancel an accepted Chụp ngay job. The server's
 // dry run comes first, so the outcome is known before the red button; the
 // customer always gets everything back and the photographer's reliability
-// drops (Decision 9). #140 moves no money: the copy is the end-state copy
-// (Task 1 ruling), the recorded amounts are zero.
+// drops (Decision 9). The money stays held for the customer's next round
+// (#202); the quote shown goes with the cancel (`conflict` if it changed).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,16 +47,19 @@ class _ProviderCancelBodyState extends ConsumerState<_ProviderCancelBody> {
   String? _error;
 
   Future<void> _confirm() async {
-    if (_running) return;
+    // The red button exists only once the quote has loaded; without one, no cancel.
+    final shown = ref.read(providerCancelQuoteProvider(widget.requestId)).value;
+    if (_running || shown == null) return;
     final l = context.l10n;
     setState(() {
       _running = true;
       _error = null;
     });
     try {
+      // The outcome shown goes with the cancel (`conflict` if it changed).
       await ref
           .read(instantRepositoryProvider)
-          .cancel(widget.requestId, dryRun: false);
+          .cancel(widget.requestId, dryRun: false, expected: shown);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } on Object catch (e) {

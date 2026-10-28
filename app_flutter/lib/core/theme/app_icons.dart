@@ -35,6 +35,7 @@ abstract final class AppIcons {
   static const IconData arrowDown = Symbols.arrow_downward_rounded;
   static const IconData check = Symbols.check_rounded;
   static const IconData checkCircle = Symbols.check_circle_rounded;
+  static const IconData taskAlt = Symbols.task_alt_rounded;
   static const IconData doneAll = Symbols.done_all_rounded;
   static const IconData close = Symbols.close_rounded;
   static const IconData undo = Symbols.undo_rounded;
@@ -99,6 +100,12 @@ abstract final class AppIcons {
   static const IconData verified = Symbols.verified_rounded;
   static const IconData work = Symbols.work_rounded;
   static const IconData store = Symbols.storefront_rounded;
+
+  /// S27: a studio–collaborator relationship (S27.06, S09.02 "Cộng tác").
+  static const IconData handshake = Symbols.handshake_rounded;
+
+  /// S27: a recruit notice (S27.05, S09.02 "Tin tuyển", S03.01 "Đang tuyển").
+  static const IconData campaign = Symbols.campaign_rounded;
   static const IconData verifiedUser = Symbols.verified_user_rounded;
   static const IconData businessVerify = Symbols.domain_verification_rounded;
   static const IconData people = Symbols.group_rounded;
@@ -115,6 +122,8 @@ abstract final class AppIcons {
   static const IconData volumeOff = Symbols.volume_off_rounded;
   static const IconData delete = Symbols.delete_rounded;
   static const IconData personRemove = Symbols.person_remove_rounded;
+  static const IconData personSearch = Symbols.person_search_rounded;
+  static const IconData hourglass = Symbols.hourglass_empty_rounded;
   static const IconData flag = Symbols.flag_rounded;
   static const IconData help = Symbols.help_rounded;
   static const IconData car = Symbols.directions_car_rounded;

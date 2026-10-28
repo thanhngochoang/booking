@@ -229,7 +229,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 .value;
             final counterpartName =
                 counterpartProfile?.displayName ??
-                (currentUserId == thread.customerId
+                (thread.kind == ChatKind.collab
+                    ? l10n.chatKindCollab
+                    : currentUserId == thread.customerId
                     ? l10n.profileRolePhotographer
                     : l10n.profileRoleCustomer);
 
@@ -508,7 +510,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         .value;
     final counterpartName =
         counterpartProfile?.displayName ??
-        (currentUserId == thread.customerId
+        (thread.kind == ChatKind.collab
+            ? l10n.chatKindCollab
+            : currentUserId == thread.customerId
             ? l10n.profileRolePhotographer
             : l10n.profileRoleCustomer);
     final avatarUrl = counterpartProfile?.avatarUrl;

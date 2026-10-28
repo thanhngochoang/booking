@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/account/account_providers.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/features/account/delete_account_screen.dart';
@@ -44,9 +45,13 @@ import 'package:photobooking/features/jobs/quote_detail_screen.dart';
 import 'package:photobooking/features/jobs/quotes_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/search/explore_search_screen.dart';
+import 'package:photobooking/features/disputes/dispute_detail_screen.dart';
 import 'package:photobooking/features/help/help_screen.dart';
 import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
+import 'package:photobooking/features/instant/instant_flow_screen.dart';
+import 'package:photobooking/features/instant/instant_payment.dart';
+import 'package:photobooking/features/instant/instant_request_screen.dart';
 import 'package:photobooking/features/instant_work/instant_job_screen.dart';
 import 'package:photobooking/features/instant_work/live_shutter_screen.dart';
 import 'package:photobooking/features/instant_work/offer_screen.dart';
@@ -55,6 +60,7 @@ import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
+import 'package:photobooking/features/payments/payment_history_screen.dart';
 import 'package:photobooking/features/photo/photo_detail_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -66,6 +72,11 @@ import 'package:photobooking/features/saved/followers_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
+import 'package:photobooking/features/collab/collab_screen.dart';
+import 'package:photobooking/features/recruit/recruit_detail_screen.dart';
+import 'package:photobooking/features/recruit/recruit_edit_screen.dart';
+import 'package:photobooking/features/recruit/recruit_list_screen.dart';
+import 'package:photobooking/features/recruit/studio_recruit_screen.dart';
 import 'package:photobooking/features/safety/blocked_users_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
@@ -115,9 +126,13 @@ String? computeRedirect({
   bool isAccountLocked = false,
   required String location,
   String? from,
+  String? target,
 }) {
+  // Where the splash returns to: the whole URI, query included, so a
+  // cold-start deep link like `/collab?offer=…` keeps its parameters.
+  final resume = target ?? location;
   final onAuth = _authRoutes.contains(location);
-  if (authLoading) return location == _splashRoute ? null : _toSplash(location);
+  if (authLoading) return location == _splashRoute ? null : _toSplash(resume);
   if (!signedIn) {
     if (location == _splashRoute) return '/login';
     return onAuth ? null : '/login';
@@ -126,7 +141,7 @@ String? computeRedirect({
     return location == _sessionErrorRoute ? null : _sessionErrorRoute;
   }
   if (!profileLoaded) {
-    return location == _splashRoute ? null : _toSplash(location);
+    return location == _splashRoute ? null : _toSplash(resume);
   }
   if (isAccountLocked) {
     return location == _restoreAccountRoute ? null : _restoreAccountRoute;
@@ -136,7 +151,10 @@ String? computeRedirect({
   }
   if (needsRole) return location == _onboardingRoute ? null : _onboardingRoute;
   if (location == _splashRoute) {
-    return (from == null || _nonResumable.contains(from))
+    // A malformed `from` (hand-typed `/splash?from=::`) goes home; parsing
+    // must not throw inside the top-level redirect.
+    final fromPath = from == null ? null : Uri.tryParse(from)?.path;
+    return (fromPath == null || _nonResumable.contains(fromPath))
         ? AppTab.home.path
         : from;
   }
@@ -147,6 +165,19 @@ String? computeRedirect({
 /// S06.04 and S08.01 are for photographers only (spec screens/README.md "Vai trò").
 String? photographerOnlyRedirect(UserRole? role) =>
     role == UserRole.photographer ? null : AppTab.home.path;
+
+/// S27.04 and S27.05 belong to a studio: anyone not in photographer mode
+/// goes to S27.01 (which shows them only the R3 note); the screens send a
+/// photographer who is not a studio there too once its facts load.
+String? studioRecruitRedirect(UserRole? role) =>
+    role == UserRole.photographer ? null : '/recruit';
+
+/// S13 Chụp ngay is for customers, and only while it is on (Decision 9, 14).
+/// A role not known yet (profile loading) does not redirect: a cold-start
+/// deep link or push keeps its destination (the app-level redirect parks it
+/// on /splash until the profile is there).
+String? instantCustomerRedirect({required bool enabled, UserRole? role}) =>
+    !enabled || role == UserRole.photographer ? AppTab.home.path : null;
 
 /// Rebuilds GoRouter's redirect when auth or profile changes.
 class RouterNotifier extends ChangeNotifier {
@@ -174,6 +205,7 @@ class RouterNotifier extends ChangeNotifier {
       isAccountLocked: lock.value != null,
       location: state.matchedLocation,
       from: state.uri.queryParameters['from'],
+      target: state.uri.toString(),
     );
   }
 }
@@ -183,6 +215,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(notifier.dispose);
   String? photographersOnly() =>
       photographerOnlyRedirect(ref.read(currentProfileProvider).value?.role);
+  String? instantCustomersOnly() => instantCustomerRedirect(
+    enabled: ref.read(instantEnabledProvider),
+    role: ref.read(currentProfileProvider).value?.role,
+  );
   return GoRouter(
     initialLocation: AppTab.home.path,
     refreshListenable: notifier,
@@ -299,6 +335,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/work/calendar',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const MyCalendarScreen(),
+      ),
+      // S13 Chụp ngay (customer): S13.01, then the request's status switch.
+      // Flat routes: the request does not stack on the S13.01 form.
+      GoRoute(
+        path: '/instant',
+        redirect: (_, _) => instantCustomersOnly(),
+        builder: (_, _) => const InstantRequestScreen(),
+      ),
+      GoRoute(
+        path: '/instant/:id',
+        redirect: (_, _) => instantCustomersOnly(),
+        builder: (_, state) => InstantFlowScreen(
+          requestId: state.pathParameters['id']!,
+          justPaid: state.uri.queryParameters[kInstantPaidQuery] == '1',
+        ),
+      ),
+      // #202: the first round's payment on V1's shared S04.04.
+      GoRoute(
+        path: '/instant/:id/pay',
+        redirect: (_, _) => instantCustomersOnly(),
+        builder: (_, state) => PaymentScreen(
+          subject: InstantPay(state.pathParameters['id']!),
+          initial: state.extra as PaymentInstructions?,
+        ),
       ),
       GoRoute(
         path: '/work/instant',
@@ -518,6 +578,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      // S22.01 (#141): from S09.02 and the `refund_account_needed` notice.
+      GoRoute(
+        path: '/me/payments',
+        builder: (_, _) => const PaymentHistoryScreen(),
+      ),
       // S26.03 (individual, NAG) and S26.01 (studio owner); the server refuses
       // the wrong side's calls, the settings rows pick the right screen.
       GoRoute(
@@ -597,6 +662,58 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.queryParameters['tab'],
           ),
         ),
+      ),
+      // S27.01 / S27.02: provider accounts only; the screens query nothing
+      // for anyone else (R3).
+      GoRoute(
+        path: '/recruit',
+        builder: (_, state) =>
+            RecruitListScreen(studioId: state.uri.queryParameters['studioId']),
+      ),
+      GoRoute(
+        path: '/recruit/:postId',
+        builder: (_, state) =>
+            RecruitDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      // S27.05 (query `post`), S27.04 new and edit: studios only.
+      GoRoute(
+        path: '/studio/recruit',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            StudioRecruitScreen(postId: state.uri.queryParameters['post']),
+      ),
+      GoRoute(
+        path: '/studio/recruit/new',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, _) => const RecruitEditScreen(),
+      ),
+      GoRoute(
+        path: '/studio/recruit/:postId/edit',
+        redirect: (_, _) => studioRecruitRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            RecruitEditScreen(postId: state.pathParameters['postId']),
+      ),
+      // S27.06 (query `offer` opens S27.07): providers only; the screen
+      // picks the studio or the photographer view from the account's facts.
+      GoRoute(
+        path: '/collab',
+        redirect: (_, _) => photographerOnlyRedirect(
+          ref.read(currentProfileProvider).value?.role,
+        ),
+        builder: (_, state) =>
+            CollabScreen(offerBookingId: state.uri.queryParameters['offer']),
+      ),
+      // S18.02: outside the tab shell, for the dispute's customer and provider.
+      GoRoute(
+        path: '/disputes/:id',
+        builder: (_, state) =>
+            DisputeDetailScreen(disputeId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
       GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),

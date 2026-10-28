@@ -139,6 +139,10 @@ describe('award callables on the emulators', () => {
   test('the A1 hook recomputes after studio -> individual', async () => {
     // DUNG is an artist with three approved seed awards. Studio keeps its type, so the switch
     // clears artistSince; going back to individual must bring the artist tier back.
+    // The seed gives Dũng an open join request to Cúc; an open studio relation blocks the switch.
+    const open = await db.collection('studio_members').where('memberId', '==', DUNG).where('status', '==', 'requested').get();
+    assert.equal(open.size, 1);
+    await open.docs[0]?.ref.update({ status: 'cancelled' });
     const toStudio = await call('setProviderType', DUNG, { type: 'studio' });
     assert.deepEqual(toStudio.result, { providerType: 'studio' }, toStudio.text);
     assert.equal((await data(`photographers/${DUNG}`)).providerType, 'studio');

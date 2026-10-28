@@ -158,6 +158,7 @@ class StudioAssigneeBlock extends ConsumerWidget {
             data: (context, p) => AssigneeCard(
               summary: _summaryOf(assigneeId, p),
               studioName: studioName,
+              collaborator: studio.assigneeKind == 'collaborator',
               onViewProfile: () => context.push('/u/$assigneeId'),
               changeLabel: state == StudioBlockState.changePending
                   ? l.assigneeChangePending

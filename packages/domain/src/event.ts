@@ -153,6 +153,8 @@ export interface RegistrationDoc {
    */
   readonly refundId?: string | null;
   readonly refundStatus?: RefundStatus | null;
+  /** The ticket's latest dispute (S18), open or resolved; written only by the dispute transaction (server). */
+  readonly disputeId?: string | null;
   readonly event: {
     readonly title: string;
     readonly type: EventType;

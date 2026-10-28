@@ -42,7 +42,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 1, expired: 0, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal((await payment(world, paymentId)).status, 'paid');
     assert.equal((await world.store.getBooking(draft.id))?.status, 'requested');
@@ -59,7 +59,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 0, expired: 0, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal((await payment(world, paymentId)).status, 'created');
     assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
@@ -75,7 +75,7 @@ describe('runPaymentSweeps', () => {
     const early = await runPaymentSweeps(world.deps);
     assert.deepEqual(early, {
       reconciled: 0, expired: 0, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
 
     world.clock.advanceMinutes(1); // 15 minutes: expiresAt reached
@@ -83,7 +83,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 0, expired: 2, refunded: 1, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     const p = await payment(world, under.paymentId);
     assert.equal(p.status, 'expired');
@@ -118,11 +118,11 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(first, {
       reconciled: 0, expired: 1, refunded: 1, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.deepEqual(second, {
       reconciled: 0, expired: 0, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal(world.store.refunds.size, 1);
     assert.equal(world.gateway.refundCalls.length, 1);
@@ -139,7 +139,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 1, expired: 1, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal((await payment(world, paymentId)).status, 'expired');
     assert.deepEqual(
@@ -173,7 +173,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 0, expired: 0, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal(world.gateway.queryTransfersCalls.length, 0);
     assert.equal((await payment(world, 'legacy')).status, 'created');
@@ -192,7 +192,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 1, expired: 0, refunded: 0, refundsResent: 0,
-      reconcileFailed: 1, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 1, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal((await payment(world, broken.paymentId)).status, 'created');
     assert.equal((await payment(world, fine.paymentId)).status, 'paid');
@@ -211,7 +211,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 0, expired: 2, refunded: 2, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal((await payment(world, a.paymentId)).status, 'expired');
     assert.equal((await payment(world, b.paymentId)).status, 'expired');
@@ -242,7 +242,7 @@ describe('runPaymentSweeps', () => {
 
     assert.deepEqual(res, {
       reconciled: 0, expired: 1, refunded: 0, refundsResent: 0,
-      reconcileFailed: 0, expireFailed: 1, resendFailed: 0, skippedRefunds: 0,
+      reconcileFailed: 0, expireFailed: 1, resendFailed: 0, skippedRefunds: 0, refundAccountsConfirmed: 0, confirmFailed: 0,
     });
     assert.equal((await payment(world, a.paymentId)).status, 'created');
     assert.equal((await payment(world, b.paymentId)).status, 'expired');

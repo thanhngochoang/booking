@@ -9,7 +9,9 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 /// One part of a [MetaLine]: plain text, or the tomato icon with a percent.
 sealed class MetaPart {
-  const factory MetaPart.text(String text) = _TextPart;
+  /// [bold], when it occurs in [text], is drawn bold in tabular figures
+  /// (mock `<b class="tn">`, e.g. "đến trong khoảng **9 phút**").
+  const factory MetaPart.text(String text, {String? bold}) = _TextPart;
 
   /// Shown as the tomato icon and `97%`, or `97% (58)` with a [count] (the
   /// S02.01 photo cards). Callers add it only when the provider has enough
@@ -50,8 +52,9 @@ String metaPartsSemantics(List<MetaPart> parts, AppLocalizations l) => parts
     .join(' · ');
 
 class _TextPart implements MetaPart {
-  const _TextPart(this.text);
+  const _TextPart(this.text, {this.bold});
   final String text;
+  final String? bold;
 }
 
 class _TomatoPart implements MetaPart {
@@ -84,8 +87,25 @@ class MetaLine extends StatelessWidget {
     for (final part in parts) {
       if (spans.isNotEmpty) spans.add(const TextSpan(text: ' · '));
       switch (part) {
-        case _TextPart(:final text):
-          spans.add(TextSpan(text: text));
+        case _TextPart(:final text, :final bold):
+          final at = bold == null || bold.isEmpty ? -1 : text.indexOf(bold);
+          if (at < 0) {
+            spans.add(TextSpan(text: text));
+          } else {
+            spans
+              ..add(TextSpan(text: text.substring(0, at)))
+              ..add(
+                TextSpan(
+                  text: bold,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              )
+              ..add(TextSpan(text: text.substring(at + bold!.length)));
+          }
         case _TomatoPart(:final pct, :final count):
           spans.add(
             const WidgetSpan(

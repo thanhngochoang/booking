@@ -14,6 +14,8 @@ import {
   MAX_MEMBERS_VERIFIED,
   PAYMENT_METHODS,
   acceptsOrders,
+  collabJobId,
+  collaborationId,
   escrowRefundedTotal,
   formatVnDate,
   isAddonKind,
@@ -23,6 +25,7 @@ import {
   parseVnDateTime,
   waitsForAssignee,
   type AddonLine,
+  type AssigneeKind,
   type Booking,
   type BookingPickup,
   type BookingCheckout,
@@ -34,12 +37,15 @@ import {
   type PaymentProvider,
   type AvailabilityDayRecord,
   type StudioBookingStore,
+  type StudioAssignment,
   type StudioBookingTx,
   type StudioDayLoad,
   type Payment,
+  type PaymentDispute,
   type PaymentStatus,
   type Refund,
   type RefundStatus,
+  type StoredBankAccount,
   type LedgerEntry,
   type LedgerEntryType,
   type TransferOutcome,
@@ -66,6 +72,15 @@ import {
   spotDayFromFirestore,
   spotDayToFirestore,
 } from './spot_firestore.js';
+import {
+  COLLAB_JOBS_COLLECTION,
+  RECRUIT_COUNTERS_DOC,
+  STUDIO_COLLABORATIONS_COLLECTION,
+  collabJobFromDoc,
+  collabJobToDoc,
+  collaborationFromDoc,
+  countersFromDoc,
+} from './recruit_mapping.js';
 
 export const BOOKINGS_COLLECTION = 'bookings';
 export const AVAILABILITY_COLLECTION = 'availability';
@@ -151,6 +166,8 @@ function studioFieldsToFirestore(b: Booking): DocumentData {
     isStudio: true,
     assigneeId: b.assigneeId ?? null,
     assigneeKind: b.assigneeKind ?? null,
+    // S27: false while a collaborator's offer waits (rules keep the customer contact closed until true).
+    ...(b.assigneeAccepted !== undefined ? { assigneeAccepted: b.assigneeAccepted } : {}),
     assignStatus: b.assignStatus ?? 'unassigned',
     assignDeadline: toTimestamp(b.assignDeadline),
     assignOverdue: b.assignOverdue ?? false,
@@ -162,6 +179,10 @@ function studioFieldsToFirestore(b: Booking): DocumentData {
       by: a.by,
       reason: a.reason,
       late: a.late,
+      // S27 collaborator offers only; the agreed fee is never on the booking (#151 Decision 3).
+      ...(a.offerExpiresAt !== undefined ? { offerExpiresAt: toTimestamp(a.offerExpiresAt) } : {}),
+      ...(a.acceptedAt !== undefined ? { acceptedAt: toTimestamp(a.acceptedAt) } : {}),
+      ...(a.declinedAt !== undefined ? { declinedAt: toTimestamp(a.declinedAt) } : {}),
     })),
     assignRemindersSent: [...(b.assignRemindersSent ?? [])],
     changeRequest: cr
@@ -181,6 +202,11 @@ function studioFieldsToFirestore(b: Booking): DocumentData {
   };
 }
 
+/** A stored assignee kind; anything else is null (an entry without one predates S27 and is a member). */
+function assigneeKindOf(v: unknown): AssigneeKind | null {
+  return v === 'member' || v === 'collaborator' ? v : null;
+}
+
 function studioFieldsFromFirestore(d: DocumentData): Partial<Booking> {
   if (d.isStudio !== true) return {};
   const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
@@ -193,20 +219,29 @@ function studioFieldsFromFirestore(d: DocumentData): Partial<Booking> {
   return {
     isStudio: true,
     assigneeId: str(d.assigneeId),
-    assigneeKind: d.assigneeKind === 'member' ? 'member' : null,
+    assigneeKind: assigneeKindOf(d.assigneeKind),
+    ...(typeof d.assigneeAccepted === 'boolean' ? { assigneeAccepted: d.assigneeAccepted } : {}),
     assignStatus: d.assignStatus === 'assigned' ? 'assigned' : 'unassigned',
     ...(toIsoString(d.assignDeadline) !== undefined ? { assignDeadline: toIsoString(d.assignDeadline) } : {}),
     assignOverdue: d.assignOverdue === true,
     assignedAt: toIsoString(d.assignedAt) ?? null,
     assignments: Array.isArray(d.assignments)
-      ? d.assignments.map((raw: Record<string, unknown>) => ({
-          assigneeId: String(raw?.assigneeId ?? ''),
-          assigneeKind: 'member' as const,
-          at: toIsoString(raw?.at) ?? '',
-          by: String(raw?.by ?? ''),
-          reason: str(raw?.reason),
-          late: raw?.late === true,
-        }))
+      ? d.assignments.map((raw: Record<string, unknown>): StudioAssignment => {
+          const offerExpiresAt = toIsoString(raw?.offerExpiresAt);
+          const acceptedAt = toIsoString(raw?.acceptedAt);
+          const declinedAt = toIsoString(raw?.declinedAt);
+          return {
+            assigneeId: String(raw?.assigneeId ?? ''),
+            assigneeKind: assigneeKindOf(raw?.assigneeKind) ?? 'member',
+            at: toIsoString(raw?.at) ?? '',
+            by: String(raw?.by ?? ''),
+            reason: str(raw?.reason),
+            late: raw?.late === true,
+            ...(offerExpiresAt !== undefined ? { offerExpiresAt } : {}),
+            ...(acceptedAt !== undefined ? { acceptedAt } : {}),
+            ...(declinedAt !== undefined ? { declinedAt } : {}),
+          };
+        })
       : [],
     assignRemindersSent: Array.isArray(d.assignRemindersSent)
       ? d.assignRemindersSent.filter((r: unknown): r is 'h48' | 'h26' => r === 'h48' || r === 'h26')
@@ -334,6 +369,7 @@ export function bookingToFirestore(b: Booking): DocumentData {
     depositProvider: b.depositProvider ?? null,
     depositPaidAt: toTimestamp(b.depositPaidAt),
     depositRefundedAt: toTimestamp(b.depositRefundedAt),
+    ...(b.refundAccountNeeded !== undefined ? { refundAccountNeeded: b.refundAccountNeeded } : {}),
     acceptDeadline: toTimestamp(b.acceptDeadline),
     cancel: b.cancel
       ? {
@@ -345,6 +381,8 @@ export function bookingToFirestore(b: Booking): DocumentData {
       : null,
     completedAt: toTimestamp(b.completedAt),
     reviewedAt: toTimestamp(b.reviewedAt),
+    // S18: the dispute mirror (written by the dispute transaction) survives every booking write.
+    disputeId: b.disputeId ?? null,
     chatId: b.chatId ?? null,
     revisionsIncluded: b.revisionsIncluded ?? null,
     revisionsUsed: b.revisionsUsed ?? null,
@@ -485,10 +523,12 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     depositProvider: (d.depositProvider as PaymentProvider) ?? undefined,
     depositPaidAt: toIsoString(d.depositPaidAt),
     depositRefundedAt: toIsoString(d.depositRefundedAt),
+    ...(typeof d.refundAccountNeeded === 'boolean' ? { refundAccountNeeded: d.refundAccountNeeded } : {}),
     acceptDeadline: toIsoString(d.acceptDeadline),
     cancel: cancelObj,
     completedAt: toIsoString(d.completedAt),
     reviewedAt: toIsoString(d.reviewedAt),
+    ...(typeof d.disputeId === 'string' && d.disputeId !== '' ? { disputeId: d.disputeId } : {}),
     chatId: d.chatId ?? undefined,
     source: typeof d.source === 'string' ? (d.source as BookingSource) : 'package',
     ...(typeof d.jobId === 'string' ? { jobId: d.jobId } : {}),
@@ -531,6 +571,35 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
   };
 }
 
+/**
+ * `payments/{id}.dispute` (S18): `{reason, openedAt, disputeId?, milestone?, prevEscrowStatus?}`. Only the
+ * fields present are written, so a row from before S18 (`reason` + `openedAt`) reads back unchanged.
+ */
+function paymentDisputeToFirestore(x: PaymentDispute): DocumentData {
+  return {
+    reason: x.reason,
+    openedAt: toTimestamp(x.openedAt),
+    ...(x.disputeId !== undefined ? { disputeId: x.disputeId } : {}),
+    ...(x.milestone !== undefined ? { milestone: x.milestone } : {}),
+    ...(x.prevEscrowStatus !== undefined ? { prevEscrowStatus: x.prevEscrowStatus } : {}),
+  };
+}
+
+function paymentDisputeFromFirestore(v: unknown): PaymentDispute | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const d = v as Record<string, unknown>;
+  if (typeof d.reason !== 'string') return null;
+  const m = d.milestone;
+  const prev = d.prevEscrowStatus;
+  return {
+    reason: d.reason,
+    openedAt: toIsoString(d.openedAt) ?? new Date(0).toISOString(),
+    ...(typeof d.disputeId === 'string' && d.disputeId !== '' ? { disputeId: d.disputeId } : {}),
+    ...(m === null || m === 'shoot' || m === 'delivery' ? { milestone: m } : {}),
+    ...(prev === 'held' || prev === 'partially_refunded' ? { prevEscrowStatus: prev } : {}),
+  };
+}
+
 export function paymentToFirestore(p: Payment): DocumentData {
   return {
     subjectType: p.subjectType,
@@ -562,9 +631,11 @@ export function paymentToFirestore(p: Payment): DocumentData {
     paidAt: toTimestamp(p.paidAt),
     releasedAt: toTimestamp(p.releasedAt),
     releaseAfter: toTimestamp(p.releaseAfter),
-    dispute: p.dispute ? { reason: p.dispute.reason, openedAt: toTimestamp(p.dispute.openedAt) } : null,
+    dispute: p.dispute ? paymentDisputeToFirestore(p.dispute) : null,
     payoutId: p.payoutId ?? null,
     payableAmount: p.payableAmount ?? null,
+    // An instant payment's platform fee snapshot (Decision 6); absent → the payout policy's rate.
+    ...(p.feeBp !== undefined ? { feeBp: p.feeBp } : {}),
     milestones: p.milestones
       ? p.milestones.map((m) => ({
           kind: m.kind,
@@ -615,12 +686,10 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     paidAt: toIsoString(d.paidAt),
     releasedAt: toIsoString(d.releasedAt),
     releaseAfter: toIsoString(d.releaseAfter),
-    dispute:
-      d.dispute && typeof d.dispute === 'object' && typeof d.dispute.reason === 'string'
-        ? { reason: d.dispute.reason, openedAt: toIsoString(d.dispute.openedAt) ?? new Date(0).toISOString() }
-        : null,
+    dispute: paymentDisputeFromFirestore(d.dispute),
     payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
     ...(typeof d.payableAmount === 'number' ? { payableAmount: d.payableAmount } : {}),
+    ...(typeof d.feeBp === 'number' && Number.isInteger(d.feeBp) && d.feeBp >= 0 && d.feeBp <= 10_000 ? { feeBp: d.feeBp } : {}),
     ...(Array.isArray(d.milestones)
       ? {
           milestones: d.milestones.map((m: { kind?: unknown; amount?: unknown; status?: unknown; releaseAfter?: unknown; releasedAt?: unknown; payoutId?: unknown }) => ({
@@ -655,6 +724,10 @@ export function refundToFirestore(r: Refund): DocumentData {
       source: r.destination.source,
     } : null,
     confirmBy: toTimestamp(r.confirmBy),
+    // S22.04 (#141): the account the customer looked up, number encrypted; cleared once chosen.
+    candidate: r.candidate ? storedBankAccountToFirestore(r.candidate) : null,
+    // S22.04 holder-name lookups charged to this refund's Vietnam day (the cap).
+    accountLookups: r.accountLookups ? { day: r.accountLookups.day, count: r.accountLookups.count } : null,
     attempts: r.attempts,
     lastAttemptAt: toTimestamp(r.lastAttemptAt),
     failureReason: r.failureReason ?? null,
@@ -667,8 +740,33 @@ export function refundToFirestore(r: Refund): DocumentData {
   };
 }
 
+/** A stored bank account (refund `candidate`): number encrypted, never a plain field. */
+function storedBankAccountToFirestore(a: StoredBankAccount): DocumentData {
+  return {
+    bankCode: a.bankCode,
+    bankName: a.bankName,
+    accountNumberEnc: a.accountNumberEnc,
+    accountLast4: a.accountLast4,
+    holderName: a.holderName,
+  };
+}
+
+function storedBankAccountFromFirestore(v: unknown): StoredBankAccount | undefined {
+  if (typeof v !== 'object' || v === null) return undefined;
+  const a = v as Record<string, unknown>;
+  if (typeof a.bankCode !== 'string' || typeof a.accountNumberEnc !== 'string') return undefined;
+  return {
+    bankCode: a.bankCode,
+    bankName: typeof a.bankName === 'string' ? a.bankName : a.bankCode,
+    accountNumberEnc: a.accountNumberEnc,
+    accountLast4: typeof a.accountLast4 === 'string' ? a.accountLast4 : '',
+    holderName: typeof a.holderName === 'string' ? a.holderName : '',
+  };
+}
+
 export function refundFromFirestore(id: string, d: DocumentData | undefined): Refund | null {
   if (!d) return null;
+  const candidate = storedBankAccountFromFirestore(d.candidate);
   const destination = d.destination && typeof d.destination === 'object' && typeof d.destination.bankCode === 'string'
     ? {
         bankCode: d.destination.bankCode,
@@ -690,6 +788,10 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
     method: (d.method as Refund['method']) ?? 'gateway',
     ...(destination ? { destination } : {}),
     ...(toIsoString(d.confirmBy) !== undefined ? { confirmBy: toIsoString(d.confirmBy) } : {}),
+    ...(candidate ? { candidate } : {}),
+    ...(typeof d.accountLookups?.day === 'string' && typeof d.accountLookups?.count === 'number'
+      ? { accountLookups: { day: d.accountLookups.day, count: d.accountLookups.count } }
+      : {}),
     attempts: typeof d.attempts === 'number' ? d.attempts : 0,
     ...(toIsoString(d.lastAttemptAt) !== undefined ? { lastAttemptAt: toIsoString(d.lastAttemptAt) } : {}),
     ...(typeof d.failureReason === 'string' ? { failureReason: d.failureReason } : {}),
@@ -852,6 +954,25 @@ export class FirestoreBookingStore implements StudioBookingStore {
           return typeof studioId === 'string' && studioId !== '' ? studioId : null;
         },
         getMemberDays: (studioId, day) => readStudioMemberDays(this.firestore, fTx, studioId, day),
+        // S27 (#151) collaborator offers run in this transaction: the collaboration, the collab job (fee and
+        // offer, never on the booking) and the studio's recruit counters (recruitBlockedUntil).
+        getCollaboration: async (studioId, uid) => {
+          const snap = await fTx.get(this.firestore.collection(STUDIO_COLLABORATIONS_COLLECTION).doc(collaborationId(studioId, uid)));
+          return snap.exists ? collaborationFromDoc(snap.id, snap.data()) : null;
+        },
+        getCollabJob: async (bookingId, uid) => {
+          const snap = await fTx.get(this.firestore.collection(COLLAB_JOBS_COLLECTION).doc(collabJobId(bookingId, uid)));
+          return snap.exists ? collabJobFromDoc(snap.id, snap.data()) : null;
+        },
+        getRecruitCounters: async (uid) => {
+          const snap = await fTx.get(
+            this.firestore.collection('photographers').doc(uid).collection('private').doc(RECRUIT_COUNTERS_DOC),
+          );
+          return countersFromDoc(snap.exists ? snap.data() : undefined);
+        },
+        putCollabJob: (j) => {
+          fTx.set(this.firestore.collection(COLLAB_JOBS_COLLECTION).doc(j.id), collabJobToDoc(j));
+        },
         getBooking: async (id) => {
           const snap = await fTx.get(this.firestore.collection(BOOKINGS_COLLECTION).doc(id));
           return bookingFromFirestore(snap.id, snap.data());
@@ -1284,16 +1405,24 @@ export class FirestoreBookingStore implements StudioBookingStore {
   }
 
   async findReleasableEscrows(cutoff: Date, limit = 100): Promise<readonly Payment[]> {
-    const snap = await this.firestore
-      .collection(PAYMENTS_COLLECTION)
-      .where('escrowStatus', 'in', ['held', 'partially_refunded'])
-      .where('releaseAfter', '<=', Timestamp.fromDate(cutoff))
-      .limit(limit)
-      .get();
+    // Held money, then disputed milestone payments (another milestone may be due; S18 Decision 1). Two
+    // queries on the same (escrowStatus, releaseAfter) index, so frozen payments never starve the others.
+    const query = (statuses: readonly string[]) =>
+      this.firestore
+        .collection(PAYMENTS_COLLECTION)
+        .where('escrowStatus', 'in', statuses)
+        .where('releaseAfter', '<=', Timestamp.fromDate(cutoff))
+        .limit(limit)
+        .get();
     const res: Payment[] = [];
-    for (const doc of snap.docs) {
+    for (const doc of (await query(['held', 'partially_refunded'])).docs) {
       const p = paymentFromFirestore(doc.id, doc.data());
       if (p) res.push(p);
+    }
+    if (res.length >= limit) return res;
+    for (const doc of (await query(['disputed'])).docs) {
+      const p = paymentFromFirestore(doc.id, doc.data());
+      if (p?.milestones && res.length < limit) res.push(p);
     }
     return res;
   }

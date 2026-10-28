@@ -21,6 +21,9 @@ abstract class LocationGateway {
     required bool highAccuracy,
   });
   Future<bool> openAppSettings();
+
+  /// The system's location switch page.
+  Future<bool> openLocationSettings();
 }
 
 class GeolocatorGateway implements LocationGateway {
@@ -74,6 +77,9 @@ class GeolocatorGateway implements LocationGateway {
 
   @override
   Future<bool> openAppSettings() => Geolocator.openAppSettings();
+
+  @override
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
 }
 
 class GeolocatorLocationRepository implements LocationRepository {
@@ -169,5 +175,10 @@ class GeolocatorLocationRepository implements LocationRepository {
   @override
   Future<void> openSettings() async {
     await _gateway.openAppSettings();
+  }
+
+  @override
+  Future<void> openLocationSettings() async {
+    await _gateway.openLocationSettings();
   }
 }

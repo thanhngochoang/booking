@@ -90,6 +90,10 @@ abstract class LocationRepository {
 
   /// Opens the OS settings page of this app.
   Future<void> openSettings();
+
+  /// Opens the system location settings (the device's location switch is
+  /// off: [LocationPermissionStatus.serviceOff]).
+  Future<void> openLocationSettings();
 }
 
 class FakeLocationRepository implements LocationRepository {
@@ -115,6 +119,7 @@ class FakeLocationRepository implements LocationRepository {
   int locationCalls = 0;
   int positionCalls = 0;
   int openSettingsCalls = 0;
+  int openLocationSettingsCalls = 0;
   int fixCalls = 0;
   int highAccuracyFixCalls = 0;
 
@@ -170,5 +175,10 @@ class FakeLocationRepository implements LocationRepository {
   @override
   Future<void> openSettings() async {
     openSettingsCalls++;
+  }
+
+  @override
+  Future<void> openLocationSettings() async {
+    openLocationSettingsCalls++;
   }
 }

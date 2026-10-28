@@ -24,6 +24,9 @@ class MapPin {
   final bool self;
 }
 
+/// A point a [MapPreview] can be centred on.
+typedef MapCenter = ({double lat, double lng});
+
 /// The area a [MapPreview] shows, in degrees.
 typedef MapBounds = ({
   double minLat,
@@ -41,9 +44,11 @@ const double kMapMinSpanDeg = 0.0036;
 const double kMapPadding = 0.2;
 
 /// The pins' bounding box, expanded to [kMapMinSpanDeg] around its centre,
-/// then padded by [kMapPadding] of the span on each side.
+/// then padded by [kMapPadding] of the span on each side. With [center], the
+/// box is mirrored around that point first, so it lands in the middle and
+/// every pin stays inside.
 @visibleForTesting
-MapBounds mapBoundsOf(List<MapPin> pins) {
+MapBounds mapBoundsOf(List<MapPin> pins, {MapCenter? center}) {
   assert(pins.isNotEmpty);
   var minLat = pins.first.lat, maxLat = minLat;
   var minLng = pins.first.lng, maxLng = minLng;
@@ -52,6 +57,20 @@ MapBounds mapBoundsOf(List<MapPin> pins) {
     maxLat = math.max(maxLat, p.lat);
     minLng = math.min(minLng, p.lng);
     maxLng = math.max(maxLng, p.lng);
+  }
+  if (center != null) {
+    final dLat = math.max(
+      (maxLat - center.lat).abs(),
+      (minLat - center.lat).abs(),
+    );
+    final dLng = math.max(
+      (maxLng - center.lng).abs(),
+      (minLng - center.lng).abs(),
+    );
+    minLat = center.lat - dLat;
+    maxLat = center.lat + dLat;
+    minLng = center.lng - dLng;
+    maxLng = center.lng + dLng;
   }
   final cosLat = math.cos((minLat + maxLat) / 2 * math.pi / 180);
   ({double lo, double hi}) widen(double lo, double hi, double minSpan) {
@@ -126,7 +145,8 @@ class MapPalette {
 /// Schematic map (mock `.map`): decorative blocks/roads/water/park, labelled
 /// pins placed by an equirectangular projection of [pins] (padding 20%,
 /// minimum span 400 m), a dotted route between the first two pins when
-/// [route], and a "Về vị trí của tôi" button when [onRecenter] is set. No
+/// [route], and a "Về vị trí của tôi" button when [onRecenter] is set; with
+/// [center] the view is centred on that point (all pins still shown). No
 /// tiles and no maps SDK (plan #140 Decision 30): the streets are decoration,
 /// only the pins' relative places are real. Screen readers hear "Bản đồ:"
 /// and the pin labels.
@@ -138,12 +158,17 @@ class MapPreview extends StatelessWidget {
     this.route = false,
     this.onRecenter,
     this.borderRadius,
+    this.center,
   });
 
   final List<MapPin> pins;
   final double height;
   final bool route;
   final VoidCallback? onRecenter;
+
+  /// Keeps this point in the middle of the map (e.g. the meet point after
+  /// "Về vị trí của tôi" on S13.05); null fits the pins.
+  final MapCenter? center;
 
   /// Defaults to the mock's `--r2` (16); `BorderRadius.zero` for a full-bleed map.
   final BorderRadius? borderRadius;
@@ -203,7 +228,7 @@ class MapPreview extends StatelessWidget {
   ) {
     final points = <Offset>[];
     if (pins.isNotEmpty) {
-      final b = mapBoundsOf(pins);
+      final b = mapBoundsOf(pins, center: center);
       final cosLat = math.cos((b.minLat + b.maxLat) / 2 * math.pi / 180);
       for (final p in pins) {
         points.add(projectMapPin(p, box, b, cosLat));

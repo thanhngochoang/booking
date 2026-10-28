@@ -31,6 +31,18 @@ DateTime endOfVnWeek(DateTime instant) {
   return startOfDay.add(Duration(days: daysToMonday)).subtract(_vnOffset);
 }
 
+/// Whole Vietnam calendar days from the day of [from] to the day of [to];
+/// negative when [to] falls on an earlier day.
+int vnDaysBetween(DateTime from, DateTime to) {
+  final a = toVn(from);
+  final b = toVn(to);
+  return DateTime.utc(
+    b.year,
+    b.month,
+    b.day,
+  ).difference(DateTime.utc(a.year, a.month, a.day)).inDays;
+}
+
 /// `yyyy-MM-dd` of the Vietnamese calendar day containing [instant].
 String vnDateKey(DateTime instant) {
   final v = toVn(instant);

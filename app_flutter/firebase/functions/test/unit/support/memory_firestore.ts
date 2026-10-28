@@ -1,6 +1,6 @@
 /**
  * A small in-memory stand-in for the Admin Firestore API, enough for the adapters' unit tests:
- * documents, collection queries (where ==, !=, in, not-in, <, <=, >, >=; orderBy; limit), dotted field
+ * documents, collection queries (where ==, !=, in, not-in, array-contains(-any), <, <=, >, >=; orderBy; limit), dotted field
  * paths, `FieldPath.documentId()`, transactions (writes applied after the callback, reads after a write
  * refused like Firestore does), `getAll`, `set` with `merge`, `update`, `delete`, and the sentinels
  * `FieldValue.increment`, `FieldValue.delete` and `FieldValue.serverTimestamp`.
@@ -106,6 +106,8 @@ function matches(id: string, data: Data, f: Filter): boolean {
       return v !== undefined && v !== null && !(f.value as unknown[]).some((x) => equal(v, x));
     case 'array-contains':
       return Array.isArray(v) && v.some((x) => equal(x, f.value));
+    case 'array-contains-any':
+      return Array.isArray(v) && v.some((x) => (f.value as unknown[]).some((y) => equal(x, y)));
     case '<':
     case '<=':
     case '>':

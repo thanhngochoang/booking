@@ -112,6 +112,44 @@ Future<void> _choose(
 }
 
 void main() {
+  testWidgets('no Chụp ngay button while the flag is off', (tester) async {
+    await _open(tester, DiscoveryWorld());
+    expect(find.byKey(const Key('instant-find-button')), findsNothing);
+    expect(find.text('Chụp ngay · tới trong 30–90 phút'), findsNothing);
+  });
+
+  testWidgets('with Chụp ngay on, its outline button sits above the count', (
+    tester,
+  ) async {
+    _phone(tester);
+    final w = DiscoveryWorld(instantEnabled: true);
+    await w.init();
+    await tester.pumpWidget(
+      screenRouterApp(router: _router(), overrides: w.overrides),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final button = find.byKey(const Key('instant-find-button'));
+    expect(button, findsOneWidget);
+    expect(
+      find.descendant(
+        of: button,
+        matching: find.text('Chụp ngay · tới trong 30–90 phút'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getBottomLeft(button).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.text('4 nhiếp ảnh gia')).dy),
+    );
+    final sortRow = find.byKey(const Key('find-sort-best'));
+    expect(
+      tester.getTopLeft(button).dy,
+      greaterThan(tester.getBottomLeft(sortRow).dy),
+    );
+  });
+
   testWidgets('title, chips, count and the cards in recommended order', (
     tester,
   ) async {
@@ -609,7 +647,8 @@ void main() {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final w = DiscoveryWorld();
+      // Chụp ngay on, as shipped since #202: the S02.06 button fits too.
+      final w = DiscoveryWorld(instantEnabled: true);
       await w.init();
       await tester.pumpWidget(
         screenRouterApp(
@@ -621,6 +660,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('instant-find-button')), findsOneWidget);
       await _tapChip(tester, 'find-service');
       expect(tester.takeException(), isNull, reason: 'the sheet fits too');
     });

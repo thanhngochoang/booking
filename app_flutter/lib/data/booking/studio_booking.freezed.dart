@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StudioAssignment {
 
- String get assigneeId; String get assigneeKind; DateTime get at; String get by; String? get reason; bool get late;
+ String get assigneeId; String get assigneeKind; DateTime get at; String get by; String? get reason; bool get late;/// S27: when a collaborator's offer lapses (6 h, capped by the deadline).
+ DateTime? get offerExpiresAt; DateTime? get acceptedAt; DateTime? get declinedAt;
 /// Create a copy of StudioAssignment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $StudioAssignmentCopyWith<StudioAssignment> get copyWith => _$StudioAssignmentCo
 @override
 bool operator ==(Object other) {
   final _this = this as StudioAssignment;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioAssignment&&(identical(other.assigneeId, _this.assigneeId) || other.assigneeId == _this.assigneeId)&&(identical(other.assigneeKind, _this.assigneeKind) || other.assigneeKind == _this.assigneeKind)&&(identical(other.at, _this.at) || other.at == _this.at)&&(identical(other.by, _this.by) || other.by == _this.by)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.late, _this.late) || other.late == _this.late));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioAssignment&&(identical(other.assigneeId, _this.assigneeId) || other.assigneeId == _this.assigneeId)&&(identical(other.assigneeKind, _this.assigneeKind) || other.assigneeKind == _this.assigneeKind)&&(identical(other.at, _this.at) || other.at == _this.at)&&(identical(other.by, _this.by) || other.by == _this.by)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.late, _this.late) || other.late == _this.late)&&(identical(other.offerExpiresAt, _this.offerExpiresAt) || other.offerExpiresAt == _this.offerExpiresAt)&&(identical(other.acceptedAt, _this.acceptedAt) || other.acceptedAt == _this.acceptedAt)&&(identical(other.declinedAt, _this.declinedAt) || other.declinedAt == _this.declinedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StudioAssignment;
-  return Object.hash(runtimeType,_this.assigneeId,_this.assigneeKind,_this.at,_this.by,_this.reason,_this.late);
+  return Object.hash(runtimeType,_this.assigneeId,_this.assigneeKind,_this.at,_this.by,_this.reason,_this.late,_this.offerExpiresAt,_this.acceptedAt,_this.declinedAt);
 }
 
 @override
 String toString() {
   final _this = this as StudioAssignment;
-  return 'StudioAssignment(assigneeId: ${_this.assigneeId}, assigneeKind: ${_this.assigneeKind}, at: ${_this.at}, by: ${_this.by}, reason: ${_this.reason}, late: ${_this.late})';
+  return 'StudioAssignment(assigneeId: ${_this.assigneeId}, assigneeKind: ${_this.assigneeKind}, at: ${_this.at}, by: ${_this.by}, reason: ${_this.reason}, late: ${_this.late}, offerExpiresAt: ${_this.offerExpiresAt}, acceptedAt: ${_this.acceptedAt}, declinedAt: ${_this.declinedAt})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $StudioAssignmentCopyWith<$Res>  {
   factory $StudioAssignmentCopyWith(StudioAssignment value, $Res Function(StudioAssignment) _then) = _$StudioAssignmentCopyWithImpl;
 @useResult
 $Res call({
- String assigneeId, String assigneeKind, DateTime at, String by, String? reason, bool late
+ String assigneeId, String assigneeKind, DateTime at, String by, String? reason, bool late, DateTime? offerExpiresAt, DateTime? acceptedAt, DateTime? declinedAt
 });
 
 
@@ -71,7 +72,7 @@ class _$StudioAssignmentCopyWithImpl<$Res>
 
 /// Create a copy of StudioAssignment
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? assigneeId = null,Object? assigneeKind = null,Object? at = null,Object? by = null,Object? reason = freezed,Object? late = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? assigneeId = null,Object? assigneeKind = null,Object? at = null,Object? by = null,Object? reason = freezed,Object? late = null,Object? offerExpiresAt = freezed,Object? acceptedAt = freezed,Object? declinedAt = freezed,}) {
   return _then(StudioAssignment(
 assigneeId: null == assigneeId ? _self.assigneeId : assigneeId // ignore: cast_nullable_to_non_nullable
 as String,assigneeKind: null == assigneeKind ? _self.assigneeKind : assigneeKind // ignore: cast_nullable_to_non_nullable
@@ -79,7 +80,10 @@ as String,at: null == at ? _self.at : at // ignore: cast_nullable_to_non_nullabl
 as DateTime,by: null == by ? _self.by : by // ignore: cast_nullable_to_non_nullable
 as String,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String?,late: null == late ? _self.late : late // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,offerExpiresAt: freezed == offerExpiresAt ? _self.offerExpiresAt : offerExpiresAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,acceptedAt: freezed == acceptedAt ? _self.acceptedAt : acceptedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,declinedAt: freezed == declinedAt ? _self.declinedAt : declinedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -164,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String assigneeId,  String assigneeKind,  DateTime at,  String by,  String? reason,  bool late)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String assigneeId,  String assigneeKind,  DateTime at,  String by,  String? reason,  bool late,  DateTime? offerExpiresAt,  DateTime? acceptedAt,  DateTime? declinedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StudioAssignment() when $default != null:
-return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reason,_that.late);case _:
+return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reason,_that.late,_that.offerExpiresAt,_that.acceptedAt,_that.declinedAt);case _:
   return orElse();
 
 }
@@ -185,10 +189,10 @@ return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String assigneeId,  String assigneeKind,  DateTime at,  String by,  String? reason,  bool late)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String assigneeId,  String assigneeKind,  DateTime at,  String by,  String? reason,  bool late,  DateTime? offerExpiresAt,  DateTime? acceptedAt,  DateTime? declinedAt)  $default,) {final _that = this;
 switch (_that) {
 case _StudioAssignment():
-return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reason,_that.late);case _:
+return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reason,_that.late,_that.offerExpiresAt,_that.acceptedAt,_that.declinedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +209,10 @@ return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String assigneeId,  String assigneeKind,  DateTime at,  String by,  String? reason,  bool late)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String assigneeId,  String assigneeKind,  DateTime at,  String by,  String? reason,  bool late,  DateTime? offerExpiresAt,  DateTime? acceptedAt,  DateTime? declinedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StudioAssignment() when $default != null:
-return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reason,_that.late);case _:
+return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reason,_that.late,_that.offerExpiresAt,_that.acceptedAt,_that.declinedAt);case _:
   return null;
 
 }
@@ -220,7 +224,7 @@ return $default(_that.assigneeId,_that.assigneeKind,_that.at,_that.by,_that.reas
 @JsonSerializable()
 
 class _StudioAssignment implements StudioAssignment {
-  const _StudioAssignment({required this.assigneeId, this.assigneeKind = 'member', required this.at, required this.by, this.reason, this.late = false});
+  const _StudioAssignment({required this.assigneeId, this.assigneeKind = 'member', required this.at, required this.by, this.reason, this.late = false, this.offerExpiresAt, this.acceptedAt, this.declinedAt});
   factory _StudioAssignment.fromJson(Map<String, dynamic> json) => _$StudioAssignmentFromJson(json);
 
 @override final  String assigneeId;
@@ -229,6 +233,10 @@ class _StudioAssignment implements StudioAssignment {
 @override final  String by;
 @override final  String? reason;
 @override@JsonKey() final  bool late;
+/// S27: when a collaborator's offer lapses (6 h, capped by the deadline).
+@override final  DateTime? offerExpiresAt;
+@override final  DateTime? acceptedAt;
+@override final  DateTime? declinedAt;
 
 /// Create a copy of StudioAssignment
 /// with the given fields replaced by the non-null parameter values.
@@ -243,18 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudioAssignment&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.assigneeKind, assigneeKind) || other.assigneeKind == assigneeKind)&&(identical(other.at, at) || other.at == at)&&(identical(other.by, by) || other.by == by)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.late, late) || other.late == late));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudioAssignment&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.assigneeKind, assigneeKind) || other.assigneeKind == assigneeKind)&&(identical(other.at, at) || other.at == at)&&(identical(other.by, by) || other.by == by)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.late, late) || other.late == late)&&(identical(other.offerExpiresAt, offerExpiresAt) || other.offerExpiresAt == offerExpiresAt)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.declinedAt, declinedAt) || other.declinedAt == declinedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,assigneeId,assigneeKind,at,by,reason,late);
+    return Object.hash(runtimeType,assigneeId,assigneeKind,at,by,reason,late,offerExpiresAt,acceptedAt,declinedAt);
 }
 
 @override
 String toString() {
-    return 'StudioAssignment(assigneeId: $assigneeId, assigneeKind: $assigneeKind, at: $at, by: $by, reason: $reason, late: $late)';
+    return 'StudioAssignment(assigneeId: $assigneeId, assigneeKind: $assigneeKind, at: $at, by: $by, reason: $reason, late: $late, offerExpiresAt: $offerExpiresAt, acceptedAt: $acceptedAt, declinedAt: $declinedAt)';
 }
 
 
@@ -265,7 +273,7 @@ abstract mixin class _$StudioAssignmentCopyWith<$Res> implements $StudioAssignme
   factory _$StudioAssignmentCopyWith(_StudioAssignment value, $Res Function(_StudioAssignment) _then) = __$StudioAssignmentCopyWithImpl;
 @override @useResult
 $Res call({
- String assigneeId, String assigneeKind, DateTime at, String by, String? reason, bool late
+ String assigneeId, String assigneeKind, DateTime at, String by, String? reason, bool late, DateTime? offerExpiresAt, DateTime? acceptedAt, DateTime? declinedAt
 });
 
 
@@ -282,7 +290,7 @@ class __$StudioAssignmentCopyWithImpl<$Res>
 
 /// Create a copy of StudioAssignment
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? assigneeId = null,Object? assigneeKind = null,Object? at = null,Object? by = null,Object? reason = freezed,Object? late = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? assigneeId = null,Object? assigneeKind = null,Object? at = null,Object? by = null,Object? reason = freezed,Object? late = null,Object? offerExpiresAt = freezed,Object? acceptedAt = freezed,Object? declinedAt = freezed,}) {
   return _then(_StudioAssignment(
 assigneeId: null == assigneeId ? _self.assigneeId : assigneeId // ignore: cast_nullable_to_non_nullable
 as String,assigneeKind: null == assigneeKind ? _self.assigneeKind : assigneeKind // ignore: cast_nullable_to_non_nullable
@@ -290,7 +298,10 @@ as String,at: null == at ? _self.at : at // ignore: cast_nullable_to_non_nullabl
 as DateTime,by: null == by ? _self.by : by // ignore: cast_nullable_to_non_nullable
 as String,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String?,late: null == late ? _self.late : late // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,offerExpiresAt: freezed == offerExpiresAt ? _self.offerExpiresAt : offerExpiresAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,acceptedAt: freezed == acceptedAt ? _self.acceptedAt : acceptedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,declinedAt: freezed == declinedAt ? _self.declinedAt : declinedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -859,8 +870,10 @@ as DateTime,
 /// @nodoc
 mixin _$StudioBookingInfo {
 
-/// Who shoots; kept after "Trả việc" until the studio reassigns.
- String? get assigneeId; String? get assigneeKind; StudioAssignStatus get assignStatus; DateTime get assignDeadline;/// Set once by the sweep when the deadline passed unassigned; stays as
+/// Who shoots; kept after "Trả việc" until the studio reassigns. For a
+/// collaborator (S27) it is set at offer time, with [assigneeAccepted]
+/// false until they accept (`assignStatus` stays unassigned meanwhile).
+ String? get assigneeId; String? get assigneeKind; bool get assigneeAccepted; StudioAssignStatus get assignStatus; DateTime get assignDeadline;/// Set once by the sweep when the deadline passed unassigned; stays as
 /// history after a late assignment.
  bool get assignOverdue; DateTime? get assignedAt; List<StudioAssignment> get assignments;/// Reminders the studio got (`h48`, `h26`), for "Đã nhắc … lúc …".
  List<String> get remindersSent; StudioChangeRequest? get changeRequest; StudioFault? get studioFault;/// "Trả việc": when and why the assignee handed the job back.
@@ -878,20 +891,20 @@ $StudioBookingInfoCopyWith<StudioBookingInfo> get copyWith => _$StudioBookingInf
 @override
 bool operator ==(Object other) {
   final _this = this as StudioBookingInfo;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioBookingInfo&&(identical(other.assigneeId, _this.assigneeId) || other.assigneeId == _this.assigneeId)&&(identical(other.assigneeKind, _this.assigneeKind) || other.assigneeKind == _this.assigneeKind)&&(identical(other.assignStatus, _this.assignStatus) || other.assignStatus == _this.assignStatus)&&(identical(other.assignDeadline, _this.assignDeadline) || other.assignDeadline == _this.assignDeadline)&&(identical(other.assignOverdue, _this.assignOverdue) || other.assignOverdue == _this.assignOverdue)&&(identical(other.assignedAt, _this.assignedAt) || other.assignedAt == _this.assignedAt)&&const DeepCollectionEquality().equals(other.assignments, _this.assignments)&&const DeepCollectionEquality().equals(other.remindersSent, _this.remindersSent)&&(identical(other.changeRequest, _this.changeRequest) || other.changeRequest == _this.changeRequest)&&(identical(other.studioFault, _this.studioFault) || other.studioFault == _this.studioFault)&&(identical(other.returnedAt, _this.returnedAt) || other.returnedAt == _this.returnedAt)&&(identical(other.returnReason, _this.returnReason) || other.returnReason == _this.returnReason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioBookingInfo&&(identical(other.assigneeId, _this.assigneeId) || other.assigneeId == _this.assigneeId)&&(identical(other.assigneeKind, _this.assigneeKind) || other.assigneeKind == _this.assigneeKind)&&(identical(other.assigneeAccepted, _this.assigneeAccepted) || other.assigneeAccepted == _this.assigneeAccepted)&&(identical(other.assignStatus, _this.assignStatus) || other.assignStatus == _this.assignStatus)&&(identical(other.assignDeadline, _this.assignDeadline) || other.assignDeadline == _this.assignDeadline)&&(identical(other.assignOverdue, _this.assignOverdue) || other.assignOverdue == _this.assignOverdue)&&(identical(other.assignedAt, _this.assignedAt) || other.assignedAt == _this.assignedAt)&&const DeepCollectionEquality().equals(other.assignments, _this.assignments)&&const DeepCollectionEquality().equals(other.remindersSent, _this.remindersSent)&&(identical(other.changeRequest, _this.changeRequest) || other.changeRequest == _this.changeRequest)&&(identical(other.studioFault, _this.studioFault) || other.studioFault == _this.studioFault)&&(identical(other.returnedAt, _this.returnedAt) || other.returnedAt == _this.returnedAt)&&(identical(other.returnReason, _this.returnReason) || other.returnReason == _this.returnReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StudioBookingInfo;
-  return Object.hash(runtimeType,_this.assigneeId,_this.assigneeKind,_this.assignStatus,_this.assignDeadline,_this.assignOverdue,_this.assignedAt,const DeepCollectionEquality().hash(_this.assignments),const DeepCollectionEquality().hash(_this.remindersSent),_this.changeRequest,_this.studioFault,_this.returnedAt,_this.returnReason);
+  return Object.hash(runtimeType,_this.assigneeId,_this.assigneeKind,_this.assigneeAccepted,_this.assignStatus,_this.assignDeadline,_this.assignOverdue,_this.assignedAt,const DeepCollectionEquality().hash(_this.assignments),const DeepCollectionEquality().hash(_this.remindersSent),_this.changeRequest,_this.studioFault,_this.returnedAt,_this.returnReason);
 }
 
 @override
 String toString() {
   final _this = this as StudioBookingInfo;
-  return 'StudioBookingInfo(assigneeId: ${_this.assigneeId}, assigneeKind: ${_this.assigneeKind}, assignStatus: ${_this.assignStatus}, assignDeadline: ${_this.assignDeadline}, assignOverdue: ${_this.assignOverdue}, assignedAt: ${_this.assignedAt}, assignments: ${_this.assignments}, remindersSent: ${_this.remindersSent}, changeRequest: ${_this.changeRequest}, studioFault: ${_this.studioFault}, returnedAt: ${_this.returnedAt}, returnReason: ${_this.returnReason})';
+  return 'StudioBookingInfo(assigneeId: ${_this.assigneeId}, assigneeKind: ${_this.assigneeKind}, assigneeAccepted: ${_this.assigneeAccepted}, assignStatus: ${_this.assignStatus}, assignDeadline: ${_this.assignDeadline}, assignOverdue: ${_this.assignOverdue}, assignedAt: ${_this.assignedAt}, assignments: ${_this.assignments}, remindersSent: ${_this.remindersSent}, changeRequest: ${_this.changeRequest}, studioFault: ${_this.studioFault}, returnedAt: ${_this.returnedAt}, returnReason: ${_this.returnReason})';
 }
 
 
@@ -902,7 +915,7 @@ abstract mixin class $StudioBookingInfoCopyWith<$Res>  {
   factory $StudioBookingInfoCopyWith(StudioBookingInfo value, $Res Function(StudioBookingInfo) _then) = _$StudioBookingInfoCopyWithImpl;
 @useResult
 $Res call({
- String? assigneeId, String? assigneeKind, StudioAssignStatus assignStatus, DateTime assignDeadline, bool assignOverdue, DateTime? assignedAt, List<StudioAssignment> assignments, List<String> remindersSent, StudioChangeRequest? changeRequest, StudioFault? studioFault, DateTime? returnedAt, String? returnReason
+ String? assigneeId, String? assigneeKind, bool assigneeAccepted, StudioAssignStatus assignStatus, DateTime assignDeadline, bool assignOverdue, DateTime? assignedAt, List<StudioAssignment> assignments, List<String> remindersSent, StudioChangeRequest? changeRequest, StudioFault? studioFault, DateTime? returnedAt, String? returnReason
 });
 
 
@@ -919,11 +932,12 @@ class _$StudioBookingInfoCopyWithImpl<$Res>
 
 /// Create a copy of StudioBookingInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? assigneeId = freezed,Object? assigneeKind = freezed,Object? assignStatus = null,Object? assignDeadline = null,Object? assignOverdue = null,Object? assignedAt = freezed,Object? assignments = null,Object? remindersSent = null,Object? changeRequest = freezed,Object? studioFault = freezed,Object? returnedAt = freezed,Object? returnReason = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? assigneeId = freezed,Object? assigneeKind = freezed,Object? assigneeAccepted = null,Object? assignStatus = null,Object? assignDeadline = null,Object? assignOverdue = null,Object? assignedAt = freezed,Object? assignments = null,Object? remindersSent = null,Object? changeRequest = freezed,Object? studioFault = freezed,Object? returnedAt = freezed,Object? returnReason = freezed,}) {
   return _then(StudioBookingInfo(
 assigneeId: freezed == assigneeId ? _self.assigneeId : assigneeId // ignore: cast_nullable_to_non_nullable
 as String?,assigneeKind: freezed == assigneeKind ? _self.assigneeKind : assigneeKind // ignore: cast_nullable_to_non_nullable
-as String?,assignStatus: null == assignStatus ? _self.assignStatus : assignStatus // ignore: cast_nullable_to_non_nullable
+as String?,assigneeAccepted: null == assigneeAccepted ? _self.assigneeAccepted : assigneeAccepted // ignore: cast_nullable_to_non_nullable
+as bool,assignStatus: null == assignStatus ? _self.assignStatus : assignStatus // ignore: cast_nullable_to_non_nullable
 as StudioAssignStatus,assignDeadline: null == assignDeadline ? _self.assignDeadline : assignDeadline // ignore: cast_nullable_to_non_nullable
 as DateTime,assignOverdue: null == assignOverdue ? _self.assignOverdue : assignOverdue // ignore: cast_nullable_to_non_nullable
 as bool,assignedAt: freezed == assignedAt ? _self.assignedAt : assignedAt // ignore: cast_nullable_to_non_nullable
@@ -1042,10 +1056,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? assigneeId,  String? assigneeKind,  StudioAssignStatus assignStatus,  DateTime assignDeadline,  bool assignOverdue,  DateTime? assignedAt,  List<StudioAssignment> assignments,  List<String> remindersSent,  StudioChangeRequest? changeRequest,  StudioFault? studioFault,  DateTime? returnedAt,  String? returnReason)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? assigneeId,  String? assigneeKind,  bool assigneeAccepted,  StudioAssignStatus assignStatus,  DateTime assignDeadline,  bool assignOverdue,  DateTime? assignedAt,  List<StudioAssignment> assignments,  List<String> remindersSent,  StudioChangeRequest? changeRequest,  StudioFault? studioFault,  DateTime? returnedAt,  String? returnReason)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StudioBookingInfo() when $default != null:
-return $default(_that.assigneeId,_that.assigneeKind,_that.assignStatus,_that.assignDeadline,_that.assignOverdue,_that.assignedAt,_that.assignments,_that.remindersSent,_that.changeRequest,_that.studioFault,_that.returnedAt,_that.returnReason);case _:
+return $default(_that.assigneeId,_that.assigneeKind,_that.assigneeAccepted,_that.assignStatus,_that.assignDeadline,_that.assignOverdue,_that.assignedAt,_that.assignments,_that.remindersSent,_that.changeRequest,_that.studioFault,_that.returnedAt,_that.returnReason);case _:
   return orElse();
 
 }
@@ -1063,10 +1077,10 @@ return $default(_that.assigneeId,_that.assigneeKind,_that.assignStatus,_that.ass
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? assigneeId,  String? assigneeKind,  StudioAssignStatus assignStatus,  DateTime assignDeadline,  bool assignOverdue,  DateTime? assignedAt,  List<StudioAssignment> assignments,  List<String> remindersSent,  StudioChangeRequest? changeRequest,  StudioFault? studioFault,  DateTime? returnedAt,  String? returnReason)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? assigneeId,  String? assigneeKind,  bool assigneeAccepted,  StudioAssignStatus assignStatus,  DateTime assignDeadline,  bool assignOverdue,  DateTime? assignedAt,  List<StudioAssignment> assignments,  List<String> remindersSent,  StudioChangeRequest? changeRequest,  StudioFault? studioFault,  DateTime? returnedAt,  String? returnReason)  $default,) {final _that = this;
 switch (_that) {
 case _StudioBookingInfo():
-return $default(_that.assigneeId,_that.assigneeKind,_that.assignStatus,_that.assignDeadline,_that.assignOverdue,_that.assignedAt,_that.assignments,_that.remindersSent,_that.changeRequest,_that.studioFault,_that.returnedAt,_that.returnReason);case _:
+return $default(_that.assigneeId,_that.assigneeKind,_that.assigneeAccepted,_that.assignStatus,_that.assignDeadline,_that.assignOverdue,_that.assignedAt,_that.assignments,_that.remindersSent,_that.changeRequest,_that.studioFault,_that.returnedAt,_that.returnReason);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1083,10 +1097,10 @@ return $default(_that.assigneeId,_that.assigneeKind,_that.assignStatus,_that.ass
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? assigneeId,  String? assigneeKind,  StudioAssignStatus assignStatus,  DateTime assignDeadline,  bool assignOverdue,  DateTime? assignedAt,  List<StudioAssignment> assignments,  List<String> remindersSent,  StudioChangeRequest? changeRequest,  StudioFault? studioFault,  DateTime? returnedAt,  String? returnReason)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? assigneeId,  String? assigneeKind,  bool assigneeAccepted,  StudioAssignStatus assignStatus,  DateTime assignDeadline,  bool assignOverdue,  DateTime? assignedAt,  List<StudioAssignment> assignments,  List<String> remindersSent,  StudioChangeRequest? changeRequest,  StudioFault? studioFault,  DateTime? returnedAt,  String? returnReason)?  $default,) {final _that = this;
 switch (_that) {
 case _StudioBookingInfo() when $default != null:
-return $default(_that.assigneeId,_that.assigneeKind,_that.assignStatus,_that.assignDeadline,_that.assignOverdue,_that.assignedAt,_that.assignments,_that.remindersSent,_that.changeRequest,_that.studioFault,_that.returnedAt,_that.returnReason);case _:
+return $default(_that.assigneeId,_that.assigneeKind,_that.assigneeAccepted,_that.assignStatus,_that.assignDeadline,_that.assignOverdue,_that.assignedAt,_that.assignments,_that.remindersSent,_that.changeRequest,_that.studioFault,_that.returnedAt,_that.returnReason);case _:
   return null;
 
 }
@@ -1098,12 +1112,15 @@ return $default(_that.assigneeId,_that.assigneeKind,_that.assignStatus,_that.ass
 @JsonSerializable()
 
 class _StudioBookingInfo extends StudioBookingInfo {
-  const _StudioBookingInfo({this.assigneeId, this.assigneeKind, this.assignStatus = StudioAssignStatus.unassigned, required this.assignDeadline, this.assignOverdue = false, this.assignedAt,  List<StudioAssignment> assignments = const <StudioAssignment>[],  List<String> remindersSent = const <String>[], this.changeRequest, this.studioFault, this.returnedAt, this.returnReason}): _assignments = assignments,_remindersSent = remindersSent,super._();
+  const _StudioBookingInfo({this.assigneeId, this.assigneeKind, this.assigneeAccepted = false, this.assignStatus = StudioAssignStatus.unassigned, required this.assignDeadline, this.assignOverdue = false, this.assignedAt,  List<StudioAssignment> assignments = const <StudioAssignment>[],  List<String> remindersSent = const <String>[], this.changeRequest, this.studioFault, this.returnedAt, this.returnReason}): _assignments = assignments,_remindersSent = remindersSent,super._();
   factory _StudioBookingInfo.fromJson(Map<String, dynamic> json) => _$StudioBookingInfoFromJson(json);
 
-/// Who shoots; kept after "Trả việc" until the studio reassigns.
+/// Who shoots; kept after "Trả việc" until the studio reassigns. For a
+/// collaborator (S27) it is set at offer time, with [assigneeAccepted]
+/// false until they accept (`assignStatus` stays unassigned meanwhile).
 @override final  String? assigneeId;
 @override final  String? assigneeKind;
+@override@JsonKey() final  bool assigneeAccepted;
 @override@JsonKey() final  StudioAssignStatus assignStatus;
 @override final  DateTime assignDeadline;
 /// Set once by the sweep when the deadline passed unassigned; stays as
@@ -1145,18 +1162,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudioBookingInfo&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.assigneeKind, assigneeKind) || other.assigneeKind == assigneeKind)&&(identical(other.assignStatus, assignStatus) || other.assignStatus == assignStatus)&&(identical(other.assignDeadline, assignDeadline) || other.assignDeadline == assignDeadline)&&(identical(other.assignOverdue, assignOverdue) || other.assignOverdue == assignOverdue)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&const DeepCollectionEquality().equals(other.assignments, _assignments)&&const DeepCollectionEquality().equals(other.remindersSent, _remindersSent)&&(identical(other.changeRequest, changeRequest) || other.changeRequest == changeRequest)&&(identical(other.studioFault, studioFault) || other.studioFault == studioFault)&&(identical(other.returnedAt, returnedAt) || other.returnedAt == returnedAt)&&(identical(other.returnReason, returnReason) || other.returnReason == returnReason));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudioBookingInfo&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.assigneeKind, assigneeKind) || other.assigneeKind == assigneeKind)&&(identical(other.assigneeAccepted, assigneeAccepted) || other.assigneeAccepted == assigneeAccepted)&&(identical(other.assignStatus, assignStatus) || other.assignStatus == assignStatus)&&(identical(other.assignDeadline, assignDeadline) || other.assignDeadline == assignDeadline)&&(identical(other.assignOverdue, assignOverdue) || other.assignOverdue == assignOverdue)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&const DeepCollectionEquality().equals(other.assignments, _assignments)&&const DeepCollectionEquality().equals(other.remindersSent, _remindersSent)&&(identical(other.changeRequest, changeRequest) || other.changeRequest == changeRequest)&&(identical(other.studioFault, studioFault) || other.studioFault == studioFault)&&(identical(other.returnedAt, returnedAt) || other.returnedAt == returnedAt)&&(identical(other.returnReason, returnReason) || other.returnReason == returnReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,assigneeId,assigneeKind,assignStatus,assignDeadline,assignOverdue,assignedAt,const DeepCollectionEquality().hash(_assignments),const DeepCollectionEquality().hash(_remindersSent),changeRequest,studioFault,returnedAt,returnReason);
+    return Object.hash(runtimeType,assigneeId,assigneeKind,assigneeAccepted,assignStatus,assignDeadline,assignOverdue,assignedAt,const DeepCollectionEquality().hash(_assignments),const DeepCollectionEquality().hash(_remindersSent),changeRequest,studioFault,returnedAt,returnReason);
 }
 
 @override
 String toString() {
-    return 'StudioBookingInfo(assigneeId: $assigneeId, assigneeKind: $assigneeKind, assignStatus: $assignStatus, assignDeadline: $assignDeadline, assignOverdue: $assignOverdue, assignedAt: $assignedAt, assignments: $assignments, remindersSent: $remindersSent, changeRequest: $changeRequest, studioFault: $studioFault, returnedAt: $returnedAt, returnReason: $returnReason)';
+    return 'StudioBookingInfo(assigneeId: $assigneeId, assigneeKind: $assigneeKind, assigneeAccepted: $assigneeAccepted, assignStatus: $assignStatus, assignDeadline: $assignDeadline, assignOverdue: $assignOverdue, assignedAt: $assignedAt, assignments: $assignments, remindersSent: $remindersSent, changeRequest: $changeRequest, studioFault: $studioFault, returnedAt: $returnedAt, returnReason: $returnReason)';
 }
 
 
@@ -1167,7 +1184,7 @@ abstract mixin class _$StudioBookingInfoCopyWith<$Res> implements $StudioBooking
   factory _$StudioBookingInfoCopyWith(_StudioBookingInfo value, $Res Function(_StudioBookingInfo) _then) = __$StudioBookingInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String? assigneeId, String? assigneeKind, StudioAssignStatus assignStatus, DateTime assignDeadline, bool assignOverdue, DateTime? assignedAt, List<StudioAssignment> assignments, List<String> remindersSent, StudioChangeRequest? changeRequest, StudioFault? studioFault, DateTime? returnedAt, String? returnReason
+ String? assigneeId, String? assigneeKind, bool assigneeAccepted, StudioAssignStatus assignStatus, DateTime assignDeadline, bool assignOverdue, DateTime? assignedAt, List<StudioAssignment> assignments, List<String> remindersSent, StudioChangeRequest? changeRequest, StudioFault? studioFault, DateTime? returnedAt, String? returnReason
 });
 
 
@@ -1184,11 +1201,12 @@ class __$StudioBookingInfoCopyWithImpl<$Res>
 
 /// Create a copy of StudioBookingInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? assigneeId = freezed,Object? assigneeKind = freezed,Object? assignStatus = null,Object? assignDeadline = null,Object? assignOverdue = null,Object? assignedAt = freezed,Object? assignments = null,Object? remindersSent = null,Object? changeRequest = freezed,Object? studioFault = freezed,Object? returnedAt = freezed,Object? returnReason = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? assigneeId = freezed,Object? assigneeKind = freezed,Object? assigneeAccepted = null,Object? assignStatus = null,Object? assignDeadline = null,Object? assignOverdue = null,Object? assignedAt = freezed,Object? assignments = null,Object? remindersSent = null,Object? changeRequest = freezed,Object? studioFault = freezed,Object? returnedAt = freezed,Object? returnReason = freezed,}) {
   return _then(_StudioBookingInfo(
 assigneeId: freezed == assigneeId ? _self.assigneeId : assigneeId // ignore: cast_nullable_to_non_nullable
 as String?,assigneeKind: freezed == assigneeKind ? _self.assigneeKind : assigneeKind // ignore: cast_nullable_to_non_nullable
-as String?,assignStatus: null == assignStatus ? _self.assignStatus : assignStatus // ignore: cast_nullable_to_non_nullable
+as String?,assigneeAccepted: null == assigneeAccepted ? _self.assigneeAccepted : assigneeAccepted // ignore: cast_nullable_to_non_nullable
+as bool,assignStatus: null == assignStatus ? _self.assignStatus : assignStatus // ignore: cast_nullable_to_non_nullable
 as StudioAssignStatus,assignDeadline: null == assignDeadline ? _self.assignDeadline : assignDeadline // ignore: cast_nullable_to_non_nullable
 as DateTime,assignOverdue: null == assignOverdue ? _self.assignOverdue : assignOverdue // ignore: cast_nullable_to_non_nullable
 as bool,assignedAt: freezed == assignedAt ? _self.assignedAt : assignedAt // ignore: cast_nullable_to_non_nullable

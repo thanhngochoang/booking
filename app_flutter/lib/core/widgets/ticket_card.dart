@@ -55,6 +55,8 @@ class TicketCard extends StatelessWidget {
     this.cancelLabel,
     this.payLabel,
     this.compact = false,
+    this.onReportProblem,
+    this.reportProblemLabel,
   });
 
   final TicketCardData ticket;
@@ -90,6 +92,13 @@ class TicketCard extends StatelessWidget {
 
   /// Replaces "Thanh toán" on a pending ticket (e.g. "Thanh toán tiếp").
   final String? payLabel;
+
+  /// "Báo vấn đề" (S18.01) under a compact row: a paid ticket inside its
+  /// dispute window; hidden when null.
+  final VoidCallback? onReportProblem;
+
+  /// Replaces "Báo vấn đề".
+  final String? reportProblemLabel;
 
   static Widget skeleton() => const _TicketCardSkeleton();
 
@@ -249,7 +258,30 @@ class TicketCard extends StatelessWidget {
           ),
         ),
       );
-      return isDimmed ? Opacity(opacity: 0.55, child: row) : row;
+      final shown = isDimmed ? Opacity(opacity: 0.55, child: row) : row;
+      if (onReportProblem == null) {
+        return shown;
+      }
+      // A red text button under the row, like the cancel of a big card; not
+      // dimmed with a past ticket.
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          shown,
+          AppButton.text(
+            reportProblemLabel ?? l.ticketReportProblem,
+            key: const Key('ticket-report-problem'),
+            onPressed: onReportProblem,
+            size: AppButtonSize.small,
+            style: TextButton.styleFrom(
+              foregroundColor: dark
+                  ? AppColorsDark.destructive
+                  : AppColors.destructive,
+            ),
+          ),
+        ],
+      );
     }
 
     final meta =

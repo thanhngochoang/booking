@@ -91,6 +91,7 @@ Future<Widget> _app({
       GoRoute(path: '/verify/start', builder: stub),
       GoRoute(path: '/me/studio', builder: stub),
       GoRoute(path: '/studio/members', builder: stub),
+      GoRoute(path: '/me/payments', builder: stub),
     ],
   );
   return ProviderScope(
@@ -596,8 +597,8 @@ void main() {
       addTearDown(tester.view.reset);
       await openSettings(tester);
       // Account: 3 rows (edit profile, phone, blocked users). Theme and button style are
-      // segmented tabs, Thông báo a single row.
-      expect(find.byType(Divider), findsNWidgets(2));
+      // segmented tabs, Thông báo a single row; Thanh toán và dữ liệu: 2 rows.
+      expect(find.byType(Divider), findsNWidgets(3));
       final preview = tester.widget<AppButton>(
         find.widgetWithText(AppButton, 'Xem trước nút'),
       );
@@ -902,6 +903,52 @@ void main() {
       await tester.tap(find.byKey(const Key('settings-privacy')));
       await tester.pumpAndSettle();
       expect(find.text('privacy settings'), findsOneWidget);
+    });
+
+    testWidgets('S09.02 shows "Lịch sử thanh toán" first in the paymentsData group and opens /me/payments', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+
+      final history = find.byKey(const Key('settings-payment-history'));
+      expect(history, findsOneWidget);
+      expect(
+        find.descendant(of: history, matching: find.text('Lịch sử thanh toán')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: history,
+          matching: find.text('Khoản đã trả, đang giữ, đang hoàn'),
+        ),
+        findsOneWidget,
+      );
+      double y(Finder f) => tester.getTopLeft(f).dy;
+      final group = find.byKey(const Key('settings-group-paymentsData'));
+      expect(y(group), lessThan(y(history)));
+      expect(
+        y(history),
+        lessThan(y(find.byKey(const Key('settings-privacy')))),
+      );
+      // Same card as the privacy row.
+      GlassCard card(Finder f) => tester.widget<GlassCard>(
+        find.ancestor(of: f, matching: find.byType(GlassCard)).first,
+      );
+      expect(
+        identical(
+          card(history),
+          card(find.byKey(const Key('settings-privacy'))),
+        ),
+        isTrue,
+      );
+
+      await tester.tap(history);
+      await tester.pumpAndSettle();
+      expect(find.text('stub /me/payments'), findsOneWidget);
     });
 
     testWidgets('sign-out unregisters the device first', (tester) async {

@@ -126,6 +126,16 @@ describe('FirestoreStudioStore', () => {
     assert.equal(db.data(`studio_members/${invited.after.id}`)?.status, 'active');
   });
 
+  it('activeCollaborationOf reads the pair\'s studio_collaborations document; an active one refuses the S26 invite (S27 Decision 12)', async () => {
+    db.seed(`studio_collaborations/${STUDIO}_m2`, { studioId: STUDIO, collaboratorId: 'm2', status: 'ended' });
+    assert.equal(await deps.studios.runTransaction((tx) => tx.activeCollaborationOf(STUDIO, 'm1')), false);
+    assert.equal(await deps.studios.runTransaction((tx) => tx.activeCollaborationOf(STUDIO, 'm2')), false);
+    db.seed(`studio_collaborations/${STUDIO}_m1`, { studioId: STUDIO, collaboratorId: 'm1', status: 'active' });
+    assert.equal(await deps.studios.runTransaction((tx) => tx.activeCollaborationOf(STUDIO, 'm1')), true);
+    await assert.rejects(inviteMember(deps, STUDIO, { memberId: 'm1' }), { code: 'membership_conflict' });
+    assert.equal(db.data(`studio_quota/${STUDIO}`), undefined);
+  });
+
   it('countOpenInvites leaves out invites past expiresAt', async () => {
     seedRelation(db, relation({ id: 'r_open_1' }));
     seedRelation(db, relation({ id: 'r_stale_1', memberId: 'm2', expiresAt: NOW.toISOString() }));

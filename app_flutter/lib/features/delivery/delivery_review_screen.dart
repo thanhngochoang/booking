@@ -13,11 +13,11 @@ import 'package:photobooking/data/delivery/delivery.dart';
 import 'package:photobooking/data/delivery/delivery_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
-import 'package:photobooking/features/delivery/report_delivery_sheet.dart';
 import 'package:photobooking/features/delivery/revision_sheet.dart';
 import 'package:photobooking/features/delivery/widgets/check_window_card.dart';
 import 'package:photobooking/features/delivery/widgets/originals_card.dart';
 import 'package:photobooking/features/delivery/widgets/sample_grid.dart';
+import 'package:photobooking/features/disputes/dispute_entry.dart';
 
 class DeliveryReviewScreen extends ConsumerStatefulWidget {
   const DeliveryReviewScreen({super.key, required this.bookingId});
@@ -93,14 +93,16 @@ class _DeliveryReviewScreenState extends ConsumerState<DeliveryReviewScreen> {
     );
   }
 
-  Future<void> _report(Booking booking) async {
-    final reported = await showReportDeliverySheet(context, booking: booking);
-    if (reported == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.deliveryReportSuccess)),
-      );
-    }
+  /// The same window rule as S05.02 and S18.01 (`bookingDisputeClosesAt`).
+  bool _canReport(Booking booking, DateTime now) {
+    final closesAt = bookingDisputeClosesAt(booking);
+    return closesAt != null && disputeHoursLeft(closesAt, now) != null;
   }
+
+  /// "Báo vấn đề với ảnh gốc" → S18.01 over S05.02 with the delivery reasons
+  /// (Decision 13); a sent dispute opens S18.02 from there.
+  void _report(Booking booking) =>
+      context.push('/b/${booking.id}/dispute?from=delivery');
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +309,9 @@ class _DeliveryReviewScreenState extends ConsumerState<DeliveryReviewScreen> {
                 CheckWindowCard(
                   checkUntil: checkUntil,
                   now: now,
-                  onReport: now.isBefore(checkUntil) ? () => _report(booking) : null,
+                  onReport: _canReport(booking, now)
+                      ? () => _report(booking)
+                      : null,
                 ),
                 const SizedBox(height: AppSpace.s4),
               ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
@@ -8,6 +9,9 @@ import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
+import 'package:photobooking/data/disputes/dispute_providers.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -15,6 +19,8 @@ import 'package:photobooking/features/booking/booking_features.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
+import '../../support/dispute_world.dart';
+import '../../support/fake_payments_repository.dart';
 
 /// Shoot on Monday 12/10 15:30–17:30 Vietnam = 08:30–10:30 UTC.
 final _startsAt = DateTime.utc(2026, 10, 12, 8, 30);
@@ -83,6 +89,93 @@ List<String> primaryButtonLabels(WidgetTester tester) => [
 ];
 
 void main() {
+  testWidgets('S05.02 shows the refund card while refundAccountNeeded and '
+      'hides it after', (tester) async {
+    // Declined after payment: the server's refund waits for the account.
+    final declined = _booking(
+      status: BookingStatus.declined,
+      escrow: EscrowStatus.refunded,
+    ).copyWith(depositRefunded: 1500000, refundAccountNeeded: true);
+    final payments = FakePaymentsRepository()
+      ..pendingBySubject[const BookingRefund('b1')] = PendingRefund(
+        refundId: 'r1',
+        amount: 1500000,
+        payer: (
+          bankName: 'Vietcombank',
+          accountLast4: '6789',
+          holderName: 'NGUYEN THANH HA',
+        ),
+        confirmBy: _startsAt,
+      );
+    final handles = await pumpBookingDetail(
+      tester,
+      uid: detailCustomerUid,
+      bookings: _repo(declined),
+      payments: payments,
+    );
+    await _settle(tester);
+
+    final card = find.byKey(const Key('detail-refund-account'));
+    expect(card, findsOneWidget);
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.text('Bạn được hoàn 1.500.000₫'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.text('Chọn tài khoản để nhận tiền hoàn.'),
+      ),
+      findsOneWidget,
+    );
+    final choose = find.descendant(
+      of: card,
+      matching: find.widgetWithText(AppButton, 'Chọn tài khoản nhận hoàn'),
+    );
+    expect(choose, findsOneWidget);
+    // An outline button: the screen keeps at most one primary.
+    expect(
+      primaryButtonLabels(tester),
+      isNot(contains('Chọn tài khoản nhận hoàn')),
+    );
+
+    await tester.ensureVisible(choose);
+    await tester.tap(choose);
+    await _settle(tester);
+    expect(payments.pendingCalls, [const BookingRefund('b1')]);
+    expect(find.text('Tài khoản nhận hoàn'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Hoàn về tài khoản này'));
+    await _settle(tester);
+    expect(payments.chooseCalls, ['r1:payer']);
+
+    // The server clears the flag once the refund leaves.
+    handles.bookings.seedBooking(
+      declined.copyWith(refundAccountNeeded: false),
+    );
+    await _settle(tester);
+    expect(card, findsNothing);
+  });
+
+  testWidgets('the photographer never sees the refund card', (tester) async {
+    await pumpBookingDetail(
+      tester,
+      uid: detailPhotographerUid,
+      bookings: _repo(
+        _booking(
+          status: BookingStatus.declined,
+          escrow: EscrowStatus.refunded,
+        ).copyWith(depositRefunded: 1500000, refundAccountNeeded: true),
+        copy: testContactSnapshot,
+      ),
+    );
+    await _settle(tester);
+
+    expect(find.byKey(const Key('detail-refund-account')), findsNothing);
+  });
+
   testWidgets('the paid toast shows "Đã thanh toán 3.400.000₫…" and the block '
       'lists the add-ons and the pickup', (tester) async {
     await pumpBookingDetail(
@@ -770,6 +863,182 @@ void main() {
         find.text('Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('S18 disputes on S05.02', () {
+    /// The detail world's "now".
+    final now = worldBookingToday;
+
+    /// Shot 6 hours ago: 18 hours left in the shoot window.
+    Booking shotBooking({String? disputeId, EscrowStatus? escrow}) =>
+        _booking(
+          status: BookingStatus.shot,
+          escrow: escrow ?? EscrowStatus.held,
+        ).copyWith(
+          shotAt: now.subtract(const Duration(hours: 6)),
+          disputeId: disputeId,
+        );
+
+    List<Override> disputeOverrides(DisputeWorld w) => [
+      disputeRepositoryProvider.overrideWithValue(w.repo),
+      imagePickerProvider.overrideWithValue(w.picker),
+    ];
+
+    testWidgets('the red "Báo vấn đề · còn 18 giờ" opens S18.01 and a success '
+        'pushes /disputes/:id', (tester) async {
+      final w = DisputeWorld(now: now);
+      final handles = await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        bookings: _repo(shotBooking()),
+        extraOverrides: disputeOverrides(w),
+      );
+      await _settle(tester);
+
+      final report = find.widgetWithText(AppButton, 'Báo vấn đề · còn 18 giờ');
+      expect(report, findsOneWidget);
+      final style = tester.widget<AppButton>(report).style;
+      expect(
+        style?.foregroundColor?.resolve(<WidgetState>{}),
+        AppColorsDark.destructive,
+      );
+
+      await tester.ensureVisible(report);
+      await tester.tap(report);
+      await _settle(tester);
+      expect(_codeFinder(ScreenCodes.openDispute), findsOneWidget);
+      expect(
+        find.text(
+          'Còn 18 giờ để báo vấn đề. Tiền của buổi chụp được giữ tới khi có '
+          'kết quả.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Thợ không đến'));
+      await tester.enterText(
+        find.byKey(const Key('dispute-description')),
+        'Đợi 1 tiếng mà thợ không tới.',
+      );
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('dispute-submit')));
+      await tester.tap(find.byKey(const Key('dispute-submit')));
+      await _settle(tester);
+
+      final draft = w.repo.opened.single;
+      expect(draft.subjectId, 'b1');
+      expect(handles.location, '/disputes/${draft.disputeId}');
+    });
+
+    testWidgets('the photographer has no "Báo vấn đề"', (tester) async {
+      final w = DisputeWorld(now: now, uid: detailPhotographerUid);
+      await pumpBookingDetail(
+        tester,
+        uid: detailPhotographerUid,
+        bookings: _repo(shotBooking(), copy: testContactSnapshot),
+        extraOverrides: disputeOverrides(w),
+      );
+      await _settle(tester);
+      expect(find.textContaining('Báo vấn đề'), findsNothing);
+    });
+
+    testWidgets('/b/:id/dispute opens the sheet over S05.02', (tester) async {
+      final w = DisputeWorld(now: now);
+      await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        path: '/b/b1/dispute',
+        bookings: _repo(shotBooking()),
+        extraOverrides: disputeOverrides(w),
+      );
+      await _settle(tester);
+      expect(_codeFinder(ScreenCodes.bookingDetail), findsOneWidget);
+      expect(_codeFinder(ScreenCodes.openDispute), findsOneWidget);
+      expect(find.text('Vấn đề là gì?'), findsOneWidget);
+    });
+
+    testWidgets('?from=delivery opens the delivery variant', (tester) async {
+      final w = DisputeWorld(now: now);
+      final approved = _booking(status: BookingStatus.approved).copyWith(
+        approvedAt: now.subtract(const Duration(hours: 1)),
+        checkUntil: now.add(const Duration(hours: 47)),
+      );
+      await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        path: '/b/b1/dispute?from=delivery',
+        bookings: _repo(approved),
+        extraOverrides: disputeOverrides(w),
+      );
+      await _settle(tester);
+      expect(find.text('Báo vấn đề với ảnh gốc'), findsOneWidget);
+      expect(
+        find.text(
+          'Còn 47 giờ để kiểm tra bộ ảnh gốc. Đợt thanh toán thứ hai được '
+          'giữ tới khi có kết quả.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('/b/:id/dispute outside the window opens nothing', (
+      tester,
+    ) async {
+      final w = DisputeWorld(now: now);
+      await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        path: '/b/b1/dispute',
+        bookings: _repo(_booking(status: BookingStatus.upcoming)),
+        extraOverrides: disputeOverrides(w),
+      );
+      await _settle(tester);
+      expect(_codeFinder(ScreenCodes.openDispute), findsNothing);
+    });
+
+    for (final uid in [detailCustomerUid, detailPhotographerUid]) {
+      testWidgets('a booking with disputeId shows "Đang khiếu nại" for $uid '
+          'and opens /disputes/:id', (tester) async {
+        final w = DisputeWorld(now: now, uid: uid);
+        final handles = await pumpBookingDetail(
+          tester,
+          uid: uid,
+          bookings: _repo(
+            shotBooking(disputeId: 'dK7Q2', escrow: EscrowStatus.disputed),
+            copy: testContactSnapshot,
+          ),
+          extraOverrides: disputeOverrides(w),
+        );
+        await _settle(tester);
+
+        expect(find.text('Đang khiếu nại'), findsOneWidget);
+        expect(find.text('Tiền được giữ tới khi có kết quả.'), findsOneWidget);
+        expect(find.text('Xem khiếu nại'), findsOneWidget);
+        expect(find.textContaining('Báo vấn đề'), findsNothing);
+
+        await tester.tap(find.byKey(const Key('dispute-banner')));
+        await _settle(tester);
+        expect(handles.location, '/disputes/dK7Q2');
+      });
+    }
+
+    testWidgets('the resolved banner reads "Khiếu nại đã có kết quả"', (
+      tester,
+    ) async {
+      final w = DisputeWorld(now: now);
+      await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        bookings: _repo(
+          shotBooking(disputeId: 'dK7Q2', escrow: EscrowStatus.released),
+        ),
+        extraOverrides: disputeOverrides(w),
+      );
+      await _settle(tester);
+      expect(find.text('Khiếu nại đã có kết quả'), findsOneWidget);
+      expect(find.text('Đang khiếu nại'), findsNothing);
+      expect(find.text('Xem khiếu nại'), findsOneWidget);
     });
   });
 }

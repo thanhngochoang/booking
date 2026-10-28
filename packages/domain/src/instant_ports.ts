@@ -5,12 +5,14 @@
  */
 import type { BlockGate } from './block_ports.js';
 import type { BookingContactSnapshot } from './booking.js';
-import type { CustomerContactReader, ProviderOrderGate } from './booking_ports.js';
+import type { CustomerContactReader, PaymentGateway, ProviderOrderGate, TransferRecord } from './booking_ports.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import type { InstantConfig, InstantPresence, InstantOffer, InstantRequest } from './instant.js';
 import type { InstantDayState } from './instant_match.js';
 import type { PushSender, UserDirectory } from './notification_ports.js';
 import type { OrderGateDeps } from './order_gate.js';
+import type { PaymentLookup } from './payment_settlement.js';
+import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator } from './ports.js';
 
 /** `instant_tracks/{requestId}`: the photographer's last position, only while `en_route` (Decision 11). */
@@ -23,9 +25,13 @@ export interface InstantTx {
   getRequest(id: string): Promise<InstantRequest | null>;
   getOffer(photographerId: string, offerId: string): Promise<InstantOffer | null>;
   getPresence(uid: string): Promise<InstantPresence | null>;
-  /** #202 (Task 11); nothing in #140 reads or writes money. */
+  /** #202 (Task 11): the request's payments, refunds and V1's transfer records. */
   getPayment(id: string): Promise<Payment | null>;
   getRefund(id: string): Promise<Refund | null>;
+  /** V1's record of an applied transfer (`payment_notifications/{id}`); a settle reads it first. */
+  getTransferRecord(id: string): Promise<TransferRecord | null>;
+  /** Every payment of a request (`subjectType == 'instant_request' && subjectId == requestId`), any status. */
+  paymentsOfRequest(requestId: string): Promise<readonly Payment[]>;
   /** `customerId == uid && active == true`, limit 1. */
   findActiveRequestOfCustomer(customerId: string): Promise<InstantRequest | null>;
   putRequest(r: InstantRequest): void;
@@ -34,6 +40,7 @@ export interface InstantTx {
   putPayment(p: Payment): void;
   putRefund(r: Refund): void;
   putLedgerEntry(e: LedgerEntry): void;
+  putTransferRecord(r: TransferRecord): void;
   /** `instant_requests/{id}/private/contact` (Decision 22). */
   putContact(requestId: string, c: BookingContactSnapshot): void;
   deleteContact(requestId: string): void;
@@ -76,8 +83,21 @@ export interface InstantDayReader {
 }
 
 /**
+ * Operational log of the Chụp ngay use cases: counts and codes only, never names, phones or accounts.
+ * The Functions adapter writes it to Cloud Logging; tests may record it or leave it out.
+ */
+export interface InstantLog {
+  /**
+   * Refunds a committed transaction wrote whose send or stored outcome failed. Each stays `pending`
+   * and V2's re-send (`instantRefundHandler`) sends it again under the same id.
+   */
+  refundSendsFailed(count: number): void;
+}
+
+/**
  * #198's OrderGateDeps: providers + blocks. `blocks` is optional there, so every InstantDeps literal sets it:
- * liveInstantDeps() → liveBlockGate(), the test world → FakeBlockGate. The payment gateway joins with #202.
+ * liveInstantDeps() → liveBlockGate(), the test world → FakeBlockGate. #202 adds the money: #129's
+ * gateway, V1's cross-subject payment lookup (fresh transfer codes) and V2's account cipher (refunds).
  */
 export interface InstantDeps extends OrderGateDeps {
   readonly store: InstantStore;
@@ -90,9 +110,14 @@ export interface InstantDeps extends OrderGateDeps {
   readonly profiles: InstantProfileReader;
   readonly days: InstantDayReader;
   readonly users: UserDirectory;
+  readonly gateway: PaymentGateway;
+  readonly payments: Pick<PaymentLookup, 'findPaymentsByTransferCode'>;
+  readonly cipher: AccountCipher;
   readonly push: PushSender;
   readonly clock: Clock;
   readonly ids: IdGenerator;
+  /** Optional: without it a failed refund send is only left `pending` for V2's re-send. */
+  readonly log?: InstantLog;
 }
 
 export interface InstantCaller {

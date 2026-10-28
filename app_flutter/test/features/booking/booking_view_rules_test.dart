@@ -245,6 +245,113 @@ void main() {
       ]);
     });
 
+    test('reportProblem only for the customer of a completed booking inside '
+        '24 h with held escrow and no dispute', () {
+      final done = endsAt.add(const Duration(hours: 1));
+      final b = _b(BookingStatus.completed, completedAt: done);
+      final in6h = done.add(const Duration(hours: 6));
+      expect(detailActions(b, BookingRole.customer, in6h, _off), [
+        DetailAction.reportProblem,
+      ]);
+      expect(detailActions(b, BookingRole.photographer, in6h, _off), isEmpty);
+      // Partly refunded money is still held.
+      expect(
+        detailActions(
+          _b(
+            BookingStatus.completed,
+            completedAt: done,
+            escrow: EscrowStatus.partiallyRefunded,
+          ),
+          BookingRole.customer,
+          in6h,
+          _off,
+        ),
+        [DetailAction.reportProblem],
+      );
+      // Released: nothing held, nothing to dispute.
+      expect(
+        detailActions(
+          _b(
+            BookingStatus.completed,
+            completedAt: done,
+            escrow: EscrowStatus.released,
+          ),
+          BookingRole.customer,
+          in6h,
+          _off,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('reportProblem within 24 h of the shoot ("Chờ bàn giao", mock '
+        'S05.02-problem) and during the delivery check', () {
+      final shotAt = endsAt.add(const Duration(minutes: 15));
+      final shot = _b(BookingStatus.shot).copyWith(shotAt: shotAt);
+      expect(
+        detailActions(
+          shot,
+          BookingRole.customer,
+          shotAt.add(const Duration(hours: 6)),
+          _off,
+        ),
+        contains(DetailAction.reportProblem),
+      );
+      expect(
+        detailActions(
+          shot,
+          BookingRole.customer,
+          shotAt.add(const Duration(hours: 24)),
+          _off,
+        ),
+        isNot(contains(DetailAction.reportProblem)),
+      );
+      final approved = _b(
+        BookingStatus.approved,
+      ).copyWith(checkUntil: shotAt.add(const Duration(days: 4)));
+      expect(
+        detailActions(
+          approved,
+          BookingRole.customer,
+          shotAt.add(const Duration(days: 3)),
+          _off,
+        ),
+        contains(DetailAction.reportProblem),
+      );
+    });
+
+    test('not for upcoming, not after 24 h, not when disputeId is set', () {
+      final done = endsAt.add(const Duration(hours: 1));
+      final b = _b(BookingStatus.completed, completedAt: done);
+      expect(
+        detailActions(
+          _b(BookingStatus.upcoming),
+          BookingRole.customer,
+          startsAt.subtract(const Duration(hours: 1)),
+          _off,
+        ),
+        isNot(contains(DetailAction.reportProblem)),
+      );
+      expect(
+        detailActions(
+          b,
+          BookingRole.customer,
+          done.add(const Duration(hours: 24)),
+          _off,
+        ),
+        isEmpty,
+      );
+      expect(
+        detailActions(
+          b.copyWith(disputeId: 'd1'),
+          BookingRole.customer,
+          done.add(const Duration(hours: 6)),
+          _off,
+        ),
+        isEmpty,
+      );
+    });
+
     test('message only when chat is on and the booking has a chat', () {
       final withChat = _b(BookingStatus.accepted, chatId: 'chat1');
       final noChat = _b(BookingStatus.accepted);
@@ -1159,6 +1266,72 @@ void main() {
           isFalse,
         );
       });
+    });
+  });
+
+  group('studioOfferOf (S27)', () {
+    final deadline = DateTime.utc(2026, 10, 23, 8);
+    final now = DateTime.utc(2026, 10, 21, 3);
+
+    Booking offer({required BookingStatus status, bool declined = false}) =>
+        makeTestBooking(
+          id: 'sb1',
+          photographerId: 'cuc',
+          status: status,
+          day: '2026-10-24',
+          start: '15:00',
+          end: '17:00',
+        ).copyWith(
+          studio: StudioBookingInfo(
+            assigneeId: declined ? null : 'lan',
+            assigneeKind: declined ? null : 'collaborator',
+            assignDeadline: deadline,
+            assignments: [
+              StudioAssignment(
+                assigneeId: 'lan',
+                assigneeKind: 'collaborator',
+                at: now,
+                by: 'cuc',
+                offerExpiresAt: now.add(const Duration(hours: 6)),
+                declinedAt: declined ? now : null,
+              ),
+            ],
+          ),
+        );
+
+    test('pending and declined offers of an open booking', () {
+      expect(
+        studioOfferOf(offer(status: BookingStatus.accepted), now)?.state,
+        StudioOfferState.pending,
+      );
+      expect(
+        studioOfferOf(
+          offer(status: BookingStatus.accepted, declined: true),
+          now,
+        )?.state,
+        StudioOfferState.declined,
+      );
+    });
+
+    test('a cancelled or completed booking has no offer line', () {
+      for (final status in [
+        BookingStatus.cancelled,
+        BookingStatus.completed,
+        BookingStatus.reviewed,
+        BookingStatus.declined,
+        BookingStatus.expired,
+      ]) {
+        expect(
+          studioOfferOf(offer(status: status), now),
+          isNull,
+          reason: '$status',
+        );
+        expect(
+          studioOfferOf(offer(status: status, declined: true), now),
+          isNull,
+          reason: '$status declined',
+        );
+      }
     });
   });
 }

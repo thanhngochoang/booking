@@ -73,6 +73,36 @@ final _feed = find
 double _left(WidgetTester t, Key k) => t.getTopLeft(find.byKey(k)).dx;
 
 void main() {
+  testWidgets('no Chụp ngay card while the flag is off', (tester) async {
+    await _pump(tester, DiscoveryWorld());
+    expect(find.byKey(const Key('instant-entry-card')), findsNothing);
+    expect(find.text('Chụp ngay'), findsNothing);
+  });
+
+  testWidgets('with Chụp ngay on, the card sits between greeting and chips', (
+    tester,
+  ) async {
+    _phone(tester);
+    final w = DiscoveryWorld(instantEnabled: true);
+    await w.init();
+    await tester.pumpWidget(
+      screenRouterApp(router: _router(), overrides: w.overrides),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final card = find.byKey(const Key('instant-entry-card'));
+    expect(card, findsOneWidget);
+    expect(
+      tester.getTopLeft(card).dy,
+      greaterThan(tester.getBottomLeft(find.text('Hôm nay chụp gì?')).dy),
+    );
+    expect(
+      tester.getBottomLeft(card).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('home-chip-all'))).dy),
+    );
+  });
+
   testWidgets(
     'header, chips and the first post with its pills, name row and save button',
     (tester) async {
@@ -480,7 +510,8 @@ void main() {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final w = DiscoveryWorld();
+      // Chụp ngay on, as shipped since #202: the S02.01 card fits too.
+      final w = DiscoveryWorld(instantEnabled: true);
       await w.init();
       await tester.pumpWidget(
         screenApp(
@@ -492,6 +523,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('instant-entry-card')), findsOneWidget);
       expect(find.byType(BackdropFilter), findsNothing);
     });
   }

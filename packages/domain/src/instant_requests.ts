@@ -1,11 +1,14 @@
 /**
- * Chụp ngay, customer side and sweeps (plan #140 Task 3): create a request, rounds of 5, invites
- * (#140: offers go out at once, no payment), cancel, confirm, tick and the clock step. Every use case
- * settles the request first inside its transaction (Decision 3) and keeps what the clock settled even
- * when it refuses. No payment, refund or ledger write here: money is #202's (Task 11).
+ * Chụp ngay, customer side and sweeps (plan #140 Task 3, money #202 Task 11): create a request,
+ * rounds of 5, invites (the first one opens the payment; the offers go out once it is paid,
+ * Decision 5), cancel (Decision 9 money), confirm (release, Decision 7), tick and the clock step.
+ * Every use case settles the request first inside its transaction (Decision 3) and keeps what the
+ * clock settled even when it refuses. Refunds are sent after the commit; the clock step never sends one.
  */
-import { formatVnDate } from './booking_policy.js';
+import { PAYMENT_EXPIRY_MINUTES, formatVnDate } from './booking_policy.js';
+import { checkSubjectPayments, freshPaymentId, instructionsOf, issuePaymentInstructions, newSubjectPayment } from './create_payment.js';
 import { DomainError } from './errors.js';
+import { isPaymentMethod, type Payment, type PaymentMethod } from './escrow.js';
 import { isId } from './ids.js';
 import {
   INSTANT,
@@ -32,10 +35,13 @@ import {
 import { quoteInstantCancel, type InstantCancelQuote } from './instant_cancel.js';
 import { dayBlocksInstant, rankCandidates, type InstantDayState } from './instant_match.js';
 import { offerPushMessage } from './instant_notices.js';
+import { mirrorRefund, refundInstantShare, sendInstantRefunds } from './instant_payments.js';
 import type { InstantCaller, InstantDeps } from './instant_ports.js';
-import { InstantWork, peekInstantRequest, runInstant } from './instant_work.js';
+import { InstantWork, peekInstantRequest, runInstant, type InstantRefundSend } from './instant_work.js';
 import { distanceKm } from './geo.js';
 import { orderBlocker, type OrderBlock } from './order_gate.js';
+import type { PaymentInstructions } from './payment_ports.js';
+import { expireUnpaid, type SettlementDeps } from './payment_settlement.js';
 import { isVnE164 } from './phone.js';
 
 const SEC = 1000;
@@ -153,7 +159,8 @@ const roundKm = (km: number): number => Math.round(km * 10) / 10;
  * Sends one offer to each chosen photographer who can still take it (fresh, free, on the current
  * price list, fewer than 3 live offers, not gated or blocked, day not held); the others get an
  * `unavailable` row and stay suggestible. All unavailable → `choosing` with `roundEnded` (spec §10).
- * The search window restarts (spec §3.3); `committedAt` is set on the first send.
+ * The search window restarts (spec §3.3); `committedAt` is set on the first send. From
+ * `pending_payment` (#202: the payment of the first round just arrived) the request moves on `paid`.
  */
 export async function sendInstantOffers(
   w: InstantWork,
@@ -176,7 +183,9 @@ export async function sendInstantOffers(
   };
   const invited = ids.filter(canTake);
   const unavailable = ids.filter((id) => !invited.includes(id));
-  const status = invited.length > 0 ? nextInstantStatus(r.status, 'invite') : r.status;
+  const fromPayment = r.status === 'pending_payment';
+  const status = invited.length > 0 ? nextInstantStatus(r.status, fromPayment ? 'paid' : 'invite')
+    : fromPayment ? 'choosing' : r.status;
   const expiresAt = new Date(now.getTime() + INSTANT.OFFER_TTL_S * SEC);
   const offers: InstantOffer[] = [];
   const rows = ids.map((id): InstantOfferRow => {
@@ -212,7 +221,7 @@ export async function sendInstantOffers(
   const request: InstantRequest = invited.length > 0
     ? { ...r, ...common, status, roundEnded: false,
         invitedTotal: r.invitedTotal + invited.length, roundsWithInvites: r.roundsWithInvites + 1 }
-    : { ...r, ...common, roundEnded: true, candidates: [] };
+    : { ...r, ...common, status, roundEnded: true, candidates: [] };
   w.setRequest(request);
   return { request, offers, invited, unavailable };
 }
@@ -346,14 +355,22 @@ export async function nextInstantCandidates(
 // ---------------------------------------------------------------- inviteInstant
 
 export type InviteResult =
+  | { kind: 'payment'; instructions: PaymentInstructions; amountVnd: number }
   | { kind: 'invited'; invited: string[]; unavailable: string[] }
   | { kind: 'price_changed'; amountVnd: number };
 
+const MINUTE_MS = 60_000;
+
 /**
- * S13.02 "Gửi lời mời": 1–5 people of the current round. Uncommitted: the price is re-quoted first
- * (`price_changed` saves the new amount and sends nothing; a stale `expectedAmountVnd` answers the
- * same without a write). #140 has no payment step: the offers go out at once (Task 11 inserts the
- * payment for #202).
+ * S13.02 "Thanh toán {giá} và gửi lời mời" / "Gửi lời mời": 1–5 people of the current round.
+ * Uncommitted (nothing paid yet, #202 Decision 5): `payMethod` is required; in `choosing` the price is
+ * re-quoted first (`price_changed` saves the new amount and opens nothing; a stale `expectedAmountVnd`
+ * answers the same without a write); then the choice waits in `pendingInviteIds`, the request in
+ * `pending_payment`, and the answer is how to pay (V1's `PaymentInstructions`). A second tap
+ * (`pending_payment`, "Thanh toán tiếp") reuses the open payment of the same amount and method;
+ * another method closes it (`expireUnpaid`) and opens a new one. No offer goes out before the
+ * payment is `paid` (`InstantPaymentSettler`). Committed (paid): later rounds send at once on the
+ * held money.
  */
 export async function inviteInstant(deps: InstantDeps, caller: InstantCaller, raw: unknown): Promise<InviteResult> {
   const d = instantInput(raw);
@@ -362,20 +379,37 @@ export async function inviteInstant(deps: InstantDeps, caller: InstantCaller, ra
   const skipped = instantIdList(d.skipped, 0, MAX_SKIPPED);
   const expected = d.expectedAmountVnd;
   if (typeof expected !== 'number' || !Number.isInteger(expected) || expected < 0) return invalid();
+  const payMethod: PaymentMethod | undefined = d.payMethod === undefined || d.payMethod === null ? undefined
+    : isPaymentMethod(d.payMethod) ? d.payMethod : invalid();
   const pre = await peekInstantRequest(deps, requestId);
   if (pre === null) throw new DomainError('not_found');
   if (pre.customerId !== caller.uid) throw new DomainError('permission_denied');
   const cfg = await deps.config.get();
   if (!cfg.enabled) throw new DomainError('not_eligible');
-  const checks = await instantOfferChecks(deps, pre.customerId, ids, deps.clock.now());
+  const committed = pre.committedAt !== null;
+  if (!committed && payMethod === undefined) return invalid();
+  const checks = committed ? await instantOfferChecks(deps, pre.customerId, ids, deps.clock.now()) : null;
+  // Drawn outside the transaction: its transfer code must not clash with any payment of any subject.
+  const freshId = committed ? null : await freshPaymentId(deps.payments, deps.ids);
   const sent: InstantOffer[] = [];
-  const result = await runInstant(deps, async (w): Promise<InviteResult> => {
+  let sends: InstantRefundSend[] = [];
+  const result = await runInstant(deps, async (w): Promise<InviteResult | { kind: 'issue'; payment: Payment; amountVnd: number }> => {
     sent.length = 0;
+    sends = [];
     const r = await customerRequest(w, requestId, caller.uid);
-    if (r.status !== 'choosing') throw new DomainError('conflict');
-    if (!ids.every((id) => r.candidates.some((c) => c.photographerId === id))) throw new DomainError('not_eligible');
     const excludedIds = union(r.excludedIds, skipped);
-    if (r.committedAt === null) {
+    if (r.committedAt !== null) {
+      if (r.status !== 'choosing') throw new DomainError('conflict');
+      if (!ids.every((id) => r.candidates.some((c) => c.photographerId === id))) throw new DomainError('not_eligible');
+      const out = await sendInstantOffers(w, deps, { ...r, excludedIds }, ids, cfg, checks ?? (await instantOfferChecks(deps, r.customerId, ids, w.now)));
+      sent.push(...out.offers);
+      return { kind: 'invited', invited: out.invited, unavailable: out.unavailable };
+    }
+    if (r.status !== 'choosing' && r.status !== 'pending_payment') throw new DomainError('conflict');
+    if (!ids.every((id) => r.candidates.some((c) => c.photographerId === id))) throw new DomainError('not_eligible');
+    if (payMethod === undefined || freshId === null) return invalid();
+    if (r.status === 'choosing') {
+      // While a payment is open its amount is the price; a closed window re-quotes.
       const pkg = cfg.packages.find((p) => p.code === r.packageCode);
       const city = cfg.cities.find((c) => c.id === r.cityId);
       if (pkg === undefined || city === undefined) throw new DomainError('not_eligible');
@@ -387,14 +421,86 @@ export async function inviteInstant(deps: InstantDeps, caller: InstantCaller, ra
         });
         return { kind: 'price_changed', amountVnd };
       }
-      if (expected !== r.amountVnd) return { kind: 'price_changed', amountVnd: r.amountVnd };
     }
-    const out = await sendInstantOffers(w, deps, { ...r, excludedIds }, ids, cfg, checks);
-    sent.push(...out.offers);
-    return { kind: 'invited', invited: out.invited, unavailable: out.unavailable };
+    if (expected !== r.amountVnd) return { kind: 'price_changed', amountVnd: r.amountVnd };
+    // ---- reads (the request's payments), then the payment decision
+    const open = r.paymentId === null ? null : await w.payment(r.paymentId);
+    const count = (await w.paymentsOfRequest(r.id)).length;
+    const now = w.now;
+    const live = open !== null && open.status === 'created' && open.amount === r.amountVnd && open.method === payMethod
+      && open.expiresAt !== undefined && Date.parse(open.expiresAt) > now.getTime();
+    let payment: Payment;
+    if (live) {
+      payment = open;
+    } else {
+      if (open !== null && open.status === 'created') {
+        const out = expireUnpaid({ payment: open, refundId: deps.ids.newId(), ledgerEntryId: deps.ids.newId(), now });
+        w.setPayment(out.payment);
+        if (out.refund !== null && out.ledgerEntry !== null) {
+          w.putRefund(out.refund);
+          w.putLedgerEntry(out.ledgerEntry);
+          w.queueRefundSend(out.refund, out.payment);
+        }
+      }
+      payment = {
+        ...newSubjectPayment({
+          id: freshId, subjectType: 'instant_request', subjectId: r.id, payerId: r.customerId, payeeId: '',
+          amount: r.amountVnd, method: payMethod, provider: deps.gateway.provider, idempotencyKey: `inst_${r.id}_${count + 1}`,
+          now, expiresAt: new Date(now.getTime() + PAYMENT_EXPIRY_MINUTES * MINUTE_MS),
+        }),
+        // Decision 6: the payout takes the fee the request snapshotted with its price.
+        feeBp: r.platformFeeBp,
+      };
+      w.setPayment(payment);
+    }
+    w.setRequest({
+      ...r,
+      status: r.status === 'choosing' ? nextInstantStatus(r.status, 'invite_unpaid') : r.status,
+      pendingInviteIds: ids, excludedIds, payMethod, provider: payment.provider, paymentId: payment.id,
+      paymentDeadlineAt: new Date(Date.parse(payment.expiresAt ?? now.toISOString())), lastActivityAt: now,
+    });
+    sends = w.refundSends();
+    return { kind: 'issue', payment, amountVnd: r.amountVnd };
   });
+  await sendInstantRefunds(deps, sends);
   await pushInstantOffers(deps, sent);
-  return result;
+  if (result.kind !== 'issue') return result;
+  const { payment } = result;
+  // The gateway is asked outside the transaction; its answer is saved only while the payment is still open.
+  const instructions = instructionsOf(payment) ?? await issuePaymentInstructions(deps.gateway, payment, async (providerRef, inst) => {
+    await deps.store.runTransaction(async (tx) => {
+      const cur = await tx.getPayment(payment.id);
+      if (cur === null || cur.status !== 'created') return;
+      tx.putPayment({ ...cur, ...(providerRef ? { providerRef } : {}), instructions: inst, updatedAt: deps.clock.now().toISOString() });
+    });
+  });
+  return { kind: 'payment', instructions, amountVnd: result.amountVnd };
+}
+
+// ---------------------------------------------------------------- checkInstantPayment
+
+/**
+ * S04.04 on resume for an instant request (payer only): asks the gateway about every open payment of
+ * the request and applies what it reports through V1's settlement (`checkSubjectPayments`), then
+ * answers whether the request is paid and its status.
+ */
+export async function checkInstantPayment(
+  deps: InstantDeps & { readonly settlement: SettlementDeps },
+  caller: InstantCaller,
+  raw: unknown,
+): Promise<{ paid: boolean; status: InstantStatus }> {
+  const requestId = instantRequestId(instantInput(raw));
+  const open = await deps.store.runTransaction(async (tx) => {
+    const r = await tx.getRequest(requestId);
+    if (r === null) throw new DomainError('not_found');
+    if (r.customerId !== caller.uid) throw new DomainError('permission_denied');
+    if (r.paidAt !== null) return [];
+    return (await tx.paymentsOfRequest(requestId)).filter((p) => p.status === 'created');
+  });
+  await checkSubjectPayments(deps.settlement, open);
+  const after = await runInstant(deps, (w) => w.settle(requestId));
+  if (after === null) throw new DomainError('not_found');
+  return { paid: after.paidAt !== null, status: after.status };
 }
 
 // ---------------------------------------------------------------- cancelInstantRequest
@@ -404,12 +510,24 @@ const PHOTOGRAPHER_RESET = {
   lateDeadlineAt: null, startedRouteAt: null, arrivedAt: null, forcedArrivalAccuracyM: null,
 } as const;
 
+/** The dry run's quote the app sends with the real cancel (`expectedRule`, `expectedRefundVnd`), when it does. */
+function expectedQuote(d: Record<string, unknown>): { rule: string; refundVnd: number } | null {
+  const { expectedRule: rule, expectedRefundVnd: refundVnd } = d;
+  if (rule === undefined && refundVnd === undefined) return null;
+  if (typeof rule !== 'string' || typeof refundVnd !== 'number' || !Number.isInteger(refundVnd) || refundVnd < 0) return invalid();
+  return { rule, refundVnd };
+}
+
 /**
- * S13.08 / the photographer's cancel. `dryRun` answers the quote and writes nothing. A customer cancel
- * ends the request (`cancelled_by_customer`; #140: rule `unpaid`, no money) and withdraws the pending
- * offers; an assigned photographer is freed (`reliability.late` when past `lateDeadlineAt` before
- * arrival, whatever the rule). A photographer cancel returns the request to `choosing` without them,
- * clears the job, restarts the 10-minute window and counts `reliability.cancelled`.
+ * S13.08 / the photographer's cancel. `dryRun` answers the quote and writes nothing. A real cancel may
+ * carry the dry run's `expectedRule`/`expectedRefundVnd`: when the quote changed in between (a window
+ * ended), it is `conflict` and nothing moves, so the customer never confirms one amount and gets another.
+ * A customer cancel ends the request (`cancelled_by_customer`) and withdraws the pending offers; an
+ * assigned photographer is freed (`reliability.late` when past `lateDeadlineAt` before arrival). Paid
+ * (#202): the quote's share goes back to the customer (`applyRefundToPayment`, Decision 9), the rest
+ * stays for the photographer and is released 24 h later (Decision 7). A photographer cancel returns
+ * the request to `choosing` without them, clears the job and the payment's payee (the money stays held
+ * for the next round), restarts the 10-minute window and counts `reliability.cancelled`.
  */
 export async function cancelInstantRequest(
   deps: InstantDeps,
@@ -419,7 +537,10 @@ export async function cancelInstantRequest(
   const d = instantInput(raw);
   const requestId = instantRequestId(d);
   const dryRun = optionalBool(d.dryRun) ?? false;
-  return runInstant(deps, async (w) => {
+  const expected = expectedQuote(d);
+  let sends: InstantRefundSend[] = [];
+  const result = await runInstant(deps, async (w) => {
+    sends = [];
     const first = await w.request(requestId);
     if (first === null) throw new DomainError('not_found');
     const role = first.customerId === caller.uid ? 'customer' : first.photographerId === caller.uid ? 'photographer' : null;
@@ -433,8 +554,11 @@ export async function cancelInstantRequest(
       w.discard();
       return { ...q, status: r.status };
     }
+    if (expected !== null && (expected.rule !== q.rule || expected.refundVnd !== q.refundVnd)) throw new DomainError('conflict');
     const recorded = { cancelRule: q.rule, refundPercent: q.refundPercent, feeVnd: q.feeVnd, cancelledAt: now };
     const status = nextInstantStatus(r.status, role === 'customer' ? 'customer_cancel' : 'photographer_cancel');
+    // #202: the paid money (reads before any decision is written; the work flushes at the end).
+    const payment = q.amountVnd > 0 && r.paymentId !== null ? await w.payment(r.paymentId) : null;
     if (role === 'customer') {
       const late = (r.status === 'assigned' || r.status === 'en_route') && r.lateDeadlineAt !== null && now.getTime() > r.lateDeadlineAt.getTime();
       for (const row of r.offers) if (row.outcome === 'pending') await w.closeOffer(row, 'withdrawn');
@@ -443,15 +567,29 @@ export async function cancelInstantRequest(
         if (p !== null && late) w.setPresence({ ...p, reliability: { ...p.reliability, late: p.reliability.late + 1 } });
         w.deleteTrack(r.id);
       }
-      const next: InstantRequest = {
+      let next: InstantRequest = {
         ...r, ...recorded, status, cancelledBy: 'customer', candidates: [],
         offers: r.offers.map((o) => (o.outcome === 'pending' ? { ...o, outcome: 'withdrawn' as const } : o)),
       };
+      if (payment !== null) {
+        let held = payment;
+        if (q.refundVnd > 0) {
+          const out = refundInstantShare(w, deps, payment, q.refundPercent, q.rule);
+          held = out.payment;
+          next = mirrorRefund(next, out.refund);
+        }
+        // What the photographer keeps is released after the dispute window (Decision 7).
+        w.setPayment(held);
+        if (q.feeVnd > 0) await w.stampRelease(next, now);
+      }
       w.setRequest(next);
+      sends = w.refundSends();
       return { ...q, status: next.status };
     }
     const p = await w.freePresence(caller.uid, r.id);
     if (p !== null) w.setPresence({ ...p, reliability: { ...p.reliability, cancelled: p.reliability.cancelled + 1 } });
+    // The money stays held for the next round; nobody is its payee until someone else accepts.
+    if (payment !== null) w.setPayment({ ...payment, payeeId: '', updatedAt: now.toISOString() });
     w.deleteContact(r.id);
     w.deleteTrack(r.id);
     const next: InstantRequest = {
@@ -462,11 +600,16 @@ export async function cancelInstantRequest(
     w.setRequest(next);
     return { ...q, status: next.status };
   });
+  await sendInstantRefunds(deps, sends);
+  return result;
 }
 
 // ---------------------------------------------------------------- confirm, tick, sweep
 
-/** The customer confirms the shoot (`in_progress` or `finished` → `completed`); the photographer is free again. */
+/**
+ * The customer confirms the shoot (`in_progress` or `finished` → `completed`); the photographer is free
+ * again and the money is released 24 h later (#202, Decision 7: `releaseAfter`, bookingClock's release step).
+ */
 export async function confirmInstantComplete(deps: InstantDeps, caller: InstantCaller, raw: unknown): Promise<{ status: InstantStatus }> {
   const requestId = instantRequestId(instantInput(raw));
   return runInstant(deps, async (w) => {
@@ -474,7 +617,9 @@ export async function confirmInstantComplete(deps: InstantDeps, caller: InstantC
     if (r.status === 'completed') return { status: r.status };
     const status = nextInstantStatus(r.status, 'complete');
     if (r.photographerId !== null) await w.freePresence(r.photographerId, r.id);
-    w.setRequest({ ...r, status, completedAt: w.now, finishedAt: r.finishedAt ?? w.now });
+    const next: InstantRequest = { ...r, status, completedAt: w.now, finishedAt: r.finishedAt ?? w.now };
+    await w.stampRelease(next, w.now);
+    w.setRequest(next);
     return { status };
   });
 }

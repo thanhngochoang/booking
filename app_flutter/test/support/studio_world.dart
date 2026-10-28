@@ -10,12 +10,16 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/collab/collab_providers.dart';
+import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/recruit/recruit_post.dart';
+import 'package:photobooking/data/recruit/recruit_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
@@ -287,7 +291,8 @@ class StudioWorld {
   StudioWorld._(this.uid, this.now)
     : studios = FakeStudioRepository(uid: uid, clock: () => now),
       bookings = FakeBookingRepository(customerId: 'c1', clock: () => now),
-      photographers = FakePhotographerRepository();
+      photographers = FakePhotographerRepository(),
+      collabs = FakeCollabRepository(uid: uid, clock: () => now);
 
   final String uid;
   final DateTime now;
@@ -295,12 +300,23 @@ class StudioWorld {
   final FakeBookingRepository bookings;
   final FakePhotographerRepository photographers;
 
+  /// S27 collaborators (the S26.04 "Cộng tác viên" group).
+  final FakeCollabRepository collabs;
+
+  /// The studio's S27 counters (S26.04 dims the collaborators while
+  /// `recruitBlockedUntil` is ahead).
+  RecruitCounters recruitCounters = RecruitCounters.empty;
+
   List<Override> get overrides => [
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     clockProvider.overrideWithValue(() => now),
     studioRepositoryProvider.overrideWithValue(studios),
     bookingRepositoryProvider.overrideWithValue(bookings),
     photographerRepositoryProvider.overrideWithValue(photographers),
+    collabRepositoryProvider.overrideWithValue(collabs),
+    myRecruitCountersProvider.overrideWith(
+      (ref) => Stream.value(recruitCounters),
+    ),
   ];
 
   /// The signed-in user's own `photographers` intro (S26.01's cap and

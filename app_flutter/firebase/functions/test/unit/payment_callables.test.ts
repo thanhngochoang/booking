@@ -302,7 +302,7 @@ describe('payment callables', () => {
     assert.equal(after.instructions, null);
   });
 
-  it('confirmFakePayment sends FAKE_PAYER, so a cancel refund is sent by bank transfer', async () => {
+  it('confirmFakePayment sends FAKE_PAYER, so a cancel refund waits prefilled with it and goes by bank transfer', async () => {
     const w = paymentWorld();
     const p = await openPayment(w);
     const paid = await handleConfirmFakePayment(
@@ -326,9 +326,16 @@ describe('payment callables', () => {
     const refund = refunds[0];
     assert.ok(refund);
     assert.equal(refund.method, 'bank_transfer');
-    assert.equal(refund.status, 'done');
+    // #141 S22.04: it waits for c1 to confirm the paying account (24 hours by default), then is sent.
+    assert.equal(refund.status, 'awaiting_account');
     assert.equal(refund.destination?.holderName, 'KHACH THU NGHIEM');
     assert.equal(refund.destination?.source, 'payer');
+    const { chooseRefundAccount } = await import('@photobooking/domain');
+    const { refundAccountDepsOf } = await import('../../../../../packages/domain/test/support/refund_account_world.js');
+    assert.deepEqual(
+      await chooseRefundAccount(refundAccountDepsOf({ bookings: w.deps }), { uid: 'c1' }, { refundId: refund.id, use: 'payer' }),
+      { status: 'done' },
+    );
   });
 });
 

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "lib/index.js",
   "engines": {
-    "node": "22"
+    "node": "24"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -20,6 +20,7 @@
     "spots": "tsx tools/spots.ts",
     "payouts": "tsx tools/payouts.ts",
     "support": "tsx tools/support.ts",
+    "disputes": "tsx tools/disputes.ts",
     "clock": "tsx tools/clock.ts",
     "stats": "tsx tools/discovery_stats.ts",
     "reports": "tsx tools/reports.ts",
@@ -34,7 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
-    "@types/node": "^22.20.0",
+    "@types/node": "^24.0.0",
     "@types/opentype.js": "^1.3.10",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.0",

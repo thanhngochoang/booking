@@ -6,6 +6,7 @@ import { createPayment } from '../src/create_payment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
+import { freezeBookingPayment } from './support/dispute_world.js';
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
@@ -248,5 +249,95 @@ describe('Task 5: runBookingSweeps', () => {
 
     assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
     assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
+  });
+  it('a disputed payment is not released by runBookingSweeps even after releaseAfter', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const legacy = await newDraft(world);
+    const { paymentId: legacyPay } = await payDraft(world, legacy.id);
+    await transitionBooking(world.deps, { bookingId: legacy.id, action: 'accept', actorId: 'p1' });
+    const split = await newDraft(world, { day: '2026-10-16' });
+    const { paymentId: splitPay } = await payDraft(world, split.id);
+    await transitionBooking(world.deps, { bookingId: split.id, action: 'accept', actorId: 'p1' });
+
+    // Legacy: a payment without milestones scheduled for release (as completion did before #152);
+    // split: marked shot, its shoot milestone releases at shotAt + 24 h.
+    world.clock.setTime(new Date('2026-10-16T09:30:00.000Z'));
+    const lp = world.store.payments.get(legacyPay);
+    assert.ok(lp && lp.milestones === undefined);
+    world.store.payments.set(legacyPay, { ...lp, releaseAfter: '2026-10-17T09:30:00.000Z' });
+    await transitionBooking(world.deps, { bookingId: split.id, action: 'mark_shot', actorId: 'p1' });
+    freezeBookingPayment(world.store, legacy.id, world.clock.now());
+    freezeBookingPayment(world.store, split.id, world.clock.now(), 'shoot');
+
+    world.clock.setTime(new Date('2026-10-18T10:00:00.000Z'));
+    const sweeps = await runBookingSweeps(world.deps);
+    assert.equal(sweeps.releasedEscrows, 0);
+    assert.equal(world.store.payments.get(legacyPay)?.escrowStatus, 'disputed');
+    const shoot = world.store.payments.get(splitPay)?.milestones?.find((m) => m.kind === 'shoot');
+    assert.equal(shoot?.status, 'disputed');
+    assert.equal(world.store.payments.get(splitPay)?.escrowStatus, 'disputed');
+    assert.equal([...world.store.ledgerEntries.values()].filter((e) => e.type === 'escrow_released').length, 0);
+  });
+
+  it('a delivery dispute does not hold the shoot milestone: the due shoot milestone is released, the disputed one never', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const b = await newDraft(world);
+    const { paymentId } = await payDraft(world, b.id);
+    await transitionBooking(world.deps, { bookingId: b.id, action: 'accept', actorId: 'p1' });
+    world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    await transitionBooking(world.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'p1' });
+    freezeBookingPayment(world.store, b.id, world.clock.now(), 'delivery');
+    assert.equal((await world.store.findReleasableEscrows(world.clock.now())).length, 0);
+
+    world.clock.setTime(new Date('2026-10-16T10:00:00.000Z'));
+    assert.deepEqual((await world.store.findReleasableEscrows(world.clock.now())).map((p) => p.id), [paymentId]);
+    const sweeps = await runBookingSweeps(world.deps);
+    assert.equal(sweeps.releasedEscrows, 1);
+    const p = world.store.payments.get(paymentId);
+    const status = (k: string) => p?.milestones?.find((m) => m.kind === k)?.status;
+    assert.equal(status('shoot'), 'released');
+    assert.equal(status('delivery'), 'disputed');
+    assert.equal(p?.escrowStatus, 'disputed');
+    assert.equal((await world.store.getBooking(b.id))?.escrowStatus, 'disputed');
+    const released = [...world.store.ledgerEntries.values()].filter((e) => e.type === 'escrow_released');
+    assert.deepEqual(released.map((e) => e.amount), [PAID / 2]);
+
+    // Nothing else is due: a second run releases nothing (the disputed milestone has no releaseAfter).
+    assert.equal((await runBookingSweeps(world.deps)).releasedEscrows, 0);
+  });
+
+  it('the escrow release reads everything before its first write (Firestore refuses a read after a write)', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const b = await newDraft(world);
+    const { paymentId } = await payDraft(world, b.id);
+    await transitionBooking(world.deps, { bookingId: b.id, action: 'accept', actorId: 'p1' });
+    world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    await transitionBooking(world.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'p1' });
+    world.clock.setTime(new Date('2026-10-16T10:00:00.000Z'));
+
+    // A store whose transactions throw on any read made after a write, like the Admin SDK.
+    const store = world.deps.store;
+    const strict = Object.create(store) as typeof store;
+    strict.runTransaction = (fn) =>
+      store.runTransaction((tx) => {
+        let wrote = false;
+        const guarded = new Proxy(tx, {
+          get(target, key, receiver) {
+            const value = Reflect.get(target, key, receiver);
+            if (typeof value !== 'function') return value;
+            const name = String(key);
+            return (...args: unknown[]) => {
+              if (/^(get|find)/.test(name) && wrote) throw new Error(`read after write: ${name}`);
+              if (/^(set|add|put|delete|increment)/.test(name)) wrote = true;
+              return value.apply(target, args);
+            };
+          },
+        });
+        return fn(guarded);
+      });
+    const sweeps = await runBookingSweeps({ ...world.deps, store: strict });
+    assert.equal(sweeps.releasedEscrows, 1);
+    const shoot = world.store.payments.get(paymentId)?.milestones?.find((m) => m.kind === 'shoot');
+    assert.equal(shoot?.status, 'released');
   });
 });

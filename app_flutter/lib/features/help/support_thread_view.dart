@@ -19,6 +19,7 @@ class SupportThreadView extends ConsumerStatefulWidget {
     required this.senderLabel,
     this.emptyPlaceholder,
     this.header,
+    this.scrollHeader = false,
   });
 
   final String threadId;
@@ -29,12 +30,19 @@ class SupportThreadView extends ConsumerStatefulWidget {
   final Widget? emptyPlaceholder;
   final Widget? header;
 
+  /// When true the [header] scrolls with the messages (S18.02: the dispute
+  /// details come first, the thread under them) and the view opens at the
+  /// top; it only scrolls to the end when the user sends. Otherwise the
+  /// header stays fixed and the view follows the newest message.
+  final bool scrollHeader;
+
   @override
   ConsumerState<SupportThreadView> createState() => _SupportThreadViewState();
 }
 
 class _SupportThreadViewState extends ConsumerState<SupportThreadView> {
   final ScrollController _scrollController = ScrollController();
+  int _pendingSeen = 0;
 
   @override
   void dispose() {
@@ -88,61 +96,87 @@ class _SupportThreadViewState extends ConsumerState<SupportThreadView> {
         if (!streamIds.contains(m.id)) m,
     ];
 
-    if (allMessages.isNotEmpty) {
+    final sent = state.pending.length > _pendingSeen;
+    _pendingSeen = state.pending.length;
+    if (allMessages.isNotEmpty && (!widget.scrollHeader || sent)) {
       _scrollToBottom();
+    }
+
+    Widget bubble(SupportMessage msg) {
+      final isMine =
+          (currentUid != null && msg.senderId == currentUid) ||
+          (msg.senderRole == SupportSenderRole.user && msg.senderId == null);
+      final system = msg.senderRole == SupportSenderRole.system;
+      final label = system ? '' : widget.senderLabel(msg);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: ChatBubble(
+          key: Key('bubble-${msg.id}'),
+          content: system ? SystemContent(msg.body) : TextContent(msg.body),
+          mine: !system && isMine,
+          state: sendStateOf(msg.sendState),
+          senderName: label.isNotEmpty ? label : null,
+          onRetry: msg.sendState == MessageSendState.failed
+              ? () => controller.retry(msg.id)
+              : null,
+        ),
+      );
+    }
+
+    Widget messages({required int skeletons, required bool scrolls}) {
+      return AsyncView<List<SupportMessage>>(
+        value: messagesAsync,
+        skeleton: (_) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < skeletons; i++)
+              ChatBubble.skeleton(mine: i.isOdd),
+          ],
+        ),
+        onRetry: () => ref.invalidate(supportMessagesProvider(widget.threadId)),
+        data: (context, _) {
+          if (allMessages.isEmpty && widget.emptyPlaceholder != null) {
+            return widget.emptyPlaceholder!;
+          }
+          if (!scrolls) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [for (final m in allMessages) bubble(m)],
+            );
+          }
+          return ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s4,
+              vertical: AppSpace.s3,
+            ),
+            itemCount: allMessages.length,
+            itemBuilder: (context, index) => bubble(allMessages[index]),
+          );
+        },
+      );
     }
 
     return Column(
       children: [
-        if (widget.header != null) widget.header!,
-        Expanded(
-          child: AsyncView<List<SupportMessage>>(
-            value: messagesAsync,
-            skeleton: (_) => Column(
+        if (widget.scrollHeader)
+          Expanded(
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s4,
+                vertical: AppSpace.s3,
+              ),
               children: [
-                for (var i = 0; i < 6; i++) ChatBubble.skeleton(mine: i.isOdd),
+                if (widget.header != null) widget.header!,
+                messages(skeletons: 3, scrolls: false),
               ],
             ),
-            onRetry: () =>
-                ref.invalidate(supportMessagesProvider(widget.threadId)),
-            data: (context, _) {
-              if (allMessages.isEmpty && widget.emptyPlaceholder != null) {
-                return widget.emptyPlaceholder!;
-              }
-
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s4,
-                  vertical: AppSpace.s3,
-                ),
-                itemCount: allMessages.length,
-                itemBuilder: (context, index) {
-                  final msg = allMessages[index];
-                  final isMine =
-                      (currentUid != null && msg.senderId == currentUid) ||
-                      (msg.senderRole == SupportSenderRole.user &&
-                          msg.senderId == null);
-                  final label = widget.senderLabel(msg);
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: ChatBubble(
-                      key: Key('bubble-${msg.id}'),
-                      content: TextContent(msg.body),
-                      mine: isMine,
-                      state: sendStateOf(msg.sendState),
-                      senderName: label.isNotEmpty ? label : null,
-                      onRetry: msg.sendState == MessageSendState.failed
-                          ? () => controller.retry(msg.id)
-                          : null,
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
+          )
+        else ...[
+          if (widget.header != null) widget.header!,
+          Expanded(child: messages(skeletons: 6, scrolls: true)),
+        ],
         if (widget.enabled)
           AppFooterBar(
             child: ChatComposer(
