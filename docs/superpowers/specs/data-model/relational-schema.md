@@ -2018,7 +2018,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `spots/{id}` | `spots` (+ `spot_access_fees`) | Điểm chụp; S30: `managedBy` → `managed_by`, `access.{type,note,source,updatedAt}` → `access_*`, `access.fees[]` → `spot_access_fees` (thứ tự → `position`), `openHours.{start,end}` → `open_time`, `close_time` |
 | `spots/{id}/residents/{providerId}` | `spot_residents` | S30 thợ tại điểm; khoá `(spot_id, provider_id)` lấy từ đường dẫn |
 | `organizers/{uid}` | `organizers` | S30; `managedSpotIds[]` không thành cột (dẫn xuất từ `spots.managed_by`) |
-| `organizers/{uid}/gate_staff/{staffUid}` | `organizer_gate_staff` | S30; `scansToday.{day,count}` → `scans_day`, `scans_count` |
+| `organizers/{uid}/gate_staff/{staffUid}` | `organizer_gate_staff` | S30; `scansToday.{day,count}` → `scans_day`, `scans_count`; `staffUid`, `organizerId` trong tài liệu chỉ để truy vấn collection group (đã có ở khoá) |
 | `events/{id}` (`type = entry`) | `events` + `event_ticket_types` | S30 vé vào cửa; `openHours.{start,end}` → `open_time`, `close_time`; `ticketTypes[]` → `event_ticket_types` (thứ tự → `position`); `closedWeekdays[]`, `closedDays[]` → mảng |
 | `entry_days/{eventId}_{day}` | `entry_days` | S30; khoá `(event_id, day)` tách từ id |
 | `events/{id}/registrations/{id}` (vé vào cửa) | `event_registrations` + `event_registration_items` | S30; `visitDay`, `bookingId`, `gateCheckedInAt`, `ticketCodeLast4` → cột; `items[]` → `event_registration_items` |

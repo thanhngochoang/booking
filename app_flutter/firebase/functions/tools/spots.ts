@@ -4,11 +4,26 @@
 //   npm run spots -- edit <id> [same flags] --actor <uid>
 //   npm run spots -- pin|unpin|hide|unhide|archive <id> --actor <uid>
 //   npm run spots -- rank
+// S30 organizers (#223 Decisions 2, 4, Phase 1 staff review):
+//   npm run spots -- claims list [--status pending|approved|rejected]
+//   npm run spots -- claims approve <claimId> [--spot <spotId>] --actor <uid>
+//   npm run spots -- claims reject <claimId> --reason <text> --actor <uid>
+//   npm run spots -- access <spotId> --type open|ticket|none [--fee "Người lớn=70000"]… [--note <text>] --actor <uid>
+//   npm run spots -- organizers suspend|sync <uid> --actor <uid>
 // Uses the Admin SDK.
 
 import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs/promises';
 import {
+  DomainError,
+  SPOT_CLAIM_STATUSES,
+  reviewSpotClaim,
+  setSpotAccess,
+  suspendOrganizer,
+  syncOrganizerSelling,
+  type SpotClaim,
+  type SpotClaimStatus,
+  type SuspendOrganizerDeps,
   addSpot,
   editSpot,
   setSpotFlag,
@@ -31,11 +46,24 @@ export const HELP = `usage: spots list [--area <code>]
        spots edit <id> [same flags] --actor <uid>
        spots pin|unpin|hide|unhide|archive <id> --actor <uid>
        spots rank
+       spots claims list [--status pending|approved|rejected]
+       spots claims approve <claimId> [--spot <spotId>] --actor <uid>
+       spots claims reject <claimId> --reason <text> --actor <uid>
+       spots access <spotId> --type open|ticket|none [--fee "Người lớn=70000"]... [--note <text>] --actor <uid>
+       spots organizers suspend <uid> --actor <uid>
+       spots organizers sync <uid> --actor <uid>
+
+S30 (organizers): claims approve sets the spot's manager (a proposal needs --spot, the spot staff
+added for it with "spots add"); organizers suspend cancels every open event of the organizer with
+100% refunds and prints any event it could not cancel; organizers sync recomputes the selling flags
+(business, payout account) after a staff change.
 
 Environment:
   GOOGLE_APPLICATION_CREDENTIALS  path to a service account key (production)
   GCLOUD_PROJECT                  project id
   STORAGE_BUCKET                  bucket for spot covers (or FIREBASE_STORAGE_BUCKET)
+  PAYOUT_ACCOUNT_KEY              base64 account-cipher key: organizers suspend refunds bank-QR tickets with it on a
+                                  real project (the emulators use the committed emulator key)
   FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST, FIREBASE_STORAGE_EMULATOR_HOST
                                   use these instead of credentials to work against the emulators
 --actor must be a user with the custom claim staffRole = admin.
@@ -173,12 +201,164 @@ export interface SpotCliIo {
   uploadCover?(spotId: string, coverPath: string, cardPath: string): Promise<SpotCover>;
 }
 
+/** The S30 staff tools (claims, access, suspension): the organizer use cases and the claims listing. */
+export interface SpotCliStaffDeps {
+  readonly organizer: SuspendOrganizerDeps;
+  readonly claims: {
+    list(status: SpotClaimStatus): Promise<SpotClaim[]>;
+    /** A pending proposal (`spotId` null) gets the spot staff added for it; null when it is not one. */
+    setSpot(claimId: string, spotId: string): Promise<SpotClaim | null>;
+  };
+}
+
 export interface SpotCliDeps {
   readonly spots: SpotRankStore & SpotAdminStore;
   readonly counter: SpotCounter;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly staff: { isAdmin(uid: string): Promise<boolean> };
+  /** S30 commands; absent → they are refused. */
+  readonly staffTools?: SpotCliStaffDeps;
+}
+
+// ---- S30 staff commands ---------------------------------------------------------------------
+
+export type StaffCommand = 'claims' | 'access' | 'organizers';
+const STAFF_COMMANDS: readonly string[] = ['claims', 'access', 'organizers'];
+
+export interface StaffArgs {
+  readonly command: StaffCommand;
+  readonly sub: 'list' | 'approve' | 'reject' | 'suspend' | 'sync' | null;
+  /** The claim, spot or organizer id. */
+  readonly id: string | null;
+  readonly status: SpotClaimStatus;
+  readonly reason: string | null;
+  readonly spot: string | null;
+  /** `access`: the block to set, or null for `--type none` (clears it). */
+  readonly access: { type: 'open' | 'ticket'; fees: { label: string; amountVnd: number }[]; note: string } | null;
+  readonly actor: string | null;
+}
+
+/** `"Người lớn=70000"` (dots and spaces in the amount are ignored) → a fee line; anything else throws. */
+function feeOf(raw: string | undefined): { label: string; amountVnd: number } {
+  const i = raw?.lastIndexOf('=') ?? -1;
+  const label = i > 0 ? (raw as string).slice(0, i).trim() : '';
+  const amount = i > 0 ? (raw as string).slice(i + 1).replace(/[\s.,]/g, '') : '';
+  if (label === '' || !/^\d+$/.test(amount)) throw new Error(`--fee needs "<label>=<amount VND>" (got ${raw ?? 'nothing'}). ${HELP}`);
+  return { label, amountVnd: Number(amount) };
+}
+
+export function parseStaffArgs(argv: readonly string[]): StaffArgs {
+  const command = argv[0] as StaffCommand;
+  if (!STAFF_COMMANDS.includes(command)) throw new Error(HELP);
+  let sub: StaffArgs['sub'] = null;
+  let i = 1;
+  if (command === 'claims') {
+    sub = argv[1] as StaffArgs['sub'];
+    if (sub !== 'list' && sub !== 'approve' && sub !== 'reject') throw new Error(`claims needs list, approve or reject. ${HELP}`);
+    i = 2;
+  } else if (command === 'organizers') {
+    sub = argv[1] as StaffArgs['sub'];
+    if (sub !== 'suspend' && sub !== 'sync') throw new Error(`organizers needs suspend or sync. ${HELP}`);
+    i = 2;
+  }
+  let id: string | null = null;
+  if (sub !== 'list') {
+    id = argv[i] ?? null;
+    if (id === null || id.startsWith('--')) throw new Error(`${command}${sub ? ` ${sub}` : ''} needs an id. ${HELP}`);
+    i += 1;
+  }
+  let status: SpotClaimStatus = 'pending';
+  let reason: string | null = null;
+  let spot: string | null = null;
+  let type: string | null = null;
+  const fees: { label: string; amountVnd: number }[] = [];
+  let note = '';
+  let actor: string | null = null;
+  for (; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a === '--status') {
+      const v = argv[++i] ?? '';
+      if (!(SPOT_CLAIM_STATUSES as readonly string[]).includes(v)) throw new Error(`--status must be pending, approved or rejected. ${HELP}`);
+      status = v as SpotClaimStatus;
+    } else if (a === '--reason') reason = argv[++i] ?? null;
+    else if (a === '--spot') spot = argv[++i] ?? null;
+    else if (a === '--type') type = argv[++i] ?? null;
+    else if (a === '--fee') fees.push(feeOf(argv[++i]));
+    else if (a === '--note') note = argv[++i] ?? '';
+    else if (a === '--actor') actor = argv[++i] ?? null;
+  }
+  if (sub === 'reject' && (reason === null || reason.trim() === '')) throw new Error(`claims reject needs --reason <text>. ${HELP}`);
+  let access: StaffArgs['access'] = null;
+  if (command === 'access') {
+    if (type !== 'open' && type !== 'ticket' && type !== 'none') throw new Error(`access needs --type open, ticket or none. ${HELP}`);
+    access = type === 'none' ? null : { type, fees, note };
+  }
+  return { command, sub, id, status, reason, spot, access, actor };
+}
+
+const codeOf = (e: unknown): string => (e instanceof DomainError ? e.code : e instanceof Error ? e.name : 'unknown');
+
+async function runStaffCommand(argv: readonly string[], deps: SpotCliDeps, io: SpotCliIo): Promise<void> {
+  const args = parseStaffArgs(argv);
+  const tools = deps.staffTools;
+  if (tools === undefined) throw new Error(`${args.command} is not available here. ${HELP}`);
+
+  if (args.command === 'claims' && args.sub === 'list') {
+    const claims = await tools.claims.list(args.status);
+    if (claims.length === 0) io.print(`No ${args.status} claims`);
+    for (const c of claims) {
+      const what = c.spotId !== null ? `spot ${c.spotId}` : `proposal "${c.proposal?.name ?? ''}" (${c.proposal?.address ?? ''})`;
+      const extra = c.reason !== null ? `  reason: ${c.reason}` : '';
+      io.print(`${c.id}  ${what}  organizer ${c.organizerId}  ${c.createdAt}  proofs: ${c.proofPaths.join(', ')}${extra}`);
+    }
+    return;
+  }
+
+  const actor = args.actor;
+  if (actor === null) throw new Error(`${args.command} needs --actor <uid> of an admin. ${HELP}`);
+  if (!(await io.isAdmin(actor))) throw new Error(`${actor} does not have the admin claim`);
+  const id = args.id as string;
+  const org = tools.organizer;
+
+  try {
+    if (args.command === 'claims') {
+      if (args.sub === 'approve' && args.spot !== null && (await tools.claims.setSpot(id, args.spot)) === null) {
+        throw new Error(`Claim ${id} is not a pending proposal without a spot`);
+      }
+      const reviewed = await reviewSpotClaim(org, actor, {
+        claimId: id, approve: args.sub === 'approve', ...(args.reason !== null ? { reason: args.reason } : {}),
+      });
+      io.print(reviewed.status === 'approved'
+        ? `Claim ${id} approved: spot ${reviewed.spotId ?? ''} is managed by ${reviewed.organizerId}`
+        : `Claim ${id} rejected: ${reviewed.reason ?? ''}`);
+      return;
+    }
+    if (args.command === 'access') {
+      const spot = await setSpotAccess(org, actor, { spotId: id, access: args.access });
+      const a = spot.access;
+      io.print(a === null
+        ? `Spot ${id} access: cleared`
+        : `Spot ${id} access: ${a.type}${a.fees.length > 0 ? ` · ${a.fees.map((f) => `${f.label} ${f.amountVnd}`).join(', ')}` : ''}`);
+      return;
+    }
+    if (args.sub === 'sync') {
+      const o = await syncOrganizerSelling(org, id);
+      if (o === null) throw new Error(`${id} is not an organizer`);
+      io.print(`Organizer ${id}: businessVerified ${o.businessVerified}, payoutAccountOk ${o.payoutAccountOk}`);
+      return;
+    }
+    const failed: string[] = [];
+    const { cancelledEvents } = await suspendOrganizer(org, actor, { organizerId: id }, (eventId, e) => {
+      failed.push(eventId);
+      io.print(`cancel failed: ${eventId} (${codeOf(e)})`);
+    });
+    io.print(`Organizer ${id} suspended: ${cancelledEvents} open event(s) cancelled`);
+    if (failed.length > 0) throw new Error(`${failed.length} event(s) not cancelled; run organizers suspend ${id} again`);
+  } catch (e) {
+    if (e instanceof DomainError) throw new Error(`${args.command}${args.sub ? ` ${args.sub}` : ''} ${id}: ${e.code}${e.field ? ` (${e.field})` : ''}`);
+    throw e;
+  }
 }
 
 /** Validates that a file is a JPEG <= maxSize bytes. */
@@ -217,6 +397,10 @@ async function rewriteRankings(spotsStore: SpotRankStore, clock: Clock): Promise
 }
 
 export async function runCli(argv: readonly string[], deps: SpotCliDeps, io: SpotCliIo): Promise<void> {
+  if (argv[0] !== undefined && STAFF_COMMANDS.includes(argv[0])) {
+    await runStaffCommand(argv, deps, io);
+    return;
+  }
   const args = parseArgs(argv);
 
   if (args.command === 'list') {
@@ -405,12 +589,29 @@ async function main(): Promise<void> {
     },
   };
 
+  const { liveOrganizerDeps } = await import('../src/infra/live_organizer.js');
+  const { FirestoreOrganizerStore } = await import('../src/infra/organizer_firestore.js');
+  const { lazyAccountCipher } = await import('../src/infra/account_cipher.js');
+  const { emulatorPayoutKey } = await import('../seed/emulator_key.js');
+  const organizerStore = new FirestoreOrganizerStore(firestore);
+  const organizer = liveOrganizerDeps();
+  // `organizers suspend` refunds bank-QR tickets (the payer's account is encrypted): PAYOUT_ACCOUNT_KEY, else the
+  // committed emulator key on the emulators. Read on first use.
+  const key = process.env.PAYOUT_ACCOUNT_KEY;
+  const cipher = lazyAccountCipher(() => (key !== undefined && key !== '' ? key : emulatorPayoutKey()));
   const deps: SpotCliDeps = {
     spots: mergedStore,
     counter,
     clock: { now: () => new Date() },
     ids: { newId: () => randomUUID().replace(/-/g, '').slice(0, 26) },
     staff: { isAdmin: (uid) => io.isAdmin(uid) },
+    staffTools: {
+      organizer: { ...organizer, eventPayments: { ...organizer.eventPayments, cipher } },
+      claims: {
+        list: (status) => organizerStore.listClaims(status),
+        setSpot: (claimId, spotId) => organizerStore.setClaimSpot(claimId, spotId),
+      },
+    },
   };
 
   await runCli(process.argv.slice(2), deps, io);

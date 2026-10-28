@@ -87,6 +87,12 @@ import {
   ticketIdempotencyKey,
   ticketPayeeOf,
   truncateGraphemes,
+  entryRangeInstants,
+  entryReleaseAt,
+  newTicketPayment,
+  passCode4,
+  validateEntryEvent,
+  type Organizer,
   type Dispute,
   type DisputeReason,
   type SupportMessage,
@@ -95,7 +101,9 @@ import {
 import { Timestamp } from 'firebase-admin/firestore';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
-import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
+import { entryDayToFirestore, eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
+import { gateStaffToFirestore, organizerToFirestore, residentToFirestore } from '../src/infra/organizer_firestore.js';
+import { passToFirestore } from '../src/infra/pass_firestore.js';
 import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
 import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
 import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
@@ -153,6 +161,8 @@ export const GIANG = 'seed-photographer-giang';
 export const HOA = 'seed-photographer-hoa';
 /** Staff account with the custom claim `staffRole: 'admin'` (reviews awards; see `applySeed`). */
 export const ADMIN = 'seed-staff-admin';
+/** S30 (#223): the organizer "Bãi đá sông Hồng" (an account with an organizer document, no provider role). */
+export const SEED_ORGANIZER_BAI_DA = 'seed-organizer-bai-da';
 
 export interface SeedUser {
   readonly uid: string;
@@ -175,6 +185,7 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: GIANG, email: 'giang.pending@seed.test', displayName: 'Giang (seed, chờ duyệt)', role: 'photographer', phoneNumber: '+84976000001' },
   { uid: HOA, email: 'hoa.ctv@seed.test', displayName: 'Hòa (seed, CTV)', role: 'photographer' },
   { uid: ADMIN, email: 'admin.staff@seed.test', displayName: 'Admin (seed, nhân viên)', role: 'customer', staffRole: 'admin' },
+  { uid: SEED_ORGANIZER_BAI_DA, email: 'bai.da.organizer@seed.test', displayName: 'Bãi đá sông Hồng (seed)', role: 'customer' },
 ];
 
 /** Private customer numbers (`users/{uid}/private/contact`). Minh has none, for `phone_required`. */
@@ -330,6 +341,8 @@ export interface SeedBooking {
   readonly heldInWindow?: true;
   /** A studio booking (#136): its member, or null while unassigned. */
   readonly studio?: { readonly assigneeId: string | null };
+  /** S30 (#223 Decision 7): the booking's pass code (8 characters), written to `passes/` and its `private/pass`. */
+  readonly pass?: string;
 }
 
 export const SEED_BOOKINGS: readonly SeedBooking[] = [
@@ -349,6 +362,29 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-revision', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'revision_requested', date: '2026-10-12', start: '14:00', end: '16:00', place: 'Bảo tàng Dân tộc học, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-approved', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'approved', date: '2026-10-11', start: '14:00', end: '16:00', place: 'Cầu Long Biên, Hà Nội', completedDaysAgo: null },
 ];
+
+// ---- Organizers, entry tickets and passes (S30, #223) ----
+
+export const SEED_SPOT_BAI_DA = 'seed-spot-bai-da';
+export const SEED_EVENT_ENTRY_BAI_DA = 'seed-event-entry-bai-da';
+export const SEED_REGISTRATION_LAN_ENTRY = 'seed-registration-lan-entry';
+export const SEED_PAYMENT_ENTRY_LAN = 'seed-payment-entry-lan';
+/** Lan's entry ticket for tomorrow (`VE-VAQC-SEED`; the attendee list shows `SEED`). */
+export const SEED_PASS_ENTRY_LAN = 'VAQCSEED';
+export const SEED_BOOKING_LAN_BINH_PASS = 'seed-booking-lan-binh-pass';
+/** Lan's "Mã gặp thợ" for Bình today (`VE-BKNG-SEED`). */
+export const SEED_PASS_BOOKING_LAN_BINH = 'BKNGSEED';
+/** The reference entry fee of the seed spot and the adult ticket price. */
+export const SEED_BAI_DA_FEE = 70_000;
+
+/** S30: Lan's paid booking with Bình today 15:30 (a pass, nothing scanned yet: S05.02-pass, S06.01-scan). */
+export function organizerSeedBookings(now: Date): SeedBooking[] {
+  return [{
+    id: SEED_BOOKING_LAN_BINH_PASS, customerId: LAN, photographerId: BINH, serviceId: 'seed-service-family', status: 'upcoming',
+    date: formatVnDate(now), start: '15:30', end: '17:00', place: 'Bãi đá sông Hồng, Hà Nội', completedDaysAgo: null,
+    pass: SEED_PASS_BOOKING_LAN_BINH,
+  }];
+}
 
 // ---- Studio (S26, #136) ----
 
@@ -1247,7 +1283,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
     // Calculate blocked days for p.uid from bookings and events
     const today = formatVnDate(at);
     const blockedDaysList: string[] = [];
-    for (const b of SEED_BOOKINGS) {
+    for (const b of [...SEED_BOOKINGS, ...organizerSeedBookings(now)]) {
       if (b.photographerId === p.uid && (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed')) {
         blockedDaysList.push(b.date);
       }
@@ -1439,10 +1475,25 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
   }
   const disputeDocs: SeedDocument[] = [];
-  for (const b of [...SEED_BOOKINGS, ...studioSeedBookings(now)]) {
+  for (const b of [...SEED_BOOKINGS, ...studioSeedBookings(now), ...organizerSeedBookings(now)]) {
     const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
     if (!service) continue;
     const bData = bookingData(b, now);
+    if (b.pass !== undefined) {
+      // S30: what the paying transaction writes (Decisions 7, 10); the null fields keep the clock queries matching.
+      Object.assign(bData, {
+        passCode4: passCode4(b.pass), checkedInAt: null, shootQuestionAt: null, shootQuestionUntil: null,
+        shootDeniedAt: null, disputeId: null, entry: null, groupId: null,
+      });
+      docs.push({ path: `bookings/${b.id}/private/pass`, data: { code: b.pass } });
+      docs.push({
+        path: `passes/${b.pass}`,
+        data: passToFirestore({
+          code8: b.pass, customerId: b.customerId, day: b.date, bookingId: b.id, eventId: null, registrationIds: [],
+          createdAt: (bData.createdAt as Date).toISOString(),
+        }) as Record<string, unknown>,
+      });
+    }
     const { deposit } = computeDeposit(service.price);
     const createdAt = bData.createdAt as Date;
     const updatedAt = bData.updatedAt as Date;
@@ -1675,16 +1726,16 @@ export function seedDocuments(now: Date): SeedDocument[] {
         data: { state: 'pending', bookingId: b.id, updatedAt },
       });
     } else if (['accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved', 'completed'].includes(b.status)) {
-      docs.push({
-        path: `availability/${b.photographerId}/days/${b.date}`,
-        data: { state: 'booked', bookingId: b.id, updatedAt },
-      });
+      const dayPath = `availability/${b.photographerId}/days/${b.date}`;
+      // The S30 booking is dated today: on a day another seed booking holds, that one keeps the day.
+      if (!docs.some((d) => d.path === dayPath)) docs.push({ path: dayPath, data: { state: 'booked', bookingId: b.id, updatedAt } });
     }
   }
   docs.push(...disputeDocs);
   docs.push(...reviewDocuments(now));
   docs.push(...notificationAndBadgeDocuments(now));
   docs.push(...eventDocuments(now, docs));
+  docs.push(...organizerDocuments(now));
   // After the events: the projection also counts An's paid ticket payment.
   docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
@@ -2796,6 +2847,130 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
   return docs;
 }
 
+/**
+ * S30 (#223): the organizer "Bãi đá sông Hồng" (active, can sell) managing `seed-spot-bai-da`, An as its resident
+ * (both waivers), Dũng as its active gate staff, its open entry event (adult 70 000, child 40 000) and Lan's paid
+ * ticket for tomorrow with its pass. Lan's booking with Bình today and its pass are written with the bookings.
+ */
+function organizerDocuments(now: Date): SeedDocument[] {
+  const at = SEED_CREATED_AT;
+  const today = formatVnDate(now);
+  const tomorrow = formatVnDate(new Date(now.getTime() + DAY_MS));
+  const spot = seedSpots(now).find((x) => x.id === SEED_SPOT_BAI_DA);
+  if (spot === undefined) throw new Error('no seed spot bai-da');
+  const organizer: Organizer = {
+    id: SEED_ORGANIZER_BAI_DA, name: 'Bãi đá sông Hồng', bio: 'Bãi hoa ven sông Hồng, mở cửa 7:00–18:00 mỗi ngày.',
+    avatarUrl: null, status: 'active', phoneVerified: true, businessVerified: true, payoutAccountOk: true,
+    managedSpotIds: [SEED_SPOT_BAI_DA], createdAt: at.toISOString(), updatedAt: at.toISOString(),
+  };
+  const docs: SeedDocument[] = [
+    { path: `organizers/${SEED_ORGANIZER_BAI_DA}`, data: organizerToFirestore(organizer) as Record<string, unknown> },
+    {
+      path: `users/${SEED_ORGANIZER_BAI_DA}/private/contact`,
+      data: { phone: '+84903000009', phoneVerified: true, allowZalo: false, allowWhatsApp: false, updatedAt: at },
+    },
+    {
+      path: `spots/${SEED_SPOT_BAI_DA}/residents/${AN}`,
+      data: residentToFirestore({
+        providerId: AN, waivesProvider: true, waivesGuests: true, maxGuests: null, validUntil: null,
+        addedAt: at.toISOString(), addedBy: SEED_ORGANIZER_BAI_DA,
+      }) as Record<string, unknown>,
+    },
+    {
+      path: `organizers/${SEED_ORGANIZER_BAI_DA}/gate_staff/${DUNG}`,
+      data: gateStaffToFirestore({
+        staffUid: DUNG, status: 'active', invitedAt: at.toISOString(), respondedAt: new Date(at.getTime() + HOUR_MS).toISOString(),
+      }, SEED_ORGANIZER_BAI_DA) as Record<string, unknown>,
+    },
+  ];
+
+  // The entry event: the same fields saveEventDraft + publishEvent store (Decision 11), sold from today for 90 days.
+  const fields = validateEntryEvent({
+    spotId: SEED_SPOT_BAI_DA, startAt: today, endAt: formatVnDate(new Date(now.getTime() + 89 * DAY_MS)),
+    closedWeekdays: [], closedDays: [], openHours: { start: '07:00', end: '18:00' },
+    ticketTypes: [
+      { id: 'adult', name: 'Người lớn', price: SEED_BAI_DA_FEE },
+      { id: 'child', name: 'Trẻ em', price: 40_000 },
+    ],
+    dailyCapacity: 300, refundCutoffHours: 48,
+  }, today);
+  const { startAt, endAt } = entryRangeInstants(fields);
+  const publishedAt = new Date(now.getTime() - 2 * DAY_MS);
+  const paidAt = new Date(now.getTime() - HOUR_MS);
+  const title = 'Vé vào cửa Bãi đá sông Hồng';
+  const location = {
+    name: spot.name, meetingPoint: null, lat: spot.point.lat, lng: spot.point.lng,
+    geohash: encodeGeohash(spot.point.lat, spot.point.lng), areaId: spot.areaCode,
+  };
+  const ev: EventRecord = {
+    id: SEED_EVENT_ENTRY_BAI_DA,
+    host: { type: 'organizer', id: SEED_ORGANIZER_BAI_DA, name: organizer.name, avatarUrl: null, verified: true },
+    createdBy: SEED_ORGANIZER_BAI_DA, createdByRole: 'photographer', hostConsent: 'not_required', hostConsentExpiresAt: null,
+    title, description: 'Vé vào cửa theo ngày. Một mã QR cho cả nhóm, đưa ở cổng.', type: 'entry',
+    coverUrl: spot.cover?.url ?? null, coverPath: spot.cover?.path ?? null,
+    startAt, endAt, dayKey: null, location,
+    capacity: null, price: null, registrationDeadline: null, faq: [],
+    hashtag: '', hashtagKey: '', hashtagLocked: true, spotId: SEED_SPOT_BAI_DA, spotDecided: true,
+    closedWeekdays: fields.closedWeekdays, closedDays: fields.closedDays, openHours: fields.openHours,
+    ticketTypes: fields.ticketTypes, dailyCapacity: fields.dailyCapacity, refundCutoffHours: fields.refundCutoffHours,
+    status: 'open', registeredCount: 1, heldCount: 0, chatId: null, postCount: 0, version: 3,
+    publishedAt, completedAt: null, cancelledAt: null, soonNoticeAt: null,
+    venue: null, venueConsent: 'not_required', venueConsentExpiresAt: null, venueFeePerGuest: 0, venueManagerId: null,
+    createdAt: publishedAt, updatedAt: paidAt,
+  };
+  docs.push({ path: `events/${ev.id}`, data: eventToFirestore(ev) as Record<string, unknown> });
+
+  // Lan's paid adult ticket for tomorrow: no public code, its pass in private/pass and passes/{code8}.
+  const reg: RegistrationDoc = {
+    id: SEED_REGISTRATION_LAN_ENTRY, eventId: ev.id, userId: LAN, userName: 'Lan (seed)', userAvatarUrl: null,
+    quantity: 1, amount: SEED_BAI_DA_FEE, status: 'paid', holdExpiresAt: null,
+    ticketCode: '', ticketCodeLast4: passCode4(SEED_PASS_ENTRY_LAN), paymentId: SEED_PAYMENT_ENTRY_LAN,
+    contactEligible: true, checkedInAt: null, cancelledAt: null, refundPercent: null,
+    visitDay: tomorrow, items: [{ ticketTypeId: 'adult', name: 'Người lớn', price: SEED_BAI_DA_FEE, qty: 1 }],
+    bookingId: null, gateCheckedInAt: null,
+    event: {
+      title, type: 'entry', startAt: parseVnDateTime(tomorrow, '07:00'), endAt: parseVnDateTime(tomorrow, '18:00'),
+      locationName: spot.name, lat: spot.point.lat, lng: spot.point.lng, coverUrl: ev.coverUrl,
+    },
+    version: 2, createdAt: paidAt, updatedAt: paidAt,
+  };
+  const regPath = `events/${ev.id}/registrations/${reg.id}`;
+  docs.push({ path: regPath, data: registrationToFirestore(reg) as Record<string, unknown> });
+  docs.push({ path: `${regPath}/private/pass`, data: { code: SEED_PASS_ENTRY_LAN } });
+  docs.push({
+    path: `${regPath}/private/contact`,
+    data: { name: 'Lan (seed)', phone: SEED_CUSTOMER_PHONES[LAN] ?? '+84903000001', allowZalo: true, allowWhatsApp: false },
+  });
+  docs.push({
+    path: `passes/${SEED_PASS_ENTRY_LAN}`,
+    data: passToFirestore({
+      code8: SEED_PASS_ENTRY_LAN, customerId: LAN, day: tomorrow, bookingId: null, eventId: ev.id,
+      registrationIds: [reg.id], createdAt: paidAt.toISOString(),
+    }) as Record<string, unknown>,
+  });
+  docs.push({
+    path: `entry_days/${ev.id}_${tomorrow}`,
+    data: entryDayToFirestore({
+      eventId: ev.id, day: tomorrow, sold: 1, held: 0, checkedIn: 0, closed: false, updatedAt: paidAt.toISOString(),
+    }) as Record<string, unknown>,
+  });
+  const opened = newTicketPayment({
+    id: SEED_PAYMENT_ENTRY_LAN, event: ev, registrationId: reg.id, payerId: LAN, method: 'bank_qr', provider: 'fake',
+    amount: reg.amount, now: new Date(paidAt.getTime() - 5 * 60_000), expiresAt: new Date(paidAt.getTime() + 10 * 60_000),
+    lineKind: 'entry_ticket', releaseAfter: entryReleaseAt(tomorrow),
+  });
+  const payment: Payment = { ...opened, status: 'paid', receivedAmount: reg.amount, paidAt: paidAt.toISOString(), updatedAt: paidAt.toISOString() };
+  docs.push({ path: `payments/${payment.id}`, data: paymentToFirestore(payment) as Record<string, unknown> });
+  docs.push({
+    path: `ledger_entries/seed-ledger-${payment.id}-recv`,
+    data: ledgerEntryToFirestore({
+      id: `seed-ledger-${payment.id}-recv`, type: 'ticket_received', paymentId: payment.id, subjectType: 'event_registration',
+      subjectId: reg.id, accountOwnerId: 'platform_escrow', amount: payment.amount, note: `Seed entry ticket ${reg.id}`, at: paidAt.toISOString(),
+    }) as Record<string, unknown>,
+  });
+  return docs;
+}
+
 export function seedWeekendDays(today: string, excludedDays: ReadonlySet<string> = new Set()): string[] {
   const parts = today.split('-').map(Number);
   const y = parts[0] ?? 2026;
@@ -2823,6 +2998,42 @@ export function seedWeekendDays(today: string, excludedDays: ReadonlySet<string>
 export function seedSpots(now: Date): Spot[] {
   const at = now.toISOString();
   return [
+    // S30 (#223): managed by the organizer "Bãi đá sông Hồng", with its reference entry fee.
+    {
+      id: SEED_SPOT_BAI_DA,
+      name: 'Bãi đá sông Hồng',
+      city: 'Hà Nội',
+      areaCode: 'hn',
+      point: { lat: 21.0493, lng: 105.8612 },
+      geohash: encodeGeohash(21.0493, 105.8612),
+      radiusM: 300,
+      cover: {
+        url: `https://seed.test/spots/${SEED_SPOT_BAI_DA}/cover.jpg`,
+        cardUrl: `https://seed.test/spots/${SEED_SPOT_BAI_DA}/card.jpg`,
+        path: `spots/${SEED_SPOT_BAI_DA}/cover.jpg`,
+      },
+      description: 'Bãi hoa ven sông Hồng dưới chân cầu Long Biên, mỗi mùa một loại hoa.',
+      tips: ['Đến trước 8:00 để có ánh sáng dịu', 'Mua vé trong app, đưa mã QR ở cổng'],
+      seasonMonths: [10, 11, 12, 1],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 0,
+      stats: EMPTY_SPOT_STATS,
+      createdAt: at,
+      updatedAt: at,
+      rankedAt: null,
+      managedBy: SEED_ORGANIZER_BAI_DA,
+      access: {
+        type: 'ticket',
+        fees: [{ label: 'Vé vào cửa', amountVnd: SEED_BAI_DA_FEE }],
+        note: 'Trẻ em dưới 1 m miễn vé',
+        updatedAt: at,
+        source: 'organizer',
+      },
+      openHours: { start: '07:00', end: '18:00' },
+      updatedBy: SEED_ORGANIZER_BAI_DA,
+    },
     {
       id: SEED_SPOT_CAU_DAT,
       name: 'Đồi chè Cầu Đất',
