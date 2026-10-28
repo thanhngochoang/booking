@@ -11,6 +11,7 @@ import { waitFor } from './event_social_support.js';
 let app: App;
 let db: Firestore;
 const tokens = new Map<string, string>();
+const TRIGGER_BACKLOG_MS = 60_000;
 
 before(async () => {
   await resetEmulators();
@@ -43,11 +44,16 @@ describe('cancelLateDelivery on the emulators (S05, #207)', () => {
     assert.equal(payment?.escrowStatus, 'released');
     assert.equal(payment?.refundedAmount, 750_000);
 
-    // The milestone read model is written by the onPaymentWritten trigger.
-    const deliveryMilestone = await waitFor('the delivery milestone read model', async () => {
-      const d = (await db.doc(`bookings/${SEED_BOOKING_SHOT_LATE}/milestones/delivery`).get()).data();
-      return d?.status === 'refunded' ? d : null;
-    });
+    // The milestone read model is written by the onPaymentWritten trigger, queued behind the triggers
+    // the seed set off (about 20 s on a laptop), hence the longer wait.
+    const deliveryMilestone = await waitFor(
+      'the delivery milestone read model',
+      async () => {
+        const d = (await db.doc(`bookings/${SEED_BOOKING_SHOT_LATE}/milestones/delivery`).get()).data();
+        return d?.status === 'refunded' ? d : null;
+      },
+      TRIGGER_BACKLOG_MS,
+    );
     assert.equal(deliveryMilestone.status, 'refunded');
     const shootMilestone = (await db.doc(`bookings/${SEED_BOOKING_SHOT_LATE}/milestones/shoot`).get()).data();
     assert.equal(shootMilestone?.status, 'released');
@@ -58,10 +64,14 @@ describe('cancelLateDelivery on the emulators (S05, #207)', () => {
     assert.equal((repeat.error?.details as { code?: string })?.code, 'not_eligible');
 
     // Provider receives delivery_cancelled_late (written by the onBookingWrite trigger; id n_{dedupeKey}).
-    const notif = await waitFor('the provider notification', async () => {
-      const d = await db.doc(`users/${AN}/notifications/n_delivery_cancelled_late_${SEED_BOOKING_SHOT_LATE}`).get();
-      return d.exists ? d : null;
-    });
+    const notif = await waitFor(
+      'the provider notification',
+      async () => {
+        const d = await db.doc(`users/${AN}/notifications/n_delivery_cancelled_late_${SEED_BOOKING_SHOT_LATE}`).get();
+        return d.exists ? d : null;
+      },
+      TRIGGER_BACKLOG_MS,
+    );
     assert.equal(notif.get('type'), 'delivery_cancelled_late');
   });
 });

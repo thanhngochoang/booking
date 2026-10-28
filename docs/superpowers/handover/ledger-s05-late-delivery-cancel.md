@@ -40,7 +40,7 @@ None. The toast amount comes from the milestone read model (falls back to 50/50 
 ## 5. Skipped suites
 
 - Rules emulator tests: no rule changed.
-- Functions integration test written, not run (standing rule; CI runs it): `test/integration/delivery_late_cancel.test.ts`.
+- Functions integration test `test/integration/delivery_late_cancel.test.ts`: CI runs it only after merge (`firebase-deploy.yml` on `develop`). Run once locally on the emulators on 2026-10-28 and passing; its trigger-written reads wait up to 60 s because the seed's own triggers queue ahead of them (about 20 s locally).
 
 Verified locally on 2026-10-28: `packages/domain` test, lint and typecheck; Functions lint, typecheck and unit tests; `flutter analyze`; `flutter test` for `test/features/booking` (344), `earnings`, `notifications`, `disputes`, `test/data/booking`; `dart run tool/affected_test.dart origin/develop --run` (5169 passed, 42 skipped).
 
@@ -69,7 +69,7 @@ Run the emulators with the seed; as Lan, open `/b/seed-booking-shot-late` (shot 
 A fresh whole-branch review found:
 
 - **Fixed: completed count and shoot badges dropped older bookings.** The draft filtered `deliveryCancel == null`, which in Firestore matches only documents that have the field, so every booking written before this branch fell out of `completedCount`, `completedShoots` and `customerShoots`; the three-field query also had no composite index. The counts now keep the old query and subtract `deliveryCancel != null` (`discovery_firestore.ts` `completedBookings`, `badge_firestore.ts`), with the two indexes above. Tests: `completedBookings subtracts late-cancelled bookings…`, `shoot counts subtract late-cancelled bookings…`, `the late-cancel counts have their composite indexes`.
-- **Fixed: the integration test asserted the wrong statuses and notification id** and read trigger-written documents without waiting. It now expects payment `partially_refunded` / escrow `released`, the id `n_delivery_cancelled_late_{bookingId}`, and polls with `waitFor`. Still not run locally (standing rule).
+- **Fixed: the integration test asserted the wrong statuses and notification id** and read trigger-written documents without waiting. It now expects payment `partially_refunded` / escrow `released`, the id `n_delivery_cancelled_late_{bookingId}`, and polls with `waitFor` (60 s budget, `waitFor` gained an optional timeout). Verified on the local emulators.
 - **Fixed: S05.08 stayed open on a `not_eligible` refusal** (the first call committed but its response was lost, or a legacy payment without milestones): the sheet now closes with `LateCancelOutcome.notEligible` and S05.02 toasts `detailErrorNotEligible` and refreshes.
 
 Needs the owner (not changed):
