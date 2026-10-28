@@ -305,6 +305,7 @@ describe('Task 4: createBookingDraft', () => {
         'createdAt',
         'customerId',
         'day',
+        'deliveryDays',
         'deposit',
         'end',
         'id',
@@ -347,6 +348,26 @@ describe('Task 4: createBookingDraft', () => {
         service: { ...serviceRecord, revisions: 9 },
       });
       assert.equal(draft9.revisionsIncluded, 5);
+    });
+
+    it('copies deliveryDays from the service (5 → 5; absent → 7; 120 → 90)', () => {
+      const draft5 = buildBookingDraft({
+        ...BASE,
+        service: { ...serviceRecord, deliveryDays: 5 },
+      });
+      assert.equal(draft5.deliveryDays, 5);
+
+      const draftAbsent = buildBookingDraft({
+        ...BASE,
+        service: { ...serviceRecord, deliveryDays: undefined },
+      });
+      assert.equal(draftAbsent.deliveryDays, 7);
+
+      const draft120 = buildBookingDraft({
+        ...BASE,
+        service: { ...serviceRecord, deliveryDays: 120 },
+      });
+      assert.equal(draft120.deliveryDays, 90);
     });
 
     it('deposit comes from draftTotal', () => {

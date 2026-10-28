@@ -155,6 +155,7 @@ export * from './memory_addon_store.js';
 export * from './addon_use_cases.js';
 export * from './addon_pricing.js';
 export * from './delivery.js';
+export * from './delivery_deadline.js';
 export * from './delivery_use_cases.js';
 export * from './account_deletion.js';
 export * from './data_export.js';

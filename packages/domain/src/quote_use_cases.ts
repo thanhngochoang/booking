@@ -570,6 +570,7 @@ export async function createQuoteBookingDraft(
         durationMinutes: terms.durationMinutes,
         active: true,
         revisions: terms.revisions,
+        deliveryDays: terms.deliveryDays,
       },
       day: proposal.day,
       start: proposal.start,

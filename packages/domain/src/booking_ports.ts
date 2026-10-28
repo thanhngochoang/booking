@@ -28,6 +28,8 @@ export interface ServiceRecord {
   readonly active: boolean;
   /** Free revision rounds of a package (from deliverables.revisions; a quote passes terms.revisions). */
   readonly revisions?: number;
+  /** Delivery deadline in days (from deliverables.deliveryDays; a quote passes terms.deliveryDays). */
+  readonly deliveryDays?: number;
 }
 
 export interface ServiceCatalog {
