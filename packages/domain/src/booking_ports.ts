@@ -324,18 +324,13 @@ export interface PaymentGateway {
 }
 
 /**
- * S30 (Decision 15, spec §5.3): the entry-ticket line of a booking with tickets, settled in the event
- * store after the booking's own transition commits. `percent` 100 refunds the ticket (`refundTicket`);
- * 0 cancels it and its money stays held for the organizer (the late-cancel rule).
+ * S30 (Decision 15, spec §5.3): the entry-ticket line of a booking with tickets. The booking's own
+ * transaction stamps what is owed on the registration (`bookingLineDue` + `refundDue`); `settle` is the
+ * immediate attempt after it commits (refund 100%, or cancel keeping the money). A failure is retried
+ * by the event clock (`runEventSweeps`), so it never undoes the booking's transition.
  */
 export interface BookingTicketLines {
-  /** The entry rule for the customer cancelling now: `entryRefundPercent` with the event's cutoff. */
-  customerPercent(line: { readonly eventId: string; readonly registrationId: string }, now: Date): Promise<0 | 100>;
-  settle(
-    line: { readonly eventId: string; readonly registrationId: string; readonly customerId: string },
-    percent: 0 | 100,
-    reason: 'customer_cancel' | 'provider_cancelled',
-  ): Promise<void>;
+  settle(line: { readonly eventId: string; readonly registrationId: string }): Promise<void>;
 }
 
 export interface BookingDeps {
@@ -352,8 +347,8 @@ export interface BookingDeps {
   readonly clock: Clock;
   readonly ids: IdGenerator;
   /**
-   * S30: settles the ticket line when a booking with tickets is declined, expires or is cancelled.
-   * Absent → only the booking line is refunded (the tickets keep their own rules).
+   * S30: settles the ticket line at once when a booking with tickets is declined, expires or is
+   * cancelled. Absent → the line stays stamped and the event clock settles it.
    */
   readonly tickets?: BookingTicketLines;
 }

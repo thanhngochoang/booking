@@ -7,6 +7,8 @@ import { DomainError, type ErrorCode } from '../src/errors.js';
 import type { Payment } from '../src/escrow.js';
 import { closeEntryDay } from '../src/event_payments.js';
 import { runPaymentSweeps } from '../src/payment_sweeps.js';
+import { runBookingSweeps } from '../src/booking_sweeps.js';
+import { runEventSweeps } from '../src/event_sweeps.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { must } from './support/event_world.js';
 import { org1 } from './support/entry_world.js';
@@ -44,31 +46,36 @@ describe('bookingEntryDefaults', () => {
     const event = ev(w);
     const two = [{ ticketTypeId: 'adult', qty: 1 }, { ticketTypeId: 'child', qty: 1 }];
 
-    const p3 = bookingEntryDefaults({ event, resident: null, customerItems: two, today: '2026-10-18' });
+    const p3 = bookingEntryDefaults({ event, resident: null, customerItems: two, visitDay: VISIT });
     assert.deepEqual(p3.items.map((l) => [l.ticketTypeId, l.qty, l.price]), [['adult', 2, ADULT], ['child', 1, 40_000]]);
     assert.deepEqual([p3.providerTicket, p3.waived, p3.amount], [true, { provider: false, guests: false }, 2 * ADULT + 40_000]);
 
     const p1 = bookingEntryDefaults({
-      event, resident: residentOf('p1', { waivesProvider: true }), customerItems: two, today: '2026-10-18',
+      event, resident: residentOf('p1', { waivesProvider: true }), customerItems: two, visitDay: VISIT,
     });
     assert.deepEqual(p1.items.map((l) => [l.ticketTypeId, l.qty]), [['adult', 1], ['child', 1]]);
     assert.deepEqual([p1.providerTicket, p1.waived], [false, { provider: true, guests: false }]);
 
     const guests = residentOf('p1', { waivesProvider: true, waivesGuests: true, maxGuests: 2 });
-    const allWaived = bookingEntryDefaults({ event, resident: guests, customerItems: two, today: '2026-10-18' });
+    const allWaived = bookingEntryDefaults({ event, resident: guests, customerItems: two, visitDay: VISIT });
     assert.deepEqual([allWaived.items, allWaived.amount, allWaived.waived], [[], 0, { provider: true, guests: true }]);
 
     const three = bookingEntryDefaults({
-      event, resident: guests, customerItems: [{ ticketTypeId: 'adult', qty: 3 }], today: '2026-10-18',
+      event, resident: guests, customerItems: [{ ticketTypeId: 'adult', qty: 3 }], visitDay: VISIT,
     });
     assert.deepEqual(three.items.map((l) => [l.ticketTypeId, l.qty]), [['adult', 1]]);
     assert.equal(three.amount, ADULT);
 
-    // An expired residency waives nothing.
-    const expired = bookingEntryDefaults({
-      event, resident: residentOf('p1', { waivesProvider: true, validUntil: '2026-10-17' }), customerItems: two, today: '2026-10-18',
+    // A residency that ends before the visit day waives nothing, even while it is still valid today.
+    const endsBefore = bookingEntryDefaults({
+      event, resident: residentOf('p1', { waivesProvider: true, validUntil: '2026-10-20' }), customerItems: two, visitDay: VISIT,
     });
-    assert.equal(expired.providerTicket, true);
+    assert.deepEqual([endsBefore.providerTicket, endsBefore.waived.provider], [true, false]);
+    // One valid through the visit day does.
+    const endsThatDay = bookingEntryDefaults({
+      event, resident: residentOf('p1', { waivesProvider: true, validUntil: VISIT }), customerItems: two, visitDay: VISIT,
+    });
+    assert.deepEqual([endsThatDay.providerTicket, endsThatDay.waived.provider], [false, true]);
   });
 });
 
@@ -82,6 +89,13 @@ describe('createBooking with entry', () => {
     );
     const p1 = await entryDraft(w, { photographerId: 'p1', serviceId: 'srv_01', customerId: 'c2' });
     assert.deepEqual([p1.entry?.providerTicket, p1.entry?.waived.provider, p1.entry?.amount], [false, true, ADULT]);
+  });
+
+  test('a residency ending before the visit day gives no waiver on the draft', async () => {
+    const w = await createBookingEntryWorld();
+    w.entry.store.residents.set('s1/p1', residentOf('p1', { waivesProvider: true, validUntil: '2026-10-20' }));
+    const draft = await entryDraft(w, { photographerId: 'p1', serviceId: 'srv_01' });
+    assert.deepEqual([draft.entry?.providerTicket, draft.entry?.waived.provider, draft.entry?.amount], [true, false, 2 * ADULT]);
   });
 
   test('createBooking with entry on a spot without an entry event → invalid_argument entry; on a closed day → day_closed; qty over 10 → limit_exceeded', async () => {
@@ -244,6 +258,58 @@ describe('cancelling a booking with tickets', () => {
     assert.equal(must(paymentOf(w, ticketChild.id)).status, 'refunded');
     assert.deepEqual([reg(w, regId).status, reg(w, regId).refundPercent], ['refunded', 100]);
     assert.equal(day(w)?.sold, 0);
+  });
+
+  test('customer cancel after the entry cutoff: the ticket is cancelled, its money stays held, sold goes back', async () => {
+    const w = await createBookingEntryWorld();
+    const { draft, bookingChild, ticketChild, regId } = await paidEntryBooking(w);
+    w.booking.clock.setTime(new Date('2026-10-20T03:00:00.000Z')); // past the cutoff (00:00 on the 20th), 47 h before the start
+    await transitionBooking(w.bookingDeps, { bookingId: draft.id, action: 'cancel', actorId: 'c1' });
+    assert.equal(bookingOf(w, draft.id).status, 'cancelled');
+    assert.equal(must(paymentOf(w, bookingChild.id)).status, 'partially_refunded'); // 50% of the booking
+    const r = reg(w, regId);
+    assert.deepEqual([r.status, r.refundPercent, r.refundDue, r.bookingLineDue], ['cancelled', 0, false, null]);
+    const t = must(paymentOf(w, ticketChild.id));
+    assert.deepEqual([t.status, t.escrowStatus, t.refundedAmount ?? 0], ['paid', 'held', 0]);
+    assert.equal(w.entry.store.refundsOf(t.id).length, 0);
+    assert.deepEqual([day(w)?.sold, ev(w).registeredCount], [0, 0]);
+  });
+
+  test('a ticket refund that fails after a decline stays stamped on the registration and the event clock refunds it', async () => {
+    const w = await createBookingEntryWorld();
+    const { draft, bookingChild, ticketChild, regId } = await paidEntryBooking(w);
+    w.entry.store.failNext = { error: new Error('outage'), times: 1 };
+    await transitionBooking(w.bookingDeps, { bookingId: draft.id, action: 'decline', actorId: 'p3', reason: 'Bận' });
+    assert.equal(bookingOf(w, draft.id).status, 'declined');
+    assert.equal(must(paymentOf(w, bookingChild.id)).status, 'refunded');
+    const stamped = reg(w, regId);
+    assert.deepEqual([stamped.status, stamped.refundDue, stamped.bookingLineDue], ['paid', true, { percent: 100, reason: 'provider_cancelled' }]);
+    assert.equal(must(paymentOf(w, ticketChild.id)).status, 'paid');
+
+    const swept = await runEventSweeps(w.eventDeps);
+    assert.equal(swept.refunded, 1);
+    const r = reg(w, regId);
+    assert.deepEqual([r.status, r.refundPercent, r.refundDue, r.bookingLineDue], ['refunded', 100, false, null]);
+    assert.equal(must(paymentOf(w, ticketChild.id)).status, 'refunded');
+    assert.deepEqual(w.entry.store.refundsOf(ticketChild.id).map((x) => x.reason), ['provider_cancelled']);
+    assert.deepEqual([day(w)?.sold, ev(w).registeredCount], [0, 0]);
+    // A second run changes nothing.
+    assert.equal((await runEventSweeps(w.eventDeps)).refunded, 0);
+  });
+
+  test('a request that expires in the booking sweep without the ticket port is stamped, and the event clock refunds the ticket', async () => {
+    const w = await createBookingEntryWorld();
+    const { draft, ticketChild, regId } = await paidEntryBooking(w);
+    const { tickets: _ignored, ...withoutPort } = w.bookingDeps;
+    void _ignored;
+    w.booking.clock.advanceHours(25); // past the 24 h accept deadline
+    const swept = await runBookingSweeps(withoutPort);
+    assert.equal(swept.expiredRequests, 1);
+    assert.equal(bookingOf(w, draft.id).status, 'expired');
+    assert.deepEqual(reg(w, regId).bookingLineDue, { percent: 100, reason: 'provider_cancelled' });
+    assert.equal((await runEventSweeps(w.eventDeps)).refunded, 1);
+    assert.equal(reg(w, regId).status, 'refunded');
+    assert.equal(must(paymentOf(w, ticketChild.id)).status, 'refunded');
   });
 
   test('closeEntryDay on the booking\'s day refunds the ticket line and leaves the booking upcoming', async () => {

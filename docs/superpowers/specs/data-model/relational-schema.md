@@ -1886,6 +1886,9 @@ alter table bookings
   add column entry_amount          bigint check (entry_amount >= 0),
   add column entry_registration_id text references event_registrations(id),  -- vé đang giữ/đã trả, có sau createPayment
   add column group_id              text references payments(id);        -- khoản nhóm gần nhất
+alter table event_registrations
+  add column booking_line_due_percent smallint check (booking_line_due_percent in (0, 100)),   -- vé booking để lại: hoàn 100 hoặc huỷ giữ tiền 0
+  add column booking_line_due_reason  text check (booking_line_due_reason in ('provider_cancelled','customer_cancel'));
 ```
 
 ## 3. Ánh xạ Firestore → bảng

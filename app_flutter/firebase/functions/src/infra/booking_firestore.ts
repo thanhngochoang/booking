@@ -14,6 +14,7 @@ import {
   LINE_KINDS,
   MAX_MEMBERS_VERIFIED,
   entryDayId,
+  isUnpaidPayment,
   type BookingEntry,
   type PaymentGroupView,
   PAYMENT_METHODS,
@@ -1541,7 +1542,8 @@ export class FirestoreBookingStore implements StudioBookingStore {
     const res: Payment[] = [];
     for (const doc of (await query(['held', 'partially_refunded'])).docs) {
       const p = paymentFromFirestore(doc.id, doc.data());
-      if (p) res.push(p);
+      // Never an unpaid intent or a group's line still waiting for its group (S30): not money yet.
+      if (p && !isUnpaidPayment(p)) res.push(p);
     }
     if (res.length >= limit) return res;
     for (const doc of (await query(['disputed'])).docs) {

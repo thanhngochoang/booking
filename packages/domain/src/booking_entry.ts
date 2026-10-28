@@ -26,7 +26,8 @@ export type BookingEntryDefaults = Pick<BookingEntry, 'items' | 'providerTicket'
  * Spec §5.1: the customer's tickets (`customerItems`, S04.03's counters, by default one of the first
  * type) plus one ticket of the first visible type for the provider, unless the provider is a resident
  * of the spot who `waivesProvider`; a resident who `waivesGuests` waives the customer's tickets, at most
- * `maxGuests` of them (null: all), in the order given. An expired residency waives nothing. At most
+ * `maxGuests` of them (null: all), in the order given. A residency that ends (`validUntil`) before the visit day
+ * waives nothing. At most
  * ENTRY_TICKETS_PER_ORDER tickets counting the provider's (`limit_exceeded`); unknown or hidden types
  * are `invalid_argument` (field `items`). `items` are the tickets charged, merged per type.
  */
@@ -34,11 +35,12 @@ export function bookingEntryDefaults(p: {
   readonly event: EventRecord;
   readonly resident: Resident | null;
   readonly customerItems: readonly EntryItem[];
-  readonly today: string;
+  /** The booking's day: a residency that ends before it waives nothing. */
+  readonly visitDay: string;
 }): BookingEntryDefaults {
   const types = entryFieldsOf(p.event).ticketTypes;
   const priced = priceItems(types, p.customerItems);
-  const waiver = waiverFor(p.resident, p.today);
+  const waiver = waiverFor(p.resident, p.visitDay);
   const providerTicket = !waiver.provider;
   if (priced.quantity + (providerTicket ? 1 : 0) > ENTRY_TICKETS_PER_ORDER) throw new DomainError('limit_exceeded');
 

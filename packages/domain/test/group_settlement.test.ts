@@ -12,7 +12,11 @@ import {
   type GroupLine,
 } from '../src/group_settlement.js';
 import { transferCodeFor } from '../src/payment_code.js';
-import { EMPTY_PAYER_SUBJECT, confirmFakePayment, payerRowOf, runPaymentSweeps } from '../src/index.js';
+import { EMPTY_PAYER_SUBJECT, confirmFakePayment, payerRowOf, runBookingSweeps, runPaymentSweeps } from '../src/index.js';
+import { closeEntryDay, releaseEventHolds } from '../src/event_payments.js';
+import { createBookingWorld, transferOf } from './support/booking_world.js';
+import { buy, org1 } from './support/entry_world.js';
+import { cu1 } from './support/event_world.js';
 import { createPayout, createPayouts } from '../src/payout_use_cases.js';
 import { DEFAULT_PAYOUT_POLICY, payoutLineOf, taxRateBpOf } from '../src/payout_policy.js';
 import {
@@ -246,6 +250,90 @@ describe('group settlement', () => {
     for (const id of [o2.groupId, o2.bookingChild.id, o2.ticketChild.id]) {
       assert.ok(ledgerHolds(w2, paymentOf(w2, id) as Payment), `expired ${id}`);
     }
+  });
+});
+
+describe('group settlement: late and released lines', () => {
+  /** The group's refunds as [amount, reason, fromEscrow]. */
+  const groupRefunds = (w: BookingEntryWorld, groupId: string) =>
+    [...w.booking.store.refunds.values()].filter((r) => r.paymentId === groupId).map((r) => [r.amount, r.reason, r.fromEscrow]);
+
+  async function expectLateRefund(w: BookingEntryWorld, o: Awaited<ReturnType<typeof openGroup>>, reason: string, receivedAt?: string) {
+    const n = transferOf(w.booking, { content: o.code, amount: TOTAL, ...(receivedAt ? { receivedAt } : {}) });
+    assert.equal((await send(w, n)).outcome, 'refunded');
+    assert.deepEqual(groupRefunds(w, o.groupId), [[TOTAL, reason, true]]);
+    assert.equal(paymentOf(w, o.groupId)?.status, 'refunded');
+    for (const c of [o.bookingChild, o.ticketChild]) assert.equal(paymentOf(w, c.id)?.status, 'expired');
+    assert.equal(w.booking.store.paymentGroups.get(o.groupId)?.status, 'expired');
+    for (const id of [o.groupId, o.bookingChild.id, o.ticketChild.id]) assert.ok(ledgerHolds(w, paymentOf(w, id) as Payment), id);
+  }
+
+  test('an exact transfer received in time but handled after the hold sweep released the tickets → refunded 100%, lines expired, held not given back twice', async () => {
+    const w = await createBookingEntryWorld();
+    const o = await openGroup(w);
+    const inTime = new Date(w.booking.clock.now().getTime() + 5 * 60_000).toISOString();
+    w.booking.clock.advanceMinutes(16);
+    await releaseEventHolds(w.eventDeps);
+    assert.equal(reg(w, o.ticketChild.subjectId)?.status, 'cancelled');
+    // Someone else holds one ticket of the day: the late group must not take it away.
+    await buy(w.entry, cu1);
+    assert.equal(day(w)?.held, 1);
+    await expectLateRefund(w, o, 'late_payment_hold_expired', inTime);
+    assert.deepEqual([day(w)?.held, day(w)?.sold, w.entry.store.events.get(ENTRY_ID)?.heldCount], [1, 0, 1]);
+    assert.equal(w.booking.store.bookings.get(o.draft.id)?.status, 'draft');
+  });
+
+  test('the draft gone, the provider no longer accepting, or the day closed while the group is open → the whole group is refunded', async () => {
+    const gone = await createBookingEntryWorld();
+    const g = await openGroup(gone);
+    gone.booking.store.bookings.delete(g.draft.id);
+    await expectLateRefund(gone, g, 'late_payment_draft_expired');
+    assert.deepEqual([day(gone)?.held, reg(gone, g.ticketChild.subjectId)?.status], [0, 'cancelled']);
+
+    const off = await createBookingEntryWorld();
+    const p = await openGroup(off);
+    off.booking.providers.set('p3', { verified: false, onboardingComplete: true });
+    await expectLateRefund(off, p, 'provider_not_accepting');
+    assert.equal(off.booking.store.bookings.get(p.draft.id)?.status, 'draft');
+    assert.equal(day(off)?.held, 0);
+
+    const closed = await createBookingEntryWorld();
+    const c = await openGroup(closed);
+    assert.deepEqual(await closeEntryDay(closed.eventDeps, org1, { eventId: ENTRY_ID, day: VISIT }), { refunded: 0, left: 0 });
+    await expectLateRefund(closed, c, 'late_payment_hold_expired');
+    assert.deepEqual([day(closed)?.held, day(closed)?.sold, day(closed)?.closed], [0, 0, true]);
+  });
+
+  test('a transfer after the group expired is sent straight back; the lines and the tickets stay as expiry left them', async () => {
+    const w = await createBookingEntryWorld();
+    const o = await openGroup(w);
+    w.booking.clock.advanceMinutes(16);
+    await runPaymentSweeps(w.settlement);
+    assert.equal(day(w)?.held, 0);
+    const out = await send(w, transfer(w, o.code, TOTAL));
+    assert.equal(out.outcome, 'refunded');
+    const refunds = [...w.booking.store.refunds.values()].filter((r) => r.paymentId === o.groupId);
+    assert.deepEqual(refunds.map((r) => [r.amount, r.fromEscrow]), [[TOTAL, false]]);
+    assert.equal(paymentOf(w, o.groupId)?.status, 'expired');
+    for (const c of [o.bookingChild, o.ticketChild]) assert.equal(paymentOf(w, c.id)?.status, 'expired');
+    assert.equal(reg(w, o.ticketChild.subjectId)?.status, 'cancelled');
+    assert.deepEqual([day(w)?.held, day(w)?.sold], [0, 0]);
+    assert.ok(ledgerHolds(w, paymentOf(w, o.groupId) as Payment));
+  });
+
+  test('an unpaid awaiting_group line whose releaseAfter has passed is never released', async () => {
+    const w = createBookingWorld(NOW);
+    const line = newChildPayment({
+      id: 'line_1', groupId: 'g1', payerId: 'c1', method: 'bank_qr', provider: 'fake', now: NOW, expiresAt: LATER,
+      line: { kind: 'entry_ticket', subjectType: 'event_registration', subjectId: 'r1', payeeId: 'org1', amount: TICKETS },
+      payeeKind: 'organizer', eventId: ENTRY_ID, releaseAfter: new Date(NOW.getTime() - 60_000),
+    });
+    w.store.payments.set(line.id, line);
+    const swept = await runBookingSweeps(w.deps);
+    assert.equal(swept.releasedEscrows, 0);
+    const after = w.store.payments.get(line.id) as Payment;
+    assert.deepEqual([after.status, after.escrowStatus, after.releasedAt], ['awaiting_group', 'held', undefined]);
+    assert.equal([...w.store.ledgerEntries.values()].filter((e) => e.paymentId === line.id).length, 0);
   });
 });
 

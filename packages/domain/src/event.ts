@@ -182,6 +182,13 @@ export interface RegistrationDoc {
   readonly items?: readonly EntryLine[];
   /** A ticket bought with a booking (S04.03-entry, Task 3); null for a lone ticket. */
   readonly bookingId?: string | null;
+  /**
+   * S30 (spec §5.3): what the booking this ticket was bought with left owed to it when it was declined,
+   * expired or cancelled, stamped in the booking's own transaction (with `refundDue`): 100 → refund it
+   * (`reason`), 0 → cancel it and keep the money held (a customer cancel after the entry cutoff). Cleared
+   * once settled (`settleBookingLine`, retried by the event clock). Absent or null: nothing owed.
+   */
+  readonly bookingLineDue?: BookingLineDue | null;
   /** The gate's check-in (S30.07); `checkedInAt` stays the event manager's. */
   readonly gateCheckedInAt?: Date | null;
   /** The last 4 random characters of the ticket code. */
@@ -199,6 +206,11 @@ export interface RegistrationDoc {
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+}
+
+export interface BookingLineDue {
+  readonly percent: 0 | 100;
+  readonly reason: 'provider_cancelled' | 'customer_cancel';
 }
 
 /** `registrations/{regId}/private/contact`; written only for tickets that unlock contact (O3). */

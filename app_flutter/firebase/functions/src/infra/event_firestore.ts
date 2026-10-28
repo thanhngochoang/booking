@@ -12,6 +12,7 @@ import {
   RetryableConflict,
   entryDayId,
   type AvailabilityRecord,
+  type BookingLineDue,
   type EntryDay,
   type EntryLine,
   type EventHost,
@@ -290,6 +291,14 @@ export function entryDayFromFirestore(d: DocumentData | undefined): EntryDay | n
   };
 }
 
+/** S30: `bookingLineDue` of a registration bought with a booking (`{percent: 0 | 100, reason}`), or null. */
+function bookingLineDueOf(v: unknown): BookingLineDue | null {
+  const o = asObj(v);
+  const percent = o.percent === 0 || o.percent === 100 ? o.percent : null;
+  const reason = o.reason === 'provider_cancelled' || o.reason === 'customer_cancel' ? o.reason : null;
+  return percent === null || reason === null ? null : { percent, reason };
+}
+
 export function registrationToFirestore(r: RegistrationDoc): DocumentData {
   return {
     id: r.id,
@@ -308,6 +317,7 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     cancelledAt: ts(r.cancelledAt),
     refundPercent: r.refundPercent,
     refundDue: r.refundDue === true,
+    bookingLineDue: r.bookingLineDue ? { percent: r.bookingLineDue.percent, reason: r.bookingLineDue.reason } : null,
     refundId: r.refundId ?? null,
     refundStatus: r.refundStatus ?? null,
     // S18: the dispute mirror (written by the dispute transaction) survives every registration write.
@@ -348,6 +358,7 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     cancelledAt: toDate(d.cancelledAt),
     refundPercent: num(d.refundPercent),
     ...(d.refundDue === true ? { refundDue: true } : {}),
+    ...(bookingLineDueOf(d.bookingLineDue) !== null ? { bookingLineDue: bookingLineDueOf(d.bookingLineDue) } : {}),
     ...(str(d.refundId) !== null ? { refundId: str(d.refundId) as string } : {}),
     ...((REFUND_STATUSES as readonly unknown[]).includes(d.refundStatus) ? { refundStatus: d.refundStatus as RefundStatus } : {}),
     ...(str(d.disputeId) !== null ? { disputeId: str(d.disputeId) as string } : {}),

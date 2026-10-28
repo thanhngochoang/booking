@@ -4,7 +4,7 @@
 
 import { AUTO_COMPLETE_DELAY_HOURS } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
-import { escrowRefundedTotal, releaseEscrowPayment } from './escrow.js';
+import { escrowRefundedTotal, isUnpaidPayment, releaseEscrowPayment } from './escrow.js';
 import { releaseDueMilestones } from './milestones.js';
 import { withoutInterval } from './spot_booking.js';
 import { transitionBooking } from './transition_booking.js';
@@ -146,7 +146,8 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
       // `releaseDueMilestones` never touches the disputed one. A payment without milestones stays frozen whole.
       const disputedMilestones = p?.milestones !== undefined && p.escrowStatus === 'disputed';
       // Never an unpaid intent: an entry ticket's payment carries `releaseAfter` from its creation (S30).
-      const unpaid = p?.status === 'created' || p?.status === 'expired';
+      // Nor a group's line still waiting for its group (S30): its escrow reads `held` from creation.
+      const unpaid = p !== null && isUnpaidPayment(p);
       if (p && !unpaid && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || disputedMilestones)) {
         if (p.milestones) {
           const { payment: updatedP, ledgerEntries } = releaseDueMilestones(p, now, () => deps.ids.newId());

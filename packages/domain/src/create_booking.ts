@@ -35,7 +35,6 @@ import { addonDraftFields, bookingTotal, priceAddonLines, requirePickup } from '
 
 // slot #223 (S30 entry tickets)
 import { assertEntryBookable, bookingEntryDefaults } from './booking_entry.js';
-import { formatVnDate } from './booking_policy.js';
 
 // ── end draft slot imports ──
 
@@ -313,7 +312,7 @@ export async function createBookingDraft(
       const resident = spotId !== null ? await tx.residentOf(spotId, input.photographerId) : null;
       const entryDay = spotId !== null ? await tx.getEntryDay(input.entry.eventId, input.entry.visitDay) : null;
       const defaults = event?.type === 'entry'
-        ? bookingEntryDefaults({ event, resident, customerItems: input.entry.items, today: formatVnDate(now) })
+        ? bookingEntryDefaults({ event, resident, customerItems: input.entry.items, visitDay: input.entry.visitDay })
         : null;
       assertEntryBookable({
         event,

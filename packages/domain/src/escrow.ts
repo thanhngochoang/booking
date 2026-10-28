@@ -216,6 +216,13 @@ export interface Refund {
 export const isSettledPayment = (p: Pick<Payment, 'status'>): boolean =>
   p.status === 'paid' || p.status === 'partially_refunded';
 
+/**
+ * Not money yet, whatever its escrow says: an open intent (`created`), one nobody paid (`expired`) or a
+ * group's line waiting for its group (`awaiting_group`, S30). Never released.
+ */
+export const isUnpaidPayment = (p: Pick<Payment, 'status'>): boolean =>
+  p.status === 'created' || p.status === 'expired' || p.status === 'awaiting_group';
+
 /** True unless the refund is marked as money that never entered escrow (a missing marker counts). */
 export const isEscrowRefund = (r: Pick<Refund, 'fromEscrow'> | { readonly fromEscrow?: boolean }): boolean =>
   r.fromEscrow !== false;

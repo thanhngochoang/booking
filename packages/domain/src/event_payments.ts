@@ -21,7 +21,7 @@ import {
   type RegistrationStatus,
 } from './event.js';
 import { formatVnDate, isDateString } from './booking_policy.js';
-import { ENTRY_CLOSE_BATCH, emptyEntryDay, entryFieldsOf, entryRefundPercent, isOpenDay } from './entry_tickets.js';
+import { ENTRY_CLOSE_BATCH, emptyEntryDay, entryFieldsOf, isOpenDay } from './entry_tickets.js';
 import { NO_ENTRY_DAYS, readEntryDays, releaseDeltas, visitDayOf, writeEntryDays, type EntryDays } from './entry_days.js';
 import { notifyEntryDayClosed } from './notification_hooks.js';
 import type { NotifyDeps } from './notification_ports.js';
@@ -481,7 +481,9 @@ export async function refundTicket(
       ? reg.status === 'paid'
       : reg.status === 'paid' || (reg.status === 'cancelled' && reg.refundDue === true);
     if (!held || !eligible || p === null) {
-      if (reg.refundDue === true) tx.putRegistration({ ...reg, refundDue: false, updatedAt: now, version: reg.version + 1 });
+      if (reg.refundDue === true || (reg.bookingLineDue ?? null) !== null) {
+        tx.putRegistration({ ...reg, refundDue: false, bookingLineDue: null, updatedAt: now, version: reg.version + 1 });
+      }
       return 'skipped';
     }
     // #141 Decision 5: a bank-QR ticket refund waits for the customer's account choice (S22.04);
@@ -494,6 +496,7 @@ export async function refundTicket(
     tx.putLedgerEntry(res.ledgerEntry);
     tx.putRegistration({
       ...reg, status: 'refunded', refundPercent: percent, refundDue: false, cancelledAt: reg.cancelledAt ?? now,
+      ...((reg.bookingLineDue ?? null) !== null ? { bookingLineDue: null } : {}),
       refundId: res.refund.id, refundStatus: res.refund.status, updatedAt: now, version: reg.version + 1,
     });
     tx.deleteRegistrationContact(eventId, regId);
@@ -643,10 +646,18 @@ export async function cancelTicketKeepingMoney(deps: EventDeps, eventId: string,
     const now = deps.clock.now();
     const reg = await tx.getRegistration(eventId, regId);
     const ev = await tx.getEvent(eventId);
-    if (reg === null || ev === null || reg.status !== 'paid') return 'skipped';
-    if (reg.checkedInAt !== null || (reg.gateCheckedInAt ?? null) !== null) return 'skipped';
+    if (reg === null || ev === null) return 'skipped';
+    if (reg.status !== 'paid' || reg.checkedInAt !== null || (reg.gateCheckedInAt ?? null) !== null) {
+      if (reg.refundDue === true || (reg.bookingLineDue ?? null) !== null) {
+        tx.putRegistration({ ...reg, refundDue: false, bookingLineDue: null, updatedAt: now, version: reg.version + 1 });
+      }
+      return 'skipped';
+    }
     const days = await readEntryDays(tx, ev, [reg]);
-    tx.putRegistration({ ...reg, status: 'cancelled', cancelledAt: now, refundPercent: 0, updatedAt: now, version: reg.version + 1 });
+    tx.putRegistration({
+      ...reg, status: 'cancelled', cancelledAt: now, refundPercent: 0, refundDue: false, bookingLineDue: null,
+      updatedAt: now, version: reg.version + 1,
+    });
     tx.deleteRegistrationContact(eventId, regId);
     writeEntryDays(tx, ev.id, days, releaseDeltas(ev, [reg]), now);
     const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
@@ -656,25 +667,37 @@ export async function cancelTicketKeepingMoney(deps: EventDeps, eventId: string,
 }
 
 /**
- * S30 (Decision 15, spec §5.3): the ticket line of a booking with tickets, in the event store: 100 →
- * `refundTicket` (`provider_cancelled` or `customer_cancel`), 0 → `cancelTicketKeepingMoney`. A ticket
- * already used, refunded or cancelled is left as it is.
+ * S30 (Decision 15, spec §5.3): settles what a booking left owed to its ticket (`bookingLineDue`,
+ * stamped in the booking's transaction): 100 → `refundTicket` with the stamped reason, 0 →
+ * `cancelTicketKeepingMoney`. A cancelled event or a closed visit day refunds 100% whatever was
+ * stamped (their own rules win). Idempotent: the immediate attempt after the booking commits and the
+ * event clock's retry (`runEventSweeps`) both call it; a settled ticket is `skipped`.
  */
+export async function settleBookingLine(
+  deps: EventPaymentDeps,
+  eventId: string,
+  regId: string,
+): Promise<'refunded' | 'cancelled' | 'skipped'> {
+  const found = await deps.events.runTransaction(async (tx) => {
+    const reg = await tx.getRegistration(eventId, regId);
+    const ev = await tx.getEvent(eventId);
+    const day = ev !== null && reg !== null ? visitDayOf(ev, reg) : null;
+    const row = ev !== null && day !== null ? await tx.getEntryDay(ev.id, day) : null;
+    return { reg, ev, closed: row?.closed === true };
+  });
+  const due = found.reg?.bookingLineDue ?? null;
+  if (found.reg === null || due === null) return 'skipped';
+  if (found.ev?.status === 'cancelled') return refundTicket(deps, eventId, regId, 100, 'event_cancelled');
+  if (found.closed) return refundTicket(deps, eventId, regId, 100, 'day_closed');
+  if (due.percent === 100) return refundTicket(deps, eventId, regId, 100, due.reason);
+  return cancelTicketKeepingMoney(deps, eventId, regId);
+}
+
+/** The booking side's port (`BookingDeps.tickets`): the immediate attempt after the booking commits. */
 export function bookingTicketLines(deps: EventPaymentDeps): BookingTicketLines {
   return {
-    async customerPercent(line, now) {
-      const found = await deps.events.runTransaction(async (tx) => {
-        const reg = await tx.getRegistration(line.eventId, line.registrationId);
-        const ev = await tx.getEvent(line.eventId);
-        return { reg, ev };
-      });
-      const visitDay = found.ev === null || found.reg === null ? null : visitDayOf(found.ev, found.reg);
-      if (found.ev === null || visitDay === null) return 0;
-      return entryRefundPercent(visitDay, now, entryFieldsOf(found.ev).refundCutoffHours);
-    },
-    async settle(line, percent, reason) {
-      if (percent === 100) await refundTicket(deps, line.eventId, line.registrationId, 100, reason);
-      else await cancelTicketKeepingMoney(deps, line.eventId, line.registrationId);
+    async settle(line) {
+      await settleBookingLine(deps, line.eventId, line.registrationId);
     },
   };
 }
