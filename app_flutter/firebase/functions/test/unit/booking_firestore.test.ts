@@ -164,6 +164,30 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(docData.disputeId, 'dsp_01');
     assert.equal(restored.disputeId, 'dsp_01');
     assert.equal(bookingToFirestore({ ...sampleBooking, disputeId: undefined }).disputeId, null);
+
+    // S05 (#207): deliveryDays and deliveryCancel round-trip and write null when absent.
+    assert.equal(docData.deliveryDays, null);
+    assert.equal(docData.deliveryCancel, null);
+    assert.equal(restored.deliveryDays, undefined);
+    assert.equal(restored.deliveryCancel, undefined);
+
+    const lateCancelled: Booking = {
+      ...sampleBooking,
+      deliveryDays: 5,
+      deliveryCancel: {
+        at: '2026-10-21T10:00:00.000Z',
+        dueAt: '2026-10-20T16:00:00.000Z',
+        refundedAmount: 500_000,
+      },
+    };
+    const lateDoc = bookingToFirestore(lateCancelled);
+    assert.equal(lateDoc.deliveryDays, 5);
+    assert.ok(lateDoc.deliveryCancel.at instanceof Timestamp);
+    assert.ok(lateDoc.deliveryCancel.dueAt instanceof Timestamp);
+    assert.equal(lateDoc.deliveryCancel.refundedAmount, 500_000);
+    const restoredLate = bookingFromFirestore('b_01', lateDoc);
+    assert.equal(restoredLate?.deliveryDays, 5);
+    assert.deepEqual(restoredLate?.deliveryCancel, lateCancelled.deliveryCancel);
     assert.equal(restored.version, sampleBooking.version);
     assert.deepEqual(restored.addons, sampleBooking.addons);
     assert.deepEqual(restored.pickup, sampleBooking.pickup);

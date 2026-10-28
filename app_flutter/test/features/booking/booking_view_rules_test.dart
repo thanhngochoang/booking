@@ -1334,4 +1334,83 @@ void main() {
       }
     });
   });
+
+  group('late delivery cancel (#207)', () {
+    final shotAt = DateTime.utc(2026, 10, 12, 10, 30); // 12/10 17:30 VN
+    final dueAt = DateTime.utc(2026, 10, 17, 10, 30); // 17/10 17:30 VN
+
+    test('customer on shot past dueAt gets cancelLateDelivery; before dueAt not; provider never', () {
+      final shot = _b(BookingStatus.shot)
+          .copyWith(shotAt: shotAt, deliveryDays: 5);
+      expect(
+        detailActions(shot, BookingRole.customer, dueAt, _off),
+        isNot(contains(DetailAction.cancelLateDelivery)),
+      );
+      final lateNow = dueAt.add(const Duration(seconds: 1));
+      expect(
+        detailActions(shot, BookingRole.customer, lateNow, _off),
+        contains(DetailAction.cancelLateDelivery),
+      );
+      expect(
+        detailActions(shot, BookingRole.photographer, lateNow, _off),
+        isNot(contains(DetailAction.cancelLateDelivery)),
+      );
+    });
+
+    test(
+      'timeline in shot shows "Hạn bàn giao {date}" and overdue days when late',
+      () {
+        final shot = _b(BookingStatus.shot)
+            .copyWith(shotAt: shotAt, deliveryDays: 5);
+        final beforeSteps = timelineSteps(
+          shot,
+          const [],
+          shotAt.add(const Duration(days: 2)),
+          l,
+          photographerName: 'Minh Trí',
+        );
+        expect(beforeSteps[5].title, 'Bàn giao & duyệt ảnh');
+        expect(beforeSteps[5].subtitle, 'Hạn bàn giao 17/10');
+
+        final lateSteps = timelineSteps(
+          shot,
+          const [],
+          dueAt.add(const Duration(days: 3)),
+          l,
+          photographerName: 'Minh Trí',
+        );
+        expect(lateSteps[5].subtitle, 'Hạn bàn giao 17/10 · đã quá 3 ngày');
+      },
+    );
+
+    test('timeline of a completed booking with deliveryCancel shows "Đã huỷ phần bàn giao · hoàn 500.000₫" and no delivery step', () {
+      final cancelledAt = dueAt.add(const Duration(days: 2));
+      final completed = _b(BookingStatus.completed, completedAt: cancelledAt)
+          .copyWith(
+            shotAt: shotAt,
+            deliveryDays: 5,
+            deliveryCancel: DeliveryCancel(
+              at: cancelledAt,
+              dueAt: dueAt,
+              refundedAmount: 500000,
+            ),
+          );
+      final steps = timelineSteps(
+        completed,
+        const [],
+        cancelledAt.add(const Duration(hours: 1)),
+        l,
+        photographerName: 'Minh Trí',
+      );
+      expect(steps.any((s) => s.title == 'Bàn giao & duyệt ảnh'), isFalse);
+      expect(
+        steps.any(
+          (s) =>
+              s.title == 'Đã huỷ phần bàn giao · hoàn 500.000₫' &&
+              s.state == TimelineStepState.done,
+        ),
+        isTrue,
+      );
+    });
+  });
 }

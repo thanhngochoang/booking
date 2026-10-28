@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { DomainError } from '../src/errors.js';
+import { verifyPaymentLedgerInvariant, type LedgerEntry, type Payment } from '../src/escrow.js';
 import {
   DEFAULT_MILESTONE_PERCENTS,
   MILESTONE_KINDS,
@@ -10,6 +11,8 @@ import {
   aggregateEscrow,
   withMilestones,
   releaseDueMilestones,
+  releaseMilestone,
+  refundMilestone,
 } from '../src/milestones.js';
 import { milestoneAmounts as milestoneAmountsFromIndex } from '../src/index.js';
 
@@ -193,4 +196,143 @@ test('releaseDueMilestones is idempotent', () => {
   assert.equal(rel2.ledgerEntries.length, 0);
   assert.equal(rel2.payment, rel1.payment);
 });
+
+function baseMilestonePayment(overrides: Partial<Payment> = {}): Payment {
+  const shotAt = new Date('2026-10-10T10:00:00.000Z');
+  const ms = splitMilestones(1_000_000, shotAt);
+  return withMilestones(
+    {
+      id: 'pay_1',
+      subjectType: 'booking',
+      subjectId: 'bk_1',
+      payerId: 'c1',
+      payeeId: 'p1',
+      amount: 1_000_000,
+      receivedAmount: 1_000_000,
+      status: 'paid',
+      escrowStatus: 'held',
+      method: 'bank_qr',
+      provider: 'fake',
+      idempotencyKey: 'k',
+      payer: {
+        bankCode: 'VCB',
+        bankName: 'Vietcombank',
+        accountNumberEnc: 'enc_1234',
+        accountLast4: '1234',
+        holderName: 'NGUYEN VAN A',
+      },
+      createdAt: shotAt.toISOString(),
+      updatedAt: shotAt.toISOString(),
+      ...overrides,
+    },
+    ms,
+    shotAt.toISOString(),
+  );
+}
+
+test('refundMilestone on a held delivery milestone: milestone refunded, shoot untouched (held case), payment.status partially_refunded, payment.refundedAmount += amount, escrowStatus recomputed, verifyPaymentLedgerInvariant holds, refund {amount, percent 50, fromEscrow true, status pending} and ledger {type refund_issued, amount -delivery.amount, accountOwnerId payerId}', () => {
+  const payment = baseMilestonePayment();
+  const now = new Date('2026-10-18T10:00:00.000Z');
+  const res = refundMilestone(payment, 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery');
+
+  const shoot = res.payment.milestones?.find((m) => m.kind === 'shoot');
+  const delivery = res.payment.milestones?.find((m) => m.kind === 'delivery');
+  assert.equal(shoot?.status, 'held');
+  assert.equal(shoot?.amount, 500_000);
+  assert.equal(delivery?.status, 'refunded');
+  assert.equal(delivery?.amount, 500_000);
+
+  assert.equal(res.payment.status, 'partially_refunded');
+  assert.equal(res.payment.refundedAmount, 500_000);
+  assert.equal(res.payment.escrowStatus, 'held'); // shoot is still held
+
+  assert.equal(res.refund.id, 'rf_1');
+  assert.equal(res.refund.paymentId, 'pay_1');
+  assert.equal(res.refund.amount, 500_000);
+  assert.equal(res.refund.percent, 50);
+  assert.equal(res.refund.fromEscrow, true);
+  assert.equal(res.refund.status, 'pending');
+  assert.equal(res.refund.reason, 'late_delivery');
+
+  assert.equal(res.ledgerEntry.id, 'led_rf_1');
+  assert.equal(res.ledgerEntry.type, 'refund_issued');
+  assert.equal(res.ledgerEntry.amount, -500_000);
+  assert.equal(res.ledgerEntry.accountOwnerId, 'c1');
+  assert.equal(res.ledgerEntry.refundId, 'rf_1');
+
+  const receivedEntry: LedgerEntry = {
+    id: 'led_rec_1',
+    type: 'payment_received',
+    paymentId: 'pay_1',
+    subjectType: 'booking',
+    subjectId: 'bk_1',
+    accountOwnerId: 'platform',
+    amount: 1_000_000,
+    at: payment.createdAt,
+  };
+  assert.equal(
+    verifyPaymentLedgerInvariant(res.payment, [res.refund], [receivedEntry, res.ledgerEntry]),
+    true,
+  );
+});
+
+test('refundMilestone with the shoot milestone already released leaves it released', () => {
+  const released = releaseMilestone(baseMilestonePayment(), 'shoot', 'led_rel_1', new Date('2026-10-12T10:00:00.000Z'));
+  const now = new Date('2026-10-18T10:00:00.000Z');
+  const res = refundMilestone(released.payment, 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery');
+
+  const shoot = res.payment.milestones?.find((m) => m.kind === 'shoot');
+  const delivery = res.payment.milestones?.find((m) => m.kind === 'delivery');
+  assert.equal(shoot?.status, 'released');
+  assert.equal(delivery?.status, 'refunded');
+  assert.equal(res.payment.escrowStatus, 'released');
+  assert.equal(res.payment.payableAmount, 500_000);
+  assert.equal(res.payment.refundedAmount, 500_000);
+});
+
+test('refundMilestone on a released or refunded delivery milestone is conflict', () => {
+  const now = new Date('2026-10-18T10:00:00.000Z');
+  const released = releaseMilestone(baseMilestonePayment(), 'delivery', 'led_rel_2', now);
+  assert.throws(
+    () => refundMilestone(released.payment, 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery'),
+    (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+  );
+
+  const refunded = refundMilestone(baseMilestonePayment(), 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery');
+  assert.throws(
+    () => refundMilestone(refunded.payment, 'delivery', 'rf_2', 'led_rf_2', now, 'late_delivery'),
+    (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+  );
+});
+
+test('refundMilestone on a payment without milestones is conflict', () => {
+  const now = new Date('2026-10-18T10:00:00.000Z');
+  const withoutMilestones = { ...baseMilestonePayment(), milestones: undefined };
+  assert.throws(
+    () => refundMilestone(withoutMilestones, 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery'),
+    (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+  );
+});
+
+test('a bank-transfer payment without payer yields status awaiting_account and destination null', () => {
+  const withoutPayer = { ...baseMilestonePayment({ method: 'bank_qr' }), payer: undefined };
+  const now = new Date('2026-10-18T10:00:00.000Z');
+  const res = refundMilestone(withoutPayer, 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery');
+  assert.equal(res.refund.status, 'awaiting_account');
+  assert.equal(res.refund.destination, null);
+  assert.equal(res.refund.method, 'bank_transfer');
+});
+
+test('a payment with payer yields destination {...payer, source: payer}', () => {
+  const payment = baseMilestonePayment();
+  const now = new Date('2026-10-18T10:00:00.000Z');
+  const res = refundMilestone(payment, 'delivery', 'rf_1', 'led_rf_1', now, 'late_delivery');
+  assert.equal(res.refund.status, 'pending');
+  assert.ok(payment.payer);
+  assert.deepEqual(res.refund.destination, {
+    ...payment.payer,
+    source: 'payer',
+  });
+});
+
 

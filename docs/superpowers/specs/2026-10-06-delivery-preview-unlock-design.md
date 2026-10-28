@@ -76,9 +76,9 @@ shot ──(quá deliveryDays, khách huỷ phần giao)──▶ completed (m�
 
 | # | Quyết định | Ghi chú |
 |---|---|---|
-| D1 | Khách xin thêm vòng mà người bàn giao chưa trả lời: **đồng hồ tự duyệt 72 giờ vẫn chạy**, không tạm dừng. Thợ im lặng thì ảnh được duyệt, khách còn 48 giờ kiểm tra và khiếu nại. | Trả lời "Needs the owner 2" của kế hoạch #152; test ghim ở #207. |
-| D2 | Booking đã `completed` với thanh toán hai mốc thì **không mở khiếu nại được nữa** (mốc 2 đã chuyển): cửa sổ 48 giờ kiểm tra là cơ hội cuối. Cửa sổ 24 giờ sau `completed` chỉ còn cho thanh toán cũ một khoản. | Làm ở #207 (`openDispute` từ chối rõ ràng). |
-| D3 | **Huỷ phần bàn giao khi trễ hạn** (spec 10-05 §4.1.5): chỉ khi `shot` và `now > shotAt + deliveryDays × 24 giờ`; `deliveryDays` chụp từ gói lúc đặt (`deliverables.deliveryDays`, mặc định **7**, 1–90); hoàn đúng số tiền mốc 2, mốc 1 giữ nguyên trạng thái; booking → `completed` kèm `deliveryCancel`. Màn S05.08 và biến thể `#S05.02-late`. | Kế hoạch `2026-10-18-s05-late-delivery-cancel.md` (#207). |
+| D1 | Khách xin thêm vòng mà người bàn giao chưa trả lời: **đồng hồ tự duyệt 72 giờ vẫn chạy**, không tạm dừng. Thợ im lặng thì ảnh được duyệt, khách còn 48 giờ kiểm tra và khiếu nại. | Trả lời "Needs the owner 2" của kế hoạch #152; test ghim ở #207. Đã làm (#207). |
+| D2 | Booking đã `completed` với thanh toán hai mốc thì **không mở khiếu nại được nữa** (mốc 2 đã chuyển): cửa sổ 48 giờ kiểm tra là cơ hội cuối. Cửa sổ 24 giờ sau `completed` chỉ còn cho thanh toán cũ một khoản. | Server đã làm ở #142 (`disputeWindow` trả `not_eligible`); app ẩn lối khiếu nại ở #207. Đã làm (#207). |
+| D3 | **Huỷ phần bàn giao khi trễ hạn** (spec 10-05 §4.1.5): chỉ khi `shot` và `now > shotAt + deliveryDays × 24 giờ`; `deliveryDays` chụp từ gói lúc đặt (`deliverables.deliveryDays`, mặc định **7**, 1–90); hoàn đúng số tiền mốc 2, mốc 1 giữ nguyên trạng thái; booking → `completed` kèm `deliveryCancel`. Màn S05.08 và biến thể `#S05.02-late`. | Kế hoạch `2026-10-18-s05-late-delivery-cancel.md`. Đã làm (#207). |
 
 ## 5. Màn hình
 

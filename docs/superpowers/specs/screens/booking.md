@@ -85,7 +85,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 |-----------|-----------------|---------------|
 | `requested` | Liên hệ, Huỷ | Nhận, Từ chối (S06.03) |
 | `accepted`/`upcoming` | Liên hệ, Đổi lịch, Chỉ đường, Huỷ | Liên hệ, Đổi lịch, Hoàn thành (sau giờ: "Đã chụp xong", tự chuyển sau 24h), Huỷ |
-| `shot` | Liên hệ, Đổi lịch; quá hạn bàn giao (`now > shotAt + deliveryDays`): khối cảnh báo + nút chữ đỏ "Huỷ phần bàn giao" → S05.08 (`#S05.02-late`, #207) | Liên hệ, Nộp bàn giao (S06.07) |
+| `shot` | Liên hệ, Đổi lịch; quá hạn bàn giao (`now > shotAt + deliveryDays`): khối cảnh báo + nút chữ đỏ "Huỷ phần bàn giao" → S05.08 (`#S05.02-late`, đã làm [#207](https://github.com/thanhngochoang/booking/issues/207)) | Liên hệ, Nộp bàn giao (S06.07) |
 | `delivered` | Liên hệ, Xem bàn giao (S05.06) | Liên hệ, Xem bàn giao (S05.06) |
 | `revision_requested` | Liên hệ, Xem bàn giao (S05.06) | Liên hệ, Nộp bàn giao (vòng n, S06.07), Trả lời xin thêm vòng (nếu có) |
 | `approved` | Liên hệ, Xem bàn giao (S05.06: mở link, kiểm tra 48h), Đánh giá (S05.05) | Liên hệ, Xem bàn giao (S05.06: thông báo tiền chuyển sau 48h) |
@@ -137,7 +137,7 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 
 ## S05.08 · Huỷ phần bàn giao khi trễ hạn (sheet)
 
-- **Thông tin**: sheet mở trên S05.02 · khách · spec 10-05 §4.1.5, spec 10-06 §4 · Chưa có (kế hoạch `2026-10-18-s05-late-delivery-cancel.md`, #207).
+- **Thông tin**: sheet mở trên S05.02 · khách · spec 10-05 §4.1.5, spec 10-06 §4 · Đã làm ([#207](https://github.com/thanhngochoang/booking/issues/207), kế hoạch `2026-10-18-s05-late-delivery-cancel.md`).
 - **Mục đích**: khi thợ quá `deliveryDays` sau buổi chụp mà chưa nộp vòng bàn giao nào, khách kết thúc booking: mốc 2 hoàn 100%, thợ giữ mốc 1, booking `shot → completed`.
 - **Điểm vào → ra**: nút chữ đỏ "Huỷ phần bàn giao" trên S05.02 (chỉ hiện khi `status = shot` và quá hạn; mock `#S05.02-late`). Xác nhận → S05.02 ở trạng thái `completed` kèm toast; hoàn tiền chuyển khoản chưa có tài khoản nhận thì chờ "Đang hoàn" kèm thông báo `refund_account_needed`; khách chọn tài khoản ở S22.04 (S22.01, #141).
 - **Bố cục**: tiêu đề "Huỷ phần bàn giao?"; hai dòng tiền: "Hoàn mốc 2 cho bạn · {số tiền}" (nổi bật) và "{thợ} giữ mốc 1 (buổi chụp) · {số tiền}" (đọc từ `bookings/{id}/milestones/*`; thiếu thì chia 50/50 trên số đã trả trừ đã hoàn, server là nguồn đúng); ghi chú hậu quả; nút viền "Chờ thêm" và nút đỏ "Huỷ phần bàn giao".

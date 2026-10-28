@@ -11758,4 +11758,85 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get detailRefundAccountBody => 'Chọn tài khoản để nhận tiền hoàn.';
+
+  @override
+  String detailDeliveryDue(String date) {
+    return 'Hạn bàn giao $date';
+  }
+
+  @override
+  String detailDeliveryOverdue(String date, int n) {
+    return 'Hạn bàn giao $date · đã quá $n ngày';
+  }
+
+  @override
+  String get lateDeliverySection => 'Bàn giao ảnh';
+
+  @override
+  String get lateDeliveryOverdueLabel => 'Quá hạn';
+
+  @override
+  String lateDeliveryTitle(String name, String date) {
+    return '$name chưa bàn giao đúng hạn (trước $date)';
+  }
+
+  @override
+  String get lateDeliveryBody =>
+      'Bạn có thể chờ thêm hoặc huỷ phần bàn giao và nhận lại mốc 2.';
+
+  @override
+  String get lateDeliveryCancel => 'Huỷ phần bàn giao';
+
+  @override
+  String get lateCancelTitle => 'Huỷ phần bàn giao?';
+
+  @override
+  String get lateCancelRefundRow => 'Hoàn mốc 2 cho bạn';
+
+  @override
+  String lateCancelKeepRow(String name) {
+    return '$name giữ mốc 1 (buổi chụp)';
+  }
+
+  @override
+  String lateCancelNote(String name) {
+    return 'Buổi chụp được tính là hoàn thành, bạn sẽ không nhận ảnh. Nếu $name bàn giao sau khi huỷ thì không còn qua app.';
+  }
+
+  @override
+  String get lateCancelWait => 'Chờ thêm';
+
+  @override
+  String get lateCancelConfirm => 'Huỷ phần bàn giao';
+
+  @override
+  String lateCancelDoneToast(String amount) {
+    return 'Đã huỷ phần bàn giao · hoàn $amount';
+  }
+
+  @override
+  String get lateCancelNotLate => 'Chưa quá hạn bàn giao.';
+
+  @override
+  String get lateCancelDisputed => 'Booking đang khiếu nại, không huỷ được.';
+
+  @override
+  String lateCancelAlreadyDelivered(String name) {
+    return '$name vừa nộp bàn giao. Xem bàn giao trước khi quyết định.';
+  }
+
+  @override
+  String detailLateCancelledProvider(String date) {
+    return 'Khách đã huỷ phần bàn giao vì quá hạn (hạn $date). Bạn giữ mốc 1, mốc 2 đã hoàn cho khách.';
+  }
+
+  @override
+  String timelineLateCancelled(String amount) {
+    return 'Đã huỷ phần bàn giao · hoàn $amount';
+  }
+
+  @override
+  String earningsMilestoneRefundedSuffix(int n) {
+    return ' · mốc $n đã hoàn cho khách';
+  }
 }

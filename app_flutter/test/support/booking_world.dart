@@ -512,6 +512,13 @@ class RecordingBookingRepository extends FakeBookingRepository {
       reason: reason,
     );
   }
+
+  @override
+  Future<Booking> cancelLateDelivery({required String bookingId}) async {
+    final g = gate;
+    if (g != null) await g.future;
+    return super.cancelLateDelivery(bookingId: bookingId);
+  }
 }
 
 class BookingDetailHandles {

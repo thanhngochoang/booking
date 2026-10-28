@@ -11,6 +11,7 @@ import {
   clampRevisions,
   computeDeposit,
 } from './booking_policy.js';
+import { clampDeliveryDays } from './delivery_deadline.js';
 import type { BookingDeps, ServiceRecord } from './booking_ports.js';
 import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
@@ -85,6 +86,7 @@ function coreDraft(i: BookingDraftInput): Booking {
   const { deposit, remaining } = computeDeposit(total);
   const payableUntil = new Date(now.getTime() + DRAFT_EXPIRY_MINUTES * 60_000).toISOString();
   const revisionsIncluded = clampRevisions(service.revisions);
+  const deliveryDays = clampDeliveryDays(service.deliveryDays);
 
   return {
     id,
@@ -106,6 +108,7 @@ function coreDraft(i: BookingDraftInput): Booking {
     remaining,
     payableUntil,
     revisionsIncluded,
+    deliveryDays,
     version: 1,
     createdAt,
     updatedAt: createdAt,
@@ -144,6 +147,7 @@ function slotService(offer: SlotOffer, photographerId: string): ServiceRecord {
     price: offer.price,
     durationMinutes: offer.slotMinutes,
     active: true,
+    deliveryDays: offer.deliveryDays,
   };
 }
 

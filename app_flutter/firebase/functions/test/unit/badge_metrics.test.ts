@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { Timestamp, type Firestore } from 'firebase-admin/firestore';
 import { FirestoreBadgeMetricsReader } from '../../src/infra/badge_firestore.js';
@@ -73,8 +74,36 @@ describe('FirestoreBadgeMetricsReader', () => {
       new Set(['completedShoots', 'workPosts', 'activeServices'] as const),
     );
     assert.deepEqual(m, { completedShoots: 12, workPosts: 6, activeServices: 1 });
-    assert.equal(log.length, 3);
+    assert.equal(log.length, 4);
     assert.ok(log.every((l) => l.startsWith('count ')));
+  });
+
+  it('shoot counts subtract late-cancelled bookings and keep bookings written before deliveryCancel existed (#207)', async () => {
+    // `deliveryCancel == null` would match only documents that have the field, dropping every older booking.
+    const { db, log } = fakeDb({}, {
+      'bookings|photographerId == "u1" & status in ["completed","reviewed"]': 12,
+      'bookings|photographerId == "u1" & deliveryCancel != null': 2,
+      'bookings|customerId == "u1" & status in ["completed","reviewed"]': 5,
+      'bookings|customerId == "u1" & deliveryCancel != null': 1,
+    });
+    const m = await new FirestoreBadgeMetricsReader(db, () => NOW).read(
+      'u1',
+      new Set(['completedShoots', 'customerShoots'] as const),
+    );
+    assert.deepEqual(m, { completedShoots: 10, customerShoots: 4 });
+    assert.ok(log.every((l) => !l.includes('deliveryCancel == null')));
+  });
+
+  it('the late-cancel counts have their composite indexes (#207)', () => {
+    const json = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as {
+      indexes: { collectionGroup: string; queryScope: string; fields: { fieldPath: string; order: string }[] }[];
+    };
+    const shapes = json.indexes
+      .filter((i) => i.collectionGroup === 'bookings' && i.queryScope === 'COLLECTION')
+      .map((i) => i.fields.map((f) => `${f.fieldPath} ${f.order}`).join(', '));
+    // completedShoots / completedBookings: photographerId ==, deliveryCancel != null; customerShoots: customerId ==, deliveryCancel != null.
+    assert.ok(shapes.includes('photographerId ASCENDING, deliveryCancel ASCENDING'), shapes.join(' | '));
+    assert.ok(shapes.includes('customerId ASCENDING, deliveryCancel ASCENDING'), shapes.join(' | '));
   });
 
   it('reads account age from users/{uid}.createdAt', async () => {

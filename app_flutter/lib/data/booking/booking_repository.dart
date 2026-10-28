@@ -4,17 +4,21 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
+import 'package:photobooking/data/booking/booking_milestones.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 
+export 'package:photobooking/data/booking/booking_milestones.dart';
 export 'package:photobooking/data/payments/payments_repository.dart'
     show FakeTransferKind;
 
 class BookingException implements Exception {
-  const BookingException(this.code);
+  const BookingException(this.code, {this.field});
   final String code;
+  final String? field;
 
   @override
-  String toString() => 'BookingException($code)';
+  String toString() =>
+      field == null ? 'BookingException($code)' : 'BookingException($code, $field)';
 }
 
 enum BookingErrorCode {
@@ -22,6 +26,8 @@ enum BookingErrorCode {
   phoneRequired,
   priceChanged,
   notEligible,
+  alreadyDelivered,
+  notLate,
   notAcceptingOrders,
   blocked,
   deadlinePassed,
@@ -45,7 +51,7 @@ BookingErrorCode bookingErrorOf(Object error) {
     return BookingErrorCode.network;
   }
   if (error is BookingException) {
-    return _codeToBookingError(error.code);
+    return _codeToBookingError(error.code, field: error.field);
   }
   final errType = error.runtimeType.toString();
   if (errType.contains('FunctionsException')) {
@@ -56,18 +62,21 @@ BookingErrorCode bookingErrorOf(Object error) {
         return BookingErrorCode.network;
       }
       final details = dyn.details;
+      final field = details is Map && details['field'] is String
+          ? details['field'] as String
+          : null;
       if (details is Map && details['code'] is String) {
-        return _codeToBookingError(details['code'] as String);
+        return _codeToBookingError(details['code'] as String, field: field);
       }
       if (dyn.message is String) {
-        return _codeToBookingError(dyn.message as String);
+        return _codeToBookingError(dyn.message as String, field: field);
       }
     } catch (_) {}
   }
   return BookingErrorCode.unknown;
 }
 
-BookingErrorCode _codeToBookingError(String code) {
+BookingErrorCode _codeToBookingError(String code, {String? field}) {
   switch (code) {
     case 'day_taken':
       return BookingErrorCode.dayTaken;
@@ -76,7 +85,14 @@ BookingErrorCode _codeToBookingError(String code) {
     case 'price_changed':
       return BookingErrorCode.priceChanged;
     case 'not_eligible':
+    case 'failed-precondition':
+      if (field == 'delivered') return BookingErrorCode.alreadyDelivered;
+      if (field == 'not_late') return BookingErrorCode.notLate;
       return BookingErrorCode.notEligible;
+    case 'already_delivered':
+      return BookingErrorCode.alreadyDelivered;
+    case 'not_late':
+      return BookingErrorCode.notLate;
     case 'not_accepting_orders':
       return BookingErrorCode.notAcceptingOrders;
     case 'blocked':
@@ -84,6 +100,7 @@ BookingErrorCode _codeToBookingError(String code) {
     case 'deadline_passed':
       return BookingErrorCode.deadlinePassed;
     case 'conflict':
+    case 'aborted':
       return BookingErrorCode.conflict;
     case 'permission_denied':
     case 'permission-denied':
@@ -183,6 +200,9 @@ abstract class BookingRepository {
   /// `bookings/{id}/events`, oldest first (4a writes them; the read rule is added in Task 1).
   Stream<List<BookingEventRecord>> watchEvents(String bookingId);
 
+  /// `bookings/{id}/milestones/{shoot,delivery}` read model (#152 / #207).
+  Stream<BookingMilestones?> watchMilestones(String bookingId);
+
   /// Creates a draft booking. [addons] are picks (the server prices them),
   /// [pickup] is required with a transport pick, [expectedTotal] is the total
   /// the customer saw (a staleness check, never a price).
@@ -227,6 +247,10 @@ abstract class BookingRepository {
     required String action,
     String? reason,
   });
+
+  /// Cancels the delivery part of a late `shot` booking and refunds milestone 2
+  /// (`cancelLateDelivery`, S05.08).
+  Future<Booking> cancelLateDelivery({required String bookingId});
 
   // ── Studio bookings (#136); refusals throw [BookingException] with the
   // server code (`day_taken`, `not_accepting_orders`, `conflict`, ...). ──

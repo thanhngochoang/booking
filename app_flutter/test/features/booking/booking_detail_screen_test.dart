@@ -16,6 +16,7 @@ import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
+import 'package:photobooking/features/booking/widgets/late_delivery_card.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
@@ -1040,5 +1041,143 @@ void main() {
       expect(find.text('Đang khiếu nại'), findsNothing);
       expect(find.text('Xem khiếu nại'), findsOneWidget);
     });
+  });
+
+  group('S05.02 late delivery cancel (#207)', () {
+    final now = DateTime.utc(2026, 10, 18, 9);
+    const lateMilestones = BookingMilestones(
+      shootAmount: 500000,
+      deliveryAmount: 500000,
+      shootStatus: 'released',
+      deliveryStatus: 'held',
+    );
+
+    Booking lateShotBooking() =>
+        _booking(status: BookingStatus.shot, chatId: 'chat1').copyWith(
+          deposit: 1000000,
+          remaining: 0,
+          shotAt: DateTime.utc(2026, 10, 12, 9),
+          deliveryDays: 5,
+        );
+
+    testWidgets(
+      'customer sees LateDeliveryCard only when late; tapping opens the sheet; '
+      'after success the toast "Đã huỷ phần bàn giao · hoàn 500.000₫" shows '
+      'and the Nhắn tin button stays',
+      (tester) async {
+        // Not yet late: no LateDeliveryCard.
+        final onTime = lateShotBooking().copyWith(
+          shotAt: DateTime.utc(2026, 10, 15, 9),
+        );
+        await pumpBookingDetail(
+          tester,
+          uid: detailCustomerUid,
+          clock: TestClock(now),
+          bookings: _repo(onTime),
+          features: const BookingFeatures(
+            chat: true,
+            reschedule: false,
+            review: false,
+          ),
+        );
+        await _settle(tester);
+        expect(find.byType(LateDeliveryCard), findsNothing);
+
+        // Late: LateDeliveryCard shows; primary CTA has no late-cancel action.
+        final repo = _repo(lateShotBooking())
+          ..milestones['b1'] = lateMilestones;
+        await pumpBookingDetail(
+          tester,
+          uid: detailCustomerUid,
+          clock: TestClock(now),
+          bookings: repo,
+          features: const BookingFeatures(
+            chat: true,
+            reschedule: false,
+            review: false,
+          ),
+        );
+        await _settle(tester);
+
+        expect(find.byType(LateDeliveryCard), findsOneWidget);
+        expect(find.text('Hạn bàn giao 17/10 · đã quá 1 ngày'), findsOneWidget);
+        expect(find.widgetWithText(AppButton, 'Nhắn tin'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('late-delivery-cancel')));
+        await _settle(tester);
+        expect(find.text('Huỷ phần bàn giao?'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('late-cancel-confirm')));
+        await _settle(tester);
+
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text('Đã huỷ phần bàn giao · hoàn 500.000₫'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.widgetWithText(AppButton, 'Nhắn tin'), findsOneWidget);
+        expect(_badge(BookingStatus.completed), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'provider sees detailLateCancelledProvider on a completed booking with '
+      'deliveryCancel and no "Nộp bàn giao"',
+      (tester) async {
+        final cancelled = lateShotBooking().copyWith(
+          status: BookingStatus.completed,
+          completedAt: now,
+          deliveryCancel: DeliveryCancel(
+            at: now,
+            dueAt: DateTime.utc(2026, 10, 17, 9),
+            refundedAmount: 500000,
+          ),
+        );
+        await pumpBookingDetail(
+          tester,
+          uid: detailPhotographerUid,
+          clock: TestClock(now),
+          bookings: _repo(cancelled),
+        );
+        await _settle(tester);
+
+        expect(
+          find.text(
+            'Khách đã huỷ phần bàn giao vì quá hạn (hạn 17/10). '
+            'Bạn giữ mốc 1, mốc 2 đã hoàn cho khách.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.widgetWithText(AppButton, 'Nộp bàn giao'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'golden-free layout at 320 dp, 1.3×, dark and light on late shot booking',
+      (tester) async {
+        for (final brightness in [Brightness.light, Brightness.dark]) {
+          await pumpBookingDetail(
+            tester,
+            uid: detailCustomerUid,
+            clock: TestClock(now),
+            brightness: brightness,
+            textScale: 1.3,
+            viewSize: const Size(320, 640),
+            bookings: _repo(lateShotBooking())
+              ..milestones['b1'] = lateMilestones,
+            features: const BookingFeatures(
+              chat: true,
+              reschedule: false,
+              review: false,
+            ),
+          );
+          await _settle(tester);
+          expect(tester.takeException(), isNull, reason: '$brightness');
+          expect(find.byType(LateDeliveryCard), findsOneWidget);
+        }
+      },
+    );
   });
 }

@@ -72,6 +72,18 @@ abstract class BookingCancel with _$BookingCancel {
 }
 
 @freezed
+abstract class DeliveryCancel with _$DeliveryCancel {
+  const factory DeliveryCancel({
+    required DateTime at,
+    required DateTime dueAt,
+    required int refundedAmount,
+  }) = _DeliveryCancel;
+
+  factory DeliveryCancel.fromJson(Map<String, dynamic> json) =>
+      _$DeliveryCancelFromJson(json);
+}
+
+@freezed
 abstract class BookingContactSnapshot with _$BookingContactSnapshot {
   const factory BookingContactSnapshot({
     required String name,
@@ -166,6 +178,8 @@ abstract class Booking with _$Booking {
     DateTime? autoApproveNoticeAt,
     DateTime? samplesPurgeAfter,
     @Default(0) int deliveryRound,
+    @Default(7) int deliveryDays,
+    DeliveryCancel? deliveryCancel,
     @Default(1) int revisionsIncluded,
     @Default(0) int revisionsUsed,
     @Default(0) int revisionsGranted,
@@ -348,6 +362,8 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       autoApproveNoticeAt: toDateTime(data['autoApproveNoticeAt']),
       samplesPurgeAfter: toDateTime(data['samplesPurgeAfter']),
       deliveryRound: (data['deliveryRound'] as num?)?.toInt() ?? 0,
+      deliveryDays: _clampDeliveryDays(data['deliveryDays']),
+      deliveryCancel: _deliveryCancelFrom(data['deliveryCancel'], toDateTime),
       revisionsIncluded: (data['revisionsIncluded'] as num?)?.toInt() ?? 1,
       revisionsUsed: (data['revisionsUsed'] as num?)?.toInt() ?? 0,
       revisionsGranted: (data['revisionsGranted'] as num?)?.toInt() ?? 0,
@@ -373,6 +389,28 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
   } catch (_) {
     return null;
   }
+}
+
+int _clampDeliveryDays(Object? raw) {
+  if (raw is! num || raw is double && raw != raw.roundToDouble() || raw < 1) {
+    return 7;
+  }
+  final v = raw.toInt();
+  if (v < 1) return 7;
+  if (v > 90) return 90;
+  return v;
+}
+
+DeliveryCancel? _deliveryCancelFrom(
+  Object? raw,
+  DateTime? Function(Object?) toDateTime,
+) {
+  if (raw is! Map) return null;
+  final at = toDateTime(raw['at']);
+  final dueAt = toDateTime(raw['dueAt']);
+  if (at == null || dueAt == null) return null;
+  final refundedAmount = (raw['refundedAmount'] as num?)?.toInt() ?? 0;
+  return DeliveryCancel(at: at, dueAt: dueAt, refundedAmount: refundedAmount);
 }
 
 List<BookingAddonLine> _addonLinesFrom(Object? raw) {

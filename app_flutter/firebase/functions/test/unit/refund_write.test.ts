@@ -74,4 +74,31 @@ describe('onRefundWritten', () => {
     // Without notice deps (older wiring) only the row refreshes.
     assert.equal(await handleRefundWrite('r1', undefined, doc, deps), 'written');
   });
+
+  it('a new awaiting_account refund with reason late_delivery and subjectType booking sends refund_account_needed once', async () => {
+    const store = new MemoryPayerHistoryStore();
+    store.payments.set('pay1', { ...payment, method: 'bank_qr', status: 'paid', escrowStatus: 'partially_refunded', refundedAmount: 500_000 });
+    const deps = { store, clock: { now: () => NOW } };
+    const notifications = new MemoryNotificationStore();
+    const notice = {
+      notify: { store: notifications, push: new MemoryPushSender(), users: new MemoryUserDirectory(), clock: { now: () => NOW } },
+      payments: { getPayment: async (id: string) => store.payments.get(id) ?? null },
+    };
+    const waiting: Refund = {
+      ...refund('awaiting_account'),
+      id: 'r_late',
+      amount: 500_000,
+      percent: 50,
+      reason: 'late_delivery',
+      method: 'bank_transfer',
+      confirmBy: '2026-10-21T10:00:00.000Z',
+    };
+    store.refunds.set('r_late', waiting);
+    const doc = refundToFirestore(waiting);
+
+    await handleRefundWrite('r_late', undefined, doc, deps, notice);
+    await handleRefundWrite('r_late', undefined, doc, deps, notice);
+    const rows = notifications.rowsOf('c1');
+    assert.deepEqual(rows.map((r) => [r.type, r.target]), [['refund_account_needed', '/me/payments']]);
+  });
 });

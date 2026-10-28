@@ -151,6 +151,28 @@ class BookingRules {
     final endsAt = parseBookingDateTime(booking.day, booking.end);
     return now.isAfter(endsAt) || now.isAtSameMomentAs(endsAt);
   }
+
+  /// Due instant for the first delivery round: `shotAt + deliveryDays × 24 h`,
+  /// or null when `shotAt` is absent (matches `deliveryDueAt` in domain).
+  static DateTime? deliveryDueAt(Booking booking) {
+    final shotAt = booking.shotAt;
+    if (shotAt == null) return null;
+    final days = booking.deliveryDays < 1
+        ? 7
+        : booking.deliveryDays > 90
+        ? 90
+        : booking.deliveryDays;
+    return shotAt.add(Duration(days: days));
+  }
+
+  /// Whether a `shot` booking has passed its delivery deadline without a
+  /// submitted round (`status == shot && now > dueAt`).
+  static bool isDeliveryLate(Booking booking, DateTime now) {
+    if (booking.status != BookingStatus.shot) return false;
+    final due = deliveryDueAt(booking);
+    if (due == null) return false;
+    return now.isAfter(due);
+  }
 }
 
 /// S05.01 tab categories.

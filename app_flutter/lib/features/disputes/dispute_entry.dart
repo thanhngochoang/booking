@@ -141,9 +141,10 @@ DateTime? bookingDisputeClosesAt(Booking b) {
       const Duration(hours: disputeWindowHours),
     ),
     BookingStatus.approved => b.checkUntil,
-    BookingStatus.completed || BookingStatus.reviewed => b.completedAt?.add(
-      const Duration(hours: disputeWindowHours),
-    ),
+    BookingStatus.completed || BookingStatus.reviewed =>
+      (b.approvedAt != null || b.deliveryCancel != null)
+          ? null
+          : b.completedAt?.add(const Duration(hours: disputeWindowHours)),
     _ => null,
   };
 }

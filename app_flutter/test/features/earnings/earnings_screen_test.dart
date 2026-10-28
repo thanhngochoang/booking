@@ -594,18 +594,29 @@ void main() {
     });
 
     testWidgets('meta shows "mốc 1/2" and "đủ 2 mốc"; nothing without '
-        'milestones', (tester) async {
+        'milestones; refunded delivery milestone reads "mốc 1/1 · mốc 2 đã hoàn cho khách"', (tester) async {
       await _open(
         tester,
         seed: (w) => w.repo.emitItems([
           w.item('a', day: '2026-10-10', milestonesDone: 1, milestonesTotal: 2),
           w.item('b', day: '2026-10-01', milestonesDone: 2, milestonesTotal: 2),
           w.item('c', day: '2026-10-02'),
+          w.item(
+            'd',
+            day: '2026-10-03',
+            milestonesDone: 1,
+            milestonesTotal: 1,
+            milestonesRefunded: const ['delivery'],
+          ),
         ]),
       );
       expect(find.text('T7 10/10 · mốc 1/2'), findsOneWidget);
       expect(find.text('T5 01/10 · đủ 2 mốc'), findsOneWidget);
       expect(find.text('T6 02/10'), findsOneWidget);
+      expect(
+        find.text('T7 03/10 · mốc 1/1 · mốc 2 đã hoàn cho khách'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('tapping a row toggles only that row', (tester) async {

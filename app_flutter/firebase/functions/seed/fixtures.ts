@@ -330,7 +330,13 @@ export interface SeedBooking {
   readonly heldInWindow?: true;
   /** A studio booking (#136): its member, or null while unassigned. */
   readonly studio?: { readonly assigneeId: string | null };
+  /** S05 (#207): delivery turnaround days snapshotted on the booking. */
+  readonly deliveryDays?: number;
+  /** S05 (#207): hours between `shotAt` and seeding (e.g. 240 for 10 days ago). */
+  readonly shotHoursAgo?: number;
 }
+
+export const SEED_BOOKING_SHOT_LATE = 'seed-booking-shot-late';
 
 export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-accepted', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'accepted', date: '2026-10-20', start: '08:00', end: '10:00', place: 'Hồ Hoàn Kiếm, Hà Nội', completedDaysAgo: null },
@@ -345,6 +351,7 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-completed-window', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-30', start: '14:00', end: '16:00', place: 'Nhà hát Lớn, Hà Nội', completedDaysAgo: 2 / 24, heldInWindow: true },
   // Two-layer delivery seed bookings (S05/S06):
   { id: 'seed-booking-shot', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'shot', date: '2026-10-14', start: '14:00', end: '16:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: null },
+  { id: SEED_BOOKING_SHOT_LATE, customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'shot', date: '2026-09-21', start: '10:00', end: '12:00', place: 'Hoàng Thành Thăng Long, Hà Nội', completedDaysAgo: null, deliveryDays: 5, shotHoursAgo: 240 },
   { id: 'seed-booking-delivered', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'delivered', date: '2026-10-13', start: '14:00', end: '16:00', place: 'Hồ Tây, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-revision', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'revision_requested', date: '2026-10-12', start: '14:00', end: '16:00', place: 'Bảo tàng Dân tộc học, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-approved', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'approved', date: '2026-10-11', start: '14:00', end: '16:00', place: 'Cầu Long Biên, Hà Nội', completedDaysAgo: null },
@@ -1049,9 +1056,11 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
   const timeline = steps.map((status, i) => ({ status, at: new Date(last.getTime() - (steps.length - 1 - i) * HOUR_MS) }));
   const createdAt = timeline[0]?.at ?? last;
   const completedAt = b.status === 'completed' ? last : null;
-  const shotAt = ['shot', 'delivered', 'revision_requested', 'approved', 'completed'].includes(b.status)
-    ? new Date(last.getTime() - 2 * HOUR_MS)
-    : null;
+  const shotAt = b.shotHoursAgo !== undefined
+    ? new Date(now.getTime() - b.shotHoursAgo * HOUR_MS)
+    : ['shot', 'delivered', 'revision_requested', 'approved', 'completed'].includes(b.status)
+      ? new Date(last.getTime() - 2 * HOUR_MS)
+      : null;
   const deliveredAt = ['delivered', 'revision_requested', 'approved'].includes(b.status)
     ? new Date(last.getTime() - HOUR_MS)
     : null;
@@ -1090,6 +1099,8 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
     checkUntil,
     autoApproveAt,
     deliveryRound: ['delivered', 'revision_requested', 'approved'].includes(b.status) ? 1 : 0,
+    ...(b.deliveryDays !== undefined ? { deliveryDays: b.deliveryDays } : {}),
+    deliveryCancel: null,
     revisionsIncluded: 1,
     revisionsUsed: b.status === 'revision_requested' ? 1 : 0,
     timeline,
@@ -1579,7 +1590,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
     if (isDeliveryBooking) {
       const shootAmount = Math.floor(deposit / 2);
       const deliveryAmount = deposit - shootAmount;
-      const shootReleased = ['delivered', 'revision_requested', 'approved'].includes(b.status);
+      const shootReleased = ['delivered', 'revision_requested', 'approved'].includes(b.status) || b.shotHoursAgo !== undefined;
       const deliveryReleased = b.status === 'approved';
       const ms = [
         {

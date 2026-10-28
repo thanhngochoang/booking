@@ -61,6 +61,7 @@ class EarningsWorld {
     bool estimated = true,
     int? milestonesDone,
     int? milestonesTotal,
+    List<String> milestonesRefunded = const <String>[],
   }) => EarningItem(
     id: id,
     subjectType: subjectType,
@@ -80,6 +81,7 @@ class EarningsWorld {
     estimated: estimated,
     milestonesDone: milestonesDone,
     milestonesTotal: milestonesTotal,
+    milestonesRefunded: milestonesRefunded,
   );
 
   PayoutAccountView account({

@@ -88,6 +88,20 @@ Map<String, dynamic> _$BookingCancelToJson(_BookingCancel instance) =>
       'refundPercent': instance.refundPercent,
     };
 
+_DeliveryCancel _$DeliveryCancelFromJson(Map<String, dynamic> json) =>
+    _DeliveryCancel(
+      at: DateTime.parse(json['at'] as String),
+      dueAt: DateTime.parse(json['dueAt'] as String),
+      refundedAmount: (json['refundedAmount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$DeliveryCancelToJson(_DeliveryCancel instance) =>
+    <String, dynamic>{
+      'at': instance.at.toIso8601String(),
+      'dueAt': instance.dueAt.toIso8601String(),
+      'refundedAmount': instance.refundedAmount,
+    };
+
 _BookingContactSnapshot _$BookingContactSnapshotFromJson(
   Map<String, dynamic> json,
 ) => _BookingContactSnapshot(
@@ -238,6 +252,10 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
       ? null
       : DateTime.parse(json['samplesPurgeAfter'] as String),
   deliveryRound: (json['deliveryRound'] as num?)?.toInt() ?? 0,
+  deliveryDays: (json['deliveryDays'] as num?)?.toInt() ?? 7,
+  deliveryCancel: json['deliveryCancel'] == null
+      ? null
+      : DeliveryCancel.fromJson(json['deliveryCancel'] as Map<String, dynamic>),
   revisionsIncluded: (json['revisionsIncluded'] as num?)?.toInt() ?? 1,
   revisionsUsed: (json['revisionsUsed'] as num?)?.toInt() ?? 0,
   revisionsGranted: (json['revisionsGranted'] as num?)?.toInt() ?? 0,
@@ -299,6 +317,8 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'autoApproveNoticeAt': instance.autoApproveNoticeAt?.toIso8601String(),
   'samplesPurgeAfter': instance.samplesPurgeAfter?.toIso8601String(),
   'deliveryRound': instance.deliveryRound,
+  'deliveryDays': instance.deliveryDays,
+  'deliveryCancel': instance.deliveryCancel,
   'revisionsIncluded': instance.revisionsIncluded,
   'revisionsUsed': instance.revisionsUsed,
   'revisionsGranted': instance.revisionsGranted,

@@ -198,4 +198,76 @@ void main() {
       () => callable.call<Object?>({'paymentId': 'pay_1', 'kind': 'exact'}),
     ).called(1);
   });
+
+  test('cancelLateDelivery calls the callable with {bookingId} and maps failed-precondition -> notEligible/alreadyDelivered/notLate, aborted -> conflict', () async {
+    final db = FakeFirebaseFirestore();
+    await db.collection('bookings').doc('b1').set({
+      ..._bookingWire('completed'),
+      'deliveryCancel': {
+        'at': '2026-10-21T10:00:00.000Z',
+        'dueAt': '2026-10-20T10:00:00.000Z',
+        'refundedAmount': 500000,
+      },
+    });
+    final repoWithDb = FirestoreBookingRepository(
+      firestore: db,
+      functions: functions,
+    );
+    answer({'status': 'completed', 'refundedAmount': 500000});
+
+    final b = await repoWithDb.cancelLateDelivery(bookingId: 'b1');
+    verify(
+      () => functions.httpsCallable(
+        'cancelLateDelivery',
+        options: any(named: 'options'),
+      ),
+    ).called(1);
+    verify(() => callable.call<Object?>({'bookingId': 'b1'})).called(1);
+    expect(b.deliveryCancel?.refundedAmount, 500000);
+
+    when(() => callable.call<Object?>(any())).thenThrow(
+      FirebaseFunctionsException(
+        message: 'not_eligible',
+        code: 'failed-precondition',
+        details: {'code': 'not_eligible', 'field': 'delivered'},
+      ),
+    );
+    Object? errDelivered;
+    try {
+      await repoWithDb.cancelLateDelivery(bookingId: 'b1');
+    } catch (e) {
+      errDelivered = e;
+    }
+    expect(bookingErrorOf(errDelivered!), BookingErrorCode.alreadyDelivered);
+
+    when(() => callable.call<Object?>(any())).thenThrow(
+      FirebaseFunctionsException(
+        message: 'not_eligible',
+        code: 'failed-precondition',
+        details: {'code': 'not_eligible'},
+      ),
+    );
+    Object? errNotEligible;
+    try {
+      await repoWithDb.cancelLateDelivery(bookingId: 'b1');
+    } catch (e) {
+      errNotEligible = e;
+    }
+    expect(bookingErrorOf(errNotEligible!), BookingErrorCode.notEligible);
+
+    when(() => callable.call<Object?>(any())).thenThrow(
+      FirebaseFunctionsException(
+        message: 'conflict',
+        code: 'aborted',
+        details: {'code': 'conflict'},
+      ),
+    );
+    Object? errConflict;
+    try {
+      await repoWithDb.cancelLateDelivery(bookingId: 'b1');
+    } catch (e) {
+      errConflict = e;
+    }
+    expect(bookingErrorOf(errConflict!), BookingErrorCode.conflict);
+  });
 }

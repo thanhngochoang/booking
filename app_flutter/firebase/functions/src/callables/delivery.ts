@@ -2,6 +2,7 @@ import { HttpsError } from 'firebase-functions/v2/https';
 import {
   submitDelivery,
   approveDelivery,
+  cancelLateDelivery,
   requestRevision,
   answerExtraRound,
   type BookingDeps,
@@ -40,6 +41,27 @@ export async function handleApproveDelivery(
     return { status: booking.status };
   } catch (e) {
     handleCallableError('approveDelivery', e);
+  }
+}
+
+export async function handleCancelLateDelivery(
+  request: CallableInput,
+  deps: BookingDeps,
+): Promise<{ status: string; refundedAmount: number }> {
+  const uid = request.auth?.uid;
+  if (uid === undefined) {
+    throw new HttpsError('unauthenticated', 'permission_denied', { code: 'permission_denied' });
+  }
+  try {
+    const data = (request.data && typeof request.data === 'object' ? request.data : {}) as Record<string, unknown>;
+    const bookingId = String(data.bookingId ?? '');
+    const booking = await cancelLateDelivery(deps, { bookingId, customerId: uid });
+    return {
+      status: booking.status,
+      refundedAmount: booking.deliveryCancel?.refundedAmount ?? 0,
+    };
+  } catch (e) {
+    handleCallableError('cancelLateDelivery', e);
   }
 }
 
