@@ -341,6 +341,9 @@ describe('Booking callables', () => {
       createdAt: '2026-10-01T00:00:00.000Z',
       updatedAt: '2026-10-01T00:00:00.000Z',
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'system',
     });
     store.schedules.set('sched1', {

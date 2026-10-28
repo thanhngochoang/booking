@@ -94,7 +94,12 @@ export type NotificationContent =
     }
   | { type: 'collab_pay_due'; name: string; amount: number; service: string; day: string }
   | { type: 'collab_pay_reported'; studio: string; amount: number; method: 'bank' | 'cash' | 'other' }
-  | { type: 'collab_pay_disputed'; name: string; amount: number; service: string; day: string };
+  | { type: 'collab_pay_disputed'; name: string; amount: number; service: string; day: string }
+  // S30 organizers (#223). `spot` null = a proposal for a new spot; `reason` is the staff's text or 'spot_managed'.
+  | { type: 'spot_claim_approved'; spot: string }
+  | { type: 'spot_claim_rejected'; spot: string | null; reason: string | null }
+  | { type: 'spot_resident_added'; organizer: string; spot: string }
+  | { type: 'gate_staff_invited'; organizer: string };
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'] as const;
 
@@ -482,5 +487,26 @@ export function renderNotification(c: NotificationContent): { title: string; bod
         title: 'Cộng tác viên chưa nhận thù lao',
         body: `${c.name} báo chưa nhận ${formatVnd(c.amount)} cho buổi ${c.service} ${formatDayShortVi(c.day)}.`,
       };
+    case 'spot_claim_approved':
+      return {
+        title: `Bạn đã được duyệt quản lý ${c.spot}`,
+        body: 'Cập nhật giá vào cửa và thợ tại điểm để khách biết trước khi đến.',
+      };
+    case 'spot_claim_rejected':
+      return {
+        title: c.spot === null ? 'Đề xuất điểm mới chưa được duyệt' : `Yêu cầu quản lý ${c.spot} chưa được duyệt`,
+        body: c.reason === 'spot_managed'
+          ? 'Điểm này đã có chủ quản lý. Liên hệ hỗ trợ nếu bạn là ban quản lý.'
+          : c.reason
+            ? `Bị từ chối: ${truncateGraphemes(c.reason, 80)}`
+            : 'Xem lại minh chứng và gửi lại.',
+      };
+    case 'spot_resident_added':
+      return {
+        title: `${c.organizer} thêm bạn vào thợ tại ${c.spot}`,
+        body: 'Khách thấy nhãn “Thợ tại điểm · miễn vé” khi đặt bạn ở đây.',
+      };
+    case 'gate_staff_invited':
+      return { title: `${c.organizer} mời bạn soát vé`, body: 'Nhận lời mời trong 72 giờ để mở màn quét mã.' };
   }
 }

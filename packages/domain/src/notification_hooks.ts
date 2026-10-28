@@ -958,3 +958,71 @@ export async function notifyCollabPayDisputed(
     ...from(c),
   });
 }
+
+// ── S30 organizers (#223) ───────────────────────────────────────────────────────────────────
+
+/** An organizer as the actor: its own name and avatar (the organizer document), not the user profile's. */
+const organizerActor = (e: { organizerId: string; organizerName: string; organizerAvatarUrl?: string | null }): NotificationActor => ({
+  id: e.organizerId,
+  name: e.organizerName,
+  avatarUrl: e.organizerAvatarUrl ?? null,
+});
+
+/** Emitter: `reviewSpotClaim` (approve). Opens S30.03 of the spot. */
+export async function notifySpotClaimApproved(
+  deps: NotifyDeps,
+  e: { organizerId: string; claimId: string; spotId: string; spotName: string },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.organizerId,
+    content: { type: 'spot_claim_approved', spot: e.spotName },
+    target: `/organizer/spots/${e.spotId}`,
+    dedupeKey: `spot_claim_approved:${e.claimId}`,
+  });
+}
+
+/**
+ * Emitter: `reviewSpotClaim` (reject, or another claim of the spot approved: reason `spot_managed`).
+ * Opens S30.02, which shows the rejected claim and "Gửi lại".
+ */
+export async function notifySpotClaimRejected(
+  deps: NotifyDeps,
+  e: { organizerId: string; claimId: string; spotName: string | null; reason: string | null },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.organizerId,
+    content: { type: 'spot_claim_rejected', spot: e.spotName, reason: e.reason },
+    target: '/organizer/spots/claim',
+    dedupeKey: `spot_claim_rejected:${e.claimId}`,
+  });
+}
+
+/** Emitter: `saveResident` when the provider is newly added (not on an edit). Opens the spot page (S29.02). */
+export async function notifySpotResidentAdded(
+  deps: NotifyDeps,
+  e: { providerId: string; organizerId: string; organizerName: string; organizerAvatarUrl?: string | null; spotId: string; spotName: string; addedAt: string },
+): Promise<NotifyResult> {
+  const actor = organizerActor(e);
+  return notify(deps, {
+    userId: e.providerId,
+    content: { type: 'spot_resident_added', organizer: actor.name, spot: e.spotName },
+    target: `/spots/${e.spotId}`,
+    dedupeKey: `spot_resident_added:${e.spotId}_${e.providerId}_${e.addedAt}`,
+    ...from(actor),
+  });
+}
+
+/** Emitter: `inviteGateStaff` (a new or renewed invite). Opens S30.06, where the invitee accepts or declines. */
+export async function notifyGateStaffInvited(
+  deps: NotifyDeps,
+  e: { staffUid: string; organizerId: string; organizerName: string; organizerAvatarUrl?: string | null; invitedAt: string },
+): Promise<NotifyResult> {
+  const actor = organizerActor(e);
+  return notify(deps, {
+    userId: e.staffUid,
+    content: { type: 'gate_staff_invited', organizer: actor.name },
+    target: '/organizer/gate-staff',
+    dedupeKey: `gate_staff_invited:${e.organizerId}_${e.staffUid}_${e.invitedAt}`,
+    ...from(actor),
+  });
+}

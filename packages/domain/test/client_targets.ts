@@ -48,6 +48,11 @@ export const CLIENT_TARGET_PATTERNS = [
   '/studio/recruit?post=:id',
   '/collab',
   '/collab?offer=:id',
+  // #223 S30 organizers: S30.02, S30.03, S30.06 and the spot page S29.02
+  '/organizer/spots/claim',
+  '/organizer/spots/:id',
+  '/organizer/gate-staff',
+  '/spots/:id',
 ] as const;
 
 const ID = /^[A-Za-z0-9_-]{1,128}$/;

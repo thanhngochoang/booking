@@ -48,7 +48,8 @@ export interface EventCaller {
 }
 
 export interface EventHost {
-  readonly type: 'photographer' | 'platform';
+  /** `organizer` (S30, #223): an organizer document's owner; manager rules for it arrive with entry events. */
+  readonly type: 'photographer' | 'platform' | 'organizer';
   readonly id: string | null;
   readonly name: string | null;
   readonly avatarUrl: string | null;

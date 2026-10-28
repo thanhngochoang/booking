@@ -224,6 +224,13 @@ const CASES: readonly (readonly [NotificationContent, string, string])[] = [
   [{ type: 'collab_pay_reported', studio: 'Studio Mây', amount: 1_500_000, method: 'cash' }, 'Studio báo đã trả thù lao', 'Studio Mây báo đã trả 1.500.000₫ (tiền mặt). Bấm Đã nhận hoặc Chưa nhận.'],
   [{ type: 'collab_pay_reported', studio: 'Studio Mây', amount: 1_500_000, method: 'other' }, 'Studio báo đã trả thù lao', 'Studio Mây báo đã trả 1.500.000₫ (cách khác). Bấm Đã nhận hoặc Chưa nhận.'],
   [{ type: 'collab_pay_disputed', name: 'Minh Trí', amount: 1_500_000, service: 'Cưới', day: DAY }, 'Cộng tác viên chưa nhận thù lao', 'Minh Trí báo chưa nhận 1.500.000₫ cho buổi Cưới T2 12/10.'],
+  // S30 organizers (#223)
+  [{ type: 'spot_claim_approved', spot: 'Bãi đá sông Hồng' }, 'Bạn đã được duyệt quản lý Bãi đá sông Hồng', 'Cập nhật giá vào cửa và thợ tại điểm để khách biết trước khi đến.'],
+  [{ type: 'spot_claim_rejected', spot: 'Bãi đá sông Hồng', reason: 'Thiếu hợp đồng thuê' }, 'Yêu cầu quản lý Bãi đá sông Hồng chưa được duyệt', 'Bị từ chối: Thiếu hợp đồng thuê'],
+  [{ type: 'spot_claim_rejected', spot: 'Bãi đá sông Hồng', reason: 'spot_managed' }, 'Yêu cầu quản lý Bãi đá sông Hồng chưa được duyệt', 'Điểm này đã có chủ quản lý. Liên hệ hỗ trợ nếu bạn là ban quản lý.'],
+  [{ type: 'spot_claim_rejected', spot: null, reason: null }, 'Đề xuất điểm mới chưa được duyệt', 'Xem lại minh chứng và gửi lại.'],
+  [{ type: 'spot_resident_added', organizer: 'Bãi đá sông Hồng', spot: 'Bãi đá sông Hồng' }, 'Bãi đá sông Hồng thêm bạn vào thợ tại Bãi đá sông Hồng', 'Khách thấy nhãn “Thợ tại điểm · miễn vé” khi đặt bạn ở đây.'],
+  [{ type: 'gate_staff_invited', organizer: 'Bãi đá sông Hồng' }, 'Bãi đá sông Hồng mời bạn soát vé', 'Nhận lời mời trong 72 giờ để mở màn quét mã.'],
 ];
 
 /** Types rendered by the tests above this table (copy from earlier plans). */

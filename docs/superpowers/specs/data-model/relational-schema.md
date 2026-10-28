@@ -1705,6 +1705,104 @@ alter table booking_assignments
 -- Chat studio–CTV: chats.kind thêm 'collab' (id 'collab_{studioId}_{collaboratorId}'; studio ở customer_id, CTV ở photographer_id)
 ```
 
+### 2.14 Chủ sự kiện, nhận quản lý điểm, thợ tại điểm, nhân viên soát vé (S30, #223)
+
+`domain-model.md` mục 2.16; bất biến 56–58.
+
+```sql
+-- Tài khoản chủ sự kiện: một dòng mỗi người dùng (là tài liệu, không phải vai trò).
+create table organizers (
+  user_id            text primary key references users(id) on delete cascade,
+  name               text not null check (char_length(name) between 3 and 60),
+  bio                text not null default '' check (char_length(bio) <= 300),
+  avatar_url         text,
+  status             text not null default 'active' check (status in ('active','suspended')),
+  phone_verified     boolean not null default false,
+  business_verified  boolean not null default false,
+  payout_account_ok  boolean not null default false,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+-- managedSpotIds của Firestore là dẫn xuất: select id from spots where managed_by = user_id.
+
+-- Nhân viên soát vé (tối đa 10 giữ chỗ: active + invited chưa quá 72 giờ, kiểm trong use case).
+create table organizer_gate_staff (
+  organizer_id       text not null references organizers(user_id) on delete cascade,
+  staff_user_id      text not null references users(id) on delete cascade,
+  status             text not null default 'invited' check (status in ('invited','active','removed')),
+  invited_at         timestamptz not null,
+  responded_at       timestamptz,
+  scans_day          date,                                                     -- scansToday.day (S30.07)
+  scans_count        int not null default 0,
+  primary key (organizer_id, staff_user_id),
+  check (organizer_id <> staff_user_id)
+);
+create index ix_organizer_gate_staff_staff on organizer_gate_staff (staff_user_id, status);
+
+-- Điểm (#194) thêm chủ quản lý, giá vào cửa tham khảo và giờ mở cửa.
+alter table spots
+  add column managed_by         text references organizers(user_id) on delete set null,  -- tối đa một chủ mỗi điểm
+  add column access_type        text check (access_type in ('open','ticket')),           -- null = chưa có access
+  add column access_note        text check (char_length(access_note) <= 120),
+  add column access_source      text check (access_source in ('staff','organizer')),
+  add column access_updated_at  timestamptz,
+  add column open_time          time,
+  add column close_time         time,
+  add constraint ck_spots_open_hours check (open_time is null or close_time > open_time),
+  add constraint ck_spots_access check ((access_type is null) = (access_source is null) and (access_type is null) = (access_updated_at is null));
+create index ix_spots_managed_by on spots (managed_by) where managed_by is not null;
+
+-- access.fees[] (≤ 6, kiểm trong use case).
+create table spot_access_fees (
+  spot_id            text not null references spots(id) on delete cascade,
+  position           smallint not null check (position between 0 and 5),
+  label              text not null check (char_length(label) between 1 and 40),
+  amount_vnd         bigint not null check (amount_vnd > 0),
+  primary key (spot_id, position)
+);
+
+-- Yêu cầu nhận quản lý điểm (staff duyệt). spot_id null = đề xuất điểm mới (proposal_*).
+create table spot_claims (
+  id                 text primary key,                                         -- ULID
+  spot_id            text references spots(id) on delete cascade,
+  proposal_name      text,
+  proposal_address   text,
+  organizer_id       text not null references organizers(user_id) on delete cascade,
+  status             text not null default 'pending' check (status in ('pending','approved','rejected')),
+  proof_paths        text[] not null check (cardinality(proof_paths) between 1 and 3), -- Storage spot_claims/{uid}/…
+  note               text not null default '' check (char_length(note) <= 300),
+  reason             text,                                                     -- lý do của staff, hoặc 'spot_managed'
+  created_at         timestamptz not null default now(),
+  reviewed_at        timestamptz,
+  reviewed_by        text references users(id),
+  check ((spot_id is null) = (proposal_name is not null and proposal_address is not null))
+);
+-- Mỗi điểm (hoặc mỗi chủ với đề xuất) tối đa một yêu cầu đang chờ.
+create unique index ux_spot_claims_pending on spot_claims (coalesce(spot_id, ''), organizer_id) where status = 'pending';
+create index ix_spot_claims_status_created on spot_claims (status, created_at);
+
+-- Thợ tại điểm (≤ 50 mỗi điểm, kiểm trong use case); chỉ nhà cung cấp acceptsOrders.
+create table spot_residents (
+  spot_id            text not null references spots(id) on delete cascade,
+  provider_id        text not null references photographers(user_id) on delete cascade,
+  waives_provider    boolean not null default false,
+  waives_guests      boolean not null default false,
+  max_guests         smallint check (max_guests between 1 and 100),
+  valid_until        date,                                                     -- tính cả ngày đó (giờ VN)
+  added_at           timestamptz not null default now(),
+  added_by           text not null references users(id),
+  primary key (spot_id, provider_id)
+);
+create index ix_spot_residents_valid_until on spot_residents (valid_until) where valid_until is not null;
+
+-- Sự kiện do chủ sự kiện tổ chức (EventHost.type = 'organizer'); cột vé vào cửa thêm ở S30 phần vé.
+alter table events
+  drop constraint if exists events_host_type_check,
+  add constraint ck_events_host_type check (host_type in ('photographer','platform','organizer')),
+  add column host_organizer_id text references organizers(user_id),
+  add constraint ck_events_host_organizer check (host_type <> 'organizer' or host_organizer_id is not null);
+```
+
 ## 3. Ánh xạ Firestore → bảng
 
 Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` → `timestamptz`; `GeoPoint` → `lat`+`lng`; mảng → bảng liên kết; tài liệu con (`map`) → cột phẳng có tiền tố; số đếm ghi bởi Functions → cột dẫn xuất.
@@ -1748,7 +1846,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `studio_collaborations/{studioId}_{uid}` + `history/{ulid}` | `studio_collaborations` | Mỗi bản trong `history` → một dòng (theo `createdAt`, `seq` tăng dần); tài liệu chính → dòng có `seq` lớn nhất; `studio.*`, `collaborator.*`→cột phẳng; `applicationId` (`{postId}_{uid}`) → `application_post_id` |
 | `collab_jobs/{bookingId}_{uid}` | `collab_jobs` | Id ghép thành khoá `(booking_id, collaborator_id)`; `shoot.*`→`shoot_day`, `shoot_start`, `shoot_end`, `service_name`, `place_name`; `pay.*`→`pay_*` (`pay.amount` = `agreed_fee`, không thành cột riêng); `pay.paidOn` (`yyyy-MM-dd`) → `pay_paid_on date` |
 | `photographers/{uid}/private/recruit` | `recruit_counters` | `{day, count}` của `postActions`, `collabActions`, `applyActions`, `notices` → cặp `*_day`, `*`; `notices.postIds`→`notice_post_ids`; `unpaidFlags[]`→`timestamptz[]` |
-| `photographers/{uid}.recruitMatchKeys[]` | `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
+| `photographers/{uid}.recruitMatchKeys[]` | `organizers.managedSpotIds` (Firestore) | `spots.managed_by` | Ghi cùng giao dịch duyệt `spot_claims` (S30); bảng không lưu cột riêng |
+| `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
 | `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
 | `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
@@ -1771,7 +1870,11 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
-| `spots/{id}` | `spots` | Điểm chụp |
+| `spots/{id}` | `spots` (+ `spot_access_fees`) | Điểm chụp; S30: `managedBy` → `managed_by`, `access.{type,note,source,updatedAt}` → `access_*`, `access.fees[]` → `spot_access_fees` (thứ tự → `position`), `openHours.{start,end}` → `open_time`, `close_time` |
+| `spots/{id}/residents/{providerId}` | `spot_residents` | S30 thợ tại điểm; khoá `(spot_id, provider_id)` lấy từ đường dẫn |
+| `organizers/{uid}` | `organizers` | S30; `managedSpotIds[]` không thành cột (dẫn xuất từ `spots.managed_by`) |
+| `organizers/{uid}/gate_staff/{staffUid}` | `organizer_gate_staff` | S30; `scansToday.{day,count}` → `scans_day`, `scans_count` |
+| `spot_claims/{id}` | `spot_claims` | S30; `proposal.{name,address}` → `proposal_*`; `proofPaths[]` → `proof_paths text[]` (đường dẫn Storage, không phải URL) |
 | `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
 | `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |
 | `spot_schedules/{id}` | `spot_schedules` + `spot_schedule_days` | `days[]` → `spot_schedule_days` |
@@ -1813,7 +1916,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `organizers` → `organizer_gate_staff` → `spots` (+`spot_access_fees`) → `spot_claims` → `photographers` và bảng con → `spot_residents` → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

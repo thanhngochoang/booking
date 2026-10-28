@@ -202,6 +202,9 @@ export async function addSpot(deps: SpotAdminDeps, actor: string, raw: unknown):
     updatedAt: now,
     rankedAt: null,
     updatedBy: actor,
+    managedBy: null,
+    access: null,
+    openHours: null,
   };
 
   await deps.spots.putSpot(spot);

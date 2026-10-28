@@ -2846,6 +2846,9 @@ export function seedSpots(now: Date): Spot[] {
       createdAt: at,
       updatedAt: at,
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'seed',
     },
     {
@@ -2872,6 +2875,9 @@ export function seedSpots(now: Date): Spot[] {
       createdAt: at,
       updatedAt: at,
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'seed',
     },
     {
@@ -2898,6 +2904,9 @@ export function seedSpots(now: Date): Spot[] {
       createdAt: at,
       updatedAt: at,
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'seed',
     },
     {
@@ -2924,6 +2933,9 @@ export function seedSpots(now: Date): Spot[] {
       createdAt: at,
       updatedAt: at,
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'seed',
     },
     {
@@ -2950,6 +2962,9 @@ export function seedSpots(now: Date): Spot[] {
       createdAt: at,
       updatedAt: at,
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'seed',
     },
   ];

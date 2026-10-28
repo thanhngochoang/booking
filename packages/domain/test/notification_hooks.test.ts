@@ -25,6 +25,7 @@ import {
   notifyDisputeMessage,
   notifyDisputeOpened,
   notifyDisputeResolved,
+  notifyGateStaffInvited,
   notifyInstantArrived,
   notifyInstantAssigned,
   notifyInstantCancelled,
@@ -48,6 +49,9 @@ import {
   notifyRecruitPostNew,
   notifyRefundAccountNeeded,
   notifyReviewVerdict,
+  notifySpotClaimApproved,
+  notifySpotClaimRejected,
+  notifySpotResidentAdded,
   notifyStudioInvite,
   notifyStudioInviteAccepted,
   notifyStudioInviteExpiring,
@@ -110,6 +114,29 @@ const row = (userId: string, type: NotificationType, target: string, id: string,
 
 /** Every non-grouped hook of the plan's hooks table. */
 const CASES: readonly HookCase[] = [
+  // S30 organizers (#223)
+  {
+    name: 'notifySpotClaimApproved',
+    run: (d) => notifySpotClaimApproved(d, { organizerId: 's1', claimId: 'cl1', spotId: 'sp1', spotName: 'Bãi đá' }),
+    rows: [row('s1', 'spot_claim_approved', '/organizer/spots/sp1', 'n_spot_claim_approved_cl1', 'Bạn đã được duyệt quản lý Bãi đá')],
+  },
+  {
+    name: 'notifySpotClaimRejected',
+    run: (d) => notifySpotClaimRejected(d, { organizerId: 's1', claimId: 'cl2', spotName: 'Bãi đá', reason: 'Thiếu giấy tờ' }),
+    rows: [row('s1', 'spot_claim_rejected', '/organizer/spots/claim', 'n_spot_claim_rejected_cl2', 'Yêu cầu quản lý Bãi đá chưa được duyệt')],
+  },
+  {
+    name: 'notifySpotResidentAdded',
+    run: (d) => notifySpotResidentAdded(d, {
+      providerId: 'p1', organizerId: 's1', organizerName: 'Bãi đá sông Hồng', spotId: 'sp1', spotName: 'Bãi đá', addedAt: AT,
+    }),
+    rows: [row('p1', 'spot_resident_added', '/spots/sp1', 'n_spot_resident_added_sp1_p1_2026-10-10T10_00_00.000Z', 'Bãi đá sông Hồng thêm bạn vào thợ tại Bãi đá')],
+  },
+  {
+    name: 'notifyGateStaffInvited',
+    run: (d) => notifyGateStaffInvited(d, { staffUid: 'a1', organizerId: 's1', organizerName: 'Bãi đá sông Hồng', invitedAt: AT }),
+    rows: [row('a1', 'gate_staff_invited', '/organizer/gate-staff', 'n_gate_staff_invited_s1_a1_2026-10-10T10_00_00.000Z', 'Bãi đá sông Hồng mời bạn soát vé')],
+  },
   {
     name: 'notifyQuoteWithdrawn',
     run: (d) => notifyQuoteWithdrawn(d, { customerId: 'c1', jobId: 'j1', jobTitle: JOB, photographerId: 'p1', quoteVersion: 2, auto: false }),
