@@ -123,20 +123,29 @@ async function checkOrganizerHost(tx: EventTx, host: EventHost, price: number | 
   if ((price ?? 0) > 0 && !canSell(org)) throw new DomainError('business_required');
 }
 
-/** The venue's fields after a save: a new venue starts over (nothing asked, no fee). */
+/** The same place: kind and spot (what a manager's consent is about). */
+const samePlace = (a: Venue | null, b: Venue | null): boolean =>
+  a !== null && b !== null && a.kind === b.kind && a.spotId === b.spotId;
+
+/**
+ * The venue's fields after a save: a new place (kind or spot) starts over (nothing asked, no fee); the
+ * same place with other details (entry fee, terms) keeps its consent.
+ */
 function venueFieldsOf(existing: EventRecord | null, next: Venue | null | undefined): Partial<EventRecord> {
   if (next === undefined) return existing === null ? { venue: null, ...NO_VENUE_CONSENT } : {};
   if (existing !== null && JSON.stringify(existing.venue ?? null) === JSON.stringify(next)) return {};
+  if (existing !== null && samePlace(existing.venue ?? null, next)) return { venue: next };
   return { venue: next, ...NO_VENUE_CONSENT };
 }
 
-/** §7.2: what the spot's manager agreed to: the day and hours, the seats and the price. */
-function venueMaterialChange(e: EventRecord, f: EventFields): string | null {
-  if (!sameInstant(f.startAt, e.startAt)) return 'startAt';
-  if (!sameInstant(f.endAt, e.endAt)) return 'endAt';
-  if (f.capacity !== e.capacity) return 'capacity';
-  if (f.price !== e.price) return 'price';
-  return null;
+/** §7.2: what the spot's manager agreed to, in this order: the day and hours, the seats and the price. */
+function venueMaterialChanges(e: EventRecord, f: EventFields): string[] {
+  const out: string[] = [];
+  if (!sameInstant(f.startAt, e.startAt)) out.push('startAt');
+  if (!sameInstant(f.endAt, e.endAt)) out.push('endAt');
+  if (f.capacity !== e.capacity) out.push('capacity');
+  if (f.price !== e.price) out.push('price');
+  return out;
 }
 
 function checkCoverAndFaq(deps: EventDeps, caller: EventCaller, f: EventFields, host: EventHost, createdBy: string, eventId: string): void {
@@ -420,7 +429,7 @@ export async function saveEventDraft(
     const venueIn = await readVenue(tx, r.venue, now);
     const venue = venueFieldsOf(existing, venueIn?.venue);
     const askAgain = existing !== null && venue.venue === undefined && venueConsentOf(existing) === 'accepted'
-      && venueMaterialChange(existing, f) !== null;
+      && venueMaterialChanges(existing, f).length > 0;
     const askSpot = askAgain && existing?.venue?.spotId != null ? await tx.getSpot(existing.venue.spotId) : null;
 
     const base = {
@@ -557,10 +566,12 @@ export async function publishEvent(deps: EventDeps & { readonly notify?: NotifyD
   await tellVenueRequested(deps.notify, request);
 }
 
-export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unknown): Promise<void> {
+export async function updateEvent(deps: EventDeps & { readonly notify?: NotifyDeps }, caller: EventCaller, raw: unknown): Promise<void> {
   const r = obj(raw);
   const eventId = idOf(r.eventId);
+  let request: VenueRequest | null = null;
   await deps.events.runTransaction(async (tx) => {
+    request = null;
     const now = deps.clock.now();
     const ev = await tx.getEvent(eventId);
     if (ev === null) throw new DomainError('not_found');
@@ -579,31 +590,42 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
     if (f.price !== ev.price && sold > 0) throw new DomainError('conflict');
 
     if (f.price !== ev.price) await checkOrganizerHost(tx, ev.host, f.price);
-    // S30 Decision 16: what a spot's manager agreed to stays (a published event cannot ask again).
+    // S30 Decision 16 (§7.2, ruled): at a venue whose manager accepted, the place itself never changes
+    // (`venue_consent_required` venue); more seats need no new consent; any other change of what the
+    // manager agreed to returns an event without tickets to `draft` and asks again, and is refused
+    // (`venue_consent_required`, the field) once tickets are sold or held.
     const venueIn = await readVenue(tx, r.venue, now);
     const venue = venueFieldsOf(ev, venueIn?.venue);
     if (venue.venue === null && venueRequired(ev)) throw new DomainError('invalid_argument', 'venue');
     const asked = venueConsentOf(ev) === 'accepted';
-    const moved = asked ? venueMaterialChange(ev, f) : null;
-    if (moved !== null) throw new DomainError('venue_consent_required', moved);
-    if (venue.venue !== undefined && venue.venue !== null) {
+    if (asked && venueIn !== undefined && !samePlace(ev.venue ?? null, venueIn.venue)) {
+      throw new DomainError('venue_consent_required', 'venue');
+    }
+    const changes = asked
+      ? venueMaterialChanges(ev, f).filter((c) => !(c === 'capacity' && (f.capacity ?? 0) > (ev.capacity ?? 0)))
+      : [];
+    const redraft = changes.length > 0 && sold === 0;
+    if (changes.length > 0 && !redraft) throw new DomainError('venue_consent_required', changes[0]);
+    if (venue.venue !== undefined && venue.venue !== null && !asked) {
       const managedBy = venueIn?.spot?.managedBy ?? null;
       if (venueConsentNeeded(venue.venue, ev.host.id, managedBy)) throw new DomainError('venue_consent_required', 'venue');
     }
+    const askSpot = redraft && ev.venue?.spotId != null ? await tx.getSpot(ev.venue.spotId) : null;
     const plan = await planHashtag(tx, ev, f, ev.id, now);
     if (spotNeedsCheck(ev, f)) await checkSpot(tx, f);
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
     const moveDay = hostId !== null && f.dayKey !== ev.dayKey;
     const newDay = moveDay ? await tx.availability(hostId, f.dayKey as string) : null;
-    const oldDay = moveDay && ev.dayKey !== null ? await tx.availability(hostId, ev.dayKey) : null;
+    const oldDay = (moveDay || redraft) && hostId !== null && ev.dayKey !== null ? await tx.availability(hostId, ev.dayKey) : null;
     if (newDay !== null && (newDay.state === 'booked' || newDay.state === 'pending' || newDay.state === 'spot')) {
       throw new DomainError('day_taken');
     }
 
     writeHashtag(tx, plan, ev.id, false);
-    if (moveDay) {
+    if (hostId !== null && (moveDay || redraft)) {
       if (oldDay !== null && oldDay.eventId === ev.id && ev.dayKey !== null) tx.deleteAvailability(hostId, ev.dayKey);
-      tx.setAvailabilityBooked(hostId, f.dayKey as string, ev.id);
+      // A draft books no day: publishing it again does.
+      if (!redraft) tx.setAvailabilityBooked(hostId, f.dayKey as string, ev.id);
     }
     const next: EventRecord = {
       ...ev,
@@ -617,8 +639,15 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
       ...venue,
       version: ev.version + 1, updatedAt: now,
     };
+    if (redraft) {
+      const back: EventRecord = { ...next, status: 'draft', ...venueConsentRequest(now) };
+      tx.putEvent(back);
+      if (askSpot?.managedBy != null) request = { managerId: askSpot.managedBy, event: back, spot: askSpot.name };
+      return;
+    }
     tx.putEvent({ ...next, status: statusAfterSeats(next, now) });
   });
+  await tellVenueRequested(deps.notify, request);
 }
 
 export async function cancelEvent(

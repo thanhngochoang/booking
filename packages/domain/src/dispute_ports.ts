@@ -39,6 +39,13 @@ export interface DisputeSubjectView {
  * `created` or expired payment never counts), the one still holding money first. Every store's
  * `findSubjectPayment` uses it, so the memory and Firestore stores pick the same payment.
  */
+/** The `venue_fee` siblings of `payment` among `candidates` (every store filters the same way). */
+export function venueLinesAmong(payment: Payment, candidates: readonly Payment[]): Payment[] {
+  if (payment.groupId === undefined || payment.subjectType !== 'event_registration') return [];
+  return candidates.filter((c) => c.id !== payment.id && c.groupId === payment.groupId
+    && c.subjectId === payment.subjectId && c.lineKind === 'venue_fee');
+}
+
 export function pickSubjectPayment(payments: readonly Payment[]): Payment | null {
   const settled = payments.filter(isSettledPayment);
   const holding = (p: Payment) => p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'disputed';
@@ -57,6 +64,11 @@ export interface DisputeTx {
    * payment never counts, a holding one first); ticket: the registration's `paymentId`. The use case checks what it holds.
    */
   findSubjectPayment(subject: DisputeSubjectView): Promise<Payment | null>;
+  /**
+   * S30 Decision 16: the `venue_fee` lines riding on a ticket payment (same `groupId`, same subject);
+   * none for a payment outside a group. A ticket dispute freezes and settles them with the ticket.
+   */
+  venueLinesOf(payment: Payment): Promise<Payment[]>;
   setDispute(d: Dispute): void;
   setPayment(p: Payment): void;
   /** Booking: `disputeId` + the `escrowStatus` mirror; registration: `disputeId` only. */

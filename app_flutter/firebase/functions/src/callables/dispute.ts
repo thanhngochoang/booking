@@ -49,7 +49,17 @@ export async function handleResolveDispute(
   } catch (e) {
     handleCallableError('resolveDispute', e);
   }
-  const { dispute, refund } = resolved;
+  const { dispute, refund, lineRefunds } = resolved;
+  // S30 Decision 16: a ticket's venue-fee line refunds beside it; a failed send stays pending for V2.
+  for (const line of lineRefunds) {
+    try {
+      await dispatchDisputeRefund(deps, line.payment, line.refund);
+    } catch (e) {
+      logger.error('dispute_refund_send_failed', {
+        disputeId: dispute.id, refundId: line.refund.id, code: isDomainError(e) ? e.code : 'unexpected',
+      });
+    }
+  }
   if (refund !== null) {
     try {
       const payment = await deps.store.runTransaction((tx) => tx.getPayment(dispute.paymentId));

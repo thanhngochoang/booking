@@ -447,7 +447,11 @@ export async function checkTicketPayment(
   if (reg.userId !== caller.uid) throw new DomainError('permission_denied');
   const paymentId = reg.paymentId;
   if (reg.status !== 'held' || paymentId === null) return { paid: reg.status === 'paid', status: reg.status };
-  const p = await deps.events.runTransaction((tx) => tx.getPayment(paymentId));
+  // S30 Decision 16: a ticket with a venue fee is paid through its group (the line has no transfer code).
+  const p = await deps.events.runTransaction(async (tx) => {
+    const line = await tx.getPayment(paymentId);
+    return line?.groupId !== undefined ? tx.getPayment(line.groupId) : line;
+  });
   if (p === null) return { paid: false, status: reg.status };
 
   const settlement: SettlementDeps = deps.settlement ?? {
@@ -457,6 +461,8 @@ export async function checkTicketPayment(
     subjects: { event_registration: new TicketPaymentSettler(deps) },
   };
 
+  // Only a settlement that knows groups can settle one (the Functions wiring passes it).
+  if (p.subjectType === 'payment_group' && settlement.subjects.payment_group === undefined) return { paid: false, status: reg.status };
   await checkSubjectPayments(settlement, [p]);
 
   const updatedReg = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));

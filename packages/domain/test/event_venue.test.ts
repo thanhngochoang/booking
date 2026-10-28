@@ -11,6 +11,7 @@ import {
 } from '../src/event_venue.js';
 import { cancelEvent, publishEvent, saveEventDraft, updateEvent } from '../src/event_use_cases.js';
 import { cancelRegistration, registerEvent } from '../src/event_registration.js';
+import { checkTicketPayment } from '../src/event_payments.js';
 import { runEventSweeps } from '../src/event_sweeps.js';
 import { ORGANIZER_TERMS_VERSION } from '../src/organizer.js';
 import { createEntryWorld, org1, org2, org3, type EntryWorld } from './support/entry_world.js';
@@ -193,6 +194,15 @@ describe('respondVenueConsent', () => {
       rejects('invalid_argument', 'venueFeePerGuest'));
   });
 
+  test('a fee equal to the price is invalid_argument venueFeePerGuest (the fee stays strictly below it)', async () => {
+    const w = world(V_NOW);
+    await requested(w, { price: 150_000 });
+    await assert.rejects(respondVenueConsent(w.deps, org1, { eventId: ID, accept: true, venueFeePerGuest: 150_000 }),
+      rejects('invalid_argument', 'venueFeePerGuest'));
+    await respondVenueConsent(w.deps, org1, { eventId: ID, accept: true, venueFeePerGuest: 149_000 });
+    assert.equal(ev(w).venueFeePerGuest, 149_000);
+  });
+
   test('a free event at a managed spot can only be accepted with fee 0', async () => {
     const w = world(V_NOW);
     await requested(w, { price: 0 });
@@ -221,14 +231,60 @@ describe('respondVenueConsent', () => {
     await assert.rejects(publishEvent(w.deps, ph1, { eventId: ID }), rejects('venue_consent_required'));
   });
 
-  test('a published event at a consented venue cannot move its dates or capacity (venue_consent_required)', async () => {
-    const w = world(V_NOW);
+  /** ph1's event priced 150 000 at s1, accepted by org1 with a 20 000 fee, published. */
+  async function publishedAtVenue(w: EntryWorld): Promise<void> {
     await requested(w, { price: 150_000 });
     await respondVenueConsent(w.deps, org1, { eventId: ID, accept: true, venueFeePerGuest: 20_000 });
     await publishEvent(w.deps, ph1, { eventId: ID });
-    await assert.rejects(updateEvent(w.deps, ph1, { eventId: ID, capacity: 20 }), rejects('venue_consent_required', 'capacity'));
-    await updateEvent(w.deps, ph1, { eventId: ID, title: 'Tên mới' });
-    assert.equal(ev(w).title, 'Tên mới');
+    assert.equal(ev(w).status, 'open');
+  }
+
+  test('a published event at an accepted venue may raise its capacity without a new consent', async () => {
+    const w = world(V_NOW);
+    await publishedAtVenue(w);
+    await updateEvent(withNotify(w), ph1, { eventId: ID, capacity: 20, title: 'Tên mới' });
+    assert.deepEqual([ev(w).status, ev(w).capacity, ev(w).venueConsent, ev(w).venueFeePerGuest, ev(w).title], ['open', 20, 'accepted', 20_000, 'Tên mới']);
+    assert.equal(w.notify.store.rowsOf('org1').filter((r) => r.type === 'event_venue_requested').length, 1);
+  });
+
+  test('without tickets, another material edit of a published event returns it to draft and asks the manager again', async () => {
+    const w = world(V_NOW);
+    await publishedAtVenue(w);
+    w.clock.set(new Date(V_NOW.getTime() + HOUR));
+    await updateEvent(withNotify(w), ph1, { eventId: ID, startAt: '2026-10-25T02:00:00.000Z', endAt: '2026-10-25T05:00:00.000Z' });
+    assert.deepEqual([ev(w).status, ev(w).venueConsent, ev(w).dayKey], ['draft', 'pending', '2026-10-25']);
+    assert.equal(ev(w).venueConsentExpiresAt?.getTime(), V_NOW.getTime() + HOUR + VENUE_CONSENT_HOURS * HOUR);
+    assert.equal(w.notify.store.rowsOf('org1').filter((r) => r.type === 'event_venue_requested').length, 2);
+    // A photographer host's old day is free again; the new one is booked only when it is published.
+    assert.equal(w.store.availabilityDays.has('ph1/2026-10-24'), false);
+    assert.equal(w.store.availabilityDays.has('ph1/2026-10-25'), false);
+    await respondVenueConsent(w.deps, org1, { eventId: ID, accept: true, venueFeePerGuest: 20_000 });
+    await publishEvent(w.deps, ph1, { eventId: ID });
+    assert.deepEqual([ev(w).status, w.store.availabilityDays.get('ph1/2026-10-25')?.state], ['open', 'booked']);
+  });
+
+  test('a capacity cut or a price change without tickets also asks again', async () => {
+    const w = world(V_NOW);
+    await publishedAtVenue(w);
+    await updateEvent(w.deps, ph1, { eventId: ID, capacity: 5 });
+    assert.deepEqual([ev(w).status, ev(w).venueConsent], ['draft', 'pending']);
+  });
+
+  test('with tickets sold or held the material edit is refused venue_consent_required (field = the change)', async () => {
+    const w = world(V_NOW);
+    await publishedAtVenue(w);
+    await registerEvent(w.deps, cu1, { eventId: ID, quantity: 1, name: 'An', method: 'bank_qr' });
+    await assert.rejects(updateEvent(w.deps, ph1, { eventId: ID, capacity: 5 }), rejects('venue_consent_required', 'capacity'));
+    await updateEvent(w.deps, ph1, { eventId: ID, capacity: 20 });
+    assert.deepEqual([ev(w).status, ev(w).capacity], ['open', 20]);
+  });
+
+  test('while accepted, replacing the managed_spot venue is venue_consent_required venue', async () => {
+    const w = world(V_NOW);
+    await publishedAtVenue(w);
+    await assert.rejects(updateEvent(w.deps, ph1, { eventId: ID, venue: publicPlace() }), rejects('venue_consent_required', 'venue'));
+    await assert.rejects(updateEvent(w.deps, ph1, { eventId: ID, venue: managed('s2') }), rejects('venue_consent_required', 'venue'));
+    assert.deepEqual([ev(w).venue?.spotId, ev(w).venueConsent], ['s1', 'accepted']);
   });
 
   test('expireVenueConsent after 72 h → expired, cancelled', async () => {
@@ -337,6 +393,18 @@ describe('the venue fee line (Decisions 6, 16)', () => {
     assert.equal(out.status, 'refunded');
     const refunded = childrenOf(w, group.id).map((c) => [c.lineKind, c.escrowStatus, c.refundedAmount ?? 0]).sort();
     assert.deepEqual(refunded, [['event_ticket', 'refunded', 130_000], ['venue_fee', 'refunded', 20_000]]);
+  });
+
+  test('checkTicketPayment of a fee ticket polls its group and settles a transfer the gateway reports', async () => {
+    const w = await feeEvent(20_000);
+    const r = await registerEvent(w.eventDeps, cu1, { eventId: ID, quantity: 1, name: 'An', method: 'bank_qr' });
+    const group = must(paymentOf(w, must(r.paymentId)));
+    const deps = { ...w.eventDeps, settlement: w.settlement };
+    const ask = { eventId: ID, registrationId: r.registrationId };
+    assert.deepEqual(await checkTicketPayment(deps, cu1, ask), { paid: false, status: 'held' });
+    w.booking.gateway.pushTransfer(group.id, transfer(w, must(group.transferCode), 150_000));
+    assert.deepEqual(await checkTicketPayment(deps, cu1, ask), { paid: true, status: 'paid' });
+    assert.deepEqual(childrenOf(w, group.id).map((c) => c.status), ['paid', 'paid']);
   });
 
   test('an event with fee 0 creates no group', async () => {

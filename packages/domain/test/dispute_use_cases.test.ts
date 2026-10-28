@@ -479,3 +479,71 @@ describe('dispatchDisputeRefund marks the refund done, failed+manual when the ga
     assert.deepEqual(w.store.refunds.get(refund.id), awaiting);
   });
 });
+
+describe('a ticket with a venue fee (S30 Decision 16)', () => {
+  /** r1: 150 000 paid as a group: the event_ticket line (130 000 to h1) and the venue_fee line (20 000 to org1). */
+  function seedFeeTicket(): DisputeWorld {
+    const w = createDisputeWorld();
+    seedTicket(w, { amount: 130_000 });
+    const t = payment(w, 'pay_r1');
+    w.store.payments.set('pay_r1', { ...t, groupId: 'g1', lineKind: 'event_ticket' });
+    const v = paidPayment({
+      id: 'pay_v1', subjectType: 'event_registration', subjectId: 'r1', eventId: 'e1', payeeId: 'org1', payeeKind: 'organizer',
+      amount: 20_000, idempotencyKey: 'grp_g1_venue_fee', groupId: 'g1', lineKind: 'venue_fee', releaseAfter: t.releaseAfter,
+    });
+    w.store.payments.set('pay_v1', v);
+    w.store.ledger.push({
+      id: 'le_recv_pay_v1', type: 'ticket_received', paymentId: 'pay_v1', subjectType: 'event_registration', subjectId: 'r1',
+      accountOwnerId: 'platform_escrow', amount: 20_000, at: v.createdAt,
+    });
+    return w;
+  }
+  const open = (w: DisputeWorld) =>
+    openDispute(w.deps, 'c1', openInput({ subjectType: 'ticket', subjectId: 'r1', eventId: 'e1', reason: 'event_not_held' }));
+
+  it('opening freezes both lines; the release sweep releases neither', async () => {
+    const w = seedFeeTicket();
+    const d = await open(w);
+    assert.equal(d.amountHeld, 150_000);
+    for (const id of ['pay_r1', 'pay_v1']) {
+      assert.equal(payment(w, id).escrowStatus, 'disputed');
+      assert.equal(payment(w, id).dispute?.disputeId, 'd1');
+    }
+    const { MemoryBookingStore } = await import('../src/memory_booking_store.js');
+    const bookings = new MemoryBookingStore();
+    for (const id of ['pay_r1', 'pay_v1']) bookings.payments.set(id, payment(w, id));
+    assert.deepEqual(await bookings.findReleasableEscrows(hoursFrom(24 * 30)), []);
+  });
+
+  it('a 100% customer outcome refunds both lines in full (130 000 + 20 000)', async () => {
+    const w = seedFeeTicket();
+    await open(w);
+    const out = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'refund', note: NOTE });
+    assert.deepEqual([out.dispute.outcome?.refundAmount, out.dispute.outcome?.releaseAmount], [150_000, 0]);
+    assert.deepEqual(refundsOf(w, 'pay_r1').map((r) => r.amount), [130_000]);
+    assert.deepEqual(refundsOf(w, 'pay_v1').map((r) => r.amount), [20_000]);
+    assert.deepEqual(out.lineRefunds.map((l) => [l.payment.id, l.refund.amount]), [['pay_v1', 20_000]]);
+    assert.deepEqual([payment(w, 'pay_r1').escrowStatus, payment(w, 'pay_v1').escrowStatus], ['refunded', 'refunded']);
+    assert.ok(invariantHolds(w, 'pay_r1') && invariantHolds(w, 'pay_v1'));
+  });
+
+  it('a 0% outcome releases both lines', async () => {
+    const w = seedFeeTicket();
+    await open(w);
+    const out = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: NOTE });
+    assert.deepEqual([out.dispute.outcome?.refundAmount, out.dispute.outcome?.releaseAmount], [0, 150_000]);
+    assert.deepEqual([payment(w, 'pay_r1').escrowStatus, payment(w, 'pay_v1').escrowStatus], ['released', 'released']);
+    assert.equal(refundsOf(w, 'pay_v1').length, 0);
+  });
+
+  it('a split refunds each line its share (30%: 39 000 + 6 000 back, 91 000 + 14 000 released)', async () => {
+    const w = seedFeeTicket();
+    await open(w);
+    const out = await resolveDispute(w.deps, 'staff1', { disputeId: 'd1', outcome: 'split', refundPercent: 30, note: NOTE });
+    assert.deepEqual([out.dispute.outcome?.refundAmount, out.dispute.outcome?.releaseAmount], [45_000, 105_000]);
+    assert.deepEqual(refundsOf(w, 'pay_r1').map((r) => r.amount), [39_000]);
+    assert.deepEqual(refundsOf(w, 'pay_v1').map((r) => r.amount), [6_000]);
+    assert.deepEqual([payment(w, 'pay_r1').escrowStatus, payment(w, 'pay_v1').escrowStatus], ['released', 'released']);
+    assert.ok(invariantHolds(w, 'pay_r1') && invariantHolds(w, 'pay_v1'));
+  });
+});

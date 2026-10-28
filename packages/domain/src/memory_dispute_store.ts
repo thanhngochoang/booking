@@ -1,6 +1,6 @@
 import type { EscrowStatus } from './booking.js';
 import type { Dispute, DisputeStatus, DisputeSubjectType } from './dispute.js';
-import { pickSubjectPayment, type DisputeStore, type DisputeSubjectView, type DisputeTx } from './dispute_ports.js';
+import { pickSubjectPayment, venueLinesAmong, type DisputeStore, type DisputeSubjectView, type DisputeTx } from './dispute_ports.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import { MemorySupportStore } from './memory_support_store.js';
 import type { SupportTx } from './support_use_cases.js';
@@ -62,6 +62,7 @@ export class MemoryDisputeStore extends MemorySupportStore implements DisputeSto
             [...this.payments.values()].filter((p) => p.subjectType === 'booking' && p.subjectId === subject.id),
           );
         }),
+      venueLinesOf: (payment) => read(() => venueLinesAmong(payment, [...this.payments.values()])),
       setDispute: (d) => write(() => disputes.set(d.id, d)),
       setPayment: (p) => write(() => payments.set(p.id, p)),
       linkSubject: (view, patch) =>

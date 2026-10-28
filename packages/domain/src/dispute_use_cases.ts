@@ -17,7 +17,7 @@ import {
   type ResolveDisputeInput,
 } from './dispute.js';
 import { formatVnDate, formatVnTime } from './booking_policy.js';
-import type { DisputeDeps, DisputeSubjectView } from './dispute_ports.js';
+import type { DisputeDeps, DisputeSubjectView, DisputeTx } from './dispute_ports.js';
 import { DomainError } from './errors.js';
 import {
   applyRefundToPayment,
@@ -116,10 +116,12 @@ async function openParsed(deps: DisputeDeps, input: OpenDisputeInput, opener: Op
     if (existing) return { existing, paymentId: null };
     const subject = await tx.getSubject(input.subjectType, input.subjectId, input.eventId);
     const payment = subject ? await tx.findSubjectPayment(subject) : null;
-    return { existing: null, paymentId: payment?.id ?? null };
+    const lines = payment ? await tx.venueLinesOf(payment) : [];
+    return { existing: null, paymentId: payment?.id ?? null, lineIds: lines.map((l) => l.id) };
   });
   if (pre.existing) return again(pre.existing);
   const refundsSoFar = pre.paymentId ? escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.paymentId)) : 0;
+  const lineRefundsSoFar = await escrowRefundsOf(deps, pre.lineIds ?? []);
   const customerName = callerId === null ? SYSTEM_NAME : (await deps.names.displayName(callerId)) || 'Khách';
 
   return deps.store.runTransaction(async (tx) => {
@@ -162,6 +164,18 @@ async function openParsed(deps: DisputeDeps, input: OpenDisputeInput, opener: Op
       };
     }
     if (amountHeld <= 0) throw new DomainError('not_eligible');
+    // S30 Decision 16: the ticket's venue-fee line is frozen with it (its money is part of the ticket).
+    const lines = (await tx.venueLinesOf(payment))
+      .filter((l) => l.escrowStatus === 'held' || l.escrowStatus === 'partially_refunded');
+    if (lines.some((l) => !lineRefundsSoFar.has(l.id))) throw new DomainError('conflict');
+    const frozenLines = lines.map((l): Payment => ({
+      ...disputeEscrowPayment(l, now),
+      dispute: {
+        reason: input.reason, openedAt: at, disputeId: input.disputeId, milestone: null,
+        prevEscrowStatus: l.escrowStatus === 'partially_refunded' ? 'partially_refunded' : 'held',
+      },
+    }));
+    amountHeld += lines.reduce((n, l) => n + l.amount - (lineRefundsSoFar.get(l.id) ?? 0), 0);
 
     const dispute: Dispute = {
       id: input.disputeId,
@@ -207,6 +221,7 @@ async function openParsed(deps: DisputeDeps, input: OpenDisputeInput, opener: Op
     };
 
     tx.setPayment(frozen);
+    for (const l of frozenLines) tx.setPayment(l);
     tx.linkSubject(subject, { disputeId: dispute.id, escrowStatus: frozen.escrowStatus });
     tx.setDispute(dispute);
     tx.putThread(thread);
@@ -214,6 +229,49 @@ async function openParsed(deps: DisputeDeps, input: OpenDisputeInput, opener: Op
     tx.addMessage(first);
     return dispute;
   });
+}
+
+/** What escrow already gave back of each payment (read outside the transaction, like the main payment's). */
+async function escrowRefundsOf(deps: DisputeDeps, ids: readonly string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  for (const id of ids) out.set(id, escrowRefundedTotal(await deps.store.getRefundsForPayment(id)));
+  return out;
+}
+
+/**
+ * Writes only (S30 Decision 16): a frozen venue-fee line gets the dispute's outcome on its own amount
+ * (the same percent), back to its previous status, refunded and released like a ticket payment.
+ */
+function settleVenueLine(
+  tx: DisputeTx,
+  deps: DisputeDeps,
+  line: Payment,
+  refundsSoFar: number,
+  d: Dispute,
+  input: ResolveDisputeInput,
+  now: Date,
+): { readonly refundAmount: number; readonly releaseAmount: number; readonly refund: Refund | null; readonly payment: Payment } {
+  const at = now.toISOString();
+  const a = outcomeAmounts(line.amount - refundsSoFar, input.kind, input.refundPercent);
+  let pay: Payment = { ...line, escrowStatus: line.dispute?.prevEscrowStatus ?? 'held', updatedAt: at };
+  let refund: Refund | null = null;
+  if (a.refundAmount > 0) {
+    const r = applyRefundToPayment({
+      payment: pay, refundId: deps.ids.newId(), percent: a.refundPercent, amount: a.refundAmount, escrowRefunded: refundsSoFar,
+      ledgerEntryId: deps.ids.newId(), reason: `dispute:${d.id}`, now, waitForAccount: true,
+    });
+    pay = r.payment;
+    refund = r.refund;
+    tx.addRefund(r.refund);
+    tx.addLedgerEntry(r.ledgerEntry);
+  }
+  if (a.releaseAmount > 0) {
+    const r = releaseEscrowPayment({ payment: pay, refundAmount: refundsSoFar + a.refundAmount, ledgerEntryId: deps.ids.newId(), now });
+    pay = r.payment;
+    tx.addLedgerEntry(r.ledgerEntry);
+  }
+  tx.setPayment(pay);
+  return { refundAmount: a.refundAmount, releaseAmount: a.releaseAmount, refund, payment: pay };
 }
 
 function outcomeLine(kind: DisputeOutcomeKind, refund: number, release: number, provider: string): string {
@@ -260,26 +318,40 @@ export async function resolveDispute(
   deps: DisputeDeps,
   staffId: string,
   raw: unknown,
-): Promise<{ dispute: Dispute; refund: Refund | null }> {
+): Promise<{
+  dispute: Dispute;
+  refund: Refund | null;
+  /** S30 Decision 16: the refunds of the ticket's venue-fee lines, for the caller to send like `refund`. */
+  lineRefunds: readonly { readonly payment: Payment; readonly refund: Refund }[];
+}> {
   const input = parseResolveDisputeInput(raw);
   const now = deps.clock.now();
   const at = now.toISOString();
 
-  const pre = await deps.store.runTransaction((tx) => tx.getDispute(input.disputeId));
+  const pre = await deps.store.runTransaction(async (tx) => {
+    const d = await tx.getDispute(input.disputeId);
+    const p = d ? await tx.getPayment(d.paymentId) : null;
+    const lines = p ? await tx.venueLinesOf(p) : [];
+    return d ? { d, lineIds: lines.map((l) => l.id) } : null;
+  });
   if (!pre) throw new DomainError('not_found');
-  const refundsSoFar = escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.paymentId));
+  const refundsSoFar = escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.d.paymentId));
+  const lineRefundsSoFar = await escrowRefundsOf(deps, pre.lineIds);
 
   return deps.store.runTransaction(async (tx) => {
     const d = await tx.getDispute(input.disputeId);
     // A retry after a lost response (same staff, same decision) gets the stored outcome, not conflict.
     if (d?.status === 'resolved' && d.outcome && isSameDecision(d.outcome, staffId, input)) {
       const stored = d.outcome.refundId ? await tx.getRefund(d.outcome.refundId) : null;
-      return { dispute: d, refund: stored };
+      return { dispute: d, refund: stored, lineRefunds: [] };
     }
     const p = d ? await tx.getPayment(d.paymentId) : null;
     const subject: DisputeSubjectView | null = d ? await tx.getSubject(d.subjectType, d.subjectId, d.eventId) : null;
     const thread = d ? await tx.getThread(d.threadId) : null;
     if (!d || !p || !subject) throw new DomainError('not_found');
+    const frozenLines = (await tx.venueLinesOf(p))
+      .filter((l) => l.escrowStatus === 'disputed' && l.dispute?.disputeId === d.id);
+    if (frozenLines.some((l) => !lineRefundsSoFar.has(l.id))) throw new DomainError('conflict');
 
     const kind = frozenMilestone(p);
     const ms = kind ? p.milestones?.find((m) => m.kind === kind) : undefined;
@@ -350,14 +422,19 @@ export async function resolveDispute(
       tx.addLedgerEntry(r.ledgerEntry);
     }
 
+    // S30 Decision 16: the venue-fee lines take the same outcome on their own amounts (writes only).
+    const settledLines = frozenLines.map((l) => settleVenueLine(tx, deps, l, lineRefundsSoFar.get(l.id) ?? 0, d, input, now));
+    const refundTotal = a.refundAmount + settledLines.reduce((n, l) => n + l.refundAmount, 0);
+    const releaseTotal = a.releaseAmount + settledLines.reduce((n, l) => n + l.releaseAmount, 0);
+
     const resolved: Dispute = {
       ...d,
       status: 'resolved',
       outcome: {
         kind: input.kind,
         refundPercent: a.refundPercent,
-        refundAmount: a.refundAmount,
-        releaseAmount: a.releaseAmount,
+        refundAmount: refundTotal,
+        releaseAmount: releaseTotal,
         note: input.note,
         decidedBy: staffId,
         decidedAt: at,
@@ -368,7 +445,7 @@ export async function resolveDispute(
       version: d.version + 1,
     };
     const provider = disputeProviderName(d);
-    const body = `Khiếu nại đã có kết quả: ${outcomeLine(input.kind, a.refundAmount, a.releaseAmount, provider)}. Ghi chú của hỗ trợ: ${input.note}`;
+    const body = `Khiếu nại đã có kết quả: ${outcomeLine(input.kind, refundTotal, releaseTotal, provider)}. Ghi chú của hỗ trợ: ${input.note}`;
     const closed: SupportThread = {
       ...(thread ?? newDisputeThread(d, at)),
       status: 'closed',
@@ -384,7 +461,8 @@ export async function resolveDispute(
     tx.setDispute(resolved);
     tx.putThread(closed);
     tx.addMessage(systemMessage(d.threadId, deps.ids.newId(), body, at));
-    return { dispute: resolved, refund };
+    const lineRefunds = settledLines.flatMap((l) => (l.refund === null ? [] : [{ payment: l.payment, refund: l.refund }]));
+    return { dispute: resolved, refund, lineRefunds };
   });
 }
 

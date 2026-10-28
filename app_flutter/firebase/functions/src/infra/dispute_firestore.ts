@@ -17,6 +17,7 @@ import {
   formatVnTime,
   isEscrowRefund,
   pickSubjectPayment,
+  venueLinesAmong,
   ticketPayeeOf,
   type Booking,
   type Dispute,
@@ -193,6 +194,14 @@ export class FirestoreDisputeTx extends FirestoreSupportTx implements DisputeTx 
       .where('subjectId', '==', subject.id);
     const snap = await this.tx.get(q);
     return pickSubjectPayment(snap.docs.map((d) => paymentFromFirestore(d.id, d.data())).filter((p): p is Payment => p !== null));
+  }
+
+  /** S30 Decision 16: the group's lines (single-field `groupId`), filtered to the ticket's venue-fee lines. */
+  async venueLinesOf(payment: Payment): Promise<Payment[]> {
+    if (payment.groupId === undefined || payment.subjectType !== 'event_registration') return [];
+    const snap = await this.tx.get(this.firestore.collection(PAYMENTS_COLLECTION).where('groupId', '==', payment.groupId));
+    const all = snap.docs.map((d) => paymentFromFirestore(d.id, d.data())).filter((p): p is Payment => p !== null);
+    return venueLinesAmong(payment, all);
   }
 
   setDispute(d: Dispute): void {
