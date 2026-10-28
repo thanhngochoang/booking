@@ -132,7 +132,7 @@ describe('job eligibility & fit', () => {
     for (let i = 0; i < 200; i++) {
       const p: JobProviderProfile = {
         ...baseProvider,
-        specialties: [specialties[i % specialties.length]],
+        specialties: [specialties[i % specialties.length]!],
         startingPrice: Math.floor(Math.random() * 10_000_000),
         score: Math.random() * 2 - 1,
         reviewCount: Math.floor(Math.random() * 50),
@@ -143,7 +143,7 @@ describe('job eligibility & fit', () => {
           center: { lat: 10.7 + Math.random() * 0.2, lng: 106.6 + Math.random() * 0.2 },
         },
       };
-      const day = days[i % days.length];
+      const day = days[i % days.length]!;
       const fit = jobFit(baseJob, p, day);
       assert.ok(Number.isInteger(fit), `fit ${fit} must be an integer`);
       assert.ok(fit >= 0 && fit <= 100, `fit ${fit} must be within 0..100`);

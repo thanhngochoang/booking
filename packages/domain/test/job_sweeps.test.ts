@@ -206,7 +206,7 @@ describe('job sweeps', () => {
 
     const notices = world.notifyWorld.store.rowsOf('cust_lan');
     assert.equal(notices.length, 1);
-    assert.equal(notices[0].type, 'job_expired');
+    assert.equal(notices[0]!.type, 'job_expired');
   });
 
   it('the expiring notice calls notifyJobExpiring with the deadline and is sent again after an extension', async () => {

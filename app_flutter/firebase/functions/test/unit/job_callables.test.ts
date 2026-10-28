@@ -1,8 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { HttpsError } from 'firebase-functions/v2/https';
 import {
-  DomainError,
   type JobDeps,
   type BookingDeps,
   type ChatDeps,
@@ -34,7 +33,7 @@ function createMockJobDeps(overrides: Partial<JobDeps> = {}): JobDeps {
       dueForReferencePurge: async () => [],
     },
     people: {
-      customer: async (uid) => ({
+      customer: async () => ({
         role: 'customer',
         name: 'Lan',
         avatarUrl: null,
@@ -167,7 +166,7 @@ describe('job callables', () => {
         dueForReferencePurge: async () => [],
       },
       people: {
-        customer: async (uid) => ({
+        customer: async () => ({
           role: 'customer',
           name: 'Lan',
           avatarUrl: null,

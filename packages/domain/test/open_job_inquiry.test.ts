@@ -119,6 +119,7 @@ describe('open_job_inquiry', () => {
         kind: 'booking',
         customerId: 'cust_lan',
         photographerId: 'p_tu',
+        assigneeId: null,
         bookingId: 'bk_old_1',
         bookingStatus: 'completed',
         photographerRepliedAt: jWorld.clock.now(),

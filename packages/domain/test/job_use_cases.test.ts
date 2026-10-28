@@ -90,7 +90,7 @@ describe('job use cases', () => {
 
     const matches = Array.from(world.jobs.matches.get(res.jobId)?.values() ?? []);
     assert.equal(matches.length, 1);
-    assert.equal(matches[0].photographerId, 'p_vu'); // Lê Hoàng Vũ is artist in TP.HCM
+    assert.equal(matches[0]!.photographerId, 'p_vu'); // Lê Hoàng Vũ is artist in TP.HCM
   });
 
   it('keeps at most 30 matches, best fit first', async () => {
@@ -123,7 +123,7 @@ describe('job use cases', () => {
     const matches = Array.from(world.jobs.matches.get(res.jobId)?.values() ?? []);
     assert.equal(matches.length, 30);
     for (let i = 0; i < matches.length - 1; i++) {
-      assert.ok(matches[i].fit >= matches[i + 1].fit);
+      assert.ok(matches[i]!.fit >= matches[i + 1]!.fit);
     }
   });
 

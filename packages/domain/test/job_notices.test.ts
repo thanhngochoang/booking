@@ -101,7 +101,7 @@ describe('job notices', () => {
     const count = await emitQuoteNotices(nw.deps, null, baseQuote);
     assert.equal(count, 1);
     assert.equal(nw.store.rows.size, 1);
-    const row = nw.store.rowsOf('cust_lan')[0];
+    const row = nw.store.rowsOf('cust_lan')[0]!;
     assert.equal(row.type, 'quote_new');
     assert.equal(row.userId, 'cust_lan');
   });

@@ -1,8 +1,9 @@
 import { createNotifyWorld, type NotifyWorld } from './notify_world.js';
-import type { IdGenerator } from '../../src/ports.js';
-import type { UserContactReader } from '../../src/require_phone.js';
+import type { IdGenerator, UserContactReader } from '../../src/ports.js';
 import { FakeBlockGate } from '../../src/fake_block_gate.js';
 import { MemoryJobStore } from '../../src/memory_job_store.js';
+import type { MemoryNotificationStore } from '../../src/memory_notification_store.js';
+import type { NotifyDeps } from '../../src/notification_ports.js';
 import type { JobDeps, JobMedia, JobPeople } from '../../src/job_ports.js';
 import type { JobProviderProfile } from '../../src/job_eligibility.js';
 import type { ProviderOrderGate } from '../../src/booking_ports.js';
@@ -108,10 +109,18 @@ export function createJobWorld(): JobTestWorld {
   };
 
   const providers: ProviderOrderGate = {
-    acceptsOrders: async (pid: string) => {
+    acceptsOrders: async (pid: string): Promise<boolean> => {
       const p = await people.provider(pid);
       if (!p) return false;
-      return p.acceptingOrdersFields.verified && p.acceptingOrdersFields.onboardingComplete;
+      return Boolean(p.acceptingOrdersFields.verified && p.acceptingOrdersFields.onboardingComplete);
+    },
+    orderProfile: async (pid: string) => {
+      const p = await people.provider(pid);
+      if (!p) return null;
+      return {
+        acceptsOrders: Boolean(p.acceptingOrdersFields.verified && p.acceptingOrdersFields.onboardingComplete),
+        providerType: p.providerType,
+      };
     },
   };
 

@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { Booking, JobRecord, QuoteRecord, NotifyDeps, ChatDeps, BadgeDeps, JobDeps } from '@photobooking/domain';
+import { Timestamp } from 'firebase-admin/firestore';
+import type { Booking, JobRecord, QuoteRecord, NotifyDeps, BadgeDeps } from '@photobooking/domain';
 import { MemoryNotificationStore, MemoryUserDirectory, MemoryPushSender } from '@photobooking/domain';
 import {
   handleJobQuoteWrite,
@@ -248,8 +249,8 @@ describe('job triggers', () => {
     });
 
     const mockFirestore: any = {
-      collection: (col: string) => ({
-        doc: (id: string) => ({
+      collection: () => ({
+        doc: () => ({
           get: async () => ({
             exists: true,
             id: 'job_01',
@@ -306,9 +307,6 @@ describe('job triggers', () => {
   });
 
   it('onBookingWrite awards the job for a quote booking entering accepted', async () => {
-    let awardedJobCalledWith: Booking | null = null;
-    let withdrawnForDayCalled = false;
-
     const mockJobsDeps: any = {
       jobs: {
         runTransaction: async (fn: any) => {

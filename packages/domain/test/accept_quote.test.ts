@@ -48,9 +48,17 @@ function createBookingWorldForJob(w: ReturnType<typeof createJobWorld>): Booking
     addons,
     services,
     providers: {
-      acceptsOrders: async (pid: string) => {
+      acceptsOrders: async (pid: string): Promise<boolean> => {
         const p = await w.people.provider(pid);
-        return !!p && p.acceptingOrdersFields.verified && p.acceptingOrdersFields.onboardingComplete;
+        return Boolean(p && p.acceptingOrdersFields.verified && p.acceptingOrdersFields.onboardingComplete);
+      },
+      orderProfile: async (pid: string) => {
+        const p = await w.people.provider(pid);
+        if (!p) return null;
+        return {
+          acceptsOrders: Boolean(p.acceptingOrdersFields.verified && p.acceptingOrdersFields.onboardingComplete),
+          providerType: p.providerType,
+        };
       },
     },
     blocks,
