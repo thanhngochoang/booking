@@ -16,6 +16,7 @@ import type {
 
 export function serviceRecordOf(id: string, photographerId: string, d: DocumentData): ServiceRecord {
   const revisions = typeof d.deliverables?.revisions === 'number' ? d.deliverables.revisions : undefined;
+  const deliveryDays = typeof d.deliverables?.deliveryDays === 'number' ? d.deliverables.deliveryDays : undefined;
   return {
     id,
     photographerId,
@@ -24,6 +25,7 @@ export function serviceRecordOf(id: string, photographerId: string, d: DocumentD
     durationMinutes: typeof d.durationMinutes === 'number' ? d.durationMinutes : 60,
     active: d.active !== false,
     ...(revisions !== undefined ? { revisions } : {}),
+    ...(deliveryDays !== undefined ? { deliveryDays } : {}),
   };
 }
 

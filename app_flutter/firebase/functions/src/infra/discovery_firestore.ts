@@ -74,6 +74,7 @@ export class FirestoreDiscoveryStatsStore implements DiscoveryStatsStore {
       .collection('bookings')
       .where('photographerId', '==', uid)
       .where('status', 'in', ['completed', 'reviewed'])
+      .where('deliveryCancel', '==', null)
       .count()
       .get();
     return snap.data().count;

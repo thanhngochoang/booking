@@ -388,6 +388,14 @@ export function bookingToFirestore(b: Booking): DocumentData {
     revisionsUsed: b.revisionsUsed ?? null,
     revisionsGranted: b.revisionsGranted ?? null,
     deliveryRound: b.deliveryRound ?? null,
+    deliveryDays: b.deliveryDays ?? null,
+    deliveryCancel: b.deliveryCancel
+      ? {
+          at: toTimestamp(b.deliveryCancel.at),
+          dueAt: toTimestamp(b.deliveryCancel.dueAt),
+          refundedAmount: b.deliveryCancel.refundedAmount,
+        }
+      : null,
     shotAt: toTimestamp(b.shotAt),
     deliveredAt: toTimestamp(b.deliveredAt),
     approvedAt: toTimestamp(b.approvedAt),
@@ -541,6 +549,16 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     ...(typeof d.revisionsUsed === 'number' ? { revisionsUsed: d.revisionsUsed } : {}),
     ...(typeof d.revisionsGranted === 'number' ? { revisionsGranted: d.revisionsGranted } : {}),
     ...(typeof d.deliveryRound === 'number' ? { deliveryRound: d.deliveryRound } : {}),
+    ...(typeof d.deliveryDays === 'number' ? { deliveryDays: d.deliveryDays } : {}),
+    ...(d.deliveryCancel && typeof d.deliveryCancel === 'object'
+      ? {
+          deliveryCancel: {
+            at: toIsoString(d.deliveryCancel.at) ?? new Date(0).toISOString(),
+            dueAt: toIsoString(d.deliveryCancel.dueAt) ?? new Date(0).toISOString(),
+            refundedAmount: typeof d.deliveryCancel.refundedAmount === 'number' ? d.deliveryCancel.refundedAmount : 0,
+          },
+        }
+      : {}),
     shotAt: toIsoString(d.shotAt),
     deliveredAt: toIsoString(d.deliveredAt),
     approvedAt: toIsoString(d.approvedAt),

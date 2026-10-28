@@ -64,7 +64,7 @@ describe('FirestoreBadgeMetricsReader', () => {
 
   it('counts through aggregation queries, one per metric', async () => {
     const { db, log } = fakeDb({}, {
-      'bookings|photographerId == "u1" & status in ["completed","reviewed"]': 12,
+      'bookings|photographerId == "u1" & status in ["completed","reviewed"] & deliveryCancel == null': 12,
       'posts|photographerId == "u1" & kind == "work"': 6,
       'photographers/u1/services|active == true': 1,
     });

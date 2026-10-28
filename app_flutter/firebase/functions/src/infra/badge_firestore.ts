@@ -169,10 +169,16 @@ export class FirestoreBadgeMetricsReader implements BadgeMetricsReader {
       );
     }
     if (metrics.has('completedShoots')) {
-      count('completedShoots', db.collection('bookings').where('photographerId', '==', uid).where('status', 'in', ['completed', 'reviewed']));
+      count(
+        'completedShoots',
+        db.collection('bookings').where('photographerId', '==', uid).where('status', 'in', ['completed', 'reviewed']).where('deliveryCancel', '==', null),
+      );
     }
     if (metrics.has('customerShoots')) {
-      count('customerShoots', db.collection('bookings').where('customerId', '==', uid).where('status', 'in', ['completed', 'reviewed']));
+      count(
+        'customerShoots',
+        db.collection('bookings').where('customerId', '==', uid).where('status', 'in', ['completed', 'reviewed']).where('deliveryCancel', '==', null),
+      );
     }
     if (metrics.has('workPosts')) {
       count('workPosts', db.collection('posts').where('photographerId', '==', uid).where('kind', '==', 'work'));

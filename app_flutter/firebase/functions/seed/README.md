@@ -24,6 +24,7 @@ Password for every account: `seed-password-1`
 | `seed-booking-accepted` | Lan ↔ An | accepted | unlocked (all three channels) |
 | `seed-booking-upcoming` | Lan ↔ An | upcoming | unlocked |
 | `seed-booking-shot` | Lan ↔ An | shot | unlocked |
+| `seed-booking-shot-late` | Lan ↔ An | shot 10 days ago (`deliveryDays: 5`, milestone `shoot` released, `delivery` held; 5 days overdue for S05.02 / S05.08) | unlocked |
 | `seed-booking-delivered` | Lan ↔ An | delivered (round 1, 3 ready samples) | unlocked |
 | `seed-booking-revision` | Lan ↔ An | revision_requested (round 1) | unlocked |
 | `seed-booking-approved` | Lan ↔ An | approved (checkUntil in 47 h, link unlocked) | unlocked |
