@@ -1,5 +1,6 @@
 import * as logger from 'firebase-functions/logger';
 import {
+  askShootHappened,
   runBookingSweeps,
   sendDueReminders,
   sendVerificationNudges,
@@ -128,6 +129,17 @@ export async function handleBookingClock(
     } catch (e) {
       logger.error('bookingClock reminders failed', { error: String(e) });
       reminderError = e;
+    }
+  }
+
+  // S30 (Decision 10): "Buổi chụp có diễn ra không?" for unscanned bookings at end + 24 h, its own try (the
+  // expiry of unanswered questions runs inside runBookingSweeps).
+  if (reminders) {
+    try {
+      const asked = await askShootHappened(deps, reminders.notify);
+      logger.info('bookingClock askShootHappened completed', { asked });
+    } catch (e) {
+      logger.error('bookingClock askShootHappened failed', { error: String(e) });
     }
   }
 

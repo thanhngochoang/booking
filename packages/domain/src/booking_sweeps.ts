@@ -11,17 +11,19 @@ import { transitionBooking } from './transition_booking.js';
 import { approveDelivery } from './delivery_use_cases.js';
 import { studioDayLoadWith } from './studio_capacity.js';
 import { waitsForAssignee } from './studio_assignment.js';
+import { expireShootQuestions } from './shoot_question.js';
 
 export interface BookingSweepResults {
   readonly cleanedDrafts: number;
   readonly expiredRequests: number;
   readonly upcomingTransitions: number;
-  readonly autoShots: number;
+  /** S30: `shooting` bookings moved to `shot` 24 h after their end (the scan proved the meeting). */
+  readonly shootingShots: number;
+  /** S30: unanswered shoot questions past `shootQuestionUntil`, moved to `shot` (shotAt = end). */
+  readonly shootQuestionsExpired: number;
   readonly autoApprovals: number;
   readonly finishedChecks: number;
   readonly releasedEscrows: number;
-  /** Legacy alias for backwards compatibility */
-  readonly autoCompletions?: number;
 }
 
 export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepResults> {
@@ -89,9 +91,11 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     }
   }
 
-  // 4. Auto mark-shot upcoming bookings 24h after end time. A studio booking without an assignee is never
-  // marked shot (no payout); the studio sweep cancels it at its start.
-  let autoShots = 0;
+  // 4. S30 (Decision 10): the old "auto mark-shot 24 h after end" is gone. A `shooting` booking (scanned) is
+  // shot by the system 24 h after its end; an `upcoming` one (nobody scanned) gets the shoot question
+  // instead (`askShootHappened`, run by the clock with notifications), and an unanswered question is
+  // shot here once `shootQuestionUntil` passes. A studio booking without an assignee is never shot.
+  let shootingShots = 0;
   const completeCutoff = new Date(now.getTime() - AUTO_COMPLETE_DELAY_HOURS * 60 * 60 * 1000);
   const completions = await deps.store.findAutoCompletions(completeCutoff);
   for (const b of completions) {
@@ -101,11 +105,12 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
         bookingId: b.id,
         action: 'mark_shot',
       });
-      autoShots += 1;
+      shootingShots += 1;
     } catch {
       // Swallowed
     }
   }
+  const shootQuestionsExpired = await expireShootQuestions(deps);
 
   // 5. Auto-approve delivered bookings past autoApproveAt
   let autoApprovals = 0;
@@ -198,10 +203,10 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     cleanedDrafts,
     expiredRequests,
     upcomingTransitions,
-    autoShots,
+    shootingShots,
+    shootQuestionsExpired,
     autoApprovals,
     finishedChecks,
     releasedEscrows,
-    autoCompletions: autoShots,
   };
 }

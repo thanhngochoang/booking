@@ -176,7 +176,10 @@ const HOUR_MS = 3_600_000;
 const plusHours = (d: Date, h: number): Date => new Date(d.getTime() + h * HOUR_MS);
 
 /**
- * The window of a subject (Decision 2): booking `shot` → shotAt + 24 h (milestone `shoot`);
+ * The window of a subject (Decision 2): booking `shooting` (S30: scanned, not marked done) → any time while
+ * it lasts, and an `upcoming` booking whose customer denied the shoot (`shootDeniedAt`, the preset reason
+ * "Buổi chụp không diễn ra") → any time: milestones are split only at `shot`, so both freeze the whole
+ * held payment (`closesAt` rolls with now); booking `shot` → shotAt + 24 h (milestone `shoot`);
  * `approved` → checkUntil (milestone `delivery`); `completed|reviewed` whose payment has no milestones
  * (before #152) → completedAt (`windowStart`) + 24 h; paid ticket → from endAt (`windowStart`) to + 24 h.
  * `hasMilestones`: the subject's payment carries #152's milestones (only the use case knows it).
@@ -195,6 +198,8 @@ export function disputeWindow(
     }
     if (now.getTime() < subject.windowStart.getTime()) throw new DomainError('not_eligible');
     closesAt = plusHours(subject.windowStart, DISPUTE_WINDOW_HOURS);
+  } else if (subject.state === 'shooting' || (subject.state === 'upcoming' && (subject.shootDeniedAt ?? null) !== null)) {
+    closesAt = plusHours(now, DISPUTE_WINDOW_HOURS);
   } else if (subject.state === 'shot' && subject.shotAt !== null) {
     closesAt = plusHours(subject.shotAt, DISPUTE_WINDOW_HOURS);
     milestone = 'shoot';

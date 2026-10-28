@@ -43,6 +43,7 @@ import { mergeRefundOutcome, sendRefundOnce, transferRefund } from './refunds.js
 import { refundWithoutPayment, type RefundSubjectHandler } from './refund_subjects.js';
 import { checkSubjectPayments } from './create_payment.js';
 import { ticketPaidUpdate } from './ticket_paid.js';
+import { freshPassCode, newPass, writePass } from './pass.js';
 import { transferCodeFor } from './payment_code.js';
 import { payerAccountOf } from './payer_account.js';
 
@@ -237,6 +238,11 @@ export class TicketPaymentSettler implements SubjectSettler {
       const live = reg !== null && ev !== null && reg.status === 'held' && ev.status !== 'cancelled'
         && reg.holdExpiresAt !== null && reg.holdExpiresAt.getTime() > now.getTime() && !dayClosed;
       const contact = live ? await this.deps.contacts.get(p.payerId) : null;
+      // S30 (Decision 7): a lone entry ticket paid now gets its pass; the code is drawn (a read) first.
+      const passCode = live && ev !== null && ev.type === 'entry'
+        && applyTransfer({ payment: p, transfer, ledgerEntryId: 'probe', now }).decision.kind === 'paid'
+        ? await freshPassCode(this.deps.random, (c) => tx.passTaken(c))
+        : null;
 
       // Apply transfer using pure helper
       const applied = applyTransfer({
@@ -342,11 +348,17 @@ export class TicketPaymentSettler implements SubjectSettler {
       }
 
       tx.putPayment(paidPayment);
-      const paid = ticketPaidUpdate({ ev, reg, paymentId: p.id, contact, now });
+      const paid = ticketPaidUpdate({ ev, reg, paymentId: p.id, contact, now, passCode });
       tx.putRegistration(paid.registration);
       if (paid.contact !== null) tx.putRegistrationContact(ev.id, reg.id, paid.contact);
       if (paid.day !== null) writeEntryDays(tx, ev.id, days, [paid.day], now);
       tx.putEvent(paid.event);
+      if (passCode !== null) {
+        await writePass(tx, newPass({
+          code8: passCode, customerId: reg.userId, day: visitDay ?? formatVnDate(now), bookingId: null, eventId: ev.id,
+          registrationIds: [reg.id], now,
+        }));
+      }
 
       const finalOutcome: Exclude<TransferOutcome, 'needs_review'> = applied.excess > 0 ? 'paid_with_refund' : 'paid';
       tx.putTransferRecord(transferRecordOf(transfer, finalOutcome, p.id));
@@ -463,6 +475,13 @@ export async function refundTicket(
   regId: string,
   percent: 100,
   reason: TicketRefundReason,
+  options: {
+    /**
+     * S30 (Task 4): a used ticket (`checkedInAt` or `gateCheckedInAt`, the gate let them in) keeps its money:
+     * `skipped`, its owed flags cleared. The booking ticket-line settle asks for it.
+     */
+    readonly unusedOnly?: boolean;
+  } = {},
 ): Promise<'refunded' | 'skipped'> {
   let pendingRefund: { refund: Refund; payment: Payment } | null = null;
   const out = await deps.events.runTransaction(async (tx): Promise<'refunded' | 'skipped'> => {
@@ -480,7 +499,8 @@ export async function refundTicket(
     const eligible = reason === 'customer_cancel'
       ? reg.status === 'paid'
       : reg.status === 'paid' || (reg.status === 'cancelled' && reg.refundDue === true);
-    if (!held || !eligible || p === null) {
+    const used = reg.checkedInAt !== null || (reg.gateCheckedInAt ?? null) !== null;
+    if (!held || !eligible || p === null || (options.unusedOnly === true && used)) {
       if (reg.refundDue === true || (reg.bookingLineDue ?? null) !== null) {
         tx.putRegistration({ ...reg, refundDue: false, bookingLineDue: null, updatedAt: now, version: reg.version + 1 });
       }
@@ -668,7 +688,8 @@ export async function cancelTicketKeepingMoney(deps: EventDeps, eventId: string,
 
 /**
  * S30 (Decision 15, spec §5.3): settles what a booking left owed to its ticket (`bookingLineDue`,
- * stamped in the booking's transaction): 100 → `refundTicket` with the stamped reason, 0 →
+ * stamped in the booking's transaction): 100 → `refundTicket` with the stamped reason (never for a ticket
+ * used at the gate meanwhile: `checkedInAt` / `gateCheckedInAt`, Task 4), 0 →
  * `cancelTicketKeepingMoney`. A cancelled event or a closed visit day refunds 100% whatever was
  * stamped (their own rules win). Idempotent: the immediate attempt after the booking commits and the
  * event clock's retry (`runEventSweeps`) both call it; a settled ticket is `skipped`.
@@ -687,9 +708,11 @@ export async function settleBookingLine(
   });
   const due = found.reg?.bookingLineDue ?? null;
   if (found.reg === null || due === null) return 'skipped';
-  if (found.ev?.status === 'cancelled') return refundTicket(deps, eventId, regId, 100, 'event_cancelled');
-  if (found.closed) return refundTicket(deps, eventId, regId, 100, 'day_closed');
-  if (due.percent === 100) return refundTicket(deps, eventId, regId, 100, due.reason);
+  // A ticket the gate already let in is used: never refunded here (checked again in the refund's own transaction).
+  const unused = { unusedOnly: true } as const;
+  if (found.ev?.status === 'cancelled') return refundTicket(deps, eventId, regId, 100, 'event_cancelled', unused);
+  if (found.closed) return refundTicket(deps, eventId, regId, 100, 'day_closed', unused);
+  if (due.percent === 100) return refundTicket(deps, eventId, regId, 100, due.reason, unused);
   return cancelTicketKeepingMoney(deps, eventId, regId);
 }
 

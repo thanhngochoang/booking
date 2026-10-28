@@ -15,6 +15,7 @@ import { createPayment } from '../../src/create_payment.js';
 import { handleTransferNotification } from '../../src/handle_transfer.js';
 import { transitionBooking } from '../../src/transition_booking.js';
 import { TEST_CIPHER } from './test_cipher.js';
+import { PASS_ALPHABET } from '../../src/pass.js';
 export { TEST_CIPHER };
 
 export const TEST_PAYER: NonNullable<TransferNotification['payer']> = {
@@ -62,8 +63,36 @@ export class SequentialIdGen implements IdGenerator {
   }
 }
 
+/**
+ * The booking deps' random source (pass codes, S30): a fixed stream, or scripted pass codes first
+ * (`script('7K2Q4M9P')` makes the next draw that code).
+ */
+export class TestRandom {
+  private queue: number[] = [];
+  private s = 11;
+
+  script(...codes: string[]): void {
+    for (const c of codes) for (const ch of c) this.queue.push(PASS_ALPHABET.indexOf(ch));
+  }
+
+  readonly bytes = (n: number): Uint8Array => {
+    const out = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      const next = this.queue.shift();
+      if (next !== undefined) {
+        out[i] = next;
+        continue;
+      }
+      this.s = (Math.imul(this.s, 1664525) + 1013904223) >>> 0;
+      out[i] = (this.s >>> 24) & 0xff;
+    }
+    return out;
+  };
+}
+
 export interface BookingWorld {
   readonly deps: BookingDeps;
+  readonly random: TestRandom;
   readonly settlement: SettlementDeps;
   readonly store: MemoryBookingStore;
   readonly gateway: FakePaymentGateway;
@@ -91,6 +120,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
   const addons = new MemoryAddonStore();
   const clock = new ControllableClock(initialDate);
   const ids = new SequentialIdGen();
+  const random = new TestRandom();
 
   const services = new Map<string, ServiceRecord>();
   const contacts = new Map<string, { phone: string; allowZalo?: boolean; allowWhatsApp?: boolean; name?: string }>();
@@ -158,6 +188,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     cipher: TEST_CIPHER,
     clock,
     ids,
+    random: random.bytes,
   };
 
   const settlement: SettlementDeps = {
@@ -180,6 +211,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
 
   return {
     deps,
+    random,
     settlement,
     store,
     gateway,
@@ -330,3 +362,15 @@ export function withOffer(world: BookingWorld, offer: SlotOffer): BookingWorld {
   return world;
 }
 
+
+/**
+ * S30: the shooter scanned the customer's pass (what `scanPass` writes): `shooting` with `checkedInAt`.
+ * A paid booking has a pass, so the photographer's "Đã chụp xong" needs it (Decision 14).
+ */
+export function scanned(world: Pick<BookingWorld, 'store' | 'clock'>, bookingId: string): void {
+  const b = world.store.bookings.get(bookingId);
+  if (b === undefined) throw new Error(`scanned: no booking ${bookingId}`);
+  world.store.bookings.set(bookingId, {
+    ...b, status: 'shooting', checkedInAt: world.clock.now().toISOString(), version: b.version + 1,
+  });
+}

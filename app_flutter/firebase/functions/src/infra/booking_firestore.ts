@@ -78,6 +78,7 @@ import {
   registrationToFirestore,
 } from './event_firestore.js';
 import { RESIDENTS_SUBCOLLECTION, residentFromFirestore } from './organizer_firestore.js';
+import { PASSES_COLLECTION, passToFirestore, privatePassRef } from './pass_firestore.js';
 import {
   SPOTS_COLLECTION,
   SPOT_SCHEDULES_COLLECTION,
@@ -114,6 +115,12 @@ function toIsoString(v: unknown): string | undefined {
   if (v instanceof Date) return v.toISOString();
   if (typeof v === 'string') return v;
   return undefined;
+}
+
+/** `{[key]: iso}` when the stored value is a time, else nothing (so absent fields stay absent). */
+function optionalIso<K extends string>(key: K, v: unknown): Partial<Record<K, string>> {
+  const iso = toIsoString(v);
+  return iso === undefined ? {} : ({ [key]: iso } as Record<K, string>);
 }
 
 function toTimestamp(iso: string | null | undefined): Timestamp | null {
@@ -364,6 +371,7 @@ function bookingEntryToFirestore(e: BookingEntry): DocumentData {
     items: e.items.map((l) => ({ ticketTypeId: l.ticketTypeId, name: l.name, price: l.price, qty: l.qty })),
     providerTicket: e.providerTicket,
     waived: { provider: e.waived.provider, guests: e.waived.guests },
+    waivedGuests: e.waivedGuests ?? 0,
     amount: e.amount,
     registrationId: e.registrationId,
   };
@@ -386,6 +394,7 @@ function bookingEntryFromFirestore(v: unknown): BookingEntry | null {
     }),
     providerTicket: d.providerTicket === true,
     waived: { provider: waived.provider === true, guests: waived.guests === true },
+    ...(typeof d.waivedGuests === 'number' ? { waivedGuests: d.waivedGuests } : {}),
     amount: typeof d.amount === 'number' ? d.amount : 0,
     registrationId: typeof d.registrationId === 'string' && d.registrationId !== '' ? d.registrationId : null,
   };
@@ -485,6 +494,12 @@ export function bookingToFirestore(b: Booking): DocumentData {
     slotOfferId: b.slotOfferId ?? null,
     entry: b.entry ? bookingEntryToFirestore(b.entry) : null,
     groupId: b.groupId ?? null,
+    // S30 passes, `shooting` and the shoot question (Decisions 7, 10).
+    passCode4: b.passCode4 ?? null,
+    checkedInAt: toTimestamp(b.checkedInAt),
+    shootQuestionAt: toTimestamp(b.shootQuestionAt),
+    shootQuestionUntil: toTimestamp(b.shootQuestionUntil),
+    shootDeniedAt: toTimestamp(b.shootDeniedAt),
     checkout: checkoutToFirestore(b.checkout),
     payableUntil: toTimestamp(b.payableUntil),
     ...studioFieldsToFirestore(b),
@@ -610,6 +625,11 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     ...(typeof d.slotOfferId === 'string' ? { slotOfferId: d.slotOfferId } : {}),
     ...(bookingEntryFromFirestore(d.entry) !== null ? { entry: bookingEntryFromFirestore(d.entry) as BookingEntry } : {}),
     ...(typeof d.groupId === 'string' && d.groupId !== '' ? { groupId: d.groupId } : {}),
+    ...(typeof d.passCode4 === 'string' && d.passCode4 !== '' ? { passCode4: d.passCode4 } : {}),
+    ...optionalIso('checkedInAt', d.checkedInAt),
+    ...optionalIso('shootQuestionAt', d.shootQuestionAt),
+    ...optionalIso('shootQuestionUntil', d.shootQuestionUntil),
+    ...optionalIso('shootDeniedAt', d.shootDeniedAt),
     ...(typeof d.revisionsIncluded === 'number' ? { revisionsIncluded: d.revisionsIncluded } : {}),
     ...(typeof d.revisionsUsed === 'number' ? { revisionsUsed: d.revisionsUsed } : {}),
     ...(typeof d.revisionsGranted === 'number' ? { revisionsGranted: d.revisionsGranted } : {}),
@@ -1259,6 +1279,14 @@ export class FirestoreBookingStore implements StudioBookingStore {
         putGroupView: async (g) => {
           fTx.set(this.firestore.collection(PAYMENT_GROUPS_COLLECTION).doc(g.id), paymentGroupToFirestore(g));
         },
+        // S30 passes (Decision 7): written by the transaction that pays the booking or its group.
+        passTaken: async (code8) => (await fTx.get(this.firestore.collection(PASSES_COLLECTION).doc(code8))).exists,
+        putPass: async (p) => {
+          fTx.set(this.firestore.collection(PASSES_COLLECTION).doc(p.code8), passToFirestore(p));
+        },
+        putPrivatePass: async (ref, code8) => {
+          fTx.set(privatePassRef(this.firestore, ref), { code: code8 });
+        },
       };
 
       return fn(tx);
@@ -1514,17 +1542,59 @@ export class FirestoreBookingStore implements StudioBookingStore {
     return { bookings, next: snap.size < limit ? null : (snap.docs[snap.size - 1] ?? null) };
   }
 
+  /** S30: `shooting` bookings ended before `cutoff`; the sweep marks them shot (the scan proved the meeting). */
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
     const snap = await this.firestore
       .collection(BOOKINGS_COLLECTION)
-      .where('status', 'in', ['upcoming', 'accepted'])
+      .where('status', '==', 'shooting')
       .limit(limit)
       .get();
     const res: Booking[] = [];
     for (const doc of snap.docs) {
       const b = bookingFromFirestore(doc.id, doc.data());
       // A studio booking without an assignee is never marked shot (#136); the studio sweep cancels it at its start.
-      if (b && !waitsForAssignee(b)) res.push(b);
+      if (b && !waitsForAssignee(b) && parseVnDateTime(b.day, b.end).getTime() <= cutoff.getTime()) res.push(b);
+    }
+    return res;
+  }
+
+  /**
+   * S30: `upcoming` bookings ended before `cutoff`, not scanned and not asked yet: the oldest days first on
+   * the reminder index (`status, day, start, __name__`), the rest filtered here.
+   */
+  async findShootQuestionsDue(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'upcoming')
+      .where('day', '<=', formatVnDate(cutoff))
+      .orderBy('day')
+      .orderBy('start')
+      .orderBy('__name__')
+      .limit(limit)
+      .get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b && b.checkedInAt === undefined && b.shootQuestionAt === undefined && !waitsForAssignee(b)
+        && parseVnDateTime(b.day, b.end).getTime() <= cutoff.getTime()) {
+        res.push(b);
+      }
+    }
+    return res;
+  }
+
+  /** S30: open shoot questions past `shootQuestionUntil` (index `status, shootQuestionUntil`, Task 6). */
+  async findExpiredShootQuestions(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'upcoming')
+      .where('shootQuestionUntil', '<=', Timestamp.fromDate(now))
+      .limit(limit)
+      .get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b && b.shootDeniedAt === undefined) res.push(b);
     }
     return res;
   }

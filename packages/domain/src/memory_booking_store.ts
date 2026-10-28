@@ -22,8 +22,9 @@ import type { Spot } from './spot.js';
 import type { SpotSchedule } from './spot_schedule.js';
 import type { SlotOffer } from './spot_slots.js';
 import type { SpotDay } from './spot_booking.js';
-import type { MemoryEventStore } from './memory_event_store.js';
+import { privatePassKey, type MemoryEventStore } from './memory_event_store.js';
 import type { PaymentGroupView } from './group_settlement.js';
+import type { PassRecord } from './pass.js';
 
 export class MemoryBookingStore implements StudioBookingStore {
   readonly bookings = new Map<string, Booking>();
@@ -65,6 +66,9 @@ export class MemoryBookingStore implements StudioBookingStore {
   readonly spotDays = new Map<string, SpotDay>(); // key: `${scheduleId}_${day}`
   /** `payment_groups/{id}` (S30 Decision 6). */
   readonly paymentGroups = new Map<string, PaymentGroupView>();
+  /** `passes/{code8}` and the customers' copies (S30), while no event store is linked (then they live there). */
+  readonly passes = new Map<string, PassRecord>();
+  readonly privatePasses = new Map<string, string>();
   /**
    * S30: the event store holding entry events, `entry_days`, residents, registrations and ticket
    * payments (one database on Firestore). Linked by `MemoryGroupStore`; each booking transaction then
@@ -214,6 +218,15 @@ export class MemoryBookingStore implements StudioBookingStore {
         putRegistrationContact: async (eventId, regId, c) => evTx().putRegistrationContact(eventId, regId, c),
         putGroupView: async (g) => {
           this.paymentGroups.set(g.id, { ...g, lines: g.lines.map((l) => ({ ...l })) });
+        },
+        passTaken: async (code8) => (ev === null ? this.passes.has(code8) : ev.tx.passTaken(code8)),
+        putPass: async (p) => {
+          if (ev !== null) ev.tx.putPass(p);
+          else this.passes.set(p.code8, { ...p, registrationIds: [...p.registrationIds] });
+        },
+        putPrivatePass: async (ref, code8) => {
+          if (ev !== null) ev.tx.putPrivatePass(ref, code8);
+          else this.privatePasses.set(privatePassKey(ref), code8);
         },
       };
 
@@ -450,13 +463,34 @@ export class MemoryBookingStore implements StudioBookingStore {
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
     const res: Booking[] = [];
     for (const b of this.bookings.values()) {
-      if ((b.status === 'upcoming' || b.status === 'accepted') && !(b.isStudio === true && !b.assigneeId)) {
-        const endsAt = parseVnDateTime(b.day, b.end);
-        // cutoff is now - 24 hours
-        if (endsAt.getTime() <= cutoff.getTime()) {
-          res.push({ ...b });
-          if (res.length >= limit) break;
-        }
+      if (b.status === 'shooting' && parseVnDateTime(b.day, b.end).getTime() <= cutoff.getTime()) {
+        res.push({ ...b });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findShootQuestionsDue(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
+    const res: Booking[] = [];
+    for (const b of this.bookings.values()) {
+      if (b.status !== 'upcoming' || b.checkedInAt !== undefined || b.shootQuestionAt !== undefined) continue;
+      if (b.isStudio === true && !b.assigneeId) continue;
+      if (parseVnDateTime(b.day, b.end).getTime() <= cutoff.getTime()) {
+        res.push({ ...b });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findExpiredShootQuestions(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const res: Booking[] = [];
+    for (const b of this.bookings.values()) {
+      if (b.status === 'upcoming' && b.shootDeniedAt === undefined && b.shootQuestionUntil !== undefined
+        && Date.parse(b.shootQuestionUntil) <= now.getTime()) {
+        res.push({ ...b });
+        if (res.length >= limit) break;
       }
     }
     return res;

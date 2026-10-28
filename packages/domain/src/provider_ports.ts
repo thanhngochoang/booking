@@ -23,7 +23,7 @@ export interface StudioAddress {
 
 export interface ProviderTx {
   getProfile(uid: string): Promise<ProviderProfile | null>;
-  /** Bookings where photographerId = uid in requested | accepted | upcoming. */
+  /** Bookings where photographerId = uid in requested | accepted | upcoming | shooting. */
   countActiveBookings(uid: string): Promise<number>;
   /** Payments where payeeId = uid in escrowStatus held | partially_refunded | disputed. */
   countHeldPayments(uid: string): Promise<number>;

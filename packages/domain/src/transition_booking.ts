@@ -33,6 +33,10 @@ export async function transitionBooking(
   if (!isId(input.bookingId)) {
     throw new DomainError('invalid_argument');
   }
+  // S30: `upcoming → shooting` happens only through scanPass (the customer's pass proves the meeting).
+  if (input.action === 'scan') {
+    throw new DomainError('invalid_argument');
+  }
 
   const booking = await deps.store.getBooking(input.bookingId);
   if (!booking) {

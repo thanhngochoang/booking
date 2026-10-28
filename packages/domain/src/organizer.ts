@@ -126,6 +126,8 @@ export interface GateStaff {
   readonly status: GateStaffStatus;
   readonly invitedAt: string;
   readonly respondedAt: string | null;
+  /** S30.06 "{n} mã hôm nay": this staff's gate scans of `day` (Vietnam), written by `scanPass` only. */
+  readonly scansToday?: { readonly day: string; readonly count: number };
 }
 
 const HOUR_MS = 3_600_000;

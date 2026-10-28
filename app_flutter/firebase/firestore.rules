@@ -479,7 +479,7 @@ service cloud.firestore {
     }
 
     function isBookingContactUnlocked(b) {
-      return b.status in ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved']
+      return b.status in ['requested', 'accepted', 'upcoming', 'shooting', 'shot', 'delivered', 'revision_requested', 'approved']
         || ((b.status in ['completed', 'reviewed'])
             && ('completedAt' in b)
             && b.completedAt != null
@@ -495,7 +495,7 @@ service cloud.firestore {
       return b.get('assigneeKind', 'member') != 'collaborator'
         ? isBookingContactUnlocked(b)
         : b.get('assigneeAccepted', false) == true
-          && (b.status in ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved']
+          && (b.status in ['requested', 'accepted', 'upcoming', 'shooting', 'shot', 'delivered', 'revision_requested', 'approved']
               || (b.status in ['completed', 'reviewed']
                   && b.get('completedAt', null) != null
                   && request.time < b.completedAt + duration.value(7, 'd'))

@@ -1043,3 +1043,40 @@ export async function notifyEntryDayClosed(
     thumbUrl: e.thumbUrl ?? null,
   });
 }
+
+// ── S30 passes and the shoot question (#223 Decisions 7, 10) ─────────────────────────────────
+
+/**
+ * Emitter: `askShootHappened` (the booking clock), once per booking at end + 24 h without a scan. Opens
+ * the booking (S05.02), which shows the S05.02-askshot sheet while the question is open.
+ */
+export async function notifyShootQuestion(
+  deps: NotifyDeps,
+  e: { bookingId: string; customerId: string; providerId: string; day: string },
+): Promise<NotifyResult> {
+  const p = await actorOf(deps, e.providerId, PHOTOGRAPHER);
+  return notify(deps, {
+    userId: e.customerId,
+    content: { type: 'shoot_question', provider: p.name, day: e.day },
+    target: `/b/${e.bookingId}`,
+    dedupeKey: `shoot_question:${e.bookingId}`,
+    ...from(p),
+  });
+}
+
+/**
+ * Emitter: the pass writer's trigger (Task 6: `passes/{code8}` created), once per pass. A booking's
+ * opens the booking (S05.02-pass), an entry ticket's the event's tickets (S11.04-entry).
+ */
+export async function notifyPassReady(
+  deps: NotifyDeps,
+  e: { customerId: string; day: string; bookingId: string | null; eventId: string | null; registrationId: string | null },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.customerId,
+    content: { type: 'pass_ready', kind: e.bookingId !== null ? 'booking' : 'entry', day: e.day },
+    target: e.bookingId !== null ? `/b/${e.bookingId}` : `/e/${e.eventId ?? ''}`,
+    // Never the code itself: only the customer's `private/pass` holds it.
+    dedupeKey: `pass_ready:${e.bookingId ?? `${e.eventId ?? ''}_${e.registrationId ?? ''}`}`,
+  });
+}

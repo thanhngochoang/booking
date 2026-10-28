@@ -12,6 +12,7 @@
 import type { Booking, PaymentProvider } from './booking.js';
 import type { BookingDeps, BookingTx, TransferNotification, TransferOutcome } from './booking_ports.js';
 import { moveDraftToRequested } from './booking_payment_paths.js';
+import { formatVnDate } from './booking_policy.js';
 import { newSubjectPayment } from './create_payment.js';
 import type { EntryDay } from './entry_tickets.js';
 import type { EntryDayDelta } from './entry_days.js';
@@ -33,6 +34,8 @@ import { applyTransfer, expireUnpaid, transferRecordId, transferRecordOf } from 
 import type { SubjectSettler } from './payment_ports.js';
 import { dispatchRefunds, transferRefund } from './refunds.js';
 import { ticketHoldReleased, ticketPaidUpdate } from './ticket_paid.js';
+import { systemRandom } from './ids.js';
+import { freshPassCode, newPass, writePass } from './pass.js';
 
 /** A group exists only for two lines or more; a single line keeps today's direct payment. */
 export const MIN_GROUP_LINES = 2;
@@ -90,6 +93,9 @@ export type GroupSettlementTx = Pick<
   | 'putGroupView'
   | 'addRefund'
   | 'addLedgerEntry'
+  | 'passTaken'
+  | 'putPass'
+  | 'putPrivatePass'
 >;
 
 export interface GroupSettlementStore {
@@ -364,6 +370,18 @@ async function lateReason(deps: BookingDeps, read: GroupRead, fold: EntryFold, n
   return null;
 }
 
+/** The group's one pass (Decision 7): its booking (if any) and every ticket line's registration, on the booking's or visit day. */
+function groupPass(read: GroupRead, group: Payment, code8: string, now: Date) {
+  const booking = read.lines.find((l): l is Extract<LineState, { kind: 'booking' }> => l.kind === 'booking')?.booking ?? null;
+  const tickets = read.lines.filter((l): l is Extract<LineState, { kind: 'ticket' }> => l.kind === 'ticket');
+  const regs = tickets.map((l) => l.reg).filter((r): r is RegistrationDoc => r !== null);
+  const day = booking?.day ?? regs.map((r) => r.visitDay).find((d): d is string => typeof d === 'string') ?? formatVnDate(now);
+  return newPass({
+    code8, customerId: group.payerId, day, bookingId: booking?.id ?? null, eventId: regs[0]?.eventId ?? null,
+    registrationIds: regs.map((r) => r.id), now,
+  });
+}
+
 function receivedEntry(deps: BookingDeps, child: Payment, now: Date): LedgerEntry {
   return {
     id: deps.ids.newId(),
@@ -403,6 +421,10 @@ export function groupSettler(deps: BookingDeps, groups: GroupSettlementStore = d
         const read = await readGroup(tx, group, fold);
         const applied = applyTransfer({ payment: group, transfer, ledgerEntryId: deps.ids.newId(), now });
         const late = applied.decision.kind === 'paid' ? await lateReason(deps, read, fold, now) : null;
+        // Decision 7: the paid group's lines share one pass; its code is drawn (a read) before any write.
+        const passCode = applied.decision.kind === 'paid' && late === null
+          ? await freshPassCode(deps.random ?? systemRandom, (c) => tx.passTaken(c))
+          : null;
         const contact = applied.decision.kind === 'paid' && late === null && read.lines.some((l) => l.kind === 'ticket')
           ? await deps.contacts.get(group.payerId)
           : null;
@@ -481,11 +503,11 @@ export function groupSettler(deps: BookingDeps, groups: GroupSettlementStore = d
           await tx.setPayment(paid);
           await tx.addLedgerEntry(receivedEntry(deps, paid, now));
           if (l.kind === 'booking') {
-            await moveDraftToRequested(tx, deps, l.booking as Booking, paid, now);
+            await moveDraftToRequested(tx, deps, l.booking as Booking, paid, now, passCode);
             continue;
           }
           const ev = fold.event(l.eventId as string) as EventRecord;
-          const ticket = ticketPaidUpdate({ ev, reg: l.reg as RegistrationDoc, paymentId: paid.id, contact, now });
+          const ticket = ticketPaidUpdate({ ev, reg: l.reg as RegistrationDoc, paymentId: paid.id, contact, now, passCode });
           await tx.putRegistration(ticket.registration);
           if (ticket.contact !== null) await tx.putRegistrationContact(ev.id, ticket.registration.id, ticket.contact);
           fold.putEvent(ticket.event);
@@ -493,7 +515,7 @@ export function groupSettler(deps: BookingDeps, groups: GroupSettlementStore = d
         }
         await fold.flush(tx, now);
         await tx.putGroupView(groupViewOf(settled, read.children.map(lineOf), 'paid', now));
-        // Task 4 (Decision 7): the paid group's one pass is created here, in this transaction.
+        if (passCode !== null) await writePass(tx, groupPass(read, group, passCode, now));
         const out = applied.excess > 0 ? 'paid_with_refund' : 'paid';
         await tx.saveTransferRecord(transferRecordOf(transfer, out, group.id));
         return out;

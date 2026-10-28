@@ -17,6 +17,8 @@ export const BOOKING_STATUSES = [
   'expired',
   'cancelled',
   'upcoming',
+  /** S30 (Decision 10): the shooter scanned the customer's pass (`checkedInAt`); "Đã chụp xong" → `shot`. */
+  'shooting',
   'shot',
   'delivered',
   'revision_requested',
@@ -161,6 +163,12 @@ export interface BookingEntry {
   readonly items: readonly EntryLine[];
   readonly providerTicket: boolean;
   readonly waived: { readonly provider: boolean; readonly guests: boolean };
+  /**
+   * How many of the customer's tickets a resident's `waivesGuests` waived (0 when none); with the waived
+   * provider ticket, the head count the gate lets in on the booking's pass (Task 4 ruling). Absent on
+   * drafts made before it (read as 1 when `waived.guests`).
+   */
+  readonly waivedGuests?: number;
   /** Σ price × qty of `items`, VND. */
   readonly amount: number;
   readonly registrationId: string | null;
@@ -215,6 +223,21 @@ export interface Booking {
    * `checkout` then mirrors that group payment. Absent for a booking paid alone.
    */
   readonly groupId?: string;
+  // ── S30 passes, `shooting` and the shoot question (#223 Decisions 7, 10, 14) ──
+  /**
+   * The last 4 characters of the booking's pass (`passes/{code8}`; the customer reads the code from
+   * `bookings/{id}/private/pass`). Set when the booking is paid; absent on instant bookings and on
+   * bookings paid before passes, which keep the photographer's "Đã chụp xong" without a scan.
+   */
+  readonly passCode4?: string;
+  /** ISO: the shooter's scan (`upcoming → shooting`). */
+  readonly checkedInAt?: string;
+  /** ISO: the customer was asked "Buổi chụp có diễn ra không?" (end + 24 h, nobody scanned). */
+  readonly shootQuestionAt?: string;
+  /** ISO: shootQuestionAt + 48 h; no answer by then → `shot`. */
+  readonly shootQuestionUntil?: string;
+  /** ISO: the customer answered "Không diễn ra"; the booking stays `upcoming`, money held, for the dispute. */
+  readonly shootDeniedAt?: string;
   /** Draft only: the payment the customer is paying now. */
   readonly checkout?: BookingCheckout;
   /**

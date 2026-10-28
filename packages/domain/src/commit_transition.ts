@@ -186,7 +186,7 @@ export async function commitTransition(
       depositRefunded: depositRefunded > 0 ? depositRefunded : undefined,
       ...(refundAccountNeeded !== undefined ? { refundAccountNeeded } : {}),
       cancel: decision.cancelRecord ?? current.cancel,
-      shotAt: nextStatus === 'shot' ? (current.shotAt ?? now.toISOString()) : current.shotAt,
+      shotAt: nextStatus === 'shot' ? (current.shotAt ?? decision.shotAt ?? now.toISOString()) : current.shotAt,
       completedAt: nextStatus === 'completed' ? now.toISOString() : current.completedAt,
       reviewedAt: nextStatus === 'reviewed' ? now.toISOString() : current.reviewedAt,
       samplesPurgeAfter,

@@ -8,7 +8,8 @@ const MAX_TIME = 2 ** 48 - 1;
 
 export type RandomBytes = (length: number) => Uint8Array;
 
-const systemRandom: RandomBytes = (length) => globalThis.crypto.getRandomValues(new Uint8Array(length));
+/** The platform's CSPRNG (the default random source of the use cases that draw codes). */
+export const systemRandom: RandomBytes = (length) => globalThis.crypto.getRandomValues(new Uint8Array(length));
 
 /** ULID: 10 chars of millisecond time + 16 random chars, Crockford base32, sorts by time. */
 export function newUlid(nowMs: number, random: RandomBytes = systemRandom): string {

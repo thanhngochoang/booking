@@ -1030,6 +1030,16 @@ test('a user uploads, replaces and deletes only their own avatar, JPEG up to 512
 });
 
 // ---- Plan 4a: bookings, contact copy and escrow rules ----
+test('S30: a shooting booking keeps the contact unlocked for the photographer (isBookingContactUnlocked)', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'bookings/b_shooting'), { customerId: 'c1', photographerId: 'p1', status: 'shooting' });
+    await setDoc(doc(f, 'bookings/b_shooting/private/contact'), { name: 'Customer C1', phone: '+84903123456' });
+  });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('p1').firestore(), 'bookings/b_shooting/private/contact')));
+  await assertFails(getDoc(doc(env.authenticatedContext('stranger').firestore(), 'bookings/b_shooting/private/contact')));
+});
+
 test('bookings/private/contact is readable by customer always, photographer only when unlocked', async () => {
   await env.withSecurityRulesDisabled(async (c) => {
     const f = c.firestore();

@@ -100,7 +100,11 @@ export type NotificationContent =
   | { type: 'spot_claim_rejected'; spot: string | null; reason: string | null }
   | { type: 'spot_resident_added'; organizer: string; spot: string }
   | { type: 'gate_staff_invited'; organizer: string }
-  | { type: 'entry_day_closed'; spot: string; day: string };
+  | { type: 'entry_day_closed'; spot: string; day: string }
+  // S30 Decision 10 (S05.02-askshot): `provider` is the shooter's name.
+  | { type: 'shoot_question'; provider: string; day: string }
+  // S30 Decision 7: the customer's pass exists (`kind` booking: "Mã gặp thợ"; entry: entry tickets).
+  | { type: 'pass_ready'; kind: 'booking' | 'entry'; day: string };
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'] as const;
 
@@ -514,5 +518,14 @@ export function renderNotification(c: NotificationContent): { title: string; bod
         title: `${c.spot} đóng cửa ${formatDayShortVi(c.day)}`,
         body: 'Vé vào cửa ngày này được hoàn 100%. Xem trạng thái hoàn tiền trong mục Vé.',
       };
+    case 'shoot_question':
+      return {
+        title: 'Buổi chụp có diễn ra không?',
+        body: `${c.provider} chưa quét mã của bạn hôm ${formatDayShortVi(c.day)}. Cho chúng tôi biết để giữ đúng tiền của bạn.`,
+      };
+    case 'pass_ready':
+      return c.kind === 'booking'
+        ? { title: 'Mã gặp thợ đã sẵn sàng', body: `Thợ quét mã này khi gặp bạn ${formatDayShortVi(c.day)}.` }
+        : { title: 'Vé vào cửa đã sẵn sàng', body: `Đưa mã QR ở cổng ngày ${formatDayShortVi(c.day)}.` };
   }
 }

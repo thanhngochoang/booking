@@ -56,7 +56,7 @@ export class FirestoreProviderStore implements ProviderStore {
             this.firestore
               .collection(BOOKINGS_COLLECTION)
               .where('photographerId', '==', uid)
-              .where('status', 'in', ['requested', 'accepted', 'upcoming'])
+              .where('status', 'in', ['requested', 'accepted', 'upcoming', 'shooting'])
               .limit(1),
           );
           return snap.size;

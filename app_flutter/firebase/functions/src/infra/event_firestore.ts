@@ -30,6 +30,7 @@ import {
   type RegistrationReader,
   type TransferRecord,
 } from '@photobooking/domain';
+import { PASSES_COLLECTION, passFromFirestore, passToFirestore, privatePassRef } from './pass_firestore.js';
 import {
   LEDGER_COLLECTION,
   PAYMENTS_COLLECTION,
@@ -514,6 +515,15 @@ export class FirestoreEventStore implements EventStore {
         getTransferRecord: async (id) => {
           const s = await fTx.get(fs.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(id));
           return s.exists ? transferRecordFromFirestore(s.id, s.data()) : null;
+        },
+        // S30 passes (Decision 7; the scan adapter is Task 6's).
+        getPass: async (code8) => passFromFirestore(code8, (await fTx.get(fs.collection(PASSES_COLLECTION).doc(code8))).data()),
+        passTaken: async (code8) => (await fTx.get(fs.collection(PASSES_COLLECTION).doc(code8))).exists,
+        putPass: (p) => {
+          writes.push(() => fTx.set(fs.collection(PASSES_COLLECTION).doc(p.code8), passToFirestore(p)));
+        },
+        putPrivatePass: (ref, code8) => {
+          writes.push(() => fTx.set(privatePassRef(fs, ref), { code: code8 }));
         },
         putTransferRecord: (r: TransferRecord) => {
           writes.push(() => fTx.set(fs.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(r.id), transferRecordToFirestore(r)));

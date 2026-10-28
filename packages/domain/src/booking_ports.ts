@@ -22,6 +22,8 @@ import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.
 import type { EntryDay } from './entry_tickets.js';
 import type { Resident } from './organizer.js';
 import type { PaymentGroupView } from './group_settlement.js';
+import type { RandomBytes } from './ids.js';
+import type { PassRecord, PrivatePassRef } from './pass.js';
 
 export interface ServiceRecord {
   readonly id: string;
@@ -184,6 +186,12 @@ export interface BookingTx {
   putRegistrationContact(eventId: string, regId: string, c: RegistrationContact): Promise<void>;
   /** `payment_groups/{id}`: the read model the payer sees (S04.03-entry, S05.02). */
   putGroupView(g: PaymentGroupView): Promise<void>;
+  // ── S30 passes (Decision 7): written in the transaction that pays the booking or its group ──
+  /** `passes/{code8}` exists. A read: callers ask before their first write. */
+  passTaken(code8: string): Promise<boolean>;
+  putPass(p: PassRecord): Promise<void>;
+  /** `bookings/{id}/private/pass` or `events/{e}/registrations/{r}/private/pass`: `{code}`, the customer's copy. */
+  putPrivatePass(ref: PrivatePassRef, code8: string): Promise<void>;
 }
 
 /**
@@ -253,8 +261,18 @@ export interface BookingStore {
   findExpiredDrafts(now: Date, limit?: number): Promise<readonly Booking[]>;
   findExpiredRequests(now: Date, limit?: number): Promise<readonly Booking[]>;
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
-  /** accepted | upcoming bookings ended before `cutoff`, without studio bookings that have no assignee. */
+  /**
+   * S30 (Decision 10): `shooting` bookings ended before `cutoff` (now − 24 h), which the sweep moves to
+   * `shot`. (Before S30: accepted | upcoming bookings, auto-marked shot; that step is gone.)
+   */
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /**
+   * `upcoming` bookings ended before `cutoff` (now − 24 h) that nobody scanned (`checkedInAt` absent) and
+   * whose customer was not asked yet (`shootQuestionAt` absent), without studio bookings that have no assignee.
+   */
+  findShootQuestionsDue(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /** `upcoming` bookings with `shootQuestionUntil <= now` and no `shootDeniedAt` (index `status, shootQuestionUntil`). */
+  findExpiredShootQuestions(now: Date, limit?: number): Promise<readonly Booking[]>;
   /**
    * Payments with `releaseAfter <= cutoff` whose escrow is `held` or `partially_refunded`, or `disputed`
    * with milestones (another milestone may be due; S18 Decision 1). Never a disputed payment without milestones.
@@ -346,6 +364,8 @@ export interface BookingDeps {
   readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
+  /** S30: draws pass codes (Decision 7); absent → the platform CSPRNG (`systemRandom`). */
+  readonly random?: RandomBytes;
   /**
    * S30: settles the ticket line at once when a booking with tickets is declined, expires or is
    * cancelled. Absent → the line stays stamped and the event clock settles it.

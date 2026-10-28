@@ -12,6 +12,11 @@ import type { Spot } from './spot.js';
 import { entryDayId, type EntryDay } from './entry_tickets.js';
 import type { Organizer, Resident } from './organizer.js';
 import type { PaymentSource } from './memory_payment_lookup.js';
+import type { PassRecord, PrivatePassRef } from './pass.js';
+
+/** Memory key of a customer's pass copy: `booking:{id}` or `reg:{eventId}/{regId}`. */
+export const privatePassKey = (ref: PrivatePassRef): string =>
+  'bookingId' in ref ? `booking:${ref.bookingId}` : `reg:${ref.eventId}/${ref.regId}`;
 
 /** Like the Firestore adapter: a transaction that lost a race is run again a few times. */
 export const MAX_TX_ATTEMPTS = 5;
@@ -28,6 +33,10 @@ export class MemoryEventStore implements EventStore, PaymentSource {
   readonly residents = new Map<string, Resident>();
   readonly hashtags = new Map<string, string>();
   readonly ticketCodes = new Map<string, { eventId: string; registrationId: string }>();
+  /** `passes/{code8}` (S30). */
+  readonly passes = new Map<string, PassRecord>();
+  /** The customers' copies, keyed by `privatePassKey`. */
+  readonly privatePasses = new Map<string, string>();
   readonly availabilityDays = new Map<string, AvailabilityRecord>(); // `${uid}/${dayKey}`
   readonly chats = new Map<string, EventGroupChatSeed>();
   readonly chatReadOnlyAt = new Map<string, Date>();
@@ -220,6 +229,17 @@ export class MemoryEventStore implements EventStore, PaymentSource {
         read('getTransferRecord', `transfer:${id}`);
         return this.transferRecords.get(id) ?? null;
       },
+      getPass: async (code8) => {
+        read('getPass', `pass:${code8}`);
+        const p = this.passes.get(code8);
+        return p ? { ...p, registrationIds: [...p.registrationIds] } : null;
+      },
+      passTaken: async (code8) => {
+        read('passTaken', `pass:${code8}`);
+        return this.passes.has(code8);
+      },
+      putPass: (p) => write(() => { this.passes.set(p.code8, { ...p, registrationIds: [...p.registrationIds] }); }, `pass:${p.code8}`),
+      putPrivatePass: (ref, code8) => write(() => { this.privatePasses.set(privatePassKey(ref), code8); }),
       putEvent: (e) => write(() => { this.events.set(e.id, e); }, `event:${e.id}`),
       putEntryDay: (d) => write(() => { this.entryDays.set(entryDayId(d.eventId, d.day), d); }, `entryday:${entryDayId(d.eventId, d.day)}`),
       putHashtag: (k, eventId) => write(() => { this.hashtags.set(k, eventId); }, `hashtag:${k}`),

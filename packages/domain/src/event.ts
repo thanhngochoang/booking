@@ -136,6 +136,12 @@ export interface EventRecord {
   /** Null: no daily limit. */
   readonly dailyCapacity?: number | null;
   readonly refundCutoffHours?: number;
+  /**
+   * S30 §7.2: where the event takes place. Task 4 reads only `spotId` (a managed spot: its manager and
+   * gate staff check tickets in at the gate, `gateCheckedInAt`); Task 5 completes the block (`Venue`).
+   * Absent or null on older events.
+   */
+  readonly venue?: { readonly spotId: string | null } | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

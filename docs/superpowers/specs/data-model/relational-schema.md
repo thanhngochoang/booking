@@ -1889,6 +1889,38 @@ alter table bookings
 alter table event_registrations
   add column booking_line_due_percent smallint check (booking_line_due_percent in (0, 100)),   -- vé booking để lại: hoàn 100 hoặc huỷ giữ tiền 0
   add column booking_line_due_reason  text check (booking_line_due_reason in ('provider_cancelled','customer_cancel'));
+
+-- Mã gặp thợ / mã vào cửa (S30, Decisions 7–10): một mã 8 ký tự cho mỗi booking đã trả (trừ instant) hoặc vé vào
+-- cửa đã trả; booking kèm vé dùng chung một mã. Chỉ máy chủ đọc; khách đọc bản sao của mình (Firestore
+-- */private/pass), tài liệu công khai chỉ có 4 ký tự cuối. Vé vào cửa mới không còn ticket_code công khai.
+create table passes (
+  code        char(8) primary key check (code ~ '^[2-9A-HJ-NP-TV-Z]{8}$'),
+  customer_id text not null references users(id),
+  day         date not null,                                   -- ngày buổi chụp hoặc ngày tham quan
+  booking_id  text unique references bookings(id),
+  event_id    text references events(id),                      -- sự kiện của các vé (một mã không thuộc hai sự kiện)
+  created_at  timestamptz not null default now()
+);
+create table pass_registrations (
+  code            char(8) not null references passes(code) on delete cascade,
+  registration_id text not null unique references event_registrations(id),
+  primary key (code, registration_id)
+);
+-- "Đang chụp" và câu hỏi "Buổi chụp có diễn ra không?" (S30, Decision 10); danh sách trạng thái đầy đủ
+-- (gồm các trạng thái bàn giao #152 mà khối đầu chưa liệt kê).
+alter table bookings
+  drop constraint if exists bookings_status_check,
+  add constraint ck_bookings_status check (status in ('draft','requested','accepted','declined','expired','cancelled','upcoming',
+    'shooting','shot','delivered','revision_requested','approved','completed','reviewed')),
+  add column pass_code4           char(4),                      -- 4 ký tự cuối của passes.code; rỗng: instant hoặc trả trước S30
+  add column checked_in_at        timestamptz,                  -- thợ quét mã: upcoming → shooting
+  add column shoot_question_at    timestamptz,
+  add column shoot_question_until timestamptz,                  -- = shoot_question_at + 48 giờ; không trả lời → shot
+  add column shoot_denied_at      timestamptz,                  -- "Không diễn ra": vẫn upcoming, tiền giữ chờ khiếu nại
+  add column entry_waived_guests  smallint check (entry_waived_guests >= 0);   -- số vé của khách được thợ tại điểm miễn
+create index ix_bookings_shoot_question on bookings (status, shoot_question_until) where shoot_question_until is not null;
+drop index if exists ux_bookings_active_day;
+create unique index ux_bookings_active_day on bookings (photographer_id, day) where status in ('requested','accepted','upcoming','shooting');
 ```
 
 ## 3. Ánh xạ Firestore → bảng
@@ -1968,6 +2000,9 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `payments/{id}` (khoản nhóm, dòng) | `payments` | S30; `groupId` → `group_id`; `subjectType = payment_group`, `status = awaiting_group` |
 | `payment_groups/{id}` | (không có bảng) | S30; read model của người trả, dẫn xuất từ `payments` của khoản nhóm và các dòng (`group_id`) |
 | `bookings/{id}.entry`, `groupId` | `bookings` | S30; `entry.{eventId,visitDay,items,providerTicket,amount,registrationId}` → `entry_*`, `entry.waived.{provider,guests}` → `entry_waived_*`; `groupId` → `group_id` |
+| `passes/{code8}` | `passes` + `pass_registrations` | S30; id → `code`; `registrationIds[]` → `pass_registrations`; chỉ máy chủ |
+| `bookings/{id}/private/pass`, `events/{e}/registrations/{r}/private/pass` | (không có bảng) | S30; bản sao `{code}` cho khách, dẫn xuất từ `passes.booking_id` / `pass_registrations` |
+| `bookings/{id}` (S30 mã và câu hỏi) | `bookings` | `passCode4` → `pass_code4`, `checkedInAt` → `checked_in_at`, `shootQuestionAt`/`Until` → `shoot_question_*`, `shootDeniedAt` → `shoot_denied_at`, `entry.waivedGuests` → `entry_waived_guests` |
 | `spot_claims/{id}` | `spot_claims` | S30; `proposal.{name,address}` → `proposal_*`; `proofPaths[]` → `proof_paths text[]` (đường dẫn Storage, không phải URL) |
 | `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
 | `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |

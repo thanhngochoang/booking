@@ -16,6 +16,8 @@ export interface EntryDayDelta {
   readonly day: string;
   readonly held?: number;
   readonly sold?: number;
+  /** People let in at the gate (`scanPass`). */
+  readonly checkedIn?: number;
 }
 
 /** The visit day of an entry ticket (null for every other registration). */
@@ -37,20 +39,21 @@ export async function readEntryDays(tx: EventTx, ev: EventRecord | null, regs: r
 
 /** Pure: the rows the deltas change (per day, never below 0), from the rows read before. */
 export function entryDaysAfter(eventId: string, days: EntryDays, deltas: readonly EntryDayDelta[], now: Date): EntryDay[] {
-  const sum = new Map<string, { held: number; sold: number }>();
+  const sum = new Map<string, { held: number; sold: number; checkedIn: number }>();
   for (const d of deltas) {
-    const s = sum.get(d.day) ?? { held: 0, sold: 0 };
-    sum.set(d.day, { held: s.held + (d.held ?? 0), sold: s.sold + (d.sold ?? 0) });
+    const s = sum.get(d.day) ?? { held: 0, sold: 0, checkedIn: 0 };
+    sum.set(d.day, { held: s.held + (d.held ?? 0), sold: s.sold + (d.sold ?? 0), checkedIn: s.checkedIn + (d.checkedIn ?? 0) });
   }
   const out: EntryDay[] = [];
   for (const [day, s] of sum) {
-    if (s.held === 0 && s.sold === 0) continue;
+    if (s.held === 0 && s.sold === 0 && s.checkedIn === 0) continue;
     if (!days.has(day)) throw new Error(`entry day ${day} was not read before the write`);
     const row = days.get(day) ?? emptyEntryDay(eventId, day, now);
     out.push({
       ...row,
       held: Math.max(0, row.held + s.held),
       sold: Math.max(0, row.sold + s.sold),
+      checkedIn: Math.max(0, row.checkedIn + s.checkedIn),
       updatedAt: now.toISOString(),
     });
   }

@@ -9,6 +9,7 @@ import { computeAcceptDeadline, parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps, BookingTx } from './booking_ports.js';
 import { applyRefundToPayment, type LedgerEntry, type Payment, type Refund } from './escrow.js';
 import { expireUnpaid } from './payment_settlement.js';
+import { passCode4 } from './pass.js';
 
 /** The payment reached its amount: `paid`, escrow `held`. */
 export function markPaid(payment: Payment, now: Date, providerRef?: string): Payment {
@@ -38,13 +39,18 @@ export function paymentReceivedEntry(deps: BookingDeps, payment: Payment, amount
   };
 }
 
-/** Normal path: the paid draft becomes `requested` (or `accepted` if quote), with its accept deadline, escrow `held`, one booking event. */
+/**
+ * Normal path: the paid draft becomes `requested` (or `accepted` if quote), with its accept deadline, escrow
+ * `held`, one booking event. `passCode`: the booking's pass (S30 Decision 7), whose last 4 characters the
+ * booking keeps (`passCode4`); the caller writes the pass itself.
+ */
 export async function moveDraftToRequested(
   tx: Pick<BookingTx, 'setBooking' | 'setAvailabilityDay' | 'addBookingEvent'>,
   deps: Pick<BookingDeps, 'ids'>,
   booking: Booking,
   payment: Payment,
   now: Date,
+  passCode: string | null = null,
 ): Promise<Booking> {
   const isQuote = booking.source === 'quote';
   const nextStatus = isQuote ? 'accepted' : 'requested';
@@ -59,6 +65,7 @@ export async function moveDraftToRequested(
     depositPaidAt: now.toISOString(),
     acceptDeadline,
     escrowStatus: 'held',
+    ...(passCode !== null ? { passCode4: passCode4(passCode) } : {}),
     version: booking.version + 1,
     updatedAt: now.toISOString(),
   };

@@ -16,6 +16,8 @@ import { DomainError } from './errors.js';
 import type { Payment, Refund, StoredBankAccount } from './escrow.js';
 import { payerAccountOf } from './payer_account.js';
 import { dispatchRefunds, transferRefund } from './refunds.js';
+import { systemRandom } from './ids.js';
+import { bookingGetsPass, freshPassCode, newPass, writePass } from './pass.js';
 
 import {
   applyTransfer as applyTransferPure,
@@ -41,6 +43,7 @@ async function applyTransfer(
   n: TransferNotification,
   captured: StoredBankAccount | null,
   now: Date,
+  passCode: string | null,
 ): Promise<{ readonly outcome: Exclude<TransferOutcome, 'duplicate' | 'needs_review'>; readonly refunds: Refund[] }> {
   const { payment: stepPayment, ledgerEntry, decision, excess } = applyTransferPure({
     payment,
@@ -100,7 +103,14 @@ async function applyTransfer(
         return { outcome: 'refunded', refunds };
       }
       await tx.setPayment(current);
-      await moveDraftToRequested(tx, deps, booking, current, now);
+      await moveDraftToRequested(tx, deps, booking, current, now, passCode);
+      if (passCode !== null) {
+        // S30 Decision 7: a booking paid alone (no tickets) has its own pass.
+        await writePass(tx, newPass({
+          code8: passCode, customerId: booking.customerId, day: booking.day, bookingId: booking.id, eventId: null,
+          registrationIds: [], now,
+        }));
+      }
       return { outcome: excess > 0 ? 'paid_with_refund' : 'paid', refunds };
     }
   }
@@ -137,8 +147,12 @@ export class BookingPaymentSettler implements SubjectSettler {
       if (!payment || payment.subjectType !== 'booking') throw new DomainError('not_found');
       provider = payment.provider;
       const booking = await tx.getBooking(payment.subjectId);
+      // S30 (Decision 7): a transfer that pays the draft gives it a pass; its code is drawn (a read) first.
+      const pays = booking !== null && booking.status === 'draft' && bookingGetsPass(booking)
+        && applyTransferPure({ payment, transfer, ledgerEntryId: 'probe', now }).decision.kind === 'paid';
+      const passCode = pays ? await freshPassCode(this.deps.random ?? systemRandom, (c) => tx.passTaken(c)) : null;
 
-      const applied = await applyTransfer(tx, this.deps, payment, booking, transfer, captured, now);
+      const applied = await applyTransfer(tx, this.deps, payment, booking, transfer, captured, now, passCode);
       await tx.saveTransferRecord(transferRecordOf(transfer, applied.outcome, payment.id));
       pending = applied.refunds;
       return applied.outcome;

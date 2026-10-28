@@ -23,6 +23,8 @@ export interface DisputeSubjectView {
   /** #152 booking fields. */
   readonly shotAt: Date | null;
   readonly checkUntil: Date | null;
+  /** S30 (Decision 10): the customer answered "Không diễn ra" to the shoot question (booking only). */
+  readonly shootDeniedAt?: Date | null;
   /** 0 for a free ticket. */
   readonly amount: number;
   /** Registration's paymentId; null for bookings (looked up by `findSubjectPayment`). */

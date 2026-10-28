@@ -106,6 +106,9 @@ export const NOTIFICATION_TYPES = {
   gate_staff_invited: meta('events', 'events'),
   // S30 entry tickets: the organizer closed a visit day; the ticket is refunded 100%.
   entry_day_closed: meta('events', 'events'),
+  // S30 passes and the shoot question (Decision 10): booking/activity; the question decides held money.
+  shoot_question: meta('booking', 'activity', true),
+  pass_ready: meta('booking', 'activity'),
   chat_message: meta('chat', 'system'),
   promo: meta('promo', 'system'),
 } as const satisfies Record<string, TypeMeta>;

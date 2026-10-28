@@ -311,11 +311,11 @@ describe('Booking callables', () => {
       cleanedDrafts: 0,
       expiredRequests: 0,
       upcomingTransitions: 0,
-      autoShots: 0,
+      shootingShots: 0,
+      shootQuestionsExpired: 0,
       autoApprovals: 0,
       finishedChecks: 0,
       releasedEscrows: 0,
-      autoCompletions: 0,
     });
   });
 

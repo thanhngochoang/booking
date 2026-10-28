@@ -12,6 +12,7 @@ import { runEventSweeps } from '../src/event_sweeps.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { must } from './support/event_world.js';
 import { org1 } from './support/entry_world.js';
+import { scanned } from './support/booking_world.js';
 import {
   ENTRY_ID, VISIT, childrenOf, createBookingEntryWorld, entryDraft, payEntry, paymentOf, residentOf, send, transfer,
   type BookingEntryWorld,
@@ -176,6 +177,7 @@ describe('paying a booking with tickets', () => {
 
     await transitionBooking(w.bookingDeps, { bookingId: draft.id, action: 'accept', actorId: 'p3' });
     w.booking.clock.setTime(new Date('2026-10-22T05:00:00.000Z')); // 12:00 in Vietnam, after the 11:00 end
+    scanned(w.booking, draft.id);
     const shot = await transitionBooking(w.bookingDeps, { bookingId: draft.id, action: 'mark_shot', actorId: 'p3' });
     assert.equal(shot.status, 'shot');
     assert.equal(must(paymentOf(w, bookingChild.id)).milestones?.length, 2);
@@ -296,6 +298,25 @@ describe('cancelling a booking with tickets', () => {
     // A second run changes nothing.
     assert.equal((await runEventSweeps(w.eventDeps)).refunded, 0);
   });
+
+  for (const field of ['checkedInAt', 'gateCheckedInAt'] as const) {
+    test(`a stamped 100% ticket line is never refunded once the ticket was used (${field}, Task 4)`, async () => {
+      const w = await createBookingEntryWorld();
+      const { draft, ticketChild, regId } = await paidEntryBooking(w);
+      w.entry.store.failNext = { error: new Error('outage'), times: 1 };
+      await transitionBooking(w.bookingDeps, { bookingId: draft.id, action: 'decline', actorId: 'p3', reason: 'Bận' });
+      assert.deepEqual(reg(w, regId).bookingLineDue, { percent: 100, reason: 'provider_cancelled' });
+      // The gate let the customer in before the clock retried the refund.
+      const used = reg(w, regId);
+      w.entry.store.registrations.set(`${ENTRY_ID}/${regId}`, { ...used, [field]: w.booking.clock.now() });
+
+      assert.equal((await runEventSweeps(w.eventDeps)).refunded, 0);
+      const r = reg(w, regId);
+      assert.deepEqual([r.status, r.refundDue, r.bookingLineDue], ['paid', false, null]);
+      assert.equal(must(paymentOf(w, ticketChild.id)).status, 'paid');
+      assert.equal(w.entry.store.refundsOf(ticketChild.id).length, 0);
+    });
+  }
 
   test('a request that expires in the booking sweep without the ticket port is stamped, and the event clock refunds the ticket', async () => {
     const w = await createBookingEntryWorld();

@@ -121,7 +121,7 @@ describe('updating entry events', () => {
 });
 
 describe('registerEntry', () => {
-  test('registerEntry holds 3 tickets: registration held with visitDay, items, quantity 3, amount = Σ; entry_days held + 3; payment created with lineKind entry_ticket, payeeId org1, releaseAfter = entryReleaseAt(visitDay); ticketCodeLast4 set, private pass to be written on payment (Task 4)', async () => {
+  test('registerEntry holds 3 tickets: registration held with visitDay, items, quantity 3, amount = Σ; entry_days held + 3; payment created with lineKind entry_ticket, payeeId org1, releaseAfter = entryReleaseAt(visitDay); no public ticket code, the pass comes with the payment (Decision 8)', async () => {
     const w = createEntryWorld();
     await publishedEntry(w);
     const r = await buy(w, cu1, [{ ticketTypeId: 'adult', qty: 2 }, { ticketTypeId: 'child', qty: 1 }]);
@@ -135,8 +135,9 @@ describe('registerEntry', () => {
       { ticketTypeId: 'adult', name: 'Người lớn', price: 70_000, qty: 2 },
       { ticketTypeId: 'child', name: 'Trẻ em', price: 40_000, qty: 1 },
     ]);
-    assert.match(doc.ticketCodeLast4 ?? '', /^[A-HJ-NP-Z2-9]{4}$/);
-    assert.equal(doc.ticketCode.slice(3, 7), doc.ticketCodeLast4);
+    assert.deepEqual([doc.ticketCode, doc.ticketCodeLast4], ['', '']);
+    assert.equal(w.store.ticketCodes.size, 0);
+    assert.equal(w.store.passes.size, 0);
     assert.deepEqual([day(w)?.held, day(w)?.sold, day(w)?.closed], [3, 0, false]);
     const p = must(w.store.payments.get(must(r.paymentId)));
     assert.deepEqual([p.lineKind, p.payeeId, p.payeeKind, p.amount, p.subjectId, p.eventId],

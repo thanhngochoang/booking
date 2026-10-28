@@ -190,6 +190,8 @@ const PLAN_META: Record<string, readonly [string, string, boolean]> = {
 
 /** Critical rows that existed before S17 and keep their meta. */
 const EARLIER_CRITICAL = ['booking_cancelled', 'refund_done', 'event_host_invited'];
+/** Critical rows added after S17: S30's shoot question decides held money (plan #223 Contract). */
+const LATER_CRITICAL = ['shoot_question'];
 
 describe('S17 catalogue', () => {
   it('every new type has meta (category, tab, critical) as in the plan table', () => {
@@ -206,6 +208,7 @@ describe('S17 catalogue', () => {
       .sort();
     const expected = [
       ...EARLIER_CRITICAL,
+      ...LATER_CRITICAL,
       ...Object.entries(PLAN_META)
         .filter(([, m]) => m[2])
         .map(([t]) => t),

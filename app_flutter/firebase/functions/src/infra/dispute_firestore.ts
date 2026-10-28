@@ -76,6 +76,8 @@ export function bookingDisputeView(
     windowStart: dateOf(b.completedAt),
     shotAt: dateOf(b.shotAt),
     checkUntil: dateOf(b.checkUntil),
+    // S30: "Không diễn ra" makes an upcoming booking disputable (dispute.ts).
+    shootDeniedAt: dateOf(b.shootDeniedAt),
     amount: b.deposit,
     paymentId: null,
     disputeId: b.disputeId ?? null,

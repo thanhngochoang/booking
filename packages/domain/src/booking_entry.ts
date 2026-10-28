@@ -20,7 +20,7 @@ import type { EventRecord } from './event.js';
 import { waiverFor, type Resident } from './organizer.js';
 
 /** The tickets part of `Booking.entry` (its event, day and registration are the caller's). */
-export type BookingEntryDefaults = Pick<BookingEntry, 'items' | 'providerTicket' | 'waived' | 'amount'>;
+export type BookingEntryDefaults = Pick<BookingEntry, 'items' | 'providerTicket' | 'waived' | 'waivedGuests' | 'amount'>;
 
 /**
  * Spec §5.1: the customer's tickets (`customerItems`, S04.03's counters, by default one of the first
@@ -64,6 +64,7 @@ export function bookingEntryDefaults(p: {
     items: lines,
     providerTicket,
     waived: { provider: waiver.provider, guests: guestsWaived > 0 },
+    waivedGuests: guestsWaived,
     amount: lines.reduce((s, l) => s + l.price * l.qty, 0),
   };
 }

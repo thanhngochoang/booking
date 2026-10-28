@@ -262,7 +262,7 @@ describe('dispute Firestore adapter', () => {
     const view = await store.runTransaction((tx) => tx.getSubject('booking', 'b1', null));
     assert.deepEqual(view, {
       type: 'booking', id: 'b1', eventId: null, customerId: 'c1', providerId: 'p1', state: 'completed',
-      windowStart: new Date('2026-10-20T08:00:00.000Z'), shotAt: null, checkUntil: null, amount: 1_000_000,
+      windowStart: new Date('2026-10-20T08:00:00.000Z'), shotAt: null, checkUntil: null, shootDeniedAt: null, amount: 1_000_000,
       paymentId: null, disputeId: 'dsp_0',
       snapshot: { title: 'Minh Trí · Chân dung', subtitle: 'T2 19/10 · 15:30–17:30', providerName: 'Minh Trí', thumbUrl: 'https://cdn.test/p1.jpg' },
     });

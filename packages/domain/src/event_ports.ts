@@ -8,6 +8,7 @@ import type { RandomBytes } from './ids.js';
 import type { Spot } from './spot.js';
 import type { EntryDay } from './entry_tickets.js';
 import type { Organizer, Resident } from './organizer.js';
+import type { PassRecord, PrivatePassRef } from './pass.js';
 
 /** Thrown inside a transaction to ask the adapter to run it again (it holds no state of its own). */
 export class RetryableConflict extends Error {
@@ -77,7 +78,13 @@ export interface EventTx {
   getOrganizer(uid: string): Promise<Organizer | null>;
   /** `spots/{spotId}/residents/{providerId}` (S30; read by bookings with tickets, Task 3). */
   residentOf(spotId: string, providerId: string): Promise<Resident | null>;
+  /** `passes/{code8}` (S30 Decision 7). */
+  getPass(code8: string): Promise<PassRecord | null>;
+  passTaken(code8: string): Promise<boolean>;
   putEvent(e: EventRecord): void;
+  putPass(p: PassRecord): void;
+  /** The customer's copy of a pass (`…/private/pass {code}`). */
+  putPrivatePass(ref: PrivatePassRef, code8: string): void;
   putEntryDay(d: EntryDay): void;
   putHashtag(key: string, eventId: string): void;
   deleteHashtag(key: string): void;

@@ -3,7 +3,6 @@ import { DomainError } from './errors.js';
 import type { PaymentGateway } from './booking_ports.js';
 import { isPaymentMethod, type Payment, type PaymentMethod } from './escrow.js';
 import {
-  CHECKIN_GRACE_HOURS,
   HOLD_MINUTES,
   TICKETS_PER_REGISTRATION,
   isEventManager,
@@ -38,7 +37,8 @@ import {
   ticketRefundPercent,
 } from './event_payments.js';
 import { requireCustomerPhone } from './require_phone.js';
-import { isTicketCode, ticketCodeCandidates } from './ticket_code.js';
+import { ticketCodeCandidates } from './ticket_code.js';
+import { checkInByManager } from './pass_scan.js';
 import type { PaymentInstructions } from './payment_ports.js';
 import type { PaymentLookup } from './payment_settlement.js';
 import { freshPaymentId, instructionsOf, issuePaymentInstructions } from './create_payment.js';
@@ -46,7 +46,6 @@ import { MemoryPaymentLookup, type PaymentSource } from './memory_payment_lookup
 
 import type { AccountCipher } from './payout_ports.js';
 
-const HOUR_MS = 3_600_000;
 const NAME_MAX = 60;
 
 export interface RegisterResult {
@@ -267,8 +266,9 @@ const parseName = (v: unknown): string => {
  * S30.05 (Decision 11): an order of up to 10 entry tickets for one visit day, held 15 minutes while
  * the customer pays. One transaction reads the event, its organizer, the visit day's `entry_days` row
  * and the customer's ticket of that day, then writes the row (`held + qty`; `sold + held + qty ≤
- * dailyCapacity`, else `sold_out_day`), the registration, its payment (paid to the organizer,
- * released `entryReleaseAt(visitDay)`) and the ticket code. A customer has one lone ticket per visit
+ * dailyCapacity`, else `sold_out_day`), the registration and its payment (paid to the organizer,
+ * released `entryReleaseAt(visitDay)`). No public ticket code (Decision 8): the pass is created when
+ * the ticket is paid (`TicketPaymentSettler`). A customer has one lone ticket per visit
  * day (`conflict` for a second order); tickets bought with a booking do not count. Hidden types are
  * refused (`invalid_argument` items) but stay on the event for history.
  */
@@ -313,10 +313,6 @@ export async function registerEntry(deps: RegisterDeps, caller: EventCaller, raw
     if (active !== null && !stale.some((s) => s.id === active.id)) throw new DomainError('conflict');
     const staleDays = stale.map((s) => visitDayOf(ev, s)).filter((d): d is string => d !== null);
     const days = await readEntryDaysOf(tx, ev.id, [visitDay, ...staleDays]);
-    const codes = ticketCodeCandidates(visitDayStart(visitDay), deps.random, 5);
-    const taken = await Promise.all(codes.map((c) => tx.ticketCodeTaken(c)));
-    const code = codes.find((_, i) => !taken[i]);
-    if (code === undefined) throw new RetryableConflict();
 
     // ---- writes from here ----
     let held = ev.heldCount;
@@ -358,9 +354,10 @@ export async function registerEntry(deps: RegisterDeps, caller: EventCaller, raw
       amount: priced.total,
       status: 'held',
       holdExpiresAt,
-      ticketCode: code,
-      // The pass itself (`private/pass`) is written when the ticket is paid (Task 4).
-      ticketCodeLast4: code.slice(3, 7),
+      // Decision 8: no public code. The pass (`passes/{code8}`, `private/pass`) is created when the ticket
+      // is paid, which sets `ticketCodeLast4`.
+      ticketCode: '',
+      ticketCodeLast4: '',
       paymentId: payment.id,
       contactEligible: false,
       checkedInAt: null, cancelledAt: null, refundPercent: null,
@@ -374,7 +371,6 @@ export async function registerEntry(deps: RegisterDeps, caller: EventCaller, raw
       version: 1, createdAt: now, updatedAt: now,
     };
     writeEntryDays(tx, ev.id, days, [...released, { day: visitDay, held: priced.quantity }], now);
-    tx.putTicketCode(code, ev.id, regId);
     tx.putRegistration(reg);
     tx.putPayment(payment);
     // Stats only: an entry event's status never follows its seats (statusAfterSeats).
@@ -449,32 +445,14 @@ export async function cancelRegistration(
   return { status: 'refunded', refundPercent: 100 };
 }
 
+/**
+ * The old manager check-in (S12.03, old clients; Decision 9): delegates to the scan (`checkInByManager`,
+ * `pass_scan.ts`) as the event's manager only, with the old answers and error codes.
+ */
 export async function checkInRegistration(
   deps: EventDeps,
   caller: EventCaller,
   raw: unknown,
 ): Promise<{ name: string; quantity: number }> {
-  const r = obj(raw);
-  const eventId = idOf(r.eventId);
-  if (typeof r.ticketCode !== 'string') throw new DomainError('invalid_argument');
-  const code = r.ticketCode.trim().toUpperCase();
-  return deps.events.runTransaction(async (tx) => {
-    const now = deps.clock.now();
-    const ev = await tx.getEvent(eventId);
-    if (ev === null || ev.status === 'draft') throw new DomainError('not_found');
-    if (!isEventManager(ev, caller)) throw new DomainError('permission_denied');
-    if (ev.status === 'cancelled') throw new DomainError('not_eligible');
-    if (ev.dayKey === null || ev.endAt === null) throw new DomainError('not_found');
-    const opens = parseVnDateTime(ev.dayKey, '00:00').getTime();
-    const closes = ev.endAt.getTime() + CHECKIN_GRACE_HOURS * HOUR_MS;
-    if (now.getTime() < opens || now.getTime() > closes) throw new DomainError('not_eligible');
-    if (!isTicketCode(code)) throw new DomainError('not_found');
-    const found = await tx.findTicket(code);
-    if (found === null || found.eventId !== ev.id) throw new DomainError('not_found');
-    const reg = await tx.getRegistration(ev.id, found.registrationId);
-    if (reg === null || reg.status !== 'paid') throw new DomainError('not_found');
-    if (reg.checkedInAt !== null) throw new DomainError('conflict');
-    tx.putRegistration({ ...reg, checkedInAt: now, updatedAt: now, version: reg.version + 1 });
-    return { name: reg.userName, quantity: reg.quantity };
-  });
+  return checkInByManager(deps, caller, raw);
 }
