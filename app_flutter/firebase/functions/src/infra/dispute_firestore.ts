@@ -114,7 +114,8 @@ export function ticketDisputeView(reg: RegistrationDoc, ev: EventRecord): Disput
     snapshot: {
       title: ev.title || reg.event.title,
       subtitle: `${formatDayShortVi(formatVnDate(start))} · ${formatVnTime(start)}–${formatVnTime(end)}`,
-      providerName: ev.host.type === 'photographer' ? ev.host.name : null,
+      // S30: an organizer host is the payee too; its name is the organizer's (`host.name`).
+      providerName: ev.host.type === 'photographer' || ev.host.type === 'organizer' ? ev.host.name : null,
       thumbUrl: ev.coverUrl ?? reg.event.coverUrl,
     },
   };

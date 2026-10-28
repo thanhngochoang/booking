@@ -367,6 +367,35 @@ export function paymentGroupToFirestore(g: PaymentGroupView): DocumentData {
   };
 }
 
+/** `payment_groups/{id}` back to the payer's view; null when missing. */
+export function paymentGroupFromFirestore(id: string, d: DocumentData | undefined): PaymentGroupView | null {
+  if (d === undefined) return null;
+  const lines = Array.isArray(d.lines) ? d.lines : [];
+  const status = d.status === 'paid' || d.status === 'expired' ? d.status : 'created';
+  return {
+    id,
+    payerId: String(d.payerId ?? ''),
+    lines: lines.flatMap((x: unknown) => {
+      const l = (typeof x === 'object' && x !== null ? x : {}) as Record<string, unknown>;
+      return (LINE_KINDS as readonly unknown[]).includes(l.kind) && typeof l.amount === 'number'
+        ? [{
+            paymentId: String(l.paymentId ?? ''),
+            kind: l.kind as LineKind,
+            subjectType: l.subjectType as PaymentGroupView['lines'][number]['subjectType'],
+            subjectId: String(l.subjectId ?? ''),
+            payeeId: String(l.payeeId ?? ''),
+            amount: l.amount,
+          }]
+        : [];
+    }),
+    total: typeof d.total === 'number' ? d.total : 0,
+    status,
+    expiresAt: toIsoString(d.expiresAt) ?? new Date(0).toISOString(),
+    createdAt: toIsoString(d.createdAt) ?? new Date(0).toISOString(),
+    updatedAt: toIsoString(d.updatedAt) ?? new Date(0).toISOString(),
+  };
+}
+
 /** S30 (Decision 15): `bookings/{id}.entry`. */
 function bookingEntryToFirestore(e: BookingEntry): DocumentData {
   return {

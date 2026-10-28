@@ -249,6 +249,21 @@ import {
 } from './callables/event_chat.js';
 import { handleRegistrationWrite } from './triggers/registration_write.js';
 import { liveEventChatDeps, liveTimelineDeps } from './infra/live_event_social.js';
+import {
+  handleBecomeOrganizer,
+  handleClaimSpot,
+  handleInviteGateStaff,
+  handleRemoveGateStaff,
+  handleRemoveResident,
+  handleRespondGateStaff,
+  handleReviewSpotClaim,
+  handleSaveResident,
+  handleUpdateManagedSpot,
+} from './callables/organizer.js';
+import { handleCloseEntryDay, handleRegisterEntry, handleRespondVenueConsent } from './callables/entry.js';
+import { handleAnswerShootHappened, handleScanPass } from './callables/scan.js';
+import { liveOrganizerDeps, liveScanDeps } from './infra/live_organizer.js';
+import { handlePassCreated } from './triggers/pass_write.js';
 import { handleSendSupportMessage } from './callables/support.js';
 import { liveSupportDeps } from './infra/live_support.js';
 import { handleSupportMessageCreated } from './triggers/support_message_created.js';
@@ -1055,7 +1070,7 @@ export const checkTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
   handleCheckTicketPayment(request, { ...liveEventPaymentDeps(), settlement: liveSettlementDeps() }),
 );
 
-/** `{eventId, ticketCode}` → `{name, quantity}` */
+/** `{eventId, ticketCode}` → `{name, quantity}`: old clients; delegates to scanPass as the event's manager only (S30). */
 export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
   handleCheckInRegistration(request, liveEventDeps()),
 );
@@ -1072,6 +1087,56 @@ export const eventClock = onSchedule(EVENT_CLOCK_OPTIONS, async () => {
 /** Every minute: expired 10-minute ticket holds give their seats back. */
 export const releaseEventHolds = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 1 minutes' }, async () => {
   await handleReleaseEventHolds();
+});
+
+// ---- organizers, entry tickets and passes (S30, #223) ----
+// No new Scheduler job (Decision 13): the periodic S30 steps run in bookingClock, eventClock and rankSpots.
+
+/** S30.01 `{name, bio, avatarUrl?}` → `{organizer}`; needs a verified phone. */
+export const becomeOrganizer = onCall(CALLABLE_OPTIONS, (request) => handleBecomeOrganizer(request, liveOrganizerDeps()));
+
+/** S30.02 `{spotId? | proposal?, proofPaths[1–3], note?}` → `{claimId}`; staff review it. */
+export const claimSpot = onCall(CALLABLE_OPTIONS, (request) => handleClaimSpot(request, liveOrganizerDeps()));
+
+/** Staff (claim `staffRole == 'admin'`) `{claimId, approve, reason?}` → `{claim}`; the spots CLI runs the same use case. */
+export const reviewSpotClaim = onCall(CALLABLE_OPTIONS, (request) => handleReviewSpotClaim(request, liveOrganizerDeps()));
+
+/** S30.03 `{spotId, description?, tips?, coverPath?, coverUrl?, openHours?, access?}` → `{}`; the spot's manager. */
+export const updateManagedSpot = onCall(CALLABLE_OPTIONS, (request) => handleUpdateManagedSpot(request, liveOrganizerDeps()));
+
+/** S30.03-residents `{spotId, providerId, waivesProvider, waivesGuests, maxGuests?, validUntil?}` → `{}`. */
+export const saveResident = onCall(CALLABLE_OPTIONS, (request) => handleSaveResident(request, liveOrganizerDeps()));
+
+/** `{spotId, providerId}` → `{}`: the spot's manager, or the provider leaving the list. */
+export const removeResident = onCall(CALLABLE_OPTIONS, (request) => handleRemoveResident(request, liveOrganizerDeps()));
+
+/** S30.06 `{target}` (a phone number) → `{}`: invites gate staff (≤ 10, valid 72 h). */
+export const inviteGateStaff = onCall(CALLABLE_OPTIONS, (request) => handleInviteGateStaff(request, liveOrganizerDeps()));
+
+/** `{organizerId, accept}` → `{}`: the invitee answers within 72 h. */
+export const respondGateStaff = onCall(CALLABLE_OPTIONS, (request) => handleRespondGateStaff(request, liveOrganizerDeps()));
+
+/** `{staffUid}` → `{}`: the organizer removes a gate staff member or withdraws the invite. */
+export const removeGateStaff = onCall(CALLABLE_OPTIONS, (request) => handleRemoveGateStaff(request, liveOrganizerDeps()));
+
+/** S30.05 `{eventId, visitDay, items, name, method}` → registerEvent's answer (a 15-minute hold). 30 s: contended. */
+export const registerEntry = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleRegisterEntry(request, liveEventPaymentDeps()));
+
+/** S12.03-entry `{eventId, day}` → `{refunded, left}`: closes a visit day, 100% refunds (more than 20 by eventClock). */
+export const closeEntryDay = onCall(EVENT_REFUND_CALLABLE_OPTIONS, (request) => handleCloseEntryDay(request, liveEventPaymentDeps()));
+
+/** S11.02-venue-consent `{eventId, accept, venueFeePerGuest?}` → `{}`: the spot's manager, within 72 h. */
+export const respondVenueConsent = onCall(CALLABLE_OPTIONS, (request) => handleRespondVenueConsent(request, liveEventDeps()));
+
+/** S30.07 `{code}` → `{booking, registrations, waived, todayCount}`: what the scanner's roles allow, one transaction. */
+export const scanPass = onCall(CALLABLE_OPTIONS, (request) => handleScanPass(request, liveScanDeps()));
+
+/** S05.02-askshot `{bookingId, happened}` → `{status}`: the customer answers "Buổi chụp có diễn ra không?". */
+export const answerShootHappened = onCall(CALLABLE_OPTIONS, (request) => handleAnswerShootHappened(request, liveBookingDeps()));
+
+/** A new pass (`passes/{code8}`, server-only) → `pass_ready` to its customer (never the code). */
+export const onPassCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'passes/{code8}' }, async (event) => {
+  await handlePassCreated(event.params.code8, event.data?.data(), liveNotifyDeps());
 });
 
 // ---- event timeline and group chat (plan 10c) ----

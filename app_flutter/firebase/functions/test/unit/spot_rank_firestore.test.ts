@@ -64,7 +64,7 @@ describe('spot_rank_firestore', () => {
     assert.ok(calls[1]?.val instanceof Timestamp);
   });
 
-  it('events uses spotId, status in [open, full], startAt range', async () => {
+  it('events uses spotId, status in [open, full], startAt range, and leaves out entry events (type != entry)', async () => {
     const calls: { field: string; op: string; val: unknown }[] = [];
     const fakeQuery = {
       where: (field: string, op: string, val: unknown) => {
@@ -73,6 +73,13 @@ describe('spot_rank_firestore', () => {
       },
       count: () => ({
         get: async () => ({ data: () => ({ count: 2 }) }),
+      }),
+      // S30: the spot's entry events (one open, in the window) are not counted.
+      get: async () => ({
+        docs: [
+          { data: () => ({ status: 'open', startAt: Timestamp.fromDate(new Date('2026-10-10T00:00:00.000Z')) }) },
+          { data: () => ({ status: 'cancelled', startAt: Timestamp.fromDate(new Date('2026-10-10T00:00:00.000Z')) }) },
+        ],
       }),
     };
     const fakeFirestore = {
@@ -86,8 +93,9 @@ describe('spot_rank_firestore', () => {
     const fromIso = '2026-10-08T00:00:00.000Z';
     const toIso = '2026-11-07T00:00:00.000Z';
     const count = await counter.events('spot-1', fromIso, toIso);
-    assert.equal(count, 2);
-    assert.equal(calls.length, 4);
+    assert.equal(count, 1);
+    assert.equal(calls.length, 6);
+    assert.deepEqual(calls.slice(4), [{ field: 'spotId', op: '==', val: 'spot-1' }, { field: 'type', op: '==', val: 'entry' }]);
     assert.deepEqual(calls[0], { field: 'spotId', op: '==', val: 'spot-1' });
     assert.deepEqual(calls[1], { field: 'status', op: 'in', val: ['open', 'full'] });
     assert.equal(calls[2]?.field, 'startAt');

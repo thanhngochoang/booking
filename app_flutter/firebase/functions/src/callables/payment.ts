@@ -80,7 +80,7 @@ export async function handleCheckPayment(
 
 /**
  * `{paymentId, kind?}` → `{outcome}`: the payer simulates a bank transfer to their own payment
- * (emulator and dev project only). It builds the fake provider's body for `kind` (default `exact`),
+ * (emulator and dev project only); a group's line confirms its group payment (the group's total). It builds the fake provider's body for `kind` (default `exact`),
  * signs it with the webhook secret and runs the webhook handler in-process, so it takes exactly
  * the path a real notification takes.
  */
@@ -100,7 +100,11 @@ export async function handleConfirmFakePayment(
 
     const d = asSettlement(deps);
     const paymentId = String(data.paymentId ?? '');
-    const payment = await d.payments.getPayment(paymentId);
+    const found = await d.payments.getPayment(paymentId);
+    if (!found) throw new DomainError('not_found');
+    if (found.payerId !== uid) throw new DomainError('permission_denied');
+    // S30 (Decision 6): a line of a group (a booking or ticket paid with others) is paid through its group.
+    const payment = found.groupId !== undefined ? await d.payments.getPayment(found.groupId) : found;
     if (!payment) throw new DomainError('not_found');
     if (payment.payerId !== uid) throw new DomainError('permission_denied');
     if (payment.transferCode === undefined) throw new DomainError('conflict');

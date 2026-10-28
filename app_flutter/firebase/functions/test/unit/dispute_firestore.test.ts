@@ -19,6 +19,7 @@ import {
   FirestoreDisputeStore,
   disputeFromFirestore,
   disputeToFirestore,
+  ticketDisputeView,
 } from '../../src/infra/dispute_firestore.js';
 import { eventToFirestore, registrationToFirestore } from '../../src/infra/event_firestore.js';
 import { FirestoreSupportStore } from '../../src/infra/support_firestore.js';
@@ -226,6 +227,13 @@ describe('dispute Firestore adapter', () => {
     const ticket = dispute({ subjectType: 'ticket', subjectId: 'r1', eventId: 'e1', providerId: 'platform', parties: ['c1'] });
     assert.deepEqual(disputeFromFirestore(disputeToFirestore(ticket)), ticket);
     assert.equal(disputeFromFirestore(undefined), null);
+  });
+
+  it('a ticket of an organizer-hosted event names the organizer as provider (S30)', () => {
+    const ev = event({ host: { type: 'organizer', id: 'org1', name: 'Bãi đá sông Hồng', avatarUrl: null, verified: true } });
+    const view = ticketDisputeView(registration(), ev);
+    assert.equal(view.providerId, 'org1');
+    assert.equal(view.snapshot.providerName, 'Bãi đá sông Hồng');
   });
 
   it('findSubjectPayment for a booking picks the held payment', async () => {

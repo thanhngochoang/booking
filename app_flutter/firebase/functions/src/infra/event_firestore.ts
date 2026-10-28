@@ -304,6 +304,17 @@ function entryTicketToFirestore(r: RegistrationDoc): DocumentData {
   };
 }
 
+/**
+ * S30 Decision 8 (Review Focus 3): a ticket with a pass has no public `ticketCode` (the code lives in its
+ * `private/pass`); a legacy ticket keeps its `VE-XXXX-MMDD`. `ticketCodeLast4` is what the manager's list shows.
+ */
+function ticketCodeToFirestore(r: RegistrationDoc): DocumentData {
+  return {
+    ...(r.ticketCode !== '' ? { ticketCode: r.ticketCode } : {}),
+    ...(r.ticketCodeLast4 !== undefined && r.ticketCodeLast4 !== '' ? { ticketCodeLast4: r.ticketCodeLast4 } : {}),
+  };
+}
+
 function entryTicketFromFirestore(d: DocumentData): Partial<RegistrationDoc> {
   const visitDay = str(d.visitDay);
   if (visitDay === null) return {};
@@ -368,7 +379,7 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     amount: r.amount,
     status: r.status,
     holdExpiresAt: ts(r.holdExpiresAt),
-    ticketCode: r.ticketCode,
+    ...ticketCodeToFirestore(r),
     paymentId: r.paymentId,
     contactEligible: r.contactEligible,
     checkedInAt: ts(r.checkedInAt),
@@ -420,6 +431,7 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     ...(str(d.refundId) !== null ? { refundId: str(d.refundId) as string } : {}),
     ...((REFUND_STATUSES as readonly unknown[]).includes(d.refundStatus) ? { refundStatus: d.refundStatus as RefundStatus } : {}),
     ...(str(d.disputeId) !== null ? { disputeId: str(d.disputeId) as string } : {}),
+    ...(str(d.ticketCodeLast4) !== null ? { ticketCodeLast4: str(d.ticketCodeLast4) as string } : {}),
     ...entryTicketFromFirestore(d),
     event: {
       title: String(ev.title ?? ''),
@@ -598,6 +610,8 @@ export class FirestoreEventStore implements EventStore {
           writes.push(() => fTx.delete(fs.collection(EVENT_HASHTAGS).doc(key)));
         },
         putTicketCode: (code, eventId, registrationId) => {
+          // A ticket with a pass has no public code (S30): never an empty `ticket_codes/` row.
+          if (code === '') return;
           writes.push(() => fTx.set(fs.collection(TICKET_CODES).doc(code), { eventId, registrationId }));
         },
         putRegistration: (r) => {

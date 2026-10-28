@@ -1,7 +1,7 @@
 /**
  * A small in-memory stand-in for the Admin Firestore API, enough for the adapters' unit tests:
  * documents, collection queries (where ==, !=, in, not-in, array-contains(-any), <, <=, >, >=; orderBy; limit; startAfter), dotted field
- * paths, `FieldPath.documentId()`, transactions (writes applied after the callback, reads after a write
+ * paths, `FieldPath.documentId()`, collection-group queries, transactions (writes applied after the callback, reads after a write
  * refused like Firestore does), `getAll`, `set` with `merge`, `update`, `delete`, and the sentinels
  * `FieldValue.increment`, `FieldValue.delete` and `FieldValue.serverTimestamp`.
  */
@@ -136,6 +136,8 @@ export class MemoryFirestore {
   transactions = 0;
   /** Documents read (each document returned by a get, getAll or query counts once). */
   reads = 0;
+  /** The path of every document read, in order (a query adds the documents it returned). */
+  readonly readPaths: string[] = [];
 
   seed(path: string, data: Data): void {
     this.docs.set(path, data);
@@ -153,12 +155,18 @@ export class MemoryFirestore {
     return new MemoryDocRef(this, path);
   }
 
+  /** Every collection named `id`, at any depth (`collectionGroup`). */
+  collectionGroup(id: string): MemoryQuery {
+    return new MemoryQuery(this, '', [], [], null, null, id);
+  }
+
   async getAll(...refs: MemoryDocRef[]): Promise<MemorySnapshot[]> {
     return refs.map((r) => this.snapshot(r.path));
   }
 
   snapshot(path: string): MemorySnapshot {
     this.reads += 1;
+    this.readPaths.push(path);
     const d = this.docs.get(path);
     const ref = new MemoryDocRef(this, path);
     return {
@@ -183,11 +191,17 @@ export class MemoryFirestore {
     this.log.push({ path, kind: kind === 'merge' ? 'set' : kind });
   }
 
+  /** Per committed transaction: the documents read while it ran and the paths it wrote. */
+  readonly txLog: { reads: string[]; writes: string[] }[] = [];
+
   async runTransaction<T>(fn: (tx: MemoryTransaction) => Promise<T>): Promise<T> {
     this.transactions += 1;
+    const r0 = this.readPaths.length;
+    const w0 = this.log.length;
     const tx = new MemoryTransaction(this);
     const result = await fn(tx);
     tx.commit();
+    this.txLog.push({ reads: this.readPaths.slice(r0), writes: this.log.slice(w0).map((l) => l.path) });
     return result;
   }
 
@@ -243,6 +257,8 @@ export class MemoryQuery {
     private readonly max: number | null,
     /** `startAfter(snapshot)`: the path of the last document of the previous page. */
     private readonly after: string | null = null,
+    /** A collection-group query over every collection with this id (then `path` is ''). */
+    private readonly group: string | null = null,
   ) {}
 
   doc(id: string): MemoryDocRef {
@@ -251,21 +267,21 @@ export class MemoryQuery {
 
   where(field: unknown, op: string, value: unknown): MemoryQuery {
     const f: Filter = { field: typeof field === 'string' ? field : null, op, value };
-    return new MemoryQuery(this.db, this.path, [...this.filters, f], this.orders, this.max, this.after);
+    return new MemoryQuery(this.db, this.path, [...this.filters, f], this.orders, this.max, this.after, this.group);
   }
 
   orderBy(field: unknown, dir: 'asc' | 'desc' = 'asc'): MemoryQuery {
     const f = typeof field === 'string' && field !== '__name__' ? field : null;
-    return new MemoryQuery(this.db, this.path, this.filters, [...this.orders, { field: f, dir }], this.max, this.after);
+    return new MemoryQuery(this.db, this.path, this.filters, [...this.orders, { field: f, dir }], this.max, this.after, this.group);
   }
 
   limit(n: number): MemoryQuery {
-    return new MemoryQuery(this.db, this.path, this.filters, this.orders, n, this.after);
+    return new MemoryQuery(this.db, this.path, this.filters, this.orders, n, this.after, this.group);
   }
 
   /** Continues after a document snapshot of the same ordered query (the cursor of `startAfter(doc)`). */
   startAfter(doc: { readonly ref: { readonly path: string } }): MemoryQuery {
-    return new MemoryQuery(this.db, this.path, this.filters, this.orders, this.max, doc.ref.path);
+    return new MemoryQuery(this.db, this.path, this.filters, this.orders, this.max, doc.ref.path, this.group);
   }
 
   select(): MemoryQuery {
@@ -274,8 +290,14 @@ export class MemoryQuery {
 
   run(): MemorySnapshot[] {
     const depth = this.path.split('/').length + 1;
+    const group = this.group;
+    const inScope = (p: string): boolean => {
+      if (group === null) return p.startsWith(`${this.path}/`) && p.split('/').length === depth;
+      const parts = p.split('/');
+      return parts.length % 2 === 0 && parts[parts.length - 2] === group;
+    };
     let rows = [...this.db.docs.entries()]
-      .filter(([p]) => p.startsWith(`${this.path}/`) && p.split('/').length === depth)
+      .filter(([p]) => inScope(p))
       .filter(([p, d]) => this.filters.every((f) => matches(p.split('/').at(-1) ?? '', d, f)));
     for (const o of [...this.orders].reverse()) {
       rows = [...rows].sort(([pa, a], [pb, b]) => {
