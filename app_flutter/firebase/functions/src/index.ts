@@ -367,7 +367,11 @@ export const requestRevision = onCall(CALLABLE_OPTIONS, (request) => handleReque
 /** Delivery: provider grants or declines extra revision round */
 export const answerExtraRound = onCall(CALLABLE_OPTIONS, (request) => handleAnswerExtraRound(request, liveBookingDeps()));
 
-/** 15-minute booking lifecycle and escrow sweep clock */
+/**
+ * 15-minute booking lifecycle and escrow sweep clock. S30: `shooting` bookings become `shot` at end + 24 h,
+ * unscanned ones get the shoot question (`askShootHappened`), unanswered questions expire to `shot`
+ * (`expireShootQuestions`) and a denied shoot without a dispute after 48 h gets one.
+ */
 export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
   await handleBookingClock(undefined, liveReminderDeps(), {
     verification: { deps: liveVerificationDeps(), notify: liveNotifyDeps() },
@@ -1077,8 +1081,9 @@ export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
 
 /**
  * Every 5 minutes: closes registration, completes events (ticket money then waits 24 h for the
- * bookingClock release), expires unanswered host invitations, retries refunds of cancelled events,
- * then reminds paid ticket holders 48 h before the start (S17 `event_soon`).
+ * bookingClock release), expires unanswered host invitations and (S30) venue requests after 72 h
+ * (`expireVenueConsent`), retries refunds of cancelled events, of closed entry days (`refundClosedDays`)
+ * and of ticket lines of cancelled bookings, then reminds paid ticket holders 48 h before the start (S17 `event_soon`).
  */
 export const eventClock = onSchedule(EVENT_CLOCK_OPTIONS, async () => {
   await handleEventClock();
@@ -1324,11 +1329,14 @@ export const onAccountDeletionUpdated = onDocumentWritten(
   },
 );
 
-/** Daily 03:00 Asia/Ho_Chi_Minh: updates spot stats, hotScore, and rewrites spot_rankings and spot_directory. */
+/**
+ * Daily 03:00 Asia/Ho_Chi_Minh: updates spot stats, hotScore, and rewrites spot_rankings and spot_directory;
+ * S30: first removes residents whose `validUntil` is past (`expireResidents`).
+ */
 export const rankSpots = onSchedule(
   { ...SCHEDULE_OPTIONS, schedule: '0 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
   async () => {
-    await handleRankSpots(liveRankSpotsDeps());
+    await handleRankSpots(await liveRankSpotsDeps());
   },
 );
 
