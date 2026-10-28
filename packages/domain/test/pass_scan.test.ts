@@ -158,6 +158,63 @@ describe('scanPass at the gate', () => {
     assert.deepEqual(staffRow(w, 'org1', 'g1')?.scansToday, { day: TODAY, count: 1 });
   });
 
+  test('the waived part scans once: a rescan is already_checked_in and counts nobody again (fix 3)', async () => {
+    const w = await world(at('09:00'));
+    await w.scan('g1', P5);
+    assert.equal(w.be.entry.store.passes.get(P5)?.waivedCheckedInAt, at('09:00').toISOString());
+    w.setNow(at('09:30'));
+    await assert.rejects(w.scan('org1', P5), (e: unknown) =>
+      code('already_checked_in')(e) && (e as DomainError).details?.at === at('09:00').toISOString());
+    assert.equal(day(w)?.checkedIn, 1);
+    assert.deepEqual(staffRow(w, 'org1', 'g1')?.scansToday, { day: TODAY, count: 1 });
+  });
+
+  test('a waiver of the provider and two guests lets three people in', async () => {
+    const w = await world(at('09:00'));
+    const b4 = w.booking('b4');
+    w.be.booking.store.bookings.set('b4', {
+      ...b4, entry: { ...(b4.entry as NonNullable<typeof b4.entry>), waived: { provider: true, guests: true }, waivedGuests: 2 },
+    });
+    assert.deepEqual((await w.scan('g1', P5)).waived, { bookingId: 'b4', count: 3 });
+    assert.equal(day(w)?.checkedIn, 3);
+  });
+
+  test('a pass with a waived provider and the customer\'s tickets lets both in at once', async () => {
+    const w = await world(at('09:00'));
+    const b2 = w.booking('b2');
+    w.be.booking.store.bookings.set('b2', {
+      ...b2, entry: { ...(b2.entry as NonNullable<typeof b2.entry>), waived: { provider: true, guests: false }, waivedGuests: 0 },
+    });
+    const r = await w.scan('g1', P3);
+    assert.deepEqual(r.registrations.map((x) => x.id), ['r2']);
+    assert.deepEqual(r.waived, { bookingId: 'b2', count: 1 });
+    assert.equal(day(w)?.checkedIn, 3);
+    assert.equal(r.todayCount, 3);
+    assert.deepEqual(staffRow(w, 'org1', 'g1')?.scansToday, { day: TODAY, count: 1 });
+    await assert.rejects(w.scan('g1', P3), code('already_checked_in'));
+    assert.equal(day(w)?.checkedIn, 3);
+  });
+
+  test('an entry ticket of a closed day, waiting for its refund, or of a cancelled entry event is refunded at the gate (fix 4)', async () => {
+    const w = await world(at('09:00'));
+    const row = day(w);
+    if (row === undefined) throw new Error('day');
+    w.be.entry.store.entryDays.set(`${ENTRY_ID}_${TODAY}`, { ...row, closed: true });
+    await assert.rejects(w.scan('g1', P2), code('refunded'));
+    w.be.entry.store.entryDays.set(`${ENTRY_ID}_${TODAY}`, row);
+
+    w.be.entry.store.registrations.set(`${ENTRY_ID}/r1`, { ...w.reg(ENTRY_ID, 'r1'), refundDue: true });
+    await assert.rejects(w.scan('g1', P2), code('refunded'));
+    w.be.entry.store.registrations.set(`${ENTRY_ID}/r1`, { ...w.reg(ENTRY_ID, 'r1'), refundDue: false });
+
+    const ev = w.be.entry.store.events.get(ENTRY_ID);
+    if (ev === undefined) throw new Error('event');
+    w.be.entry.store.events.set(ENTRY_ID, { ...ev, status: 'cancelled' });
+    await assert.rejects(w.scan('g1', P2), code('refunded'));
+    assert.equal(w.reg(ENTRY_ID, 'r1').checkedInAt, null);
+    assert.equal(day(w)?.checkedIn, 0);
+  });
+
   test('a booking pass without waivers or tickets is not_your_pass at the gate', async () => {
     const w = await world(at('09:00'));
     await assert.rejects(w.scan('g1', P1), code('not_your_pass'));

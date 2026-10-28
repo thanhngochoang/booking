@@ -484,6 +484,18 @@ export class MemoryBookingStore implements StudioBookingStore {
     return res;
   }
 
+  async findDeniedShootsDue(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
+    const res: Booking[] = [];
+    for (const b of this.bookings.values()) {
+      if (b.status === 'upcoming' && !b.disputeId && b.shootDeniedAt !== undefined
+        && Date.parse(b.shootDeniedAt) <= cutoff.getTime()) {
+        res.push({ ...b });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
   async findExpiredShootQuestions(now: Date, limit = 100): Promise<readonly Booking[]> {
     const res: Booking[] = [];
     for (const b of this.bookings.values()) {

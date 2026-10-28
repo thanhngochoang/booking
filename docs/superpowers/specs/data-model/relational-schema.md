@@ -1899,6 +1899,7 @@ create table passes (
   day         date not null,                                   -- ngày buổi chụp hoặc ngày tham quan
   booking_id  text unique references bookings(id),
   event_id    text references events(id),                      -- sự kiện của các vé (một mã không thuộc hai sự kiện)
+  waived_checked_in_at timestamptz,                            -- cổng đã cho số người được miễn vé vào (một lần)
   created_at  timestamptz not null default now()
 );
 create table pass_registrations (
@@ -1917,8 +1918,12 @@ alter table bookings
   add column shoot_question_at    timestamptz,
   add column shoot_question_until timestamptz,                  -- = shoot_question_at + 48 giờ; không trả lời → shot
   add column shoot_denied_at      timestamptz,                  -- "Không diễn ra": vẫn upcoming, tiền giữ chờ khiếu nại
-  add column entry_waived_guests  smallint check (entry_waived_guests >= 0);   -- số vé của khách được thợ tại điểm miễn
-create index ix_bookings_shoot_question on bookings (status, shoot_question_until) where shoot_question_until is not null;
+  add column entry_waived_guest_count smallint check (entry_waived_guest_count >= 0);   -- số vé của khách được thợ tại điểm miễn
+create index ix_bookings_shoot_question on bookings (status, shoot_question_until) where shoot_question_until is not null and shoot_denied_at is null;
+create index ix_bookings_shoot_denied on bookings (status, shoot_denied_at) where shoot_denied_at is not null;   -- khiếu nại hệ thống sau 48 giờ
+alter table disputes
+  drop constraint if exists disputes_opened_by_check,
+  add constraint ck_disputes_opened_by check (opened_by in ('customer','system'));   -- system: booking khách trả lời "Không diễn ra" 48 giờ chưa khiếu nại
 drop index if exists ux_bookings_active_day;
 create unique index ux_bookings_active_day on bookings (photographer_id, day) where status in ('requested','accepted','upcoming','shooting');
 ```
@@ -2002,7 +2007,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `bookings/{id}.entry`, `groupId` | `bookings` | S30; `entry.{eventId,visitDay,items,providerTicket,amount,registrationId}` → `entry_*`, `entry.waived.{provider,guests}` → `entry_waived_*`; `groupId` → `group_id` |
 | `passes/{code8}` | `passes` + `pass_registrations` | S30; id → `code`; `registrationIds[]` → `pass_registrations`; chỉ máy chủ |
 | `bookings/{id}/private/pass`, `events/{e}/registrations/{r}/private/pass` | (không có bảng) | S30; bản sao `{code}` cho khách, dẫn xuất từ `passes.booking_id` / `pass_registrations` |
-| `bookings/{id}` (S30 mã và câu hỏi) | `bookings` | `passCode4` → `pass_code4`, `checkedInAt` → `checked_in_at`, `shootQuestionAt`/`Until` → `shoot_question_*`, `shootDeniedAt` → `shoot_denied_at`, `entry.waivedGuests` → `entry_waived_guests` |
+| `bookings/{id}` (S30 mã và câu hỏi) | `bookings` | `passCode4` → `pass_code4`, `checkedInAt` → `checked_in_at`, `shootQuestionAt`/`Until` → `shoot_question_*`, `shootDeniedAt` → `shoot_denied_at`, `entry.waivedGuests` → `entry_waived_guest_count` (`entry.waived.guests` vẫn là `entry_waived_guests`) |
 | `spot_claims/{id}` | `spot_claims` | S30; `proposal.{name,address}` → `proposal_*`; `proofPaths[]` → `proof_paths text[]` (đường dẫn Storage, không phải URL) |
 | `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
 | `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |

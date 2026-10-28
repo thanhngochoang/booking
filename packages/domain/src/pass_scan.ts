@@ -41,8 +41,20 @@ export type ScannerKind = 'shooter' | 'event_manager' | 'entry_gate' | 'venue_ga
  */
 export type ScanPart =
   | { readonly kind: 'booking'; readonly booking: Booking }
-  | { readonly kind: 'registration'; readonly registration: RegistrationDoc; readonly event: EventRecord }
-  | { readonly kind: 'waived'; readonly booking: Booking; readonly event: EventRecord };
+  | {
+    readonly kind: 'registration';
+    readonly registration: RegistrationDoc;
+    readonly event: EventRecord;
+    /** An entry ticket whose visit day the organizer closed (`entry_days.closed`): refunded, never let in. */
+    readonly dayClosed?: boolean;
+  }
+  | {
+    readonly kind: 'waived';
+    readonly booking: Booking;
+    readonly event: EventRecord;
+    /** `passes/{code8}.waivedCheckedInAt`: the waived head count already went in (it scans once). */
+    readonly checkedInAt?: string | null;
+  };
 
 /** What the scanner may act for, collected for this pass's parts only. */
 export interface Scanner {
@@ -92,6 +104,8 @@ export interface ScanTx {
   getEntryDay(eventId: string, day: string): Promise<EntryDay | null>;
   /** `organizers/{organizerId}/gate_staff/{staffUid}`. */
   getGateStaff(organizerId: string, staffUid: string): Promise<GateStaff | null>;
+  /** `passes/{code8}` (the waived part's check-in mark, server-only). */
+  putPass(p: PassRecord): Promise<void>;
   setBooking(b: Booking): Promise<void>;
   addBookingEvent(e: BookingEventRecord): Promise<void>;
   putRegistration(r: RegistrationDoc): Promise<void>;
@@ -150,12 +164,14 @@ function assertBookingPart(b: Booking, now: Date): void {
   decideTransition(b, 'scan', { id: b.photographerId, role: 'photographer' }, now);
 }
 
-function assertRegistrationPart(reg: RegistrationDoc, ev: EventRecord, kind: ScannerKind, now: Date): void {
+function assertRegistrationPart(reg: RegistrationDoc, ev: EventRecord, kind: ScannerKind, now: Date, dayClosed: boolean): void {
   if (reg.status === 'refunded' || reg.status === 'cancelled') fail('refunded');
   if (reg.status !== 'paid') fail('not_found');
   const at = kind === 'venue_gate' ? (reg.gateCheckedInAt ?? null) : reg.checkedInAt;
   if (at !== null) fail('already_checked_in', { at: at.toISOString() });
   if (ev.type === 'entry') {
+    // A cancelled entry event, a closed visit day or a ticket waiting for its refund lets nobody in.
+    if (ev.status === 'cancelled' || dayClosed || reg.refundDue === true) fail('refunded');
     // An entry ticket scans on its visit day only.
     if (formatVnDate(now) !== reg.visitDay) fail('wrong_day', { day: reg.visitDay ?? null });
     return;
@@ -172,8 +188,9 @@ function assertRegistrationPart(reg: RegistrationDoc, ev: EventRecord, kind: Sca
   fail('wrong_day', { day });
 }
 
-function assertWaivedPart(b: Booking, now: Date): void {
+function assertWaivedPart(b: Booking, now: Date, checkedInAt: string | null): void {
   if (CLOSED_BOOKING.includes(b.status)) fail('refunded');
+  if (checkedInAt !== null) fail('already_checked_in', { at: checkedInAt });
   if (b.status === 'draft' || b.status === 'requested' || b.status === 'accepted') fail('not_eligible');
   if (formatVnDate(now) !== b.day) fail('wrong_day', { day: b.day });
 }
@@ -209,12 +226,12 @@ export function resolveScan(
       updates.push({ kind: 'booking_shooting', bookingId: p.booking.id });
       booking = { id: p.booking.id, customerName: customerNames[p.booking.customerId] ?? '' };
     } else if (p.kind === 'waived') {
-      assertWaivedPart(p.booking, now);
+      assertWaivedPart(p.booking, now, p.checkedInAt ?? null);
       const count = waivedCount(p.booking);
       updates.push({ kind: 'waived_gate', bookingId: p.booking.id, eventId: p.event.id, count });
       waived = { bookingId: p.booking.id, count };
     } else {
-      assertRegistrationPart(p.registration, p.event, kind, now);
+      assertRegistrationPart(p.registration, p.event, kind, now, p.dayClosed === true);
       updates.push({
         kind: kind === 'venue_gate' ? 'registration_gate' : 'registration_checked_in',
         eventId: p.event.id,
@@ -260,11 +277,13 @@ async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef, opts: 
     // ---- reads: the pass and its parts ----
     let bookingId: string | null = null;
     let regRefs: { eventId: string; registrationId: string }[];
+    let pass: PassRecord | null = null;
     if ('code8' in ref) {
-      const pass = await tx.getPass(ref.code8);
+      pass = await tx.getPass(ref.code8);
       if (pass === null) throw new DomainError('not_found');
       bookingId = pass.bookingId;
-      regRefs = pass.eventId === null ? [] : pass.registrationIds.map((id) => ({ eventId: pass.eventId as string, registrationId: id }));
+      const passEventId = pass.eventId;
+      regRefs = passEventId === null ? [] : pass.registrationIds.map((id) => ({ eventId: passEventId, registrationId: id }));
     } else {
       const found = await tx.findTicket(ref.ticketCode);
       if (found === null) throw new DomainError('not_found');
@@ -281,17 +300,30 @@ async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef, opts: 
       if (!events.has(id)) events.set(id, await tx.getEvent(id));
       return events.get(id) ?? null;
     };
+    const dayRows = new Map<string, Map<string, EntryDay | null>>(); // eventId → day → row (read once)
+    const dayOf = async (eventId: string, day: string): Promise<EntryDay | null> => {
+      const rows = dayRows.get(eventId) ?? new Map<string, EntryDay | null>();
+      dayRows.set(eventId, rows);
+      if (!rows.has(day)) rows.set(day, await tx.getEntryDay(eventId, day));
+      return rows.get(day) ?? null;
+    };
     const parts: ScanPart[] = [];
     const booking = bookingId === null ? null : await tx.getBooking(bookingId);
     if (booking !== null) {
       parts.push({ kind: 'booking', booking });
       const entryEvent = booking.entry !== undefined && waivedCount(booking) > 0 ? await eventOf(booking.entry.eventId) : null;
-      if (entryEvent !== null) parts.push({ kind: 'waived', booking, event: entryEvent });
+      if (entryEvent !== null) {
+        await dayOf(entryEvent.id, booking.day);
+        parts.push({ kind: 'waived', booking, event: entryEvent, checkedInAt: pass?.waivedCheckedInAt ?? null });
+      }
     }
     for (const r of regRefs) {
       const reg = await tx.getRegistration(r.eventId, r.registrationId);
       const ev = await eventOf(r.eventId);
-      if (reg !== null && ev !== null) parts.push({ kind: 'registration', registration: reg, event: ev });
+      if (reg === null || ev === null) continue;
+      const visitDay = ev.type === 'entry' && typeof reg.visitDay === 'string' ? reg.visitDay : null;
+      const dayClosed = visitDay !== null && (await dayOf(ev.id, visitDay))?.closed === true;
+      parts.push({ kind: 'registration', registration: reg, event: ev, dayClosed });
     }
     if (parts.length === 0) throw new DomainError('not_found');
 
@@ -362,18 +394,16 @@ async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef, opts: 
         if (manager !== undefined) gateOrgs.add(manager);
       }
     }
-    const dayRows = new Map<string, Map<string, EntryDay | null>>();
-    for (const [eventId, deltas] of dayDeltas) {
-      const rows = new Map<string, EntryDay | null>();
-      for (const d of deltas) if (!rows.has(d.day)) rows.set(d.day, await tx.getEntryDay(eventId, d.day));
-      dayRows.set(eventId, rows);
-    }
+    for (const [eventId, deltas] of dayDeltas) for (const d of deltas) await dayOf(eventId, d.day);
 
     // ---- writes ----
     const at = now.toISOString();
     const written: RegistrationDoc[] = [];
     for (const u of updates) {
-      if (u.kind === 'booking_shooting' && booking !== null) {
+      if (u.kind === 'waived_gate' && pass !== null) {
+        // The waived head count goes in once per pass (Task 4 fix 3).
+        await tx.putPass({ ...pass, waivedCheckedInAt: at });
+      } else if (u.kind === 'booking_shooting' && booking !== null) {
         await tx.setBooking({ ...booking, status: 'shooting', checkedInAt: at, version: booking.version + 1, updatedAt: at });
         await tx.addBookingEvent({ id: deps.ids.newId(), bookingId: booking.id, status: 'shooting', at, actorId: caller.uid });
       } else if (u.kind === 'registration_checked_in' || u.kind === 'registration_gate') {
@@ -482,6 +512,7 @@ export function eventScanStore(events: EventStore): ScanStore {
       getSpot: (id) => tx.getSpot(id),
       getEntryDay: (eventId, day) => tx.getEntryDay(eventId, day),
       getGateStaff: async () => null,
+      putPass: async (p) => tx.putPass(p),
       setBooking: async () => {
         throw new Error('eventScanStore: no bookings');
       },

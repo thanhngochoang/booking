@@ -1651,6 +1651,42 @@
       ]
     },
     {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "disputeId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "shootDeniedAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "shootDeniedAt",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "shootQuestionUntil",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "instant_requests",
       "queryScope": "COLLECTION",
       "fields": [

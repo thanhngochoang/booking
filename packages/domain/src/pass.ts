@@ -32,6 +32,11 @@ export interface PassRecord {
   readonly eventId: string | null;
   readonly registrationIds: readonly string[];
   readonly createdAt: string;
+  /**
+   * When the gate let in the head count a resident's waiver covers on this booking pass (Task 4 fix 3):
+   * the waived part scans once. Absent or null until then.
+   */
+  readonly waivedCheckedInAt?: string | null;
 }
 
 /** Where the customer's copy lives: `bookings/{id}/private/pass` or `events/{e}/registrations/{r}/private/pass`. */

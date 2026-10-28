@@ -73,7 +73,8 @@ export interface Dispute {
   readonly providerId: string;
   /** customerId, plus providerId unless `'platform'`. */
   readonly parties: readonly string[];
-  readonly openedBy: 'customer';
+  /** `system`: the booking clock opened it for a denied shoot nobody disputed in 48 h (S30, Task 4 fix 1). */
+  readonly openedBy: 'customer' | 'system';
   readonly reason: DisputeReason;
   readonly description: string;
   readonly evidencePaths: readonly string[];

@@ -348,6 +348,10 @@ export function termsFromFirestore(v: unknown): BookingTerms | undefined {
 
 /** S30 (Decision 6): `payment_groups/{id}`, the payer's read model of a group payment. */
 export const PAYMENT_GROUPS_COLLECTION = 'payment_groups';
+/** S30: how far back the shoot-question query looks (the clock asks within one run of end + 24 h). */
+export const SHOOT_QUESTION_LOOKBACK_DAYS = 14;
+/** S30: pages the shoot-question query reads per run at most. */
+export const SHOOT_QUESTION_PAGES = 10;
 
 export function paymentGroupToFirestore(g: PaymentGroupView): DocumentData {
   return {
@@ -1542,11 +1546,18 @@ export class FirestoreBookingStore implements StudioBookingStore {
     return { bookings, next: snap.size < limit ? null : (snap.docs[snap.size - 1] ?? null) };
   }
 
-  /** S30: `shooting` bookings ended before `cutoff`; the sweep marks them shot (the scan proved the meeting). */
+  /**
+   * S30: `shooting` bookings ended before `cutoff`, oldest day first on the `status, day, start, __name__`
+   * index (bounded by the cutoff's day); the sweep marks them shot (the scan proved the meeting).
+   */
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
     const snap = await this.firestore
       .collection(BOOKINGS_COLLECTION)
       .where('status', '==', 'shooting')
+      .where('day', '<=', formatVnDate(cutoff))
+      .orderBy('day')
+      .orderBy('start')
+      .orderBy('__name__')
       .limit(limit)
       .get();
     const res: Booking[] = [];
@@ -1559,42 +1570,81 @@ export class FirestoreBookingStore implements StudioBookingStore {
   }
 
   /**
-   * S30: `upcoming` bookings ended before `cutoff`, not scanned and not asked yet: the oldest days first on
-   * the reminder index (`status, day, start, __name__`), the rest filtered here.
+   * S30: `upcoming` bookings ended before `cutoff`, not scanned and not asked yet. Pages with `startAfter` over
+   * the `status, day, start, __name__` index between `cutoff`'s day − SHOOT_QUESTION_LOOKBACK_DAYS and
+   * `cutoff`'s day until `limit` are found (at most SHOOT_QUESTION_PAGES pages), so asked or denied bookings
+   * that stay `upcoming` never starve the due ones. Not `shootQuestionAt == null`: Firestore does not match a
+   * document without the field, and bookings written before S30 have none.
    */
   async findShootQuestionsDue(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
-    const snap = await this.firestore
-      .collection(BOOKINGS_COLLECTION)
-      .where('status', '==', 'upcoming')
-      .where('day', '<=', formatVnDate(cutoff))
-      .orderBy('day')
-      .orderBy('start')
-      .orderBy('__name__')
-      .limit(limit)
-      .get();
+    const lastDay = formatVnDate(cutoff);
+    const firstDay = formatVnDate(new Date(cutoff.getTime() - SHOOT_QUESTION_LOOKBACK_DAYS * 86_400_000));
     const res: Booking[] = [];
-    for (const doc of snap.docs) {
-      const b = bookingFromFirestore(doc.id, doc.data());
-      if (b && b.checkedInAt === undefined && b.shootQuestionAt === undefined && !waitsForAssignee(b)
-        && parseVnDateTime(b.day, b.end).getTime() <= cutoff.getTime()) {
-        res.push(b);
+    let after: unknown = null;
+    for (let page = 0; page < SHOOT_QUESTION_PAGES && res.length < limit; page++) {
+      let q = this.firestore
+        .collection(BOOKINGS_COLLECTION)
+        .where('status', '==', 'upcoming')
+        .where('day', '>=', firstDay)
+        .where('day', '<=', lastDay)
+        .orderBy('day')
+        .orderBy('start')
+        .orderBy('__name__');
+      if (after !== null) q = q.startAfter(after as never);
+      const snap = await q.limit(limit).get();
+      for (const doc of snap.docs) {
+        const b = bookingFromFirestore(doc.id, doc.data());
+        if (b && b.checkedInAt === undefined && b.shootQuestionAt === undefined && !waitsForAssignee(b)
+          && parseVnDateTime(b.day, b.end).getTime() <= cutoff.getTime()) {
+          res.push(b);
+          if (res.length >= limit) break;
+        }
       }
+      if (snap.size < limit) break;
+      after = snap.docs[snap.size - 1] ?? null;
     }
     return res;
   }
 
-  /** S30: open shoot questions past `shootQuestionUntil` (index `status, shootQuestionUntil`, Task 6). */
+  /**
+   * S30: open shoot questions past `shootQuestionUntil` (index `status, shootDeniedAt, shootQuestionUntil`).
+   * `shootDeniedAt == null` keeps denied bookings (still `upcoming`) out of the page; every booking that has a
+   * question was written by S30 code, which writes the field as null.
+   */
   async findExpiredShootQuestions(now: Date, limit = 100): Promise<readonly Booking[]> {
     const snap = await this.firestore
       .collection(BOOKINGS_COLLECTION)
       .where('status', '==', 'upcoming')
+      .where('shootDeniedAt', '==', null)
       .where('shootQuestionUntil', '<=', Timestamp.fromDate(now))
+      .orderBy('shootQuestionUntil')
       .limit(limit)
       .get();
     const res: Booking[] = [];
     for (const doc of snap.docs) {
       const b = bookingFromFirestore(doc.id, doc.data());
       if (b && b.shootDeniedAt === undefined) res.push(b);
+    }
+    return res;
+  }
+
+  /**
+   * S30: denied shoots without a dispute 48 h on (index `status, disputeId, shootDeniedAt`). Every denied
+   * booking was written by S30 code, which writes `disputeId` as null until a dispute mirrors it.
+   */
+  async findDeniedShootsDue(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'upcoming')
+      .where('disputeId', '==', null)
+      .where('shootDeniedAt', '<=', Timestamp.fromDate(cutoff))
+      .orderBy('shootDeniedAt')
+      .limit(limit)
+      .get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b && !b.disputeId && b.shootDeniedAt !== undefined) res.push(b);
     }
     return res;
   }

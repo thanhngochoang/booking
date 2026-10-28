@@ -7,12 +7,17 @@ import { runBookingSweeps } from '../src/booking_sweeps.js';
 import { openDispute } from '../src/dispute_use_cases.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import {
+  SHOOT_DENIED_DESCRIPTION,
+  SHOOT_DENIED_DISPUTE_HOURS,
   SHOOT_QUESTION_AFTER_HOURS,
   SHOOT_QUESTION_ANSWER_HOURS,
   answerShootHappened,
   askShootHappened,
   expireShootQuestions,
+  openDeniedShootDisputes,
+  shootDeniedDisputeId,
 } from '../src/shoot_question.js';
+import type { BookingStore } from '../src/booking_ports.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { createBookingWorld, newDraft, payDraft, type BookingWorld } from './support/booking_world.js';
 import { bookingView, createDisputeWorld, openInput, paidPayment } from './support/dispute_world.js';
@@ -220,5 +225,81 @@ describe('mark_shot, cancel and the sweep with shooting (Decisions 10, 14)', () 
     w.clock.setTime(ASK_AT);
     assert.equal((await runBookingSweeps(w.deps)).shootingShots, 1);
     assert.equal((await get(w, b.id)).status, 'shot');
+  });
+});
+
+describe('a denied shoot has an exit (fix 1)', () => {
+  /** b denied ("Không diễn ra") at ASK_AT, and the dispute side's view of it with its held payment. */
+  async function denied() {
+    const w = createBookingWorld();
+    const b = await upcoming(w);
+    w.clock.setTime(ASK_AT);
+    await askShootHappened(w.deps, createNotifyWorld(ASK_AT).deps);
+    await answerShootHappened(w.deps, { bookingId: b.id, customerId: 'c1', happened: false });
+    const d = createDisputeWorld();
+    d.store.putSubject(bookingView({ id: b.id, state: 'upcoming', shootDeniedAt: new Date(ASK_AT) }));
+    d.store.payments.set('pay_b1', paidPayment({ subjectId: b.id }));
+    return { w, b, d };
+  }
+  const at = (h: number) => new Date(ASK_AT.getTime() + h * HOUR);
+
+  test('mark_shot by the photographer is refused after the denial, with and without a pass', async () => {
+    const { w, b } = await denied();
+    w.clock.setTime(at(1));
+    await assert.rejects(transitionBooking(w.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'p1' }), code('not_eligible'));
+    const legacy: Booking = { ...(await get(w, b.id)), id: 'b_legacy', passCode4: undefined };
+    w.store.bookings.set(legacy.id, legacy);
+    await assert.rejects(transitionBooking(w.deps, { bookingId: legacy.id, action: 'mark_shot', actorId: 'p1' }), code('not_eligible'));
+    assert.equal((await get(w, b.id)).status, 'upcoming');
+  });
+
+  test('the clock opens exactly one dispute 48 h after the denial (system, preset reason), none before; the money stays frozen', async () => {
+    const { w, b, d } = await denied();
+    w.clock.setTime(at(SHOOT_DENIED_DISPUTE_HOURS - 1));
+    assert.equal(await openDeniedShootDisputes(w.deps, d.deps), 0);
+    assert.equal(d.store.disputes.size, 0);
+
+    w.clock.setTime(at(SHOOT_DENIED_DISPUTE_HOURS));
+    assert.equal(await openDeniedShootDisputes(w.deps, d.deps), 1);
+    const dispute = d.store.disputes.get(shootDeniedDisputeId(b.id));
+    assert.deepEqual(
+      [dispute?.openedBy, dispute?.reason, dispute?.description, dispute?.customerId, dispute?.status, dispute?.amountHeld],
+      ['system', 'no_show', SHOOT_DENIED_DESCRIPTION, 'c1', 'open', 1_000_000],
+    );
+    assert.equal(d.store.payments.get('pay_b1')?.escrowStatus, 'disputed');
+    // A retry (the mirror not written yet) finds the same dispute; once mirrored, the booking is not due.
+    await openDeniedShootDisputes(w.deps, d.deps);
+    assert.equal(d.store.disputes.size, 1);
+    w.store.bookings.set(b.id, { ...(await get(w, b.id)), disputeId: shootDeniedDisputeId(b.id), escrowStatus: 'disputed' });
+    assert.equal(await openDeniedShootDisputes(w.deps, d.deps), 0);
+    assert.equal(d.store.payments.get('pay_b1')?.escrowStatus, 'disputed');
+  });
+
+  test('no system dispute when the customer already opened one', async () => {
+    const { w, b, d } = await denied();
+    d.store.putSubject(bookingView({ id: b.id, state: 'upcoming', shootDeniedAt: new Date(ASK_AT), disputeId: 'd_customer' }));
+    w.clock.setTime(at(SHOOT_DENIED_DISPUTE_HOURS));
+    assert.equal(await openDeniedShootDisputes(w.deps, d.deps), 0);
+    assert.equal(d.store.disputes.size, 0);
+    w.store.bookings.set(b.id, { ...(await get(w, b.id)), disputeId: 'd_customer' });
+    assert.equal((await w.store.findDeniedShootsDue(at(SHOOT_DENIED_DISPUTE_HOURS))).length, 0);
+  });
+});
+
+describe('the shoot step never blocks the other sweeps (fix 5)', () => {
+  test('a throwing shoot-question query still lets the escrow releases run', async () => {
+    const w = createBookingWorld();
+    const draft = await newDraft(w);
+    const { paymentId } = await payDraft(w, draft.id);
+    const p = must(w.store.payments.get(paymentId));
+    w.store.payments.set(paymentId, { ...p, releaseAfter: '2026-10-10T00:00:00.000Z' });
+    const broken = Object.create(w.store) as BookingStore;
+    broken.findExpiredShootQuestions = async () => {
+      throw new Error('index missing');
+    };
+    const sweeps = await runBookingSweeps({ ...w.deps, store: broken });
+    assert.equal(sweeps.releasedEscrows, 1);
+    assert.match(sweeps.shootStepError ?? '', /index missing/);
+    assert.equal(must(w.store.payments.get(paymentId)).escrowStatus, 'released');
   });
 });

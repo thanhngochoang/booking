@@ -35,6 +35,7 @@ export class MemoryScanStore implements ScanStore {
           const row = this.organizers.gateStaff.get(organizerId)?.get(staffUid);
           return row ? { ...row } : null;
         },
+        putPass: async (p) => etx.putPass(p),
         setBooking: async (b: Booking) => {
           staged.push(() => this.bookings.bookings.set(b.id, { ...b }));
         },

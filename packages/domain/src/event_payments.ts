@@ -648,7 +648,8 @@ export async function closeEntryDay(
   let failed = 0;
   for (const id of closed.ids.slice(0, ENTRY_CLOSE_BATCH)) {
     try {
-      if ((await refundTicket(deps, eventId, id, 100, 'day_closed')) === 'refunded') refunded += 1;
+      // A ticket the gate already let in that day is used: it keeps its money (Task 4 fix 4).
+      if ((await refundTicket(deps, eventId, id, 100, 'day_closed', { unusedOnly: true })) === 'refunded') refunded += 1;
     } catch {
       failed += 1; // still `refundDue`: the event clock retries it
     }

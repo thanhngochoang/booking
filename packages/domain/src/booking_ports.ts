@@ -274,6 +274,11 @@ export interface BookingStore {
   /** `upcoming` bookings with `shootQuestionUntil <= now` and no `shootDeniedAt` (index `status, shootQuestionUntil`). */
   findExpiredShootQuestions(now: Date, limit?: number): Promise<readonly Booking[]>;
   /**
+   * S30: `upcoming` bookings whose customer denied the shoot (`shootDeniedAt <= cutoff`, now − 48 h) and that
+   * have no dispute yet (`disputeId` absent; index `status, disputeId, shootDeniedAt`).
+   */
+  findDeniedShootsDue(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /**
    * Payments with `releaseAfter <= cutoff` whose escrow is `held` or `partially_refunded`, or `disputed`
    * with milestones (another milestone may be due; S18 Decision 1). Never a disputed payment without milestones.
    */

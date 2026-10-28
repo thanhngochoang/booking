@@ -291,6 +291,10 @@ export function decideTransition(
       let shotAt: string | undefined;
 
       if (actor.role === 'photographer') {
+        // The customer said the shoot did not happen ("Không diễn ra"): only the dispute decides now.
+        if (booking.shootDeniedAt !== undefined) {
+          throw new DomainError('not_eligible');
+        }
         // Spec §6.3, Decision 14: a booking with a pass is done only after its scan ("Đã chụp xong" from
         // `shooting`, any time); one paid before passes keeps the old rule (after its end time).
         if (!shooting && booking.passCode4 !== undefined) {

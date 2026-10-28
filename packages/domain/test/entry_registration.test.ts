@@ -6,6 +6,7 @@ import { parseVnDateTime } from '../src/booking_policy.js';
 import { cancelRegistration } from '../src/event_registration.js';
 import { cancelEventWithRefunds, closeEntryDay, releaseEventHolds, TicketPaymentSettler } from '../src/event_payments.js';
 import { publishEvent, saveEventDraft, updateEvent } from '../src/event_use_cases.js';
+import { runEventSweeps } from '../src/event_sweeps.js';
 import { FakeBlockGate } from '../src/fake_block_gate.js';
 import { cu1, cu2, cu3, cuNoPhone, must, ph1, rawEvent } from './support/event_world.js';
 import {
@@ -277,6 +278,27 @@ describe('entry refunds, closing a day and holds', () => {
     await assert.rejects(buy(w, cu3), code('day_closed'));
     // A second close changes nothing.
     assert.deepEqual(await closeEntryDay(w.deps, org1, { eventId: ENTRY_ID, day: VISIT }), { refunded: 0, left: 0 });
+  });
+
+  test('closeEntryDay keeps the money of a ticket the gate already let in, also on the clock retry (Task 4 fix 4)', async () => {
+    const w = createEntryWorld();
+    await publishedEntry(w);
+    const used = await bought(w, cu1);
+    const fresh = await bought(w, cu2);
+    w.store.registrations.set(`${ENTRY_ID}/${used}`, { ...reg(w, used), checkedInAt: new Date(MIDNIGHT + 9 * HOUR) });
+    const out = await closeEntryDay(w.deps, org1, { eventId: ENTRY_ID, day: VISIT });
+    assert.deepEqual(out, { refunded: 1, left: 0 });
+    assert.deepEqual([reg(w, used).status, reg(w, used).refundDue], ['paid', false]);
+    assert.equal(w.store.refundsOf(must(reg(w, used).paymentId)).length, 0);
+    assert.equal(reg(w, fresh).status, 'refunded');
+
+    // The event clock's `refund_day` retry of a stamped ticket the gate let in keeps its money too.
+    w.store.registrations.set(`${ENTRY_ID}/${used}`, {
+      ...reg(w, used), checkedInAt: null, gateCheckedInAt: new Date(MIDNIGHT + 9 * HOUR), refundDue: true,
+    });
+    assert.equal((await runEventSweeps(w.deps)).refunded, 0);
+    assert.deepEqual([reg(w, used).status, reg(w, used).refundDue], ['paid', false]);
+    assert.equal(w.store.refundsOf(must(reg(w, used).paymentId)).length, 0);
   });
 
   test('closeEntryDay also refunds 100% a late-cancelled ticket of that day whose money is still held', async () => {

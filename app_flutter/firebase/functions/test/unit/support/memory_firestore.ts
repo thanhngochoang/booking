@@ -1,6 +1,6 @@
 /**
  * A small in-memory stand-in for the Admin Firestore API, enough for the adapters' unit tests:
- * documents, collection queries (where ==, !=, in, not-in, array-contains(-any), <, <=, >, >=; orderBy; limit), dotted field
+ * documents, collection queries (where ==, !=, in, not-in, array-contains(-any), <, <=, >, >=; orderBy; limit; startAfter), dotted field
  * paths, `FieldPath.documentId()`, transactions (writes applied after the callback, reads after a write
  * refused like Firestore does), `getAll`, `set` with `merge`, `update`, `delete`, and the sentinels
  * `FieldValue.increment`, `FieldValue.delete` and `FieldValue.serverTimestamp`.
@@ -241,6 +241,8 @@ export class MemoryQuery {
     private readonly filters: readonly Filter[],
     private readonly orders: readonly { field: string | null; dir: 'asc' | 'desc' }[],
     private readonly max: number | null,
+    /** `startAfter(snapshot)`: the path of the last document of the previous page. */
+    private readonly after: string | null = null,
   ) {}
 
   doc(id: string): MemoryDocRef {
@@ -249,16 +251,21 @@ export class MemoryQuery {
 
   where(field: unknown, op: string, value: unknown): MemoryQuery {
     const f: Filter = { field: typeof field === 'string' ? field : null, op, value };
-    return new MemoryQuery(this.db, this.path, [...this.filters, f], this.orders, this.max);
+    return new MemoryQuery(this.db, this.path, [...this.filters, f], this.orders, this.max, this.after);
   }
 
   orderBy(field: unknown, dir: 'asc' | 'desc' = 'asc'): MemoryQuery {
     const f = typeof field === 'string' && field !== '__name__' ? field : null;
-    return new MemoryQuery(this.db, this.path, this.filters, [...this.orders, { field: f, dir }], this.max);
+    return new MemoryQuery(this.db, this.path, this.filters, [...this.orders, { field: f, dir }], this.max, this.after);
   }
 
   limit(n: number): MemoryQuery {
-    return new MemoryQuery(this.db, this.path, this.filters, this.orders, n);
+    return new MemoryQuery(this.db, this.path, this.filters, this.orders, n, this.after);
+  }
+
+  /** Continues after a document snapshot of the same ordered query (the cursor of `startAfter(doc)`). */
+  startAfter(doc: { readonly ref: { readonly path: string } }): MemoryQuery {
+    return new MemoryQuery(this.db, this.path, this.filters, this.orders, this.max, doc.ref.path);
   }
 
   select(): MemoryQuery {
@@ -281,6 +288,10 @@ export class MemoryQuery {
     if (this.orders.length > 0) {
       // Firestore leaves out documents without an orderBy field.
       rows = rows.filter(([, d]) => this.orders.every((o) => o.field === null || getField(d, o.field) !== undefined));
+    }
+    if (this.after !== null) {
+      const i = rows.findIndex(([p]) => p === this.after);
+      rows = i < 0 ? rows : rows.slice(i + 1);
     }
     const snaps = rows.map(([p]) => this.db.snapshot(p));
     return this.max === null ? snaps : snaps.slice(0, this.max);

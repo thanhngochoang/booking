@@ -13,6 +13,8 @@ import { parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { confirmedAssigneeId } from './collab_jobs.js';
 import { commitTransition } from './commit_transition.js';
+import { openDisputeAsSystem } from './dispute_use_cases.js';
+import type { DisputeDeps } from './dispute_ports.js';
 import { DomainError } from './errors.js';
 import { isId } from './ids.js';
 import { notifyShootQuestion } from './notification_hooks.js';
@@ -22,6 +24,14 @@ import { transitionBooking } from './transition_booking.js';
 
 export const SHOOT_QUESTION_AFTER_HOURS = 24;
 export const SHOOT_QUESTION_ANSWER_HOURS = 48;
+/** "Không diễn ra" without a dispute after this long: the clock opens it (Task 4 fix 1). */
+export const SHOOT_DENIED_DISPUTE_HOURS = 48;
+/** The preset of S18.01 for a denied shoot ("Buổi chụp không diễn ra"). */
+export const SHOOT_DENIED_REASON = 'no_show';
+export const SHOOT_DENIED_DESCRIPTION = 'Buổi chụp không diễn ra';
+
+/** The id of the dispute the clock opens for a denied shoot: one per booking, so a retry finds it. */
+export const shootDeniedDisputeId = (bookingId: string): string => `shoot_denied_${bookingId}`;
 
 const HOUR_MS = 3_600_000;
 
@@ -133,4 +143,36 @@ function assertAnswerable(b: Booking, customerId: string, now: Date): void {
     throw new DomainError('not_eligible');
   }
   if (now.getTime() >= Date.parse(b.shootQuestionUntil)) throw new DomainError('deadline_passed');
+}
+
+/**
+ * The booking clock's exit for a denied shoot (Task 4 fix 1): a booking whose customer answered "Không diễn ra"
+ * 48 h ago and opened no dispute gets one, opened by the system with the preset reason through
+ * `openDisputeAsSystem` (the whole held payment freezes; staff resolve it as any dispute). One per booking
+ * (`shootDeniedDisputeId`); a booking the customer disputed meanwhile is skipped. Returns how many were opened.
+ */
+export async function openDeniedShootDisputes(
+  deps: Pick<BookingDeps, 'store' | 'clock'>,
+  disputes: DisputeDeps,
+): Promise<number> {
+  const now = deps.clock.now();
+  const cutoff = new Date(now.getTime() - SHOOT_DENIED_DISPUTE_HOURS * HOUR_MS);
+  let opened = 0;
+  for (const b of await deps.store.findDeniedShootsDue(cutoff)) {
+    if (b.disputeId || b.shootDeniedAt === undefined || Date.parse(b.shootDeniedAt) > cutoff.getTime()) continue;
+    try {
+      await openDisputeAsSystem(disputes, {
+        disputeId: shootDeniedDisputeId(b.id),
+        subjectType: 'booking',
+        subjectId: b.id,
+        eventId: null,
+        reason: SHOOT_DENIED_REASON,
+        description: SHOOT_DENIED_DESCRIPTION,
+      });
+      opened += 1;
+    } catch {
+      // Disputed meanwhile (`conflict`), or retried by the next run.
+    }
+  }
+  return opened;
 }

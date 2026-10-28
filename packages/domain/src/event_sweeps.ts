@@ -111,7 +111,9 @@ export async function runEventSweeps(
       const reason = await refundReasonOf(deps, due);
       const step: EventSweepStep = reason === 'day_closed' ? 'refund_day' : 'refund';
       const did = await guarded(due.eventId, step, async () =>
-        (await refundTicket(payDeps, due.eventId, due.id, 100, reason)) === 'refunded');
+        (await refundTicket(payDeps, due.eventId, due.id, 100, reason,
+          // A closed day never refunds a ticket already used at the gate (Task 4 fix 4).
+          reason === 'day_closed' ? { unusedOnly: true } : {})) === 'refunded');
       if (did) refunded += 1;
     }
   }

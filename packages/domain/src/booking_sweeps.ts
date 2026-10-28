@@ -21,6 +21,8 @@ export interface BookingSweepResults {
   readonly shootingShots: number;
   /** S30: unanswered shoot questions past `shootQuestionUntil`, moved to `shot` (shotAt = end). */
   readonly shootQuestionsExpired: number;
+  /** Set when the shoot step failed (the clock logs it; every other step still ran). */
+  readonly shootStepError?: string;
   readonly autoApprovals: number;
   readonly finishedChecks: number;
   readonly releasedEscrows: number;
@@ -91,28 +93,7 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     }
   }
 
-  // 4. S30 (Decision 10): the old "auto mark-shot 24 h after end" is gone. A `shooting` booking (scanned) is
-  // shot by the system 24 h after its end; an `upcoming` one (nobody scanned) gets the shoot question
-  // instead (`askShootHappened`, run by the clock with notifications), and an unanswered question is
-  // shot here once `shootQuestionUntil` passes. A studio booking without an assignee is never shot.
-  let shootingShots = 0;
-  const completeCutoff = new Date(now.getTime() - AUTO_COMPLETE_DELAY_HOURS * 60 * 60 * 1000);
-  const completions = await deps.store.findAutoCompletions(completeCutoff);
-  for (const b of completions) {
-    if (waitsForAssignee(b)) continue;
-    try {
-      await transitionBooking(deps, {
-        bookingId: b.id,
-        action: 'mark_shot',
-      });
-      shootingShots += 1;
-    } catch {
-      // Swallowed
-    }
-  }
-  const shootQuestionsExpired = await expireShootQuestions(deps);
-
-  // 5. Auto-approve delivered bookings past autoApproveAt
+  // 4. Auto-approve delivered bookings past autoApproveAt
   let autoApprovals = 0;
   const dueApprovals = await deps.store.findDueAutoApprovals(now);
   for (const b of dueApprovals) {
@@ -124,7 +105,7 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     }
   }
 
-  // 6. Finish approved bookings past checkUntil
+  // 5. Finish approved bookings past checkUntil
   let finishedChecks = 0;
   const dueChecks = await deps.store.findDueChecks(now);
   for (const b of dueChecks) {
@@ -139,7 +120,7 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     }
   }
 
-  // 7. Release held escrow payments whose dispute window has passed
+  // 6. Release held escrow payments whose dispute window has passed
   let releasedEscrows = 0;
   const releasable = await deps.store.findReleasableEscrows(now);
   for (const payment of releasable) {
@@ -199,6 +180,34 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     });
   }
 
+  // 7. S30 (Decision 10), last and in its own try so a failing query never stops the auto-approvals and
+  // escrow releases above: the old "auto mark-shot 24 h after end" is gone. A `shooting` booking (scanned)
+  // is shot by the system 24 h after its end; an `upcoming` one (nobody scanned) gets the shoot question
+  // instead (`askShootHappened`, run by the clock with notifications), and an unanswered question is shot
+  // here once `shootQuestionUntil` passes. A studio booking without an assignee is never shot.
+  let shootingShots = 0;
+  let shootQuestionsExpired = 0;
+  let shootStepError: string | undefined;
+  try {
+    const completeCutoff = new Date(now.getTime() - AUTO_COMPLETE_DELAY_HOURS * 60 * 60 * 1000);
+    const completions = await deps.store.findAutoCompletions(completeCutoff);
+    for (const b of completions) {
+      if (waitsForAssignee(b)) continue;
+      try {
+        await transitionBooking(deps, {
+          bookingId: b.id,
+          action: 'mark_shot',
+        });
+        shootingShots += 1;
+      } catch {
+        // Swallowed
+      }
+    }
+    shootQuestionsExpired = await expireShootQuestions(deps);
+  } catch (e) {
+    shootStepError = String(e);
+  }
+
   return {
     cleanedDrafts,
     expiredRequests,
@@ -208,5 +217,6 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     autoApprovals,
     finishedChecks,
     releasedEscrows,
+    ...(shootStepError !== undefined ? { shootStepError } : {}),
   };
 }

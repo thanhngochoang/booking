@@ -6,6 +6,7 @@
 
 import {
   disputeProviderName,
+  type OpenDisputeInput,
   disputeThreadId,
   disputeWindow,
   outcomeAmounts,
@@ -84,7 +85,28 @@ function sameOpen(existing: Dispute, callerId: string): Dispute {
  * and opens the three-party thread with a system message and the description as the first message.
  */
 export async function openDispute(deps: DisputeDeps, callerId: string, raw: unknown): Promise<Dispute> {
-  const input = parseOpenDisputeInput(raw, callerId);
+  return openParsed(deps, parseOpenDisputeInput(raw, callerId), { kind: 'customer', uid: callerId });
+}
+
+/** Who opens: the paying customer (S18.01), or the system for a denied shoot (S30). */
+type Opener = { readonly kind: 'customer'; readonly uid: string } | { readonly kind: 'system' };
+
+/**
+ * S30 (Task 4 fix 1): the booking clock opens the dispute of a booking whose customer answered
+ * "Không diễn ra" and opened none within 48 h, on the customer's behalf, through the same rules as
+ * `openDispute` (window, one open dispute, the frozen money). `conflict` when the subject already has a
+ * dispute (open or resolved); the same `disputeId` again returns the existing one.
+ */
+export async function openDisputeAsSystem(
+  deps: DisputeDeps,
+  input: Pick<OpenDisputeInput, 'disputeId' | 'subjectType' | 'subjectId' | 'eventId' | 'reason' | 'description'>,
+): Promise<Dispute> {
+  return openParsed(deps, { ...input, evidencePaths: [] }, { kind: 'system' });
+}
+
+async function openParsed(deps: DisputeDeps, input: OpenDisputeInput, opener: Opener): Promise<Dispute> {
+  const callerId = opener.kind === 'customer' ? opener.uid : null;
+  const again = (d: Dispute): Dispute => (callerId === null ? d : sameOpen(d, callerId));
   const now = deps.clock.now();
   const at = now.toISOString();
 
@@ -96,16 +118,18 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     const payment = subject ? await tx.findSubjectPayment(subject) : null;
     return { existing: null, paymentId: payment?.id ?? null };
   });
-  if (pre.existing) return sameOpen(pre.existing, callerId);
+  if (pre.existing) return again(pre.existing);
   const refundsSoFar = pre.paymentId ? escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.paymentId)) : 0;
-  const customerName = (await deps.names.displayName(callerId)) || 'Khách';
+  const customerName = callerId === null ? SYSTEM_NAME : (await deps.names.displayName(callerId)) || 'Khách';
 
   return deps.store.runTransaction(async (tx) => {
     const existing = await tx.getDispute(input.disputeId);
-    if (existing) return sameOpen(existing, callerId);
+    if (existing) return again(existing);
     const subject = await tx.getSubject(input.subjectType, input.subjectId, input.eventId);
     if (!subject) throw new DomainError('not_found');
-    if (subject.customerId !== callerId) throw new DomainError('permission_denied');
+    if (callerId !== null && subject.customerId !== callerId) throw new DomainError('permission_denied');
+    // The system never opens a second dispute next to the customer's (open or resolved).
+    if (callerId === null && subject.disputeId) throw new DomainError('conflict');
     const payment = await tx.findSubjectPayment(subject);
     const window = disputeWindow(subject, now, payment?.milestones !== undefined);
     // One OPEN dispute per subject (spec §3i.1). After a resolved shoot dispute the delivery milestone
@@ -148,7 +172,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       customerId: subject.customerId,
       providerId: subject.providerId,
       parties: subject.providerId === PLATFORM ? [subject.customerId] : [subject.customerId, subject.providerId],
-      openedBy: 'customer',
+      openedBy: opener.kind,
       reason: input.reason,
       description: input.description,
       evidencePaths: input.evidencePaths,
@@ -169,7 +193,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       id: deps.ids.newId(),
       threadId: dispute.threadId,
       senderId: callerId,
-      senderRole: 'customer',
+      senderRole: callerId === null ? 'system' : 'customer',
       senderName: customerName,
       body: input.description,
       createdAt: firstAt,
@@ -179,7 +203,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       ...newDisputeThread(dispute, at),
       lastMessageAt: firstAt,
       lastMessagePreview: truncateGraphemes(input.description, PREVIEW_MAX),
-      lastSenderRole: 'customer',
+      lastSenderRole: callerId === null ? 'system' : 'customer',
     };
 
     tx.setPayment(frozen);

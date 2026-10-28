@@ -17,6 +17,7 @@ export function passToFirestore(p: PassRecord): DocumentData {
     eventId: p.eventId,
     registrationIds: [...p.registrationIds],
     createdAt: Timestamp.fromDate(new Date(p.createdAt)),
+    waivedCheckedInAt: p.waivedCheckedInAt ? Timestamp.fromDate(new Date(p.waivedCheckedInAt)) : null,
   };
 }
 
@@ -31,6 +32,7 @@ export function passFromFirestore(code8: string, d: DocumentData | undefined): P
     eventId: typeof d.eventId === 'string' ? d.eventId : null,
     registrationIds: Array.isArray(d.registrationIds) ? d.registrationIds.filter((x: unknown): x is string => typeof x === 'string') : [],
     createdAt,
+    waivedCheckedInAt: d.waivedCheckedInAt instanceof Timestamp ? d.waivedCheckedInAt.toDate().toISOString() : null,
   };
 }
 
