@@ -263,7 +263,6 @@ describe('FirestoreVerificationStore', () => {
     const { firestore, writes } = fakeFirestore({
       'verifications/s1': verificationToFirestore(submitted('s1', 'studio')),
       'photographers/s1': { providerType: 'studio', onboardingComplete: true, verified: true },
-      'organizers/s1': { status: 'active', businessVerified: false },
     });
     await reviewVerification(businessDeps(new FirestoreVerificationStore(firestore)), { uid: 'staff1', isAdmin: true }, {
       uid: 's1', target: 'business', action: 'approve',
@@ -273,6 +272,35 @@ describe('FirestoreVerificationStore', () => {
       [['verifications/s1', false], ['photographers/s1', true], ['verificationAudit/a1', false]],
     );
     assert.deepEqual(writes[1]?.data, { businessVerified: true });
+  });
+
+  it('a verified studio that is also an active organizer: its business approval patches photographers/{uid} and organizers/{uid}', async () => {
+    const { firestore, writes } = fakeFirestore({
+      'verifications/s1': verificationToFirestore(submitted('s1', 'studio')),
+      'photographers/s1': { providerType: 'studio', onboardingComplete: true, verified: true },
+      'organizers/s1': { status: 'active', businessVerified: false },
+    });
+    await reviewVerification(businessDeps(new FirestoreVerificationStore(firestore)), { uid: 'staff1', isAdmin: true }, {
+      uid: 's1', target: 'business', action: 'approve',
+    });
+    assert.deepEqual(
+      writes.map((w) => [w.path, w.merge]).sort(),
+      [['organizers/s1', true], ['photographers/s1', true], ['verificationAudit/a1', false], ['verifications/s1', false]],
+    );
+    assert.equal(writes.find((w) => w.path === 'organizers/s1')?.data.businessVerified, true);
+    assert.equal(writes.find((w) => w.path === 'photographers/s1')?.data.businessVerified, true);
+  });
+
+  it('a suspended organizer document next to a studio is not written', async () => {
+    const { firestore, writes } = fakeFirestore({
+      'verifications/s1': verificationToFirestore(submitted('s1', 'studio')),
+      'photographers/s1': { providerType: 'studio', onboardingComplete: true, verified: true },
+      'organizers/s1': { status: 'suspended', businessVerified: false },
+    });
+    await reviewVerification(businessDeps(new FirestoreVerificationStore(firestore)), { uid: 'staff1', isAdmin: true }, {
+      uid: 's1', target: 'business', action: 'approve',
+    });
+    assert.equal(writes.some((w) => w.path.startsWith('organizers/')), false);
   });
 
   it('getOrganizer reads organizers/{uid}: its status and business flag; missing is null', async () => {

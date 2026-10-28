@@ -19,6 +19,7 @@ import type {
   StaffCaller,
   VerificationDeps,
 } from './verification_ports.js';
+import { patchBusinessVerified } from './business_verification.js';
 import { DomainError } from './errors.js';
 import { acceptsOrders } from './provider_orders.js';
 import type { NotifyDeps } from './notification_ports.js';
@@ -367,6 +368,8 @@ export async function reviewVerification(
     const p = await tx.getProvider(input.uid as string);
     const organizerBusiness = target === 'business' && rec.business?.subject === 'organizer';
     if (!p && !organizerBusiness) throw new DomainError('not_found');
+    // Read before the first write: a studio that is also an active organizer gets both flags on approval.
+    const organizer = target === 'business' ? await tx.getOrganizer(input.uid as string) : null;
 
     if (target === 'identity') {
       if (!p) throw new DomainError('not_found');
@@ -520,8 +523,7 @@ export async function reviewVerification(
 
         tx.putVerification(after);
         // Same transaction as the record (Decision 12): the flag lands on the subject's own document.
-        if (rec.business.subject === 'organizer') tx.setOrganizerFlags(input.uid as string, { businessVerified: true });
-        else tx.setProviderFlags(input.uid as string, { businessVerified: true });
+        patchBusinessVerified(tx, input.uid as string, rec.business.subject, organizer);
         tx.addAudit({
           id: deps.ids.newId(),
           uid: input.uid as string,

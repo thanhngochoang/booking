@@ -6,6 +6,7 @@ import {
   type VerificationRecord,
 } from './verification.js';
 import type {
+  OrganizerVerificationView,
   TaxCodeInfo,
   VerificationDeps,
   VerificationTx,
@@ -31,14 +32,32 @@ export function isTaxCode(s: unknown): s is string {
  * organizer document. A suspended organizer is `conflict`; someone who is neither is `permission_denied`
  * (no provider profile) or `not_eligible` (a provider who is not a verified studio), as before.
  */
-async function businessSubjectOf(tx: VerificationTx, uid: string): Promise<BusinessSubject> {
+async function businessSubjectOf(
+  tx: VerificationTx,
+  uid: string,
+): Promise<{ subject: BusinessSubject; organizer: OrganizerVerificationView | null }> {
   const provider = await tx.getProvider(uid);
-  if (provider !== null && provider.providerType === 'studio' && provider.verified) return 'studio';
   const organizer = await tx.getOrganizer(uid);
-  if (organizer?.status === 'active') return 'organizer';
+  if (provider !== null && provider.providerType === 'studio' && provider.verified) return { subject: 'studio', organizer };
+  if (organizer?.status === 'active') return { subject: 'organizer', organizer };
   if (organizer?.status === 'suspended') throw new DomainError('conflict');
   if (provider === null) throw new DomainError('permission_denied');
   throw new DomainError('not_eligible');
+}
+
+/**
+ * The flag an approved business sets (Decision 3), in the transaction that decides it: a studio's lands on
+ * `photographers/{uid}`, an organizer's on `organizers/{uid}`, and a verified studio that is also an active
+ * organizer gets both (one business, two selling surfaces). `organizer` is read before the first write.
+ */
+export function patchBusinessVerified(
+  tx: VerificationTx,
+  uid: string,
+  subject: BusinessSubject,
+  organizer: OrganizerVerificationView | null,
+): void {
+  if (subject === 'studio') tx.setProviderFlags(uid, { businessVerified: true });
+  if (subject === 'organizer' || organizer?.status === 'active') tx.setOrganizerFlags(uid, { businessVerified: true });
 }
 
 const isOwnDoc = (docPath: string | null, uid: string): docPath is string =>
@@ -74,7 +93,7 @@ export async function submitBusinessVerification(
 ): Promise<VerificationChange> {
   if (!deps.taxCodes || !deps.vault) throw new DomainError('not_eligible');
 
-  const subject = await deps.store.runTransaction((tx) => businessSubjectOf(tx, uid));
+  const { subject } = await deps.store.runTransaction((tx) => businessSubjectOf(tx, uid));
 
   if (typeof raw !== 'object' || raw === null) {
     throw new DomainError('invalid_argument');
@@ -108,7 +127,8 @@ export async function submitBusinessVerification(
 
   return deps.store.runTransaction(async (tx) => {
     // Re-checked with the writes: the caller may have changed since the first read.
-    if ((await businessSubjectOf(tx, uid)) !== subject) throw new DomainError('conflict');
+    const standing = await businessSubjectOf(tx, uid);
+    if (standing.subject !== subject) throw new DomainError('conflict');
     const stored = await tx.getVerification(uid);
     // A studio's S21 record exists by then; an organizer has none until it first sends a business.
     if (!stored && subject === 'studio') throw new DomainError('not_eligible');
@@ -152,8 +172,7 @@ export async function submitBusinessVerification(
           purgeAfter: null,
         };
 
-        if (subject === 'organizer') tx.setOrganizerFlags(uid, { businessVerified: true });
-        else tx.setProviderFlags(uid, { businessVerified: true });
+        patchBusinessVerified(tx, uid, subject, standing.organizer);
       } else {
         // Rejected representative_mismatch
         bizRecord = {

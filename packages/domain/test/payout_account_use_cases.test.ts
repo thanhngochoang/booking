@@ -269,4 +269,59 @@ describe('organizers (S06.06, plan #223 Decision 3)', () => {
     assert.equal(res.accountLast4, '0002');
     assert.equal(w.payoutStore.organizerPayoutOk.get('org1'), true);
   });
+
+  it('an organizer without an approved business cannot save a payout account (not_eligible) and payoutAccountOk stays false', async () => {
+    const { w, deps } = orgWorld();
+    w.businessNames.delete('org1');
+    await refused(savePayoutAccount(deps, ORG, bank), 'not_eligible');
+    // Not even when the bank gives no name (the "review" decision providers get).
+    await refused(savePayoutAccount(deps, ORG, { ...bank, accountNumber: '0123459999' }), 'not_eligible');
+    assert.equal(w.payoutStore.accounts.size, 0);
+    assert.equal(w.payoutStore.organizerPayoutOk.has('org1'), false);
+    // With the business approved, the unsupported lookup (review) is accepted as for providers.
+    w.businessNames.set('org1', BUSINESS);
+    const saved = await savePayoutAccount(deps, ORG, { ...bank, accountNumber: '0123459999' });
+    assert.equal(saved.nameStatus, 'pending_review');
+    assert.equal(w.payoutStore.organizerPayoutOk.get('org1'), true);
+  });
+
+  describe('a photographer who is also an active organizer', () => {
+    /** p1 (role photographer, identity name Nguyễn Văn An) with an active organizer document. */
+    function dual(businessName: string | null) {
+      const w = createPayoutWorld();
+      w.payoutStore.seedOrganizer('p1', 'active');
+      if (businessName !== null) w.businessNames.set('p1', businessName);
+      // The fake bank answers one holder name; the use case compares it with each verified name.
+      const deps: PayoutAccountDeps = { ...w.accountDeps, lookup: new FakeAccountNameLookup('Nguyễn Văn An') };
+      return { w, deps };
+    }
+
+    it('keeps the identity-name check; when the business name matches the same holder it also sets payoutAccountOk', async () => {
+      const { w, deps } = dual('Nguyễn Văn An');
+      const saved = await savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123456789' });
+      assert.equal(saved.nameStatus, 'matched');
+      assert.equal(w.payoutStore.organizerPayoutOk.get('p1'), true);
+    });
+
+    it('a business name that does not match leaves the organizer flag unset; the provider save still works', async () => {
+      const { w, deps } = dual('CÔNG TY TNHH BÃI ĐÁ');
+      const saved = await savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123456789' });
+      assert.equal(saved.nameStatus, 'matched');
+      assert.equal(w.payoutStore.organizerPayoutOk.has('p1'), false);
+    });
+
+    it('without an approved business the provider save works as today and no flag is written; a mismatch with the identity is still refused', async () => {
+      const { w, deps } = dual(null);
+      await refused(savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123454321' }), 'name_mismatch');
+      await savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123456789' });
+      assert.equal(w.payoutStore.organizerPayoutOk.has('p1'), false);
+    });
+
+    it('a suspended organizer document on a photographer sets nothing', async () => {
+      const { w, deps } = dual('Nguyễn Văn An');
+      w.payoutStore.seedOrganizer('p1', 'suspended');
+      await savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123456789' });
+      assert.equal(w.payoutStore.organizerPayoutOk.has('p1'), false);
+    });
+  });
 });

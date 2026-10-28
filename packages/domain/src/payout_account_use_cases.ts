@@ -43,8 +43,18 @@ export async function isSameAccount(
  * organizer; anyone else, a customer who is not an organizer or a suspended organizer, is `permission_denied`.
  */
 export async function payoutHolderOf(tx: PayoutTx, uid: string): Promise<PayoutHolder> {
-  if ((await tx.getUserRole(uid)) === 'photographer') return 'provider';
-  if ((await tx.getOrganizerStatus(uid)) === 'active') return 'organizer';
+  return (await payoutStandingOf(tx, uid)).holder;
+}
+
+/**
+ * `payoutHolderOf` plus whether the caller also has an `active` organizer document: a provider who is
+ * one too keeps the identity-name check and, in addition, may set `organizers/{uid}.payoutAccountOk`.
+ */
+export async function payoutStandingOf(tx: PayoutTx, uid: string): Promise<{ holder: PayoutHolder; organizer: boolean }> {
+  const isProvider = (await tx.getUserRole(uid)) === 'photographer';
+  const organizer = (await tx.getOrganizerStatus(uid)) === 'active';
+  if (isProvider) return { holder: 'provider', organizer };
+  if (organizer) return { holder: 'organizer', organizer };
   throw new DomainError('permission_denied');
 }
 
@@ -62,22 +72,22 @@ export async function verifiedNameFor(
  * One transaction before any bank lookup (`lookupPayoutAccountName` and `savePayoutAccount`): the
  * caller must be a provider or an active organizer, then `guard` (refusals that must not spend a
  * lookup), then one lookup is charged to the caller's Vietnam day; the 21st is `limit_exceeded` and
- * charges nothing. Returns who the caller is and what `guard` returned.
+ * charges nothing. Returns who the caller is (`organizer`: also an active organizer) and what `guard` returned.
  */
 export async function chargeLookup<T>(
   deps: Pick<PayoutAccountDeps, 'store' | 'clock'>,
   uid: string,
   guard: (tx: PayoutTx) => Promise<T>,
-): Promise<{ holder: PayoutHolder; guarded: T }> {
+): Promise<{ holder: PayoutHolder; organizer: boolean; guarded: T }> {
   return deps.store.runTransaction(async (tx) => {
-    const holder = await payoutHolderOf(tx, uid);
+    const { holder, organizer } = await payoutStandingOf(tx, uid);
     const guarded = await guard(tx);
     const day = formatVnDate(deps.clock.now());
     const quota = await tx.getLookupQuota(uid);
     const count = quota !== null && quota.day === day ? quota.count : 0;
     if (count >= NAME_LOOKUPS_PER_DAY) throw new DomainError('limit_exceeded');
     tx.putLookupQuota(uid, { day, count: count + 1 });
-    return { holder, guarded };
+    return { holder, organizer, guarded };
   });
 }
 

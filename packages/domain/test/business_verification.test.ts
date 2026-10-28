@@ -535,24 +535,54 @@ describe('business_verification', () => {
       assert.equal(view?.businessVerified, true);
     });
 
+    const verifiedStudio = async (world: ReturnType<typeof createVerificationWorld>, idHash = 'h:x') => {
+      world.store.providers.set('s1', { providerType: 'studio', onboardingComplete: true, verified: true, businessVerified: false });
+      world.store.identities.set('s1', {
+        legalName: 'CHỦ STUDIO', dob: '1990-01-01', gender: null, idNumberEnc: 'enc', idHash, method: 'vneid',
+        provider: 'fake', providerRef: 'ref', verifiedAt: '2026-10-10T10:00:00.000Z',
+      });
+      world.store.verifications.set('s1', emptyVerification('s1', 'studio', world.clock.now()));
+    };
+
     it("a studio's approval behaves as today: it patches photographers/{uid} and no organizer", async () => {
       const world = createVerificationWorld();
       const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
-      world.store.providers.set('s1', { providerType: 'studio', onboardingComplete: true, verified: true, businessVerified: false });
-      world.store.identities.set('s1', {
-        legalName: 'CHỦ STUDIO', dob: '1990-01-01', gender: null, idNumberEnc: 'enc', idHash: 'h:x', method: 'vneid',
-        provider: 'fake', providerRef: 'ref', verifiedAt: '2026-10-10T10:00:00.000Z',
-      });
-      world.store.organizers.set('s1', activeOrg); // a studio that is also an organizer stays a studio submission
-      const sent = await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' }).catch((e: unknown) => e);
-      // No verification record yet: a provider needs its S21 record first, as today.
-      assert.ok(sent instanceof DomainError && sent.code === 'not_eligible');
-      world.store.verifications.set('s1', emptyVerification('s1', 'studio', world.clock.now()));
+      await verifiedStudio(world);
       const res = await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' });
       assert.equal(res.after.business?.subject, 'studio');
       await reviewVerification(deps, { uid: 'staff1', isAdmin: true }, { uid: 's1', target: 'business', action: 'approve' });
       assert.equal(world.store.providerFlags.get('s1')?.businessVerified, true);
       assert.equal(world.store.organizerFlags.size, 0);
+    });
+
+    it('a verified studio who is also an active organizer: a studio submission whose approval patches both documents', async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      await verifiedStudio(world);
+      world.store.organizers.set('s1', activeOrg);
+      const res = await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' });
+      assert.equal(res.after.business?.subject, 'studio');
+      await reviewVerification(deps, { uid: 'staff1', isAdmin: true }, { uid: 's1', target: 'business', action: 'approve' });
+      assert.equal(world.store.providerFlags.get('s1')?.businessVerified, true);
+      assert.equal(world.store.organizerFlags.get('s1')?.businessVerified, true);
+    });
+
+    it('the dual-role studio approved at once (household matching its identity) patches both too; a suspended organizer doc is left alone', async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      const code = '012345678901';
+      await verifiedStudio(world, await new MemoryIdentityVault().hashId(code));
+      world.store.organizers.set('s1', activeOrg);
+      await submitBusinessVerification(deps, 's1', { taxCode: code });
+      assert.equal(world.store.providerFlags.get('s1')?.businessVerified, true);
+      assert.equal(world.store.organizerFlags.get('s1')?.businessVerified, true);
+
+      const other = createVerificationWorld();
+      await verifiedStudio(other, await new MemoryIdentityVault().hashId(code));
+      other.store.organizers.set('s1', suspendedOrg);
+      await submitBusinessVerification({ ...other.deps, taxCodes: new FakeTaxCodeLookup() }, 's1', { taxCode: code });
+      assert.equal(other.store.providerFlags.get('s1')?.businessVerified, true);
+      assert.equal(other.store.organizerFlags.size, 0);
     });
   });
 });

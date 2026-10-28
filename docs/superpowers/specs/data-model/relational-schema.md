@@ -1230,6 +1230,7 @@ create table verifications (
   nudged_at      timestamptz,
   version        int not null default 1,
   -- nhánh doanh nghiệp (Firestore: verifications/{uid}.business)
+  business_subject text check (business_subject in ('studio','organizer')),   -- chủ hồ sơ doanh nghiệp (S30, #223); bản ghi cũ không có thì là 'studio'
   business_status text check (business_status in ('submitted','approved','rejected')),
   business_kind  text check (business_kind in ('company','household')),
   business_tax_code text,                           -- hộ kinh doanh: số định danh 12 số của chủ, hiện lưu dạng rõ (câu hỏi mở 9 của spec xác minh)

@@ -20,7 +20,7 @@ import {
   type PayoutAccount,
 } from './payout_account.js';
 import { checkOtp, otpCodeHashInput, otpTargetHashInput } from './payout_otp.js';
-import { chargeLookup, isSameAccount, payoutHolderOf, verifiedNameFor } from './payout_account_use_cases.js';
+import { chargeLookup, isSameAccount, payoutStandingOf, verifiedNameFor } from './payout_account_use_cases.js';
 import type { PayoutAccountDeps } from './payout_ports.js';
 
 export interface Caller {
@@ -80,7 +80,7 @@ export async function savePayoutAccount(
   // Before any external call: a provider or an active organizer only, not the account already active,
   // a change carries a code; then one lookup is charged to the 20 a day (the save must not be an
   // uncapped oracle).
-  const { holder, guarded: seenId } = await chargeLookup(deps, caller.uid, async (tx) => {
+  const { holder, organizer: isOrganizer, guarded: seenId } = await chargeLookup(deps, caller.uid, async (tx) => {
     const current = await tx.getActiveAccount(caller.uid);
     if (await isSameAccount(deps.cipher, current, bank.code, number)) throw new DomainError('conflict');
     if (current !== null && otpCode === undefined) throw new DomainError('otp_required');
@@ -89,8 +89,16 @@ export async function savePayoutAccount(
 
   // Outside the transaction: the verified name and the bank lookup (a slow external call).
   const verifiedName = await verifiedNameFor(deps, holder, caller.uid);
+  // Decision 3: an organizer's account is in its verified business's name, so the business must be
+  // approved first; without that name there is nothing to compare the holder with.
+  if (holder === 'organizer' && holderNameKey(verifiedName) === '') throw new DomainError('not_eligible');
   const lookup = await deps.lookup.lookup({ bankCode: bank.code, accountNumber: number, holder });
   const decision = holderNameDecision(lookup, verifiedName);
+  // A provider who is also an active organizer keeps the identity-name check above and is compared with its
+  // business name too (the same bank answer): not refused → `organizers/{uid}.payoutAccountOk`.
+  const businessName = holder === 'organizer' ? verifiedName : isOrganizer ? await verifiedNameFor(deps, 'organizer', caller.uid) : null;
+  const businessDecision = holderNameKey(businessName) === '' ? null : holderNameDecision(lookup, businessName);
+  const setsOrganizerFlag = businessDecision !== null && REFUSAL[businessDecision] === null;
   const refusal = REFUSAL[decision];
   const last4 = accountLast4(number);
   const enc = refusal === null ? await deps.cipher.encrypt(number) : '';
@@ -99,7 +107,8 @@ export async function savePayoutAccount(
 
   const outcome = await deps.store.runTransaction(async (tx): Promise<Outcome> => {
     // Changed since the checks above (a suspension, a role): refuse, the client retries.
-    if ((await payoutHolderOf(tx, caller.uid)) !== holder) throw new DomainError('conflict');
+    const standing = await payoutStandingOf(tx, caller.uid);
+    if (standing.holder !== holder || standing.organizer !== isOrganizer) throw new DomainError('conflict');
     if (refusal !== null) throw new DomainError(refusal);
     const now = deps.clock.now();
     const at = now.toISOString();
@@ -157,9 +166,9 @@ export async function savePayoutAccount(
       nameStatus: account.nameStatus,
       activeFrom,
     });
-    // Decision 3: a saved account (the bank's name matched the business, or staff compare it before the
-    // first payout) is what lets an organizer sell; a refusal above never reaches this line.
-    if (holder === 'organizer') tx.setOrganizerPayoutOk(caller.uid, true);
+    // Decision 3: a saved account whose holder was not refused against the verified business name (matched, or
+    // staff compare it before the first payout) is what lets an organizer sell.
+    if (setsOrganizerFlag) tx.setOrganizerPayoutOk(caller.uid, true);
     return {
       refused: null,
       saved: { accountId, accountLast4: last4, activeFrom, nameStatus: account.nameStatus },
