@@ -46,6 +46,7 @@ class EarningItem {
     this.estimated = true,
     this.milestonesDone,
     this.milestonesTotal,
+    this.milestonesRefunded = const <String>[],
   }) : netVnd = netVnd ?? amountVnd;
 
   final String id;
@@ -82,6 +83,10 @@ class EarningItem {
   /// has no milestone documents.
   final int? milestonesDone;
   final int? milestonesTotal;
+
+  /// Milestone kinds (`shoot` / `delivery`) refunded back to the customer
+  /// (#207 Decision 15).
+  final List<String> milestonesRefunded;
 }
 
 /// The three totals of S06.05: Đang giữ, Chờ chi trả, Đã nhận.

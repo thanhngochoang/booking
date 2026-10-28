@@ -51,6 +51,9 @@ export function earningItemToFirestore(i: EarningItem): DocumentData {
     estimated: i.estimated,
     milestonesDone: i.milestonesDone,
     milestonesTotal: i.milestonesTotal,
+    ...(i.milestonesRefunded && i.milestonesRefunded.length > 0
+      ? { milestonesRefunded: [...i.milestonesRefunded] }
+      : {}),
     state: i.state,
     holdReason: i.holdReason,
     paidOutAt: i.paidOutAt === null ? null : ts(i.paidOutAt),
@@ -85,6 +88,14 @@ export function earningItemFromFirestore(id: string, d: DocumentData): EarningIt
     estimated: d.estimated !== false,
     milestonesDone: numOrNull(d.milestonesDone),
     milestonesTotal: numOrNull(d.milestonesTotal),
+    ...(Array.isArray(d.milestonesRefunded) &&
+    d.milestonesRefunded.some((k) => k === 'shoot' || k === 'delivery')
+      ? {
+          milestonesRefunded: d.milestonesRefunded.filter(
+            (k): k is 'shoot' | 'delivery' => k === 'shoot' || k === 'delivery',
+          ),
+        }
+      : {}),
     state: ((EARNING_STATES as readonly unknown[]).includes(d.state) ? d.state : 'held') as EarningState,
     holdReason: typeof d.holdReason === 'string' ? d.holdReason : null,
     paidOutAt: iso(d.paidOutAt),
@@ -102,10 +113,20 @@ export function earningsSummaryToFirestore(s: EarningsSummary): DocumentData {
   };
 }
 
-/** Released or paid_out / all docs of `bookings/{id}/milestones` (written by the delivery flow, #152); none → null. */
-export function milestonesOfDocs(docs: readonly DocumentData[]): { done: number; total: number } | null {
+/**
+ * Released or paid_out / non-refunded docs of `bookings/{id}/milestones` (written by the delivery
+ * flow, #152); refunded kinds reported in `refunded` (#207 Decision 15); none → null.
+ */
+export function milestonesOfDocs(
+  docs: readonly DocumentData[],
+): { done: number; total: number; refunded?: readonly ('shoot' | 'delivery')[] } | null {
   if (docs.length === 0) return null;
-  return { done: docs.filter((d) => d.status === 'released' || d.status === 'paid_out').length, total: docs.length };
+  const done = docs.filter((d) => d.status === 'released' || d.status === 'paid_out').length;
+  const total = docs.filter((d) => d.status !== 'refunded').length;
+  const refunded = docs
+    .filter((d) => d.status === 'refunded')
+    .map((d): 'shoot' | 'delivery' => (d.kind === 'shoot' ? 'shoot' : 'delivery'));
+  return refunded.length > 0 ? { done, total, refunded } : { done, total };
 }
 
 /** Earnings projection in Firestore; writes are buffered until all reads are done. */

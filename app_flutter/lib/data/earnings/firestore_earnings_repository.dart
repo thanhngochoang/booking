@@ -64,6 +64,13 @@ EarningItem? earningItemFrom(String id, Map<String, dynamic> d) {
     estimated: d['estimated'] != false,
     milestonesDone: _intOrNull(d['milestonesDone']),
     milestonesTotal: _intOrNull(d['milestonesTotal']),
+    milestonesRefunded: switch (d['milestonesRefunded']) {
+      final List<Object?> list => [
+        for (final k in list)
+          if (k is String && (k == 'shoot' || k == 'delivery')) k,
+      ],
+      _ => const <String>[],
+    },
   );
 }
 
