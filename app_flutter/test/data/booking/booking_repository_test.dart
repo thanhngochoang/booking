@@ -381,5 +381,82 @@ void main() {
       expect(bookingFromFirestore('b_bad', {}), isNull);
       expect(bookingFromFirestore('b_bad', {'customerId': 'c1'}), isNull);
     });
+
+    test('bookingFromFirestore without deliveryDays reads 7; with 5 reads 5', () {
+      final base = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'shot',
+        'deposit': 1000000,
+        'remaining': 0,
+      };
+      expect(bookingFromFirestore('b', base)?.deliveryDays, 7);
+      expect(bookingFromFirestore('b', {...base, 'deliveryDays': 5})?.deliveryDays, 5);
+      expect(bookingFromFirestore('b', {...base, 'deliveryDays': 0})?.deliveryDays, 7);
+      expect(bookingFromFirestore('b', {...base, 'deliveryDays': 120})?.deliveryDays, 90);
+    });
+
+    test('DeliveryCancel maps at/dueAt/refundedAmount from Timestamps', () {
+      final base = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'completed',
+        'deposit': 1000000,
+        'remaining': 0,
+      };
+      expect(bookingFromFirestore('b', base)?.deliveryCancel, isNull);
+
+      final at = DateTime.utc(2026, 10, 21, 10);
+      final dueAt = DateTime.utc(2026, 10, 20, 10);
+      final withCancel = bookingFromFirestore('b', {
+        ...base,
+        'deliveryCancel': {
+          'at': Timestamp.fromDate(at),
+          'dueAt': Timestamp.fromDate(dueAt),
+          'refundedAmount': 500000,
+        },
+      });
+      expect(withCancel?.deliveryCancel?.at, at);
+      expect(withCancel?.deliveryCancel?.dueAt, dueAt);
+      expect(withCancel?.deliveryCancel?.refundedAmount, 500000);
+    });
+  });
+
+  test('bookingErrorOf maps failed-precondition with details.field delivered/not_late to alreadyDelivered/notLate', () {
+    expect(
+      bookingErrorOf(const BookingException('not_eligible', field: 'delivered')),
+      BookingErrorCode.alreadyDelivered,
+    );
+    expect(
+      bookingErrorOf(const BookingException('not_eligible', field: 'not_late')),
+      BookingErrorCode.notLate,
+    );
+    expect(
+      bookingErrorOf(const BookingException('not_eligible', field: 'status')),
+      BookingErrorCode.notEligible,
+    );
+  });
+
+  test('BookingMilestones.fromDocs reads shoot/delivery amounts and statuses; missing docs -> null', () {
+    expect(BookingMilestones.fromDocs({}), isNull);
+    expect(
+      BookingMilestones.fromDocs({
+        'shoot': {'amount': 500000, 'status': 'released'},
+      }),
+      isNull,
+    );
+    final ms = BookingMilestones.fromDocs({
+      'shoot': {'amount': 750000, 'status': 'released'},
+      'delivery': {'amount': 750000, 'status': 'held'},
+    });
+    expect(ms, isNotNull);
+    expect(ms?.shootAmount, 750000);
+    expect(ms?.shootStatus, 'released');
+    expect(ms?.deliveryAmount, 750000);
+    expect(ms?.deliveryStatus, 'held');
   });
 }

@@ -114,6 +114,19 @@ class FirestoreBookingRepository implements BookingRepository {
         );
   }
 
+  @override
+  Stream<BookingMilestones?> watchMilestones(String bookingId) {
+    return _bookingsCol
+        .doc(bookingId)
+        .collection('milestones')
+        .snapshots()
+        .map(
+          (qs) => BookingMilestones.fromDocs({
+            for (final d in qs.docs) d.id: d.data(),
+          }),
+        );
+  }
+
   Future<T> _call<T>(
     String name,
     Map<String, dynamic> data,
@@ -132,7 +145,10 @@ class FirestoreBookingRepository implements BookingRepository {
       final code = details is Map && details['code'] is String
           ? details['code'] as String
           : e.message ?? e.code;
-      throw BookingException(code);
+      final field = details is Map && details['field'] is String
+          ? details['field'] as String
+          : null;
+      throw BookingException(code, field: field);
     }
   }
 
@@ -252,6 +268,22 @@ class FirestoreBookingRepository implements BookingRepository {
         return booking;
       },
     );
+  }
+
+  @override
+  Future<Booking> cancelLateDelivery({required String bookingId}) async {
+    final res = await _call<Map<String, dynamic>>(
+      'cancelLateDelivery',
+      {'bookingId': bookingId},
+      (raw) => raw is Map ? raw.cast<String, dynamic>() : const {},
+    );
+    final updated = await getBooking(bookingId);
+    if (updated != null) return updated;
+    if (res.containsKey('customerId')) {
+      final parsed = bookingFromFirestore(bookingId, res);
+      if (parsed != null) return parsed;
+    }
+    throw const BookingException('invalid_response');
   }
 
   Booking _bookingOf(dynamic raw) {

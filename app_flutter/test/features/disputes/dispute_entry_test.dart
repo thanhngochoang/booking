@@ -91,6 +91,29 @@ void main() {
       expect(bookingDisputeClosesAt(b), _now.add(const Duration(hours: 22)));
     });
 
+    test('bookingDisputeClosesAt is null on a completed booking with deliveryCancel or approvedAt even with escrow held; a legacy completed booking keeps completedAt + 24 h', () {
+      final completedAt = _now.subtract(const Duration(hours: 2));
+      final legacy = _booking(
+        BookingStatus.completed,
+        completedAt: completedAt,
+        escrow: EscrowStatus.held,
+      );
+      expect(bookingDisputeClosesAt(legacy), _now.add(const Duration(hours: 22)));
+
+      final withApproved = legacy.copyWith(approvedAt: completedAt);
+      expect(bookingDisputeClosesAt(withApproved), isNull);
+
+      final withLateCancel = legacy.copyWith(
+        escrowStatus: EscrowStatus.partiallyRefunded,
+        deliveryCancel: DeliveryCancel(
+          at: completedAt,
+          dueAt: completedAt.subtract(const Duration(days: 1)),
+          refundedAmount: 500000,
+        ),
+      );
+      expect(bookingDisputeClosesAt(withLateCancel), isNull);
+    });
+
     test('a resolved shoot dispute leaves the delivery window open once '
         'approved; an open one or a shot booking hides it', () {
       final until = _now.add(const Duration(hours: 47));
