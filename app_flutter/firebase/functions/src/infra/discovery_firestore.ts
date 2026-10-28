@@ -69,15 +69,18 @@ export class FirestoreDiscoveryStatsStore implements DiscoveryStatsStore {
     return prices;
   }
 
+  /**
+   * Completed bookings minus those ended by a late delivery cancel (#207 Decision 17). Subtracted
+   * rather than filtered with `deliveryCancel == null`, which would drop every booking written
+   * without the field.
+   */
   async completedBookings(uid: string): Promise<number> {
-    const snap = await this.firestore
-      .collection('bookings')
-      .where('photographerId', '==', uid)
-      .where('status', 'in', ['completed', 'reviewed'])
-      .where('deliveryCancel', '==', null)
-      .count()
-      .get();
-    return snap.data().count;
+    const bookings = this.firestore.collection('bookings').where('photographerId', '==', uid);
+    const [all, late] = await Promise.all([
+      bookings.where('status', 'in', ['completed', 'reviewed']).count().get(),
+      bookings.where('deliveryCancel', '!=', null).count().get(),
+    ]);
+    return Math.max(0, all.data().count - late.data().count);
   }
 
   async apply(uid: string, patch: DiscoveryStatsPatch): Promise<void> {

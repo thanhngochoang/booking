@@ -46,7 +46,11 @@ Verified locally on 2026-10-28: `packages/domain` test, lint and typecheck; Func
 
 ## 6. Deploy order
 
-Functions (callable `cancelLateDelivery`, trigger and adapter changes) before the app. No rules, indexes or Scheduler entries.
+1. Firestore indexes first: `bookings (photographerId, deliveryCancel)` and `bookings (customerId, deliveryCancel)`, used by the late-cancel subtraction in the completed count and the shoot badges.
+2. Functions (callable `cancelLateDelivery`, trigger, adapter and count changes).
+3. The app.
+
+No rules or Scheduler entries.
 
 ## 7. QA
 
@@ -59,3 +63,18 @@ Run the emulators with the seed; as Lan, open `/b/seed-booking-shot-late` (shot 
 - A clock fudge the draft added to `FakeBookingRepository.cancelLateDelivery` was reverted; the fake's real clock already makes the fixtures late.
 - Deletions of `services/{README.md,dispatch/*,recommender/*}` found in the working tree are unrelated to #207 and were left out of every commit.
 - Spec status cells point at #207 until the PR exists.
+
+## 9. Final review fixes
+
+A fresh whole-branch review found:
+
+- **Fixed: completed count and shoot badges dropped older bookings.** The draft filtered `deliveryCancel == null`, which in Firestore matches only documents that have the field, so every booking written before this branch fell out of `completedCount`, `completedShoots` and `customerShoots`; the three-field query also had no composite index. The counts now keep the old query and subtract `deliveryCancel != null` (`discovery_firestore.ts` `completedBookings`, `badge_firestore.ts`), with the two indexes above. Tests: `completedBookings subtracts late-cancelled bookings…`, `shoot counts subtract late-cancelled bookings…`, `the late-cancel counts have their composite indexes`.
+- **Fixed: the integration test asserted the wrong statuses and notification id** and read trigger-written documents without waiting. It now expects payment `partially_refunded` / escrow `released`, the id `n_delivery_cancelled_late_{bookingId}`, and polls with `waitFor`. Still not run locally (standing rule).
+- **Fixed: S05.08 stayed open on a `not_eligible` refusal** (the first call committed but its response was lost, or a legacy payment without milestones): the sheet now closes with `LateCancelOutcome.notEligible` and S05.02 toasts `detailErrorNotEligible` and refreshes.
+
+Needs the owner (not changed):
+
+- **In-flight bookings without a `deliveryDays` snapshot read 7 days** (Decision 3), even when their package promises more, so a 30-day package booked before deploy can show "Quá hạn" after 7 days. Options: a one-off backfill copying `deliverables.deliveryDays` into non-terminal bookings at deploy, or keep 7.
+- **The milestone refund goes straight to the paying account** (V2, Decision 5), while other customer-initiated refunds of bank-QR payments wait 24 h for an S22.04 account choice (#141). Options: apply the account-choice wait here too, or confirm V2 for late cancels.
+
+Deferred minors: the dispute guard reads only the booking mirror, not the transactional payment's milestones; a fully refunded payment stays `partially_refunded` after a shoot refund plus a late cancel; the provider-name fallback reuses `earningsCustomerFallback` ("Khách"); the late card still shows on a disputed booking (tapping toasts the dispute); a dead `ref.read` of the auto-dispose milestones provider in S05.02 and a dead response fallback in `firestore_booking_repository.dart`; no test with `delivery` before `shoot` in the milestones array; the memory discovery store and `hireCount` do not exclude late-cancelled bookings.

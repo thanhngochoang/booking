@@ -15,13 +15,19 @@ enum LateCancelOutcome {
   alreadyDelivered,
   notLate,
   disputed,
+
+  /// Refused for another reason (already `completed`, e.g. the first call
+  /// committed but its response was lost; or no milestones): nothing left to
+  /// cancel, so the sheet closes and S05.02 refreshes.
+  notEligible,
   failed,
 }
 
 /// Opens the S05.08 confirmation sheet over [showAppSheet].
 ///
 /// Terminal refusals ([LateCancelOutcome.alreadyDelivered],
-/// [LateCancelOutcome.notLate], [LateCancelOutcome.disputed]) close the sheet
+/// [LateCancelOutcome.notLate], [LateCancelOutcome.disputed],
+/// [LateCancelOutcome.notEligible]) close the sheet
 /// so S05.02 can toast and refresh; transient errors keep the sheet open with
 /// a SnackBar like [showConfirmSheet].
 Future<LateCancelOutcome> showLateCancelSheet(
@@ -84,6 +90,8 @@ class _LateCancelBodyState extends ConsumerState<_LateCancelBody> {
           Navigator.of(context).pop(LateCancelOutcome.notLate);
         case BookingErrorCode.conflict:
           Navigator.of(context).pop(LateCancelOutcome.disputed);
+        case BookingErrorCode.notEligible:
+          Navigator.of(context).pop(LateCancelOutcome.notEligible);
         default:
           setState(() => _running = false);
           ScaffoldMessenger.of(context)

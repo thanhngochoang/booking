@@ -292,6 +292,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           case LateCancelOutcome.disputed:
             _say(l10n.lateCancelDisputed);
             ref.invalidate(bookingProvider(b.id));
+          case LateCancelOutcome.notEligible:
+            _say(l10n.detailErrorNotEligible);
+            ref.invalidate(bookingProvider(b.id));
           case LateCancelOutcome.kept:
           case LateCancelOutcome.failed:
             break;

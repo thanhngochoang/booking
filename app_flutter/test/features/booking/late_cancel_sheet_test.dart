@@ -234,6 +234,39 @@ void main() {
     expect(find.text('Chưa quá hạn bàn giao.'), findsOneWidget);
   });
 
+  testWidgets(
+    'a not_eligible refusal (the booking already completed, e.g. after a lost response) closes the sheet and toasts detailErrorNotEligible',
+    (tester) async {
+      final repo = RecordingBookingRepository()
+        ..seedBooking(_lateBooking())
+        ..nextError = BookingErrorCode.notEligible;
+      await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        now: _lateNow,
+        bookings: repo,
+      );
+      await _settle(tester);
+
+      final open = find.byKey(const Key('late-delivery-cancel'));
+      await tester.ensureVisible(open);
+      await tester.tap(open);
+      await _settle(tester);
+
+      await tester.tap(_inSheet(find.byKey(const Key('late-cancel-confirm'))));
+      await _settle(tester);
+
+      expect(_sheet, findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.text('Không còn thực hiện được thao tác này'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('disputed closes and toasts lateCancelDisputed', (tester) async {
     final repo = RecordingBookingRepository()
       ..seedBooking(_lateBooking())
