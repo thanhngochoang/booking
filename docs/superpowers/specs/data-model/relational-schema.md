@@ -1846,8 +1846,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `studio_collaborations/{studioId}_{uid}` + `history/{ulid}` | `studio_collaborations` | Mỗi bản trong `history` → một dòng (theo `createdAt`, `seq` tăng dần); tài liệu chính → dòng có `seq` lớn nhất; `studio.*`, `collaborator.*`→cột phẳng; `applicationId` (`{postId}_{uid}`) → `application_post_id` |
 | `collab_jobs/{bookingId}_{uid}` | `collab_jobs` | Id ghép thành khoá `(booking_id, collaborator_id)`; `shoot.*`→`shoot_day`, `shoot_start`, `shoot_end`, `service_name`, `place_name`; `pay.*`→`pay_*` (`pay.amount` = `agreed_fee`, không thành cột riêng); `pay.paidOn` (`yyyy-MM-dd`) → `pay_paid_on date` |
 | `photographers/{uid}/private/recruit` | `recruit_counters` | `{day, count}` của `postActions`, `collabActions`, `applyActions`, `notices` → cặp `*_day`, `*`; `notices.postIds`→`notice_post_ids`; `unpaidFlags[]`→`timestamptz[]` |
-| `photographers/{uid}.recruitMatchKeys[]` | `organizers.managedSpotIds` (Firestore) | `spots.managed_by` | Ghi cùng giao dịch duyệt `spot_claims` (S30); bảng không lưu cột riêng |
-| `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
+| `photographers/{uid}.recruitMatchKeys[]` | `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
+| `organizers/{uid}.managedSpotIds[]` | (dẫn xuất từ `spots.managed_by`) | S30; ghi cùng giao dịch duyệt `spot_claims`; bảng không lưu cột riêng |
 | `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
 | `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
@@ -1912,6 +1912,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | Số dư treo/chờ chi trả | `ledger_entries` | Truy vấn tổng; không lưu cột số dư riêng |
 | Lịch sử thanh toán của khách và tổng "Đang giữ / Đang hoàn" (S22.01, #141) | `payments`, `refunds` | View `payer_payment_rows`; Firestore giữ hình chiếu do trigger ghi |
 | `recruit_posts.application_count`, `recruit_counters.*_count` | `recruit_applications`, `recruit_posts`, `studio_collaborations` | Use case S27 cập nhật trong cùng giao dịch với đổi trạng thái (kể cả job); đếm lại được bằng truy vấn |
+| `organizers.managedSpotIds` (Firestore) | `spots.managed_by` | Ghi cùng giao dịch duyệt `spot_claims` (S30); bảng không lưu cột riêng |
 | `photographer_recruit_match_keys` | `photographers.service_*`, `photographer_specialties`, `users.role` | `onPhotographerWrite`, `onUserWrite` (đổi vai trò); studio và tài khoản ở vai khách không có dòng |
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
