@@ -44,7 +44,8 @@ export function taxRateBpOf(payee: PayeeKind, policy: PayoutPolicy): number {
   return payee === 'studio' || payee === 'organizer' ? 0 : policy.individualTaxBp.vat + policy.individualTaxBp.pit;
 }
 
-const feeBpOf = (payee: PayeeKind, policy: PayoutPolicy): number =>
+/** The commission rate the policy applies to a payee kind (`organizer` absent → 0). */
+export const feeRateBpOf = (payee: PayeeKind, policy: PayoutPolicy): number =>
   payee === 'organizer' ? (policy.feeBp.organizer ?? 0) : policy.feeBp[payee];
 
 /**
@@ -56,7 +57,7 @@ const feeBpOf = (payee: PayeeKind, policy: PayoutPolicy): number =>
 export function payoutLineOf(gross: number, payee: PayeeKind, policy: PayoutPolicy, feeBp?: number): PayoutLine {
   if (!Number.isSafeInteger(gross) || gross < 0) throw new DomainError('invalid_argument');
   const amount = gross;
-  const feeRateBp = feeBp ?? feeBpOf(payee, policy);
+  const feeRateBp = feeBp ?? feeRateBpOf(payee, policy);
   const taxRateBp = taxRateBpOf(payee, policy);
   const fee = Math.min(amount, Math.round((amount * feeRateBp) / BP));
   const tax = Math.min(amount - fee, Math.round((amount * taxRateBp) / BP));

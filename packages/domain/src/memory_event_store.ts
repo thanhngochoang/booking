@@ -104,6 +104,19 @@ export class MemoryEventStore implements EventStore, PaymentSource {
       this.failNext = f.times > 1 ? { ...f, times: f.times - 1 } : null;
       throw f.error;
     }
+    const open = this.openTx();
+    const result = await fn(open.tx);
+    open.commit();
+    return result;
+  }
+
+  /**
+   * One attempt's transaction, committed by the caller: `commit` throws RetryableConflict when
+   * something read changed meanwhile, else applies the staged writes without yielding. The memory
+   * booking store runs one inside each of its transactions when it is linked to this store (S30
+   * bookings with entry tickets, `MemoryGroupStore`).
+   */
+  openTx(): { readonly tx: EventTx; commit(): void } {
     const staged: Array<() => void> = [];
     // Optimistic concurrency: remember the revision of everything read, check it again at commit.
     const seen = new Map<string, number>();
@@ -228,11 +241,14 @@ export class MemoryEventStore implements EventStore, PaymentSource {
       setChatReadOnlyAt: (chatId, at) => write(() => { this.chatReadOnlyAt.set(chatId, at); }),
     };
 
-    const result = await fn(tx);
-    // Commit: nothing may have changed under us, then apply without yielding.
-    for (const [k, r] of seen) if (this.rev(k) !== r) throw new RetryableConflict();
-    for (const apply of staged) apply();
-    return result;
+    return {
+      tx,
+      commit: () => {
+        // Commit: nothing may have changed under us, then apply without yielding.
+        for (const [k, r] of seen) if (this.rev(k) !== r) throw new RetryableConflict();
+        for (const apply of staged) apply();
+      },
+    };
   }
 
   async dueForClose(now: Date, limit: number): Promise<EventRecord[]> {

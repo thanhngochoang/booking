@@ -1861,6 +1861,31 @@ create index ix_event_regs_visit_day on event_registrations (visit_day, status) 
 alter table payments
   add column line_kind  text check (line_kind in ('booking','entry_ticket','event_ticket','venue_fee')),
   add column payee_kind text check (payee_kind in ('organizer'));   -- rỗng = theo loại nhà cung cấp của người nhận
+
+-- Thanh toán nhóm (S30, Decision 6): khách trả một khoản 'payment_group' (mã chuyển khoản riêng) tách thành
+-- các khoản dòng 'awaiting_group' (không có mã) có group_id; trả đủ thì mọi dòng thành 'paid' cùng giao dịch.
+alter table payments
+  drop constraint if exists payments_subject_type_check,
+  add constraint ck_payments_subject_type check (subject_type in ('booking','event_registration','instant_request','verification_fee','payment_group')),
+  drop constraint if exists payments_status_check,
+  add constraint ck_payments_status check (status in ('created','paid','expired','needs_review','refunded','partially_refunded','awaiting_group')),
+  add column group_id text references payments(id);   -- khoản nhóm của dòng này
+create index ix_payments_group on payments (group_id) where group_id is not null;
+alter table refunds
+  drop constraint if exists refunds_subject_type_check,
+  add constraint ck_refunds_subject_type check (subject_type in ('booking','event_registration','instant_request','verification_fee','payment_group'));
+
+-- Vé vào cửa mua kèm buổi chụp (S30, Decision 15).
+alter table bookings
+  add column entry_event_id        text references events(id),
+  add column entry_visit_day       date,                                -- = day
+  add column entry_items           jsonb,                               -- [{ticketTypeId, name, price, qty}] vé phải trả, giá lúc đặt
+  add column entry_provider_ticket boolean,
+  add column entry_waived_provider boolean,
+  add column entry_waived_guests   boolean,
+  add column entry_amount          bigint check (entry_amount >= 0),
+  add column entry_registration_id text references event_registrations(id),  -- vé đang giữ/đã trả, có sau createPayment
+  add column group_id              text references payments(id);        -- khoản nhóm gần nhất
 ```
 
 ## 3. Ánh xạ Firestore → bảng
@@ -1937,6 +1962,9 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `events/{id}` (`type = entry`) | `events` + `event_ticket_types` | S30 vé vào cửa; `openHours.{start,end}` → `open_time`, `close_time`; `ticketTypes[]` → `event_ticket_types` (thứ tự → `position`); `closedWeekdays[]`, `closedDays[]` → mảng |
 | `entry_days/{eventId}_{day}` | `entry_days` | S30; khoá `(event_id, day)` tách từ id |
 | `events/{id}/registrations/{id}` (vé vào cửa) | `event_registrations` + `event_registration_items` | S30; `visitDay`, `bookingId`, `gateCheckedInAt`, `ticketCodeLast4` → cột; `items[]` → `event_registration_items` |
+| `payments/{id}` (khoản nhóm, dòng) | `payments` | S30; `groupId` → `group_id`; `subjectType = payment_group`, `status = awaiting_group` |
+| `payment_groups/{id}` | (không có bảng) | S30; read model của người trả, dẫn xuất từ `payments` của khoản nhóm và các dòng (`group_id`) |
+| `bookings/{id}.entry`, `groupId` | `bookings` | S30; `entry.{eventId,visitDay,items,providerTicket,amount,registrationId}` → `entry_*`, `entry.waived.{provider,guests}` → `entry_waived_*`; `groupId` → `group_id` |
 | `spot_claims/{id}` | `spot_claims` | S30; `proposal.{name,address}` → `proposal_*`; `proofPaths[]` → `proof_paths text[]` (đường dẫn Storage, không phải URL) |
 | `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
 | `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |

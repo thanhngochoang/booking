@@ -2,7 +2,7 @@
 
 import { isSettledPayment, type Payment, type PaymentSubject } from './escrow.js';
 import type { Payout, PayoutStatus } from './payout.js';
-import { payoutLineOf, type PayoutPolicy } from './payout_policy.js';
+import { payoutLineOf, type PayeeKind, type PayoutPolicy } from './payout_policy.js';
 import type { ProviderType } from './provider_type.js';
 
 export const EARNING_STATES = ['held', 'disputed', 'released', 'paid_out'] as const;
@@ -102,6 +102,8 @@ export function earningItemOf(i: {
   const state = earningStateOf(payment);
   const net = payment.amount - refunded;
   const paid = isSettledPayment(payment) || payment.status === 'refunded';
+  // S30 Decision 6: a group payment is the customer's one transfer; its lines are the earnings.
+  if (payment.subjectType === 'payment_group') return null;
   if (!payment.payeeId || !paid || state === null || net <= 0) return null;
 
   let holdReason: string | null = null;
@@ -139,7 +141,8 @@ export function earningItemOf(i: {
     milestonesTotal = payment.milestones.length;
   }
 
-  const breakdown = breakdownOf(state, payment, net, payout, payeeType, policy);
+  // S30 Decision 12: an organizer's line (entry tickets, venue fees) takes no commission and no tax.
+  const breakdown = breakdownOf(state, payment, net, payout, payment.payeeKind ?? payeeType, policy);
   return {
     id: payment.id,
     payeeId: payment.payeeId,
@@ -168,7 +171,7 @@ function breakdownOf(
   payment: Pick<Payment, 'id' | 'feeBp'>,
   gross: number,
   payout: Payout | null,
-  payeeType: ProviderType,
+  payeeType: PayeeKind,
   policy: PayoutPolicy,
 ): Pick<EarningItem, 'platformFee' | 'taxWithheld' | 'netAmount' | 'feeRateBp' | 'taxRateBp' | 'estimated'> {
   const item = state === 'paid_out' ? payout?.items.find((it) => it.paymentId === payment.id) : undefined;

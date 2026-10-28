@@ -13,6 +13,9 @@ import {
 import {
   LINE_KINDS,
   MAX_MEMBERS_VERIFIED,
+  entryDayId,
+  type BookingEntry,
+  type PaymentGroupView,
   PAYMENT_METHODS,
   acceptsOrders,
   collabJobId,
@@ -63,6 +66,17 @@ import {
   privateDeliveryToFirestore,
   privateDeliveryFromFirestore,
 } from './delivery_firestore.js';
+import {
+  ENTRY_DAYS,
+  EVENTS_COLLECTION,
+  entryDayFromFirestore,
+  entryDayToFirestore,
+  eventFromFirestore,
+  eventToFirestore,
+  registrationFromFirestore,
+  registrationToFirestore,
+} from './event_firestore.js';
+import { RESIDENTS_SUBCOLLECTION, residentFromFirestore } from './organizer_firestore.js';
 import {
   SPOTS_COLLECTION,
   SPOT_SCHEDULES_COLLECTION,
@@ -324,6 +338,58 @@ export function termsFromFirestore(v: unknown): BookingTerms | undefined {
   };
 }
 
+/** S30 (Decision 6): `payment_groups/{id}`, the payer's read model of a group payment. */
+export const PAYMENT_GROUPS_COLLECTION = 'payment_groups';
+
+export function paymentGroupToFirestore(g: PaymentGroupView): DocumentData {
+  return {
+    payerId: g.payerId,
+    lines: g.lines.map((l) => ({
+      paymentId: l.paymentId, kind: l.kind, subjectType: l.subjectType, subjectId: l.subjectId, payeeId: l.payeeId, amount: l.amount,
+    })),
+    total: g.total,
+    status: g.status,
+    expiresAt: toTimestamp(g.expiresAt),
+    createdAt: toTimestamp(g.createdAt),
+    updatedAt: toTimestamp(g.updatedAt),
+  };
+}
+
+/** S30 (Decision 15): `bookings/{id}.entry`. */
+function bookingEntryToFirestore(e: BookingEntry): DocumentData {
+  return {
+    eventId: e.eventId,
+    visitDay: e.visitDay,
+    items: e.items.map((l) => ({ ticketTypeId: l.ticketTypeId, name: l.name, price: l.price, qty: l.qty })),
+    providerTicket: e.providerTicket,
+    waived: { provider: e.waived.provider, guests: e.waived.guests },
+    amount: e.amount,
+    registrationId: e.registrationId,
+  };
+}
+
+function bookingEntryFromFirestore(v: unknown): BookingEntry | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const d = v as Record<string, unknown>;
+  if (typeof d.eventId !== 'string' || typeof d.visitDay !== 'string') return null;
+  const waived = (typeof d.waived === 'object' && d.waived !== null ? d.waived : {}) as Record<string, unknown>;
+  const items = Array.isArray(d.items) ? d.items : [];
+  return {
+    eventId: d.eventId,
+    visitDay: d.visitDay,
+    items: items.flatMap((i: unknown) => {
+      const x = (typeof i === 'object' && i !== null ? i : {}) as Record<string, unknown>;
+      return typeof x.ticketTypeId === 'string' && typeof x.price === 'number' && typeof x.qty === 'number'
+        ? [{ ticketTypeId: x.ticketTypeId, name: typeof x.name === 'string' ? x.name : '', price: x.price, qty: x.qty }]
+        : [];
+    }),
+    providerTicket: d.providerTicket === true,
+    waived: { provider: waived.provider === true, guests: waived.guests === true },
+    amount: typeof d.amount === 'number' ? d.amount : 0,
+    registrationId: typeof d.registrationId === 'string' && d.registrationId !== '' ? d.registrationId : null,
+  };
+}
+
 export function bookingToFirestore(b: Booking): DocumentData {
   return {
     customerId: b.customerId,
@@ -416,6 +482,8 @@ export function bookingToFirestore(b: Booking): DocumentData {
     spotId: b.spotId ?? null,
     spotScheduleId: b.spotScheduleId ?? null,
     slotOfferId: b.slotOfferId ?? null,
+    entry: b.entry ? bookingEntryToFirestore(b.entry) : null,
+    groupId: b.groupId ?? null,
     checkout: checkoutToFirestore(b.checkout),
     payableUntil: toTimestamp(b.payableUntil),
     ...studioFieldsToFirestore(b),
@@ -539,6 +607,8 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     ...(typeof d.spotId === 'string' ? { spotId: d.spotId } : {}),
     ...(typeof d.spotScheduleId === 'string' ? { spotScheduleId: d.spotScheduleId } : {}),
     ...(typeof d.slotOfferId === 'string' ? { slotOfferId: d.slotOfferId } : {}),
+    ...(bookingEntryFromFirestore(d.entry) !== null ? { entry: bookingEntryFromFirestore(d.entry) as BookingEntry } : {}),
+    ...(typeof d.groupId === 'string' && d.groupId !== '' ? { groupId: d.groupId } : {}),
     ...(typeof d.revisionsIncluded === 'number' ? { revisionsIncluded: d.revisionsIncluded } : {}),
     ...(typeof d.revisionsUsed === 'number' ? { revisionsUsed: d.revisionsUsed } : {}),
     ...(typeof d.revisionsGranted === 'number' ? { revisionsGranted: d.revisionsGranted } : {}),
@@ -641,6 +711,7 @@ export function paymentToFirestore(p: Payment): DocumentData {
     // S30: an entry ticket's line kind and an organizer payee (no commission, no tax withheld).
     ...(p.lineKind !== undefined ? { lineKind: p.lineKind } : {}),
     ...(p.payeeKind !== undefined ? { payeeKind: p.payeeKind } : {}),
+    ...(p.groupId !== undefined ? { groupId: p.groupId } : {}),
     milestones: p.milestones
       ? p.milestones.map((m) => ({
           kind: m.kind,
@@ -697,6 +768,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     ...(typeof d.feeBp === 'number' && Number.isInteger(d.feeBp) && d.feeBp >= 0 && d.feeBp <= 10_000 ? { feeBp: d.feeBp } : {}),
     ...((LINE_KINDS as readonly unknown[]).includes(d.lineKind) ? { lineKind: d.lineKind as LineKind } : {}),
     ...(d.payeeKind === 'organizer' ? { payeeKind: 'organizer' as const } : {}),
+    ...(typeof d.groupId === 'string' && d.groupId !== '' ? { groupId: d.groupId } : {}),
     ...(Array.isArray(d.milestones)
       ? {
           milestones: d.milestones.map((m: { kind?: unknown; amount?: unknown; status?: unknown; releaseAfter?: unknown; releasedAt?: unknown; payoutId?: unknown }) => ({
@@ -1145,10 +1217,55 @@ export class FirestoreBookingStore implements StudioBookingStore {
             spotDayToFirestore(spotDay),
           );
         },
+        // ── S30 (#223 Decisions 6, 15): bookings with entry tickets (Task 6 adds the integration tests) ──
+        getEntryEvent: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(EVENTS_COLLECTION).doc(id));
+          const d = snap.data();
+          return snap.exists && d ? eventFromFirestore(id, d) : null;
+        },
+        getEntryDay: async (eventId, day) =>
+          entryDayFromFirestore((await fTx.get(this.firestore.collection(ENTRY_DAYS).doc(entryDayId(eventId, day)))).data()),
+        residentOf: async (spotId, providerId) =>
+          residentFromFirestore(providerId, (await fTx.get(
+            this.firestore.collection(SPOTS_COLLECTION).doc(spotId).collection(RESIDENTS_SUBCOLLECTION).doc(providerId),
+          )).data()),
+        getRegistration: async (eventId, regId) => {
+          const snap = await fTx.get(this.registrationRef(eventId, regId));
+          const d = snap.data();
+          return snap.exists && d ? registrationFromFirestore(regId, d) : null;
+        },
+        childrenOf: async (groupId) => {
+          const snap = await fTx.get(this.firestore.collection(PAYMENTS_COLLECTION).where('groupId', '==', groupId));
+          return snap.docs.map((d) => paymentFromFirestore(d.id, d.data())).filter((p): p is Payment => p !== null);
+        },
+        putEntryEvent: async (e) => {
+          fTx.set(this.firestore.collection(EVENTS_COLLECTION).doc(e.id), eventToFirestore(e));
+        },
+        putEntryDay: async (d) => {
+          fTx.set(this.firestore.collection(ENTRY_DAYS).doc(entryDayId(d.eventId, d.day)), entryDayToFirestore(d));
+        },
+        putRegistration: async (r) => {
+          fTx.set(this.registrationRef(r.eventId, r.id), registrationToFirestore(r));
+        },
+        putRegistrationContact: async (eventId, regId, c) => {
+          fTx.set(this.registrationRef(eventId, regId).collection('private').doc('contact'), {
+            name: c.name,
+            phone: c.phone,
+            allowZalo: c.allowZalo,
+            allowWhatsApp: c.allowWhatsApp,
+          });
+        },
+        putGroupView: async (g) => {
+          fTx.set(this.firestore.collection(PAYMENT_GROUPS_COLLECTION).doc(g.id), paymentGroupToFirestore(g));
+        },
       };
 
       return fn(tx);
     });
+  }
+
+  private registrationRef(eventId: string, regId: string) {
+    return this.firestore.collection(EVENTS_COLLECTION).doc(eventId).collection('registrations').doc(regId);
   }
 
   async getBooking(id: string): Promise<Booking | null> {

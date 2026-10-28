@@ -2362,6 +2362,7 @@ function seedPayerSubject(p: Payment, get: (path: string) => Record<string, unkn
       return r === undefined ? null : instantSubjectOf(r);
     }
     case 'verification_fee':
+    case 'payment_group':
       return EMPTY_PAYER_SUBJECT;
   }
 }

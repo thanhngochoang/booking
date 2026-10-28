@@ -10,7 +10,8 @@ import { DomainError } from './errors.js';
 
 /**
  * `expired`: nobody paid in time (or the QR was replaced). `needs_review` is reserved for staff
- * (S23.02); no code path writes it on a Payment yet.
+ * (S23.02); no code path writes it on a Payment yet. `awaiting_group` (S30 Decision 6): a line of a
+ * group payment, not payable on its own (no transfer code); it turns `paid` or `expired` with its group.
  */
 export const PAYMENT_STATUSES = [
   'created',
@@ -19,6 +20,7 @@ export const PAYMENT_STATUSES = [
   'needs_review',
   'refunded',
   'partially_refunded',
+  'awaiting_group',
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
@@ -34,8 +36,11 @@ export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
 /**
  * `verification_fee`: the S21 fee, platform revenue (payee `platform`), never earnings or payouts (#203).
  * `instant_request`: a Chụp ngay request (#202); payee `''` until a photographer is assigned.
+ * `payment_group` (S30 Decision 6): the one payment a customer makes for several lines (a booking with
+ * entry tickets); `subjectId` is its own id, payee its payer; once paid its money is the lines'
+ * (escrow `released`, `payableAmount` 0), so it is never released, paid out or shown as earnings.
  */
-export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee', 'instant_request'] as const;
+export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee', 'instant_request', 'payment_group'] as const;
 export type PaymentSubject = (typeof PAYMENT_SUBJECTS)[number];
 export const isPaymentSubject = (v: unknown): v is PaymentSubject =>
   typeof v === 'string' && (PAYMENT_SUBJECTS as readonly string[]).includes(v);
@@ -102,6 +107,8 @@ export interface Payment {
   readonly feeBp?: number;
   /** S30: see LINE_KINDS. */
   readonly lineKind?: LineKind;
+  /** S30 Decision 6: the group payment this line belongs to (`payments/{groupId}`, `payment_groups/{groupId}`). */
+  readonly groupId?: string;
   /**
    * S30 Decision 12: `organizer` when the payee is paid as an organizer (entry tickets, tickets of an
    * organizer-hosted event, venue fees): no commission, no tax withheld. Absent → the payee's provider type.
@@ -469,7 +476,8 @@ export function disputeEscrowPayment(payment: Payment, now: Date): Payment {
  * - `paid`: sum(received) - sum(refunded) = amount (an over-transfer is refunded and the payment stays paid);
  * - `refunded` / `partially_refunded`: the amount was received in full (received >= amount) and
  *   refunds never exceed what was received (refunds then also cover any over-transfer);
- * - `created` / `needs_review`: refunds never exceed what was received.
+ * - `created` / `needs_review`: refunds never exceed what was received;
+ * - `awaiting_group`: a group's line never receives or refunds anything on its own.
  * Both `payment_received` and the legacy `deposit_received` count as received.
  */
 export function verifyPaymentLedgerInvariant(
@@ -506,5 +514,7 @@ export function verifyPaymentLedgerInvariant(
     case 'created':
     case 'needs_review':
       return refunded <= received;
+    case 'awaiting_group':
+      return received === 0 && refunded === 0;
   }
 }

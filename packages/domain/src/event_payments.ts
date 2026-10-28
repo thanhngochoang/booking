@@ -14,7 +14,6 @@ import {
 import {
   FREE_CANCEL_HOURS,
   isEventManager,
-  registrationContactOf,
   statusAfterSeats,
   type EventCaller,
   type EventRecord,
@@ -22,7 +21,7 @@ import {
   type RegistrationStatus,
 } from './event.js';
 import { formatVnDate, isDateString } from './booking_policy.js';
-import { ENTRY_CLOSE_BATCH, emptyEntryDay, entryFieldsOf, isOpenDay } from './entry_tickets.js';
+import { ENTRY_CLOSE_BATCH, emptyEntryDay, entryFieldsOf, entryRefundPercent, isOpenDay } from './entry_tickets.js';
 import { NO_ENTRY_DAYS, readEntryDays, releaseDeltas, visitDayOf, writeEntryDays, type EntryDays } from './entry_days.js';
 import { notifyEntryDayClosed } from './notification_hooks.js';
 import type { NotifyDeps } from './notification_ports.js';
@@ -30,7 +29,6 @@ import type { EventDeps, EventPaymentDeps, EventTx } from './event_ports.js';
 import { cancelEvent } from './event_use_cases.js';
 import { isId } from './ids.js';
 import { PLATFORM_PAYEE } from './payout.js';
-import { isVnE164 } from './phone.js';
 import type { SubjectSettler } from './payment_ports.js';
 import type { SettlementDeps } from './payment_settlement.js';
 import {
@@ -39,19 +37,24 @@ import {
   transferRecordId,
   transferRecordOf,
 } from './payment_settlement.js';
-import type { TransferNotification, TransferOutcome } from './booking_ports.js';
+import type { BookingTicketLines, TransferNotification, TransferOutcome } from './booking_ports.js';
 import { DISPUTE_WINDOW_HOURS } from './booking_policy.js';
 import { mergeRefundOutcome, sendRefundOnce, transferRefund } from './refunds.js';
 import { refundWithoutPayment, type RefundSubjectHandler } from './refund_subjects.js';
 import { checkSubjectPayments } from './create_payment.js';
+import { ticketPaidUpdate } from './ticket_paid.js';
 import { transferCodeFor } from './payment_code.js';
 import { payerAccountOf } from './payer_account.js';
 
 const HOUR_MS = 3_600_000;
 const SWEEP_BATCH = 200;
 
-/** `day_closed` (S30): the organizer closed an entry ticket's visit day (`closeEntryDay`). */
-export type TicketRefundReason = 'customer_cancel' | 'event_cancelled' | 'day_closed';
+/**
+ * `day_closed` (S30): the organizer closed an entry ticket's visit day (`closeEntryDay`).
+ * `provider_cancelled` (S30, spec §5.3): the booking a ticket was bought with was declined, expired or
+ * cancelled by its provider.
+ */
+export type TicketRefundReason = 'customer_cancel' | 'event_cancelled' | 'day_closed' | 'provider_cancelled';
 
 /** Spec §3g (O4): a paid ticket cancelled at least 48 h before the start gets 100% back, later nothing. */
 export function ticketRefundPercent(startAt: Date, now: Date): 100 | 0 {
@@ -339,28 +342,11 @@ export class TicketPaymentSettler implements SubjectSettler {
       }
 
       tx.putPayment(paidPayment);
-      const ticket: RegistrationDoc = {
-        ...reg,
-        status: 'paid',
-        paymentId: p.id,
-        contactEligible: true,
-        updatedAt: now,
-        version: reg.version + 1,
-      };
-      tx.putRegistration(ticket);
-
-      const phone = contact?.phone;
-      if (isVnE164(phone)) {
-        tx.putRegistrationContact(ev.id, reg.id, registrationContactOf(reg.userName, phone, contact));
-      }
-
-      if (visitDay !== null) writeEntryDays(tx, ev.id, days, [{ day: visitDay, held: -reg.quantity, sold: reg.quantity }], now);
-      const next = {
-        ...ev,
-        heldCount: Math.max(0, ev.heldCount - reg.quantity),
-        registeredCount: ev.registeredCount + reg.quantity,
-      };
-      tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
+      const paid = ticketPaidUpdate({ ev, reg, paymentId: p.id, contact, now });
+      tx.putRegistration(paid.registration);
+      if (paid.contact !== null) tx.putRegistrationContact(ev.id, reg.id, paid.contact);
+      if (paid.day !== null) writeEntryDays(tx, ev.id, days, [paid.day], now);
+      tx.putEvent(paid.event);
 
       const finalOutcome: Exclude<TransferOutcome, 'needs_review'> = applied.excess > 0 ? 'paid_with_refund' : 'paid';
       tx.putTransferRecord(transferRecordOf(transfer, finalOutcome, p.id));
@@ -587,7 +573,8 @@ export function stampTicketRelease(tx: EventTx, ev: EventRecord, payments: reado
 
 /**
  * S30 (Decision 11): the organizer closes a visit day of an entry event. In one transaction the day is
- * marked `closed` (no more sales) and every paid ticket of it gets `refundDue`; then the first
+ * marked `closed` (no more sales) and every paid ticket of it, and every ticket of it cancelled late
+ * whose money is still held, gets `refundDue`; then the first
  * ENTRY_CLOSE_BATCH tickets are refunded 100% here, each in its own transaction (`refundTicket`,
  * reason `day_closed`), and the event clock refunds what is `left` (`runEventSweeps`). Every customer
  * whose ticket is flagged here gets `entry_day_closed` (best effort). Managers only.
@@ -610,7 +597,14 @@ export async function closeEntryDay(
     if (day < formatVnDate(now)) throw new DomainError('not_eligible');
     if (!isOpenDay(entryFieldsOf(ev), day)) throw new DomainError('invalid_argument', 'day');
     const row = await tx.getEntryDay(ev.id, day);
-    const paid = (await tx.registrationsOfDay(ev.id, day)).filter((x) => x.amount > 0);
+    const live = (await tx.registrationsOfDay(ev.id, day)).filter((x) => x.amount > 0);
+    // Tickets of the day cancelled late (no refund, money still held) are refunded too: an organizer
+    // never keeps money for a day it closed (as `cancelEvent` does for late cancels).
+    const liveIds = new Set(live.map((x) => x.id));
+    const heldIds = [...new Set((await tx.heldTicketPayments(ev.id)).map((p) => p.subjectId))].filter((id) => !liveIds.has(id));
+    const late = (await Promise.all(heldIds.map((id) => tx.getRegistration(ev.id, id))))
+      .filter((x): x is RegistrationDoc => x !== null && x.status === 'cancelled' && (x.visitDay ?? null) === day);
+    const paid = [...live, ...late];
     const flagged = paid.filter((x) => x.refundDue !== true);
     for (const x of flagged) tx.putRegistration({ ...x, refundDue: true, updatedAt: now, version: x.version + 1 });
     if (row?.closed !== true) {
@@ -637,4 +631,50 @@ export async function closeEntryDay(
     }
   }
   return { refunded, left: Math.max(0, closed.ids.length - ENTRY_CLOSE_BATCH) + failed };
+}
+
+/**
+ * Writes the late-cancel of a paid ticket (the customer's own rule, `cancelRegistration` after the
+ * cutoff): `cancelled` with `refundPercent` 0, seats and its day's `sold` back, the money stays held for
+ * the host. `skipped` unless the ticket is still paid.
+ */
+export async function cancelTicketKeepingMoney(deps: EventDeps, eventId: string, regId: string): Promise<'cancelled' | 'skipped'> {
+  return deps.events.runTransaction(async (tx) => {
+    const now = deps.clock.now();
+    const reg = await tx.getRegistration(eventId, regId);
+    const ev = await tx.getEvent(eventId);
+    if (reg === null || ev === null || reg.status !== 'paid') return 'skipped';
+    if (reg.checkedInAt !== null || (reg.gateCheckedInAt ?? null) !== null) return 'skipped';
+    const days = await readEntryDays(tx, ev, [reg]);
+    tx.putRegistration({ ...reg, status: 'cancelled', cancelledAt: now, refundPercent: 0, updatedAt: now, version: reg.version + 1 });
+    tx.deleteRegistrationContact(eventId, regId);
+    writeEntryDays(tx, ev.id, days, releaseDeltas(ev, [reg]), now);
+    const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
+    tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
+    return 'cancelled';
+  });
+}
+
+/**
+ * S30 (Decision 15, spec §5.3): the ticket line of a booking with tickets, in the event store: 100 →
+ * `refundTicket` (`provider_cancelled` or `customer_cancel`), 0 → `cancelTicketKeepingMoney`. A ticket
+ * already used, refunded or cancelled is left as it is.
+ */
+export function bookingTicketLines(deps: EventPaymentDeps): BookingTicketLines {
+  return {
+    async customerPercent(line, now) {
+      const found = await deps.events.runTransaction(async (tx) => {
+        const reg = await tx.getRegistration(line.eventId, line.registrationId);
+        const ev = await tx.getEvent(line.eventId);
+        return { reg, ev };
+      });
+      const visitDay = found.ev === null || found.reg === null ? null : visitDayOf(found.ev, found.reg);
+      if (found.ev === null || visitDay === null) return 0;
+      return entryRefundPercent(visitDay, now, entryFieldsOf(found.ev).refundCutoffHours);
+    },
+    async settle(line, percent, reason) {
+      if (percent === 100) await refundTicket(deps, line.eventId, line.registrationId, 100, reason);
+      else await cancelTicketKeepingMoney(deps, line.eventId, line.registrationId);
+    },
+  };
 }

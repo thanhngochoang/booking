@@ -40,8 +40,8 @@ export function paymentReceivedEntry(deps: BookingDeps, payment: Payment, amount
 
 /** Normal path: the paid draft becomes `requested` (or `accepted` if quote), with its accept deadline, escrow `held`, one booking event. */
 export async function moveDraftToRequested(
-  tx: BookingTx,
-  deps: BookingDeps,
+  tx: Pick<BookingTx, 'setBooking' | 'setAvailabilityDay' | 'addBookingEvent'>,
+  deps: Pick<BookingDeps, 'ids'>,
   booking: Booking,
   payment: Payment,
   now: Date,

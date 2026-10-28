@@ -35,24 +35,37 @@ export async function readEntryDays(tx: EventTx, ev: EventRecord | null, regs: r
   return readEntryDaysOf(tx, ev.id, regs.map((r) => visitDayOf(ev, r)).filter((d): d is string => d !== null));
 }
 
-/** Writes only: adds the deltas per day (never below 0) to the rows read by `readEntryDays`. */
-export function writeEntryDays(tx: EventTx, eventId: string, days: EntryDays, deltas: readonly EntryDayDelta[], now: Date): void {
+/** Pure: the rows the deltas change (per day, never below 0), from the rows read before. */
+export function entryDaysAfter(eventId: string, days: EntryDays, deltas: readonly EntryDayDelta[], now: Date): EntryDay[] {
   const sum = new Map<string, { held: number; sold: number }>();
   for (const d of deltas) {
     const s = sum.get(d.day) ?? { held: 0, sold: 0 };
     sum.set(d.day, { held: s.held + (d.held ?? 0), sold: s.sold + (d.sold ?? 0) });
   }
+  const out: EntryDay[] = [];
   for (const [day, s] of sum) {
     if (s.held === 0 && s.sold === 0) continue;
     if (!days.has(day)) throw new Error(`entry day ${day} was not read before the write`);
     const row = days.get(day) ?? emptyEntryDay(eventId, day, now);
-    tx.putEntryDay({
+    out.push({
       ...row,
       held: Math.max(0, row.held + s.held),
       sold: Math.max(0, row.sold + s.sold),
       updatedAt: now.toISOString(),
     });
   }
+  return out;
+}
+
+/** Writes only: adds the deltas per day (never below 0) to the rows read by `readEntryDays`. */
+export function writeEntryDays(
+  tx: Pick<EventTx, 'putEntryDay'>,
+  eventId: string,
+  days: EntryDays,
+  deltas: readonly EntryDayDelta[],
+  now: Date,
+): void {
+  for (const row of entryDaysAfter(eventId, days, deltas, now)) tx.putEntryDay(row);
 }
 
 /** The deltas of registrations leaving their state: a held one gives back `held`, a paid one `sold`. */

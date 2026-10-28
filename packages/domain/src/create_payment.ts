@@ -3,14 +3,31 @@
  * Opens a payment of the full price for a draft booking and mirrors how to pay it on the booking.
  */
 
-import type { BookingCheckout, PaymentProvider } from './booking.js';
+import type { Booking, BookingCheckout, BookingEntry, PaymentProvider } from './booking.js';
+import { assertEntryBookable } from './booking_entry.js';
+import { entryFieldsOf, entryReleaseAt } from './entry_tickets.js';
+import type { EventRecord, RegistrationDoc } from './event.js';
+import {
+  EntryFold,
+  assertLinesSum,
+  expireGroupLines,
+  groupViewOf,
+  lineOf,
+  newChildPayment,
+  newGroupPayment,
+  readGroup,
+  type GroupLine,
+  type GroupRead,
+} from './group_settlement.js';
+import { PLATFORM_PAYEE } from './payout.js';
 import {
   DRAFT_EXPIRY_MINUTES,
   DRAFT_PAYMENT_GRACE_MINUTES,
   MAX_PAYMENT_ATTEMPTS,
   PAYMENT_EXPIRY_MINUTES,
+  parseVnDateTime,
 } from './booking_policy.js';
-import type { BookingDeps, GatewayInstructions, PaymentGateway } from './booking_ports.js';
+import type { BookingDeps, BookingTx, GatewayInstructions, PaymentGateway } from './booking_ports.js';
 import { expireOpenPayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
 import {
@@ -36,6 +53,9 @@ const MINUTE = 60_000;
 export interface CreatePaymentResult {
   readonly paymentId: string;
   readonly checkout: BookingCheckout;
+  /** S30: a booking with tickets is paid as a group: `paymentId` is the group payment, `lines` its children. */
+  readonly groupId?: string;
+  readonly lines?: readonly GroupLine[];
 }
 
 /**
@@ -200,6 +220,83 @@ export async function readPaymentInstructions(
 }
 
 /**
+ * Writes only (S30 Decisions 6, 15): the group payment of a booking with tickets, its two lines (the
+ * booking to the provider; the tickets to the event's host, `payeeKind: organizer`, released
+ * `entryReleaseAt(visitDay)`), the registration held for the tickets until the group expires (`held`
+ * on its visit day, through `fold`) and the `payment_groups` view. The caller writes the group payment.
+ */
+async function openGroup(
+  tx: BookingTx,
+  deps: BookingDeps,
+  p: {
+    readonly booking: Booking;
+    readonly entry: BookingEntry;
+    readonly ev: EventRecord;
+    readonly fold: EntryFold;
+    readonly userName: string;
+    readonly paymentId: string;
+    readonly method: PaymentMethod;
+    readonly idempotencyKey: string;
+    readonly now: Date;
+    readonly expiresAt: Date;
+  },
+): Promise<{ readonly group: Payment; readonly lines: GroupLine[]; readonly registrationId: string }> {
+  const { booking, entry, ev, now, expiresAt } = p;
+  const provider = deps.gateway.provider;
+  const regId = deps.ids.newId();
+  const group = newGroupPayment({
+    id: p.paymentId, payerId: booking.customerId, total: booking.deposit + entry.amount, method: p.method,
+    provider, idempotencyKey: p.idempotencyKey, now, expiresAt,
+  });
+  const hostPaid = (ev.host.type === 'photographer' || ev.host.type === 'organizer') && ev.host.id !== null;
+  const children = [
+    newChildPayment({
+      id: deps.ids.newId(), groupId: group.id, payerId: booking.customerId, method: p.method, provider, now, expiresAt,
+      line: { kind: 'booking', subjectType: 'booking', subjectId: booking.id, payeeId: booking.photographerId, amount: booking.deposit },
+    }),
+    newChildPayment({
+      id: deps.ids.newId(), groupId: group.id, payerId: booking.customerId, method: p.method, provider, now, expiresAt,
+      line: {
+        kind: 'entry_ticket', subjectType: 'event_registration', subjectId: regId,
+        payeeId: hostPaid ? (ev.host.id as string) : PLATFORM_PAYEE, amount: entry.amount,
+      },
+      ...(ev.host.type === 'organizer' ? { payeeKind: 'organizer' as const } : {}),
+      eventId: ev.id,
+      releaseAfter: entryReleaseAt(entry.visitDay),
+    }),
+  ];
+  assertLinesSum(group, children);
+  for (const c of children) await tx.setPayment(c);
+
+  const fields = entryFieldsOf(ev);
+  const loc = ev.location as NonNullable<EventRecord['location']>;
+  const quantity = entry.items.reduce((n, l) => n + l.qty, 0);
+  const reg: RegistrationDoc = {
+    id: regId, eventId: ev.id, userId: booking.customerId, userName: p.userName, userAvatarUrl: null,
+    quantity, amount: entry.amount, status: 'held', holdExpiresAt: expiresAt,
+    // A booking's tickets have no ticket code of their own: the booking's pass (Task 4) is shown at the gate.
+    ticketCode: '', ticketCodeLast4: '',
+    paymentId: (children[1] as Payment).id, contactEligible: false,
+    checkedInAt: null, cancelledAt: null, refundPercent: null,
+    visitDay: entry.visitDay, items: entry.items, bookingId: booking.id, gateCheckedInAt: null,
+    event: {
+      title: ev.title, type: ev.type,
+      startAt: parseVnDateTime(entry.visitDay, fields.openHours.start),
+      endAt: parseVnDateTime(entry.visitDay, fields.openHours.end),
+      locationName: loc.name, lat: loc.lat, lng: loc.lng, coverUrl: ev.coverUrl,
+    },
+    version: 1, createdAt: now, updatedAt: now,
+  };
+  await tx.putRegistration(reg);
+  // Stats only: an entry event's status never follows its seats (statusAfterSeats).
+  p.fold.putEvent({ ...ev, heldCount: ev.heldCount + quantity, version: ev.version + 1, updatedAt: now });
+  p.fold.addDelta(ev.id, { day: entry.visitDay, held: quantity });
+  const lines = children.map(lineOf);
+  await tx.putGroupView(groupViewOf(group, lines, 'created', now));
+  return { group, lines, registrationId: regId };
+}
+
+/**
  * 1. `method` must be one of PAYMENT_METHODS (`invalid_argument`).
  * 2. The caller owns the booking, it is a `draft`, they have a phone, and the day is still held
  *    for it (`permission_denied` / `conflict` / `phone_required` / `day_taken`).
@@ -208,6 +305,12 @@ export async function readPaymentInstructions(
  * 5. A new `created` payment of `booking.deposit` (the full price), valid 15 minutes, with its
  *    transfer code and idempotency key `pay_${bookingId}_${attempt}`; the gateway opens it.
  * 6. `booking.checkout` mirrors it and `payableUntil` becomes max(payableUntil, expiresAt + 5 min).
+ * S30 (Decisions 6, 15): a booking with tickets to pay (`entry.items` not empty) gets a group payment of
+ * `deposit + entry.amount` instead (its own transfer code, the gateway opens it), with two
+ * `awaiting_group` lines (the booking; the tickets to the event's host) and the tickets held on their
+ * visit day until the group expires (`day_closed`, `sold_out_day`, `invalid_argument` entry when the
+ * day can no longer be sold); an open group it replaces expires with its lines and releases its hold.
+ * The result then carries `groupId` and `lines`.
  */
 export async function createPayment(
   deps: BookingDeps,
@@ -234,7 +337,7 @@ export async function createPayment(
   const expiresAt = new Date(now.getTime() + PAYMENT_EXPIRY_MINUTES * MINUTE).toISOString();
   let pendingRefunds: { readonly refund: Refund; readonly provider: Payment['provider'] }[] = [];
 
-  const result = await deps.store.runTransaction(async (tx) => {
+  const result = await deps.store.runTransaction(async (tx): Promise<CreatePaymentResult> => {
     pendingRefunds = [];
     // Reads
     const booking = await tx.getBooking(input.bookingId);
@@ -267,13 +370,44 @@ export async function createPayment(
       if (p && p.status === 'created') open.push(p);
     }
 
+    // S30 (Decision 6, 15): a booking with tickets to pay is paid as a group (booking + tickets); an open
+    // group it replaces takes its lines and its held tickets with it.
+    const fold = new EntryFold();
+    const replaced = new Map<string, GroupRead>();
+    for (const p of open) if (p.subjectType === 'payment_group') replaced.set(p.id, await readGroup(tx, p, fold));
+    const entry = booking.entry !== undefined && booking.entry.items.length > 0 ? booking.entry : null;
+    let entryEvent: EventRecord | null = null;
+    let userName = '';
+    if (entry !== null) {
+      const ev = await fold.readEvent(tx, entry.eventId);
+      const row = await fold.readDay(tx, entry.eventId, entry.visitDay);
+      let freed = 0;
+      for (const g of replaced.values()) {
+        for (const l of g.lines) {
+          if (l.kind === 'ticket' && l.eventId === entry.eventId && l.reg?.status === 'held'
+            && l.reg.paymentId === l.payment.id && l.reg.visitDay === entry.visitDay) freed += l.reg.quantity;
+        }
+      }
+      entryEvent = assertEntryBookable({
+        event: ev,
+        visitDay: entry.visitDay,
+        bookingDay: booking.day,
+        spotId: booking.spotId ?? null,
+        day: row === null ? null : { ...row, held: Math.max(0, row.held - freed) },
+        qty: entry.items.reduce((n, l) => n + l.qty, 0),
+        now,
+      });
+      userName = (await tx.getContactSnapshot(booking.id))?.name ?? '';
+    }
+    const total = booking.deposit + (entry?.amount ?? 0);
+
     const idempotencyKey = `pay_${booking.id}_${attempt}`;
     const instructions = await deps.gateway.createPayment({
       paymentId,
-      subjectType: 'booking',
-      subjectId: booking.id,
+      subjectType: entry !== null ? 'payment_group' : 'booking',
+      subjectId: entry !== null ? paymentId : booking.id,
       bookingId: booking.id,
-      amount: booking.deposit,
+      amount: total,
       method,
       transferCode,
       expiresAt,
@@ -284,30 +418,49 @@ export async function createPayment(
     for (const p of open) {
       const refund = await expireOpenPayment(tx, deps, p, now);
       if (refund) pendingRefunds.push({ refund, provider: p.provider });
+      const g = replaced.get(p.id);
+      if (g) await expireGroupLines(tx, g, fold, { ...p, status: 'expired' }, now);
     }
 
     const { providerRef, ...clientInstructions } = instructions;
-    const payment: Payment = {
-      id: paymentId,
-      subjectType: 'booking',
-      subjectId: booking.id,
-      payerId: booking.customerId,
-      payeeId: booking.photographerId,
-      provider: deps.gateway.provider,
-      amount: booking.deposit,
-      status: 'created',
-      escrowStatus: 'held',
-      idempotencyKey,
-      method,
-      transferCode,
-      expiresAt,
-      receivedAmount: 0,
+    const opened = {
       ...(providerRef ? { providerRef } : {}),
       instructions: clientInstructions,
-      createdAt,
-      updatedAt: createdAt,
     };
+    let payment: Payment;
+    let lines: GroupLine[] | undefined;
+    let bookingPatch: Partial<Booking> = {};
+    if (entry !== null && entryEvent !== null) {
+      const built = await openGroup(tx, deps, {
+        booking, entry, ev: fold.event(entryEvent.id) ?? entryEvent, fold, userName,
+        paymentId, method, idempotencyKey, now, expiresAt: new Date(expiresAt),
+      });
+      payment = { ...built.group, ...opened };
+      lines = built.lines;
+      bookingPatch = { groupId: paymentId, entry: { ...entry, registrationId: built.registrationId } };
+    } else {
+      payment = {
+        id: paymentId,
+        subjectType: 'booking',
+        subjectId: booking.id,
+        payerId: booking.customerId,
+        payeeId: booking.photographerId,
+        provider: deps.gateway.provider,
+        amount: booking.deposit,
+        status: 'created',
+        escrowStatus: 'held',
+        idempotencyKey,
+        method,
+        transferCode,
+        expiresAt,
+        receivedAmount: 0,
+        ...opened,
+        createdAt,
+        updatedAt: createdAt,
+      };
+    }
     await tx.setPayment(payment);
+    await fold.flush(tx, now);
 
     const checkout: BookingCheckout = {
       paymentId,
@@ -328,9 +481,9 @@ export async function createPayment(
     const payableUntil = new Date(
       Math.max(draftUntil, Date.parse(expiresAt) + DRAFT_PAYMENT_GRACE_MINUTES * MINUTE),
     ).toISOString();
-    await tx.setBooking({ ...booking, checkout, payableUntil, updatedAt: createdAt });
+    await tx.setBooking({ ...booking, ...bookingPatch, checkout, payableUntil, updatedAt: createdAt });
 
-    return { paymentId, checkout };
+    return { paymentId, checkout, ...(lines !== undefined ? { groupId: paymentId, lines } : {}) };
   });
 
   // The new QR is committed: a refund the gateway refuses or throws on is left `failed` for staff.

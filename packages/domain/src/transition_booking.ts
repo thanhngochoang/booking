@@ -19,6 +19,11 @@ export interface TransitionBookingInput {
   readonly action: TransitionAction;
   readonly actorId?: string;
   readonly reason?: string;
+  /**
+   * S30 (S05.03 "Giữ vé vào cửa"): a customer cancelling a booking with tickets keeps the tickets
+   * (still paid, still usable). Ignored for every other cancel.
+   */
+  readonly keepTickets?: boolean;
 }
 
 export async function transitionBooking(
@@ -65,5 +70,5 @@ export async function transitionBooking(
     input.reason,
   );
 
-  return commitTransition(deps, booking, decision, input.actorId);
+  return commitTransition(deps, booking, decision, input.actorId, { keepTickets: input.keepTickets === true });
 }

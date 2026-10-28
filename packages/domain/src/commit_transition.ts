@@ -12,6 +12,7 @@ import { applyRefundToPayment, isSettledPayment, type Payment, type Refund } fro
 import { releaseMilestone, splitMilestones, withMilestones } from './milestones.js';
 import { dispatchRefund } from './refunds.js';
 import { withoutInterval } from './spot_booking.js';
+import { refundPlan, type GroupLine, type RefundCancelBy } from './group_settlement.js';
 import { studioDayLoadWith } from './studio_capacity.js';
 
 export async function commitTransition(
@@ -19,6 +20,7 @@ export async function commitTransition(
   booking: Booking,
   decision: TransitionDecision,
   actorId?: string,
+  options: { readonly keepTickets?: boolean } = {},
 ): Promise<Booking> {
   const now = deps.clock.now();
   let pendingRefund: { refund: Refund; provider: Payment['provider'] } | undefined;
@@ -205,5 +207,42 @@ export async function commitTransition(
     await dispatchRefund(deps, pendingRefund.refund, pendingRefund.provider);
   }
 
+  // 5. S30 (spec §5.3): the tickets bought with the booking follow `refundPlan`, in the event store.
+  await settleTicketLine(deps, updatedBooking, decision, now, options.keepTickets === true);
+
   return updatedBooking;
+}
+
+/**
+ * The ticket line of a paid booking with tickets that was just declined, expired or cancelled: the
+ * provider's side (decline, expiry, provider or studio cancel) refunds it 100%; the customer's cancel
+ * applies the entry rule (`entryRefundPercent`) unless `keepTickets`. Each ticket settles in its own
+ * event transaction; a failure is left to the ticket's own paths (it stays paid).
+ */
+async function settleTicketLine(
+  deps: BookingDeps,
+  booking: Booking,
+  decision: TransitionDecision,
+  now: Date,
+  keepTickets: boolean,
+): Promise<void> {
+  const entry = booking.entry;
+  const cancel = decision.cancelRecord;
+  if (deps.tickets === undefined || entry?.registrationId == null || booking.groupId === undefined || cancel === undefined) return;
+  if (!['declined', 'expired', 'cancelled'].includes(decision.nextStatus)) return;
+  const cancelBy: RefundCancelBy = cancel.by === 'customer' ? 'customer' : 'provider';
+  // The ticket's refund follows the entry rule of its event at the moment of cancelling.
+  const ref = { eventId: entry.eventId, registrationId: entry.registrationId };
+  const percent = cancelBy === 'customer' && !keepTickets ? await deps.tickets.customerPercent(ref, now) : 100;
+  const line: GroupLine = {
+    paymentId: '', kind: 'entry_ticket', subjectType: 'event_registration', subjectId: entry.registrationId,
+    payeeId: '', amount: entry.amount,
+  };
+  for (const step of refundPlan([line], cancelBy, keepTickets, decision.refundPercent, percent)) {
+    await deps.tickets.settle(
+      { ...ref, customerId: booking.customerId },
+      step.percent >= 100 ? 100 : 0,
+      step.reason === 'provider_cancelled' ? 'provider_cancelled' : 'customer_cancel',
+    );
+  }
 }

@@ -7,6 +7,7 @@ import type { AddonKind, AddonUnit } from './addon.js';
 import type { PaymentMethod } from './escrow.js';
 import type { ExtraRound } from './delivery.js';
 import type { AssigneeKind } from './studio_ports.js';
+import type { EntryLine } from './entry_tickets.js';
 
 export const BOOKING_STATUSES = [
   'draft',
@@ -147,6 +148,24 @@ export interface StudioFault {
   readonly at: string;
 }
 
+/**
+ * S30 Decision 15 (S04.03-entry): the entry tickets bought with a booking at a ticketed spot, from
+ * `bookingEntryDefaults` at draft time (prices as shown then). `items` are the tickets charged: the
+ * customer's minus the ones a resident waives, plus one for the provider unless waived; empty when
+ * everything is waived (then the booking is paid alone, without a group). `registrationId` is the held
+ * (later paid) registration `createPayment` opens; null until then.
+ */
+export interface BookingEntry {
+  readonly eventId: string;
+  readonly visitDay: string;
+  readonly items: readonly EntryLine[];
+  readonly providerTicket: boolean;
+  readonly waived: { readonly provider: boolean; readonly guests: boolean };
+  /** Σ price × qty of `items`, VND. */
+  readonly amount: number;
+  readonly registrationId: string | null;
+}
+
 export type AssignReminder = 'h48' | 'h26';
 export type BookingSource = 'package' | 'quote' | 'instant' | 'spot' | 'spot_slot';
 
@@ -189,6 +208,13 @@ export interface Booking {
   readonly spotId?: string;
   readonly spotScheduleId?: string;
   readonly slotOfferId?: string;
+  /** S30 Decision 15: entry tickets bought with the booking; absent for every other booking. */
+  readonly entry?: BookingEntry;
+  /**
+   * S30 Decision 6: the group payment of a booking with tickets (the latest one `createPayment` opened);
+   * `checkout` then mirrors that group payment. Absent for a booking paid alone.
+   */
+  readonly groupId?: string;
   /** Draft only: the payment the customer is paying now. */
   readonly checkout?: BookingCheckout;
   /**

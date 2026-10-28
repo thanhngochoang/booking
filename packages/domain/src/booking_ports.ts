@@ -18,6 +18,10 @@ import type { Spot } from './spot.js';
 import type { SpotSchedule } from './spot_schedule.js';
 import type { SlotOffer } from './spot_slots.js';
 import type { SpotDay } from './spot_booking.js';
+import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
+import type { EntryDay } from './entry_tickets.js';
+import type { Resident } from './organizer.js';
+import type { PaymentGroupView } from './group_settlement.js';
 
 export interface ServiceRecord {
   readonly id: string;
@@ -162,6 +166,24 @@ export interface BookingTx {
   getSlotOffer(id: string): Promise<SlotOffer | null>;
   getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null>;
   setSpotDay(spotDay: SpotDay): Promise<void>;
+  // ── S30 (#223 Decisions 6, 15): bookings with entry tickets, one transaction over both sides ──
+  // `getPayment`/`setPayment` reach every payment (a group's ticket line is an `event_registration` one).
+  /** `events/{id}` (a booking's entry event). */
+  getEntryEvent(id: string): Promise<EventRecord | null>;
+  /** `entry_days/{eventId}_{day}`. */
+  getEntryDay(eventId: string, day: string): Promise<EntryDay | null>;
+  /** `spots/{spotId}/residents/{providerId}`. */
+  residentOf(spotId: string, providerId: string): Promise<Resident | null>;
+  /** `events/{eventId}/registrations/{regId}`. */
+  getRegistration(eventId: string, regId: string): Promise<RegistrationDoc | null>;
+  /** The line payments of a group payment (`payments where groupId == groupId`). */
+  childrenOf(groupId: string): Promise<Payment[]>;
+  putEntryEvent(e: EventRecord): Promise<void>;
+  putEntryDay(d: EntryDay): Promise<void>;
+  putRegistration(r: RegistrationDoc): Promise<void>;
+  putRegistrationContact(eventId: string, regId: string, c: RegistrationContact): Promise<void>;
+  /** `payment_groups/{id}`: the read model the payer sees (S04.03-entry, S05.02). */
+  putGroupView(g: PaymentGroupView): Promise<void>;
 }
 
 /**
@@ -223,9 +245,9 @@ export interface BookingStore {
   findPaymentsByTransferCode(code: string): Promise<readonly Payment[]>;
   getTransferRecord(id: string): Promise<TransferRecord | null>;
   // Sweep queries
-  /** Booking payments in `created` with `createdAt <= createdBefore`. */
+  /** Booking payments in `created` with `createdAt <= createdBefore` (a group's `awaiting_group` lines never are, S30). */
   findPaymentsToReconcile(createdBefore: Date, limit?: number): Promise<readonly Payment[]>;
-  /** Payments in `created` with `expiresAt <= now`. */
+  /** Payments in `created` with `expiresAt <= now` (never an `awaiting_group` line: it expires with its group). */
   findOverduePayments(now: Date, limit?: number): Promise<readonly Payment[]>;
   /** Drafts with `payableUntil <= now`; drafts without the field are never returned. */
   findExpiredDrafts(now: Date, limit?: number): Promise<readonly Booking[]>;
@@ -301,6 +323,21 @@ export interface PaymentGateway {
   }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly pending?: boolean; readonly error?: string }>;
 }
 
+/**
+ * S30 (Decision 15, spec §5.3): the entry-ticket line of a booking with tickets, settled in the event
+ * store after the booking's own transition commits. `percent` 100 refunds the ticket (`refundTicket`);
+ * 0 cancels it and its money stays held for the organizer (the late-cancel rule).
+ */
+export interface BookingTicketLines {
+  /** The entry rule for the customer cancelling now: `entryRefundPercent` with the event's cutoff. */
+  customerPercent(line: { readonly eventId: string; readonly registrationId: string }, now: Date): Promise<0 | 100>;
+  settle(
+    line: { readonly eventId: string; readonly registrationId: string; readonly customerId: string },
+    percent: 0 | 100,
+    reason: 'customer_cancel' | 'provider_cancelled',
+  ): Promise<void>;
+}
+
 export interface BookingDeps {
   readonly store: BookingStore;
   readonly services: ServiceCatalog;
@@ -314,4 +351,9 @@ export interface BookingDeps {
   readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
+  /**
+   * S30: settles the ticket line when a booking with tickets is declined, expires or is cancelled.
+   * Absent → only the booking line is refunded (the tickets keep their own rules).
+   */
+  readonly tickets?: BookingTicketLines;
 }

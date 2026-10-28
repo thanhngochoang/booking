@@ -109,6 +109,7 @@ async function applyTransfer(
 import type { BookingStore } from './booking_ports.js';
 import { expireOpenPayment } from './booking_payment_paths.js';
 import type { SubjectSettler } from './payment_ports.js';
+import { groupSettler } from './group_settlement.js';
 import {
   type PaymentLookup,
   type SettlementDeps,
@@ -206,6 +207,8 @@ export function bookingSettlement(deps: BookingDeps): SettlementDeps {
     clock: deps.clock,
     subjects: {
       booking: new BookingPaymentSettler(deps),
+      // S30: a booking with tickets is paid through its group payment (over the same store).
+      payment_group: groupSettler(deps),
     },
   };
 }

@@ -278,6 +278,27 @@ describe('entry refunds, closing a day and holds', () => {
     assert.deepEqual(await closeEntryDay(w.deps, org1, { eventId: ENTRY_ID, day: VISIT }), { refunded: 0, left: 0 });
   });
 
+  test('closeEntryDay also refunds 100% a late-cancelled ticket of that day whose money is still held', async () => {
+    const w = createEntryWorld();
+    await publishedEntry(w);
+    const late = await bought(w, cu1);
+    const other = await bought(w, cu2, undefined, '2026-10-23');
+    // Past the 48 h cutoff (00:00 on the 20th): cancelled without a refund, the money stays held.
+    w.clock.set(new Date(MIDNIGHT - 30 * HOUR));
+    assert.deepEqual(await cancelRegistration(w.deps, cu1, { eventId: ENTRY_ID, registrationId: late }), { status: 'cancelled', refundPercent: 0 });
+    const paymentId = must(reg(w, late).paymentId);
+    assert.equal(must(w.store.payments.get(paymentId)).escrowStatus, 'held');
+
+    const out = await closeEntryDay(w.deps, org1, { eventId: ENTRY_ID, day: VISIT });
+    assert.deepEqual(out, { refunded: 1, left: 0 });
+    assert.deepEqual([reg(w, late).status, reg(w, late).refundPercent], ['refunded', 100]);
+    assert.equal(must(w.store.payments.get(paymentId)).status, 'refunded');
+    assert.deepEqual(w.store.refundsOf(paymentId).map((r) => [r.amount, r.reason]), [[70_000, 'day_closed']]);
+    // Another day's ticket keeps its money; the day's counters never go below zero.
+    assert.equal(reg(w, other).status, 'paid');
+    assert.deepEqual([day(w)?.sold, day(w)?.closed], [0, true]);
+  });
+
   test('closeEntryDay refunds the first 20 at once and leaves the rest to the event clock', async () => {
     const w = createEntryWorld();
     await publishedEntry(w, { dailyCapacity: null });

@@ -225,7 +225,7 @@ function validNotification(n: TransferNotification): boolean {
 /**
  * Matches a transfer's content to a payment across subjects.
  * For each code in transferCodesIn(content), candidates = findPaymentsByTransferCode(code)
- * with createdAt <= receivedAt AND a settler for their subject.
+ * with createdAt <= receivedAt AND a settler for their subject, never an `awaiting_group` line.
  * Open payment wins, else the newest.
  */
 async function matchPayment(
@@ -239,6 +239,8 @@ async function matchPayment(
     const all = await deps.payments.findPaymentsByTransferCode(code);
     const candidates = all.filter(
       (p) =>
+        // A group's line is never paid on its own (S30 Decision 6): its group payment is.
+        p.status !== 'awaiting_group' &&
         Date.parse(p.createdAt) <= receivedMs &&
         deps.subjects[p.subjectType] !== undefined,
     );
@@ -285,6 +287,7 @@ export async function settleTransfer(deps: SettlementDeps, n: TransferNotificati
 
 /**
  * Dev/emulator tool and CLIs: simulates a transfer of `kind` to the caller's own payment (Decision 9).
+ * A group's line (`groupId`) confirms its group payment: a transfer of the group's total (S30).
  */
 export async function confirmFakePayment(
   deps: SettlementDeps,
@@ -298,7 +301,11 @@ export async function confirmFakePayment(
     throw new DomainError('invalid_argument');
   }
 
-  const p = await deps.payments.getPayment(paymentId);
+  const found = await deps.payments.getPayment(paymentId);
+  if (!found) throw new DomainError('not_found');
+  if (found.payerId !== caller.uid) throw new DomainError('permission_denied');
+  // A line of a group (a booking or registration paid with others, S30) is paid through its group.
+  const p = found.groupId !== undefined ? await deps.payments.getPayment(found.groupId) : found;
   if (!p) throw new DomainError('not_found');
   if (p.payerId !== caller.uid) throw new DomainError('permission_denied');
   if (!p.transferCode) throw new DomainError('conflict');
