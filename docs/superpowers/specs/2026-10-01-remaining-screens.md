@@ -97,13 +97,13 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
-| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S09 |
+| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) · huỷ phần bàn giao: ✅ ([#207](https://github.com/thanhngochoang/booking/issues/207)) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S09 |
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) · ScreenCode ✅ (#152) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
 | S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S12 |
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
-| S05.08 | Huỷ phần bàn giao khi trễ hạn (sheet: hoàn mốc 2, thợ giữ mốc 1) | — (sheet) | khách | spec 10-05 §4.1.5 | kế hoạch `2026-10-18-s05-late-delivery-cancel.md` ([#207](https://github.com/thanhngochoang/booking/issues/207)) | — |
+| S05.08 | Huỷ phần bàn giao khi trễ hạn (sheet: hoàn mốc 2, thợ giữ mốc 1) | — (sheet) | khách | spec 10-05 §4.1.5 | ✅ đã làm ([#207](https://github.com/thanhngochoang/booking/issues/207), kế hoạch `2026-10-18-s05-late-delivery-cancel.md`) | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
 | S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · Live Shutter: [#140](https://github.com/thanhngochoang/booking/issues/140) | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
