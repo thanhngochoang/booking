@@ -11,6 +11,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import {
+  LINE_KINDS,
   MAX_MEMBERS_VERIFIED,
   PAYMENT_METHODS,
   acceptsOrders,
@@ -27,6 +28,7 @@ import {
   type AddonLine,
   type AssigneeKind,
   type Booking,
+  type LineKind,
   type BookingPickup,
   type BookingCheckout,
   type BookingContactSnapshot,
@@ -636,6 +638,9 @@ export function paymentToFirestore(p: Payment): DocumentData {
     payableAmount: p.payableAmount ?? null,
     // An instant payment's platform fee snapshot (Decision 6); absent → the payout policy's rate.
     ...(p.feeBp !== undefined ? { feeBp: p.feeBp } : {}),
+    // S30: an entry ticket's line kind and an organizer payee (no commission, no tax withheld).
+    ...(p.lineKind !== undefined ? { lineKind: p.lineKind } : {}),
+    ...(p.payeeKind !== undefined ? { payeeKind: p.payeeKind } : {}),
     milestones: p.milestones
       ? p.milestones.map((m) => ({
           kind: m.kind,
@@ -690,6 +695,8 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
     ...(typeof d.payableAmount === 'number' ? { payableAmount: d.payableAmount } : {}),
     ...(typeof d.feeBp === 'number' && Number.isInteger(d.feeBp) && d.feeBp >= 0 && d.feeBp <= 10_000 ? { feeBp: d.feeBp } : {}),
+    ...((LINE_KINDS as readonly unknown[]).includes(d.lineKind) ? { lineKind: d.lineKind as LineKind } : {}),
+    ...(d.payeeKind === 'organizer' ? { payeeKind: 'organizer' as const } : {}),
     ...(Array.isArray(d.milestones)
       ? {
           milestones: d.milestones.map((m: { kind?: unknown; amount?: unknown; status?: unknown; releaseAfter?: unknown; releasedAt?: unknown; payoutId?: unknown }) => ({

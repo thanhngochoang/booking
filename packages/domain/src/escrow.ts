@@ -40,6 +40,13 @@ export type PaymentSubject = (typeof PAYMENT_SUBJECTS)[number];
 export const isPaymentSubject = (v: unknown): v is PaymentSubject =>
   typeof v === 'string' && (PAYMENT_SUBJECTS as readonly string[]).includes(v);
 
+/**
+ * What a payment pays for (S30, #223): a group payment's child line (Decision 6, Task 3), or a lone
+ * entry ticket. Absent on payments from before S30 and on plain event tickets and bookings.
+ */
+export const LINE_KINDS = ['booking', 'entry_ticket', 'event_ticket', 'venue_fee'] as const;
+export type LineKind = (typeof LINE_KINDS)[number];
+
 export interface Payment {
   readonly id: string;
   readonly subjectType: PaymentSubject;
@@ -93,6 +100,13 @@ export interface Payment {
    * `instant_request` payment snapshots its request's `platformFeeBp`); absent → the payout policy's.
    */
   readonly feeBp?: number;
+  /** S30: see LINE_KINDS. */
+  readonly lineKind?: LineKind;
+  /**
+   * S30 Decision 12: `organizer` when the payee is paid as an organizer (entry tickets, tickets of an
+   * organizer-hosted event, venue fees): no commission, no tax withheld. Absent → the payee's provider type.
+   */
+  readonly payeeKind?: 'organizer';
   readonly createdAt: string;
   readonly updatedAt: string;
 }

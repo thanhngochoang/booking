@@ -179,6 +179,8 @@ export * from './spot_ranking.js';
 export * from './spot_admin.js';
 export * from './memory_spot_rank_store.js';
 export * from './organizer.js';
+export * from './entry_tickets.js';
+export * from './entry_days.js';
 export * from './organizer_ports.js';
 export * from './organizer_use_cases.js';
 export * from './memory_organizer_store.js';

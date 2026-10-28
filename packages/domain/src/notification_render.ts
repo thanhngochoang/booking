@@ -99,7 +99,8 @@ export type NotificationContent =
   | { type: 'spot_claim_approved'; spot: string }
   | { type: 'spot_claim_rejected'; spot: string | null; reason: string | null }
   | { type: 'spot_resident_added'; organizer: string; spot: string }
-  | { type: 'gate_staff_invited'; organizer: string };
+  | { type: 'gate_staff_invited'; organizer: string }
+  | { type: 'entry_day_closed'; spot: string; day: string };
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'] as const;
 
@@ -508,5 +509,10 @@ export function renderNotification(c: NotificationContent): { title: string; bod
       };
     case 'gate_staff_invited':
       return { title: `${c.organizer} mời bạn soát vé`, body: 'Nhận lời mời trong 72 giờ để mở màn quét mã.' };
+    case 'entry_day_closed':
+      return {
+        title: `${c.spot} đóng cửa ${formatDayShortVi(c.day)}`,
+        body: 'Vé vào cửa ngày này được hoàn 100%. Xem trạng thái hoàn tiền trong mục Vé.',
+      };
   }
 }

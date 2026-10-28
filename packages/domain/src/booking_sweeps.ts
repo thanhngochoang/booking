@@ -145,7 +145,9 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
       // A disputed milestone payment still releases its other held, due milestones (S18 Decision 1);
       // `releaseDueMilestones` never touches the disputed one. A payment without milestones stays frozen whole.
       const disputedMilestones = p?.milestones !== undefined && p.escrowStatus === 'disputed';
-      if (p && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || disputedMilestones)) {
+      // Never an unpaid intent: an entry ticket's payment carries `releaseAfter` from its creation (S30).
+      const unpaid = p?.status === 'created' || p?.status === 'expired';
+      if (p && !unpaid && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || disputedMilestones)) {
         if (p.milestones) {
           const { payment: updatedP, ledgerEntries } = releaseDueMilestones(p, now, () => deps.ids.newId());
           if (ledgerEntries.length > 0) {

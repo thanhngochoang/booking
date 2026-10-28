@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, type DocumentData } from 'firebase-admin/firestore';
 import type { EventRecord, Refund, RegistrationDoc } from '@photobooking/domain';
-import { refundFromFirestore, refundToFirestore } from '../../src/infra/booking_firestore.js';
+import { paymentFromFirestore, paymentToFirestore, refundFromFirestore, refundToFirestore } from '../../src/infra/booking_firestore.js';
 import {
   FirestoreEventStore,
+  entryDayFromFirestore,
+  entryDayToFirestore,
   eventFromFirestore,
   eventToFirestore,
   firestoreRegistrationReader,
@@ -259,5 +261,106 @@ describe('Firestore mapping for events', () => {
       return (await tx.availability('ph1', '2026-10-18')) as { state: string };
     });
     assert.equal(rec.state, 'spot');
+  });
+});
+
+describe('Firestore mapping for entry events (S30, #223)', () => {
+  const entry = (over: Partial<EventRecord> = {}): EventRecord => event({
+    type: 'entry', status: 'open', hostConsent: 'not_required', hostConsentExpiresAt: null,
+    host: { type: 'organizer', id: 'org1', name: 'Bãi đá sông Hồng', avatarUrl: null, verified: true },
+    createdBy: 'org1', createdByRole: 'photographer', dayKey: null, capacity: null, price: null,
+    registrationDeadline: null, faq: [], hashtag: '', hashtagKey: '', hashtagLocked: true, spotId: 's1',
+    startAt: D('2026-10-17T17:00:00.000Z'), endAt: D('2026-12-31T17:00:00.000Z'),
+    closedWeekdays: [1], closedDays: ['2026-10-25'], openHours: { start: '08:00', end: '17:00' },
+    ticketTypes: [{ id: 'adult', name: 'Người lớn', price: 70_000, hidden: false }, { id: 'old', name: 'Vé cũ', price: 50_000, hidden: true }],
+    dailyCapacity: 10, refundCutoffHours: 48,
+    ...over,
+  });
+
+  it('an organizer-hosted event keeps host.type organizer on read (not platform)', () => {
+    const doc = eventToFirestore(entry());
+    assert.deepEqual([doc.host.type, doc.hostId], ['organizer', 'org1']);
+    assert.deepEqual(eventFromFirestore('ev1', doc).host, { type: 'organizer', id: 'org1', name: 'Bãi đá sông Hồng', avatarUrl: null, verified: true });
+    // An unknown stored type still reads as the platform.
+    assert.equal(eventFromFirestore('ev1', { ...doc, host: { ...doc.host, type: 'robot' } }).host.type, 'platform');
+  });
+
+  it('an entry event round-trips its day rules; other events carry none', () => {
+    const e = entry();
+    const doc = eventToFirestore(e);
+    assert.deepEqual(doc.ticketTypes[1], { id: 'old', name: 'Vé cũ', price: 50_000, hidden: true });
+    assert.deepEqual(eventFromFirestore('ev1', doc), e);
+    assert.deepEqual(eventFromFirestore('ev1', eventToFirestore(entry({ dailyCapacity: null }))).dailyCapacity, null);
+    const plain = eventToFirestore(event());
+    for (const k of ['closedWeekdays', 'closedDays', 'openHours', 'ticketTypes', 'dailyCapacity', 'refundCutoffHours']) {
+      assert.equal(k in plain, false, k);
+    }
+  });
+
+  it('an entry ticket round-trips visitDay, items, bookingId, gateCheckedInAt and ticketCodeLast4', () => {
+    const r = registration({
+      status: 'held', amount: 180_000, quantity: 3, holdExpiresAt: D('2026-10-18T03:15:00.000Z'), paymentId: 'p1',
+      ticketCode: 'VE-ABCD-1022', ticketCodeLast4: 'ABCD', visitDay: '2026-10-22', bookingId: null,
+      gateCheckedInAt: null,
+      items: [{ ticketTypeId: 'adult', name: 'Người lớn', price: 70_000, qty: 2 }, { ticketTypeId: 'child', name: 'Trẻ em', price: 40_000, qty: 1 }],
+    });
+    const doc = registrationToFirestore(r);
+    assert.deepEqual([doc.visitDay, doc.ticketCodeLast4, doc.bookingId, doc.gateCheckedInAt], ['2026-10-22', 'ABCD', null, null]);
+    assert.deepEqual(registrationFromFirestore('r1', doc), r);
+    const checked = registration({ visitDay: '2026-10-22', items: [], bookingId: 'bk1', ticketCodeLast4: 'WXYZ', gateCheckedInAt: D('2026-10-22T02:00:00.000Z') });
+    assert.deepEqual(registrationFromFirestore('r1', registrationToFirestore(checked)), checked);
+    assert.equal('visitDay' in registrationToFirestore(registration()), false);
+  });
+
+  it('an entry day round-trips', () => {
+    const d = { eventId: 'ev1', day: '2026-10-22', sold: 8, held: 2, checkedIn: 1, closed: false, updatedAt: '2026-10-18T03:00:00.000Z' };
+    const doc = entryDayToFirestore(d);
+    assert.ok(doc.updatedAt instanceof Timestamp);
+    assert.deepEqual(entryDayFromFirestore(doc), d);
+    assert.equal(entryDayFromFirestore(undefined), null);
+  });
+
+  it('a ticket payment keeps lineKind and payeeKind', () => {
+    const p = paymentFromFirestore('p1', paymentToFirestore({
+      id: 'p1', subjectType: 'event_registration', subjectId: 'r1', eventId: 'ev1', payerId: 'cu1', payeeId: 'org1',
+      provider: 'fake', amount: 70_000, status: 'created', escrowStatus: 'held', idempotencyKey: 'tkt_r1_bank_qr',
+      method: 'bank_qr', lineKind: 'entry_ticket', payeeKind: 'organizer', releaseAfter: '2026-10-22T17:00:00.000Z',
+      createdAt: '2026-10-18T03:00:00.000Z', updatedAt: '2026-10-18T03:00:00.000Z',
+    }));
+    assert.deepEqual([p?.lineKind, p?.payeeKind, p?.payeeId, p?.releaseAfter], ['entry_ticket', 'organizer', 'org1', '2026-10-22T17:00:00.000Z']);
+  });
+
+  it('entry_days, organizers and residents are read inside the event transaction', async () => {
+    const gets: string[] = [];
+    const sets: string[] = [];
+    const docs: Record<string, DocumentData> = {
+      'entry_days/ev1_2026-10-22': { eventId: 'ev1', day: '2026-10-22', sold: 8, held: 0, checkedIn: 0, closed: false, updatedAt: Timestamp.fromDate(D('2026-10-18T03:00:00.000Z')) },
+      'organizers/org1': { name: 'Bãi đá', bio: '', status: 'active', phoneVerified: true, businessVerified: true, payoutAccountOk: true, managedSpotIds: ['s1'] },
+      'spots/s1/residents/p1': { waivesProvider: true, waivesGuests: false, maxGuests: null, validUntil: null, addedAt: '2026-10-01T00:00:00.000Z', addedBy: 'org1' },
+    };
+    const ref = (path: string): unknown => ({
+      path,
+      collection: (c: string) => ({ doc: (id: string) => ref(`${path}/${c}/${id}`) }),
+    });
+    const firestore = {
+      collection: (c: string) => ({ doc: (id: string) => ref(`${c}/${id}`) }),
+      runTransaction: async (fn: (fTx: unknown) => Promise<unknown>) => fn({
+        get: async (r: { path: string }) => { gets.push(r.path); return { data: () => docs[r.path] }; },
+        set: (r: { path: string }) => { sets.push(r.path); },
+      }),
+    };
+    const store = new FirestoreEventStore(firestore as never);
+    const out = await store.runTransaction(async (tx) => {
+      const day = await tx.getEntryDay('ev1', '2026-10-22');
+      const org = await tx.getOrganizer('org1');
+      const res = await tx.residentOf('s1', 'p1');
+      tx.putEntryDay({ ...(day as NonNullable<typeof day>), held: 2 });
+      return { day, org, res };
+    });
+    assert.deepEqual(gets, ['entry_days/ev1_2026-10-22', 'organizers/org1', 'spots/s1/residents/p1']);
+    assert.deepEqual(sets, ['entry_days/ev1_2026-10-22']);
+    assert.equal(out.day?.sold, 8);
+    assert.equal(out.org?.businessVerified, true);
+    assert.equal(out.res?.waivesProvider, true);
   });
 });

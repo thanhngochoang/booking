@@ -1802,6 +1802,65 @@ alter table events
   add constraint ck_events_host_type check (host_type in ('photographer','platform','organizer')),
   add column host_organizer_id text references organizers(user_id),
   add constraint ck_events_host_organizer check (host_type <> 'organizer' or host_organizer_id is not null);
+
+-- Vé vào cửa (S30, Decision 11): sự kiện type = 'entry' của chủ sự kiện ở điểm họ quản lý; khoảng bán
+-- là starts_at/ends_at (≤ 180 ngày), sức chứa theo ngày ở entry_days; capacity/price/day_key rỗng.
+alter table events
+  drop constraint if exists events_type_check,
+  add constraint ck_events_type check (type in ('photo_walk','mini_session','workshop','cosplay','other','entry')),
+  add column closed_weekdays     smallint[] not null default '{}',   -- 0 = Chủ nhật … 6 = thứ Bảy
+  add column closed_days         date[] not null default '{}',       -- ≤ 30
+  add column open_time           time,                               -- openHours.start
+  add column close_time          time,                               -- openHours.end
+  add column daily_capacity      int check (daily_capacity is null or daily_capacity >= 1),  -- rỗng = không giới hạn
+  add column refund_cutoff_hours smallint check (refund_cutoff_hours between 0 and 168),       -- mặc định 48
+  add constraint ck_events_entry check (type <> 'entry' or (host_type = 'organizer' and spot_id is not null
+    and open_time is not null and close_time > open_time and refund_cutoff_hours is not null));
+
+create table event_ticket_types (
+  event_id   text not null references events(id) on delete cascade,
+  id         text not null,                                  -- giữ nguyên qua các lần sửa (vé đã bán trỏ vào)
+  position   smallint not null,
+  name       text not null check (char_length(name) between 3 and 40),
+  price      bigint not null check (price > 0),
+  hidden     boolean not null default false,                 -- loại đã bán chỉ được ẩn, không xoá
+  primary key (event_id, id)
+);
+
+create table entry_days (
+  event_id   text not null references events(id) on delete cascade,
+  day        date not null,
+  sold       int not null default 0 check (sold >= 0),
+  held       int not null default 0 check (held >= 0),
+  checked_in int not null default 0 check (checked_in >= 0),
+  closed     boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (event_id, day)
+);
+
+alter table event_registrations
+  drop constraint if exists event_registrations_quantity_check,
+  add constraint ck_event_regs_quantity check (quantity between 1 and 10),   -- 1..4 vé sự kiện, 1..10 vé vào cửa (use case kiểm)
+  add column visit_day          date,                                   -- vé vào cửa
+  add column booking_id         text references bookings(id),           -- vé mua kèm buổi chụp (S04.03-entry)
+  add column gate_checked_in_at timestamptz,
+  add column ticket_code_last4  char(4);
+create table event_registration_items (
+  registration_id text not null references event_registrations(id) on delete cascade,
+  ticket_type_id  text not null,
+  name            text not null,                               -- tên và giá lúc mua
+  price           bigint not null check (price > 0),
+  qty             smallint not null check (qty >= 1),
+  primary key (registration_id, ticket_type_id)
+);
+drop index if exists ux_event_regs_active;
+create unique index ux_event_regs_active on event_registrations (event_id, user_id, coalesce(visit_day, '0001-01-01'))
+  where status in ('held','paid') and booking_id is null;   -- một vé lẻ mỗi ngày tham quan
+create index ix_event_regs_visit_day on event_registrations (visit_day, status) where visit_day is not null;
+
+alter table payments
+  add column line_kind  text check (line_kind in ('booking','entry_ticket','event_ticket','venue_fee')),
+  add column payee_kind text check (payee_kind in ('organizer'));   -- rỗng = theo loại nhà cung cấp của người nhận
 ```
 
 ## 3. Ánh xạ Firestore → bảng
@@ -1875,6 +1934,9 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `spots/{id}/residents/{providerId}` | `spot_residents` | S30 thợ tại điểm; khoá `(spot_id, provider_id)` lấy từ đường dẫn |
 | `organizers/{uid}` | `organizers` | S30; `managedSpotIds[]` không thành cột (dẫn xuất từ `spots.managed_by`) |
 | `organizers/{uid}/gate_staff/{staffUid}` | `organizer_gate_staff` | S30; `scansToday.{day,count}` → `scans_day`, `scans_count` |
+| `events/{id}` (`type = entry`) | `events` + `event_ticket_types` | S30 vé vào cửa; `openHours.{start,end}` → `open_time`, `close_time`; `ticketTypes[]` → `event_ticket_types` (thứ tự → `position`); `closedWeekdays[]`, `closedDays[]` → mảng |
+| `entry_days/{eventId}_{day}` | `entry_days` | S30; khoá `(event_id, day)` tách từ id |
+| `events/{id}/registrations/{id}` (vé vào cửa) | `event_registrations` + `event_registration_items` | S30; `visitDay`, `bookingId`, `gateCheckedInAt`, `ticketCodeLast4` → cột; `items[]` → `event_registration_items` |
 | `spot_claims/{id}` | `spot_claims` | S30; `proposal.{name,address}` → `proposal_*`; `proofPaths[]` → `proof_paths text[]` (đường dẫn Storage, không phải URL) |
 | `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
 | `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |
@@ -1914,11 +1976,12 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | Lịch sử thanh toán của khách và tổng "Đang giữ / Đang hoàn" (S22.01, #141) | `payments`, `refunds` | View `payer_payment_rows`; Firestore giữ hình chiếu do trigger ghi |
 | `recruit_posts.application_count`, `recruit_counters.*_count` | `recruit_applications`, `recruit_posts`, `studio_collaborations` | Use case S27 cập nhật trong cùng giao dịch với đổi trạng thái (kể cả job); đếm lại được bằng truy vấn |
 | `organizers.managedSpotIds` (Firestore) | `spots.managed_by` | Ghi cùng giao dịch duyệt `spot_claims` (S30); bảng không lưu cột riêng |
+| `entry_days.sold`, `held`, `checked_in` | `event_registrations` (`visit_day`, `status`) | S30; ghi trong cùng giao dịch với vé (giữ, trả, hết hạn, hoàn, soát); đối soát được bằng tổng `quantity` theo ngày |
 | `photographer_recruit_match_keys` | `photographers.service_*`, `photographer_specialties`, `users.role` | `onPhotographerWrite`, `onUserWrite` (đổi vai trò); studio và tài khoản ở vai khách không có dòng |
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `organizers` → `organizer_gate_staff` → `spots` (+`spot_access_fees`) → `spot_claims` → `photographers` và bảng con → `spot_residents` → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `organizers` → `organizer_gate_staff` → `spots` (+`spot_access_fees`) → `spot_claims` → `photographers` và bảng con → `spot_residents` → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` (+`event_ticket_types`, `entry_days`) → `event_registrations` (+`event_registration_items`), `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

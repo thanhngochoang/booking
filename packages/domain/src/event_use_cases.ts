@@ -1,5 +1,8 @@
 import {
+  EVENT_DESC_MAX,
+  EVENT_TITLE_MAX,
   HOST_CONSENT_HOURS,
+  encodeGeohash,
   isEventManager,
   sameInstant,
   statusAfterSeats,
@@ -15,7 +18,19 @@ import { GROUP_READONLY_DAYS } from './event_chat.js';
 import { hashtagBase, hashtagKeyOf, hashtagWithSuffix } from './event_hashtag.js';
 import type { EventDeps, EventGroupChatSeed, EventTx } from './event_ports.js';
 import { isId } from './ids.js';
-import { SPOT_EVENT_SLACK_M, spotCovers } from './spot.js';
+import { SPOT_EVENT_SLACK_M, spotCovers, type Spot } from './spot.js';
+import { formatVnDate } from './booking_policy.js';
+import { graphemeCount } from './booking_requests.js';
+import {
+  entryFieldsOf,
+  entryRangeInstants,
+  isOpenDay,
+  validateEntryEvent,
+  weekdayOf,
+  type EntryFields,
+} from './entry_tickets.js';
+import { readEntryDays, releaseDeltas, writeEntryDays } from './entry_days.js';
+import { canSell } from './organizer.js';
 
 const HOUR_MS = 3_600_000;
 const CLIENT_EVENT_ID = /^[A-Za-z0-9_-]{20,64}$/;
@@ -152,6 +167,164 @@ function writeHashtag(tx: EventTx, plan: HashtagPlan, eventId: string, isNew: bo
   if (isNew || plan.oldKey !== null) tx.putHashtag(plan.key, eventId);
 }
 
+// ---- entry events (S30, Decision 11) -------------------------------------------------------
+
+const ENTRY_KEYS = ['spotId', 'startAt', 'endAt', 'closedWeekdays', 'closedDays', 'openHours', 'ticketTypes',
+  'dailyCapacity', 'refundCutoffHours'] as const;
+
+/** The stored entry fields with the request's entry keys on top (an entry save always validates the whole set). */
+function mergedEntryRaw(existing: EventRecord | null, r: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = existing === null ? {} : { ...entryFieldsOf(existing) };
+  for (const k of ENTRY_KEYS) if (r[k] !== undefined) out[k] = r[k];
+  return out;
+}
+
+function textField(v: unknown, field: string, min: number, max: number): string {
+  if (typeof v !== 'string') throw new DomainError('invalid_argument', field);
+  const t = v.normalize('NFC').trim();
+  const n = graphemeCount(t);
+  if (n < min || n > max) throw new DomainError('invalid_argument', field);
+  return t;
+}
+
+/** Reads only: the spot must exist, be active and be managed by the host organizer. */
+async function entrySpot(tx: EventTx, spotId: string, organizerId: string | null): Promise<Spot> {
+  const spot = await tx.getSpot(spotId);
+  if (spot === null) throw new DomainError('not_found', 'spotId');
+  if (spot.status !== 'active') throw new DomainError('spot_archived', 'spotId');
+  if (organizerId === null || spot.managedBy !== organizerId) throw new DomainError('not_spot_manager');
+  return spot;
+}
+
+/** Decision 11: an entry event's record fields; place and cover are the spot's, the one-day fields are empty. */
+function entryRecordFields(f: EntryFields, spot: Spot, r: Record<string, unknown>, existing: EventRecord | null) {
+  const { startAt, endAt } = entryRangeInstants(f);
+  return {
+    title: r.title === undefined ? (existing?.title ?? spot.name) : textField(r.title, 'title', 1, EVENT_TITLE_MAX),
+    description: r.description === undefined ? (existing?.description ?? '') : textField(r.description, 'description', 0, EVENT_DESC_MAX),
+    type: 'entry' as const,
+    coverUrl: spot.cover?.url ?? null,
+    coverPath: spot.cover?.path ?? null,
+    startAt, endAt, dayKey: null,
+    location: {
+      name: spot.name, meetingPoint: null, lat: spot.point.lat, lng: spot.point.lng,
+      geohash: encodeGeohash(spot.point.lat, spot.point.lng), areaId: isId(spot.areaCode) ? spot.areaCode : null,
+    },
+    capacity: null, price: null, registrationDeadline: null, faq: [],
+    spotId: f.spotId, spotDecided: true,
+    closedWeekdays: f.closedWeekdays, closedDays: f.closedDays, openHours: f.openHours, ticketTypes: f.ticketTypes,
+    dailyCapacity: f.dailyCapacity, refundCutoffHours: f.refundCutoffHours,
+  };
+}
+
+/** The request or the stored event is an entry event: only an entry save may touch it. */
+function entryTypeGuard(existing: EventRecord | null, r: Record<string, unknown>): boolean {
+  const entry = r.type === 'entry' || existing?.type === 'entry';
+  if (!entry) return false;
+  if (existing !== null && existing.type !== 'entry') throw new DomainError('invalid_argument', 'type');
+  if (r.type !== undefined && r.type !== 'entry') throw new DomainError('invalid_argument', 'type');
+  if (r.hostPhotographerId !== undefined && r.hostPhotographerId !== null) throw new DomainError('invalid_argument', 'type');
+  return true;
+}
+
+/** An organizer's entry draft (Decision 11): host = the caller's organizer document, on a spot it manages. */
+async function saveEntryDraft(
+  deps: EventDeps,
+  caller: EventCaller,
+  tx: EventTx,
+  r: Record<string, unknown>,
+  eventId: string,
+  existing: EventRecord | null,
+  now: Date,
+): Promise<{ eventId: string; hashtag: string }> {
+  let host: EventHost;
+  if (existing !== null) {
+    if (!isEventManager(existing, caller)) throw new DomainError('permission_denied');
+    if (existing.status !== 'draft') throw new DomainError('conflict');
+    host = existing.host;
+  } else {
+    // Only an organizer hosts entry events (a photographer or staff cannot).
+    const org = caller.staffRole === null ? await tx.getOrganizer(caller.uid) : null;
+    if (org === null) throw new DomainError('invalid_argument', 'type');
+    if (org.status !== 'active') throw new DomainError('permission_denied');
+    host = { type: 'organizer', id: org.id, name: org.name, avatarUrl: org.avatarUrl, verified: org.businessVerified };
+  }
+  const f = validateEntryEvent(mergedEntryRaw(existing, r), formatVnDate(now), { newId: () => deps.ids.newId() });
+  const spot = await entrySpot(tx, f.spotId, host.id);
+  const fields = entryRecordFields(f, spot, r, existing);
+  if (existing !== null) {
+    tx.putEvent({ ...existing, ...fields, version: existing.version + 1, updatedAt: now });
+  } else {
+    tx.putEvent({
+      id: eventId, host, createdBy: caller.uid, createdByRole: 'photographer',
+      hostConsent: 'not_required', hostConsentExpiresAt: null,
+      ...fields,
+      hashtag: '', hashtagKey: '', hashtagLocked: true,
+      status: 'draft', registeredCount: 0, heldCount: 0, chatId: null, postCount: 0, version: 1,
+      publishedAt: null, completedAt: null, cancelledAt: null, createdAt: now, updatedAt: now,
+    });
+  }
+  return { eventId, hashtag: '' };
+}
+
+/** Decision 3: publishing sells tickets, so the organizer must be able to sell (`business_required`). */
+async function publishEntry(tx: EventTx, ev: EventRecord, now: Date): Promise<void> {
+  const org = ev.host.id === null ? null : await tx.getOrganizer(ev.host.id);
+  if (org === null || org.status !== 'active') throw new DomainError('permission_denied');
+  if (!canSell(org)) throw new DomainError('business_required');
+  const f = validateEntryEvent(mergedEntryRaw(ev, {}), formatVnDate(now));
+  const spot = await entrySpot(tx, f.spotId, org.id);
+  tx.putEvent({
+    ...ev, ...entryRecordFields(f, spot, {}, ev),
+    status: 'open', publishedAt: now, version: ev.version + 1, updatedAt: now,
+  });
+}
+
+/** Where a day with tickets stops being an open day, the field that closed it. */
+function closingField(f: EntryFields, day: string): string {
+  if (day < f.startAt) return 'startAt';
+  if (day > f.endAt) return 'endAt';
+  return f.closedWeekdays.includes(weekdayOf(day)) ? 'closedWeekdays' : 'closedDays';
+}
+
+/**
+ * Edits of a published entry event (S30.04): a sold ticket type can only be hidden, a day's capacity
+ * never goes under its tickets, and a day with tickets stays open (closing one is `closeEntryDay`,
+ * which refunds). The spot never changes. Prices paid stay on the registrations.
+ */
+async function updateEntry(deps: EventDeps, tx: EventTx, ev: EventRecord, r: Record<string, unknown>, now: Date): Promise<void> {
+  const today = formatVnDate(now);
+  const f = validateEntryEvent(mergedEntryRaw(ev, r), today, {
+    newId: () => deps.ids.newId(),
+    existingStartAt: entryFieldsOf(ev).startAt,
+  });
+  if (f.spotId !== ev.spotId) throw new DomainError('invalid_argument', 'spotId');
+  const regs = await tx.activeRegistrations(ev.id);
+  const spot = await entrySpot(tx, f.spotId, ev.host.id);
+
+  const kept = new Set(f.ticketTypes.map((t) => t.id));
+  if (regs.some((x) => (x.items ?? []).some((i) => !kept.has(i.ticketTypeId)))) {
+    throw new DomainError('invalid_argument', 'ticketTypes');
+  }
+  const perDay = new Map<string, number>();
+  for (const x of regs) {
+    const d = x.visitDay ?? null;
+    if (d !== null && d >= today) perDay.set(d, (perDay.get(d) ?? 0) + x.quantity);
+  }
+  const days = [...perDay].sort(([a], [b]) => (a < b ? -1 : 1));
+  const cap = f.dailyCapacity;
+  const over = cap === null ? [] : days.filter(([, n]) => n > cap);
+  if (over.length > 0) {
+    throw new DomainError('invalid_argument', 'dailyCapacity', { days: over.map(([day, sold]) => ({ day, sold })) });
+  }
+  const shut = days.filter(([d]) => !isOpenDay(f, d));
+  const firstShut = shut[0];
+  if (firstShut !== undefined) {
+    throw new DomainError('invalid_argument', closingField(f, firstShut[0]), { days: shut.map(([day, sold]) => ({ day, sold })) });
+  }
+  tx.putEvent({ ...ev, ...entryRecordFields(f, spot, r, ev), version: ev.version + 1, updatedAt: now });
+}
+
 export async function saveEventDraft(
   deps: EventDeps,
   caller: EventCaller,
@@ -166,6 +339,7 @@ export async function saveEventDraft(
     if (existing === null && r.eventId !== undefined && !CLIENT_EVENT_ID.test(eventId)) {
       throw new DomainError('invalid_argument');
     }
+    if (entryTypeGuard(existing, r)) return saveEntryDraft(deps, caller, tx, r, eventId, existing, now);
     if (existing !== null) {
       if (!isEventManager(existing, caller)) throw new DomainError('permission_denied');
       if (existing.status !== 'draft') throw new DomainError('conflict');
@@ -237,6 +411,8 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
     if (ev.status !== 'draft') throw new DomainError('conflict');
     // O1: an event staff created for a photographer needs that photographer's acceptance first.
     if (ev.hostConsent !== 'not_required' && ev.hostConsent !== 'accepted') throw new DomainError('not_eligible');
+    // Entry events: no group chat and no host availability (Decision 11).
+    if (ev.type === 'entry') return publishEntry(tx, ev, now);
     const f = validateEventFields({}, 'publish', now, ev);
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
     const dayKey = f.dayKey as string;
@@ -272,7 +448,8 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
 }
 
 export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unknown): Promise<void> {
-  const eventId = idOf(obj(raw).eventId);
+  const r = obj(raw);
+  const eventId = idOf(r.eventId);
   await deps.events.runTransaction(async (tx) => {
     const now = deps.clock.now();
     const ev = await tx.getEvent(eventId);
@@ -280,6 +457,7 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
     if (!isEventManager(ev, caller)) throw new DomainError('permission_denied');
     if (ev.status === 'draft') throw new DomainError('conflict');
     if (ev.status === 'cancelled' || ev.status === 'completed') throw new DomainError('not_eligible');
+    if (entryTypeGuard(ev, r)) return updateEntry(deps, tx, ev, r, now);
     const f = validateEventFields(raw, 'publish', now, ev);
     checkCoverAndFaq(deps, caller, f, ev.host, ev.createdBy, ev.id);
 
@@ -334,13 +512,18 @@ export async function cancelEvent(
     if (ev.status === 'cancelled' || ev.status === 'completed') throw new DomainError('not_eligible');
     if (ev.endAt !== null && now.getTime() >= ev.endAt.getTime()) throw new DomainError('not_eligible');
     const regs = await tx.activeRegistrations(ev.id);
+    // S30 (spec §4.1 "mọi vé chưa dùng"): an entry event refunds only unused tickets, those of today or
+    // later never checked in; past or used tickets keep their money and their release.
+    const today = formatVnDate(now);
+    const unused = (x: RegistrationDoc): boolean => ev.type !== 'entry'
+      || ((x.visitDay ?? '') >= today && x.checkedInAt === null && (x.gateCheckedInAt ?? null) === null);
     // Task 9: every ticket whose money is still held is refunded after this transaction, including
     // tickets cancelled late without a refund (O4): the host does not keep money for a cancelled event.
     const heldMoney = await tx.heldTicketPayments(ev.id);
     const activeIds = new Set(regs.map((x) => x.id));
     const lateIds = [...new Set(heldMoney.map((p) => p.subjectId))].filter((id) => !activeIds.has(id));
     const late = (await Promise.all(lateIds.map((id) => tx.getRegistration(ev.id, id))))
-      .filter((x): x is RegistrationDoc => x !== null && x.status === 'cancelled');
+      .filter((x): x is RegistrationDoc => x !== null && x.status === 'cancelled' && unused(x));
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
     const day = hostId !== null && ev.dayKey !== null && ev.status !== 'draft'
       ? await tx.availability(hostId, ev.dayKey)
@@ -348,8 +531,10 @@ export async function cancelEvent(
 
     // Paid tickets stay `paid` (and counted) with `refundDue` until their refund lands in its own
     // transaction, so a crash midway never loses track of them (the event clock retries).
-    const paid = regs.filter((x) => x.status === 'paid' && x.amount > 0);
-    const rest = regs.filter((x) => !(x.status === 'paid' && x.amount > 0));
+    const paid = regs.filter((x) => x.status === 'paid' && x.amount > 0 && unused(x));
+    const kept = regs.filter((x) => x.status === 'paid' && x.amount > 0 && !unused(x));
+    const rest = regs.filter((x) => !paid.includes(x) && !kept.includes(x));
+    const days = await readEntryDays(tx, ev, rest);
     let registered = ev.registeredCount;
     let held = ev.heldCount;
     for (const x of rest) {
@@ -357,13 +542,14 @@ export async function cancelEvent(
       if (x.status === 'paid') registered -= x.quantity;
       else held -= x.quantity;
     }
+    writeEntryDays(tx, ev.id, days, releaseDeltas(ev, rest), now);
     for (const x of [...paid, ...late]) {
       tx.putRegistration({ ...x, refundDue: true, updatedAt: now, version: x.version + 1 });
     }
     if (hostId !== null && ev.dayKey !== null && day !== null && day.eventId === ev.id) {
       tx.deleteAvailability(hostId, ev.dayKey);
     }
-    if (ev.status === 'draft') tx.deleteHashtag(ev.hashtagKey);
+    if (ev.status === 'draft' && ev.hashtagKey !== '') tx.deleteHashtag(ev.hashtagKey);
     // M5: the group chat of a cancelled event closes like a completed one, 7 days later.
     if (ev.chatId !== null) tx.setChatReadOnlyAt(ev.chatId, new Date(now.getTime() + GROUP_READONLY_DAYS * 86_400_000));
     tx.putEvent({

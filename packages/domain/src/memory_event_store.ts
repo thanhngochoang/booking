@@ -9,6 +9,8 @@ import {
   type EventTx,
 } from './event_ports.js';
 import type { Spot } from './spot.js';
+import { entryDayId, type EntryDay } from './entry_tickets.js';
+import type { Organizer, Resident } from './organizer.js';
 import type { PaymentSource } from './memory_payment_lookup.js';
 
 /** Like the Firestore adapter: a transaction that lost a race is run again a few times. */
@@ -19,6 +21,11 @@ export class MemoryEventStore implements EventStore, PaymentSource {
   readonly registrations = new Map<string, RegistrationDoc>(); // `${eventId}/${regId}`
   readonly contacts = new Map<string, RegistrationContact>(); // `${eventId}/${regId}`
   readonly spots = new Map<string, Spot>();
+  /** `entry_days`, keyed `${eventId}_${day}` (S30). */
+  readonly entryDays = new Map<string, EntryDay>();
+  readonly organizers = new Map<string, Organizer>();
+  /** Keyed `${spotId}/${providerId}`. */
+  readonly residents = new Map<string, Resident>();
   readonly hashtags = new Map<string, string>();
   readonly ticketCodes = new Map<string, { eventId: string; registrationId: string }>();
   readonly availabilityDays = new Map<string, AvailabilityRecord>(); // `${uid}/${dayKey}`
@@ -144,10 +151,11 @@ export class MemoryEventStore implements EventStore, PaymentSource {
         read('getRegistration', `reg:${key(eventId, regId)}`);
         return this.registrations.get(key(eventId, regId)) ?? null;
       },
-      activeRegistrationOf: async (eventId, userId) => {
+      activeRegistrationOf: async (eventId, userId, visitDay) => {
         read('activeRegistrationOf', regsKey(eventId));
         return this.registrationsOf(eventId)
-          .find((r) => r.userId === userId && (r.status === 'held' || r.status === 'paid')) ?? null;
+          .find((r) => r.userId === userId && (r.status === 'held' || r.status === 'paid')
+            && (visitDay === undefined || ((r.visitDay ?? null) === visitDay && (r.bookingId ?? null) === null))) ?? null;
       },
       activeRegistrations: async (eventId) => {
         read('activeRegistrations', regsKey(eventId));
@@ -179,11 +187,28 @@ export class MemoryEventStore implements EventStore, PaymentSource {
         read('getRefund', `refund:${id}`);
         return this.refunds.get(id) ?? null;
       },
+      getEntryDay: async (eventId, day) => {
+        read('getEntryDay', `entryday:${entryDayId(eventId, day)}`);
+        return this.entryDays.get(entryDayId(eventId, day)) ?? null;
+      },
+      registrationsOfDay: async (eventId, day) => {
+        read('registrationsOfDay', regsKey(eventId));
+        return this.registrationsOf(eventId).filter((r) => (r.visitDay ?? null) === day && r.status === 'paid');
+      },
+      getOrganizer: async (uid) => {
+        read('getOrganizer', `org:${uid}`);
+        return this.organizers.get(uid) ?? null;
+      },
+      residentOf: async (spotId, providerId) => {
+        read('residentOf', `resident:${spotId}/${providerId}`);
+        return this.residents.get(`${spotId}/${providerId}`) ?? null;
+      },
       getTransferRecord: async (id) => {
         read('getTransferRecord', `transfer:${id}`);
         return this.transferRecords.get(id) ?? null;
       },
       putEvent: (e) => write(() => { this.events.set(e.id, e); }, `event:${e.id}`),
+      putEntryDay: (d) => write(() => { this.entryDays.set(entryDayId(d.eventId, d.day), d); }, `entryday:${entryDayId(d.eventId, d.day)}`),
       putHashtag: (k, eventId) => write(() => { this.hashtags.set(k, eventId); }, `hashtag:${k}`),
       deleteHashtag: (k) => write(() => { this.hashtags.delete(k); }, `hashtag:${k}`),
       putTicketCode: (code, eventId, registrationId) =>

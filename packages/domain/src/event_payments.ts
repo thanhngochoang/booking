@@ -6,12 +6,14 @@
 import { DomainError } from './errors.js';
 import {
   applyRefundToPayment,
+  type LineKind,
   type Payment,
   type PaymentMethod,
   type Refund,
 } from './escrow.js';
 import {
   FREE_CANCEL_HOURS,
+  isEventManager,
   registrationContactOf,
   statusAfterSeats,
   type EventCaller,
@@ -19,6 +21,11 @@ import {
   type RegistrationDoc,
   type RegistrationStatus,
 } from './event.js';
+import { formatVnDate, isDateString } from './booking_policy.js';
+import { ENTRY_CLOSE_BATCH, emptyEntryDay, entryFieldsOf, isOpenDay } from './entry_tickets.js';
+import { NO_ENTRY_DAYS, readEntryDays, releaseDeltas, visitDayOf, writeEntryDays, type EntryDays } from './entry_days.js';
+import { notifyEntryDayClosed } from './notification_hooks.js';
+import type { NotifyDeps } from './notification_ports.js';
 import type { EventDeps, EventPaymentDeps, EventTx } from './event_ports.js';
 import { cancelEvent } from './event_use_cases.js';
 import { isId } from './ids.js';
@@ -43,7 +50,8 @@ import { payerAccountOf } from './payer_account.js';
 const HOUR_MS = 3_600_000;
 const SWEEP_BATCH = 200;
 
-export type TicketRefundReason = 'customer_cancel' | 'event_cancelled';
+/** `day_closed` (S30): the organizer closed an entry ticket's visit day (`closeEntryDay`). */
+export type TicketRefundReason = 'customer_cancel' | 'event_cancelled' | 'day_closed';
 
 /** Spec §3g (O4): a paid ticket cancelled at least 48 h before the start gets 100% back, later nothing. */
 export function ticketRefundPercent(startAt: Date, now: Date): 100 | 0 {
@@ -54,11 +62,18 @@ export function ticketRefundPercent(startAt: Date, now: Date): 100 | 0 {
 export const ticketIdempotencyKey = (registrationId: string, method: PaymentMethod): string =>
   `tkt_${registrationId}_${method}`;
 
-/** The host photographer is paid; a platform-hosted event's money stays with the platform. */
+/**
+ * The host photographer or organizer (S30 Decision 12) is paid; a platform-hosted event's money stays
+ * with the platform.
+ */
 export const ticketPayeeOf = (ev: Pick<EventRecord, 'host'>): string =>
-  ev.host.type === 'photographer' && ev.host.id !== null ? ev.host.id : PLATFORM_PAYEE;
+  (ev.host.type === 'photographer' || ev.host.type === 'organizer') && ev.host.id !== null ? ev.host.id : PLATFORM_PAYEE;
 
-/** A fresh, unpaid ticket payment. */
+/**
+ * A fresh, unpaid ticket payment. An organizer-hosted event's payment is stamped `payeeKind: organizer`
+ * (no commission, no tax withheld); an entry ticket carries `lineKind: entry_ticket` and its release
+ * instant from the start (`entryReleaseAt(visitDay)`, so completion's `stampTicketRelease` keeps it).
+ */
 export function newTicketPayment(params: {
   readonly id: string;
   readonly event: Pick<EventRecord, 'id' | 'host'>;
@@ -69,9 +84,14 @@ export function newTicketPayment(params: {
   readonly amount: number;
   readonly now: Date;
   readonly expiresAt: Date;
+  readonly lineKind?: LineKind;
+  readonly releaseAfter?: Date;
 }): Payment {
   const at = params.now.toISOString();
   return {
+    ...(params.event.host.type === 'organizer' ? { payeeKind: 'organizer' as const } : {}),
+    ...(params.lineKind !== undefined ? { lineKind: params.lineKind } : {}),
+    ...(params.releaseAfter !== undefined ? { releaseAfter: params.releaseAfter.toISOString() } : {}),
     id: params.id,
     subjectType: 'event_registration',
     subjectId: params.registrationId,
@@ -92,13 +112,23 @@ export function newTicketPayment(params: {
   };
 }
 
-/** Seats of a hold go back (writes only). */
-function releaseHoldWrites(tx: EventTx, ev: EventRecord | null, holds: readonly RegistrationDoc[], now: Date): void {
+/**
+ * Seats of a hold go back (writes only). An entry ticket's visit day gives back its `held` too; `days`
+ * holds those rows, read before (`readEntryDays`).
+ */
+function releaseHoldWrites(
+  tx: EventTx,
+  ev: EventRecord | null,
+  holds: readonly RegistrationDoc[],
+  now: Date,
+  days: EntryDays = NO_ENTRY_DAYS,
+): void {
   let held = ev?.heldCount ?? 0;
   for (const s of holds) {
     tx.putRegistration({ ...s, status: 'cancelled', cancelledAt: now, updatedAt: now, version: s.version + 1 });
     held -= s.quantity;
   }
+  if (ev !== null) writeEntryDays(tx, ev.id, days, releaseDeltas(ev, holds.filter((s) => s.status === 'held')), now);
   if (ev !== null && holds.length > 0) {
     const next = { ...ev, heldCount: Math.max(0, held) };
     tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
@@ -197,8 +227,12 @@ export class TicketPaymentSettler implements SubjectSettler {
 
       const reg = await tx.getRegistration(p.eventId, p.subjectId);
       const ev = await tx.getEvent(p.eventId);
+      // An entry ticket (S30): its visit day moves held → sold; a day closed meanwhile refunds instead.
+      const days = reg === null ? NO_ENTRY_DAYS : await readEntryDays(tx, ev, [reg]);
+      const visitDay = reg === null ? null : visitDayOf(ev, reg);
+      const dayClosed = visitDay !== null && days.get(visitDay)?.closed === true;
       const live = reg !== null && ev !== null && reg.status === 'held' && ev.status !== 'cancelled'
-        && reg.holdExpiresAt !== null && reg.holdExpiresAt.getTime() > now.getTime();
+        && reg.holdExpiresAt !== null && reg.holdExpiresAt.getTime() > now.getTime() && !dayClosed;
       const contact = live ? await this.deps.contacts.get(p.payerId) : null;
 
       // Apply transfer using pure helper
@@ -242,7 +276,7 @@ export class TicketPaymentSettler implements SubjectSettler {
         if (reg !== null && (reg.status === 'held' || (reg.status === 'cancelled' && reg.paymentId === p.id))) {
           const mark = { refundId: refund.id, refundStatus: refund.status };
           if (reg.status === 'held' && ev !== null) {
-            releaseHoldWrites(tx, ev, [{ ...reg, ...mark }], now);
+            releaseHoldWrites(tx, ev, [{ ...reg, ...mark }], now, days);
           } else {
             tx.putRegistration({ ...reg, ...mark, updatedAt: now, version: reg.version + 1 });
           }
@@ -274,7 +308,7 @@ export class TicketPaymentSettler implements SubjectSettler {
           : null;
 
         if (reg !== null && reg.status === 'held' && ev !== null) {
-          releaseHoldWrites(tx, ev, [{ ...reg, ...(mark ?? {}) }], now);
+          releaseHoldWrites(tx, ev, [{ ...reg, ...(mark ?? {}) }], now, days);
         } else if (reg !== null && mark !== null) {
           tx.putRegistration({ ...reg, ...mark, updatedAt: now, version: reg.version + 1 });
         }
@@ -320,6 +354,7 @@ export class TicketPaymentSettler implements SubjectSettler {
         tx.putRegistrationContact(ev.id, reg.id, registrationContactOf(reg.userName, phone, contact));
       }
 
+      if (visitDay !== null) writeEntryDays(tx, ev.id, days, [{ day: visitDay, held: -reg.quantity, sold: reg.quantity }], now);
       const next = {
         ...ev,
         heldCount: Math.max(0, ev.heldCount - reg.quantity),
@@ -451,9 +486,11 @@ export async function refundTicket(
     if (reg === null || reg.status === 'refunded' || reg.paymentId === null || reg.amount <= 0) return 'skipped';
     const ev = await tx.getEvent(eventId);
     const p = await tx.getPayment(reg.paymentId);
+    const days = reg.status === 'paid' ? await readEntryDays(tx, ev, [reg]) : NO_ENTRY_DAYS;
     const held = p !== null && p.status === 'paid'
       && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded');
     // A customer refunds a live ticket; a host cancel also refunds late-cancelled tickets whose money is held.
+    // Closing an entry day (S30) refunds like a host cancel.
     const eligible = reason === 'customer_cancel'
       ? reg.status === 'paid'
       : reg.status === 'paid' || (reg.status === 'cancelled' && reg.refundDue === true);
@@ -475,6 +512,7 @@ export async function refundTicket(
     });
     tx.deleteRegistrationContact(eventId, regId);
     if (reg.status === 'paid' && ev !== null) {
+      writeEntryDays(tx, ev.id, days, releaseDeltas(ev, [reg]), now);
       const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
       tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
     }
@@ -523,7 +561,8 @@ export async function releaseEventHolds(
         const now = deps.clock.now();
         const ev = await tx.getEvent(eventId);
         const stale = await tx.expiredHolds(eventId, now);
-        releaseHoldWrites(tx, ev, stale, now);
+        const days = await readEntryDays(tx, ev, stale);
+        releaseHoldWrites(tx, ev, stale, now, days);
         return stale.length;
       });
     } catch (e) {
@@ -544,4 +583,58 @@ export function stampTicketRelease(tx: EventTx, ev: EventRecord, payments: reado
     n += 1;
   }
   return n;
+}
+
+/**
+ * S30 (Decision 11): the organizer closes a visit day of an entry event. In one transaction the day is
+ * marked `closed` (no more sales) and every paid ticket of it gets `refundDue`; then the first
+ * ENTRY_CLOSE_BATCH tickets are refunded 100% here, each in its own transaction (`refundTicket`,
+ * reason `day_closed`), and the event clock refunds what is `left` (`runEventSweeps`). Every customer
+ * whose ticket is flagged here gets `entry_day_closed` (best effort). Managers only.
+ */
+export async function closeEntryDay(
+  deps: EventPaymentDeps & { readonly notify?: NotifyDeps },
+  caller: EventCaller,
+  raw: unknown,
+): Promise<{ refunded: number; left: number }> {
+  const r = obj(raw);
+  const eventId = idOf(r.eventId);
+  if (!isDateString(r.day)) throw new DomainError('invalid_argument', 'day');
+  const day = r.day;
+  const closed = await deps.events.runTransaction(async (tx) => {
+    const now = deps.clock.now();
+    const ev = await tx.getEvent(eventId);
+    if (ev === null || ev.type !== 'entry' || ev.status === 'draft') throw new DomainError('not_found');
+    if (!isEventManager(ev, caller)) throw new DomainError('permission_denied');
+    if (ev.status === 'cancelled' || ev.status === 'completed') throw new DomainError('not_eligible');
+    if (day < formatVnDate(now)) throw new DomainError('not_eligible');
+    if (!isOpenDay(entryFieldsOf(ev), day)) throw new DomainError('invalid_argument', 'day');
+    const row = await tx.getEntryDay(ev.id, day);
+    const paid = (await tx.registrationsOfDay(ev.id, day)).filter((x) => x.amount > 0);
+    const flagged = paid.filter((x) => x.refundDue !== true);
+    for (const x of flagged) tx.putRegistration({ ...x, refundDue: true, updatedAt: now, version: x.version + 1 });
+    if (row?.closed !== true) {
+      tx.putEntryDay({ ...(row ?? emptyEntryDay(ev.id, day, now)), closed: true, updatedAt: now.toISOString() });
+    }
+    return { ev, ids: paid.map((x) => x.id), flagged };
+  });
+
+  const notify = deps.notify;
+  if (notify !== undefined) {
+    const place = closed.ev.location?.name ?? closed.ev.title;
+    await Promise.allSettled(closed.flagged.map((x) => notifyEntryDayClosed(notify, {
+      userId: x.userId, eventId: closed.ev.id, registrationId: x.id, spot: place, day, thumbUrl: closed.ev.coverUrl,
+    })));
+  }
+
+  let refunded = 0;
+  let failed = 0;
+  for (const id of closed.ids.slice(0, ENTRY_CLOSE_BATCH)) {
+    try {
+      if ((await refundTicket(deps, eventId, id, 100, 'day_closed')) === 'refunded') refunded += 1;
+    } catch {
+      failed += 1; // still `refundDue`: the event clock retries it
+    }
+  }
+  return { refunded, left: Math.max(0, closed.ids.length - ENTRY_CLOSE_BATCH) + failed };
 }

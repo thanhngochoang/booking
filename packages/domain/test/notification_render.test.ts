@@ -231,6 +231,7 @@ const CASES: readonly (readonly [NotificationContent, string, string])[] = [
   [{ type: 'spot_claim_rejected', spot: null, reason: null }, 'Đề xuất điểm mới chưa được duyệt', 'Xem lại minh chứng và gửi lại.'],
   [{ type: 'spot_resident_added', organizer: 'Bãi đá sông Hồng', spot: 'Bãi đá sông Hồng' }, 'Bãi đá sông Hồng thêm bạn vào thợ tại Bãi đá sông Hồng', 'Khách thấy nhãn “Thợ tại điểm · miễn vé” khi đặt bạn ở đây.'],
   [{ type: 'gate_staff_invited', organizer: 'Bãi đá sông Hồng' }, 'Bãi đá sông Hồng mời bạn soát vé', 'Nhận lời mời trong 72 giờ để mở màn quét mã.'],
+  [{ type: 'entry_day_closed', spot: 'Bãi đá sông Hồng', day: DAY }, 'Bãi đá sông Hồng đóng cửa T2 12/10', 'Vé vào cửa ngày này được hoàn 100%. Xem trạng thái hoàn tiền trong mục Vé.'],
 ];
 
 /** Types rendered by the tests above this table (copy from earlier plans). */

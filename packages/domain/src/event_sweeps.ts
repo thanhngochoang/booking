@@ -5,8 +5,25 @@ import { GROUP_READONLY_DAYS } from './event_chat.js';
 import { refundTicket, stampTicketRelease } from './event_payments.js';
 import { expireHostConsent } from './event_use_cases.js';
 import { MemoryPaymentLookup, type PaymentSource } from './memory_payment_lookup.js';
+import type { RegistrationDoc } from './event.js';
+import type { TicketRefundReason } from './event_payments.js';
 
-export type EventSweepStep = 'close' | 'complete' | 'consent' | 'refund';
+/**
+ * `refundClosedDays` (S30 Decision 13): a `refundDue` entry ticket whose visit day is closed is a
+ * leftover of `closeEntryDay` (reason `day_closed`); every other one belongs to a cancelled event.
+ */
+async function refundReasonOf(deps: EventDeps, r: RegistrationDoc): Promise<TicketRefundReason> {
+  const day = r.visitDay ?? null;
+  if (day === null) return 'event_cancelled';
+  const row = await deps.events.runTransaction(async (tx) => {
+    const ev = await tx.getEvent(r.eventId);
+    return ev === null || ev.status === 'cancelled' ? null : tx.getEntryDay(r.eventId, day);
+  });
+  return row?.closed === true ? 'day_closed' : 'event_cancelled';
+}
+
+/** `refund_day` (S30): a ticket of a closed entry day `closeEntryDay` left to the clock. */
+export type EventSweepStep = 'close' | 'complete' | 'consent' | 'refund' | 'refund_day';
 
 const BATCH = 200;
 const DAY_MS = 86_400_000;
@@ -15,7 +32,8 @@ const DAY_MS = 86_400_000;
  * The event clock (every 5 minutes): closes registration after the deadline, completes events after
  * `endAt` (stamping `releaseAfter` on their held ticket money, Task 9), cancels drafts whose
  * photographer did not answer within 24 h (O1), and refunds tickets of cancelled events that are
- * still due (both need the gateway; the gateway keys refunds by id). Every step re-reads inside its own
+ * still due, and the tickets of closed entry days `closeEntryDay` left over (`refundClosedDays`, S30;
+ * both need the gateway; the gateway keys refunds by id). Every step re-reads inside its own
  * transaction, so a second run (or a parallel one) changes nothing more.
  */
 export async function runEventSweeps(
@@ -80,8 +98,10 @@ export async function runEventSweeps(
     const payments = new MemoryPaymentLookup([deps.events as unknown as PaymentSource]);
     const payDeps = { ...deps, gateway, cipher, payments };
     for (const due of await deps.events.paidUnrefundedOfCancelled(BATCH)) {
-      const did = await guarded(due.eventId, 'refund', async () =>
-        (await refundTicket(payDeps, due.eventId, due.id, 100, 'event_cancelled')) === 'refunded');
+      const reason = await refundReasonOf(deps, due);
+      const step: EventSweepStep = reason === 'day_closed' ? 'refund_day' : 'refund';
+      const did = await guarded(due.eventId, step, async () =>
+        (await refundTicket(payDeps, due.eventId, due.id, 100, reason)) === 'refunded');
       if (did) refunded += 1;
     }
   }

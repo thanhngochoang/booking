@@ -1026,3 +1026,20 @@ export async function notifyGateStaffInvited(
     ...from(actor),
   });
 }
+
+/**
+ * Emitter: `closeEntryDay` (S30), once per paid ticket of the closed day. Opens the event (S11.02),
+ * whose tickets tab shows "Ngày đóng cửa · đang hoàn 100%".
+ */
+export async function notifyEntryDayClosed(
+  deps: NotifyDeps,
+  e: { userId: string; eventId: string; registrationId: string; spot: string; day: string; thumbUrl?: string | null },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.userId,
+    content: { type: 'entry_day_closed', spot: e.spot, day: e.day },
+    target: `/e/${e.eventId}`,
+    dedupeKey: `entry_day_closed:${e.eventId}_${e.day}_${e.registrationId}`,
+    thumbUrl: e.thumbUrl ?? null,
+  });
+}

@@ -13,7 +13,21 @@ import {
   type RegistrationDoc,
   type RegistrationStatus,
 } from './event.js';
-import { parseVnDateTime } from './booking_policy.js';
+import { formatVnDate, isDateString, parseVnDateTime } from './booking_policy.js';
+import {
+  ENTRY_HOLD_MINUTES,
+  assertDailyCapacity,
+  entryFieldsOf,
+  entryRefundPercent,
+  entryReleaseAt,
+  isOpenDay,
+  priceItems,
+  visitDayStart,
+  type EntryItem,
+} from './entry_tickets.js';
+import { readEntryDays, readEntryDaysOf, releaseDeltas, visitDayOf, writeEntryDays } from './entry_days.js';
+import type { ErrorCode } from './errors.js';
+import { canSell } from './organizer.js';
 import type { EventDeps } from './event_ports.js';
 import { RetryableConflict } from './event_ports.js';
 import { isId } from './ids.js';
@@ -107,8 +121,10 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     const now = deps.clock.now();
     const ev = await tx.getEvent(eventId);
     if (!ev || ev.status === 'draft') throw new DomainError('not_found');
+    // Entry tickets are bought per visit day (registerEntry).
+    if (ev.type === 'entry') throw new DomainError('invalid_argument', 'type');
     if (isEventManager(ev, caller)) throw new DomainError('permission_denied');
-    if (ev.host.type === 'photographer' && ev.host.id && deps.blocks) {
+    if ((ev.host.type === 'photographer' || ev.host.type === 'organizer') && ev.host.id && deps.blocks) {
       if (await deps.blocks.isBlockedEitherWay(caller.uid, ev.host.id)) {
         throw new DomainError('blocked');
       }
@@ -204,14 +220,18 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     return { result: resultOf(reg), soldOut: false, intent: payment };
   });
   if (out.soldOut || out.result === null) throw new DomainError('sold_out');
-  if (out.intent === null || deps.gateway === undefined) return out.result;
+  return withInstructions(deps, out.result, out.intent);
+}
 
-  const storedInst = instructionsOf(out.intent);
+/** After the hold's transaction: the gateway's instructions for its payment (stored ones are reused). */
+async function withInstructions(deps: RegisterDeps, result: RegisterResult, intent: Payment | null): Promise<RegisterResult> {
+  if (intent === null || deps.gateway === undefined) return result;
+
+  const storedInst = instructionsOf(intent);
   if (storedInst !== null) {
-    return { ...out.result, instructions: storedInst };
+    return { ...result, instructions: storedInst };
   }
 
-  const intent = out.intent;
   const intentId = intent.id;
   const instructions = await issuePaymentInstructions(
     deps.gateway,
@@ -230,7 +250,139 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     },
   );
 
-  return { ...out.result, instructions };
+  return { ...result, instructions };
+}
+
+type EntryOut = { result: RegisterResult | null; refusal: ErrorCode | null; intent: Payment | null };
+
+const parseName = (v: unknown): string => {
+  if (typeof v !== 'string') throw new DomainError('invalid_argument', 'name');
+  const name = v.normalize('NFC').trim();
+  const n = graphemeCount(name);
+  if (n < 1 || n > NAME_MAX) throw new DomainError('invalid_argument', 'name');
+  return name;
+};
+
+/**
+ * S30.05 (Decision 11): an order of up to 10 entry tickets for one visit day, held 15 minutes while
+ * the customer pays. One transaction reads the event, its organizer, the visit day's `entry_days` row
+ * and the customer's ticket of that day, then writes the row (`held + qty`; `sold + held + qty ≤
+ * dailyCapacity`, else `sold_out_day`), the registration, its payment (paid to the organizer,
+ * released `entryReleaseAt(visitDay)`) and the ticket code. A customer has one lone ticket per visit
+ * day (`conflict` for a second order); tickets bought with a booking do not count. Hidden types are
+ * refused (`invalid_argument` items) but stay on the event for history.
+ */
+export async function registerEntry(deps: RegisterDeps, caller: EventCaller, raw: unknown): Promise<RegisterResult> {
+  const r = obj(raw);
+  const eventId = idOf(r.eventId);
+  if (!isDateString(r.visitDay)) throw new DomainError('invalid_argument', 'visitDay');
+  const visitDay = r.visitDay;
+  if (!Array.isArray(r.items)) throw new DomainError('invalid_argument', 'items');
+  const items = r.items as readonly EntryItem[];
+  const name = parseName(r.name);
+  if ('provider' in r) throw new DomainError('invalid_argument');
+  const method = parseMethod(r.method);
+  if (method === null) throw new DomainError('invalid_argument', 'method');
+  if (deps.gateway === undefined) throw new DomainError('not_eligible');
+  const provider = deps.gateway.provider;
+  const profile = await deps.people.user(caller.uid);
+  const paymentId = deps.payments !== undefined ? await freshPaymentId(deps.payments, deps.ids) : deps.ids.newId();
+
+  const out = await deps.events.runTransaction(async (tx): Promise<EntryOut> => {
+    const now = deps.clock.now();
+    const ev = await tx.getEvent(eventId);
+    if (ev === null || ev.status === 'draft' || ev.type !== 'entry') throw new DomainError('not_found');
+    if (isEventManager(ev, caller)) throw new DomainError('permission_denied');
+    const hostId = ev.host.id;
+    if (hostId !== null && deps.blocks && await deps.blocks.isBlockedEitherWay(caller.uid, hostId)) {
+      throw new DomainError('blocked');
+    }
+    await requireCustomerPhone(deps.contacts, caller.uid);
+    if (ev.status !== 'open' && ev.status !== 'full') throw new DomainError('deadline_passed');
+    const org = hostId === null ? null : await tx.getOrganizer(hostId);
+    if (org === null || !canSell(org)) throw new DomainError('not_eligible');
+    const fields = entryFieldsOf(ev);
+    if (visitDay < formatVnDate(now) || !isOpenDay(fields, visitDay)
+      || now.getTime() >= parseVnDateTime(visitDay, fields.openHours.end).getTime()) {
+      throw new DomainError('day_closed');
+    }
+    const priced = priceItems(fields.ticketTypes, items);
+    const active = await tx.activeRegistrationOf(ev.id, caller.uid, visitDay);
+    const stale = await tx.expiredHolds(ev.id, now);
+    // A lapsed hold is not "the active registration" (it is released below).
+    if (active !== null && !stale.some((s) => s.id === active.id)) throw new DomainError('conflict');
+    const staleDays = stale.map((s) => visitDayOf(ev, s)).filter((d): d is string => d !== null);
+    const days = await readEntryDaysOf(tx, ev.id, [visitDay, ...staleDays]);
+    const codes = ticketCodeCandidates(visitDayStart(visitDay), deps.random, 5);
+    const taken = await Promise.all(codes.map((c) => tx.ticketCodeTaken(c)));
+    const code = codes.find((_, i) => !taken[i]);
+    if (code === undefined) throw new RetryableConflict();
+
+    // ---- writes from here ----
+    let held = ev.heldCount;
+    for (const s of stale) {
+      tx.putRegistration({ ...s, status: 'cancelled', cancelledAt: now, updatedAt: now, version: s.version + 1 });
+      held -= s.quantity;
+    }
+    const released = releaseDeltas(ev, stale);
+    const row = days.get(visitDay) ?? null;
+    const freed = released.filter((d) => d.day === visitDay).reduce((n, d) => n + (d.held ?? 0), 0);
+    let refusal: ErrorCode | null = null;
+    try {
+      assertDailyCapacity(row === null ? null : { ...row, held: Math.max(0, row.held + freed) }, fields.dailyCapacity, priced.quantity);
+    } catch (e) {
+      if (!(e instanceof DomainError)) throw e;
+      refusal = e.code;
+    }
+    if (refusal !== null) {
+      // A throw would abort the release of the lapsed holds above.
+      if (stale.length > 0) {
+        writeEntryDays(tx, ev.id, days, released, now);
+        tx.putEvent({ ...ev, heldCount: Math.max(0, held), version: ev.version + 1, updatedAt: now });
+      }
+      return { result: null, refusal, intent: null };
+    }
+
+    const regId = deps.ids.newId();
+    const loc = ev.location as NonNullable<EventRecord['location']>;
+    const holdExpiresAt = new Date(now.getTime() + ENTRY_HOLD_MINUTES * 60_000);
+    const payment = newTicketPayment({
+      id: paymentId, event: ev, registrationId: regId, payerId: caller.uid, method, provider,
+      amount: priced.total, now, expiresAt: holdExpiresAt,
+      lineKind: 'entry_ticket', releaseAfter: entryReleaseAt(visitDay),
+    });
+    const reg: RegistrationDoc = {
+      id: regId, eventId: ev.id, userId: caller.uid, userName: name,
+      userAvatarUrl: profile?.avatarUrl ?? null,
+      quantity: priced.quantity,
+      amount: priced.total,
+      status: 'held',
+      holdExpiresAt,
+      ticketCode: code,
+      // The pass itself (`private/pass`) is written when the ticket is paid (Task 4).
+      ticketCodeLast4: code.slice(3, 7),
+      paymentId: payment.id,
+      contactEligible: false,
+      checkedInAt: null, cancelledAt: null, refundPercent: null,
+      visitDay, items: priced.lines, bookingId: null, gateCheckedInAt: null,
+      event: {
+        title: ev.title, type: ev.type,
+        startAt: parseVnDateTime(visitDay, fields.openHours.start),
+        endAt: parseVnDateTime(visitDay, fields.openHours.end),
+        locationName: loc.name, lat: loc.lat, lng: loc.lng, coverUrl: ev.coverUrl,
+      },
+      version: 1, createdAt: now, updatedAt: now,
+    };
+    writeEntryDays(tx, ev.id, days, [...released, { day: visitDay, held: priced.quantity }], now);
+    tx.putTicketCode(code, ev.id, regId);
+    tx.putRegistration(reg);
+    tx.putPayment(payment);
+    // Stats only: an entry event's status never follows its seats (statusAfterSeats).
+    tx.putEvent({ ...ev, heldCount: Math.max(0, held) + priced.quantity, version: ev.version + 1, updatedAt: now });
+    return { result: resultOf(reg), refusal: null, intent: payment };
+  });
+  if (out.refusal !== null || out.result === null) throw new DomainError(out.refusal ?? 'sold_out_day');
+  return withInstructions(deps, out.result, out.intent);
 }
 
 export async function cancelRegistration(
@@ -251,22 +403,31 @@ export async function cancelRegistration(
     if (reg.status === 'cancelled' || reg.status === 'refunded') {
       return { status: reg.status, refundPercent: reg.refundPercent, refund: false };
     }
-    if (reg.checkedInAt !== null) throw new DomainError('conflict');
-    if (ev.startAt === null || now.getTime() >= ev.startAt.getTime()) throw new DomainError('not_eligible');
+    if (reg.checkedInAt !== null || (reg.gateCheckedInAt ?? null) !== null) throw new DomainError('conflict');
+    // An entry ticket (S30) can be cancelled until its visit day starts; the cutoff decides the refund.
+    const visitDay = ev.type === 'entry' ? (reg.visitDay ?? null) : null;
+    const startsAt = visitDay !== null ? visitDayStart(visitDay) : ev.startAt;
+    if (startsAt === null || now.getTime() >= startsAt.getTime()) throw new DomainError('not_eligible');
     if (ev.status === 'cancelled' || ev.status === 'completed') throw new DomainError('not_eligible');
+    const days = await readEntryDays(tx, ev, [reg]);
     if (reg.status === 'paid' && reg.amount > 0) {
       // ≥ 48 h: refunded in its own transaction below (refundTicket). Later: O4, no refund, seat back,
       // the money stays held and goes to the host with the other tickets after the event.
-      if (ticketRefundPercent(ev.startAt, now) === 100) return { status: reg.status, refundPercent: null, refund: true };
+      const percent = visitDay !== null
+        ? entryRefundPercent(visitDay, now, entryFieldsOf(ev).refundCutoffHours)
+        : ticketRefundPercent(startsAt, now);
+      if (percent === 100) return { status: reg.status, refundPercent: null, refund: true };
       tx.putRegistration({
         ...reg, status: 'cancelled', cancelledAt: now, refundPercent: 0, updatedAt: now, version: reg.version + 1,
       });
       tx.deleteRegistrationContact(eventId, regId);
+      writeEntryDays(tx, ev.id, days, releaseDeltas(ev, [reg]), now);
       const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
       tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
       return { status: 'cancelled' as const, refundPercent: 0, refund: false };
     }
 
+    writeEntryDays(tx, ev.id, days, releaseDeltas(ev, [reg]), now);
     tx.putRegistration({ ...reg, status: 'cancelled', cancelledAt: now, updatedAt: now, version: reg.version + 1 });
     const next = reg.status === 'held'
       ? { ...ev, heldCount: Math.max(0, ev.heldCount - reg.quantity) }

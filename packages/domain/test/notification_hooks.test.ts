@@ -25,6 +25,7 @@ import {
   notifyDisputeMessage,
   notifyDisputeOpened,
   notifyDisputeResolved,
+  notifyEntryDayClosed,
   notifyGateStaffInvited,
   notifyInstantArrived,
   notifyInstantAssigned,
@@ -136,6 +137,11 @@ const CASES: readonly HookCase[] = [
     name: 'notifyGateStaffInvited',
     run: (d) => notifyGateStaffInvited(d, { staffUid: 'a1', organizerId: 's1', organizerName: 'Bãi đá sông Hồng', invitedAt: AT }),
     rows: [row('a1', 'gate_staff_invited', '/organizer/gate-staff', 'n_gate_staff_invited_s1_a1_2026-10-10T10_00_00.000Z', 'Bãi đá sông Hồng mời bạn soát vé')],
+  },
+  {
+    name: 'notifyEntryDayClosed',
+    run: (d) => notifyEntryDayClosed(d, { userId: 'c1', eventId: 'ev1', registrationId: 'rg1', spot: 'Bãi đá', day: '2026-10-12' }),
+    rows: [row('c1', 'entry_day_closed', '/e/ev1', 'n_entry_day_closed_ev1_2026-10-12_rg1', 'Bãi đá đóng cửa T2 12/10')],
   },
   {
     name: 'notifyQuoteWithdrawn',

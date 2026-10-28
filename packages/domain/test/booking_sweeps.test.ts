@@ -7,6 +7,7 @@ import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
 import { freezeBookingPayment } from './support/dispute_world.js';
+import { newTicketPayment } from '../src/event_payments.js';
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
@@ -250,6 +251,21 @@ describe('Task 5: runBookingSweeps', () => {
     assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
     assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
   });
+  it('an unpaid entry-ticket payment (releaseAfter set at creation, S30) is never released', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const intent = newTicketPayment({
+      id: 'pay_entry', event: { id: 'en1', host: { type: 'organizer', id: 'org1', name: null, avatarUrl: null, verified: true } },
+      registrationId: 'rg1', payerId: 'c1', method: 'bank_qr', provider: 'fake', amount: 70_000,
+      now: world.clock.now(), expiresAt: new Date('2026-10-10T10:15:00.000Z'),
+      lineKind: 'entry_ticket', releaseAfter: new Date('2026-10-12T10:00:00.000Z'),
+    });
+    world.store.payments.set(intent.id, intent);
+    world.clock.setTime(new Date('2026-10-13T10:00:00.000Z'));
+    assert.equal((await runBookingSweeps(world.deps)).releasedEscrows, 0);
+    assert.equal(world.store.payments.get(intent.id)?.escrowStatus, 'held');
+    assert.equal(world.store.payments.get(intent.id)?.status, 'created');
+  });
+
   it('a disputed payment is not released by runBookingSweeps even after releaseAfter', async () => {
     const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
     const legacy = await newDraft(world);

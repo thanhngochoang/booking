@@ -6,6 +6,8 @@ import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactReader } from './ports.js';
 import type { RandomBytes } from './ids.js';
 import type { Spot } from './spot.js';
+import type { EntryDay } from './entry_tickets.js';
+import type { Organizer, Resident } from './organizer.js';
 
 /** Thrown inside a transaction to ask the adapter to run it again (it holds no state of its own). */
 export class RetryableConflict extends Error {
@@ -47,8 +49,11 @@ export interface EventTx {
   ticketCodeTaken(code: string): Promise<boolean>;
   findTicket(code: string): Promise<{ eventId: string; registrationId: string } | null>;
   getRegistration(eventId: string, regId: string): Promise<RegistrationDoc | null>;
-  /** held | paid. */
-  activeRegistrationOf(eventId: string, userId: string): Promise<RegistrationDoc | null>;
+  /**
+   * held | paid. With `visitDay` (entry events, S30 Decision 11): the customer's lone ticket of that day,
+   * ignoring tickets bought with a booking (`bookingId` set).
+   */
+  activeRegistrationOf(eventId: string, userId: string, visitDay?: string): Promise<RegistrationDoc | null>;
   /** All held | paid registrations of the event (cancelling an event). */
   activeRegistrations(eventId: string): Promise<RegistrationDoc[]>;
   /** held, `holdExpiresAt <= now`. */
@@ -64,7 +69,16 @@ export interface EventTx {
   heldTicketPayments(eventId: string): Promise<Payment[]>;
   /** `refunds/{id}`. */
   getRefund(id: string): Promise<Refund | null>;
+  /** `entry_days/{eventId}_{day}` (S30). */
+  getEntryDay(eventId: string, day: string): Promise<EntryDay | null>;
+  /** Paid registrations of an entry event's visit day (closing a day). */
+  registrationsOfDay(eventId: string, day: string): Promise<RegistrationDoc[]>;
+  /** `organizers/{uid}` (S30): the host of an entry event. */
+  getOrganizer(uid: string): Promise<Organizer | null>;
+  /** `spots/{spotId}/residents/{providerId}` (S30; read by bookings with tickets, Task 3). */
+  residentOf(spotId: string, providerId: string): Promise<Resident | null>;
   putEvent(e: EventRecord): void;
+  putEntryDay(d: EntryDay): void;
   putHashtag(key: string, eventId: string): void;
   deleteHashtag(key: string): void;
   putTicketCode(code: string, eventId: string, registrationId: string): void;
