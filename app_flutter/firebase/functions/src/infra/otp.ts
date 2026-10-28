@@ -41,13 +41,20 @@ export const nodeOtpCrypto: OtpCrypto = {
 
 /**
  * The phone the OTP goes to: `photographers/{uid}/private/contact.phone` (every set-up
- * photographer has one, S08.05). #135 may switch this to the verified phone; the port stays.
+ * photographer has one, S08.05); an organizer has no photographer document, so its own
+ * `users/{uid}/private/contact.phone` (the verified phone S30.01 required). #135 may switch this to
+ * the verified phone; the port stays.
  */
 export class FirestorePhotographerPhoneReader implements OtpPhoneReader {
   constructor(private readonly db: Firestore) {}
 
   async phoneOf(uid: string): Promise<string | null> {
-    const snap = await this.db.collection('photographers').doc(uid).collection('private').doc('contact').get();
+    const own = await this.phoneAt(this.db.collection('photographers').doc(uid));
+    return own ?? this.phoneAt(this.db.collection('users').doc(uid));
+  }
+
+  private async phoneAt(parent: ReturnType<Firestore['doc']>): Promise<string | null> {
+    const snap = await parent.collection('private').doc('contact').get();
     const phone: unknown = snap.data()?.phone;
     return typeof phone === 'string' && phone.trim() !== '' ? phone : null;
   }

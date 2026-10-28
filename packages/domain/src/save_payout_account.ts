@@ -1,7 +1,9 @@
 /**
- * Use case: a photographer registers or changes their payout account (S06.06, payments spec M6).
- * The holder name comes from the bank and must match the verified name; the first account is
- * active at once; a change needs an OTP for that exact account and takes effect after 72 hours.
+ * Use case: a photographer, or an active organizer (plan #223 Decision 3), registers or changes their
+ * payout account (S06.06, payments spec M6). The holder name comes from the bank and must match the
+ * verified name (the identity's, or an organizer's verified business legal name); the first account is
+ * active at once; a change needs an OTP for that exact account and takes effect after 72 hours. An
+ * organizer's save also sets `organizers/{uid}.payoutAccountOk` in the same transaction.
  */
 
 import type { NameLookupResult } from './account_lookup.js';
@@ -18,7 +20,7 @@ import {
   type PayoutAccount,
 } from './payout_account.js';
 import { checkOtp, otpCodeHashInput, otpTargetHashInput } from './payout_otp.js';
-import { chargeLookup, isSameAccount } from './payout_account_use_cases.js';
+import { chargeLookup, isSameAccount, payoutHolderOf, verifiedNameFor } from './payout_account_use_cases.js';
 import type { PayoutAccountDeps } from './payout_ports.js';
 
 export interface Caller {
@@ -75,9 +77,10 @@ export async function savePayoutAccount(
   if (target === null) throw new DomainError('invalid_argument');
   const { bank, number, otpCode } = target;
 
-  // Before any external call: photographer only, not the account already active, a change carries
-  // a code; then one lookup is charged to the 20 a day (the save must not be an uncapped oracle).
-  const seenId = await chargeLookup(deps, caller.uid, async (tx) => {
+  // Before any external call: a provider or an active organizer only, not the account already active,
+  // a change carries a code; then one lookup is charged to the 20 a day (the save must not be an
+  // uncapped oracle).
+  const { holder, guarded: seenId } = await chargeLookup(deps, caller.uid, async (tx) => {
     const current = await tx.getActiveAccount(caller.uid);
     if (await isSameAccount(deps.cipher, current, bank.code, number)) throw new DomainError('conflict');
     if (current !== null && otpCode === undefined) throw new DomainError('otp_required');
@@ -85,8 +88,8 @@ export async function savePayoutAccount(
   });
 
   // Outside the transaction: the verified name and the bank lookup (a slow external call).
-  const verifiedName = await deps.names.legalName(caller.uid);
-  const lookup = await deps.lookup.lookup({ bankCode: bank.code, accountNumber: number });
+  const verifiedName = await verifiedNameFor(deps, holder, caller.uid);
+  const lookup = await deps.lookup.lookup({ bankCode: bank.code, accountNumber: number, holder });
   const decision = holderNameDecision(lookup, verifiedName);
   const refusal = REFUSAL[decision];
   const last4 = accountLast4(number);
@@ -95,7 +98,8 @@ export async function savePayoutAccount(
   const sha = (s: string): Promise<string> => deps.otp.crypto.sha256Hex(s);
 
   const outcome = await deps.store.runTransaction(async (tx): Promise<Outcome> => {
-    if ((await tx.getUserRole(caller.uid)) !== 'photographer') throw new DomainError('permission_denied');
+    // Changed since the checks above (a suspension, a role): refuse, the client retries.
+    if ((await payoutHolderOf(tx, caller.uid)) !== holder) throw new DomainError('conflict');
     if (refusal !== null) throw new DomainError(refusal);
     const now = deps.clock.now();
     const at = now.toISOString();
@@ -153,6 +157,9 @@ export async function savePayoutAccount(
       nameStatus: account.nameStatus,
       activeFrom,
     });
+    // Decision 3: a saved account (the bank's name matched the business, or staff compare it before the
+    // first payout) is what lets an organizer sell; a refusal above never reaches this line.
+    if (holder === 'organizer') tx.setOrganizerPayoutOk(caller.uid, true);
     return {
       refused: null,
       saved: { accountId, accountLast4: last4, activeFrom, nameStatus: account.nameStatus },

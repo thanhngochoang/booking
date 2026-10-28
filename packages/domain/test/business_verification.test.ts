@@ -9,7 +9,7 @@ import {
 } from '../src/business_verification.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import { reviewVerification } from '../src/verification_use_cases.js';
-import { BUSINESS_DOC_RETENTION_DAYS } from '../src/verification.js';
+import { BUSINESS_DOC_RETENTION_DAYS, emptyVerification } from '../src/verification.js';
 
 const refusedWith = (code: ErrorCode) => (e: unknown) => e instanceof DomainError && e.code === code;
 
@@ -441,5 +441,118 @@ describe('business_verification', () => {
     const company = await lookup.lookup('0312345678');
     assert.equal(company?.kind, 'company');
     assert.equal(company?.status, 'active');
+  });
+
+  describe('organizers (S30, Decision 3)', () => {
+    const activeOrg = { status: 'active', businessVerified: false } as const;
+    const suspendedOrg = { status: 'suspended', businessVerified: false } as const;
+
+    it('an active organizer (not a provider) may submit business verification; a suspended one is conflict; a customer who is not an organizer is permission_denied as today', async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      world.store.organizers.set('org1', activeOrg);
+      world.store.organizers.set('org2', suspendedOrg);
+
+      // The lookup follows the same rule.
+      assert.equal((await lookupTaxCode(deps, 'org1', { taxCode: '0312345678' })).status, 'active');
+      await assert.rejects(lookupTaxCode(deps, 'org2', { taxCode: '0312345678' }), refusedWith('conflict'));
+      await assert.rejects(lookupTaxCode(deps, 'c1', { taxCode: '0312345678' }), refusedWith('permission_denied'));
+
+      // org1 has no providers/ document and no verification record yet: the record is created for the submit.
+      assert.equal(world.store.verifications.has('org1'), false);
+      const res = await submitBusinessVerification(deps, 'org1', {
+        taxCode: '0312345678',
+        docPath: 'businessDocs/org1/doc_001.jpg',
+      });
+      assert.equal(res.after.business?.status, 'submitted');
+      assert.equal(res.after.business?.kind, 'company');
+      assert.equal(res.after.business?.subject, 'organizer');
+      assert.equal(world.store.verifications.get('org1')?.business?.docPath, 'businessDocs/org1/doc_001.jpg');
+      // Submitted records never touch a provider document.
+      assert.equal(world.store.providerFlags.size, 0);
+
+      await assert.rejects(submitBusinessVerification(deps, 'org2', { taxCode: '0312345678', docPath: 'businessDocs/org2/d.jpg' }), refusedWith('conflict'));
+      await assert.rejects(submitBusinessVerification(deps, 'c1', { taxCode: '0312345678', docPath: 'businessDocs/c1/d.jpg' }), refusedWith('permission_denied'));
+      assert.equal(world.store.verifications.has('org2'), false);
+      assert.equal(world.store.verifications.has('c1'), false);
+      // An unverified provider who is not an organizer is refused as today.
+      await assert.rejects(submitBusinessVerification(deps, 'p1', { taxCode: '0312345678', docPath: 'businessDocs/p1/d.jpg' }), refusedWith('not_eligible'));
+    });
+
+    it('an organizer sends a company for review with its registration photo, and may send again only after a rejection', async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      world.store.organizers.set('org1', activeOrg);
+      await assert.rejects(submitBusinessVerification(deps, 'org1', { taxCode: '0312345678' }), refusedWith('invalid_argument'));
+      await submitBusinessVerification(deps, 'org1', { taxCode: '0312345678', docPath: 'businessDocs/org1/a.jpg' });
+      await assert.rejects(
+        submitBusinessVerification(deps, 'org1', { taxCode: '0312345678', docPath: 'businessDocs/org1/b.jpg' }),
+        refusedWith('conflict'),
+      );
+      await reviewVerification(deps, { uid: 'staff1', isAdmin: true }, { uid: 'org1', target: 'business', action: 'reject', reason: 'doc_unreadable' });
+      const again = await submitBusinessVerification(deps, 'org1', { taxCode: '0312345678', docPath: 'businessDocs/org1/c.jpg' });
+      assert.equal(again.after.business?.status, 'submitted');
+      assert.equal(again.after.business?.subject, 'organizer');
+    });
+
+    it('an organizer without an identity sends a household code for staff review (photo required); with a matching identity it is approved at once', async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      world.store.organizers.set('org1', activeOrg);
+      world.store.organizers.set('org2', activeOrg);
+      const code = '012345678901';
+
+      await assert.rejects(submitBusinessVerification(deps, 'org1', { taxCode: code }), refusedWith('invalid_argument'));
+      const review = await submitBusinessVerification(deps, 'org1', { taxCode: code, docPath: 'businessDocs/org1/h.jpg' });
+      assert.equal(review.after.business?.status, 'submitted');
+      assert.equal(review.after.business?.kind, 'household');
+      assert.equal(review.after.business?.representativeMatched, false);
+
+      world.store.identities.set('org2', {
+        legalName: 'CHỦ HỘ', dob: '1990-01-01', gender: null, idNumberEnc: 'enc',
+        idHash: await new MemoryIdentityVault().hashId(code), method: 'vneid', provider: 'fake', providerRef: 'ref',
+        verifiedAt: '2026-10-10T10:00:00.000Z',
+      });
+      const matched = await submitBusinessVerification(deps, 'org2', { taxCode: code });
+      assert.equal(matched.after.business?.status, 'approved');
+      assert.equal(matched.after.business?.subject, 'organizer');
+      assert.equal(world.store.organizerFlags.get('org2')?.businessVerified, true);
+      assert.equal(world.store.providerFlags.has('org2'), false);
+    });
+
+    it("approval of an organizer's record sets organizers/{uid}.businessVerified and does not write photographers/{uid}", async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      world.store.organizers.set('org1', activeOrg);
+      await submitBusinessVerification(deps, 'org1', { taxCode: '0312345678', docPath: 'businessDocs/org1/a.jpg' });
+
+      const approved = await reviewVerification(deps, { uid: 'staff1', isAdmin: true }, { uid: 'org1', target: 'business', action: 'approve' });
+      assert.equal(approved.after.business?.status, 'approved');
+      assert.equal(approved.after.business?.subject, 'organizer');
+      assert.deepEqual(world.store.organizerFlags.get('org1'), { businessVerified: true });
+      assert.equal(world.store.providerFlags.has('org1'), false);
+      const view = await world.store.runTransaction((tx) => tx.getOrganizer('org1'));
+      assert.equal(view?.businessVerified, true);
+    });
+
+    it("a studio's approval behaves as today: it patches photographers/{uid} and no organizer", async () => {
+      const world = createVerificationWorld();
+      const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+      world.store.providers.set('s1', { providerType: 'studio', onboardingComplete: true, verified: true, businessVerified: false });
+      world.store.identities.set('s1', {
+        legalName: 'CHỦ STUDIO', dob: '1990-01-01', gender: null, idNumberEnc: 'enc', idHash: 'h:x', method: 'vneid',
+        provider: 'fake', providerRef: 'ref', verifiedAt: '2026-10-10T10:00:00.000Z',
+      });
+      world.store.organizers.set('s1', activeOrg); // a studio that is also an organizer stays a studio submission
+      const sent = await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' }).catch((e: unknown) => e);
+      // No verification record yet: a provider needs its S21 record first, as today.
+      assert.ok(sent instanceof DomainError && sent.code === 'not_eligible');
+      world.store.verifications.set('s1', emptyVerification('s1', 'studio', world.clock.now()));
+      const res = await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' });
+      assert.equal(res.after.business?.subject, 'studio');
+      await reviewVerification(deps, { uid: 'staff1', isAdmin: true }, { uid: 's1', target: 'business', action: 'approve' });
+      assert.equal(world.store.providerFlags.get('s1')?.businessVerified, true);
+      assert.equal(world.store.organizerFlags.size, 0);
+    });
   });
 });

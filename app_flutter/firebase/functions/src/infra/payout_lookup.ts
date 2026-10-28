@@ -18,6 +18,24 @@ export class FirestoreVerifiedNameReader implements VerifiedNameReader {
 }
 
 /**
+ * An organizer's verified business legal name (S21.04, plan #223 Decision 3): `verifications/{uid}.business.name`
+ * once staff (or the registry match) approved it for an organizer. A studio's business, one still submitted or
+ * rejected, and a blank name are null: the organizer then has nothing to compare the account holder with.
+ */
+export class FirestoreBusinessNameReader implements VerifiedNameReader {
+  constructor(private readonly db: Firestore) {}
+
+  async legalName(uid: string): Promise<string | null> {
+    const snap = await this.db.collection('verifications').doc(uid).get();
+    const business: unknown = snap.data()?.business;
+    if (typeof business !== 'object' || business === null) return null;
+    const b = business as Record<string, unknown>;
+    if (b.subject !== 'organizer' || b.status !== 'approved') return null;
+    return typeof b.name === 'string' && b.name.trim() !== '' ? b.name : null;
+  }
+}
+
+/**
  * The bank's holder-name lookup (Decision 11). `fake` is the domain's one fake, echoing
  * `echoName` (the caller's verified name); `off` always answers `unsupported` (no intermediary
  * adapter yet: staff compares the name before the first payout). Never logs the number.

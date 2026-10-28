@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createHash } from 'node:crypto';
-import type { AccountNameLookup } from '../src/account_lookup.js';
+import { FakeAccountNameLookup, type AccountNameLookup } from '../src/account_lookup.js';
 import { DomainError } from '../src/errors.js';
+import type { PayoutAccountDeps } from '../src/payout_ports.js';
 import { lookupPayoutAccountName, requestPayoutOtp } from '../src/payout_account_use_cases.js';
 import { savePayoutAccount } from '../src/save_payout_account.js';
 import { addAccount, createPayoutWorld } from './support/payout_world.js';
@@ -190,5 +191,82 @@ describe('requestPayoutOtp', () => {
     await refused(savePayoutAccount(w.accountDeps, P1, { ...target, otpCode: oldCode }), 'otp_invalid');
     const res = await savePayoutAccount(w.accountDeps, P1, { ...target, otpCode: newCode });
     assert.equal(res.accountLast4, '6677');
+  });
+});
+
+
+describe('organizers (S06.06, plan #223 Decision 3)', () => {
+  const ORG = { uid: 'org1' } as const;
+  const BUSINESS = 'CÔNG TY TNHH BÃI ĐÁ SÔNG HỒNG';
+  const bank = { bankCode: 'VCB', accountNumber: '0123456789' };
+
+  /** org1: an active organizer (a customer account, no photographer role) with an approved business. */
+  function orgWorld(status: 'active' | 'suspended' = 'active') {
+    const w = createPayoutWorld();
+    w.payoutStore.seedOrganizer('org1', status);
+    w.businessNames.set('org1', BUSINESS);
+    w.phones.set('org1', '0912000111');
+    // The fake bank echoes the holder name of the account: here the business's.
+    const deps: PayoutAccountDeps = { ...w.accountDeps, lookup: new FakeAccountNameLookup(BUSINESS) };
+    return { w, deps };
+  }
+
+  it('an organizer saves a payout account whose holder name key matches the business legal name → payoutAccountOk true; a mismatch is name_mismatch', async () => {
+    const { w, deps } = orgWorld();
+    // The business legal name, not an identity name, is what is shown and compared.
+    assert.deepEqual(await lookupPayoutAccountName(deps, ORG, bank), {
+      decision: 'matched',
+      holderName: 'CONG TY TNHH BAI DA SONG HONG',
+      verifiedName: BUSINESS,
+    });
+
+    // Someone else's account (the bank answers TRAN VAN B): refused, nothing saved, no flag.
+    await refused(savePayoutAccount(deps, ORG, { ...bank, accountNumber: '0123454321' }), 'name_mismatch');
+    assert.equal(w.payoutStore.accounts.size, 0);
+    assert.equal(w.payoutStore.organizerPayoutOk.has('org1'), false);
+
+    const saved = await savePayoutAccount(deps, ORG, bank);
+    assert.equal(saved.nameStatus, 'matched');
+    assert.equal(saved.accountLast4, '6789');
+    assert.equal(w.payoutStore.organizerPayoutOk.get('org1'), true);
+    assert.equal([...w.payoutStore.accounts.values()].filter((a) => a.userId === 'org1' && a.active).length, 1);
+  });
+
+  it('the flag is written in the same transaction as the account: a refused save leaves it unset', async () => {
+    const { w, deps } = orgWorld();
+    await refused(savePayoutAccount(deps, ORG, { ...bank, accountNumber: '0123450404' }), 'not_found');
+    assert.equal(w.payoutStore.organizerPayoutOk.has('org1'), false);
+  });
+
+  it('a customer who is not an organizer, and a suspended organizer, are permission_denied on lookup, OTP and save', async () => {
+    const { w, deps } = orgWorld();
+    const cust = { uid: 'cust' };
+    await refused(lookupPayoutAccountName(deps, cust, bank), 'permission_denied');
+    await refused(requestPayoutOtp(deps, cust, bank), 'permission_denied');
+    await refused(savePayoutAccount(deps, cust, bank), 'permission_denied');
+    const suspended = orgWorld('suspended');
+    await refused(lookupPayoutAccountName(suspended.deps, ORG, bank), 'permission_denied');
+    await refused(requestPayoutOtp(suspended.deps, ORG, bank), 'permission_denied');
+    await refused(savePayoutAccount(suspended.deps, ORG, bank), 'permission_denied');
+    assert.equal(w.payoutStore.accounts.size, 0);
+    assert.equal(suspended.w.payoutStore.accounts.size, 0);
+  });
+
+  it('a photographer saves as today and sets no organizer flag', async () => {
+    const w = createPayoutWorld();
+    await savePayoutAccount(w.accountDeps, P1, { bankCode: 'VCB', accountNumber: '0123456789' });
+    assert.equal(w.payoutStore.organizerPayoutOk.size, 0);
+  });
+
+  it('an organizer changes the account with an OTP like a provider, and the flag stays true', async () => {
+    const { w, deps } = orgWorld();
+    await savePayoutAccount(deps, ORG, bank);
+    w.clock.advanceMinutes(1);
+    const change = { bankCode: 'VCB', accountNumber: '0123450002' };
+    await requestPayoutOtp(deps, ORG, change);
+    const code = w.otpSender.sent.at(-1)?.code ?? '';
+    const res = await savePayoutAccount(deps, ORG, { ...change, otpCode: code });
+    assert.equal(res.accountLast4, '0002');
+    assert.equal(w.payoutStore.organizerPayoutOk.get('org1'), true);
   });
 });

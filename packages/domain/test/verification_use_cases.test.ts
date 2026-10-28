@@ -528,6 +528,7 @@ describe('verification_use_cases', () => {
     const bizApp = {
       ...base,
       business: {
+        subject: 'studio' as const,
         status: 'approved' as const,
         kind: 'company' as const,
         taxCode: '0312345678',

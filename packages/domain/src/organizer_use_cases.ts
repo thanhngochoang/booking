@@ -129,6 +129,29 @@ export async function becomeOrganizer(deps: OrganizerDeps, callerId: string, raw
   });
 }
 
+/**
+ * Recomputes `businessVerified` and `payoutAccountOk` of an organizer from S21.04 and S06.06 (Decision 3), so
+ * that `canSell` follows them. The approval of an organizer's business and the save of its payout account
+ * already patch the document in their own transactions; this is the single recompute for any other moment
+ * (after a staff revoke, a repair, a read that wants the facts fresh). Returns the organizer as stored, or null
+ * for a user who is not an organizer (nothing is created); writes only when a flag changed.
+ */
+export async function syncOrganizerSelling(deps: OrganizerDeps, uid: string): Promise<Organizer | null> {
+  if ((await deps.organizers.getOrganizer(uid)) === null) return null;
+  const [businessVerified, payoutAccountOk] = await Promise.all([
+    deps.people.businessVerified(uid),
+    deps.people.payoutAccountOk(uid),
+  ]);
+  return deps.organizers.runTransaction(async (tx) => {
+    const o = await tx.getOrganizer(uid);
+    if (o === null) return null;
+    if (o.businessVerified === businessVerified && o.payoutAccountOk === payoutAccountOk) return o;
+    const next: Organizer = { ...o, businessVerified, payoutAccountOk, updatedAt: nowIso(deps) };
+    tx.putOrganizer(next);
+    return next;
+  });
+}
+
 // ── Spot claims (S30.02, staff review) ───────────────────────────────────────────────────────
 
 /** 1–3 Storage paths under the claimant's own `spot_claims/{uid}/` folder (Decision 4). */

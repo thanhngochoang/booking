@@ -90,7 +90,14 @@ export interface BusinessRejectReasonRecord {
   readonly text: string | null;
 }
 
+/**
+ * Who the verified business belongs to (S30, plan #223 Decision 3): a verified studio (its approval patches
+ * `photographers/{uid}`) or an organizer (it patches `organizers/{uid}`). A stored record without one is a studio's.
+ */
+export type BusinessSubject = 'studio' | 'organizer';
+
 export interface BusinessVerificationRecord {
+  readonly subject: BusinessSubject;
   readonly status: 'submitted' | 'approved' | 'rejected';
   readonly kind: 'company' | 'household';
   readonly taxCode: string;

@@ -1,7 +1,7 @@
 import { beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DomainError, type ErrorCode } from '../src/errors.js';
-import { MAX_GATE_STAFF, MAX_RESIDENTS } from '../src/organizer.js';
+import { MAX_GATE_STAFF, MAX_RESIDENTS, canSell } from '../src/organizer.js';
 import {
   becomeOrganizer,
   claimSpot,
@@ -14,6 +14,7 @@ import {
   saveResident,
   setSpotAccess,
   suspendOrganizer,
+  syncOrganizerSelling,
   updateManagedSpot,
 } from '../src/organizer_use_cases.js';
 import { registerEvent } from '../src/event_registration.js';
@@ -494,5 +495,55 @@ describe('staff tools', () => {
   test('suspendOrganizer by a non-staff actor is permission_denied; an unknown organizer not_found', async () => {
     await assert.rejects(suspendOrganizer(w.deps, 'org1', { organizerId: 'org2' }), rejects('permission_denied'));
     await assert.rejects(suspendOrganizer(w.deps, ADMIN, { organizerId: 'nope' }), rejects('not_found'));
+  });
+});
+
+describe('syncOrganizerSelling', () => {
+  let w: OrganizerWorld;
+  beforeEach(() => {
+    w = createOrganizerWorld();
+    w.store.seedOrganizer(organizerOf('org1'));
+  });
+
+  const sold = async (): Promise<{ business: boolean; payout: boolean; sell: boolean }> => {
+    const o = await syncOrganizerSelling(w.deps, 'org1');
+    assert.ok(o);
+    return { business: o.businessVerified, payout: o.payoutAccountOk, sell: canSell(o) };
+  };
+
+  test('canSell turns true only after both the business and the payout account are in place', async () => {
+    assert.deepEqual(await sold(), { business: false, payout: false, sell: false });
+    w.people.business.add('org1');
+    assert.deepEqual(await sold(), { business: true, payout: false, sell: false });
+    w.people.payout.add('org1');
+    assert.deepEqual(await sold(), { business: true, payout: true, sell: true });
+    assert.equal(w.store.organizers.get('org1')?.businessVerified, true);
+    assert.equal(w.store.organizers.get('org1')?.payoutAccountOk, true);
+  });
+
+  test('the payout account alone is not enough, and a suspended organizer never can sell', async () => {
+    w.people.payout.add('org1');
+    assert.deepEqual(await sold(), { business: false, payout: true, sell: false });
+    w.people.business.add('org1');
+    w.store.seedOrganizer(organizerOf('org1', { status: 'suspended' }));
+    assert.deepEqual(await sold(), { business: true, payout: true, sell: false });
+  });
+
+  test('a lost business or account turns the flags back; an unchanged organizer is not written', async () => {
+    w.people.business.add('org1');
+    w.people.payout.add('org1');
+    await sold();
+    const writes = w.store.writes;
+    const at = w.store.organizers.get('org1')?.updatedAt;
+    await sold();
+    assert.equal(w.store.writes, writes);
+    assert.equal(w.store.organizers.get('org1')?.updatedAt, at);
+    w.people.payout.delete('org1');
+    assert.deepEqual(await sold(), { business: true, payout: false, sell: false });
+  });
+
+  test('a user who is not an organizer gets null and nothing is created', async () => {
+    assert.equal(await syncOrganizerSelling(w.deps, 'cust'), null);
+    assert.equal(w.store.organizers.has('cust'), false);
   });
 });

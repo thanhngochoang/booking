@@ -32,6 +32,8 @@ export interface AccountCipher {
 
 export interface PayoutTx {
   getUserRole(uid: string): Promise<string | null>;
+  /** `organizers/{uid}.status` (S30); null when the user is not an organizer. */
+  getOrganizerStatus(uid: string): Promise<'active' | 'suspended' | null>;
   /** The payee's provider type (decides the tax); missing or unknown → 'individual'. */
   getPayeeType(uid: string): Promise<ProviderType>;
   getActiveAccount(userId: string): Promise<PayoutAccount | null>;
@@ -46,6 +48,8 @@ export interface PayoutTx {
   lastFinishedPayouts(accountId: string, limit: number): Promise<Payout[]>;
   putAccount(a: PayoutAccount): void;
   putAccountView(userId: string, v: PayoutAccountView): void;
+  /** `organizers/{uid}.payoutAccountOk` (S30, Decision 3), written with the account. */
+  setOrganizerPayoutOk(uid: string, ok: boolean): void;
   putPayout(p: Payout): void;
   /** Escrow `released` and not in any batch (`payoutId` empty). */
   listPayablePayments(payeeId: string): Promise<Payment[]>;
@@ -100,6 +104,11 @@ export interface PayoutCoreDeps {
 export interface PayoutAccountDeps extends PayoutCoreDeps {
   readonly lookup: AccountNameLookup;
   readonly names: VerifiedNameReader;
+  /**
+   * An active organizer's verified business legal name (S21.04 approved, subject `organizer`); null when it has
+   * none. Missing: organizers have no verified name (staff compare before the first payout).
+   */
+  readonly businessNames?: VerifiedNameReader;
   readonly otp: { readonly sender: OtpSender; readonly phones: OtpPhoneReader; readonly crypto: OtpCrypto };
   readonly notices: PayoutNotices;
 }

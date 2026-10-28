@@ -209,4 +209,26 @@ describe('payout account callables', () => {
       assert.match(logged[2] ?? '', /"code":"name_mismatch"/);
     });
   });
+  describe('organizers (S06.06 for an active organizer)', () => {
+    const org = (data: unknown, uid = 'org1') => ({ auth: { uid }, data });
+    const orgDeps = () =>
+      deps({
+        lookup: new FakeAccountNameLookup('CÔNG TY TNHH BÃI ĐÁ'),
+        businessNames: { legalName: async () => 'CÔNG TY TNHH BÃI ĐÁ' },
+      });
+
+    it('an active organizer passes the role check and saves; a customer who is not an organizer and a suspended organizer are permission-denied', async () => {
+      store.seedOrganizer('org1', 'active');
+      store.seedOrganizer('org2', 'suspended');
+      assert.equal((await handleLookupPayoutAccountName(org(INPUT), orgDeps())).decision, 'matched');
+      const saved = await handleSavePayoutAccount(org(INPUT), orgDeps());
+      assert.equal(saved.accountLast4, '6789');
+      assert.equal(store.organizerPayoutOk.get('org1'), true);
+      for (const uid of ['c1', 'org2']) {
+        await assert.rejects(handleSavePayoutAccount(org(INPUT, uid), orgDeps()), refusedWith('permission-denied', 'permission_denied'));
+        await assert.rejects(handleLookupPayoutAccountName(org(INPUT, uid), orgDeps()), refusedWith('permission-denied', 'permission_denied'));
+      }
+      assert.equal(store.organizerPayoutOk.has('org2'), false);
+    });
+  });
 });

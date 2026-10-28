@@ -363,10 +363,13 @@ export async function reviewVerification(
     const rec = await tx.getVerification(input.uid as string);
     if (!rec) throw new DomainError('not_found');
 
+    // An organizer's business record (S30) has no provider document: only a studio's, or an identity review, needs one.
     const p = await tx.getProvider(input.uid as string);
-    if (!p) throw new DomainError('not_found');
+    const organizerBusiness = target === 'business' && rec.business?.subject === 'organizer';
+    if (!p && !organizerBusiness) throw new DomainError('not_found');
 
     if (target === 'identity') {
+      if (!p) throw new DomainError('not_found');
       switch (action) {
         case 'approve': {
           if (rec.status !== 'submitted') throw new DomainError('conflict');
@@ -516,7 +519,9 @@ export async function reviewVerification(
         };
 
         tx.putVerification(after);
-        tx.setProviderFlags(input.uid as string, { businessVerified: true });
+        // Same transaction as the record (Decision 12): the flag lands on the subject's own document.
+        if (rec.business.subject === 'organizer') tx.setOrganizerFlags(input.uid as string, { businessVerified: true });
+        else tx.setProviderFlags(input.uid as string, { businessVerified: true });
         tx.addAudit({
           id: deps.ids.newId(),
           uid: input.uid as string,

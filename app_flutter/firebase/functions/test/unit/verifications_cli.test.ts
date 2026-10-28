@@ -73,7 +73,7 @@ describe('verifications staff CLI', () => {
       readyRecord('s1', {
         status: 'approved',
         business: {
-          status: 'submitted', kind: 'company', taxCode: '0312345678', name: 'X', address: 'Y', registryStatus: 'active',
+          subject: 'studio', status: 'submitted', kind: 'company', taxCode: '0312345678', name: 'X', address: 'Y', registryStatus: 'active',
           docPath: 'businessDocs/s1/a.jpg', representativeMatched: false, submittedAt: ago(30), decidedAt: null,
           decidedBy: null, rejectReason: null, purgeAfter: null,
         },
@@ -127,7 +127,7 @@ describe('verifications staff CLI', () => {
       readyRecord('s1', {
         status: 'approved',
         business: {
-          status: 'submitted', kind: 'company', taxCode: '0312345678', name: 'X', address: 'Y', registryStatus: 'active',
+          subject: 'studio', status: 'submitted', kind: 'company', taxCode: '0312345678', name: 'X', address: 'Y', registryStatus: 'active',
           docPath: 'businessDocs/s1/a.jpg', representativeMatched: false, submittedAt: ago(2), decidedAt: null,
           decidedBy: null, rejectReason: null, purgeAfter: null,
         },

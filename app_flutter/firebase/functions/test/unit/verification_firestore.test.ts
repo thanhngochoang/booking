@@ -30,6 +30,7 @@ const full: VerificationRecord = readyRecord('s1', {
   freeResubmitsLeft: 0,
   nudgedAt: '2026-10-09T09:00:00.000Z',
   business: {
+    subject: 'studio',
     status: 'approved',
     kind: 'company',
     taxCode: '0312345678',
@@ -153,6 +154,19 @@ describe('verification Firestore mapping', () => {
     assert.equal(verificationFromFirestore(doc)?.feeAttempt, 1);
   });
 
+  it('the business record keeps its subject; an old doc without one reads as a studio (S21.04 for organizers)', () => {
+    const organizer: VerificationRecord = {
+      ...full,
+      uid: 'org1',
+      business: { ...(full.business as NonNullable<VerificationRecord['business']>), subject: 'organizer', status: 'submitted' },
+    };
+    const doc = verificationToFirestore(organizer);
+    assert.equal(doc.business.subject, 'organizer');
+    assert.deepEqual(verificationFromFirestore(doc), organizer);
+    delete doc.business.subject;
+    assert.equal(verificationFromFirestore(doc)?.business?.subject, 'studio');
+  });
+
   it('identity maps both ways and holds no plain id number', () => {
     const r: IdentityRecord = {
       legalName: 'NGUYỄN MINH TRÍ',
@@ -215,6 +229,64 @@ describe('FirestoreVerificationStore', () => {
     const flags = writes.find((w) => w.path === 'photographers/p1');
     assert.equal(flags?.data.verified, true);
     assert.equal(flags?.data.acceptingOrders, false);
+  });
+
+  const businessDeps = (store: FirestoreVerificationStore) => ({
+    store, authPhones: { verifiedPhoneOf: async () => null }, identity: null, vault: null, taxCodes: null, feeRequired: false,
+    ...feeDepsOf(), clock: { now: () => NOW }, ids: { newId: () => 'a1' },
+  });
+  const submitted = (uid: string, subject: 'studio' | 'organizer'): VerificationRecord => ({
+    ...(readyRecord(uid, { status: 'approved' })),
+    business: { ...(full.business as NonNullable<VerificationRecord['business']>), subject, status: 'submitted', decidedAt: null, decidedBy: null, purgeAfter: null },
+  });
+
+  it("approval of an organizer's record sets organizers/{uid}.businessVerified and does not write photographers/{uid}", async () => {
+    const { firestore, writes } = fakeFirestore({
+      'verifications/org1': verificationToFirestore(submitted('org1', 'organizer')),
+      'organizers/org1': { status: 'active', businessVerified: false },
+    });
+    await reviewVerification(businessDeps(new FirestoreVerificationStore(firestore)), { uid: 'staff1', isAdmin: true }, {
+      uid: 'org1', target: 'business', action: 'approve',
+    });
+    assert.deepEqual(
+      writes.map((w) => [w.path, w.merge]),
+      [['verifications/org1', false], ['organizers/org1', true], ['verificationAudit/a1', false]],
+    );
+    const flags = writes.find((w) => w.path === 'organizers/org1');
+    assert.equal(flags?.data.businessVerified, true);
+    assert.ok(flags?.data.updatedAt instanceof Timestamp);
+    assert.equal(writes.some((w) => w.path.startsWith('photographers/')), false);
+    assert.equal(writes[0]?.data.business.subject, 'organizer');
+  });
+
+  it("a studio's approval behaves as today: photographers/{uid} is patched and no organizers document is written", async () => {
+    const { firestore, writes } = fakeFirestore({
+      'verifications/s1': verificationToFirestore(submitted('s1', 'studio')),
+      'photographers/s1': { providerType: 'studio', onboardingComplete: true, verified: true },
+      'organizers/s1': { status: 'active', businessVerified: false },
+    });
+    await reviewVerification(businessDeps(new FirestoreVerificationStore(firestore)), { uid: 'staff1', isAdmin: true }, {
+      uid: 's1', target: 'business', action: 'approve',
+    });
+    assert.deepEqual(
+      writes.map((w) => [w.path, w.merge]),
+      [['verifications/s1', false], ['photographers/s1', true], ['verificationAudit/a1', false]],
+    );
+    assert.deepEqual(writes[1]?.data, { businessVerified: true });
+  });
+
+  it('getOrganizer reads organizers/{uid}: its status and business flag; missing is null', async () => {
+    const { firestore } = fakeFirestore({
+      'organizers/org1': { status: 'active', businessVerified: true },
+      'organizers/org2': { status: 'suspended' },
+      'organizers/org3': { status: 'banned' },
+    });
+    await new FirestoreVerificationStore(firestore).runTransaction(async (tx) => {
+      assert.deepEqual(await tx.getOrganizer('org1'), { status: 'active', businessVerified: true });
+      assert.deepEqual(await tx.getOrganizer('org2'), { status: 'suspended', businessVerified: false });
+      assert.equal(await tx.getOrganizer('org3'), null);
+      assert.equal(await tx.getOrganizer('nobody'), null);
+    });
   });
 
   it('reads the provider, contact and identity from their documents', async () => {
