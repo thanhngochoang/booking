@@ -10,6 +10,7 @@ import {
   claimSpot,
   expireResidents,
   reviewSpotClaim,
+  syncOrganizerSelling,
   type GateStaff,
   type Organizer,
   type OrganizerDeps,
@@ -201,24 +202,60 @@ describe('firestoreOrganizerPeople', () => {
     assert.equal(await people.lookup('not a phone'), null);
   });
 
+  it('lookup keeps verified phones only: an unverified squatter loses to the verified owner; two verified owners → not_found', async () => {
+    const db = world();
+    db.seed('users/u3', { displayName: 'Kẻ chiếm số' });
+    db.seed('users/u3/private/contact', { phone: '+84903123456', phoneVerified: false });
+    const people = firestoreOrganizerPeople(db.asFirestore(), async () => false);
+    assert.deepEqual(await people.lookup('0903 123 456'), { uid: 'u1', name: 'Dũng' });
+    // Only an unverified account holds the number → nobody.
+    assert.equal(await people.lookup('0903 222 222'), null);
+    // Two verified accounts claim one number → nobody (never the first hit).
+    db.seed('users/u4', { displayName: 'Hai' });
+    db.seed('users/u4/private/contact', { phone: '+84903123456', phoneVerified: true });
+    assert.equal(await people.lookup('0903 123 456'), null);
+  });
+
   it('phoneVerified, businessVerified, payoutAccountOk and isStaff', async () => {
     const db = world();
     db.seed('verifications/u1', { business: { status: 'approved', name: 'CÔNG TY BÃI ĐÁ', subject: 'organizer' } });
     db.seed('payoutAccounts/u1', { holderName: 'Cong ty Bai Da' });
+    // A flag on the organizer document is a mirror, never a source (organizers sync must be able to clear it).
     db.seed('organizers/u2', { payoutAccountOk: true, businessVerified: true });
     const people = firestoreOrganizerPeople(db.asFirestore(), async (uid) => uid === 'admin1');
     assert.equal(await people.phoneVerified('u1'), true);
     assert.equal(await people.phoneVerified('u2'), false);
     assert.equal(await people.phoneVerified('nobody'), false);
     assert.equal(await people.businessVerified('u1'), true);
-    assert.equal(await people.businessVerified('u2'), true);
+    assert.equal(await people.businessVerified('u2'), false);
     assert.equal(await people.businessVerified('nobody'), false);
     assert.equal(await people.payoutAccountOk('u1'), true);
-    assert.equal(await people.payoutAccountOk('u2'), true);
+    assert.equal(await people.payoutAccountOk('u2'), false);
     db.seed('payoutAccounts/u1', { holderName: 'Nguyen Van Khac' });
     assert.equal(await people.payoutAccountOk('u1'), false);
     assert.equal(await people.isStaff('admin1'), true);
     assert.equal(await people.isStaff('u1'), false);
+  });
+
+  it('a revoked business: organizers sync (syncOrganizerSelling) clears both selling flags', async () => {
+    const db = world();
+    db.seed('verifications/u1', { business: { status: 'approved', name: 'CÔNG TY BÃI ĐÁ', subject: 'organizer' } });
+    db.seed('payoutAccounts/u1', { holderName: 'CONG TY BAI DA' });
+    db.seed('organizers/u1', organizerToFirestore(organizer({ id: 'u1', businessVerified: true, payoutAccountOk: true })));
+    const deps: OrganizerDeps = {
+      organizers: new FirestoreOrganizerStore(db.asFirestore()),
+      people: firestoreOrganizerPeople(db.asFirestore(), async () => false),
+      providers: { acceptsOrders: async () => true, orderProfile: async () => null },
+      notify: { store: new MemoryNotificationStore(), push: new MemoryPushSender(), users: new MemoryUserDirectory(), clock: { now: () => new Date(NOW) } },
+      clock: { now: () => new Date(NOW) },
+      ids: { newId: () => 'x' },
+    };
+    assert.deepEqual([(await syncOrganizerSelling(deps, 'u1'))?.businessVerified, db.data('organizers/u1')?.payoutAccountOk], [true, true]);
+    // Staff revoke the business (S21.04): the record is no longer approved.
+    db.seed('verifications/u1', { business: { status: 'rejected', name: 'CÔNG TY BÃI ĐÁ', subject: 'organizer' } });
+    const o = await syncOrganizerSelling(deps, 'u1');
+    assert.deepEqual([o?.businessVerified, o?.payoutAccountOk], [false, false]);
+    assert.deepEqual([db.data('organizers/u1')?.businessVerified, db.data('organizers/u1')?.payoutAccountOk], [false, false]);
   });
 });
 

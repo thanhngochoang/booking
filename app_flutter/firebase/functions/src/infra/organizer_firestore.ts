@@ -316,16 +316,16 @@ export function firestoreOrganizerPeople(firestore: Firestore, isAdmin: (uid: st
       const d = await contactOf(uid);
       return d?.phoneVerified === true && typeof d.phone === 'string' && d.phone !== '';
     },
+    /** S21.04 only: `verifications/{uid}.business` approved (a revoke clears it; `organizers sync` follows). */
     async businessVerified(uid) {
-      if ((await businessOf(uid))?.status === 'approved') return true;
-      return (await firestore.collection(ORGANIZERS_COLLECTION).doc(uid).get()).data()?.businessVerified === true;
+      return (await businessOf(uid))?.status === 'approved';
     },
     /**
-     * The flag S06.06 wrote on the organizer, or an active payout account whose holder is the approved business's
-     * legal name (a provider who becomes an organizer after saving their account).
+     * S06.06 only: the payout account view `payoutAccounts/{uid}` whose holder is the approved business's legal
+     * name (`holderNameKey`, the check `savePayoutAccount` makes for an organizer; a matched or staff-reviewed save
+     * stores that name as the holder). No business, no account, or another holder → false.
      */
     async payoutAccountOk(uid) {
-      if ((await firestore.collection(ORGANIZERS_COLLECTION).doc(uid).get()).data()?.payoutAccountOk === true) return true;
       const business = await businessOf(uid);
       if (business?.status !== 'approved' || typeof business.name !== 'string') return false;
       const holder: unknown = (await firestore.collection('payoutAccounts').doc(uid).get()).data()?.holderName;
@@ -334,13 +334,16 @@ export function firestoreOrganizerPeople(firestore: Firestore, isAdmin: (uid: st
     },
     /**
      * A phone in any form (`0903 123 456`, `+84903123456`) → E.164 → collection group `private` where `phone ==`, kept
-     * only for `users/{uid}/private/contact` (booking and provider contact copies hold phones too). `@username` → null.
+     * only for `users/{uid}/private/contact` with `phoneVerified == true` (set by the server once the Auth phone
+     * matches; the owner cannot set it, and a new number resets it). Booking and provider contact copies hold phones
+     * too and are skipped. Exactly one verified account → it; none or several → null (`not_found`). `@username` → null.
      */
     async lookup(raw) {
       const target = raw.trim();
       if (target.startsWith('@')) return null;
       const phone = normalizePhone(target);
       if (phone === null) return null;
+      const verified = new Set<string>();
       let after: unknown = null;
       for (let page = 0; page < LOOKUP_PAGES; page++) {
         let q = firestore.collectionGroup('private').where('phone', '==', phone).orderBy(FieldPath.documentId()).limit(LOOKUP_PAGE);
@@ -349,17 +352,20 @@ export function firestoreOrganizerPeople(firestore: Firestore, isAdmin: (uid: st
         for (const d of snap.docs) {
           const parts = d.ref.path.split('/');
           const uid = parts[1];
-          if (parts.length === 4 && parts[0] === 'users' && parts[2] === 'private' && parts[3] === 'contact' && uid !== undefined) {
-            const user = (await firestore.collection('users').doc(uid).get()).data();
-            if (user === undefined) continue;
-            const name = typeof user.displayName === 'string' && user.displayName !== '' ? user.displayName : 'Người dùng';
-            return { uid, name };
+          if (parts.length === 4 && parts[0] === 'users' && parts[2] === 'private' && parts[3] === 'contact' && uid !== undefined
+            && d.get('phoneVerified') === true) {
+            verified.add(uid);
           }
         }
-        if (snap.size < LOOKUP_PAGE) return null;
+        if (snap.size < LOOKUP_PAGE) break;
         after = snap.docs[snap.size - 1] ?? null;
       }
-      return null;
+      if (verified.size !== 1) return null;
+      const [uid] = [...verified] as [string];
+      const user = (await firestore.collection('users').doc(uid).get()).data();
+      if (user === undefined) return null;
+      const name = typeof user.displayName === 'string' && user.displayName !== '' ? user.displayName : 'Người dùng';
+      return { uid, name };
     },
     isStaff: isAdmin,
   };

@@ -412,10 +412,11 @@ describe('seed payouts and earnings', () => {
     //   - revision_requested: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - approved: shoot released (soon 750k), delivery released (soon 750k) -> soon 1.5m
     // - Lan's paid ticket of the past workshop (S18): held 250k until the end + 24 h
-    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) = 9.25m
+    // - S30: Lan's booking with a pass today at Bãi đá sông Hồng (held 1.5m)
+    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) + 1.5m (S30) = 10.75m
     // Total soon = 1.5m (recent) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 4.5m
     // Total received = 1.5m (completed-old)
-    assert.equal(e?.heldAmount, 9_250_000);
+    assert.equal(e?.heldAmount, 10_750_000);
     const ticket = get('earnings/seed-photographer-an/items/seed-payment-ticket-lan-past');
     assert.equal(ticket?.state, 'held');
     assert.equal(ticket?.amount, 250_000);
@@ -1340,28 +1341,40 @@ describe('seed organizer, entry tickets and passes (S30, #223)', async () => {
     assert.equal(pay?.releaseAfter, entryReleaseAt(tomorrow).toISOString());
     assert.equal(get(`ticket_codes/${String(code)}`), undefined);
 
-    // Lan ↔ Bình today 15:30, paid, with a pass.
-    const bPath = `bookings/${s30.SEED_BOOKING_LAN_BINH_PASS}`;
-    const b = bookingFromFirestore(s30.SEED_BOOKING_LAN_BINH_PASS, get(bPath));
-    assert.deepEqual([b?.customerId, b?.photographerId, b?.status, b?.day, b?.start], [LAN, BINH, 'upcoming', today, '15:30']);
+    // Lan ↔ An (verified, accepting orders) today 15:30, paid, with a pass.
+    const bPath = `bookings/${s30.SEED_BOOKING_LAN_AN_PASS}`;
+    const b = bookingFromFirestore(s30.SEED_BOOKING_LAN_AN_PASS, get(bPath));
+    assert.deepEqual([b?.customerId, b?.photographerId, b?.status, b?.day, b?.start], [LAN, AN, 'upcoming', today, '15:30']);
+    assert.equal(get(`photographers/${AN}`)?.acceptingOrders, true);
     const bCode = String(get(`${bPath}/private/pass`)?.code);
-    assert.equal(bCode, s30.SEED_PASS_BOOKING_LAN_BINH);
+    assert.equal(bCode, s30.SEED_PASS_BOOKING_LAN_AN);
     assert.equal(b?.passCode4, passCode4(bCode));
     const bPass = passFromFirestore(bCode, get(`passes/${bCode}`));
     assert.deepEqual([bPass?.customerId, bPass?.bookingId, bPass?.day, bPass?.registrationIds], [LAN, b?.id, today, []]);
-    assert.equal(get(`payments/seed-payment-${s30.SEED_BOOKING_LAN_BINH_PASS}`)?.escrowStatus, 'held');
+    assert.equal(get(`payments/seed-payment-${s30.SEED_BOOKING_LAN_AN_PASS}`)?.escrowStatus, 'held');
   });
 
   test('the two passes are the only passes and their codes appear in no public document', () => {
     const codes = docs.filter((d) => d.path.startsWith('passes/')).map((d) => d.path.slice('passes/'.length)).sort();
-    assert.deepEqual(codes, [s30.SEED_PASS_BOOKING_LAN_BINH, s30.SEED_PASS_ENTRY_LAN].sort());
+    assert.deepEqual(codes, [s30.SEED_PASS_BOOKING_LAN_AN, s30.SEED_PASS_ENTRY_LAN].sort());
     for (const d of docs) {
       if (d.path.startsWith('passes/') || d.path.endsWith('/private/pass')) continue;
       for (const c of codes) assert.equal(JSON.stringify(d.data).includes(c), false, d.path);
     }
   });
 
-  test('the S30 seed is written once on any day, Bình\'s booked day included', () => {
+  test('the organizer can sell from its sources: an approved S21.04 business and a payout account in that name', async () => {
+    const { MemoryFirestore } = await import('./support/memory_firestore.js');
+    const { firestoreOrganizerPeople } = await import('../../src/infra/organizer_firestore.js');
+    const db = new MemoryFirestore();
+    for (const d of docs) db.seed(d.path, d.data);
+    const people = firestoreOrganizerPeople(db.asFirestore(), async () => false);
+    assert.equal(await people.businessVerified(ORG), true);
+    assert.equal(await people.payoutAccountOk(ORG), true);
+    assert.equal(await people.phoneVerified(ORG), true);
+  });
+
+  test('the S30 seed is written once on any day, An\'s booked day included', () => {
     for (const at of [NOW, new Date('2026-10-25T03:00:00Z'), new Date('2026-10-24T20:00:00Z')]) {
       const paths = seedDocuments(at).map((d) => d.path);
       assert.equal(new Set(paths).size, paths.length, at.toISOString());

@@ -371,18 +371,24 @@ export const SEED_REGISTRATION_LAN_ENTRY = 'seed-registration-lan-entry';
 export const SEED_PAYMENT_ENTRY_LAN = 'seed-payment-entry-lan';
 /** Lan's entry ticket for tomorrow (`VE-VAQC-SEED`; the attendee list shows `SEED`). */
 export const SEED_PASS_ENTRY_LAN = 'VAQCSEED';
-export const SEED_BOOKING_LAN_BINH_PASS = 'seed-booking-lan-binh-pass';
-/** Lan's "Mã gặp thợ" for Bình today (`VE-BKNG-SEED`). */
-export const SEED_PASS_BOOKING_LAN_BINH = 'BKNGSEED';
+export const SEED_BOOKING_LAN_AN_PASS = 'seed-booking-lan-an-pass';
+/** Lan's "Mã gặp thợ" for An today (`VE-BKNG-SEED`). */
+export const SEED_PASS_BOOKING_LAN_AN = 'BKNGSEED';
+/** The organizer's approved business (S21.04) and its payout account in that name (S06.06): it can sell. */
+export const SEED_BAI_DA_BUSINESS_NAME = 'CÔNG TY TNHH BÃI ĐÁ SÔNG HỒNG';
+export const SEED_BAI_DA_ACCOUNT = { id: 'seed-account-bai-da-1', bankCode: 'VCB', number: '0099887766', holderName: 'CONG TY TNHH BAI DA SONG HONG' } as const;
 /** The reference entry fee of the seed spot and the adult ticket price. */
 export const SEED_BAI_DA_FEE = 70_000;
 
-/** S30: Lan's paid booking with Bình today 15:30 (a pass, nothing scanned yet: S05.02-pass, S06.01-scan). */
+/**
+ * S30: Lan's paid booking with An (verified, accepting orders) today 15:30 at the spot, a pass and nothing scanned
+ * yet (S05.02-pass, S06.01-scan). An is the spot's resident who waives both tickets, so the booking carries none.
+ */
 export function organizerSeedBookings(now: Date): SeedBooking[] {
   return [{
-    id: SEED_BOOKING_LAN_BINH_PASS, customerId: LAN, photographerId: BINH, serviceId: 'seed-service-family', status: 'upcoming',
-    date: formatVnDate(now), start: '15:30', end: '17:00', place: 'Bãi đá sông Hồng, Hà Nội', completedDaysAgo: null,
-    pass: SEED_PASS_BOOKING_LAN_BINH,
+    id: SEED_BOOKING_LAN_AN_PASS, customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'upcoming',
+    date: formatVnDate(now), start: '15:30', end: '17:30', place: 'Bãi đá sông Hồng, Hà Nội', completedDaysAgo: null,
+    pass: SEED_PASS_BOOKING_LAN_AN,
   }];
 }
 
@@ -2143,6 +2149,8 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
 function earningSubjectOf(
   x: Record<string, unknown>,
   existing: readonly SeedDocument[],
+  /** Bookings made from the clock (S30's booking with a pass), besides SEED_BOOKINGS. */
+  extra: readonly SeedBooking[] = [],
 ): { counterpartName: string; label: string; day: string } | null {
   if (x.subjectType === 'event_registration') {
     if (x.status !== 'paid' || typeof x.eventId !== 'string') return null;
@@ -2156,7 +2164,7 @@ function earningSubjectOf(
       day: start === null ? '' : formatVnDate(start),
     };
   }
-  const booking = SEED_BOOKINGS.find((b) => b.id === x.subjectId);
+  const booking = [...SEED_BOOKINGS, ...extra].find((b) => b.id === x.subjectId);
   const service = SEED_SERVICES.find((s) => s.id === booking?.serviceId);
   if (booking === undefined || service === undefined) return null;
   return { counterpartName: 'Lan (seed)', label: service.name, day: booking.date };
@@ -2268,7 +2276,7 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     if (!/^payments\/[^/]+$/.test(d.path)) continue;
     const id = d.path.slice('payments/'.length);
     const x = d.data;
-    const subject = earningSubjectOf(x, existing);
+    const subject = earningSubjectOf(x, existing, organizerSeedBookings(now));
     if (subject === null) continue;
     const payment: Payment = {
       id,
@@ -2850,7 +2858,7 @@ function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocum
 /**
  * S30 (#223): the organizer "Bãi đá sông Hồng" (active, can sell) managing `seed-spot-bai-da`, An as its resident
  * (both waivers), Dũng as its active gate staff, its open entry event (adult 70 000, child 40 000) and Lan's paid
- * ticket for tomorrow with its pass. Lan's booking with Bình today and its pass are written with the bookings.
+ * ticket for tomorrow with its pass. Lan's booking with An today and its pass are written with the bookings.
  */
 function organizerDocuments(now: Date): SeedDocument[] {
   const at = SEED_CREATED_AT;
@@ -2863,8 +2871,34 @@ function organizerDocuments(now: Date): SeedDocument[] {
     avatarUrl: null, status: 'active', phoneVerified: true, businessVerified: true, payoutAccountOk: true,
     managedSpotIds: [SEED_SPOT_BAI_DA], createdAt: at.toISOString(), updatedAt: at.toISOString(),
   };
+  // Its selling flags mirror their sources (Decision 3): the approved S21.04 business and the S06.06 account in its name.
+  const iso = at.toISOString();
+  const verification: VerificationRecord = {
+    ...emptyVerification(SEED_ORGANIZER_BAI_DA, 'individual', at),
+    steps: { phone: { doneAt: iso }, fee: null, identity: null, rules: null },
+    business: {
+      subject: 'organizer', status: 'approved', kind: 'company', taxCode: '0109999999', name: SEED_BAI_DA_BUSINESS_NAME,
+      address: 'Bãi đá sông Hồng, Long Biên, Hà Nội', registryStatus: 'active', docPath: null, representativeMatched: true,
+      submittedAt: iso, decidedAt: new Date(at.getTime() + HOUR_MS).toISOString(), decidedBy: ADMIN, rejectReason: null, purgeAfter: null,
+    },
+  };
+  const a = SEED_BAI_DA_ACCOUNT;
+  const account: PayoutAccount = {
+    id: a.id, userId: SEED_ORGANIZER_BAI_DA, bankCode: a.bankCode,
+    accountNumberEnc: encryptSyncForSeed(emulatorPayoutKey(), a.number), accountLast4: accountLast4(a.number),
+    holderName: a.holderName, active: true, createdAt: iso, nameStatus: 'matched', activeFrom: iso,
+  };
   const docs: SeedDocument[] = [
     { path: `organizers/${SEED_ORGANIZER_BAI_DA}`, data: organizerToFirestore(organizer) as Record<string, unknown> },
+    { path: `verifications/${SEED_ORGANIZER_BAI_DA}`, data: verificationToFirestore(verification) as Record<string, unknown> },
+    {
+      path: `payoutAccounts/${SEED_ORGANIZER_BAI_DA}`,
+      data: accountViewToFirestore({
+        accountId: account.id, bankCode: account.bankCode, accountLast4: account.accountLast4, holderName: account.holderName,
+        updatedAt: iso, nameStatus: account.nameStatus, activeFrom: iso,
+      }) as Record<string, unknown>,
+    },
+    { path: `payoutAccounts/${SEED_ORGANIZER_BAI_DA}/accounts/${a.id}`, data: accountToFirestore(account) as Record<string, unknown> },
     {
       path: `users/${SEED_ORGANIZER_BAI_DA}/private/contact`,
       data: { phone: '+84903000009', phoneVerified: true, allowZalo: false, allowWhatsApp: false, updatedAt: at },

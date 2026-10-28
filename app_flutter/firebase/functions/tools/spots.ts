@@ -40,6 +40,7 @@ import {
   type IdGenerator,
 } from '@photobooking/domain';
 import { assertLocalEmulators, LOCAL_HOST } from '../seed/local_guard.js';
+import { emulatorPayoutKey as defaultEmulatorKey } from '../seed/emulator_key.js';
 
 export const HELP = `usage: spots list [--area <code>]
        spots add --name <n> --city <c> --area <a> --lat <lat> --lng <lng> --radius <m> [--season 10,11,12] [--cover <file.jpg>] [--card <file.jpg>] [--description <d>] [--tip <t>]... --actor <uid>
@@ -295,6 +296,18 @@ export function parseStaffArgs(argv: readonly string[]): StaffArgs {
     access = type === 'none' ? null : { type, fees, note };
   }
   return { command, sub, id, status, reason, spot, access, actor };
+}
+
+/**
+ * The account-cipher key of `organizers suspend` (bank-QR refunds): `PAYOUT_ACCOUNT_KEY`, else the committed emulator
+ * key only when the CLI runs against the emulators (`FIRESTORE_EMULATOR_HOST`); a real project without it is refused.
+ */
+export function payoutKeyOf(env: Readonly<Record<string, string | undefined>>, emulatorKey: () => string = defaultEmulatorKey): string {
+  const key = env.PAYOUT_ACCOUNT_KEY;
+  if (key !== undefined && key !== '') return key;
+  const emulator = env.FIRESTORE_EMULATOR_HOST;
+  if (emulator !== undefined && emulator !== '') return emulatorKey();
+  throw new Error('PAYOUT_ACCOUNT_KEY is required (base64, 32 bytes) outside the emulators');
 }
 
 const codeOf = (e: unknown): string => (e instanceof DomainError ? e.code : e instanceof Error ? e.name : 'unknown');
@@ -592,13 +605,10 @@ async function main(): Promise<void> {
   const { liveOrganizerDeps } = await import('../src/infra/live_organizer.js');
   const { FirestoreOrganizerStore } = await import('../src/infra/organizer_firestore.js');
   const { lazyAccountCipher } = await import('../src/infra/account_cipher.js');
-  const { emulatorPayoutKey } = await import('../seed/emulator_key.js');
   const organizerStore = new FirestoreOrganizerStore(firestore);
   const organizer = liveOrganizerDeps();
-  // `organizers suspend` refunds bank-QR tickets (the payer's account is encrypted): PAYOUT_ACCOUNT_KEY, else the
-  // committed emulator key on the emulators. Read on first use.
-  const key = process.env.PAYOUT_ACCOUNT_KEY;
-  const cipher = lazyAccountCipher(() => (key !== undefined && key !== '' ? key : emulatorPayoutKey()));
+  // `organizers suspend` refunds bank-QR tickets (the payer's account is encrypted). Read on first use.
+  const cipher = lazyAccountCipher(() => payoutKeyOf(process.env));
   const deps: SpotCliDeps = {
     spots: mergedStore,
     counter,

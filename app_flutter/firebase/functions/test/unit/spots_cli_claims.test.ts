@@ -146,3 +146,14 @@ describe('spots CLI: claims, access, organizers (S30)', () => {
     for (const line of ['claims list', 'claims approve', 'claims reject', 'access <spotId>', 'organizers suspend']) assert.ok(HELP.includes(line), line);
   });
 });
+
+describe('spots CLI: the account-cipher key (organizers suspend refunds)', () => {
+  it('PAYOUT_ACCOUNT_KEY wins; the committed emulator key only with FIRESTORE_EMULATOR_HOST; else it is required', async () => {
+    const { payoutKeyOf } = await import('../../tools/spots.js');
+    const { emulatorPayoutKey } = await import('../../seed/emulator_key.js');
+    assert.equal(payoutKeyOf({ PAYOUT_ACCOUNT_KEY: 'k-real', FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080' }), 'k-real');
+    assert.equal(payoutKeyOf({ FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080' }), emulatorPayoutKey());
+    assert.throws(() => payoutKeyOf({}), /PAYOUT_ACCOUNT_KEY is required/);
+    assert.throws(() => payoutKeyOf({ PAYOUT_ACCOUNT_KEY: '', FIRESTORE_EMULATOR_HOST: '' }), /PAYOUT_ACCOUNT_KEY is required/);
+  });
+});

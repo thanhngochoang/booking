@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { Timestamp, getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { formatVnDate, isPassCode } from '@photobooking/domain';
+import { ORGANIZER_TERMS_VERSION, formatVnDate, isPassCode, newUlid } from '@photobooking/domain';
 import { applySeed } from '../../seed/apply.js';
 import { callCallable, emulatorProject, resetEmulators, signIn } from '../../seed/emulator_client.js';
 import {
@@ -18,6 +18,7 @@ import {
 } from '../../seed/fixtures.js';
 import { handlePaymentClock } from '../../src/scheduled/payment_clock.js';
 import { liveSettlementDeps } from '../../src/infra/live_payments.js';
+import { bucketUrl, eventStartInDays } from './event_social_support.js';
 
 // S30 entry tickets on the emulators (#223, plan Task 6): written here, run by CI (npm run test:integration).
 // Review Focus 1 (two buyers, the last seats of a day), the private pass of a paid ticket, closeEntryDay, and the
@@ -160,5 +161,43 @@ describe('S30 entry tickets on the emulators', () => {
     assert.equal((await data(`payments/${pay.paymentId}`)).status, 'expired');
     for (const l of pay.lines) assert.equal((await data(`payments/${l.paymentId}`)).status, 'expired');
     assert.equal((await data(`entry_days/${SEED_EVENT_ENTRY_BAI_DA}_${day}`)).held, 0);
+  });
+
+  test('an event-store group (a priced event at the managed spot with a venue fee): paid through the group, then an unpaid one expires', async () => {
+    const eventId = newUlid(Date.now());
+    const path = `eventCovers/${AN}/${eventId}/cover.jpg`;
+    const start = eventStartInDays(50);
+    const saved = await call('saveEventDraft', AN, {
+      eventId, title: `Workshop ${eventId.slice(-6)}`, type: 'workshop', coverUrl: bucketUrl(path), coverPath: path,
+      startAt: start.toISOString(), endAt: new Date(start.getTime() + 3 * 3_600_000).toISOString(),
+      location: { name: 'Bãi đá sông Hồng', lat: 21.0493, lng: 105.8612 }, capacity: 5, price: 150_000,
+      venue: { kind: 'managed_spot', spotId: SEED_SPOT_BAI_DA, termsVersion: ORGANIZER_TERMS_VERSION },
+    });
+    assert.equal(saved.status, 200, saved.text);
+    await call('publishEvent', AN, { eventId });
+    // The seed organizer can sell (approved business, payout account in its name): a fee above 0 is allowed.
+    const ok = await call('respondVenueConsent', SEED_ORGANIZER_BAI_DA, { eventId, accept: true, venueFeePerGuest: 20_000 });
+    assert.equal(ok.status, 200, ok.text);
+    assert.equal((await call('publishEvent', AN, { eventId })).status, 200);
+
+    const buyer = await makeCustomer(6);
+    const reg = await call('registerEvent', buyer, { eventId, quantity: 1, name: 'Khách 6', method: 'bank_qr' });
+    assert.equal(reg.status, 200, reg.text);
+    const { registrationId, paymentId } = reg.result as { registrationId: string; paymentId: string };
+    assert.equal((await data(`payments/${paymentId}`)).subjectType, 'payment_group');
+    const lines = (await db.collection('payments').where('groupId', '==', paymentId).get()).docs;
+    assert.deepEqual(lines.map((d) => d.get('lineKind')).sort(), ['event_ticket', 'venue_fee']);
+    assert.equal((await call('confirmFakePayment', buyer, { paymentId })).status, 200);
+    for (const l of lines) assert.equal((await data(`payments/${l.id}`)).status, 'paid', String(l.get('lineKind')));
+    assert.equal((await data(`events/${eventId}/registrations/${registrationId}`)).status, 'paid');
+
+    const late = await makeCustomer(7);
+    const held = (await call('registerEvent', late, { eventId, quantity: 1, name: 'Khách 7', method: 'bank_qr' })).result as { registrationId: string; paymentId: string };
+    await db.doc(`payments/${held.paymentId}`).update({ expiresAt: Timestamp.fromDate(new Date(Date.now() - 60_000)) });
+    await handlePaymentClock(liveSettlementDeps());
+    assert.equal((await data(`payments/${held.paymentId}`)).status, 'expired');
+    for (const l of (await db.collection('payments').where('groupId', '==', held.paymentId).get()).docs) assert.equal(l.get('status'), 'expired');
+    assert.equal((await data(`events/${eventId}/registrations/${held.registrationId}`)).status, 'cancelled');
+    assert.equal((await data(`events/${eventId}`)).heldCount, 0);
   });
 });

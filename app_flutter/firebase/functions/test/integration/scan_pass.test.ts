@@ -11,11 +11,11 @@ import {
   BINH,
   DUNG,
   LAN,
-  SEED_BOOKING_LAN_BINH_PASS,
+  SEED_BOOKING_LAN_AN_PASS,
   SEED_EVENT_ENTRY_BAI_DA,
   SEED_ORGANIZER_BAI_DA,
   SEED_PASSWORD,
-  SEED_PASS_BOOKING_LAN_BINH,
+  SEED_PASS_BOOKING_LAN_AN,
   SEED_PASS_ENTRY_LAN,
   SEED_SPOT_BAI_DA,
   SEED_USERS,
@@ -45,13 +45,13 @@ const call = (name: string, uid: string, payload: unknown) => callCallable(name,
 const data = async (path: string) => (await db.doc(path).get()).data() ?? {};
 const codeOf = (res: { error?: { details?: unknown } }) => (res.error?.details as { code?: string } | undefined)?.code;
 
-/** Moves the seeded Lan ↔ Bình booking around "now" (Vietnam), so the shooter's window is open whenever CI runs. */
+/** Moves the seeded Lan ↔ An booking around "now" (Vietnam), so the shooter's window is open whenever CI runs. */
 async function bookingAroundNow(): Promise<void> {
   const now = new Date();
   const start = formatVnTime(new Date(Math.max(now.getTime() - HOUR, new Date(`${formatVnDate(now)}T00:00:00+07:00`).getTime())));
   const endAt = new Date(Math.min(now.getTime() + HOUR, new Date(`${formatVnDate(now)}T23:59:00+07:00`).getTime()));
-  await db.doc(`bookings/${SEED_BOOKING_LAN_BINH_PASS}`).update({ day: formatVnDate(now), date: formatVnDate(now), start, end: formatVnTime(endAt) });
-  await db.doc(`passes/${SEED_PASS_BOOKING_LAN_BINH}`).update({ day: formatVnDate(now) });
+  await db.doc(`bookings/${SEED_BOOKING_LAN_AN_PASS}`).update({ day: formatVnDate(now), date: formatVnDate(now), start, end: formatVnTime(endAt) });
+  await db.doc(`passes/${SEED_PASS_BOOKING_LAN_AN}`).update({ day: formatVnDate(now) });
 }
 
 describe('S30 scanPass on the emulators', () => {
@@ -65,16 +65,18 @@ describe('S30 scanPass on the emulators', () => {
 
   test('the shooter\'s scan moves the booking to shooting; another scanner is not_your_pass; a rescan is already_checked_in', async () => {
     await bookingAroundNow();
-    assert.equal(codeOf(await call('scanPass', DUNG, { code: SEED_PASS_BOOKING_LAN_BINH })), 'not_your_pass');
-    const res = await call('scanPass', BINH, { code: passDisplay(SEED_PASS_BOOKING_LAN_BINH) });
+    assert.equal(codeOf(await call('scanPass', DUNG, { code: SEED_PASS_BOOKING_LAN_AN })), 'not_your_pass');
+    const res = await call('scanPass', AN, { code: passDisplay(SEED_PASS_BOOKING_LAN_AN) });
     assert.equal(res.status, 200, res.text);
     const out = res.result as { booking: { id: string; customerName: string } | null; registrations: unknown[] };
-    assert.deepEqual(out.booking, { id: SEED_BOOKING_LAN_BINH_PASS, customerName: 'Lan (seed)' });
+    assert.deepEqual(out.booking, { id: SEED_BOOKING_LAN_AN_PASS, customerName: 'Lan (seed)' });
     assert.equal(res.text.includes('+84'), false);
-    const b = await data(`bookings/${SEED_BOOKING_LAN_BINH_PASS}`);
+    const b = await data(`bookings/${SEED_BOOKING_LAN_AN_PASS}`);
     assert.equal(b.status, 'shooting');
     assert.ok(b.checkedInAt instanceof Timestamp);
-    assert.equal(codeOf(await call('scanPass', BINH, { code: SEED_PASS_BOOKING_LAN_BINH })), 'already_checked_in');
+    assert.equal(codeOf(await call('scanPass', AN, { code: SEED_PASS_BOOKING_LAN_AN })), 'already_checked_in');
+    // Another photographer is not this booking's shooter.
+    assert.equal(codeOf(await call('scanPass', BINH, { code: SEED_PASS_BOOKING_LAN_AN })), 'not_your_pass');
   });
 
   test('gate staff check a ticket of today in: checkedInAt, entry_days.checkedIn and their scansToday', async () => {
