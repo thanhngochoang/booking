@@ -90,7 +90,7 @@ void main() {
     tester,
   ) async {
     await _open(tester);
-    for (final c in ['booking', 'events', 'chat', 'badges']) {
+    for (final c in ['booking', 'jobs', 'events', 'chat', 'badges']) {
       expect(_on(tester, c, 'push'), isTrue, reason: '$c push');
       expect(_on(tester, c, 'inApp'), isTrue, reason: '$c inApp');
     }
@@ -110,19 +110,20 @@ void main() {
   });
 
   testWidgets(
-    'the jobs row is hidden while its flag is off; the Chụp ngay row is shown '
-    '(#202 turned it on)',
+    'both jobs and Chụp ngay rows are shown when their flags are on',
     (tester) async {
       await _open(tester, role: UserRole.photographer);
-      expect(kJobsEnabled, isFalse);
+      expect(kJobsEnabled, isTrue);
       expect(kInstantEnabled, isTrue);
-      expect(find.text('Việc đăng tuyển'), findsNothing);
+      expect(find.text('Việc đăng tuyển'), findsOneWidget);
       expect(find.text('Chụp ngay'), findsOneWidget);
       // A photographer has both channels for Chụp ngay offers.
       expect(_switch('instant', 'push'), findsOneWidget);
       expect(_switch('instant', 'inApp'), findsOneWidget);
       for (final label in [
         'Đặt lịch và thanh toán',
+        'Việc đăng tuyển',
+        'Chụp ngay',
         'Sự kiện',
         'Tin nhắn',
         'Huy hiệu và đánh giá',

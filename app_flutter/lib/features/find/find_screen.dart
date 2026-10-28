@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/discovery/photographer_meta.dart';
 import 'package:photobooking/features/explore/area_picker_sheet.dart';
@@ -13,6 +15,7 @@ import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/find/find_controller.dart';
 import 'package:photobooking/features/find/find_sheets.dart';
 import 'package:photobooking/features/instant/instant_find_button.dart';
+import 'package:photobooking/features/jobs/job_entry.dart';
 
 /// Items load when fewer than this many dp remain below the viewport.
 const _loadMoreExtent = 600.0;
@@ -304,17 +307,34 @@ class _FindPhotographerScreenState
                   ),
                 ),
                 isEmpty: (data) => data.items.isEmpty,
-                empty: (_) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
-                  child: EmptyState(
-                    title: l.findNoResult,
-                    body: l.findNoResultBody,
-                    actionLabel: filters.hasAny ? l.findClear : null,
-                    onAction: filters.hasAny
-                        ? ref.read(findFiltersProvider.notifier).clear
-                        : null,
-                  ),
-                ),
+                empty: (_) {
+                  final isCustomer =
+                      ref.watch(currentProfileProvider).value?.role ==
+                          UserRole.customer;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        EmptyState(
+                          title: l.findNoResult,
+                          body: l.findNoResultBody,
+                          actionLabel: filters.hasAny ? l.findClear : null,
+                          onAction: filters.hasAny
+                              ? ref.read(findFiltersProvider.notifier).clear
+                              : null,
+                        ),
+                        if (isCustomer) ...[
+                          const SizedBox(height: AppSpace.s4),
+                          AppButton.outline(
+                            l.findPostJob,
+                            onPressed: () => startJobPost(context, ref),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
                 error: (context, err, stack) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
                   child: Center(

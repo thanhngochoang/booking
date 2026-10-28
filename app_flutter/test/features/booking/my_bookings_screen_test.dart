@@ -459,12 +459,13 @@ void main() {
       expect(find.byType(EventTicketsTab), findsOneWidget);
     });
 
-    testWidgets('the top tabs are off when showTickets is false', (
+    testWidgets('the tickets tab is off when showTickets is false', (
       tester,
     ) async {
       await pumpTickets(tester, showTickets: false);
       expect(find.text('Vé sự kiện'), findsNothing);
-      expect(find.text('Buổi chụp'), findsNothing);
+      expect(find.text('Buổi chụp'), findsOneWidget);
+      expect(find.text('Việc đăng'), findsOneWidget);
     });
   });
 }

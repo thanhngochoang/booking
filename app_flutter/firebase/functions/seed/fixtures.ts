@@ -75,6 +75,9 @@ import {
   type Spot,
   type SpotSchedule,
   type SlotOffer,
+  type JobRecord,
+  type QuoteRecord,
+  type JobMatchRecord,
   disputeOpenedText,
   DISPUTE_WINDOW_HOURS,
   disputeEscrowPayment,
@@ -117,6 +120,7 @@ import {
 import { bookingDisputeView, disputeToFirestore } from '../src/infra/dispute_firestore.js';
 import { supportMessageToFirestore, supportThreadToFirestore } from '../src/infra/support_firestore.js';
 import { relationToFirestore } from '../src/infra/studio_firestore.js';
+import { jobToFirestore, quoteToFirestore, matchToFirestore } from '../src/infra/job_firestore.js';
 import {
   applicationToDoc,
   collaborationToDoc,
@@ -437,6 +441,246 @@ function studioMemberDocuments(now: Date): SeedDocument[] {
     rel(BINH, new Date(now.getTime() - 2 * DAY_MS), {}),
     rel(DUNG, new Date(now.getTime() - DAY_MS), { status: 'requested', initiatedBy: 'member' }),
   ];
+}
+
+export const SEED_JOB_HN = 'seed-job-hn';
+export const SEED_JOB_HUE = 'seed-job-hue';
+
+export function seedJobs(now: Date): readonly JobRecord[] {
+  const at = SEED_CREATED_AT;
+  const jobHnDay = formatVnDate(new Date(now.getTime() + 10 * DAY_MS));
+  const jobHnDeadline = new Date(now.getTime() + 3 * DAY_MS);
+
+  const jobHn: JobRecord = {
+    id: SEED_JOB_HN,
+    customerId: LAN,
+    customer: {
+      name: 'Lan',
+      avatarUrl: null,
+      hireCount: 3,
+      phoneVerified: true,
+    },
+    specialtyId: 'portrait',
+    title: 'Chụp chân dung tốt nghiệp ở Văn Miếu',
+    description: 'Cần tìm thợ chụp chân dung tốt nghiệp tại Văn Miếu Quốc Tử Giám, ưu tiên thợ có kinh nghiệm bắt góc sáng và hướng dẫn tạo dáng tự nhiên.',
+    references: [],
+    schedule: {
+      kind: 'fixed',
+      day: jobHnDay,
+      start: '08:00',
+      end: '10:00',
+      from: null,
+      to: null,
+      durationMinutes: 120,
+    },
+    dayFrom: jobHnDay,
+    dayTo: jobHnDay,
+    area: {
+      areaId: 'hn-hoan-kiem',
+      name: 'Quận Hoàn Kiếm, Hà Nội',
+      city: 'Hà Nội',
+      cityKey: 'hanoi',
+      lat: 21.0285,
+      lng: 105.8542,
+      geohash5: encodeGeohash(21.0285, 105.8542),
+    },
+    budget: { min: 1_000_000, max: 2_000_000 },
+    wants: { editedCount: 30, deliveryDays: 5 },
+    allowedProviders: 'all',
+    quoteDeadline: jobHnDeadline,
+    extended: false,
+    status: 'open',
+    quoteCount: 1,
+    newQuoteCount: 1,
+    viewCount: 0,
+    inviteCount: 0,
+    matchCount: 1,
+    recentQuoters: [{ photographerId: AN, avatarUrl: `https://seed.test/avatars/${AN}.jpg` }],
+    awardedQuoteId: null,
+    bookingId: null,
+    awardedTo: null,
+    checkout: null,
+    expiringNotifiedAt: null,
+    closedAt: null,
+    referencesPurgeAfter: null,
+    quotesSeenAt: null,
+    version: 1,
+    createdAt: at,
+    updatedAt: at,
+  };
+
+  const jobHueStartDay = formatVnDate(new Date(now.getTime() + 8 * DAY_MS));
+  const jobHueEndDay = formatVnDate(new Date(now.getTime() + 15 * DAY_MS));
+  const jobHueDeadline = new Date(now.getTime() + 5 * DAY_MS);
+
+  const jobHue: JobRecord = {
+    id: SEED_JOB_HUE,
+    customerId: LAN,
+    customer: {
+      name: 'Lan',
+      avatarUrl: null,
+      hireCount: 3,
+      phoneVerified: true,
+    },
+    specialtyId: 'portrait',
+    title: 'Chụp ảnh nghệ thuật Cố đô Huế',
+    description: 'Bộ ảnh nghệ thuật phong cách cổ điển tại Đại Nội và các lăng tẩm Huế.',
+    references: [],
+    schedule: {
+      kind: 'flexible',
+      day: null,
+      start: null,
+      end: null,
+      from: jobHueStartDay,
+      to: jobHueEndDay,
+      durationMinutes: 240,
+    },
+    dayFrom: jobHueStartDay,
+    dayTo: jobHueEndDay,
+    area: {
+      areaId: 'hue-city',
+      name: 'Thành phố Huế',
+      city: 'Thừa Thiên Huế',
+      cityKey: 'thuathienhue',
+      lat: 16.4637,
+      lng: 107.5909,
+      geohash5: encodeGeohash(16.4637, 107.5909),
+    },
+    budget: { min: 2_000_000, max: 4_000_000 },
+    wants: { editedCount: 40, deliveryDays: 10 },
+    allowedProviders: 'artist',
+    quoteDeadline: jobHueDeadline,
+    extended: false,
+    status: 'open',
+    quoteCount: 0,
+    newQuoteCount: 0,
+    viewCount: 0,
+    inviteCount: 0,
+    matchCount: 1,
+    recentQuoters: [],
+    awardedQuoteId: null,
+    bookingId: null,
+    awardedTo: null,
+    checkout: null,
+    expiringNotifiedAt: null,
+    closedAt: null,
+    referencesPurgeAfter: null,
+    quotesSeenAt: null,
+    version: 1,
+    createdAt: at,
+    updatedAt: at,
+  };
+
+  return [jobHn, jobHue];
+}
+
+export function seedQuotes(now: Date): readonly QuoteRecord[] {
+  const jobHnDay = formatVnDate(new Date(now.getTime() + 10 * DAY_MS));
+  const quoteAn: QuoteRecord = {
+    id: AN,
+    jobId: SEED_JOB_HN,
+    photographerId: AN,
+    customerId: LAN,
+    jobTitle: 'Chụp chân dung tốt nghiệp ở Văn Miếu',
+    photographer: {
+      name: 'An',
+      avatarUrl: `https://seed.test/avatars/${AN}.jpg`,
+      providerType: 'individual',
+      verified: true,
+      tomatoPct: 95,
+      score: 4.9,
+      reviewCount: 58,
+      completedCount: 65,
+      approvedAwardCount: 2,
+      studioDistrict: null,
+    },
+    basedOnServiceId: 'seed-service-portrait',
+    terms: {
+      price: 1_800_000,
+      durationMinutes: 120,
+      photoCount: 100,
+      editedCount: 30,
+      deliveryDays: 5,
+      revisions: 1,
+      milestones: [
+        { kind: 'shoot', percent: 50 },
+        { kind: 'delivery', percent: 50 },
+      ],
+    },
+    milestoneAmounts: {
+      shoot: 900_000,
+      delivery: 900_000,
+    },
+    proposal: {
+      day: jobHnDay,
+      start: '08:00',
+      end: '10:00',
+    },
+    message: 'Mình chụp chân dung tốt nghiệp nhiều năm, quen góc Văn Miếu buổi sáng.',
+    albumId: null,
+    album: null,
+    invited: false,
+    fit: 0.95,
+    status: 'submitted',
+    notSelectedReason: null,
+    autoWithdrawn: false,
+    declineReason: null,
+    bookingId: null,
+    withdrawnAt: null,
+    version: 1,
+    createdAt: new Date(now.getTime() - 2 * HOUR_MS),
+    updatedAt: new Date(now.getTime() - 2 * HOUR_MS),
+  };
+  return [quoteAn];
+}
+
+export function jobDocuments(now: Date): SeedDocument[] {
+  const at = SEED_CREATED_AT;
+  const docs: SeedDocument[] = [];
+  const jobs = seedJobs(now);
+  const quotes = seedQuotes(now);
+
+  for (const job of jobs) {
+    docs.push({
+      path: `jobs/${job.id}`,
+      data: jobToFirestore(job),
+    });
+  }
+
+  for (const quote of quotes) {
+    docs.push({
+      path: `jobs/${quote.jobId}/quotes/${quote.id}`,
+      data: quoteToFirestore(quote),
+    });
+  }
+
+  const matchAn: JobMatchRecord = {
+    id: AN,
+    jobId: SEED_JOB_HN,
+    photographerId: AN,
+    fit: 0.95,
+    jobStatus: 'open',
+    createdAt: at,
+  };
+  docs.push({
+    path: `jobs/${SEED_JOB_HN}/matches/${AN}`,
+    data: matchToFirestore(matchAn),
+  });
+
+  const matchDung: JobMatchRecord = {
+    id: DUNG,
+    jobId: SEED_JOB_HUE,
+    photographerId: DUNG,
+    fit: 0.9,
+    jobStatus: 'open',
+    createdAt: at,
+  };
+  docs.push({
+    path: `jobs/${SEED_JOB_HUE}/matches/${DUNG}`,
+    data: matchToFirestore(matchDung),
+  });
+
+  return docs;
 }
 
 // ---- S27 studio recruiting (#151) ----
@@ -1447,6 +1691,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...verificationDocuments(now));
   docs.push(...studioMemberDocuments(now));
   docs.push(...recruitDocuments(now));
+  docs.push(...jobDocuments(now));
   for (const l of studioLoads(now)) {
     docs.push({
       path: `studio_day_load/${CUC}_${l.day}`,

@@ -3121,6 +3121,25 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
     </div></div>
     <div class="cap"><span class="n new">Mới</span><span class="n">S15.02 · Chi tiết việc (của khách)</span><b>Biết ngay việc đang có bao nhiêu người quan tâm</b><span><code>/jobs/:id</code>. Ba ô số: báo giá, lượt xem, đã mời. Hai báo giá mới nhất làm mồi, nút chính mở S15.03. "Mời thợ ảnh báo giá" mở danh sách gợi ý từ <code>recommend</code> (tối đa 5 lời mời). Menu "…": Sửa (chỉ khi chưa có báo giá, nếu không chỉ được gia hạn), Gia hạn, Đóng việc (sheet nút đỏ, báo cho người đã báo giá).</span></div></div>
 
+    <div class="step" id="S15.02-invite"><div class="phone" data-code="S15.02"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="ic"><span class="ms">more_horiz</span></div></div>
+        <div><div class="row" style="gap:6px"><span class="tag">Kỷ yếu</span><span class="badge b-pen">Đang nhận báo giá</span></div><div style="font-family:var(--display);font-size:21px;font-weight:600;line-height:1.2;margin-top:6px">Kỷ yếu lớp 12A1, 42 bạn</div><div class="meta x">Đăng 05/10 · còn 2 ngày nhận báo giá</div></div>
+        <div class="row" style="gap:8px"><div class="kpi"><b>5</b><span>Báo giá</span></div><div class="kpi"><b>38</b><span>Lượt xem</span></div><div class="kpi"><b>2</b><span>Đã mời</span></div></div>
+      </div>
+      <div class="dim"></div>
+      <div class="sheet" style="max-height:85%;gap:10px">
+        <div class="grab"></div>
+        <div class="row" style="justify-content:space-between;align-items:baseline"><div class="h3">Mời thợ ảnh báo giá</div><span class="meta x">Còn mời được 3 người</span></div>
+        <div class="prow"><span class="av m" style="background:var(--p5)"></span><div class="grow"><b>Lê Hoàng Vũ</b> <span class="vf gold" role="img" aria-label="Nhiếp ảnh gia đã duyệt"><span class="ms">check</span></span><div class="meta"><span class="tm"><svg><use href="#i-tomato"/></svg>97%</span> · 64 buổi · từ 3M</div></div><span class="ms" style="color:var(--pri)">check_box</span></div>
+        <div class="prow"><span class="av m" style="background:var(--p1)"></span><div class="grow"><b>Studio Mây</b> <span class="vfs" role="img" aria-label="Studio đã xác minh"><svg><use href="#i-seal"/></svg></span><div class="meta"><span class="tm"><svg><use href="#i-tomato"/></svg>95%</span> · 310 buổi · từ 2,5M</div></div><span class="ms" style="color:var(--pri)">check_box</span></div>
+        <div class="prow" style="opacity:.6"><span class="av m" style="background:var(--p3)"></span><div class="grow"><b>Minh Trí</b> <span class="vf" role="img" aria-label="Đã xác minh"><span class="ms">check</span></span><div class="meta"><span class="tm"><svg><use href="#i-tomato"/></svg>98%</span> · 112 buổi · từ 4M</div></div><span class="tag">Đã mời</span></div>
+        <div class="btn pri">Gửi lời mời (2)</div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S15.02 · Mời thợ ảnh báo giá (sheet)</span><b>Tối đa 5 lời mời mỗi việc</b><span>Danh sách gợi ý từ <code>recommend</code> theo thể loại, khu vực và ngày của việc; chỉ thợ đang nhận đơn và đúng loại nhà cung cấp. Người đã mời hoặc đã báo giá hiện "Đã mời", không chọn được. Gửi → <code>inviteToJob</code>, mỗi người nhận <code>job_invited</code>.</span></div></div>
+
     <div class="step" id="S15.03"><div class="phone" data-code="S15.03"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
       <div class="body" style="gap:10px">
@@ -3156,6 +3175,38 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       <div class="foot"><div class="inq" role="button" tabindex="0" aria-label="Nhắn tin hỏi thêm"><span class="ms">chat_bubble</span></div><div class="btn pri">Chọn và thanh toán 4,2M</div></div>
     </div></div>
     <div class="cap"><span class="n new">Mới</span><span class="n">S15.04 · Chi tiết báo giá</span><b>Đọc như một hợp đồng ngắn trước khi trả tiền</b><span><code>/jobs/:id/applications/:quoteId</code>, vuốt ngang để sang báo giá kế. Giá, 2 mốc tiền, bốn ô bàn giao, lời nhắn, album đính kèm (S24.01). Nút chat mở chat hỏi trước gắn với báo giá. "Chọn và thanh toán" chạy kiểm tra SĐT (S04.05) rồi đi bước xem lại của S04.03 (cùng <code>BookingCard</code>, bảng tiền theo mốc, Chuyển khoản QR/MoMo/ZaloPay). Trả xong: việc thành "Đã chọn thợ", tạo booking <code>source=job</code> ở trạng thái <code>accepted</code> (thợ ảnh đã đồng ý khi báo giá). Menu "…": Từ chối báo giá, Báo cáo.</span></div></div>
+
+    <div class="step" id="S15.04-pay"><div class="phone" data-code="S15.04"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body" style="gap:10px;opacity:.3">
+        <div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="t" style="font-size:15px">Báo giá 1 / 5</div><div class="ic"><span class="ms">more_horiz</span></div></div>
+        <div class="row"><span class="av m" style="background:var(--p5)"></span><div class="grow"><b style="font-size:14px">Lê Hoàng Vũ</b></div></div>
+      </div>
+      <div class="dim"></div>
+      <div class="sheet" style="max-height:92%;gap:8px">
+        <div class="grab"></div>
+        <div class="row"><b class="grow h3">Xem lại</b><span class="meta x">Báo giá</span></div>
+        <div class="card"><div class="th ph p6"></div><div class="t"><b>Lê Hoàng Vũ · Kỷ yếu lớp 12A1, 42 bạn</b><span class="meta">CN 20/10 · 07:00–11:00</span><br><span class="meta">Quận 1 · TP.HCM</span></div></div>
+        <div class="field foc"><small>Địa chỉ cụ thể · bắt buộc</small><span class="meta">Số nhà, đường, phường</span></div>
+        <div class="meta x">Chỉ thợ ảnh bạn chọn thấy địa chỉ này.</div>
+        <div class="field"><small>Ghi chú · tuỳ chọn</small><span class="meta">Cần hoá đơn hoặc lưu ý thêm…</span></div>
+        <div style="font-size:12.5px;display:flex;flex-direction:column;gap:4px">
+          <div class="row"><span class="grow">Báo giá của Lê Hoàng Vũ</span><span class="tn">4.200.000₫</span></div>
+          <div class="row"><b class="grow">Thanh toán 100%</b><b class="tn">4.200.000₫</b></div>
+        </div>
+        <div class="card" style="flex-direction:column;align-items:stretch;gap:4px;padding:8px">
+          <div class="mrow"><span class="mst">1</span><div class="grow">Sau buổi chụp<small>thả cho thợ ảnh</small></div><b class="tn">2.100.000₫</b></div>
+          <div class="mrow"><span class="mst">2</span><div class="grow">Khi bạn đồng ý ảnh + 48 giờ kiểm tra<small>hoặc tự đồng ý sau 3 ngày</small></div><b class="tn">2.100.000₫</b></div>
+        </div>
+        <div class="meta x">Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.</div>
+        <div class="pml" role="radiogroup" aria-label="Phương thức thanh toán">
+          <div class="opt on" role="radio" aria-checked="true" tabindex="0"><span class="rd"></span><span class="pmi"><span class="ms">qr_code_2</span></span><div class="grow"><b>Chuyển khoản QR</b><span class="meta">Miễn phí · xác nhận ngay</span></div></div>
+          <div class="row"><div class="opt" role="radio" aria-checked="false" tabindex="-1"><span class="rd"></span><span class="pmi"><span class="ms">account_balance_wallet</span></span><b class="grow">MoMo</b></div><div class="opt" role="radio" aria-checked="false" tabindex="-1"><span class="rd"></span><span class="pmi"><span class="ms">account_balance_wallet</span></span><b class="grow">ZaloPay</b></div></div>
+        </div>
+        <div class="btn pri">Thanh toán 4.200.000₫</div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S15.04 · Xem lại và thanh toán báo giá</span><b>Bước xem lại của S04.03, theo điều khoản báo giá</b><span>Mở từ "Chọn và thanh toán" sau khi có SĐT (S04.05). Địa chỉ cụ thể bắt buộc, chỉ người được chọn thấy. Thanh toán → S04.04 → S05.02 (booking <code>source = quote</code>, <code>accepted</code>). Trong 30 phút thanh toán, báo giá bị khoá: thợ ảnh không sửa, không rút được.</span></div></div>
   </div>
 
   <h2 id="S16">S16 · Nhận việc đăng (thợ ảnh)</h2>
@@ -3176,6 +3227,25 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
     </div></div>
     <div class="cap"><span class="n new">Mới · đổi S06.01</span><span class="n">S16.02 · Việc đang tuyển</span><b>Nằm trong tab Công việc, không thêm tab mới</b><span>S06.01 thêm <code>SegmentedTabs</code> Hôm nay / Việc đang tuyển / Báo giá của tôi / Tuyển thợ (S27.01). Danh sách chỉ gồm việc còn hạn mà thợ ảnh đủ điều kiện xem: đúng khu vực phục vụ, đúng loại nhà cung cấp. Việc "Chỉ Nhiếp ảnh gia" vẫn hiện mờ với Photographer kèm lối lên NAG. Mặc định sắp theo độ phù hợp (thể loại, kỹ năng, lịch rảnh, khoảng cách, ngân sách so với giá gói). "Bạn được mời" luôn ở đầu.</span></div></div>
 
+    <div class="step" id="S16.02-quotes"><div class="phone" data-code="S16.02"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body" style="gap:10px">
+        <div class="bar"><div class="t"><small>Công việc</small>Báo giá của tôi</div></div>
+        <div class="seg"><span>Hôm nay</span><span>Việc đang tuyển · 6</span><span class="on">Báo giá của tôi</span></div>
+        <div class="sec"><b>Đang chờ</b><span>2</span></div>
+        <div class="jcard"><div class="row" style="justify-content:space-between"><span class="tag">Kỷ yếu</span><b class="tn">4,2M</b></div><b>Kỷ yếu lớp 12A1, 42 bạn</b><div class="meta">CN 20/10 · Quận 1</div></div>
+        <div class="jcard"><div class="row" style="justify-content:space-between"><span class="tag">Sự kiện</span><b class="tn">9M</b></div><b>Tiệc công ty cuối năm, 120 khách</b><div class="meta">T7 14/12 · Quận 7</div></div>
+        <div class="sec"><b>Được chọn</b><span>1</span></div>
+        <div class="jcard"><div class="row" style="justify-content:space-between"><span class="tag">Sản phẩm</span><div class="meta x">Mở buổi chụp →</div></div><b>Chụp 30 món gốm Bát Tràng</b><div class="meta">T6 11/10 · Quận 3</div></div>
+        <div class="sec"><b>Không được chọn</b><span>1</span></div>
+        <div class="jcard" style="opacity:.6"><span class="tag">Cưới</span><b>Phóng sự cưới nhà hàng</b><div class="meta">CN 01/12 · Quận 1 · Khách đã chọn thợ khác</div></div>
+        <div class="sec"><b>Đã rút</b><span>1</span></div>
+        <div class="jcard" style="opacity:.6"><span class="tag">Cưới</span><b>Ảnh cưới nghệ thuật Đà Lạt</b><div class="meta">Tự rút · bạn đã kín lịch ngày này</div></div>
+      </div>
+      <div class="tabs"><div class="tab"><span class="ms">home</span>Trang chủ</div><div class="tab"><span class="ms">explore</span>Khám phá</div><div class="tab mid"><div class="disc"><span class="ms">add</span></div>Đăng bài</div><div class="tab on"><span class="ms">calendar_today</span>Công việc<span class="dot">2</span></div><div class="tab"><span class="ms">person</span>Hồ sơ<span class="dot" aria-label="3 thông báo chưa đọc">3</span></div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S16.02 · Báo giá của tôi</span><b>Theo dõi mọi báo giá đã gửi</b><span>Chia Đang chờ / Được chọn / Không được chọn / Đã rút. Chạm một dòng mở S16.01 (được chọn → S05.02).</span></div></div>
+
     <div class="step" id="S16.01"><div class="phone" data-code="S16.01"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
       <div class="body" style="gap:10px">
@@ -3192,6 +3262,24 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       <div class="foot"><div class="inq" role="button" tabindex="0" aria-label="Hỏi khách"><span class="ms">chat_bubble</span></div><div class="btn pri">Gửi báo giá</div></div>
     </div></div>
     <div class="cap"><span class="n new">Mới</span><span class="n">S16.01 · Chi tiết việc (thợ ảnh)</span><b>Quyết định báo giá trong một cuộn</b><span><code>/jobs/:id</code> (đích của <code>job_match</code>, <code>job_invited</code>). Người đăng chỉ hiện tên, số lần đã thuê và cờ SĐT đã xác minh, không có số. Dòng ngày tự đối chiếu với lịch của thợ ảnh (rảnh / đã có lịch / đang chờ). Không hiện giá của người khác, chỉ hiện số báo giá. Đã báo giá rồi thì nút chính thành "Sửa báo giá" và có thẻ "Báo giá của bạn · 4,2M · đang chờ khách" kèm "Rút báo giá". Nút chat mở chat hỏi trước với khách (giới hạn 3 tin như hiện tại).</span></div></div>
+
+    <div class="step" id="S16.01-mine"><div class="phone" data-code="S16.01"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body" style="gap:10px">
+        <div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="row" style="gap:0"><div class="ic"><span class="ms">bookmark</span></div><div class="ic"><span class="ms">more_horiz</span></div></div></div>
+        <div><div class="row" style="gap:6px"><span class="tag">Kỷ yếu</span><span class="tag inv">Bạn được mời</span><span class="fit">Hợp 92%</span></div><div style="font-family:var(--display);font-size:21px;font-weight:600;line-height:1.2;margin-top:6px">Kỷ yếu lớp 12A1, 42 bạn</div></div>
+        <div class="row"><span class="av m" style="background:var(--p2)"></span><div class="grow"><b style="font-size:13px">Ngọc Anh</b><div class="meta">Đã thuê 2 lần · SĐT đã xác minh</div></div></div>
+        <div class="irow"><div class="ic"><span class="ms">calendar_today</span></div><div>CN 20/10 · 07:00–11:00 · 4 giờ<small class="okn">Bạn rảnh ngày này</small></div></div>
+        <div class="irow"><div class="ic"><span class="ms">location_on</span></div><div>Quận 1 · cách bạn 2,1 km<small>Địa chỉ cụ thể gửi khi bạn được chọn</small></div></div>
+        <div class="irow"><div class="ic"><span class="ms">credit_card</span></div><div>Ngân sách 3.000.000–5.000.000₫<small>Bàn giao ≥ 40 ảnh chỉnh · trong 7 ngày</small></div></div>
+        <div class="meta" style="color:var(--ink-2)">Chụp ở trường buổi sáng rồi ra phố đi bộ Nguyễn Huệ. Cần vài kiểu chụp bay nhóm và ảnh lẻ từng bạn…</div>
+        <div class="grid3"><div class="ph p6"></div><div class="ph p3"></div><div class="ph p1"></div></div>
+        <div class="meta x">5 thợ ảnh đã báo giá · còn 2 ngày</div>
+        <div class="card" style="justify-content:space-between;padding:10px;align-items:center;background:var(--surf-2)"><div class="grow"><b>Báo giá của bạn</b> · <span class="tn">4.200.000₫</span><div class="meta x">Đang chờ khách phản hồi</div></div><span style="color:var(--bad);font-weight:600;font-size:12px;cursor:pointer">Rút báo giá</span></div>
+      </div>
+      <div class="foot"><div class="inq" role="button" tabindex="0" aria-label="Hỏi khách"><span class="ms">chat_bubble</span></div><div class="btn pri">Sửa báo giá</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S16.01 · Đã báo giá</span><b>Sửa hoặc rút tới khi khách chọn</b><span>Rút báo giá mở sheet xác nhận nút đỏ. Khách đang thanh toán báo giá này thì cả hai bị khoá. Được chọn → thẻ "Khách đã chọn bạn" + nút "Mở buổi chụp" (S05.02).</span></div></div>
 
     <div class="step" id="S16.03"><div class="phone" data-code="S16.03"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
@@ -3211,6 +3299,26 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       </div>
     </div></div>
     <div class="cap"><span class="n new">Mới</span><span class="n">S16.03 · Gửi báo giá (sheet)</span><b>Điền sẵn từ gói, chỉnh vài số là gửi được</b><span>Chọn một gói thì giá, số ảnh chỉnh, hạn giao và số lần sửa được điền sẵn (gói có thêm <code>revisions</code>). Giá &gt; 0, số nguyên VND; hai mốc tự tính 50/50 và hiện ngay dưới giá. Lời nhắn 20–500 ký tự, server lọc số điện thoại và link như chat hỏi trước. Gửi → <code>quote_new</code> cho khách (gộp theo việc). Khi gửi, ngày của việc đánh dấu "Chờ" trên lịch của thợ ảnh. Ngày đó đã có booking thì không gửi được (<code>day_taken</code>).</span></div></div>
+
+    <div class="step" id="S16.03-flex"><div class="phone" data-code="S16.03"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body"><div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="t" style="font-size:15px">Kỷ yếu lớp 12A1</div><div class="ic"></div></div></div>
+      <div class="dim"></div>
+      <div class="sheet" style="max-height:95%;gap:9px">
+        <div class="grab"></div>
+        <div class="row" style="justify-content:space-between"><div class="h3">Gửi báo giá</div><span class="meta x">Ngân sách khách 3–5M</span></div>
+        <div class="fieldrow field"><div class="grow"><small>Dựa trên gói · tuỳ chọn</small>Kỷ yếu nửa ngày · 3.000.000₫</div><span class="ms chev">chevron_right</span></div>
+        <div class="fieldrow field"><div class="grow"><small>Ngày chụp đề xuất · bắt buộc</small>T7 26/10 · 08:00–12:00<span class="meta x">Trong khoảng 20/10–30/10</span></div><span class="ms chev">chevron_right</span></div>
+        <div class="field foc"><small>Giá báo · bắt buộc</small><b class="tn" style="font-size:16px">4.200.000₫</b></div>
+        <div class="meta x tn" style="margin-top:-3px">Mốc 1 sau buổi chụp 2,1M · Mốc 2 khi khách duyệt ảnh 2,1M</div>
+        <div class="row" style="gap:6px"><div class="field grow"><small>Ảnh chỉnh</small><span class="tn">60</span></div><div class="field grow"><small>Giao trong</small><span class="tn">5 ngày</span></div><div class="field grow"><small>Sửa</small><span class="tn">2 lần</span></div></div>
+        <div class="field" style="min-height:64px;justify-content:flex-start"><small>Lời nhắn · bắt buộc</small><span class="meta">Mình chụp kỷ yếu cho 6 lớp năm ngoái, có flycam…</span></div>
+        <div class="fieldrow field"><div class="grow"><small>Album đính kèm · tuỳ chọn</small>Kỷ yếu 2025 · 24 ảnh</div><span class="ms chev">chevron_right</span></div>
+        <div class="lockn"><span class="ms">info</span><span>Khách chọn và trả tiền thì buổi chụp được xác nhận luôn. Sửa hoặc rút báo giá được tới lúc đó.</span></div>
+        <div class="btn pri">Gửi báo giá</div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S16.03 · Việc linh hoạt</span><b>Thợ ảnh đề xuất ngày trong khoảng của khách</b><span>Chỉ với việc "Linh hoạt": chọn ngày trong khoảng và giờ bắt đầu; giờ kết thúc theo thời lượng của việc. Ngày đã có lịch hoặc ngày nghỉ không chọn được. Khách thấy "Rảnh {ngày}" theo ngày đề xuất.</span></div></div>
   </div>
 
 

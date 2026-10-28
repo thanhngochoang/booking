@@ -158,6 +158,7 @@ class ChatThread {
     this.updatedAt,
     this.bookingStatus,
     this.assigneeId,
+    this.jobId,
   });
 
   final String id;
@@ -165,6 +166,7 @@ class ChatThread {
   final String customerId;
   final String photographerId;
   final String? bookingId;
+  final String? jobId;
   final DateTime? photographerRepliedAt;
   final int customerMessagesBeforeReply;
   final DateTime? lastMessageAt;
@@ -235,6 +237,7 @@ class ChatThread {
           data['assigneeId'] is String && (data['assigneeId'] as String) != ''
           ? data['assigneeId'] as String
           : null,
+      jobId: data['jobId'] as String?,
     );
   }
 
@@ -256,6 +259,7 @@ class ChatThread {
     DateTime? updatedAt,
     String? bookingStatus,
     String? assigneeId,
+    String? jobId,
   }) {
     return ChatThread(
       id: id ?? this.id,
@@ -263,6 +267,7 @@ class ChatThread {
       customerId: customerId ?? this.customerId,
       photographerId: photographerId ?? this.photographerId,
       bookingId: bookingId ?? this.bookingId,
+      jobId: jobId ?? this.jobId,
       photographerRepliedAt:
           photographerRepliedAt ?? this.photographerRepliedAt,
       customerMessagesBeforeReply:
@@ -301,7 +306,8 @@ class ChatThread {
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           bookingStatus == other.bookingStatus &&
-          assigneeId == other.assigneeId;
+          assigneeId == other.assigneeId &&
+          jobId == other.jobId;
 
   @override
   int get hashCode => Object.hash(
@@ -322,9 +328,9 @@ class ChatThread {
     updatedAt,
     bookingStatus,
     assigneeId,
+    jobId,
   );
 }
-
 
 /// Days of silence after which an inquiry is closed (domain
 /// `INQUIRY_CLOSE_DAYS`). Closed is derived, never stored: any message reopens it.

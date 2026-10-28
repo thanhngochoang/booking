@@ -16923,6 +16923,1506 @@ abstract class AppLocalizations {
   /// **'Bản đồ: {pins}'**
   String mapSemantics(String pins);
 
+  /// No description provided for @jobStatusOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang nhận báo giá'**
+  String get jobStatusOpen;
+
+  /// No description provided for @jobStatusAwarded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn thợ'**
+  String get jobStatusAwarded;
+
+  /// No description provided for @jobStatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng'**
+  String get jobStatusClosed;
+
+  /// No description provided for @jobStatusExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get jobStatusExpired;
+
+  /// No description provided for @quoteStatusPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang chờ khách'**
+  String get quoteStatusPending;
+
+  /// No description provided for @quoteStatusAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'được chọn'**
+  String get quoteStatusAccepted;
+
+  /// No description provided for @quoteStatusNotSelected.
+  ///
+  /// In vi, this message translates to:
+  /// **'không được chọn'**
+  String get quoteStatusNotSelected;
+
+  /// No description provided for @quoteStatusDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'khách đã từ chối'**
+  String get quoteStatusDeclined;
+
+  /// No description provided for @quoteStatusWithdrawn.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã rút'**
+  String get quoteStatusWithdrawn;
+
+  /// No description provided for @jobLeftDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn {n} ngày'**
+  String jobLeftDays(int n);
+
+  /// No description provided for @jobLeftHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'còn {n} giờ'**
+  String jobLeftHours(int n);
+
+  /// No description provided for @jobBudgetRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'{min}–{max}'**
+  String jobBudgetRange(String min, String max);
+
+  /// No description provided for @jobOpenBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để thợ báo giá'**
+  String get jobOpenBudget;
+
+  /// No description provided for @jobDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String jobDurationHours(int n);
+
+  /// No description provided for @jobSpecialtyOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get jobSpecialtyOther;
+
+  /// No description provided for @jobErrGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có lỗi xảy ra. Thử lại sau.'**
+  String get jobErrGeneric;
+
+  /// No description provided for @jobErrNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối. Thử lại khi có mạng.'**
+  String get jobErrNetwork;
+
+  /// No description provided for @jobErrNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ của bạn chưa nhận đơn nên chưa gửi được báo giá.'**
+  String get jobErrNotAccepting;
+
+  /// No description provided for @jobErrPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số điện thoại để tiếp tục.'**
+  String get jobErrPhone;
+
+  /// No description provided for @fitPill.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hợp {n}%'**
+  String fitPill(int n);
+
+  /// No description provided for @quoteInBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'trong ngân sách'**
+  String get quoteInBudget;
+
+  /// No description provided for @quoteInBudgetRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'trong ngân sách {range}'**
+  String quoteInBudgetRange(String range);
+
+  /// No description provided for @quoteOverBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'vượt {amount}'**
+  String quoteOverBudget(String amount);
+
+  /// No description provided for @quoteInvited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được mời'**
+  String get quoteInvited;
+
+  /// No description provided for @quoteFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh {date}'**
+  String quoteFree(String date);
+
+  /// No description provided for @quoteView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem'**
+  String get quoteView;
+
+  /// No description provided for @quoteBookmark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu báo giá'**
+  String get quoteBookmark;
+
+  /// No description provided for @quoteUnbookmark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu báo giá'**
+  String get quoteUnbookmark;
+
+  /// No description provided for @quoteWithdrawnTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã rút'**
+  String get quoteWithdrawnTag;
+
+  /// No description provided for @quoteEditedChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh chỉnh'**
+  String quoteEditedChip(int n);
+
+  /// No description provided for @quoteDaysChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'giao {n} ngày'**
+  String quoteDaysChip(int n);
+
+  /// No description provided for @quoteRevisionsChip.
+  ///
+  /// In vi, this message translates to:
+  /// **'sửa {n} lần'**
+  String quoteRevisionsChip(int n);
+
+  /// No description provided for @quoteTrustSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} buổi'**
+  String quoteTrustSessions(int n);
+
+  /// No description provided for @quoteTrustAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giải'**
+  String quoteTrustAwards(int n);
+
+  /// No description provided for @jobYouInvited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được mời'**
+  String get jobYouInvited;
+
+  /// No description provided for @jobArtistOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Nhiếp ảnh gia'**
+  String get jobArtistOnly;
+
+  /// No description provided for @jobArtistLock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ NAG báo giá được · bạn còn {k} giải đã duyệt nữa'**
+  String jobArtistLock(int k);
+
+  /// No description provided for @jobCardMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} báo giá · còn {m} ngày'**
+  String jobCardMeta(int n, int m);
+
+  /// No description provided for @jobQuotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} báo giá'**
+  String jobQuotes(int n);
+
+  /// No description provided for @jobQuotesNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} mới'**
+  String jobQuotesNew(int n);
+
+  /// No description provided for @jobOpenBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở buổi chụp →'**
+  String get jobOpenBooking;
+
+  /// No description provided for @jobExpiredNoPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn · {n} báo giá · chưa chọn ai'**
+  String jobExpiredNoPick(int n);
+
+  /// No description provided for @jobRepost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng lại'**
+  String get jobRepost;
+
+  /// No description provided for @jobDistance.
+  ///
+  /// In vi, this message translates to:
+  /// **'{km} km'**
+  String jobDistance(String km);
+
+  /// No description provided for @jobPostTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc'**
+  String get jobPostTitle;
+
+  /// No description provided for @jobPostStep.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / 2'**
+  String jobPostStep(int n);
+
+  /// No description provided for @jobPostWhat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần chụp gì?'**
+  String get jobPostWhat;
+
+  /// No description provided for @jobPostName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề · bắt buộc'**
+  String get jobPostName;
+
+  /// No description provided for @jobPostNameCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / 60'**
+  String jobPostNameCount(int n);
+
+  /// No description provided for @jobPostDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả'**
+  String get jobPostDesc;
+
+  /// No description provided for @jobPostRefs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh tham khảo · tuỳ chọn · tối đa 5'**
+  String get jobPostRefs;
+
+  /// No description provided for @jobPostAddRef.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh tham khảo'**
+  String get jobPostAddRef;
+
+  /// No description provided for @jobPostPrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đừng ghi số điện thoại hay địa chỉ cụ thể. Thợ ảnh chỉ thấy quận cho tới khi bạn chọn người.'**
+  String get jobPostPrivacy;
+
+  /// No description provided for @jobPostNext.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get jobPostNext;
+
+  /// No description provided for @jobPostFixed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày cố định'**
+  String get jobPostFixed;
+
+  /// No description provided for @jobPostFlexible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Linh hoạt'**
+  String get jobPostFlexible;
+
+  /// No description provided for @jobPostWhen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi nào'**
+  String get jobPostWhen;
+
+  /// No description provided for @jobPostWhenEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày giờ'**
+  String get jobPostWhenEmpty;
+
+  /// No description provided for @jobPostWhenFixedValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · {range} · {duration}'**
+  String jobPostWhenFixedValue(String day, String range, String duration);
+
+  /// No description provided for @jobPostWhenFlexValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from}–{to} · {duration}'**
+  String jobPostWhenFlexValue(String from, String to, String duration);
+
+  /// No description provided for @jobPostFlexFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ ngày'**
+  String get jobPostFlexFrom;
+
+  /// No description provided for @jobPostFlexTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến ngày'**
+  String get jobPostFlexTo;
+
+  /// No description provided for @jobPostDuration.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thời lượng'**
+  String get jobPostDuration;
+
+  /// No description provided for @jobPostStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu'**
+  String get jobPostStart;
+
+  /// No description provided for @jobPostEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get jobPostEnd;
+
+  /// No description provided for @jobPostArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực'**
+  String get jobPostArea;
+
+  /// No description provided for @jobPostAreaEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn quận, thành phố'**
+  String get jobPostAreaEmpty;
+
+  /// No description provided for @jobPostAreaSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cụ thể chỉ gửi cho người được chọn'**
+  String get jobPostAreaSub;
+
+  /// No description provided for @jobPostBudgetFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách từ'**
+  String get jobPostBudgetFrom;
+
+  /// No description provided for @jobPostBudgetTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến'**
+  String get jobPostBudgetTo;
+
+  /// No description provided for @jobPostBudgetOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để thợ ảnh báo giá'**
+  String get jobPostBudgetOpen;
+
+  /// No description provided for @jobPostWants.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao mong muốn'**
+  String get jobPostWants;
+
+  /// No description provided for @jobPostWantsValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'≥ {n} ảnh chỉnh · trong {days} ngày'**
+  String jobPostWantsValue(int n, int days);
+
+  /// No description provided for @jobPostWantsEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh chỉnh tối thiểu'**
+  String get jobPostWantsEdited;
+
+  /// No description provided for @jobPostWantsDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao trong (ngày)'**
+  String get jobPostWantsDays;
+
+  /// No description provided for @jobPostWantsAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không yêu cầu'**
+  String get jobPostWantsAny;
+
+  /// No description provided for @jobPostWho.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ai được báo giá'**
+  String get jobPostWho;
+
+  /// No description provided for @jobPostWhoAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get jobPostWhoAll;
+
+  /// No description provided for @jobPostWhoArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Nhiếp ảnh gia'**
+  String get jobPostWhoArtist;
+
+  /// No description provided for @jobPostWhoStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Studio'**
+  String get jobPostWhoStudio;
+
+  /// No description provided for @jobPostDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận báo giá trong'**
+  String get jobPostDeadline;
+
+  /// No description provided for @jobPostDeadlineValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày · tới {date}'**
+  String jobPostDeadlineValue(int n, String date);
+
+  /// No description provided for @jobPostSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc'**
+  String get jobPostSubmit;
+
+  /// No description provided for @jobPostSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get jobPostSave;
+
+  /// No description provided for @jobPostPosted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng · đang gợi ý cho {n} thợ ảnh phù hợp'**
+  String jobPostPosted(int n);
+
+  /// No description provided for @jobPostPostedNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng · thợ ảnh trong khu vực sẽ thấy việc của bạn'**
+  String get jobPostPostedNone;
+
+  /// No description provided for @jobPostSavedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thay đổi'**
+  String get jobPostSavedToast;
+
+  /// No description provided for @jobPostSaveDraftTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp?'**
+  String get jobPostSaveDraftTitle;
+
+  /// No description provided for @jobPostSaveDraftBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lần sau mở Đăng việc, bạn tiếp tục từ chỗ này.'**
+  String get jobPostSaveDraftBody;
+
+  /// No description provided for @jobPostSaveDraft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp'**
+  String get jobPostSaveDraft;
+
+  /// No description provided for @jobPostDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ nháp'**
+  String get jobPostDiscard;
+
+  /// No description provided for @jobPostLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có 3 việc mở. Đóng bớt một việc để đăng tiếp.'**
+  String get jobPostLimit;
+
+  /// No description provided for @jobErrTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiêu đề cần 10–60 ký tự'**
+  String get jobErrTitle;
+
+  /// No description provided for @jobErrContactTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại hoặc link khỏi tiêu đề'**
+  String get jobErrContactTitle;
+
+  /// No description provided for @jobErrContactDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại hoặc link khỏi mô tả'**
+  String get jobErrContactDesc;
+
+  /// No description provided for @jobErrDescLength.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả tối đa 1000 ký tự'**
+  String get jobErrDescLength;
+
+  /// No description provided for @jobErrSchedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp phải sau hạn nhận báo giá'**
+  String get jobErrSchedule;
+
+  /// No description provided for @jobErrEndAfterStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ kết thúc phải sau giờ bắt đầu'**
+  String get jobErrEndAfterStart;
+
+  /// No description provided for @jobErrFlexRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoảng ngày tối đa 30 ngày'**
+  String get jobErrFlexRange;
+
+  /// No description provided for @jobErrBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách “đến” phải từ “từ” trở lên'**
+  String get jobErrBudget;
+
+  /// No description provided for @jobErrArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực'**
+  String get jobErrArea;
+
+  /// No description provided for @jobErrRefUpload.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải được ảnh. Thử lại.'**
+  String get jobErrRefUpload;
+
+  /// No description provided for @jobsTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đăng'**
+  String get jobsTab;
+
+  /// No description provided for @jobNewPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc mới'**
+  String get jobNewPost;
+
+  /// No description provided for @jobEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tìm được thợ ưng ý? Đăng việc để thợ ảnh báo giá cho bạn'**
+  String get jobEmptyTitle;
+
+  /// No description provided for @jobEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng việc'**
+  String get jobEmptyAction;
+
+  /// No description provided for @jobPostedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng {date} · còn {n} ngày nhận báo giá'**
+  String jobPostedOn(String date, int n);
+
+  /// No description provided for @jobStatQuotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá'**
+  String get jobStatQuotes;
+
+  /// No description provided for @jobViews.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lượt xem'**
+  String get jobViews;
+
+  /// No description provided for @jobInvitedCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get jobInvitedCount;
+
+  /// No description provided for @jobLatest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá mới'**
+  String get jobLatest;
+
+  /// No description provided for @jobSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get jobSeeAll;
+
+  /// No description provided for @jobInvite.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ ảnh báo giá'**
+  String get jobInvite;
+
+  /// No description provided for @jobCompare.
+  ///
+  /// In vi, this message translates to:
+  /// **'So sánh {n} báo giá'**
+  String jobCompare(int n);
+
+  /// No description provided for @jobCompareNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có báo giá'**
+  String get jobCompareNone;
+
+  /// No description provided for @jobMenuEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get jobMenuEdit;
+
+  /// No description provided for @jobExtend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gia hạn 7 ngày'**
+  String get jobExtend;
+
+  /// No description provided for @jobClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng việc'**
+  String get jobClose;
+
+  /// No description provided for @jobCloseTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng việc này?'**
+  String get jobCloseTitle;
+
+  /// No description provided for @jobCloseBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} thợ ảnh đã báo giá sẽ được báo là việc đã đóng.'**
+  String jobCloseBody(int n);
+
+  /// No description provided for @jobClosedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng việc'**
+  String get jobClosedToast;
+
+  /// No description provided for @jobExtendedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gia hạn tới {date}'**
+  String jobExtendedToast(String date);
+
+  /// No description provided for @jobExtendNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc này không gia hạn thêm được'**
+  String get jobExtendNotEligible;
+
+  /// No description provided for @jobInCheckout.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang thanh toán một báo giá của việc này.'**
+  String get jobInCheckout;
+
+  /// No description provided for @jobInviteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ ảnh báo giá'**
+  String get jobInviteTitle;
+
+  /// No description provided for @jobInviteLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn mời được {n} người'**
+  String jobInviteLeft(int n);
+
+  /// No description provided for @jobInviteSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lời mời ({n})'**
+  String jobInviteSend(int n);
+
+  /// No description provided for @jobInvitedTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get jobInvitedTag;
+
+  /// No description provided for @jobInvitedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời {n} thợ ảnh'**
+  String jobInvitedToast(int n);
+
+  /// No description provided for @jobInviteEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thợ ảnh phù hợp trong khu vực'**
+  String get jobInviteEmpty;
+
+  /// No description provided for @jobInviteFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc này đã mời đủ 5 người'**
+  String get jobInviteFull;
+
+  /// No description provided for @findPostJob.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy? Đăng việc để thợ ảnh báo giá'**
+  String get findPostJob;
+
+  /// No description provided for @quotesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} báo giá'**
+  String quotesTitle(int n);
+
+  /// No description provided for @quotesSortFit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phù hợp nhất'**
+  String get quotesSortFit;
+
+  /// No description provided for @quotesSortPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá thấp'**
+  String get quotesSortPrice;
+
+  /// No description provided for @quotesSortRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get quotesSortRating;
+
+  /// No description provided for @quotesSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu'**
+  String get quotesSaved;
+
+  /// No description provided for @quotesEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ báo giá đầu tiên'**
+  String get quotesEmptyTitle;
+
+  /// No description provided for @quotesSavedEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa lưu báo giá nào'**
+  String get quotesSavedEmpty;
+
+  /// No description provided for @quoteCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá {i} / {n}'**
+  String quoteCounter(int i, int n);
+
+  /// No description provided for @quoteProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get quoteProfile;
+
+  /// No description provided for @quoteM1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sau buổi chụp'**
+  String get quoteM1;
+
+  /// No description provided for @quoteM1Sub.
+  ///
+  /// In vi, this message translates to:
+  /// **'thả cho thợ ảnh'**
+  String get quoteM1Sub;
+
+  /// No description provided for @quoteM2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi bạn đồng ý ảnh + 48 giờ kiểm tra'**
+  String get quoteM2;
+
+  /// No description provided for @quoteM2Sub.
+  ///
+  /// In vi, this message translates to:
+  /// **'hoặc tự đồng ý sau {days} ngày'**
+  String quoteM2Sub(int days);
+
+  /// No description provided for @quoteTileEdited.
+  ///
+  /// In vi, this message translates to:
+  /// **'ảnh chỉnh'**
+  String get quoteTileEdited;
+
+  /// No description provided for @quoteTileRaw.
+  ///
+  /// In vi, this message translates to:
+  /// **'ảnh gốc'**
+  String get quoteTileRaw;
+
+  /// No description provided for @quoteTileDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngày giao'**
+  String get quoteTileDays;
+
+  /// No description provided for @quoteTileRevisions.
+  ///
+  /// In vi, this message translates to:
+  /// **'lần sửa'**
+  String get quoteTileRevisions;
+
+  /// No description provided for @quoteAlbum.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album · {name}'**
+  String quoteAlbum(String name);
+
+  /// No description provided for @quoteAlbumSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh · đính kèm báo giá'**
+  String quoteAlbumSub(int n);
+
+  /// No description provided for @quoteEscrow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn trả {amount} ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc.'**
+  String quoteEscrow(String amount);
+
+  /// No description provided for @quoteChoose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn và thanh toán {amount}'**
+  String quoteChoose(String amount);
+
+  /// No description provided for @quoteAsk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin hỏi thêm'**
+  String get quoteAsk;
+
+  /// No description provided for @quoteDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối báo giá'**
+  String get quoteDecline;
+
+  /// No description provided for @quoteDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối báo giá này?'**
+  String get quoteDeclineTitle;
+
+  /// No description provided for @quoteDeclineReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do · tuỳ chọn'**
+  String get quoteDeclineReason;
+
+  /// No description provided for @quoteDeclineConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get quoteDeclineConfirm;
+
+  /// No description provided for @quoteDeclinedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối báo giá'**
+  String get quoteDeclinedToast;
+
+  /// No description provided for @quoteUnavailableWithdrawn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh đã rút báo giá này'**
+  String get quoteUnavailableWithdrawn;
+
+  /// No description provided for @quoteUnavailableClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc không còn nhận báo giá'**
+  String get quoteUnavailableClosed;
+
+  /// No description provided for @quoteDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh này đã kín lịch ngày đó'**
+  String get quoteDayTaken;
+
+  /// No description provided for @quoteNotAccepting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh này tạm thời chưa nhận đơn'**
+  String get quoteNotAccepting;
+
+  /// No description provided for @quotePayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lại'**
+  String get quotePayTitle;
+
+  /// No description provided for @quotePayAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cụ thể · bắt buộc'**
+  String get quotePayAddress;
+
+  /// No description provided for @quotePayAddressHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nhà, đường, phường'**
+  String get quotePayAddressHint;
+
+  /// No description provided for @quotePayAddressNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ thợ ảnh bạn chọn thấy địa chỉ này.'**
+  String get quotePayAddressNote;
+
+  /// No description provided for @quotePayNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú · tuỳ chọn'**
+  String get quotePayNote;
+
+  /// No description provided for @quotePayLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá của {name}'**
+  String quotePayLine(String name);
+
+  /// No description provided for @quotePayTotal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán 100%'**
+  String get quotePayTotal;
+
+  /// No description provided for @quotePayPolicy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.'**
+  String get quotePayPolicy;
+
+  /// No description provided for @quotePayButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán {amount}'**
+  String quotePayButton(String amount);
+
+  /// No description provided for @quotePayErrAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập địa chỉ cụ thể (3–120 ký tự)'**
+  String get quotePayErrAddress;
+
+  /// No description provided for @workTabToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get workTabToday;
+
+  /// No description provided for @workTabJobs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đang tuyển · {n}'**
+  String workTabJobs(int n);
+
+  /// No description provided for @workTabQuotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá của tôi'**
+  String get workTabQuotes;
+
+  /// No description provided for @workJobsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đang tuyển'**
+  String get workJobsTitle;
+
+  /// No description provided for @workQuotesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá của tôi'**
+  String get workQuotesTitle;
+
+  /// No description provided for @openJobsFit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hợp với bạn'**
+  String get openJobsFit;
+
+  /// No description provided for @openJobsNear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần tôi'**
+  String get openJobsNear;
+
+  /// No description provided for @openJobsBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách'**
+  String get openJobsBudget;
+
+  /// No description provided for @openJobsNeedSetupTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất hồ sơ để thấy việc đang tuyển'**
+  String get openJobsNeedSetupTitle;
+
+  /// No description provided for @openJobsNeedSetupAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất hồ sơ'**
+  String get openJobsNeedSetupAction;
+
+  /// No description provided for @openJobsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có việc hợp với bạn. Thêm thể loại hoặc mở rộng khu vực.'**
+  String get openJobsEmpty;
+
+  /// No description provided for @openJobsEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa thể loại'**
+  String get openJobsEmptyAction;
+
+  /// No description provided for @myQuotesPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ'**
+  String get myQuotesPending;
+
+  /// No description provided for @myQuotesChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được chọn'**
+  String get myQuotesChosen;
+
+  /// No description provided for @myQuotesNotChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không được chọn'**
+  String get myQuotesNotChosen;
+
+  /// No description provided for @myQuotesWithdrawn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã rút'**
+  String get myQuotesWithdrawn;
+
+  /// No description provided for @myQuotesAuto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tự rút · bạn đã kín lịch ngày này'**
+  String get myQuotesAuto;
+
+  /// No description provided for @myQuotesEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa gửi báo giá nào'**
+  String get myQuotesEmpty;
+
+  /// No description provided for @jobHirer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thuê {n} lần'**
+  String jobHirer(int n);
+
+  /// No description provided for @jobPhoneOk.
+  ///
+  /// In vi, this message translates to:
+  /// **'SĐT đã xác minh'**
+  String get jobPhoneOk;
+
+  /// No description provided for @jobFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn rảnh ngày này'**
+  String get jobFree;
+
+  /// No description provided for @jobBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có lịch'**
+  String get jobBusy;
+
+  /// No description provided for @jobPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có yêu cầu đang chờ'**
+  String get jobPending;
+
+  /// No description provided for @jobAreaLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{area} · cách bạn {km} km'**
+  String jobAreaLine(String area, String km);
+
+  /// No description provided for @jobAreaSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cụ thể gửi khi bạn được chọn'**
+  String get jobAreaSub;
+
+  /// No description provided for @jobBudgetLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách {range}'**
+  String jobBudgetLine(String range);
+
+  /// No description provided for @jobWantsLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao ≥ {n} ảnh chỉnh · trong {days} ngày'**
+  String jobWantsLine(int n, int days);
+
+  /// No description provided for @jobCompetition.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} thợ ảnh đã báo giá · còn {m} ngày'**
+  String jobCompetition(int n, int m);
+
+  /// No description provided for @jobAsk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỏi khách'**
+  String get jobAsk;
+
+  /// No description provided for @jobQuote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi báo giá'**
+  String get jobQuote;
+
+  /// No description provided for @jobEditQuote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa báo giá'**
+  String get jobEditQuote;
+
+  /// No description provided for @jobWithdraw.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rút báo giá'**
+  String get jobWithdraw;
+
+  /// No description provided for @jobWithdrawTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rút báo giá?'**
+  String get jobWithdrawTitle;
+
+  /// No description provided for @jobWithdrawBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ không thấy báo giá này nữa. Bạn có thể gửi lại khi việc còn mở.'**
+  String get jobWithdrawBody;
+
+  /// No description provided for @jobWithdrawnToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã rút báo giá'**
+  String get jobWithdrawnToast;
+
+  /// No description provided for @jobMine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo giá của bạn · {amount} · {status}'**
+  String jobMine(String amount, String status);
+
+  /// No description provided for @jobChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã chọn bạn'**
+  String get jobChosen;
+
+  /// No description provided for @jobOpenShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở buổi chụp'**
+  String get jobOpenShoot;
+
+  /// No description provided for @jobClosedNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đã đóng'**
+  String get jobClosedNotice;
+
+  /// No description provided for @jobDayBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày này bạn đã có lịch'**
+  String get jobDayBusy;
+
+  /// No description provided for @jobArtistLockButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ Nhiếp ảnh gia báo giá được'**
+  String get jobArtistLockButton;
+
+  /// No description provided for @jobNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy việc này'**
+  String get jobNotFound;
+
+  /// No description provided for @quoteSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi báo giá'**
+  String get quoteSheetTitle;
+
+  /// No description provided for @quoteSheetBudget.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách khách {range}'**
+  String quoteSheetBudget(String range);
+
+  /// No description provided for @quoteBasedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dựa trên gói · tuỳ chọn'**
+  String get quoteBasedOn;
+
+  /// No description provided for @quoteBasedOnNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không dựa trên gói'**
+  String get quoteBasedOnNone;
+
+  /// No description provided for @quoteProposal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chụp đề xuất · bắt buộc'**
+  String get quoteProposal;
+
+  /// No description provided for @quoteProposalHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong khoảng {from}–{to}'**
+  String quoteProposalHint(String from, String to);
+
+  /// No description provided for @quotePrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá báo · bắt buộc'**
+  String get quotePrice;
+
+  /// No description provided for @quoteMilestones.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mốc 1 sau buổi chụp {a} · Mốc 2 khi khách duyệt ảnh {b}'**
+  String quoteMilestones(String a, String b);
+
+  /// No description provided for @quoteEditedField.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh chỉnh'**
+  String get quoteEditedField;
+
+  /// No description provided for @quoteDeliveryField.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao trong'**
+  String get quoteDeliveryField;
+
+  /// No description provided for @quoteDeliveryValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày'**
+  String quoteDeliveryValue(int n);
+
+  /// No description provided for @quoteRevisionsField.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get quoteRevisionsField;
+
+  /// No description provided for @quoteRevisionsValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} lần'**
+  String quoteRevisionsValue(int n);
+
+  /// No description provided for @quoteMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời nhắn · bắt buộc'**
+  String get quoteMessage;
+
+  /// No description provided for @quoteMessageCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / 500'**
+  String quoteMessageCount(int n);
+
+  /// No description provided for @quoteAlbumField.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album đính kèm · tuỳ chọn'**
+  String get quoteAlbumField;
+
+  /// No description provided for @quoteAlbumValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {n} ảnh'**
+  String quoteAlbumValue(String name, int n);
+
+  /// No description provided for @quoteAlbumNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đính kèm'**
+  String get quoteAlbumNone;
+
+  /// No description provided for @quoteNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chọn và trả tiền thì buổi chụp được xác nhận luôn. Sửa hoặc rút báo giá được tới lúc đó.'**
+  String get quoteNote;
+
+  /// No description provided for @quoteSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi báo giá'**
+  String get quoteSend;
+
+  /// No description provided for @quoteSaveEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu báo giá'**
+  String get quoteSaveEdit;
+
+  /// No description provided for @quoteSentToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi báo giá'**
+  String get quoteSentToast;
+
+  /// No description provided for @quoteSavedToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu báo giá'**
+  String get quoteSavedToast;
+
+  /// No description provided for @quoteDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ báo giá?'**
+  String get quoteDiscardTitle;
+
+  /// No description provided for @quoteDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ'**
+  String get quoteDiscard;
+
+  /// No description provided for @quoteKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục sửa'**
+  String get quoteKeep;
+
+  /// No description provided for @quoteErrPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập giá lớn hơn 0'**
+  String get quoteErrPrice;
+
+  /// No description provided for @quoteErrMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời nhắn cần 20–500 ký tự'**
+  String get quoteErrMessage;
+
+  /// No description provided for @quoteErrContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ số điện thoại hoặc link khỏi lời nhắn'**
+  String get quoteErrContact;
+
+  /// No description provided for @quoteErrLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có 20 báo giá chờ khách. Rút bớt để gửi thêm.'**
+  String get quoteErrLimit;
+
+  /// No description provided for @quoteErrDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày này bạn đã có lịch'**
+  String get quoteErrDayTaken;
+
+  /// No description provided for @quoteErrNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa đủ điều kiện báo giá việc này'**
+  String get quoteErrNotEligible;
+
+  /// No description provided for @quoteErrClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đã đóng, không gửi được báo giá'**
+  String get quoteErrClosed;
+
+  /// No description provided for @quoteErrInCheckout.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đang thanh toán báo giá này, chưa sửa hay rút được.'**
+  String get quoteErrInCheckout;
+
+  /// No description provided for @quoteErrProposal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày trong khoảng của khách'**
+  String get quoteErrProposal;
+
   /// No description provided for @chatKindCollab.
   ///
   /// In vi, this message translates to:

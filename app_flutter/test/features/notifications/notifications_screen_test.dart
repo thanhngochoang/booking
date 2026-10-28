@@ -364,6 +364,50 @@ void main() {
     expect(find.text('stub /jobs/j1/applications'), findsOneWidget);
   });
 
+  testWidgets('a job_match row opens /jobs/:id', (tester) async {
+    final w = NotificationsWorld();
+    await _open(
+      tester,
+      role: UserRole.photographer,
+      rows: [
+        w.note(
+          'jm1',
+          type: 'job_match',
+          category: NotificationCategory.jobs,
+          title: 'Khách đang tìm thợ chụp kỷ yếu tại Q1',
+          body: 'Ngân sách 2.000.000đ · Báo giá ngay',
+          target: '/jobs/job_123',
+        ),
+      ],
+    );
+    expect(find.byIcon(AppIcons.work), findsOneWidget);
+    await tester.tap(find.text('Khách đang tìm thợ chụp kỷ yếu tại Q1'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /jobs/job_123'), findsOneWidget);
+  });
+
+  testWidgets('a quote_accepted row opens /b/:id', (tester) async {
+    final w = NotificationsWorld();
+    await _open(
+      tester,
+      role: UserRole.photographer,
+      rows: [
+        w.note(
+          'qa1',
+          type: 'quote_accepted',
+          category: NotificationCategory.booking,
+          title: 'Khách đã chấp nhận báo giá của bạn',
+          body: 'Lịch chụp đã được xác nhận · Mã đơn BK_01',
+          target: '/b/BK_01',
+        ),
+      ],
+    );
+    expect(find.byIcon(AppIcons.work), findsOneWidget);
+    await tester.tap(find.text('Khách đã chấp nhận báo giá của bạn'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /b/BK_01'), findsOneWidget);
+  });
+
   testWidgets('an event_host_invited row opens /events/e1/manage', (
     tester,
   ) async {

@@ -9906,6 +9906,880 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get jobStatusOpen => 'Đang nhận báo giá';
+
+  @override
+  String get jobStatusAwarded => 'Đã chọn thợ';
+
+  @override
+  String get jobStatusClosed => 'Đã đóng';
+
+  @override
+  String get jobStatusExpired => 'Hết hạn';
+
+  @override
+  String get quoteStatusPending => 'đang chờ khách';
+
+  @override
+  String get quoteStatusAccepted => 'được chọn';
+
+  @override
+  String get quoteStatusNotSelected => 'không được chọn';
+
+  @override
+  String get quoteStatusDeclined => 'khách đã từ chối';
+
+  @override
+  String get quoteStatusWithdrawn => 'đã rút';
+
+  @override
+  String jobLeftDays(int n) {
+    return 'còn $n ngày';
+  }
+
+  @override
+  String jobLeftHours(int n) {
+    return 'còn $n giờ';
+  }
+
+  @override
+  String jobBudgetRange(String min, String max) {
+    return '$min–$max';
+  }
+
+  @override
+  String get jobOpenBudget => 'Để thợ báo giá';
+
+  @override
+  String jobDurationHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String get jobSpecialtyOther => 'Khác';
+
+  @override
+  String get jobErrGeneric => 'Có lỗi xảy ra. Thử lại sau.';
+
+  @override
+  String get jobErrNetwork => 'Mất kết nối. Thử lại khi có mạng.';
+
+  @override
+  String get jobErrNotAccepting =>
+      'Hồ sơ của bạn chưa nhận đơn nên chưa gửi được báo giá.';
+
+  @override
+  String get jobErrPhone => 'Thêm số điện thoại để tiếp tục.';
+
+  @override
+  String fitPill(int n) {
+    return 'Hợp $n%';
+  }
+
+  @override
+  String get quoteInBudget => 'trong ngân sách';
+
+  @override
+  String quoteInBudgetRange(String range) {
+    return 'trong ngân sách $range';
+  }
+
+  @override
+  String quoteOverBudget(String amount) {
+    return 'vượt $amount';
+  }
+
+  @override
+  String get quoteInvited => 'Được mời';
+
+  @override
+  String quoteFree(String date) {
+    return 'Rảnh $date';
+  }
+
+  @override
+  String get quoteView => 'Xem';
+
+  @override
+  String get quoteBookmark => 'Lưu báo giá';
+
+  @override
+  String get quoteUnbookmark => 'Bỏ lưu báo giá';
+
+  @override
+  String get quoteWithdrawnTag => 'Đã rút';
+
+  @override
+  String quoteEditedChip(int n) {
+    return '$n ảnh chỉnh';
+  }
+
+  @override
+  String quoteDaysChip(int n) {
+    return 'giao $n ngày';
+  }
+
+  @override
+  String quoteRevisionsChip(int n) {
+    return 'sửa $n lần';
+  }
+
+  @override
+  String quoteTrustSessions(int n) {
+    return '$n buổi';
+  }
+
+  @override
+  String quoteTrustAwards(int n) {
+    return '$n giải';
+  }
+
+  @override
+  String get jobYouInvited => 'Bạn được mời';
+
+  @override
+  String get jobArtistOnly => 'Chỉ Nhiếp ảnh gia';
+
+  @override
+  String jobArtistLock(int k) {
+    return 'Chỉ NAG báo giá được · bạn còn $k giải đã duyệt nữa';
+  }
+
+  @override
+  String jobCardMeta(int n, int m) {
+    return '$n báo giá · còn $m ngày';
+  }
+
+  @override
+  String jobQuotes(int n) {
+    return '$n báo giá';
+  }
+
+  @override
+  String jobQuotesNew(int n) {
+    return '$n mới';
+  }
+
+  @override
+  String get jobOpenBooking => 'Mở buổi chụp →';
+
+  @override
+  String jobExpiredNoPick(int n) {
+    return 'Hết hạn · $n báo giá · chưa chọn ai';
+  }
+
+  @override
+  String get jobRepost => 'Đăng lại';
+
+  @override
+  String jobDistance(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get jobPostTitle => 'Đăng việc';
+
+  @override
+  String jobPostStep(int n) {
+    return '$n / 2';
+  }
+
+  @override
+  String get jobPostWhat => 'Bạn cần chụp gì?';
+
+  @override
+  String get jobPostName => 'Tiêu đề · bắt buộc';
+
+  @override
+  String jobPostNameCount(int n) {
+    return '$n / 60';
+  }
+
+  @override
+  String get jobPostDesc => 'Mô tả';
+
+  @override
+  String get jobPostRefs => 'Ảnh tham khảo · tuỳ chọn · tối đa 5';
+
+  @override
+  String get jobPostAddRef => 'Thêm ảnh tham khảo';
+
+  @override
+  String get jobPostPrivacy =>
+      'Đừng ghi số điện thoại hay địa chỉ cụ thể. Thợ ảnh chỉ thấy quận cho tới khi bạn chọn người.';
+
+  @override
+  String get jobPostNext => 'Tiếp tục';
+
+  @override
+  String get jobPostFixed => 'Ngày cố định';
+
+  @override
+  String get jobPostFlexible => 'Linh hoạt';
+
+  @override
+  String get jobPostWhen => 'Khi nào';
+
+  @override
+  String get jobPostWhenEmpty => 'Chọn ngày giờ';
+
+  @override
+  String jobPostWhenFixedValue(String day, String range, String duration) {
+    return '$day · $range · $duration';
+  }
+
+  @override
+  String jobPostWhenFlexValue(String from, String to, String duration) {
+    return '$from–$to · $duration';
+  }
+
+  @override
+  String get jobPostFlexFrom => 'Từ ngày';
+
+  @override
+  String get jobPostFlexTo => 'Đến ngày';
+
+  @override
+  String get jobPostDuration => 'Thời lượng';
+
+  @override
+  String get jobPostStart => 'Bắt đầu';
+
+  @override
+  String get jobPostEnd => 'Kết thúc';
+
+  @override
+  String get jobPostArea => 'Khu vực';
+
+  @override
+  String get jobPostAreaEmpty => 'Chọn quận, thành phố';
+
+  @override
+  String get jobPostAreaSub => 'Địa chỉ cụ thể chỉ gửi cho người được chọn';
+
+  @override
+  String get jobPostBudgetFrom => 'Ngân sách từ';
+
+  @override
+  String get jobPostBudgetTo => 'Đến';
+
+  @override
+  String get jobPostBudgetOpen => 'Để thợ ảnh báo giá';
+
+  @override
+  String get jobPostWants => 'Bàn giao mong muốn';
+
+  @override
+  String jobPostWantsValue(int n, int days) {
+    return '≥ $n ảnh chỉnh · trong $days ngày';
+  }
+
+  @override
+  String get jobPostWantsEdited => 'Số ảnh chỉnh tối thiểu';
+
+  @override
+  String get jobPostWantsDays => 'Giao trong (ngày)';
+
+  @override
+  String get jobPostWantsAny => 'Không yêu cầu';
+
+  @override
+  String get jobPostWho => 'Ai được báo giá';
+
+  @override
+  String get jobPostWhoAll => 'Tất cả';
+
+  @override
+  String get jobPostWhoArtist => 'Chỉ Nhiếp ảnh gia';
+
+  @override
+  String get jobPostWhoStudio => 'Chỉ Studio';
+
+  @override
+  String get jobPostDeadline => 'Nhận báo giá trong';
+
+  @override
+  String jobPostDeadlineValue(int n, String date) {
+    return '$n ngày · tới $date';
+  }
+
+  @override
+  String get jobPostSubmit => 'Đăng việc';
+
+  @override
+  String get jobPostSave => 'Lưu thay đổi';
+
+  @override
+  String jobPostPosted(int n) {
+    return 'Đã đăng · đang gợi ý cho $n thợ ảnh phù hợp';
+  }
+
+  @override
+  String get jobPostPostedNone =>
+      'Đã đăng · thợ ảnh trong khu vực sẽ thấy việc của bạn';
+
+  @override
+  String get jobPostSavedToast => 'Đã lưu thay đổi';
+
+  @override
+  String get jobPostSaveDraftTitle => 'Lưu nháp?';
+
+  @override
+  String get jobPostSaveDraftBody =>
+      'Lần sau mở Đăng việc, bạn tiếp tục từ chỗ này.';
+
+  @override
+  String get jobPostSaveDraft => 'Lưu nháp';
+
+  @override
+  String get jobPostDiscard => 'Bỏ nháp';
+
+  @override
+  String get jobPostLimit =>
+      'Bạn đang có 3 việc mở. Đóng bớt một việc để đăng tiếp.';
+
+  @override
+  String get jobErrTitle => 'Tiêu đề cần 10–60 ký tự';
+
+  @override
+  String get jobErrContactTitle => 'Bỏ số điện thoại hoặc link khỏi tiêu đề';
+
+  @override
+  String get jobErrContactDesc => 'Bỏ số điện thoại hoặc link khỏi mô tả';
+
+  @override
+  String get jobErrDescLength => 'Mô tả tối đa 1000 ký tự';
+
+  @override
+  String get jobErrSchedule => 'Ngày chụp phải sau hạn nhận báo giá';
+
+  @override
+  String get jobErrEndAfterStart => 'Giờ kết thúc phải sau giờ bắt đầu';
+
+  @override
+  String get jobErrFlexRange => 'Khoảng ngày tối đa 30 ngày';
+
+  @override
+  String get jobErrBudget => 'Ngân sách “đến” phải từ “từ” trở lên';
+
+  @override
+  String get jobErrArea => 'Chọn khu vực';
+
+  @override
+  String get jobErrRefUpload => 'Chưa tải được ảnh. Thử lại.';
+
+  @override
+  String get jobsTab => 'Việc đăng';
+
+  @override
+  String get jobNewPost => 'Đăng việc mới';
+
+  @override
+  String get jobEmptyTitle =>
+      'Chưa tìm được thợ ưng ý? Đăng việc để thợ ảnh báo giá cho bạn';
+
+  @override
+  String get jobEmptyAction => 'Đăng việc';
+
+  @override
+  String jobPostedOn(String date, int n) {
+    return 'Đăng $date · còn $n ngày nhận báo giá';
+  }
+
+  @override
+  String get jobStatQuotes => 'Báo giá';
+
+  @override
+  String get jobViews => 'Lượt xem';
+
+  @override
+  String get jobInvitedCount => 'Đã mời';
+
+  @override
+  String get jobLatest => 'Báo giá mới';
+
+  @override
+  String get jobSeeAll => 'Xem tất cả';
+
+  @override
+  String get jobInvite => 'Mời thợ ảnh báo giá';
+
+  @override
+  String jobCompare(int n) {
+    return 'So sánh $n báo giá';
+  }
+
+  @override
+  String get jobCompareNone => 'Chưa có báo giá';
+
+  @override
+  String get jobMenuEdit => 'Sửa';
+
+  @override
+  String get jobExtend => 'Gia hạn 7 ngày';
+
+  @override
+  String get jobClose => 'Đóng việc';
+
+  @override
+  String get jobCloseTitle => 'Đóng việc này?';
+
+  @override
+  String jobCloseBody(int n) {
+    return '$n thợ ảnh đã báo giá sẽ được báo là việc đã đóng.';
+  }
+
+  @override
+  String get jobClosedToast => 'Đã đóng việc';
+
+  @override
+  String jobExtendedToast(String date) {
+    return 'Đã gia hạn tới $date';
+  }
+
+  @override
+  String get jobExtendNotEligible => 'Việc này không gia hạn thêm được';
+
+  @override
+  String get jobInCheckout => 'Bạn đang thanh toán một báo giá của việc này.';
+
+  @override
+  String get jobInviteTitle => 'Mời thợ ảnh báo giá';
+
+  @override
+  String jobInviteLeft(int n) {
+    return 'Còn mời được $n người';
+  }
+
+  @override
+  String jobInviteSend(int n) {
+    return 'Gửi lời mời ($n)';
+  }
+
+  @override
+  String get jobInvitedTag => 'Đã mời';
+
+  @override
+  String jobInvitedToast(int n) {
+    return 'Đã mời $n thợ ảnh';
+  }
+
+  @override
+  String get jobInviteEmpty => 'Chưa có thợ ảnh phù hợp trong khu vực';
+
+  @override
+  String get jobInviteFull => 'Việc này đã mời đủ 5 người';
+
+  @override
+  String get findPostJob => 'Không tìm thấy? Đăng việc để thợ ảnh báo giá';
+
+  @override
+  String quotesTitle(int n) {
+    return '$n báo giá';
+  }
+
+  @override
+  String get quotesSortFit => 'Phù hợp nhất';
+
+  @override
+  String get quotesSortPrice => 'Giá thấp';
+
+  @override
+  String get quotesSortRating => 'Đánh giá';
+
+  @override
+  String get quotesSaved => 'Đã lưu';
+
+  @override
+  String get quotesEmptyTitle => 'Đang chờ báo giá đầu tiên';
+
+  @override
+  String get quotesSavedEmpty => 'Bạn chưa lưu báo giá nào';
+
+  @override
+  String quoteCounter(int i, int n) {
+    return 'Báo giá $i / $n';
+  }
+
+  @override
+  String get quoteProfile => 'Hồ sơ';
+
+  @override
+  String get quoteM1 => 'Sau buổi chụp';
+
+  @override
+  String get quoteM1Sub => 'thả cho thợ ảnh';
+
+  @override
+  String get quoteM2 => 'Khi bạn đồng ý ảnh + 48 giờ kiểm tra';
+
+  @override
+  String quoteM2Sub(int days) {
+    return 'hoặc tự đồng ý sau $days ngày';
+  }
+
+  @override
+  String get quoteTileEdited => 'ảnh chỉnh';
+
+  @override
+  String get quoteTileRaw => 'ảnh gốc';
+
+  @override
+  String get quoteTileDays => 'ngày giao';
+
+  @override
+  String get quoteTileRevisions => 'lần sửa';
+
+  @override
+  String quoteAlbum(String name) {
+    return 'Album · $name';
+  }
+
+  @override
+  String quoteAlbumSub(int n) {
+    return '$n ảnh · đính kèm báo giá';
+  }
+
+  @override
+  String quoteEscrow(String amount) {
+    return 'Bạn trả $amount ngay, app giữ toàn bộ và chỉ chuyển cho thợ ảnh theo từng mốc.';
+  }
+
+  @override
+  String quoteChoose(String amount) {
+    return 'Chọn và thanh toán $amount';
+  }
+
+  @override
+  String get quoteAsk => 'Nhắn tin hỏi thêm';
+
+  @override
+  String get quoteDecline => 'Từ chối báo giá';
+
+  @override
+  String get quoteDeclineTitle => 'Từ chối báo giá này?';
+
+  @override
+  String get quoteDeclineReason => 'Lý do · tuỳ chọn';
+
+  @override
+  String get quoteDeclineConfirm => 'Từ chối';
+
+  @override
+  String get quoteDeclinedToast => 'Đã từ chối báo giá';
+
+  @override
+  String get quoteUnavailableWithdrawn => 'Thợ ảnh đã rút báo giá này';
+
+  @override
+  String get quoteUnavailableClosed => 'Việc không còn nhận báo giá';
+
+  @override
+  String get quoteDayTaken => 'Thợ ảnh này đã kín lịch ngày đó';
+
+  @override
+  String get quoteNotAccepting => 'Thợ ảnh này tạm thời chưa nhận đơn';
+
+  @override
+  String get quotePayTitle => 'Xem lại';
+
+  @override
+  String get quotePayAddress => 'Địa chỉ cụ thể · bắt buộc';
+
+  @override
+  String get quotePayAddressHint => 'Số nhà, đường, phường';
+
+  @override
+  String get quotePayAddressNote => 'Chỉ thợ ảnh bạn chọn thấy địa chỉ này.';
+
+  @override
+  String get quotePayNote => 'Ghi chú · tuỳ chọn';
+
+  @override
+  String quotePayLine(String name) {
+    return 'Báo giá của $name';
+  }
+
+  @override
+  String get quotePayTotal => 'Thanh toán 100%';
+
+  @override
+  String get quotePayPolicy =>
+      'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.';
+
+  @override
+  String quotePayButton(String amount) {
+    return 'Thanh toán $amount';
+  }
+
+  @override
+  String get quotePayErrAddress => 'Nhập địa chỉ cụ thể (3–120 ký tự)';
+
+  @override
+  String get workTabToday => 'Hôm nay';
+
+  @override
+  String workTabJobs(int n) {
+    return 'Việc đang tuyển · $n';
+  }
+
+  @override
+  String get workTabQuotes => 'Báo giá của tôi';
+
+  @override
+  String get workJobsTitle => 'Việc đang tuyển';
+
+  @override
+  String get workQuotesTitle => 'Báo giá của tôi';
+
+  @override
+  String get openJobsFit => 'Hợp với bạn';
+
+  @override
+  String get openJobsNear => 'Gần tôi';
+
+  @override
+  String get openJobsBudget => 'Ngân sách';
+
+  @override
+  String get openJobsNeedSetupTitle => 'Hoàn tất hồ sơ để thấy việc đang tuyển';
+
+  @override
+  String get openJobsNeedSetupAction => 'Hoàn tất hồ sơ';
+
+  @override
+  String get openJobsEmpty =>
+      'Chưa có việc hợp với bạn. Thêm thể loại hoặc mở rộng khu vực.';
+
+  @override
+  String get openJobsEmptyAction => 'Sửa thể loại';
+
+  @override
+  String get myQuotesPending => 'Đang chờ';
+
+  @override
+  String get myQuotesChosen => 'Được chọn';
+
+  @override
+  String get myQuotesNotChosen => 'Không được chọn';
+
+  @override
+  String get myQuotesWithdrawn => 'Đã rút';
+
+  @override
+  String get myQuotesAuto => 'Tự rút · bạn đã kín lịch ngày này';
+
+  @override
+  String get myQuotesEmpty => 'Bạn chưa gửi báo giá nào';
+
+  @override
+  String jobHirer(int n) {
+    return 'Đã thuê $n lần';
+  }
+
+  @override
+  String get jobPhoneOk => 'SĐT đã xác minh';
+
+  @override
+  String get jobFree => 'Bạn rảnh ngày này';
+
+  @override
+  String get jobBusy => 'Bạn đã có lịch';
+
+  @override
+  String get jobPending => 'Bạn có yêu cầu đang chờ';
+
+  @override
+  String jobAreaLine(String area, String km) {
+    return '$area · cách bạn $km km';
+  }
+
+  @override
+  String get jobAreaSub => 'Địa chỉ cụ thể gửi khi bạn được chọn';
+
+  @override
+  String jobBudgetLine(String range) {
+    return 'Ngân sách $range';
+  }
+
+  @override
+  String jobWantsLine(int n, int days) {
+    return 'Bàn giao ≥ $n ảnh chỉnh · trong $days ngày';
+  }
+
+  @override
+  String jobCompetition(int n, int m) {
+    return '$n thợ ảnh đã báo giá · còn $m ngày';
+  }
+
+  @override
+  String get jobAsk => 'Hỏi khách';
+
+  @override
+  String get jobQuote => 'Gửi báo giá';
+
+  @override
+  String get jobEditQuote => 'Sửa báo giá';
+
+  @override
+  String get jobWithdraw => 'Rút báo giá';
+
+  @override
+  String get jobWithdrawTitle => 'Rút báo giá?';
+
+  @override
+  String get jobWithdrawBody =>
+      'Khách sẽ không thấy báo giá này nữa. Bạn có thể gửi lại khi việc còn mở.';
+
+  @override
+  String get jobWithdrawnToast => 'Đã rút báo giá';
+
+  @override
+  String jobMine(String amount, String status) {
+    return 'Báo giá của bạn · $amount · $status';
+  }
+
+  @override
+  String get jobChosen => 'Khách đã chọn bạn';
+
+  @override
+  String get jobOpenShoot => 'Mở buổi chụp';
+
+  @override
+  String get jobClosedNotice => 'Việc đã đóng';
+
+  @override
+  String get jobDayBusy => 'Ngày này bạn đã có lịch';
+
+  @override
+  String get jobArtistLockButton => 'Chỉ Nhiếp ảnh gia báo giá được';
+
+  @override
+  String get jobNotFound => 'Không tìm thấy việc này';
+
+  @override
+  String get quoteSheetTitle => 'Gửi báo giá';
+
+  @override
+  String quoteSheetBudget(String range) {
+    return 'Ngân sách khách $range';
+  }
+
+  @override
+  String get quoteBasedOn => 'Dựa trên gói · tuỳ chọn';
+
+  @override
+  String get quoteBasedOnNone => 'Không dựa trên gói';
+
+  @override
+  String get quoteProposal => 'Ngày chụp đề xuất · bắt buộc';
+
+  @override
+  String quoteProposalHint(String from, String to) {
+    return 'Trong khoảng $from–$to';
+  }
+
+  @override
+  String get quotePrice => 'Giá báo · bắt buộc';
+
+  @override
+  String quoteMilestones(String a, String b) {
+    return 'Mốc 1 sau buổi chụp $a · Mốc 2 khi khách duyệt ảnh $b';
+  }
+
+  @override
+  String get quoteEditedField => 'Ảnh chỉnh';
+
+  @override
+  String get quoteDeliveryField => 'Giao trong';
+
+  @override
+  String quoteDeliveryValue(int n) {
+    return '$n ngày';
+  }
+
+  @override
+  String get quoteRevisionsField => 'Sửa';
+
+  @override
+  String quoteRevisionsValue(int n) {
+    return '$n lần';
+  }
+
+  @override
+  String get quoteMessage => 'Lời nhắn · bắt buộc';
+
+  @override
+  String quoteMessageCount(int n) {
+    return '$n / 500';
+  }
+
+  @override
+  String get quoteAlbumField => 'Album đính kèm · tuỳ chọn';
+
+  @override
+  String quoteAlbumValue(String name, int n) {
+    return '$name · $n ảnh';
+  }
+
+  @override
+  String get quoteAlbumNone => 'Không đính kèm';
+
+  @override
+  String get quoteNote =>
+      'Khách chọn và trả tiền thì buổi chụp được xác nhận luôn. Sửa hoặc rút báo giá được tới lúc đó.';
+
+  @override
+  String get quoteSend => 'Gửi báo giá';
+
+  @override
+  String get quoteSaveEdit => 'Lưu báo giá';
+
+  @override
+  String get quoteSentToast => 'Đã gửi báo giá';
+
+  @override
+  String get quoteSavedToast => 'Đã lưu báo giá';
+
+  @override
+  String get quoteDiscardTitle => 'Bỏ báo giá?';
+
+  @override
+  String get quoteDiscard => 'Bỏ';
+
+  @override
+  String get quoteKeep => 'Tiếp tục sửa';
+
+  @override
+  String get quoteErrPrice => 'Nhập giá lớn hơn 0';
+
+  @override
+  String get quoteErrMessage => 'Lời nhắn cần 20–500 ký tự';
+
+  @override
+  String get quoteErrContact => 'Bỏ số điện thoại hoặc link khỏi lời nhắn';
+
+  @override
+  String get quoteErrLimit =>
+      'Bạn đang có 20 báo giá chờ khách. Rút bớt để gửi thêm.';
+
+  @override
+  String get quoteErrDayTaken => 'Ngày này bạn đã có lịch';
+
+  @override
+  String get quoteErrNotEligible => 'Bạn chưa đủ điều kiện báo giá việc này';
+
+  @override
+  String get quoteErrClosed => 'Việc đã đóng, không gửi được báo giá';
+
+  @override
+  String get quoteErrInCheckout =>
+      'Khách đang thanh toán báo giá này, chưa sửa hay rút được.';
+
+  @override
+  String get quoteErrProposal => 'Chọn ngày trong khoảng của khách';
+
+  @override
   String get chatKindCollab => 'Cộng tác';
 
   @override

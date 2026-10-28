@@ -876,7 +876,12 @@ void main() {
       final tabs = tester.widget<SegmentedTabs<WorkSegment>>(
         find.byType(SegmentedTabs<WorkSegment>),
       );
-      expect(tabs.options.map((o) => o.label), ['Hôm nay', 'Tuyển thợ']);
+      expect(tabs.options.map((o) => o.label), [
+        'Hôm nay',
+        'Việc đang tuyển · 0',
+        'Báo giá của tôi',
+        'Tuyển thợ',
+      ]);
       await tester.tap(segment('Tuyển thợ'));
       await _settle(tester);
       expect(_codeFinder(ScreenCodes.recruitList), findsOneWidget);

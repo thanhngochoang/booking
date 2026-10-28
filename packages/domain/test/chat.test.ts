@@ -424,4 +424,122 @@ describe('chat model and rules (Task 1)', () => {
       (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
     );
   });
+
+  describe('#139 photographer-started inquiry rules', () => {
+    it('a photographer who started an inquiry may send 3 messages before the customer replies', () => {
+      const now = new Date('2026-10-05T02:00:00Z');
+      let chat: Chat = {
+        ...baseChat,
+        startedBy: 'photographer',
+      };
+
+      // 0 sent: can send
+      assert.doesNotThrow(() => assertCanSend(chat, 'phot1', now));
+
+      // Send msg 1
+      chat = afterMessage(chat, {
+        id: 'm1',
+        chatId: chat.id,
+        senderId: 'phot1',
+        type: 'text',
+        body: 'Msg 1',
+        imagePath: null,
+        point: null,
+        system: null,
+        createdAt: now,
+      }, now);
+      assert.equal(chat.photographerMessagesBeforeReply, 1);
+      assert.doesNotThrow(() => assertCanSend(chat, 'phot1', now));
+
+      // Send msg 2
+      chat = afterMessage(chat, {
+        id: 'm2',
+        chatId: chat.id,
+        senderId: 'phot1',
+        type: 'text',
+        body: 'Msg 2',
+        imagePath: null,
+        point: null,
+        system: null,
+        createdAt: now,
+      }, now);
+      assert.equal(chat.photographerMessagesBeforeReply, 2);
+      assert.doesNotThrow(() => assertCanSend(chat, 'phot1', now));
+
+      // Send msg 3
+      chat = afterMessage(chat, {
+        id: 'm3',
+        chatId: chat.id,
+        senderId: 'phot1',
+        type: 'text',
+        body: 'Msg 3',
+        imagePath: null,
+        point: null,
+        system: null,
+        createdAt: now,
+      }, now);
+      assert.equal(chat.photographerMessagesBeforeReply, 3);
+
+      // 4th message by photographer throws limit_exceeded
+      assert.throws(
+        () => assertCanSend(chat, 'phot1', now),
+        (err: DomainError) => err.code === 'limit_exceeded',
+      );
+    });
+
+    it('the customer reply lifts the photographer limit', () => {
+      const now = new Date('2026-10-05T02:00:00Z');
+      let chat: Chat = {
+        ...baseChat,
+        startedBy: 'photographer',
+        photographerMessagesBeforeReply: 3,
+      };
+
+      // Customer replies
+      chat = afterMessage(chat, {
+        id: 'm4',
+        chatId: chat.id,
+        senderId: 'cust1',
+        type: 'text',
+        body: 'Customer reply',
+        imagePath: null,
+        point: null,
+        system: null,
+        createdAt: now,
+      }, now);
+
+      assert.ok(chat.customerRepliedAt);
+      assert.doesNotThrow(() => assertCanSend(chat, 'phot1', now));
+    });
+
+    it('a customer-started inquiry keeps today rule', () => {
+      const now = new Date('2026-10-05T02:00:00Z');
+      const chat: Chat = {
+        ...baseChat,
+        startedBy: 'customer',
+        customerMessagesBeforeReply: 3,
+      };
+
+      assert.throws(
+        () => assertCanSend(chat, 'cust1', now),
+        (err: DomainError) => err.code === 'limit_exceeded',
+      );
+      // Photographer can reply
+      assert.doesNotThrow(() => assertCanSend(chat, 'phot1', now));
+    });
+
+    it('a chat without startedBy reads as customer', () => {
+      const now = new Date('2026-10-05T02:00:00Z');
+      const chat: Chat = {
+        ...baseChat,
+        customerMessagesBeforeReply: 3,
+      };
+
+      assert.throws(
+        () => assertCanSend(chat, 'cust1', now),
+        (err: DomainError) => err.code === 'limit_exceeded',
+      );
+      assert.doesNotThrow(() => assertCanSend(chat, 'phot1', now));
+    });
+  });
 });

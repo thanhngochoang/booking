@@ -120,3 +120,9 @@ export 'package:photobooking/core/widgets/verdict_icon.dart';
 export 'package:photobooking/core/widgets/verdict_pad.dart';
 export 'package:photobooking/core/widgets/spot_card.dart';
 export 'package:photobooking/core/widgets/season_tag.dart';
+
+export 'package:photobooking/core/widgets/fit_pill.dart';
+export 'package:photobooking/core/widgets/deliverable_chips.dart';
+export 'package:photobooking/core/widgets/milestone_table.dart';
+export 'package:photobooking/core/widgets/job_card.dart';
+export 'package:photobooking/core/widgets/quote_card.dart';

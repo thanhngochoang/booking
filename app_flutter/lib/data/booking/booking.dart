@@ -178,6 +178,8 @@ abstract class Booking with _$Booking {
     String? spotScheduleId,
     String? slotOfferId,
     String? source,
+    String? jobId,
+    String? quoteId,
 
     /// The open or resolved dispute of this booking (S18, server mirror).
     String? disputeId,
@@ -359,6 +361,8 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       spotScheduleId: data['spotScheduleId'] as String?,
       slotOfferId: data['slotOfferId'] as String?,
       source: data['source'] as String?,
+      jobId: data['jobId'] as String?,
+      quoteId: data['quoteId'] as String?,
       disputeId: data['disputeId'] as String?,
       refundAccountNeeded: data['refundAccountNeeded'] == true,
       checkout: bookingCheckoutFrom(data['checkout']),

@@ -31,31 +31,55 @@ import 'package:photobooking/features/recruit/recruit_list_view.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/decline_change_sheet.dart';
 import 'package:photobooking/features/studio/return_job_sheet.dart';
+import 'package:photobooking/data/jobs/job_providers.dart';
+import 'package:photobooking/data/jobs/job_repository.dart';
+import 'package:photobooking/features/job_market/my_quotes_tab.dart';
+import 'package:photobooking/features/job_market/open_jobs_tab.dart';
 import 'package:photobooking/features/work/studio_work_cards.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
 
-/// The segments of S06.01 (`SegmentedTabs`, Decision 20 of #151): the jobs
-/// plan (#139) inserts its two between them.
-enum WorkSegment { today, recruit }
+/// The segments of S06.01 (`SegmentedTabs`, Decision 20 of #151 and #139).
+enum WorkSegment { today, jobs, quotes, recruit }
+
+typedef PhotographerWorkTab = WorkSegment;
 
 /// Tab root of `/bookings` for photographers.
 class WorkScreen extends ConsumerStatefulWidget {
-  const WorkScreen({super.key, this.showEvents = false});
+  const WorkScreen({
+    super.key,
+    this.showEvents = false,
+    this.initialTab,
+  });
 
   /// "Sự kiện của tôi" (Decision 9): the photographer's next events, drafts
   /// tagged "Nháp", under the month's numbers.
   final bool showEvents;
+
+  final String? initialTab;
 
   @override
   ConsumerState<WorkScreen> createState() => _WorkScreenState();
 }
 
 class _WorkScreenState extends ConsumerState<WorkScreen> {
-  WorkSegment _segment = WorkSegment.today;
+  late WorkSegment _segment;
 
   /// The "Tuyển thợ" filter, kept while the segment is swapped out.
   RecruitFilter _recruitFilter = const RecruitFilter();
+
+  @override
+  void initState() {
+    super.initState();
+    _segment = _parseInitialTab(widget.initialTab);
+  }
+
+  WorkSegment _parseInitialTab(String? tab) {
+    if (tab == 'jobs') return WorkSegment.jobs;
+    if (tab == 'quotes') return WorkSegment.quotes;
+    if (tab == 'recruit') return WorkSegment.recruit;
+    return WorkSegment.today;
+  }
 
   /// The request being accepted; every Nhận/Từ chối waits for it.
   String? _accepting;
@@ -196,7 +220,60 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         ref.read(clockProvider)();
     final features = ref.watch(bookingFeaturesProvider);
 
-    final recruit = _segment == WorkSegment.recruit;
+    final unseenInvites = ref.watch(unseenInviteCountProvider).value ?? 0;
+    final openJobsList =
+        ref.watch(openJobsProvider(const OpenJobsFilter())).value ?? const [];
+    final jobCount =
+        openJobsList.isNotEmpty ? openJobsList.length : unseenInvites;
+
+    final title = switch (_segment) {
+      WorkSegment.today => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.workTitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: dark
+                  ? AppColorsDark.foregroundSecondary
+                  : AppColors.foregroundSecondary,
+            ),
+          ),
+          Text(_dateTitle(context, now)),
+        ],
+      ),
+      WorkSegment.jobs => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.workTitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: dark
+                  ? AppColorsDark.foregroundSecondary
+                  : AppColors.foregroundSecondary,
+            ),
+          ),
+          Text(l10n.workJobsTitle),
+        ],
+      ),
+      WorkSegment.quotes => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.workTitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: dark
+                  ? AppColorsDark.foregroundSecondary
+                  : AppColors.foregroundSecondary,
+            ),
+          ),
+          Text(l10n.workQuotesTitle),
+        ],
+      ),
+      WorkSegment.recruit => const RecruitBarTitle(),
+    };
 
     return ScreenCode(
       ScreenCodes.work,
@@ -205,29 +282,11 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         appBar: AppBar(
           centerTitle: false,
           titleTextStyle: tabRootTitleStyle(context),
-          // Mock: small "Công việc" over today's date (S27.01: over "Tuyển
-          // thợ").
-          title: recruit
-              ? const RecruitBarTitle()
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.workTitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: dark
-                            ? AppColorsDark.foregroundSecondary
-                            : AppColors.foregroundSecondary,
-                      ),
-                    ),
-                    Text(_dateTitle(context, now)),
-                  ],
-                ),
+          title: title,
           actions: [
-            if (recruit)
+            if (_segment == WorkSegment.recruit)
               const RecruitStudioPostsAction()
-            else
+            else if (_segment == WorkSegment.today)
               IconButton(
                 key: const Key('open-calendar'),
                 tooltip: l10n.myCalendarTitle,
@@ -251,7 +310,15 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                 options: [
                   SegmentOption(
                     value: WorkSegment.today,
-                    label: l10n.workToday,
+                    label: l10n.workTabToday,
+                  ),
+                  SegmentOption(
+                    value: WorkSegment.jobs,
+                    label: l10n.workTabJobs(jobCount),
+                  ),
+                  SegmentOption(
+                    value: WorkSegment.quotes,
+                    label: l10n.workTabQuotes,
                   ),
                   SegmentOption(
                     value: WorkSegment.recruit,
@@ -263,12 +330,15 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
               ),
             ),
             Expanded(
-              child: recruit
-                  ? RecruitListView(
-                      initial: _recruitFilter,
-                      onFilterChanged: (f) => _recruitFilter = f,
-                    )
-                  : _today(context, dashboard, features, now),
+              child: switch (_segment) {
+                WorkSegment.today => _today(context, dashboard, features, now),
+                WorkSegment.jobs => const OpenJobsTab(),
+                WorkSegment.quotes => const MyQuotesTab(),
+                WorkSegment.recruit => RecruitListView(
+                  initial: _recruitFilter,
+                  onFilterChanged: (f) => _recruitFilter = f,
+                ),
+              },
             ),
           ],
         ),

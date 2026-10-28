@@ -2,7 +2,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where, or, orderBy, limit } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where, or, orderBy, limit, documentId } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
@@ -2971,6 +2971,160 @@ describe('instant', () => {
     await assertFails(updateDoc(doc(as('ic_ph'), 'instant_tracks/it_c'), point({ at: Timestamp.now() })));
     await assertFails(setDoc(doc(as('ic_ph'), 'instant_tracks/it_new'), track()));
     await assertFails(deleteDoc(doc(as('ic_ph'), 'instant_tracks/it_c')));
+  });
+});
+
+// ---- Job posts & quotes (S15–S16, #139): jobs, quotes, invites, matches, views, jobRefs storage ----
+describe('jobs rules (S15–S16, #139)', () => {
+  const seed = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+  const as = (uid) => env.authenticatedContext(uid).firestore();
+  const asSt = (uid) => env.authenticatedContext(uid).storage();
+
+  const job = (over = {}) => ({
+    customerId: 'j_cust',
+    status: 'open',
+    title: 'Chụp chân dung',
+    newQuoteCount: 0,
+    quotesSeenAt: null,
+    quoteCount: 0,
+    ...over,
+  });
+
+  before(async () => {
+    await asPhotographer('j_ph1');
+    await asPhotographer('j_ph2');
+    await seed('users/j_cust', { displayName: 'Lan', role: 'customer' });
+    await seed('users/j_cust2', { displayName: 'Hùng', role: 'customer' });
+  });
+
+  test('customer can read own job', async () => {
+    await seed('jobs/job1', job());
+    await assertSucceeds(getDoc(doc(as('j_cust'), 'jobs/job1')));
+  });
+
+  test('signed-in photographer can read open job', async () => {
+    await seed('jobs/job1', job({ status: 'open' }));
+    await assertSucceeds(getDoc(doc(as('j_ph1'), 'jobs/job1')));
+  });
+
+  test('customer non-owner cannot read someone elses open job', async () => {
+    await seed('jobs/job1', job({ status: 'open' }));
+    await assertFails(getDoc(doc(as('j_cust2'), 'jobs/job1')));
+  });
+
+  test('unauthenticated read denied', async () => {
+    await seed('jobs/job1', job({ status: 'open' }));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'jobs/job1')));
+  });
+
+  test('quoter can read closed job if quote doc exists', async () => {
+    await seed('jobs/job_closed1', job({ status: 'closed' }));
+    await seed('jobs/job_closed1/quotes/j_ph1', { photographerId: 'j_ph1', customerId: 'j_cust', quotePrice: 1500000 });
+    await assertSucceeds(getDoc(doc(as('j_ph1'), 'jobs/job_closed1')));
+  });
+
+  test('invited photographer can read closed job if invite doc exists', async () => {
+    await seed('jobs/job_closed2', job({ status: 'awarded' }));
+    await seed('jobs/job_closed2/invites/j_ph1', { photographerId: 'j_ph1', customerId: 'j_cust', invitedAt: Timestamp.now() });
+    await assertSucceeds(getDoc(doc(as('j_ph1'), 'jobs/job_closed2')));
+  });
+
+  test('random photographer cannot read closed job without quote/invite', async () => {
+    await seed('jobs/job_closed3', job({ status: 'closed' }));
+    await assertFails(getDoc(doc(as('j_ph2'), 'jobs/job_closed3')));
+  });
+
+  test('customer can reset newQuoteCount to 0 with quotesSeenAt = request.time', async () => {
+    await seed('jobs/job_seen', job({ newQuoteCount: 3, quotesSeenAt: null }));
+    await assertSucceeds(updateDoc(doc(as('j_cust'), 'jobs/job_seen'), {
+      newQuoteCount: 0,
+      quotesSeenAt: serverTimestamp(),
+    }));
+  });
+
+  test('customer cannot touch other fields (status, budget, etc.)', async () => {
+    await seed('jobs/job_edit', job({ newQuoteCount: 2 }));
+    await assertFails(updateDoc(doc(as('j_cust'), 'jobs/job_edit'), {
+      status: 'closed',
+    }));
+    await assertFails(updateDoc(doc(as('j_cust'), 'jobs/job_edit'), {
+      newQuoteCount: 1,
+      quotesSeenAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(as('j_cust'), 'jobs/job_edit'), {
+      newQuoteCount: 0,
+    }));
+    await assertFails(setDoc(doc(as('j_cust'), 'jobs/job_new'), job()));
+    await assertFails(deleteDoc(doc(as('j_cust'), 'jobs/job_edit')));
+  });
+
+  test('photographer cannot write job doc directly', async () => {
+    await seed('jobs/job1', job());
+    await assertFails(updateDoc(doc(as('j_ph1'), 'jobs/job1'), { newQuoteCount: 0, quotesSeenAt: serverTimestamp() }));
+    await assertFails(setDoc(doc(as('j_ph1'), 'jobs/job_ph'), job()));
+  });
+
+  test('quotes subcollection: customer and photographer can read; client write denied', async () => {
+    await seed('jobs/job1/quotes/j_ph1', { photographerId: 'j_ph1', customerId: 'j_cust', quotePrice: 1000000 });
+    await assertSucceeds(getDoc(doc(as('j_cust'), 'jobs/job1/quotes/j_ph1')));
+    await assertSucceeds(getDoc(doc(as('j_ph1'), 'jobs/job1/quotes/j_ph1')));
+    await assertFails(getDoc(doc(as('j_ph2'), 'jobs/job1/quotes/j_ph1')));
+    await assertFails(setDoc(doc(as('j_ph1'), 'jobs/job1/quotes/j_ph1'), { photographerId: 'j_ph1', quotePrice: 1000000 }));
+    await assertFails(updateDoc(doc(as('j_ph1'), 'jobs/job1/quotes/j_ph1'), { quotePrice: 2000000 }));
+    await assertFails(deleteDoc(doc(as('j_ph1'), 'jobs/job1/quotes/j_ph1')));
+  });
+
+  test('invites subcollection: customer and photographer can read; photographer can mark seenAt = request.time (once); client create/delete denied', async () => {
+    await seed('jobs/job1/invites/j_ph1', { photographerId: 'j_ph1', customerId: 'j_cust', seenAt: null });
+    await assertSucceeds(getDoc(doc(as('j_cust'), 'jobs/job1/invites/j_ph1')));
+    await assertSucceeds(getDoc(doc(as('j_ph1'), 'jobs/job1/invites/j_ph1')));
+    await assertFails(getDoc(doc(as('j_ph2'), 'jobs/job1/invites/j_ph1')));
+    await assertSucceeds(updateDoc(doc(as('j_ph1'), 'jobs/job1/invites/j_ph1'), { seenAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('j_ph1'), 'jobs/job1/invites/j_ph1'), { seenAt: serverTimestamp() }));
+    await seed('jobs/job1/invites/j_ph2', { photographerId: 'j_ph2', customerId: 'j_cust', seenAt: null });
+    await assertFails(updateDoc(doc(as('j_cust'), 'jobs/job1/invites/j_ph2'), { seenAt: serverTimestamp() }));
+    await assertFails(setDoc(doc(as('j_ph1'), 'jobs/job1/invites/j_ph_new'), { photographerId: 'j_ph1' }));
+    await assertFails(deleteDoc(doc(as('j_ph1'), 'jobs/job1/invites/j_ph1')));
+  });
+
+  test('matches subcollection: photographer can read; others denied; write denied', async () => {
+    await seed('jobs/job1/matches/j_ph1', { photographerId: 'j_ph1', score: 0.95 });
+    await assertSucceeds(getDoc(doc(as('j_ph1'), 'jobs/job1/matches/j_ph1')));
+    await assertFails(getDoc(doc(as('j_cust'), 'jobs/job1/matches/j_ph1')));
+    await assertFails(getDoc(doc(as('j_ph2'), 'jobs/job1/matches/j_ph1')));
+    await assertFails(setDoc(doc(as('j_ph1'), 'jobs/job1/matches/j_ph1'), { score: 1 }));
+  });
+
+  test('views subcollection: photographer can create with at = request.time when job is open; read/update/delete denied; non-photographer create denied', async () => {
+    await seed('jobs/job1', job({ status: 'open' }));
+    await assertSucceeds(setDoc(doc(as('j_ph1'), 'jobs/job1/views/j_ph1'), { at: serverTimestamp() }));
+    await assertFails(getDoc(doc(as('j_ph1'), 'jobs/job1/views/j_ph1')));
+    await assertFails(updateDoc(doc(as('j_ph1'), 'jobs/job1/views/j_ph1'), { at: serverTimestamp() }));
+    await assertFails(setDoc(doc(as('j_cust'), 'jobs/job1/views/j_cust'), { at: serverTimestamp() }));
+    await assertFails(setDoc(doc(as('j_ph1'), 'jobs/job1/views/j_ph2'), { at: serverTimestamp() }));
+    await seed('jobs/job_closed_v', job({ status: 'closed' }));
+    await assertFails(setDoc(doc(as('j_ph1'), 'jobs/job_closed_v/views/j_ph1'), { at: serverTimestamp() }));
+  });
+
+  test('collection group queries: quoter reads own quote via collection group; non-owner denied', async () => {
+    await seed('jobs/job1/quotes/j_ph1', { photographerId: 'j_ph1', customerId: 'j_cust', quotePrice: 1000000 });
+    await assertSucceeds(getDocs(query(collectionGroup(as('j_ph1'), 'quotes'), where('photographerId', '==', 'j_ph1'))));
+    await assertFails(getDocs(query(collectionGroup(as('j_ph1'), 'quotes'), where('photographerId', '==', 'j_ph2'))));
+  });
+
+  test('storage: user can upload reference image to jobRefs/{uid}/{draftId}/{file} (jpeg, <= 2MB)', async () => {
+    await assertSucceeds(uploadBytes(ref(asSt('j_cust'), 'jobRefs/j_cust/draft1/ref1.jpg'), photo(1024), jpeg));
+    await assertSucceeds(getBytes(ref(asSt('j_cust'), 'jobRefs/j_cust/draft1/ref1.jpg')));
+    await assertSucceeds(deleteObject(ref(asSt('j_cust'), 'jobRefs/j_cust/draft1/ref1.jpg')));
+  });
+
+  test('storage: uploading to another uid jobRefs denied', async () => {
+    await assertFails(uploadBytes(ref(asSt('j_cust2'), 'jobRefs/j_cust/draft1/ref1.jpg'), photo(1024), jpeg));
+  });
+
+  test('storage: non-jpeg or > 2MB file denied', async () => {
+    await assertFails(uploadBytes(ref(asSt('j_cust'), 'jobRefs/j_cust/draft1/big.jpg'), photo(3 * 1024 * 1024), jpeg));
+    await assertFails(uploadBytes(ref(asSt('j_cust'), 'jobRefs/j_cust/draft1/ref2.png'), photo(1024), { contentType: 'image/png' }));
   });
 });
 

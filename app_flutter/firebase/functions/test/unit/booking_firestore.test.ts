@@ -57,7 +57,21 @@ describe('Firestore <-> Domain booking mappers', () => {
     autoApproveAt: '2026-10-19T16:00:00.000Z',
     autoApproveNoticeAt: '2026-10-18T16:00:00.000Z',
     deliveryRound: 2,
-    source: 'spot_slot',
+    source: 'quote',
+    jobId: 'job_01',
+    quoteId: 'photog_01',
+    terms: {
+      price: 1_800_000,
+      durationMinutes: 120,
+      photoCount: 50,
+      editedCount: 30,
+      deliveryDays: 5,
+      revisions: 1,
+      milestones: [
+        { kind: 'shoot', percent: 50 },
+        { kind: 'delivery', percent: 50 },
+      ],
+    },
     spotId: 'spot_01',
     spotScheduleId: 'sched_01',
     slotOfferId: 'offer_01',
@@ -95,7 +109,21 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(docData.revisionsUsed, 1);
     assert.equal(docData.revisionsGranted, 1);
     assert.equal(docData.samplesPurged, false);
-    assert.equal(docData.source, 'spot_slot');
+    assert.equal(docData.source, 'quote');
+    assert.equal(docData.jobId, 'job_01');
+    assert.equal(docData.quoteId, 'photog_01');
+    assert.deepEqual(docData.terms, {
+      price: 1_800_000,
+      durationMinutes: 120,
+      photoCount: 50,
+      editedCount: 30,
+      deliveryDays: 5,
+      revisions: 1,
+      milestones: [
+        { kind: 'shoot', percent: 50 },
+        { kind: 'delivery', percent: 50 },
+      ],
+    });
     assert.equal(docData.spotId, 'spot_01');
     assert.equal(docData.spotScheduleId, 'sched_01');
     assert.equal(docData.slotOfferId, 'offer_01');
@@ -119,7 +147,10 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(restored.autoApproveAt, sampleBooking.autoApproveAt);
     assert.equal(restored.autoApproveNoticeAt, sampleBooking.autoApproveNoticeAt);
     assert.equal(restored.deliveryRound, 2);
-    assert.equal(restored.source, 'spot_slot');
+    assert.equal(restored.source, 'quote');
+    assert.equal(restored.jobId, 'job_01');
+    assert.equal(restored.quoteId, 'photog_01');
+    assert.deepEqual(restored.terms, sampleBooking.terms);
     assert.equal(restored.spotId, 'spot_01');
     assert.equal(restored.spotScheduleId, 'sched_01');
     assert.equal(restored.slotOfferId, 'offer_01');
@@ -244,6 +275,14 @@ describe('Firestore <-> Domain booking mappers', () => {
     }
     assert.equal('refundAccountNeeded' in docData, false);
     assert.equal('refundAccountNeeded' in (restored ?? {}), false);
+  });
+
+  it('a booking without source reads as package', () => {
+    const docData = bookingToFirestore(sampleBooking);
+    delete docData.source;
+    const restored = bookingFromFirestore('b_01', docData);
+    assert.ok(restored);
+    assert.equal(restored.source, 'package');
   });
 
   it('a booking without add-ons writes neither addons nor pickup', () => {

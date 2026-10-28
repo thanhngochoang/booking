@@ -22,10 +22,16 @@ export function toFirestoreChat(chat: Chat): Record<string, unknown> {
     members: chatMembers(chat),
     bookingId: chat.bookingId ?? null,
     bookingStatus: chat.bookingStatus ?? null,
+    jobId: chat.jobId ?? null,
+    startedBy: chat.startedBy ?? 'customer',
     photographerRepliedAt: chat.photographerRepliedAt
       ? Timestamp.fromDate(chat.photographerRepliedAt)
       : null,
     customerMessagesBeforeReply: chat.customerMessagesBeforeReply,
+    customerRepliedAt: chat.customerRepliedAt
+      ? Timestamp.fromDate(chat.customerRepliedAt)
+      : null,
+    photographerMessagesBeforeReply: chat.photographerMessagesBeforeReply ?? 0,
     lastMessageAt: chat.lastMessageAt ? Timestamp.fromDate(chat.lastMessageAt) : null,
     lastMessagePreview: chat.lastMessagePreview ?? null,
     lastSenderId: chat.lastSenderId ?? null,
@@ -53,8 +59,12 @@ export function fromFirestoreChat(id: string, data: Record<string, unknown>): Ch
     assigneeId: typeof data.assigneeId === 'string' && data.assigneeId !== '' ? data.assigneeId : null,
     bookingId: data.bookingId ? String(data.bookingId) : null,
     bookingStatus: typeof data.bookingStatus === 'string' ? data.bookingStatus : null,
+    jobId: typeof data.jobId === 'string' && data.jobId !== '' ? data.jobId : null,
+    startedBy: (data.startedBy as 'customer' | 'photographer') || 'customer',
     photographerRepliedAt: toDate(data.photographerRepliedAt),
     customerMessagesBeforeReply: Number(data.customerMessagesBeforeReply ?? 0),
+    customerRepliedAt: toDate(data.customerRepliedAt),
+    photographerMessagesBeforeReply: Number(data.photographerMessagesBeforeReply ?? 0),
     lastMessageAt: toDate(data.lastMessageAt),
     lastMessagePreview: data.lastMessagePreview ? String(data.lastMessagePreview) : null,
     lastSenderId: data.lastSenderId ? String(data.lastSenderId) : null,

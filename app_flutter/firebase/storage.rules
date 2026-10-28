@@ -130,6 +130,14 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // Job reference photos (S15–S16, #139, purpose share, 1600 px): jobRefs/{uid}/{draftId}/{file}.
+    match /jobRefs/{uid}/{draftId}/{file} {
+      allow read: if signedIn();
+      allow create: if isOwner(uid) && jpegUpTo(2 * 1024 * 1024);
+      allow update: if false;
+      allow delete: if isOwner(uid);
+    }
+
     // Anything else is closed.
     match /{allPaths=**} {
       allow read, write: if false;

@@ -10,11 +10,14 @@ import {
   notifyDeliveryRevisionRequested,
   notifyDeliveryApproved,
   notifyDeliveryExtraRound,
+  awardJobFromBooking,
+  withdrawQuotesForDay,
   type BadgeDeps,
   type ChatDeps,
   type NotifyDeps,
   type DiscoveryDeps,
   type Booking,
+  type JobDeps,
 } from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { bookingFromFirestore } from '../infra/booking_firestore.js';
@@ -41,6 +44,7 @@ export async function handleBookingWrite(
     studioDays?: (studioId: string, day: string) => Promise<unknown>;
     /** S27 (#151): collab jobs follow their booking; a new personal booking may raise the poaching flag. */
     collab?: CollabBookingSync;
+    jobs?: JobDeps;
   },
   discovery?: DiscoveryDeps,
 ): Promise<{ chatId: string | null; setBookingChatId: boolean }> {
@@ -119,6 +123,13 @@ export async function handleBookingWrite(
       );
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failed) throw new Error(`badge evaluation failed after completion: ${String(failed.reason)}`);
+    }
+
+    if (extras.jobs && after && before?.status !== 'accepted' && after.status === 'accepted') {
+      if (after.source === 'quote') {
+        await awardJobFromBooking(extras.jobs, after);
+      }
+      await withdrawQuotesForDay(extras.jobs, after.photographerId, after.day, after.jobId ?? undefined);
     }
   }
 

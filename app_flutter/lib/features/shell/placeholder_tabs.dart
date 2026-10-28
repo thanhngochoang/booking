@@ -78,6 +78,6 @@ class BookingsTab extends ConsumerWidget {
             initialTab: tab,
             highlightTicketId: highlight,
           )
-        : const WorkScreen(showEvents: true);
+        : WorkScreen(showEvents: true, initialTab: tab);
   }
 }

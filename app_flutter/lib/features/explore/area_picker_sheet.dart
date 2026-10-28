@@ -13,8 +13,24 @@ const _deviceId = '__device__';
 Future<void> showAreaPicker(BuildContext context) =>
     showAppSheet<void>(context, builder: (_) => const AreaPickerSheet());
 
+/// Opens the area picker for choosing an option without modifying the app location.
+Future<AreaOption?> pickAreaOption(BuildContext context) {
+  AreaOption? result;
+  return showAppSheet<AreaOption>(
+    context,
+    builder: (sheet) => AreaPickerSheet(
+      onSelect: (option) {
+        result = option;
+        Navigator.of(sheet).pop(option);
+      },
+    ),
+  ).then((v) => v ?? result);
+}
+
 class AreaPickerSheet extends ConsumerStatefulWidget {
-  const AreaPickerSheet({super.key});
+  const AreaPickerSheet({super.key, this.onSelect});
+
+  final ValueChanged<AreaOption>? onSelect;
 
   @override
   ConsumerState<AreaPickerSheet> createState() => _AreaPickerSheetState();
@@ -117,7 +133,7 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                     ],
                   ),
                 ),
-                if (offersDevice && folded.isEmpty)
+                if (widget.onSelect == null && offersDevice && folded.isEmpty)
                   _AreaRow(
                     key: const Key('area-use-device'),
                     label: l.areaPickerUseDevice,
@@ -206,6 +222,13 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
   Future<void> _confirm(List<AreaOption> areas) async {
     final id = _selected;
     if (id == null) {
+      return;
+    }
+    if (widget.onSelect != null) {
+      final match = areas.where((a) => a.id == id);
+      if (match.isNotEmpty) {
+        widget.onSelect!(match.first);
+      }
       return;
     }
     setState(() {

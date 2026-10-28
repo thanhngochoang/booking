@@ -8,7 +8,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
 
 ## 0. Hình dạng sử dụng của repo (đọc từ code)
 
-- `app_flutter/firebase/functions/src/index.ts`: **41 callable**, **18 trigger Firestore** (`onDocumentCreated`/`onDocumentWritten`, thêm các trigger cập nhật chỉ số S02 ở #132), **10 hàm lập lịch**. Runtime nodejs24, region `asia-southeast1`, mặc định 256 MiB, `minInstances: 0` (`config.ts`).
+- `app_flutter/firebase/functions/src/index.ts`: **51 callable** (thêm 10 callable việc đăng & báo giá của #139), **18 trigger Firestore** (`onDocumentCreated`/`onDocumentWritten`, thêm các trigger cập nhật chỉ số S02 ở #132), **10 hàm lập lịch**. Runtime nodejs24, region `asia-southeast1`, mặc định 256 MiB, `minInstances: 0` (`config.ts`).
 - 10 lịch (= 10 job Cloud Scheduler; bảng dưới liệt kê 7 từ ngày 2026-10-07 và thêm `rankSpots` của #194; `paymentClock` và `createPayouts` chưa vào bảng):
   | Hàm | Lịch | Lần chạy/tháng |
   |---|---|---|
@@ -21,7 +21,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
   | `pruneNotifications` | 03:45 hằng ngày, Asia/Ho_Chi_Minh | 30 |
   | `rankSpots` | 03:00 hằng ngày, Asia/Ho_Chi_Minh (#194, sau `BLAZE_ENABLED`) | 30 |
 - Secret: `PAYOUT_ACCOUNT_KEY` (Secret Manager); spec định danh nhắc mã hoá CCCD bằng KMS (Cloud KMS).
-- 52 composite index trong `firestore.indexes.json`.
+- 60 composite index trong `firestore.indexes.json` (tăng lên sau khi thêm các chỉ mục của S15–S16).
 - Firestore và Storage: `docs/FIREBASE-SETUP.md` ghi location **asia-southeast1 (Singapore)**, không đổi được sau khi tạo.
 - Bản đồ: spec `2026-10-01-remaining-screens.md` §vị trí dùng `geolocator` + geohash + haversine ở client, "không phụ thuộc bản đồ"; toạ độ chính xác không lên server. Chỉ S13.05 (đang đến, bản đồ + ETA) cần bản đồ thật.
 - Watermark ảnh mẫu: Cloud Function (ứng viên `sharp`), cạnh dài 1600 px, chạy khi ảnh mẫu lên Storage tạm (`2026-10-06-delivery-preview-unlock-design.md`).

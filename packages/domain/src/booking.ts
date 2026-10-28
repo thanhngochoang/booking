@@ -210,6 +210,12 @@ export interface Booking {
   readonly extraRound?: ExtraRound | null;
   readonly samplesPurgeAfter?: string | null;
   readonly samplesPurged?: boolean;
+  /** #139: linked job post when source is quote. */
+  readonly jobId?: string;
+  /** #139: accepted quote id when source is quote. */
+  readonly quoteId?: string;
+  /** #139: booking terms agreed from quote. */
+  readonly terms?: import('./job.js').BookingTerms;
   // ── Studio bookings only (#136; absent on individual bookings) ──
   readonly isStudio?: boolean;
   /** Who shoots for the studio; kept after "Trả việc" until the studio reassigns. */

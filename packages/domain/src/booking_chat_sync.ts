@@ -33,6 +33,8 @@ export async function syncBookingChat(
 
     const isRequestedTransition =
       after.status === 'requested' && (!before || before.status !== 'requested');
+    const isDirectAcceptedTransition =
+      after.status === 'accepted' && (!before || before.status === 'draft');
 
     const validClosingStatuses = ['declined', 'expired', 'cancelled', 'completed'] as const;
     const postStatuses = ['accepted', ...validClosingStatuses] as const;
@@ -40,6 +42,8 @@ export async function syncBookingChat(
     let targetStatus: string | null = null;
     if (isRequestedTransition) {
       targetStatus = 'requested';
+    } else if (isDirectAcceptedTransition) {
+      targetStatus = 'accepted';
     } else if (
       chat?.bookingId === after.id &&
       (!before || before.status !== after.status) &&
@@ -84,7 +88,7 @@ export async function syncBookingChat(
 
     let setBookingChatId = false;
 
-    if (isRequestedTransition) {
+    if (isRequestedTransition || isDirectAcceptedTransition) {
       currentChat = {
         ...currentChat,
         kind: 'booking',
@@ -96,7 +100,7 @@ export async function syncBookingChat(
         updatedAt: now,
       };
 
-      if (!existingSysMsg && sysId) {
+      if (!existingSysMsg && sysId && targetStatus) {
         const sysMsg: Message = {
           id: sysId,
           chatId,
@@ -107,7 +111,7 @@ export async function syncBookingChat(
           point: null,
           system: {
             kind: 'booking_status',
-            status: 'requested',
+            status: targetStatus,
           },
           createdAt: now,
         };
