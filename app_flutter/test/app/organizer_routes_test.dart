@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/features/entry/entry_buy_screen.dart';
+import 'package:photobooking/features/scan/scan_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
@@ -74,6 +76,14 @@ void main() {
       _screenAt(router, context, organizerPayoutPath),
       isA<PayoutAccountScreen>(),
     );
+    // Task 9: S30.05 and S30.07.
+    final buy = _screenAt(router, context, spotTicketsPath('bd'));
+    expect((buy as EntryBuyScreen).spotId, 'bd');
+    final scan = _screenAt(router, context, '/scan?booking=b1');
+    expect((scan as ScanScreen).bookingId, 'b1');
+    final gate = _screenAt(router, context, scanPath);
+    expect((gate as ScanScreen).bookingId, isNull);
+    expect(_screenAt(router, context, '/scan?event=e1'), isA<ScanScreen>());
   });
 
   test('the route constants', () {
@@ -85,5 +95,9 @@ void main() {
     expect(gateStaffPath, '/organizer/gate-staff');
     expect(organizerPayoutPath, '/organizer/payout-account');
     expect(scanPath, '/scan');
+    expect(spotTicketsPath('bd'), '/spots/bd/tickets');
+    expect(entryBuyPath('bd'), spotTicketsPath('bd'));
+    expect(scanLocation(bookingId: 'b1'), '/scan?booking=b1');
+    expect(scanLocation(), '/scan');
   });
 }

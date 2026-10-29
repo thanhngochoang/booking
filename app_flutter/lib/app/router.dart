@@ -32,6 +32,7 @@ import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/earnings/earnings_screen.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/entry/entry_buy_screen.dart';
 import 'package:photobooking/features/event_manage/manage_event_screen.dart';
 import 'package:photobooking/features/event_chat/event_chat_screen.dart';
 import 'package:photobooking/features/event_manage/my_events_screen.dart';
@@ -438,6 +439,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           spotId: state.pathParameters['spotId']!,
           date: state.uri.queryParameters['date'],
         ),
+      ),
+      // S30.05: entry tickets of a spot for one visit day.
+      GoRoute(
+        path: '/spots/:spotId/tickets',
+        builder: (_, state) =>
+            EntryBuyScreen(spotId: state.pathParameters['spotId']!),
       ),
       // S30 organizers (#223): open to any signed-in user; the screens and
       // the callables check the organizer document.

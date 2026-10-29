@@ -149,6 +149,8 @@ class BookingFlowState {
     this.pickupName = '',
     this.droppedAddonNames = const [],
     this.spot,
+    this.entryOn = true,
+    this.entryPicks,
   });
 
   final BookingStep step;
@@ -184,6 +186,13 @@ class BookingFlowState {
 
   /// Set when booking from a spot (S29.02, S29.06).
   final SpotBookingContext? spot;
+
+  /// S04.03-entry: "Vé vào cửa" switch (on by default).
+  final bool entryOn;
+
+  /// S04.03-entry: the customer's tickets per type; null until changed
+  /// (one ticket of the first type).
+  final Map<String, int>? entryPicks;
 
   /// A slot-offer booking (S29.06): opens on S04.03, no add-ons or pickup.
   bool get isSlot => spot?.offer != null;
@@ -305,6 +314,8 @@ class BookingFlowState {
     String? pickupName,
     List<String>? droppedAddonNames,
     SpotBookingContext? spot,
+    bool? entryOn,
+    Map<String, int>? entryPicks,
   }) {
     return BookingFlowState(
       step: step ?? this.step,
@@ -330,6 +341,8 @@ class BookingFlowState {
       pickupName: pickupName ?? this.pickupName,
       droppedAddonNames: droppedAddonNames ?? this.droppedAddonNames,
       spot: spot ?? this.spot,
+      entryOn: entryOn ?? this.entryOn,
+      entryPicks: entryPicks ?? this.entryPicks,
     );
   }
 }

@@ -136,11 +136,17 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         );
       case BookingErrorCode.deadlinePassed:
       case BookingErrorCode.notFound:
-      // S30: the ticket day closed or sold out (S04.03-entry copy: Task 9).
-      case BookingErrorCode.dayClosed:
-      case BookingErrorCode.soldOutDay:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookTryAgain)),
+        );
+      // S04.03-entry: the tickets' day closed or sold out meanwhile.
+      case BookingErrorCode.dayClosed:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.s0403_dayClosed)),
+        );
+      case BookingErrorCode.soldOutDay:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.s0403_soldOutDay)),
         );
       case BookingErrorCode.notEligible:
         ScaffoldMessenger.of(context).showSnackBar(
