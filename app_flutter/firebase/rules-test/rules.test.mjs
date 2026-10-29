@@ -3498,6 +3498,37 @@ describe('S30 organizers, entry tickets and passes', () => {
     await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), 'spot_claims/s30_org/c1/hd.pdf')));
   });
 
+  // Task 10 (carried from Task 8): S11.02-venue-consent and S30.03 "Sự kiện ở đây chờ bạn đồng ý". A draft
+  // that waits for the venue is read by the manager of its venue spot too; nobody else gains a read.
+  test('the venue manager reads a pending-venue draft at their spot; another organizer cannot', async () => {
+    await seed('spots/s30_vspot', { name: 'Bãi đá sông Hồng', managedBy: 's30_org' });
+    await seed('spots/s30_vother', { name: 'Vườn khác', managedBy: 's30_org2' });
+    const venue = { kind: 'managed_spot', spotId: 's30_vspot', entryFee: { included: true, amountVnd: null }, commitmentAt: null, termsVersion: '2026-10-18' };
+    const draft = {
+      host: { type: 'photographer', id: 's30_ph', name: 'Minh Trí', avatarUrl: null, verified: true },
+      hostId: 's30_ph', createdBy: 's30_ph', status: 'draft', type: 'photo_walk', title: 'Photo walk cúc hoạ mi',
+      venue, venueConsent: 'pending', publishedAt: null,
+    };
+    await seed('events/s30_vev', draft);
+    await seed('events/s30_vev_none', { ...draft, venue: null, venueConsent: 'not_required' });
+    // The manager of the venue spot reads it, and lists the spot's pending requests.
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'events/s30_vev')));
+    await assertSucceeds(getDocs(query(collection(as('s30_org'), 'events'),
+      where('venue.spotId', '==', 's30_vspot'), where('venueConsent', '==', 'pending'))));
+    // Another organizer (manager of another spot), a stranger and gate staff do not.
+    await assertFails(getDoc(doc(as('s30_org2'), 'events/s30_vev')));
+    await assertFails(getDocs(query(collection(as('s30_org2'), 'events'),
+      where('venue.spotId', '==', 's30_vspot'), where('venueConsent', '==', 'pending'))));
+    await assertFails(getDoc(doc(as('s30_stranger'), 'events/s30_vev')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'events/s30_vev')));
+    // A draft without a venue stays private to its manager (the guard does not error into a read).
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_none')));
+    await assertSucceeds(getDoc(doc(as('s30_ph'), 'events/s30_vev_none')));
+    // Read only: the venue manager writes nothing and reads no registrations.
+    await assertFails(setDoc(doc(as('s30_org'), 'events/s30_vev'), { ...draft, venueConsent: 'accepted' }));
+    await assertFails(getDocs(collection(as('s30_org'), 'events/s30_vev/registrations')));
+  });
+
   test('Storage spots/{spotId}/…: the spot\'s manager adds a JPEG cover; nobody else writes', async () => {
     await seed('spots/s30_spot2', { name: 'Bãi đá', managedBy: 's30_org' });
     const st = env.authenticatedContext('s30_org').storage();

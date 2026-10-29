@@ -842,6 +842,16 @@ service cloud.firestore {
             || staffIs('admin')
             || (staffIs('sales') && e.createdBy == request.auth.uid));
     }
+    // S30 Decision 16 (Task 10): the manager of the spot an event's venue names. Read only: it lets
+    // that manager read the event (a draft waiting for their consent included), nothing below it.
+    // Guarded so an event without a venue (null, or no spotId) is simply false, never an error.
+    function venueManagerOf(e) {
+      return signedIn()
+        && e.get('venue', null) is map
+        && e.venue.get('spotId', null) is string
+        && get(/databases/$(database)/documents/spots/$(e.venue.spotId)).data.get('managedBy', null)
+             == request.auth.uid;
+    }
     function eventDoc(eventId) {
       return get(/databases/$(database)/documents/events/$(eventId)).data;
     }
@@ -861,13 +871,18 @@ service cloud.firestore {
       allow get: if signedIn()
         && ((resource.data.status != 'draft'
              && (resource.data.status != 'cancelled' || resource.data.publishedAt != null))
-            || eventManager(resource.data));
+            || eventManager(resource.data)
+            || venueManagerOf(resource.data));
       // A public list must filter status (S11.01 uses status in [open, full]); the creator and
       // the named host list their own drafts with createdBy == uid or hostId == uid.
+      // S30.03 "Sự kiện ở đây chờ bạn đồng ý" lists venue.spotId == its spot (and venueConsent ==
+      // 'pending'); the spot is read from the query's venue.spotId (Task 10).
       allow list: if signedIn()
         && (resource.data.status in ['open', 'full', 'closed', 'completed']
             || resource.data.createdBy == request.auth.uid
-            || resource.data.hostId == request.auth.uid);
+            || resource.data.hostId == request.auth.uid
+            || get(/databases/$(database)/documents/spots/$(resource.data.venue.spotId)).data.get('managedBy', null)
+                 == request.auth.uid);
       allow write: if false;
 
       // S11.05 timeline: visible rows for everyone signed in; pending and hidden rows for managers.
