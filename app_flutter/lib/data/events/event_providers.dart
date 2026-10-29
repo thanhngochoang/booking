@@ -41,6 +41,13 @@ final hostInvitationsProvider = StreamProvider.autoDispose<List<EventDetail>>(
   (ref) => ref.watch(eventRepositoryProvider).watchHostInvitations(),
 );
 
+/// S30.03: the events waiting for the answer of [spotId]'s manager.
+final venueRequestsProvider = StreamProvider.autoDispose
+    .family<List<EventDetail>, String>(
+      (ref, spotId) =>
+          ref.watch(eventRepositoryProvider).watchVenueRequests(spotId),
+    );
+
 final eventRegistrationsProvider = StreamProvider.autoDispose
     .family<List<EventRegistration>, String>(
       (ref, eventId) =>

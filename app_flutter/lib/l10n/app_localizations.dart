@@ -21956,6 +21956,294 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đang hoàn 100%'**
   String get s1104_refunding;
+
+  /// S30 (#223) Task 10. S12.01-venue section title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm · bắt buộc'**
+  String get s1201_venue;
+
+  /// S30 (#223) Task 10. S12.01-venue option.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm có chủ quản lý'**
+  String get s1201_venueManaged;
+
+  /// S30 (#223) Task 10. S12.01-venue option hint (mock #S12.01-venue; not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần chủ điểm đồng ý'**
+  String get s1201_venueManagedHint;
+
+  /// S30 (#223) Task 10. S12.01-venue option.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nơi có thu phí vào cửa'**
+  String get s1201_venuePaid;
+
+  /// S30 (#223) Task 10. S12.01-venue option hint (mock; not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu du lịch, công viên'**
+  String get s1201_venuePaidHint;
+
+  /// S30 (#223) Task 10. S12.01-venue option.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nơi công cộng'**
+  String get s1201_venuePublic;
+
+  /// S30 (#223) Task 10. S12.01-venue option hint (mock; not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thu phí'**
+  String get s1201_venuePublicHint;
+
+  /// S30 (#223) Task 10. S12.01-venue paid place name (the event's place name).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên nơi tổ chức'**
+  String get s1201_placeName;
+
+  /// S30 (#223) Task 10. S12.01-venue paid place segment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gồm phí vào cửa'**
+  String get s1201_feeIncluded;
+
+  /// S30 (#223) Task 10. S12.01-venue paid place segment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gồm'**
+  String get s1201_feeNotIncluded;
+
+  /// S30 (#223) Task 10. S12.01-venue reference entry fee per guest (mock label 'Phí vào cửa tham khảo / người'; organizer.md key wins).
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá tham khảo (₫)'**
+  String get s1201_feeAmount;
+
+  /// S30 (#223) Task 10. S12.01-venue public-place commitment tick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi tự chịu trách nhiệm xin phép theo quy định địa phương'**
+  String get s1201_commitment;
+
+  /// S30 (#223) Task 10. S12.01-venue terms tick (every host).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đồng ý điều khoản tổ chức sự kiện.'**
+  String get s1201_terms;
+
+  /// S30 (#223) Task 10. S12.01-venue error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn loại địa điểm'**
+  String get s1201_venueRequired;
+
+  /// S30 (#223) Task 10. S12.01-venue error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn đã gồm hay chưa gồm phí vào cửa'**
+  String get s1201_feeRequired;
+
+  /// S30 (#223) Task 10. S12.01-venue error: not included without an amount (domain entryFee; not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập giá vé vào cửa tham khảo'**
+  String get s1201_amountRequired;
+
+  /// S30 (#223) Task 10. S12.01-venue error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tick cam kết để đăng ở nơi công cộng'**
+  String get s1201_commitmentRequired;
+
+  /// S30 (#223) Task 10. S12.01-venue error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý điều khoản để đăng'**
+  String get s1201_termsRequired;
+
+  /// S30 (#223) Task 10. S12.01-venue error: a managed spot without a spot (not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một điểm có chủ quản lý'**
+  String get s1201_managedSpotRequired;
+
+  /// S30 (#223) Task 10. S12.01-venue error: the domain venueSpot refuses a managed_spot venue at a spot without a manager (not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này chưa có chủ quản lý. Chọn loại địa điểm khác.'**
+  String get s1201_spotNotManaged;
+
+  /// S30 (#223) Task 10. S12.01-venue error: the domain refuses a paid/public venue at a managed spot (invalid_argument kind; not in organizer.md).
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này có chủ quản lý: chọn “Điểm có chủ quản lý”.'**
+  String get s1201_spotManaged;
+
+  /// S30 (#223) Task 10. S12.01-venue note for a managed spot of someone else.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ điểm cần đồng ý trong 72 giờ. Sự kiện ở trạng thái nháp tới lúc đó.'**
+  String get s1201_consentNote;
+
+  /// S30 (#223) Task 10. S11.02/S11.03 entry-fee line (no S11.02-fee frame: organizer.md copy).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gồm vé vào cửa'**
+  String get s1102_feeIncluded;
+
+  /// S30 (#223) Task 10. S11.02/S11.03 entry-fee line.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gồm vé vào cửa ≈ {amount} · trả tại cổng'**
+  String s1102_feeNotIncluded(String amount);
+
+  /// S30 (#223) Task 10. S11.02/S11.03: the venue fee inside the price (Decision 16).
+  ///
+  /// In vi, this message translates to:
+  /// **'gồm phí quản lý địa điểm {amount}'**
+  String s1102_venueFee(String amount);
+
+  /// S30 (#223) Task 10. S11.02 price line: '{price} · gồm phí quản lý địa điểm {y}' (mock caption).
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} · {fee}'**
+  String s1102_priceWithVenueFee(String price, String fee);
+
+  /// S30 (#223) Task 10. S11.02-venue-consent title. Mock #S11.02-venue-consent wins over organizer.md 'Sự kiện xin tổ chức tại {spot}' (Decision 20, ledgered).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổ chức tại {spot}?'**
+  String s1102_consentTitle(String spot);
+
+  /// S30 (#223) Task 10. S11.02-venue-consent event line (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'{host} · {when} · tối đa {n} khách · {price}'**
+  String s1102_consentMeta(String host, String when, int n, String price);
+
+  /// S30 (#223) Task 10. S11.02-venue-consent price per ticket (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'{price}/vé'**
+  String s1102_pricePerTicket(String price);
+
+  /// S30 (#223) Task 10. S11.02-venue-consent fee field.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí quản lý mỗi khách'**
+  String get s1102_consentFee;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent note. The mock says the fee is added to the price; Decision 16 (fee inside the price) wins (ledgered).
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí nằm trong giá vé của khách và gồm cả vào cổng: nhân viên của bạn quét vé sự kiện ở cổng. Tiền chuyển cho bạn sau khi sự kiện kết thúc.'**
+  String get s1102_consentBody;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent deadline (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {left} để trả lời.'**
+  String s1102_consentLeft(String left);
+
+  /// S30 (#223) Task 10. S11.02-venue-consent hint: fee locked at 0 without a business (mock caption; business_required).
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp để thu phí quản lý'**
+  String get s1102_consentFeeLocked;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent hint: a free event is accepted with fee 0 only (Decision 16).
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện miễn phí: không thu phí quản lý'**
+  String get s1102_consentFeeFree;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent error: fee must be below the price (invalid_argument venueFeePerGuest).
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí phải thấp hơn giá vé {price}'**
+  String s1102_consentFeeTooHigh(String price);
+
+  /// S30 (#223) Task 10. S11.02-venue-consent error: deadline_passed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã quá hạn trả lời. Sự kiện đã bị huỷ.'**
+  String get s1102_consentExpired;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent primary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý'**
+  String get s1102_consentAccept;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent red text and the red confirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get s1102_consentDecline;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent confirm title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối sự kiện này?'**
+  String get s1102_consentDeclineTitle;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent confirm body (mock caption).
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ sự kiện nhận thông báo và sự kiện nháp bị huỷ.'**
+  String get s1102_consentDeclineBody;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent toast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đồng ý'**
+  String get s1102_consentAccepted;
+
+  /// S30 (#223) Task 10. S11.02-venue-consent toast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối'**
+  String get s1102_consentDeclinedDone;
+
+  /// S30 (#223) Task 10. S11.02 bar for the spot manager of a pending-venue draft: reopens the consent sheet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả lời yêu cầu'**
+  String get s1102_consentRespond;
+
+  /// S30 (#223) Task 10. S12.01 publish toast when only the consent request was sent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ địa điểm đồng ý'**
+  String get s1102_consentPending;
+
+  /// S30 (#223) Task 10. S12.03 venue line of an event at a managed spot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm: {status} · phí quản lý {amount}'**
+  String s1203_venueStatus(String status, String amount);
+
+  /// S30 (#223) Task 10. S12.03 venue line without a fee (never '0₫').
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm: {status}'**
+  String s1203_venueStatusNoFee(String status);
+
+  /// S30 (#223) Task 10. S12.03 venue consent state words.
+  ///
+  /// In vi, this message translates to:
+  /// **'{state, select, pending{chờ đồng ý} accepted{đã đồng ý} declined{đã từ chối} expired{hết hạn trả lời} other{chưa hỏi}}'**
+  String s1203_venueConsent(String state);
+
+  /// S30 (#223) Task 10. S30.03 pending venue request line (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'{host} · {n} khách · hết hạn sau {left}'**
+  String s3003_pendingMeta(String host, int n, String left);
 }
 
 class _AppLocalizationsDelegate

@@ -591,4 +591,85 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('manage-scan')), findsOneWidget);
   });
+
+  group('S12.03 venue status', () {
+    const managed = EventVenue(
+      kind: VenueKind.managedSpot,
+      spotId: 'bd',
+      termsVersion: organizerTermsVersion,
+    );
+
+    EventsWorld world({
+      EventStatus status = EventStatus.open,
+      HostConsent consent = HostConsent.accepted,
+      int fee = 0,
+      String createdBy = 'p1',
+    }) => EventsWorld(
+      uid: 'p1',
+      role: UserRole.photographer,
+      onboardingComplete: true,
+      events: [
+        detailOf(
+          'ev1',
+          status: status,
+          createdBy: createdBy,
+          venue: managed,
+          venueConsent: consent,
+          venueFeePerGuest: fee,
+        ),
+      ],
+    );
+
+    String line(WidgetTester tester) =>
+        tester.widget<Text>(find.byKey(const Key('manage-venue-status'))).data!;
+
+    testWidgets(
+      'accepted with a fee: "Địa điểm: đã đồng ý · phí quản lý {x}"',
+      (tester) async {
+        await _open(tester, world(fee: 50000));
+        expect(line(tester), 'Địa điểm: đã đồng ý · phí quản lý 50.000₫');
+      },
+    );
+
+    testWidgets('accepted without a fee: no amount, never 0₫', (tester) async {
+      await _open(tester, world());
+      expect(line(tester), 'Địa điểm: đã đồng ý');
+    });
+
+    testWidgets(
+      'my published-at-a-managed-spot draft stays here: "Địa điểm: chờ đồng ý"',
+      (tester) async {
+        final w = world(
+          status: EventStatus.draft,
+          consent: HostConsent.pending,
+        );
+        await _open(tester, w);
+        expect(w.location, _path, reason: 'not sent back to the editor');
+        expect(line(tester), 'Địa điểm: chờ đồng ý');
+      },
+    );
+
+    testWidgets('declined: the line says so', (tester) async {
+      await _open(
+        tester,
+        world(status: EventStatus.cancelled, consent: HostConsent.declined),
+      );
+      expect(line(tester), 'Địa điểm: đã từ chối');
+    });
+
+    testWidgets('no line for an event without a managed venue', (tester) async {
+      await _open(tester, _host());
+      expect(find.byKey(const Key('manage-venue-status')), findsNothing);
+    });
+
+    testWidgets('fits 320 dp at 1.3× text with the venue line', (tester) async {
+      await _open(
+        tester,
+        world(fee: 50000),
+        size: const Size(320, 640),
+        textScale: 1.3,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

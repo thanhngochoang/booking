@@ -12870,4 +12870,186 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get s1104_refunding => 'Đang hoàn 100%';
+
+  @override
+  String get s1201_venue => 'Địa điểm · bắt buộc';
+
+  @override
+  String get s1201_venueManaged => 'Điểm có chủ quản lý';
+
+  @override
+  String get s1201_venueManagedHint => 'Cần chủ điểm đồng ý';
+
+  @override
+  String get s1201_venuePaid => 'Nơi có thu phí vào cửa';
+
+  @override
+  String get s1201_venuePaidHint => 'Khu du lịch, công viên';
+
+  @override
+  String get s1201_venuePublic => 'Nơi công cộng';
+
+  @override
+  String get s1201_venuePublicHint => 'Không thu phí';
+
+  @override
+  String get s1201_placeName => 'Tên nơi tổ chức';
+
+  @override
+  String get s1201_feeIncluded => 'Đã gồm phí vào cửa';
+
+  @override
+  String get s1201_feeNotIncluded => 'Chưa gồm';
+
+  @override
+  String get s1201_feeAmount => 'Giá tham khảo (₫)';
+
+  @override
+  String get s1201_commitment =>
+      'Tôi tự chịu trách nhiệm xin phép theo quy định địa phương';
+
+  @override
+  String get s1201_terms => 'Tôi đồng ý điều khoản tổ chức sự kiện.';
+
+  @override
+  String get s1201_venueRequired => 'Chọn loại địa điểm';
+
+  @override
+  String get s1201_feeRequired => 'Chọn đã gồm hay chưa gồm phí vào cửa';
+
+  @override
+  String get s1201_amountRequired => 'Nhập giá vé vào cửa tham khảo';
+
+  @override
+  String get s1201_commitmentRequired => 'Tick cam kết để đăng ở nơi công cộng';
+
+  @override
+  String get s1201_termsRequired => 'Đồng ý điều khoản để đăng';
+
+  @override
+  String get s1201_managedSpotRequired => 'Chọn một điểm có chủ quản lý';
+
+  @override
+  String get s1201_spotNotManaged =>
+      'Điểm này chưa có chủ quản lý. Chọn loại địa điểm khác.';
+
+  @override
+  String get s1201_spotManaged =>
+      'Điểm này có chủ quản lý: chọn “Điểm có chủ quản lý”.';
+
+  @override
+  String get s1201_consentNote =>
+      'Chủ điểm cần đồng ý trong 72 giờ. Sự kiện ở trạng thái nháp tới lúc đó.';
+
+  @override
+  String get s1102_feeIncluded => 'Đã gồm vé vào cửa';
+
+  @override
+  String s1102_feeNotIncluded(String amount) {
+    return 'Chưa gồm vé vào cửa ≈ $amount · trả tại cổng';
+  }
+
+  @override
+  String s1102_venueFee(String amount) {
+    return 'gồm phí quản lý địa điểm $amount';
+  }
+
+  @override
+  String s1102_priceWithVenueFee(String price, String fee) {
+    return '$price · $fee';
+  }
+
+  @override
+  String s1102_consentTitle(String spot) {
+    return 'Tổ chức tại $spot?';
+  }
+
+  @override
+  String s1102_consentMeta(String host, String when, int n, String price) {
+    return '$host · $when · tối đa $n khách · $price';
+  }
+
+  @override
+  String s1102_pricePerTicket(String price) {
+    return '$price/vé';
+  }
+
+  @override
+  String get s1102_consentFee => 'Phí quản lý mỗi khách';
+
+  @override
+  String get s1102_consentBody =>
+      'Phí nằm trong giá vé của khách và gồm cả vào cổng: nhân viên của bạn quét vé sự kiện ở cổng. Tiền chuyển cho bạn sau khi sự kiện kết thúc.';
+
+  @override
+  String s1102_consentLeft(String left) {
+    return 'Còn $left để trả lời.';
+  }
+
+  @override
+  String get s1102_consentFeeLocked =>
+      'Xác minh doanh nghiệp để thu phí quản lý';
+
+  @override
+  String get s1102_consentFeeFree => 'Sự kiện miễn phí: không thu phí quản lý';
+
+  @override
+  String s1102_consentFeeTooHigh(String price) {
+    return 'Phí phải thấp hơn giá vé $price';
+  }
+
+  @override
+  String get s1102_consentExpired => 'Đã quá hạn trả lời. Sự kiện đã bị huỷ.';
+
+  @override
+  String get s1102_consentAccept => 'Đồng ý';
+
+  @override
+  String get s1102_consentDecline => 'Từ chối';
+
+  @override
+  String get s1102_consentDeclineTitle => 'Từ chối sự kiện này?';
+
+  @override
+  String get s1102_consentDeclineBody =>
+      'Chủ sự kiện nhận thông báo và sự kiện nháp bị huỷ.';
+
+  @override
+  String get s1102_consentAccepted => 'Đã đồng ý';
+
+  @override
+  String get s1102_consentDeclinedDone => 'Đã từ chối';
+
+  @override
+  String get s1102_consentRespond => 'Trả lời yêu cầu';
+
+  @override
+  String get s1102_consentPending => 'Chờ địa điểm đồng ý';
+
+  @override
+  String s1203_venueStatus(String status, String amount) {
+    return 'Địa điểm: $status · phí quản lý $amount';
+  }
+
+  @override
+  String s1203_venueStatusNoFee(String status) {
+    return 'Địa điểm: $status';
+  }
+
+  @override
+  String s1203_venueConsent(String state) {
+    String _temp0 = intl.Intl.selectLogic(state, {
+      'pending': 'chờ đồng ý',
+      'accepted': 'đã đồng ý',
+      'declined': 'đã từ chối',
+      'expired': 'hết hạn trả lời',
+      'other': 'chưa hỏi',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String s3003_pendingMeta(String host, int n, String left) {
+    return '$host · $n khách · hết hạn sau $left';
+  }
 }

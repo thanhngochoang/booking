@@ -7,6 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/organizer/organizer.dart';
 
+import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_summary.dart';
+
+import '../../support/event_world.dart' show detailOf;
 import '../../support/organizer_world.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
@@ -303,4 +307,82 @@ void main() {
       expect(_key('managed-primary'), findsOneWidget);
     });
   }
+
+  group('"Sự kiện ở đây chờ bạn đồng ý"', () {
+    void seedPending(OrganizerWorld w) => w.events.putEvent(
+      detailOf(
+        'ev1',
+        title: 'Photo walk cúc hoạ mi',
+        capacity: 30,
+        status: EventStatus.draft,
+        venue: const EventVenue(
+          kind: VenueKind.managedSpot,
+          spotId: 'bd',
+          termsVersion: organizerTermsVersion,
+        ),
+        venueConsent: HostConsent.pending,
+        venueConsentExpiresAt: organizerNow.add(
+          const Duration(days: 2, hours: 5),
+        ),
+      ),
+    );
+
+    testWidgets(
+      'lists the events waiting at this spot; a tap opens S11.02-venue-consent',
+      (tester) async {
+        final w = _world();
+        seedPending(w);
+        // Another spot's request and an answered one are not listed.
+        w.events.putEvent(
+          detailOf(
+            'ev2',
+            status: EventStatus.draft,
+            venue: const EventVenue(
+              kind: VenueKind.managedSpot,
+              spotId: 'other',
+              termsVersion: organizerTermsVersion,
+            ),
+            venueConsent: HostConsent.pending,
+          ),
+        );
+        await w.pump(tester, location: _path);
+        expect(find.text('Sự kiện ở đây chờ bạn đồng ý'), findsOneWidget);
+        expect(find.text('Photo walk cúc hoạ mi'), findsOneWidget);
+        expect(
+          find.text('Quốc Bảo · 30 khách · hết hạn sau 2 ngày'),
+          findsOneWidget,
+        );
+        expect(_key('managed-venue-request-ev2'), findsNothing);
+        await tapOrganizer(tester, _key('managed-venue-request-ev1'));
+        expect(find.text('Tổ chức tại Bãi đá sông Hồng?'), findsOneWidget);
+        await tester.tap(_key('venue-consent-accept'));
+        await settleOrganizer(tester);
+        expect(w.events.venueAnswers.single.eventId, 'ev1');
+      },
+    );
+
+    testWidgets('no section while nothing waits', (tester) async {
+      final w = _world();
+      await w.pump(tester, location: _path);
+      expect(find.text('Sự kiện ở đây chờ bạn đồng ý'), findsNothing);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('fits 320 dp at 1.3× text with a request ($b)', (
+        tester,
+      ) async {
+        final w = _world();
+        seedPending(w);
+        await w.pump(
+          tester,
+          location: _path,
+          width: 320,
+          height: 700,
+          textScale: 1.3,
+          brightness: b,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }

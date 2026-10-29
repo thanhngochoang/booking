@@ -182,7 +182,10 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
           }
           // My own draft is edited in S12.01; a staff-made draft I accepted
           // as host stays here (read-only until staff publish it, O1).
-          if (detail.createdBy == me) {
+          // Decision 16: a published draft that waits for its venue stays
+          // here with "Địa điểm: chờ đồng ý" (S12.03).
+          if (detail.createdBy == me &&
+              detail.venueConsent != HostConsent.pending) {
             return EventRouteRedirect('/events/new?draft=${detail.id}');
           }
         }
@@ -358,6 +361,15 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
         padding: const EdgeInsets.all(AppSpace.s4),
         children: [
           _SummaryCard(event: e),
+          if (venueStatusLine(l, e) case final venue?) ...[
+            const SizedBox(height: AppSpace.s2),
+            Text(
+              venue,
+              key: const Key('manage-venue-status'),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
           if (cancelled) ...[
             const SizedBox(height: AppSpace.s3),
             _CancelledStrip(text: l.eventCancelled),
@@ -577,6 +589,21 @@ class _ParticipantsHeader extends StatelessWidget {
       ],
     );
   }
+}
+
+/// S12.03: "Địa điểm: {consent} · phí quản lý {fee}" of an event at a
+/// managed spot whose manager was asked (the host's own spot asks no one);
+/// without a fee the amount is left out (never "0₫"). Null otherwise.
+String? venueStatusLine(AppLocalizations l, EventDetail e) {
+  if (e.venue?.kind != VenueKind.managedSpot ||
+      e.venueConsent == HostConsent.notRequired) {
+    return null;
+  }
+  final status = l.s1203_venueConsent(e.venueConsent.code);
+  final fee = e.venueFeePerGuest;
+  return e.venueConsent == HostConsent.accepted && fee > 0
+      ? l.s1203_venueStatus(status, formatMoney(fee))
+      : l.s1203_venueStatusNoFee(status);
 }
 
 class _SummaryCard extends StatelessWidget {

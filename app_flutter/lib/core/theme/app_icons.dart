@@ -103,6 +103,9 @@ abstract final class AppIcons {
   static const IconData work = Symbols.work_rounded;
   static const IconData store = Symbols.storefront_rounded;
 
+  /// S12.01-venue "Nơi công cộng" (mock `park`).
+  static const IconData park = Symbols.park_rounded;
+
   /// S27: a studio–collaborator relationship (S27.06, S09.02 "Cộng tác").
   static const IconData handshake = Symbols.handshake_rounded;
 

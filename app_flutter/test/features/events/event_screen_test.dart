@@ -12,8 +12,17 @@ import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 import '../../support/event_world.dart';
 import '../../support/meta_finders.dart';
+
+import 'package:photobooking/data/organizer/organizer_providers.dart';
+
+import '../../support/fake_organizer_repository.dart';
 import '../../support/organizer_world.dart'
-    show entryDetailOf, entryRegistration, makeEntryEvent;
+    show
+        entryDetailOf,
+        entryRegistration,
+        makeEntryEvent,
+        makeOrganizer,
+        makeSpot;
 
 const _sw = Size(390, 1200);
 
@@ -573,6 +582,143 @@ void main() {
       await tester.tap(_byKey('event-join'));
       await settle(tester);
       expect(w.location, '/spots/bd/tickets');
+    });
+  });
+  group('S11.02 venue variants', () {
+    EventVenue paid({required bool included, int? amount}) => EventVenue(
+      kind: VenueKind.paidPlace,
+      entryFeeIncluded: included,
+      entryFeeVnd: amount,
+      termsVersion: organizerTermsVersion,
+    );
+
+    testWidgets('a paid place shows "Đã gồm vé vào cửa"', (tester) async {
+      final w = EventsWorld(
+        events: [detailOf('e1', venue: paid(included: true))],
+      );
+      await w.pump(tester, path: '/e/e1', size: _sw);
+      expect(find.text('Đã gồm vé vào cửa'), findsOneWidget);
+    });
+
+    testWidgets(
+      'not included: "Chưa gồm vé vào cửa ≈ {x} · trả tại cổng" (no S11.02-fee frame: organizer.md copy)',
+      (tester) async {
+        final w = EventsWorld(
+          events: [detailOf('e1', venue: paid(included: false, amount: 20000))],
+        );
+        await w.pump(tester, path: '/e/e1', size: _sw);
+        expect(
+          find.text('Chưa gồm vé vào cửa ≈ 20.000₫ · trả tại cổng'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a public place has no entry-fee line', (tester) async {
+      final w = EventsWorld(
+        events: [
+          detailOf(
+            'e1',
+            venue: EventVenue(
+              kind: VenueKind.publicPlace,
+              commitmentAt: eventNow,
+              termsVersion: organizerTermsVersion,
+            ),
+          ),
+        ],
+      );
+      await w.pump(tester, path: '/e/e1', size: _sw);
+      expect(find.textContaining('vé vào cửa'), findsNothing);
+    });
+
+    testWidgets(
+      'an accepted venue fee: the price says "gồm phí quản lý địa điểm {y}"',
+      (tester) async {
+        final w = EventsWorld(
+          events: [
+            detailOf(
+              'e1',
+              priceVnd: 400000,
+              venue: const EventVenue(
+                kind: VenueKind.managedSpot,
+                spotId: 'bd',
+                termsVersion: organizerTermsVersion,
+              ),
+              venueConsent: HostConsent.accepted,
+              venueFeePerGuest: 50000,
+            ),
+          ],
+        );
+        await w.pump(tester, path: '/e/e1', size: _sw);
+        expect(
+          find.text('400.000₫ · gồm phí quản lý địa điểm 50.000₫'),
+          findsOneWidget,
+        );
+        // A managed spot: its gate scans the event ticket.
+        expect(find.text('Đã gồm vé vào cửa'), findsOneWidget);
+        // The price itself is unchanged: the fee is inside it (Decision 16).
+        expect(tester.widget<Text>(_byKey('event-price')).data, '400.000₫');
+      },
+    );
+
+    testWidgets(
+      'the spot manager opens a pending draft from the notification: the consent sheet',
+      (tester) async {
+        final organizers = FakeOrganizerRepository(clock: () => eventNow)
+          ..putOrganizer(makeOrganizer());
+        final w = EventsWorld(
+          uid: 'org1',
+          events: [
+            detailOf(
+              'e1',
+              title: 'Photo walk cúc hoạ mi',
+              status: EventStatus.draft,
+              venue: const EventVenue(
+                kind: VenueKind.managedSpot,
+                spotId: 'bd',
+                termsVersion: organizerTermsVersion,
+              ),
+              venueConsent: HostConsent.pending,
+              venueConsentExpiresAt: eventNow.add(const Duration(days: 2)),
+            ),
+          ],
+        );
+        w.spots.seedSpot(makeSpot(managedBy: 'org1'));
+        await w.pump(
+          tester,
+          path: '/e/e1',
+          size: _sw,
+          extra: [organizerRepositoryProvider.overrideWithValue(organizers)],
+        );
+        expect(find.text('Tổ chức tại Bãi đá sông Hồng?'), findsOneWidget);
+        await tester.tap(_byKey('venue-consent-accept'));
+        await settle(tester);
+        expect(w.repo.venueAnswers.single.accept, isTrue);
+      },
+    );
+
+    testWidgets('anyone else still cannot see the pending draft', (
+      tester,
+    ) async {
+      final w = EventsWorld(
+        uid: 'stranger',
+        events: [
+          detailOf(
+            'e1',
+            status: EventStatus.draft,
+            venue: const EventVenue(
+              kind: VenueKind.managedSpot,
+              spotId: 'bd',
+              termsVersion: organizerTermsVersion,
+            ),
+            venueConsent: HostConsent.pending,
+          ),
+        ],
+      );
+      w.spots.seedSpot(makeSpot(managedBy: 'org1'));
+      await w.pump(tester, path: '/e/e1', size: _sw);
+      expect(find.text('Tổ chức tại Bãi đá sông Hồng?'), findsNothing);
+      expect(_byKey('venue-consent-accept'), findsNothing);
     });
   });
 }

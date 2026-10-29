@@ -6,12 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
+import 'package:photobooking/features/events/venue_consent_sheet.dart';
 import 'package:photobooking/features/organizer/organizer_controller.dart';
 import 'package:photobooking/features/organizer/organizer_routes.dart';
 import 'package:photobooking/features/organizer/widgets/access_editor.dart';
@@ -352,6 +355,9 @@ class _EntryTab extends ConsumerWidget {
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: context.mutedForeground,
     );
+    final requests =
+        ref.watch(venueRequestsProvider(spot.id)).value ?? const [];
+    final now = ref.watch(clockProvider)();
 
     final Widget card;
     if (event == null) {
@@ -457,6 +463,22 @@ class _EntryTab extends ConsumerWidget {
             ),
           ],
         ),
+        // Decision 16: events of other hosts that ask to take place here.
+        if (requests.isNotEmpty) ...[
+          OrgSection(
+            l.s3003_pendingEvents,
+            trailing: Text('${requests.length}', style: muted),
+          ),
+          for (final e in requests) ...[
+            _VenueRequestCard(
+              event: e,
+              now: now,
+              onTap: () =>
+                  showVenueConsentSheet(context, event: e, spotName: spot.name),
+            ),
+            const SizedBox(height: AppSpace.s2),
+          ],
+        ],
         if (org?.businessVerified ?? false) ...[
           const SizedBox(height: AppSpace.s3),
           OrgInfoRow(
@@ -476,6 +498,71 @@ class _EntryTab extends ConsumerWidget {
             ),
         ],
       ],
+    );
+  }
+}
+
+/// Mock `#S30.03` request card: date block, title, "{host} · {n} khách ·
+/// hết hạn sau {left}", chevron; opens S11.02-venue-consent.
+class _VenueRequestCard extends StatelessWidget {
+  const _VenueRequestCard({
+    required this.event,
+    required this.now,
+    required this.onTap,
+  });
+
+  final EventDetail event;
+  final DateTime now;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final s = event.summary;
+    final until = event.venueConsentExpiresAt;
+    final left = until == null ? '' : venueTimeLeft(l, until, now);
+    return GlassCard(
+      highlight: false,
+      child: InkWell(
+        key: Key('managed-venue-request-${event.id}'),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.s3),
+            child: Row(
+              children: [
+                if (s.hasSchedule) ...[
+                  DateBlock(day: s.startsAt),
+                  const SizedBox(width: AppSpace.s3),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        l.s3003_pendingMeta(s.hostName, s.capacity, left),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: context.mutedForeground,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppIcon(AppIcons.chevron, color: context.mutedForeground),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -179,6 +179,31 @@ class FirestoreEventRepository implements EventRepository {
         });
   }
 
+  @override
+  Stream<List<EventDetail>> watchVenueRequests(String spotId) {
+    if (uid == null) {
+      return Stream.value(const []);
+    }
+    // Composite index `events(venue.spotId, venueConsent)`.
+    final query = _events
+        .where('venue.spotId', isEqualTo: spotId)
+        .where('venueConsent', isEqualTo: HostConsent.pending.code)
+        .snapshots()
+        .map((qs) {
+          final out = [
+            for (final d in qs.docs)
+              if (eventDetailFromFirestore(d.id, d.data()) case final e?)
+                if (e.summary.status == EventStatus.draft) e,
+          ];
+          out.sort(
+            (a, b) => (a.venueConsentExpiresAt ?? a.summary.createdAt)
+                .compareTo(b.venueConsentExpiresAt ?? b.summary.createdAt),
+          );
+          return out;
+        });
+    return _orIfDenied(query, const <EventDetail>[]);
+  }
+
   /// A read the rules refuse (a draft or contact the viewer may not see)
   /// is "nothing there", not a failed stream.
   Stream<T> _orIfDenied<T>(Stream<T> source, T fallback) => source.transform(

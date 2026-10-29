@@ -131,6 +131,12 @@ abstract class EventRepository {
   /// decision O1), soonest expiry first.
   Stream<List<EventDetail>> watchHostInvitations();
 
+  /// S30.03 "Sự kiện ở đây chờ bạn đồng ý": events that ask to take place at
+  /// [spotId] and wait for its manager (`venue.spotId == spotId`,
+  /// `venueConsent == pending`), soonest expiry first. Readable by the spot's
+  /// manager only (rules); anyone else gets an empty list.
+  Stream<List<EventDetail>> watchVenueRequests(String spotId);
+
   /// My active (`held` / `paid`) registration for the event, else my latest.
   Stream<EventRegistration?> watchMyRegistration(String eventId);
 
@@ -381,6 +387,24 @@ class FakeEventRepository implements EventRepository {
             (a, b) => (a.hostConsentExpiresAt ?? a.summary.createdAt).compareTo(
               b.hostConsentExpiresAt ?? b.summary.createdAt,
             ),
+          );
+    return out;
+  });
+
+  @override
+  Stream<List<EventDetail>> watchVenueRequests(String spotId) => _watch(() {
+    final out =
+        _events.values
+            .where(
+              (e) =>
+                  e.venue?.spotId == spotId &&
+                  e.venueConsent == HostConsent.pending &&
+                  e.summary.status == EventStatus.draft,
+            )
+            .toList()
+          ..sort(
+            (a, b) => (a.venueConsentExpiresAt ?? a.summary.createdAt)
+                .compareTo(b.venueConsentExpiresAt ?? b.summary.createdAt),
           );
     return out;
   });

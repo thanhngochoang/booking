@@ -27,8 +27,10 @@ import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
 import 'package:photobooking/features/payment/payment_screen.dart';
+
 import 'fake_payments_repository.dart';
 import 'fake_spot_repository.dart';
+
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
@@ -252,6 +254,11 @@ EventDetail detailOf(
   DateTime? completedAt,
   String? spotId,
   bool spotDecided = false,
+  EventVenue? venue,
+  HostConsent venueConsent = HostConsent.notRequired,
+  DateTime? venueConsentExpiresAt,
+  int venueFeePerGuest = 0,
+  String title = 'Photo walk',
 }) {
   final s = summaryOf(
     id,
@@ -264,6 +271,7 @@ EventDetail detailOf(
     status: status,
     startsIn: startsIn,
     schedule: schedule,
+    title: title,
   );
   return EventDetail(
     summary: s,
@@ -280,6 +288,10 @@ EventDetail detailOf(
     hostConsentExpiresAt: hostConsentExpiresAt,
     spotId: spotId,
     spotDecided: spotDecided || spotId != null,
+    venue: venue,
+    venueConsent: venueConsent,
+    venueConsentExpiresAt: venueConsentExpiresAt,
+    venueFeePerGuest: venueFeePerGuest,
   );
 }
 
@@ -479,6 +491,7 @@ class EventsWorld {
 
     /// The real S12 screens (create, manage, mine) instead of stubs.
     bool organizer = false,
+    Brightness brightness = Brightness.dark,
   }) async {
     if (prefs == null) {
       SharedPreferences.setMockInitialValues(prefsValues);
@@ -582,6 +595,7 @@ class EventsWorld {
           ...extra,
         ],
         textScale: textScale,
+        brightness: brightness,
       ),
     );
     await settle(tester);

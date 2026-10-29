@@ -417,4 +417,61 @@ void main() {
     ], from: DateTime.parse('2026-11-01T00:00:00Z'));
     expect(out.map((e) => e.id), ['w1']);
   });
+
+  group('venue requests (S30.03 "Sự kiện ở đây chờ bạn đồng ý")', () {
+    Map<String, dynamic> request(
+      String spotId, {
+      String consent = 'pending',
+      String status = 'draft',
+      String expires = '2026-11-12T00:00:00Z',
+    }) => _event(
+      'photo_walk',
+      extra: {
+        'status': status,
+        'host': {'type': 'photographer', 'id': 'p1', 'name': 'Minh Trí'},
+        'createdBy': 'p1',
+        'venue': {
+          'kind': 'managed_spot',
+          'spotId': spotId,
+          'entryFee': {'included': true, 'amountVnd': null},
+          'commitmentAt': null,
+          'termsVersion': '2026-10-18',
+        },
+        'venueConsent': consent,
+        'venueConsentExpiresAt': _ts(expires),
+      },
+    );
+
+    test('Firestore: events where venue.spotId == spot and venueConsent == pending, soonest expiry first', () async {
+      final db = FakeFirebaseFirestore();
+      await db
+          .doc('events/late')
+          .set(request('bd', expires: '2026-11-13T00:00:00Z'));
+      await db.doc('events/soon').set(request('bd'));
+      await db.doc('events/other').set(request('ho-tay'));
+      await db.doc('events/done').set(request('bd', consent: 'accepted'));
+      final repo = FirestoreEventRepository(
+        uid: 'org1',
+        uploader: FakeMediaUploader(),
+        db: db,
+        functions: _MockFunctions(),
+      );
+      final out = await repo.watchVenueRequests('bd').first;
+      expect(out.map((e) => e.id), ['soon', 'late']);
+      expect(out.first.venueConsent, HostConsent.pending);
+    });
+
+    test('the fake lists the same', () async {
+      final repo = FakeEventRepository(uid: 'org1');
+      final base = eventDetailFromFirestore('a', request('bd'))!;
+      repo
+        ..putEvent(base)
+        ..putEvent(eventDetailFromFirestore('b', request('ho-tay'))!)
+        ..putEvent(
+          eventDetailFromFirestore('c', request('bd', consent: 'declined'))!,
+        );
+      final out = await repo.watchVenueRequests('bd').first;
+      expect(out.map((e) => e.id), ['a']);
+    });
+  });
 }

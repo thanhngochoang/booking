@@ -63,6 +63,10 @@ enum VenueKind {
   }
 }
 
+/// `ORGANIZER_TERMS_VERSION` (Decision 17): the organizer terms an S12.01 host
+/// ticks; the server refuses a venue with any other version.
+const organizerTermsVersion = '2026-10-18';
+
 /// `events/{id}.venue`: the venue kind, its spot (managed spot), whether the
 /// ticket price includes the entry fee (and the reference fee when not), the
 /// public-place commitment and the organizer terms version.
