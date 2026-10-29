@@ -28,7 +28,14 @@ export type TransitionAction =
   /** The customer's 100% cancel after a studio fault (#136 Decision 12). */
   | 'cancel_studio_fault'
   /** The clock cancels a studio booking still without an assignee at its start: 100% back (#136 ruling). */
-  | 'cancel_unassigned_at_start';
+  | 'cancel_unassigned_at_start'
+  /**
+   * S30 (final fix D-I2): a denied shoot (`upcoming` + `shootDeniedAt`) whose dispute staff resolved with a
+   * refund (any %) is `cancelled` by the system (`reason` = `dispute:{id}`); with a release only, it is
+   * `completed`. Only `resolveDispute` decides them, inside its transaction; the dispute moved the money.
+   */
+  | 'dispute_refund'
+  | 'dispute_release';
 
 export type ActorRole = 'customer' | 'photographer' | 'system';
 
@@ -217,6 +224,23 @@ export function decideTransition(
         nextStatus: 'cancelled',
         refundPercent: 100,
         cancelRecord: { by: 'studio_fault', reason: 'assign_overdue', at: now.toISOString(), refundPercent: 100 },
+      };
+    }
+
+    case 'dispute_refund':
+    case 'dispute_release': {
+      if (booking.status !== 'upcoming' || booking.shootDeniedAt === undefined) {
+        throw new DomainError('conflict');
+      }
+      if (actor.role !== 'system') {
+        throw new DomainError('permission_denied');
+      }
+      if (action === 'dispute_release') return { nextStatus: 'completed', refundPercent: 0 };
+      // The refund percent is the dispute's (written by resolveDispute); the machine moves no money here.
+      return {
+        nextStatus: 'cancelled',
+        refundPercent: 0,
+        cancelRecord: { by: 'system', reason, at: now.toISOString(), refundPercent: 0 },
       };
     }
 

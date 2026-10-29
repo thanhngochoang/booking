@@ -17,7 +17,8 @@ import {
   type ResolveDisputeInput,
 } from './dispute.js';
 import { formatVnDate, formatVnTime } from './booking_policy.js';
-import type { DisputeDeps, DisputeSubjectView, DisputeTx } from './dispute_ports.js';
+import { decideTransition } from './booking_machine.js';
+import type { DisputeBookingEnd, DisputeDeps, DisputeSubjectView, DisputeTx } from './dispute_ports.js';
 import { DomainError } from './errors.js';
 import {
   applyRefundToPayment,
@@ -457,13 +458,43 @@ export async function resolveDispute(
     };
 
     tx.setPayment(pay);
-    tx.linkSubject(subject, { disputeId: d.id, escrowStatus: pay.escrowStatus });
+    const end = deniedShootEnd(subject, d, a.refundAmount > 0 ? a.refundPercent : 0, deps.ids.newId(), now);
+    tx.linkSubject(subject, { disputeId: d.id, escrowStatus: pay.escrowStatus, ...(end !== null ? { end } : {}) });
     tx.setDispute(resolved);
     tx.putThread(closed);
     tx.addMessage(systemMessage(d.threadId, deps.ids.newId(), body, at));
     const lineRefunds = settledLines.flatMap((l) => (l.refund === null ? [] : [{ payment: l.payment, refund: l.refund }]));
     return { dispute: resolved, refund, lineRefunds };
   });
+}
+
+/**
+ * S30 (final fix D-I2): a denied shoot (`upcoming` + `shootDeniedAt`) has no other end, so its resolution
+ * ends the booking through the machine: any refund → `cancelled` by the system (`dispute:{id}`, the
+ * refund percent on the record); a release only → `completed`. Null for every other subject (the milder
+ * `shooting` + full refund case is deferred).
+ */
+function deniedShootEnd(
+  subject: DisputeSubjectView,
+  d: Dispute,
+  refundPercent: number,
+  eventId: string,
+  now: Date,
+): DisputeBookingEnd | null {
+  const b = subject.booking;
+  if (subject.type !== 'booking' || subject.state !== 'upcoming' || b === undefined || b.shootDeniedAt === undefined) return null;
+  const at = now.toISOString();
+  const decision = refundPercent > 0
+    ? decideTransition(b, 'dispute_refund', { role: 'system' }, now, `dispute:${d.id}`)
+    : decideTransition(b, 'dispute_release', { role: 'system' }, now);
+  const status = decision.nextStatus === 'cancelled' ? 'cancelled' : 'completed';
+  return {
+    status,
+    cancel: decision.cancelRecord ? { ...decision.cancelRecord, refundPercent } : null,
+    completedAt: status === 'completed' ? at : null,
+    at,
+    event: { id: eventId, bookingId: b.id, status, at },
+  };
 }
 
 /**

@@ -4,7 +4,9 @@ import type { Booking } from '../src/booking.js';
 import { decideTransition } from '../src/booking_machine.js';
 import { parseVnDateTime } from '../src/booking_policy.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
-import { openDispute } from '../src/dispute_use_cases.js';
+import { bookingContactUnlocked } from '../src/contact.js';
+import { openDispute, resolveDispute } from '../src/dispute_use_cases.js';
+import { disputeSubjectKey } from '../src/memory_dispute_store.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import {
   SHOOT_DENIED_DESCRIPTION,
@@ -20,7 +22,7 @@ import {
 import type { BookingStore } from '../src/booking_ports.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { createBookingWorld, newDraft, payDraft, type BookingWorld } from './support/booking_world.js';
-import { bookingView, createDisputeWorld, openInput, paidPayment } from './support/dispute_world.js';
+import { bookingView, createDisputeWorld, openInput, paidPayment, seedShotBooking } from './support/dispute_world.js';
 import { must } from './support/event_world.js';
 import { createNotifyWorld } from './support/notify_world.js';
 
@@ -285,6 +287,96 @@ describe('a denied shoot has an exit (fix 1)', () => {
     assert.equal((await w.store.findDeniedShootsDue(at(SHOOT_DENIED_DISPUTE_HOURS))).length, 0);
   });
 });
+
+describe("a denied shoot's resolved dispute ends the booking (final fix D-I2)", () => {
+  /** b denied at ASK_AT, its dispute d1 opened by the customer: the dispute side sees the booking itself. */
+  async function disputed() {
+    const w = createBookingWorld();
+    const b = await upcoming(w);
+    w.clock.setTime(ASK_AT);
+    await askShootHappened(w.deps, createNotifyWorld(ASK_AT).deps);
+    const deniedB = await answerShootHappened(w.deps, { bookingId: b.id, customerId: 'c1', happened: false });
+    const d = createDisputeWorld();
+    d.store.putSubject(bookingView({ id: b.id, state: 'upcoming', shootDeniedAt: new Date(ASK_AT), booking: deniedB }));
+    d.store.payments.set('pay_b1', paidPayment({ subjectId: b.id }));
+    await openDispute(d.deps, 'c1', openInput({ subjectId: b.id, reason: 'no_show' }));
+    return { b: deniedB, d, key: disputeSubjectKey('booking', b.id, null) };
+  }
+  const NOTE = 'Khách xác nhận thợ không đến';
+
+  test('a full refund cancels it by the system with the dispute as reason; contact locks', async () => {
+    const { b, d, key } = await disputed();
+    await resolveDispute(d.deps, 'staff1', { disputeId: 'd1', outcome: 'refund', note: NOTE });
+    const end = d.store.mirrors.get(key)?.end;
+    assert.equal(end?.status, 'cancelled');
+    assert.deepEqual(end?.cancel, { by: 'system', reason: 'dispute:d1', at: d.clock.now().toISOString(), refundPercent: 100 });
+    assert.equal(end?.completedAt, null);
+    assert.equal(end?.event.status, 'cancelled');
+    assert.equal(end?.event.bookingId, b.id);
+    assert.equal(d.store.subjects.get(key)?.state, 'cancelled');
+    assert.equal(bookingContactUnlocked({ status: 'cancelled', completedAt: null }, d.clock.now()), false);
+  });
+
+  test('a split refund cancels it with the split percent', async () => {
+    const { d, key } = await disputed();
+    await resolveDispute(d.deps, 'staff1', { disputeId: 'd1', outcome: 'split', refundPercent: 40, note: NOTE });
+    const end = d.store.mirrors.get(key)?.end;
+    assert.equal(end?.status, 'cancelled');
+    assert.equal(end?.cancel?.refundPercent, 40);
+    assert.equal(end?.cancel?.reason, 'dispute:d1');
+  });
+
+  test('a release completes it with no further money; contact locks 30 days after', async () => {
+    const { d, key } = await disputed();
+    const ledgerBefore = d.store.ledger.length;
+    await resolveDispute(d.deps, 'staff1', { disputeId: 'd1', outcome: 'release', note: NOTE });
+    const end = d.store.mirrors.get(key)?.end;
+    const now = d.clock.now();
+    assert.equal(end?.status, 'completed');
+    assert.equal(end?.cancel, null);
+    assert.equal(end?.completedAt, now.toISOString());
+    assert.equal(d.store.subjects.get(key)?.state, 'completed');
+    // The release itself is the only ledger row; no refund.
+    assert.equal(d.store.ledger.length - ledgerBefore, 1);
+    assert.equal(d.store.refunds.size, 0);
+    const completedAt = new Date(now);
+    assert.equal(bookingContactUnlocked({ status: 'completed', completedAt }, now), true);
+    assert.equal(bookingContactUnlocked({ status: 'completed', completedAt }, new Date(now.getTime() + 31 * 24 * HOUR)), false);
+  });
+
+  test('the machine refuses the dispute ends for a booking that was not denied, and for a non-system actor', () => {
+    const ok = { ...newBookingShape(), status: 'upcoming' as const, shootDeniedAt: ASK_AT.toISOString() };
+    assert.equal(decideTransition(ok, 'dispute_release', { role: 'system' }, ASK_AT).nextStatus, 'completed');
+    assert.equal(decideTransition(ok, 'dispute_refund', { role: 'system' }, ASK_AT, 'dispute:d1').nextStatus, 'cancelled');
+    assert.throws(() => decideTransition({ ...ok, shootDeniedAt: undefined }, 'dispute_release', { role: 'system' }, ASK_AT), code('conflict'));
+    assert.throws(() => decideTransition({ ...ok, status: 'shot' }, 'dispute_refund', { role: 'system' }, ASK_AT), code('conflict'));
+    assert.throws(() => decideTransition(ok, 'dispute_refund', { role: 'customer', id: 'c1' }, ASK_AT), code('permission_denied'));
+  });
+
+  test('no client reaches the dispute ends through transitionBooking', async () => {
+    const w = createBookingWorld();
+    await assert.rejects(transitionBooking(w.deps, { bookingId: 'b1', action: 'dispute_release' }), code('invalid_argument'));
+    await assert.rejects(transitionBooking(w.deps, { bookingId: 'b1', action: 'dispute_refund', actorId: 'c1' }), code('invalid_argument'));
+  });
+
+  test('a dispute on a shot booking leaves its status alone', async () => {
+    const d = createDisputeWorld();
+    seedShotBooking(d);
+    await openDispute(d.deps, 'c1', openInput());
+    await resolveDispute(d.deps, 'staff1', { disputeId: 'd1', outcome: 'refund', note: NOTE });
+    assert.equal(d.store.mirrors.get(disputeSubjectKey('booking', 'b1', null))?.end, undefined);
+    assert.equal(d.store.subjects.get(disputeSubjectKey('booking', 'b1', null))?.state, 'shot');
+  });
+});
+
+/** The smallest booking `decideTransition` reads. */
+function newBookingShape(): Booking {
+  return {
+    id: 'b1', customerId: 'c1', photographerId: 'p1', serviceId: 's', serviceSnapshot: { name: 'G', price: 1, durationMinutes: 60 },
+    day: '2026-10-15', start: '14:00', end: '16:00', place: { name: 'P' }, deposit: 1, remaining: 0, version: 1, status: 'upcoming',
+    createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+  } as Booking;
+}
 
 describe('the shoot step never blocks the other sweeps (fix 5)', () => {
   test('a throwing shoot-question query still lets the escrow releases run', async () => {

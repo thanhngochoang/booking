@@ -1,4 +1,4 @@
-import type { EscrowStatus } from './booking.js';
+import type { Booking, BookingCancel, BookingEventRecord, EscrowStatus } from './booking.js';
 import type { PaymentGateway } from './booking_ports.js';
 import type { Dispute, DisputeSnapshot, DisputeStatus, DisputeSubjectType } from './dispute.js';
 import { isSettledPayment, type LedgerEntry, type Payment, type Refund } from './escrow.js';
@@ -32,6 +32,21 @@ export interface DisputeSubjectView {
   /** The subject's latest dispute (open or resolved). */
   readonly disputeId: string | null;
   readonly snapshot: DisputeSnapshot;
+  /** Booking only: the booking as read (S30: `resolveDispute` ends a denied shoot through the machine). */
+  readonly booking?: Booking;
+}
+
+/**
+ * S30 (final fix D-I2): what `resolveDispute` writes on a denied shoot's booking with its mirrors (the same
+ * transaction): `cancelled` with the system's cancel record, or `completed` with `completedAt`, + one
+ * history row. No money: the dispute already moved it.
+ */
+export interface DisputeBookingEnd {
+  readonly status: 'cancelled' | 'completed';
+  readonly cancel: BookingCancel | null;
+  readonly completedAt: string | null;
+  readonly at: string;
+  readonly event: BookingEventRecord;
 }
 
 /**
@@ -71,8 +86,14 @@ export interface DisputeTx {
   venueLinesOf(payment: Payment): Promise<Payment[]>;
   setDispute(d: Dispute): void;
   setPayment(p: Payment): void;
-  /** Booking: `disputeId` + the `escrowStatus` mirror; registration: `disputeId` only. */
-  linkSubject(subject: DisputeSubjectView, patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus }): void;
+  /**
+   * Booking: `disputeId` + the `escrowStatus` mirror (+ `end`: a denied shoot's end, S30); registration:
+   * `disputeId` only.
+   */
+  linkSubject(
+    subject: DisputeSubjectView,
+    patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus; readonly end?: DisputeBookingEnd },
+  ): void;
   /** Creates or replaces a refund. */
   addRefund(r: Refund): void;
   addLedgerEntry(e: LedgerEntry): void;

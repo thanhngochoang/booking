@@ -267,7 +267,11 @@ describe('dispute Firestore adapter', () => {
       'events/e2/registrations/r2': registrationToFirestore(registration({ id: 'r2', eventId: 'e2', disputeId: 'dsp_9' })),
     });
     const store = new FirestoreDisputeStore(firestore);
-    const view = await store.runTransaction((tx) => tx.getSubject('booking', 'b1', null));
+    const read = await store.runTransaction((tx) => tx.getSubject('booking', 'b1', null));
+    // S30 (final fix D-I2): the view carries the booking it was built from.
+    const { booking: viewBooking, ...view } = read ?? {};
+    assert.equal(viewBooking?.id, 'b1');
+    assert.equal(viewBooking?.disputeId, 'dsp_0');
     assert.deepEqual(view, {
       type: 'booking', id: 'b1', eventId: null, customerId: 'c1', providerId: 'p1', state: 'completed',
       windowStart: new Date('2026-10-20T08:00:00.000Z'), shotAt: null, checkUntil: null, shootDeniedAt: null, amount: 1_000_000,
@@ -397,9 +401,9 @@ describe('dispute Firestore adapter', () => {
 // ---- The real use cases through FirestoreDisputeStore over the strict fake (every read before the first write). ----
 
 describe('dispute use cases on the Firestore adapter (read before write)', () => {
-  function world() {
+  function world(b: Booking = booking) {
     const docs: Record<string, DocumentData> = {
-      'bookings/b1': bookingToFirestore(booking),
+      'bookings/b1': bookingToFirestore(b),
       'users/p1': { displayName: 'Minh Trí', avatarUrl: null },
       'payments/pay_paid': paymentToFirestore(payment('pay_paid', { paidAt: '2026-10-10T00:00:00.000Z' })),
     };
@@ -446,6 +450,46 @@ describe('dispute use cases on the Firestore adapter (read before write)', () =>
     assert.equal(Object.keys(docs).filter((k) => k.startsWith('support_threads/dispute_dsp_1/messages/')).length, 2);
     // The same id again returns it unchanged.
     assert.deepEqual(await open(deps), d);
+  });
+
+  describe("a denied shoot's resolved dispute ends the booking in the same transaction (final fix D-I2)", () => {
+    const denied: Booking = {
+      ...booking, status: 'upcoming', completedAt: undefined, shootQuestionAt: '2026-10-19T19:30:00.000Z',
+      shootDeniedAt: '2026-10-20T09:00:00.000Z',
+    };
+    const resolve = (deps: DisputeDeps, outcome: Record<string, unknown>) =>
+      resolveDispute(deps, 'staff1', { disputeId: 'dsp_1', note: 'Khách xác nhận thợ không đến.', ...outcome });
+
+    it('a refund cancels the booking by the system (dispute:{id}) with one booking write and a history row', async () => {
+      const { docs, deps, fake } = world(denied);
+      await open(deps);
+      const before = fake.writes.length;
+      await resolve(deps, { outcome: 'refund' });
+      const b = docs['bookings/b1'];
+      assert.equal(b?.status, 'cancelled');
+      assert.equal(b?.cancel?.by, 'system');
+      assert.equal(b?.cancel?.reason, 'dispute:dsp_1');
+      assert.equal(b?.cancel?.refundPercent, 100);
+      assert.ok(b?.cancel?.at instanceof Timestamp);
+      assert.equal(b?.version, 5);
+      assert.equal(b?.depositRefunded, 1_000_000);
+      assert.equal(fake.writes.slice(before).filter((w) => w.path === 'bookings/b1').length, 1);
+      const history = Object.entries(docs).filter(([k]) => k.startsWith('bookings/b1/events/')).map(([, v]) => v.status);
+      assert.deepEqual(history, ['cancelled']);
+    });
+
+    it('a release completes the booking with completedAt and moves no other money', async () => {
+      const { docs, deps } = world(denied);
+      await open(deps);
+      await resolve(deps, { outcome: 'release' });
+      const b = docs['bookings/b1'];
+      assert.equal(b?.status, 'completed');
+      assert.ok(b?.completedAt instanceof Timestamp);
+      assert.equal(b?.completedAt.toDate().toISOString(), NOW.toISOString());
+      assert.equal(b?.cancel ?? null, null);
+      const ledger = Object.entries(docs).filter(([k]) => k.startsWith('ledger_entries/')).map(([, v]) => v.type);
+      assert.deepEqual(ledger, ['escrow_released']);
+    });
   });
 
   it('resolveDispute split refunds and releases in one transaction, then dispatchDisputeRefund sends it once', async () => {
