@@ -104,8 +104,11 @@ export interface ScanTx {
   getEntryDay(eventId: string, day: string): Promise<EntryDay | null>;
   /** `organizers/{organizerId}/gate_staff/{staffUid}`. */
   getGateStaff(organizerId: string, staffUid: string): Promise<GateStaff | null>;
+  /** `scan_attempts/{uid}` (server-only; final fix D-I3). */
+  getScanAttempts(uid: string): Promise<ScanAttempts | null>;
   /** `passes/{code8}` (the waived part's check-in mark, server-only). */
   putPass(p: PassRecord): Promise<void>;
+  putScanAttempts(a: ScanAttempts): Promise<void>;
   setBooking(b: Booking): Promise<void>;
   addBookingEvent(e: BookingEventRecord): Promise<void>;
   putRegistration(r: RegistrationDoc): Promise<void>;
@@ -116,6 +119,38 @@ export interface ScanTx {
 export interface ScanStore {
   runTransaction<T>(fn: (tx: ScanTx) => Promise<T>): Promise<T>;
 }
+
+/**
+ * Final fix D-I3 / B-I2: `scanPass` refusals (`not_found`, `not_your_pass`) a scanner may get per window,
+ * so a code cannot be found by guessing (the booking shows `passCode4`). Once spent, every scan by that
+ * scanner, a real code included, is `limit_exceeded` until the window (from its first refusal) ends.
+ */
+export const SCAN_REFUSALS_PER_HOUR = 20;
+const SCAN_ATTEMPT_WINDOW_MS = HOUR_MS;
+
+/** `scan_attempts/{uid}` (server-only): the scanner's refusals in the current window. */
+export interface ScanAttempts {
+  readonly uid: string;
+  /** ISO: the window's first refusal. */
+  readonly windowStart: string;
+  readonly count: number;
+}
+
+const windowOpen = (a: ScanAttempts, now: Date): boolean =>
+  now.getTime() - Date.parse(a.windowStart) < SCAN_ATTEMPT_WINDOW_MS;
+
+/** True while the scanner's window is open and its refusals reached the budget. */
+export function scanBudgetSpent(a: ScanAttempts | null, now: Date): boolean {
+  return a !== null && windowOpen(a, now) && a.count >= SCAN_REFUSALS_PER_HOUR;
+}
+
+/** The record after one more refusal: counted in the open window, or a new window from `now`. */
+export function afterRefusal(a: ScanAttempts | null, uid: string, now: Date): ScanAttempts {
+  if (a !== null && windowOpen(a, now)) return { uid, windowStart: a.windowStart, count: a.count + 1 };
+  return { uid, windowStart: now.toISOString(), count: 1 };
+}
+
+const REFUSALS: readonly ErrorCode[] = ['not_found', 'not_your_pass'];
 
 export interface ScanDeps {
   readonly scans: ScanStore;
@@ -260,6 +295,8 @@ function scanRefOf(raw: string): ScanRef | null {
 interface RunOptions {
   /** `checkInRegistration` (old clients): only this event's tickets, and only as its manager. */
   readonly onlyEventId?: string;
+  /** `scanPass`: refuse `limit_exceeded` once the scanner's refusal budget is spent (read first). */
+  readonly budget?: boolean;
 }
 
 interface RunOut {
@@ -273,6 +310,9 @@ async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef, opts: 
     const now = deps.clock.now();
     const today = formatVnDate(now);
     const managerOnly = opts.onlyEventId !== undefined;
+    if (opts.budget === true && scanBudgetSpent(await tx.getScanAttempts(caller.uid), now)) {
+      throw new DomainError('limit_exceeded');
+    }
 
     // ---- reads: the pass and its parts ----
     let bookingId: string | null = null;
@@ -311,7 +351,9 @@ async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef, opts: 
     const booking = bookingId === null ? null : await tx.getBooking(bookingId);
     if (booking !== null) {
       parts.push({ kind: 'booking', booking });
-      const entryEvent = booking.entry !== undefined && waivedCount(booking) > 0 ? await eventOf(booking.entry.eventId) : null;
+      // A closed booking's photographer is not coming: no waived head count (its kept tickets still scan).
+      const waives = booking.entry !== undefined && waivedCount(booking) > 0 && !CLOSED_BOOKING.includes(booking.status);
+      const entryEvent = waives && booking.entry !== undefined ? await eventOf(booking.entry.eventId) : null;
       if (entryEvent !== null) {
         await dayOf(entryEvent.id, booking.day);
         parts.push({ kind: 'waived', booking, event: entryEvent, checkedInAt: pass?.waivedCheckedInAt ?? null });
@@ -444,12 +486,27 @@ function codeOf(raw: unknown): string {
 
 /**
  * S30.07: the scanner's scan of `{code}` (8 characters, `VE-XXXX-XXXX`, or a legacy `VE-XXXX-MMDD`).
- * `not_found` for an unknown code; the rest as `resolveScan`. One transaction.
+ * `not_found` for an unknown code; the rest as `resolveScan`. One transaction. A `not_found` or
+ * `not_your_pass` answer counts on the scanner's budget (a second, small transaction right after: the
+ * refused scan writes nothing); a spent budget answers `limit_exceeded` (final fix D-I3).
  */
 export async function scanPass(deps: ScanDeps, callerId: string, raw: unknown): Promise<ScanResult> {
-  const ref = scanRefOf(codeOf(raw));
-  if (ref === null) throw new DomainError('not_found');
-  return (await runScan(deps, { uid: callerId, staffRole: null }, ref)).result;
+  const code = codeOf(raw);
+  try {
+    const ref = scanRefOf(code);
+    if (ref === null) throw new DomainError('not_found');
+    return (await runScan(deps, { uid: callerId, staffRole: null }, ref, { budget: true })).result;
+  } catch (e) {
+    if (e instanceof DomainError && REFUSALS.includes(e.code)) await recordRefusal(deps, callerId);
+    throw e;
+  }
+}
+
+async function recordRefusal(deps: ScanDeps, uid: string): Promise<void> {
+  await deps.scans.runTransaction(async (tx) => {
+    const now = deps.clock.now();
+    await tx.putScanAttempts(afterRefusal(await tx.getScanAttempts(uid), uid, now));
+  });
 }
 
 /** The old callable's codes for the scan reasons (old clients map these). */
@@ -512,7 +569,11 @@ export function eventScanStore(events: EventStore): ScanStore {
       getSpot: (id) => tx.getSpot(id),
       getEntryDay: (eventId, day) => tx.getEntryDay(eventId, day),
       getGateStaff: async () => null,
+      getScanAttempts: async () => null,
       putPass: async (p) => tx.putPass(p),
+      putScanAttempts: async () => {
+        throw new Error('eventScanStore: no scan attempts');
+      },
       setBooking: async () => {
         throw new Error('eventScanStore: no bookings');
       },

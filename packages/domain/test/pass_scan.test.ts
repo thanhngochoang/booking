@@ -5,7 +5,7 @@ import { bookingContactUnlocked } from '../src/contact.js';
 import { openDispute } from '../src/dispute_use_cases.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import { checkInRegistration } from '../src/event_registration.js';
-import { resolveScan } from '../src/pass_scan.js';
+import { SCAN_REFUSALS_PER_HOUR, afterRefusal, resolveScan, scanBudgetSpent, type ScanAttempts } from '../src/pass_scan.js';
 import { bookingView, createDisputeWorld, openInput, paidPayment } from './support/dispute_world.js';
 import {
   E1_TICKET, E2_TICKET, ENTRY_ID, P1, P2, P3, P4, P5, P7, P8, TODAY, at, createPassWorld, type PassWorld,
@@ -82,6 +82,53 @@ describe('scanPass by the shooter (Decision 9, Review Focus 2)', () => {
     await assert.rejects(w.scan('p1', 'hello'), code('not_found'));
     const { scanPass } = await import('../src/pass_scan.js');
     await assert.rejects(scanPass(w.deps, 'p1', { code: 5 }), code('invalid_argument'));
+  });
+});
+
+describe('scanPass attempt budget (final fix D-I3: 20 refusals per scanner per hour)', () => {
+  const MIN = 60_000;
+
+  test('the 21st refusal is limit_exceeded, and so is a real code until the window resets', async () => {
+    const w = await world();
+    for (let i = 0; i < SCAN_REFUSALS_PER_HOUR; i += 1) {
+      // Unknown codes and someone else's pass both count.
+      await assert.rejects(w.scan('p1', i % 2 === 0 ? 'ZZZZ2345' : P2), code(i % 2 === 0 ? 'not_found' : 'not_your_pass'));
+    }
+    await assert.rejects(w.scan('p1', 'ZZZZ2345'), code('limit_exceeded'));
+    await assert.rejects(w.scan('p1', P1), code('limit_exceeded'));
+    assert.equal(w.booking('b1').status, 'upcoming');
+    // Another scanner keeps its own budget.
+    await assert.rejects(w.scan('h1', 'ZZZZ2345'), code('not_found'));
+
+    w.setNow(new Date(at('14:00').getTime() + 60 * MIN));
+    assert.equal((await w.scan('p1', P1)).booking?.id, 'b1');
+    assert.equal(w.booking('b1').status, 'shooting');
+  });
+
+  test('a successful or window-refused scan does not count; the window starts at the first refusal', async () => {
+    const w = await world(at('13:00'));
+    await assert.rejects(w.scan('p1', P1), code('too_early'));
+    const store = w.deps.scans as unknown as { attempts: Map<string, ScanAttempts> };
+    assert.equal(store.attempts.get('p1'), undefined);
+    await assert.rejects(w.scan('p1', 'ZZZZ2345'), code('not_found'));
+    assert.deepEqual(store.attempts.get('p1'), { uid: 'p1', windowStart: at('13:00').toISOString(), count: 1 });
+    w.setNow(new Date(at('13:00').getTime() + 30 * MIN));
+    await assert.rejects(w.scan('p1', 'ZZZZ2346'), code('not_found'));
+    assert.equal(store.attempts.get('p1')?.count, 2);
+    w.setNow(new Date(at('13:00').getTime() + 61 * MIN));
+    await assert.rejects(w.scan('p1', 'ZZZZ2347'), code('not_found'));
+    assert.deepEqual(store.attempts.get('p1'), { uid: 'p1', windowStart: new Date(at('13:00').getTime() + 61 * MIN).toISOString(), count: 1 });
+  });
+
+  test('scanBudgetSpent and afterRefusal', () => {
+    const t0 = at('10:00');
+    assert.equal(scanBudgetSpent(null, t0), false);
+    const full: ScanAttempts = { uid: 'u', windowStart: t0.toISOString(), count: SCAN_REFUSALS_PER_HOUR };
+    assert.equal(scanBudgetSpent({ ...full, count: SCAN_REFUSALS_PER_HOUR - 1 }, t0), false);
+    assert.equal(scanBudgetSpent(full, new Date(t0.getTime() + 60 * MIN - 1)), true);
+    assert.equal(scanBudgetSpent(full, new Date(t0.getTime() + 60 * MIN)), false);
+    assert.deepEqual(afterRefusal(null, 'u', t0), { uid: 'u', windowStart: t0.toISOString(), count: 1 });
+    assert.equal(afterRefusal({ ...full, count: 3 }, 'u', t0).count, 4);
   });
 });
 
@@ -193,6 +240,22 @@ describe('scanPass at the gate', () => {
     assert.deepEqual(staffRow(w, 'org1', 'g1')?.scansToday, { day: TODAY, count: 1 });
     await assert.rejects(w.scan('g1', P3), code('already_checked_in'));
     assert.equal(day(w)?.checkedIn, 3);
+  });
+
+  test('a booking cancelled with keepTickets: the gate checks the tickets in, the waived part is ignored', async () => {
+    const w = await world(at('09:00'));
+    const b2 = w.booking('b2');
+    w.be.booking.store.bookings.set('b2', {
+      ...b2,
+      status: 'cancelled',
+      entry: { ...(b2.entry as NonNullable<typeof b2.entry>), waived: { provider: true, guests: false }, waivedGuests: 0 },
+    });
+    const r = await w.scan('g1', P3);
+    assert.deepEqual(r.registrations.map((x) => x.id), ['r2']);
+    assert.equal(r.waived, null);
+    assert.equal(day(w)?.checkedIn, 2);
+    assert.equal(w.reg(ENTRY_ID, 'r2').checkedInAt?.getTime(), at('09:00').getTime());
+    assert.equal(w.be.entry.store.passes.get(P3)?.waivedCheckedInAt ?? null, null);
   });
 
   test('an entry ticket of a closed day, waiting for its refund, or of a cancelled entry event is refunded at the gate (fix 4)', async () => {

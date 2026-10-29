@@ -10,9 +10,12 @@ import type { MemoryBookingStore } from './memory_booking_store.js';
 import type { MemoryEventStore } from './memory_event_store.js';
 import type { MemoryOrganizerStore } from './memory_organizer_store.js';
 import type { GateStaff } from './organizer.js';
-import type { ScanStore, ScanTx } from './pass_scan.js';
+import type { ScanAttempts, ScanStore, ScanTx } from './pass_scan.js';
 
 export class MemoryScanStore implements ScanStore {
+  /** `scan_attempts/{uid}` (final fix D-I3). */
+  readonly attempts = new Map<string, ScanAttempts>();
+
   constructor(
     private readonly bookings: MemoryBookingStore,
     private readonly events: MemoryEventStore,
@@ -35,7 +38,14 @@ export class MemoryScanStore implements ScanStore {
           const row = this.organizers.gateStaff.get(organizerId)?.get(staffUid);
           return row ? { ...row } : null;
         },
+        getScanAttempts: async (uid) => {
+          const a = this.attempts.get(uid);
+          return a ? { ...a } : null;
+        },
         putPass: async (p) => etx.putPass(p),
+        putScanAttempts: async (a: ScanAttempts) => {
+          staged.push(() => this.attempts.set(a.uid, { ...a }));
+        },
         setBooking: async (b: Booking) => {
           staged.push(() => this.bookings.bookings.set(b.id, { ...b }));
         },

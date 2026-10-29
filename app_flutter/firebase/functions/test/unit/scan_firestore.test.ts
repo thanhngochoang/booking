@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { Timestamp } from 'firebase-admin/firestore';
 import { scanPass, type ScanDeps } from '@photobooking/domain';
 import { bookingToFirestore } from '../../src/infra/booking_firestore.js';
 import { entryDayToFirestore, eventToFirestore, registrationToFirestore } from '../../src/infra/event_firestore.js';
@@ -64,11 +65,25 @@ describe('FirestoreScanStore', () => {
     assert.ok(db.data(`events/${pw.ENTRY_ID}/registrations/r1`)?.checkedInAt);
   });
 
-  it('gate staff of another organizer is not_your_pass and nothing is written', async () => {
+  it('gate staff of another organizer is not_your_pass and nothing is written but its refusal count', async () => {
     const { db, deps } = await scanFirestore();
     const writes = db.log.length;
     await assert.rejects(scanPass(deps, 'g2', { code: pw.P2 }), { code: 'not_your_pass' });
-    assert.equal(db.log.length, writes);
+    assert.deepEqual(db.log.slice(writes).map((l) => l.path), ['scan_attempts/g2']);
+  });
+
+  it('refusals count in scan_attempts/{uid}; the 21st is limit_exceeded, a real code too (final fix D-I3)', async () => {
+    const { db, deps } = await scanFirestore();
+    for (let i = 0; i < 20; i += 1) await assert.rejects(scanPass(deps, 'p1', { code: 'ZZZZ2345' }), { code: 'not_found' });
+    const row = db.data('scan_attempts/p1');
+    assert.equal(row?.uid, 'p1');
+    assert.equal(row?.count, 20);
+    assert.ok(row?.windowStart instanceof Timestamp);
+    assert.equal(row?.windowStart.toDate().toISOString(), pw.at('16:00').toISOString());
+    await assert.rejects(scanPass(deps, 'p1', { code: 'ZZZZ2345' }), { code: 'limit_exceeded' });
+    await assert.rejects(scanPass(deps, 'p1', { code: pw.P1 }), { code: 'limit_exceeded' });
+    assert.equal(db.data('bookings/b1')?.status, 'upcoming');
+    assert.equal(db.data('scan_attempts/p1')?.count, 20);
   });
 
   it('a legacy VE-XXXX-MMDD ticket resolves through ticket_codes for its host', async () => {

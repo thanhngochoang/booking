@@ -344,6 +344,19 @@ describe('Firestore mapping for entry events (S30, #223)', () => {
     assert.equal('visitDay' in registrationToFirestore(registration()), false);
   });
 
+  it('a normal-event ticket round-trips gateCheckedInAt (a venue-gate check-in, final fix B-C1)', () => {
+    const gated = registration({ gateCheckedInAt: D('2026-10-22T02:00:00.000Z') });
+    const doc = registrationToFirestore(gated);
+    assert.ok(doc.gateCheckedInAt instanceof Timestamp);
+    assert.equal('visitDay' in doc, false);
+    assert.deepEqual(registrationFromFirestore('r1', doc), gated);
+    assert.equal(registrationFromFirestore('r1', doc).gateCheckedInAt?.toISOString(), '2026-10-22T02:00:00.000Z');
+    // Never checked in at a gate: stored null, read as absent (as before).
+    const plain = registrationToFirestore(registration());
+    assert.equal(plain.gateCheckedInAt, null);
+    assert.equal(registrationFromFirestore('r1', plain).gateCheckedInAt ?? null, null);
+  });
+
   it('an entry day round-trips', () => {
     const d = { eventId: 'ev1', day: '2026-10-22', sold: 8, held: 2, checkedIn: 1, closed: false, updatedAt: '2026-10-18T03:00:00.000Z' };
     const doc = entryDayToFirestore(d);

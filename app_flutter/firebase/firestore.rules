@@ -1021,6 +1021,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // `scan_attempts/{uid}`: a scanner's refused scans in the current hour (scanPass budget); server-only.
+    match /scan_attempts/{uid} {
+      allow read, write: if false;
+    }
+
     // A group payment's lines (S04.03-entry, S05.02): the payer only.
     match /payment_groups/{groupId} {
       allow read: if signedIn() && resource.data.payerId == request.auth.uid;

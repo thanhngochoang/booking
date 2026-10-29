@@ -3422,6 +3422,15 @@ describe('S30 organizers, entry tickets and passes', () => {
     }
   });
 
+  test('nobody reads or writes scan_attempts/* (the scan budget is server-only)', async () => {
+    await seed('scan_attempts/s30_ph', { uid: 's30_ph', windowStart: Timestamp.fromDate(new Date()), count: 20 });
+    for (const db of [as('s30_ph'), as('s30_cus'), as('s30_adm', { staffRole: 'admin' }), env.unauthenticatedContext().firestore()]) {
+      await assertFails(getDoc(doc(db, 'scan_attempts/s30_ph')));
+      await assertFails(setDoc(doc(db, 'scan_attempts/s30_ph'), { uid: 's30_ph', count: 0 }));
+      await assertFails(deleteDoc(doc(db, 'scan_attempts/s30_ph')));
+    }
+  });
+
   test('gate staff cannot read registrations/*/private/contact', async () => {
     await seed('events/s30_en2', { ...entryEvent, endAt: Timestamp.fromDate(new Date(Date.now() + 86_400_000)) });
     await seed('events/s30_en2/registrations/r1', { userId: 's30_cus', status: 'paid', contactEligible: true, visitDay: '2026-10-20' });

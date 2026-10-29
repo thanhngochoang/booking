@@ -292,14 +292,16 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
 
 // ---- events/{id}/registrations/{regId} -----------------------------------------------------
 
-/** S30 entry tickets only (a string `visitDay`); event tickets carry none of these fields. */
+/**
+ * S30 entry tickets only (a string `visitDay`); event tickets carry none of these fields. `gateCheckedInAt`
+ * is mapped for every registration (a venue gate checks in ordinary event tickets too: final fix B-C1).
+ */
 function entryTicketToFirestore(r: RegistrationDoc): DocumentData {
   if (typeof r.visitDay !== 'string') return {};
   return {
     visitDay: r.visitDay,
     items: (r.items ?? []).map((i) => ({ ticketTypeId: i.ticketTypeId, name: i.name, price: i.price, qty: i.qty })),
     bookingId: r.bookingId ?? null,
-    gateCheckedInAt: ts(r.gateCheckedInAt ?? null),
     ticketCodeLast4: r.ticketCodeLast4 ?? '',
   };
 }
@@ -391,6 +393,8 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     refundStatus: r.refundStatus ?? null,
     // S18: the dispute mirror (written by the dispute transaction) survives every registration write.
     disputeId: r.disputeId ?? null,
+    // S30: a venue gate's check-in (`venue_gate` scans), for every registration (final fix B-C1).
+    gateCheckedInAt: ts(r.gateCheckedInAt ?? null),
     ...entryTicketToFirestore(r),
     event: {
       title: r.event.title,
@@ -432,6 +436,8 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     ...((REFUND_STATUSES as readonly unknown[]).includes(d.refundStatus) ? { refundStatus: d.refundStatus as RefundStatus } : {}),
     ...(str(d.disputeId) !== null ? { disputeId: str(d.disputeId) as string } : {}),
     ...(str(d.ticketCodeLast4) !== null ? { ticketCodeLast4: str(d.ticketCodeLast4) as string } : {}),
+    // Every registration (final fix B-C1); an entry ticket also reads it as null below when unset.
+    ...(toDate(d.gateCheckedInAt) !== null ? { gateCheckedInAt: toDate(d.gateCheckedInAt) } : {}),
     ...entryTicketFromFirestore(d),
     event: {
       title: String(ev.title ?? ''),

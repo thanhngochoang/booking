@@ -3,10 +3,12 @@
  * events, registrations, `entry_days`, spots and the scanner's `gate_staff` rows. The domain reads the pass and
  * its parts first, then only the role documents those parts need (the booking's shooter, the events' managers,
  * the scanner's own gate-staff row of each candidate organizer, a venue spot's manager), and writes last.
+ * `scanPass` also reads the scanner's `scan_attempts/{uid}` first, and counts a refusal there in a second,
+ * small transaction (final fix D-I3).
  */
 
 import { Timestamp, type Firestore, type Transaction } from 'firebase-admin/firestore';
-import { entryDayId, type ScanStore, type ScanTx } from '@photobooking/domain';
+import { entryDayId, type ScanAttempts, type ScanStore, type ScanTx } from '@photobooking/domain';
 import { BOOKINGS_COLLECTION, bookingFromFirestore, bookingToFirestore } from './booking_firestore.js';
 import {
   ENTRY_DAYS,
@@ -28,6 +30,18 @@ import { PASSES_COLLECTION, passFromFirestore, passToFirestore } from './pass_fi
 import { SPOTS_COLLECTION, spotFromFirestore } from './spot_firestore.js';
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
+
+/** `scan_attempts/{uid}` (final fix D-I3): server-only, no client reads or writes it (firestore.rules). */
+export const SCAN_ATTEMPTS_COLLECTION = 'scan_attempts';
+
+export function scanAttemptsToFirestore(a: ScanAttempts): Record<string, unknown> {
+  return { uid: a.uid, windowStart: Timestamp.fromDate(new Date(a.windowStart)), count: a.count };
+}
+
+export function scanAttemptsFromFirestore(uid: string, d: Record<string, unknown> | undefined): ScanAttempts | null {
+  if (d === undefined || !(d.windowStart instanceof Timestamp) || typeof d.count !== 'number') return null;
+  return { uid, windowStart: d.windowStart.toDate().toISOString(), count: d.count };
+}
 
 export class FirestoreScanStore implements ScanStore {
   constructor(private readonly firestore: Firestore) {}
@@ -69,6 +83,11 @@ export class FirestoreScanStore implements ScanStore {
         getEntryDay: async (eventId, day) => entryDayFromFirestore((await fTx.get(dayRef(eventId, day))).data()),
         getGateStaff: async (organizerId, staffUid) =>
           gateStaffFromFirestore(staffUid, (await fTx.get(staffRef(organizerId, staffUid))).data()),
+        getScanAttempts: async (uid) =>
+          scanAttemptsFromFirestore(uid, (await fTx.get(fs.collection(SCAN_ATTEMPTS_COLLECTION).doc(uid))).data()),
+        putScanAttempts: async (a) => {
+          fTx.set(fs.collection(SCAN_ATTEMPTS_COLLECTION).doc(a.uid), scanAttemptsToFirestore(a));
+        },
         putPass: async (p) => {
           fTx.set(fs.collection(PASSES_COLLECTION).doc(p.code8), passToFirestore(p));
         },
