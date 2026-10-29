@@ -355,9 +355,16 @@ class _EntryTab extends ConsumerWidget {
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: context.mutedForeground,
     );
-    final requests =
-        ref.watch(venueRequestsProvider(spot.id)).value ?? const [];
     final now = ref.watch(clockProvider)();
+    // A request past its 72 h waits only for the sweep to cancel it: it can
+    // no longer be answered (`deadline_passed`), so it is not listed.
+    final requests = [
+      for (final e
+          in ref.watch(venueRequestsProvider(spot.id)).value ?? const [])
+        if (e.venueConsentExpiresAt case final until
+            when until == null || until.isAfter(now))
+          e,
+    ];
 
     final Widget card;
     if (event == null) {

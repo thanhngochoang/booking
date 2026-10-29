@@ -90,6 +90,7 @@ class EventDraft {
     this.spotId,
     this.spotDecided = false,
     this.venue,
+    this.venueConsent = HostConsent.notRequired,
     this.cleared = const {},
   });
 
@@ -123,6 +124,7 @@ class EventDraft {
       spotId: d.spotId,
       spotDecided: d.spotDecided,
       venue: d.venue,
+      venueConsent: d.venueConsent,
     );
   }
 
@@ -168,6 +170,10 @@ class EventDraft {
   /// S12.01-venue (Decision 16): required to publish events created after
   /// `VENUE_REQUIRED_FROM`; saved step by step like the rest.
   final EventVenue? venue;
+
+  /// Read only (never sent): where the venue's manager stands on this draft
+  /// as the server last said (Decision 16). An accepted venue publishes.
+  final HostConsent venueConsent;
 
   /// Fields the user emptied on a draft that already exists on the server
   /// (`cover`, `place`, `deadline`, `schedule`): [toCallable] sends an explicit
@@ -237,6 +243,7 @@ class EventDraft {
       spotDecided:
           spotDecided ?? (clearSpot || this.spotDecided || spotId != null),
       venue: clearVenue ? null : (venue ?? this.venue),
+      venueConsent: venueConsent,
       cleared: next,
     );
   }
@@ -294,6 +301,8 @@ class EventDraft {
     'spotId': ?spotId,
     if (spotDecided) 'spotDecided': true,
     'venue': ?venue?.toJson(),
+    if (venueConsent != HostConsent.notRequired)
+      'venueConsent': venueConsent.code,
     if (cleared.isNotEmpty) 'cleared': cleared.toList()..sort(),
   };
 
@@ -332,6 +341,7 @@ class EventDraft {
       spotId: text(json['spotId']),
       spotDecided: json['spotDecided'] == true || text(json['spotId']) != null,
       venue: EventVenue.fromJson(json['venue']),
+      venueConsent: HostConsent.fromCode(text(json['venueConsent'])),
       cleared: json['cleared'] is List
           ? {
               for (final k in json['cleared']! as List)

@@ -642,6 +642,7 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
   bool _consentNeeded(CreateEventState s) {
     final spot = s.venueSpot;
     if (s.form.venueKind != VenueKind.managedSpot ||
+        s.form.venueConsent == HostConsent.accepted ||
         spot == null ||
         spot.id != s.form.spotId ||
         spot.managedBy == null) {

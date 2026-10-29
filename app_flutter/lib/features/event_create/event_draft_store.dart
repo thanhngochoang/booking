@@ -47,6 +47,7 @@ class EventForm {
     this.entryFeeVnd,
     this.commitmentAt,
     this.termsAccepted = false,
+    this.venueConsent = HostConsent.notRequired,
   });
 
   /// Resume a server draft in the form.
@@ -85,6 +86,7 @@ class EventForm {
       entryFeeVnd: paid ? v!.entryFeeVnd : null,
       commitmentAt: v?.commitmentAt,
       termsAccepted: v != null && v.termsVersion == organizerTermsVersion,
+      venueConsent: d.venueConsent,
     );
   }
 
@@ -143,6 +145,11 @@ class EventForm {
 
   /// "Tôi đồng ý điều khoản tổ chức sự kiện." ([organizerTermsVersion]).
   final bool termsAccepted;
+
+  /// Never sent: the venue manager's answer on the server draft this form
+  /// resumes, for the venue as loaded. A new kind or spot starts over
+  /// (`notRequired`), as the server does (`venueFieldsOf`).
+  final HostConsent venueConsent;
 
   /// What the venue part still lacks, as an [EventField.venue] code:
   /// `required` (no kind), `spot` (a managed spot without a spot),
@@ -261,6 +268,7 @@ class EventForm {
     Object? entryFeeVnd = _keep,
     Object? commitmentAt = _keep,
     bool? termsAccepted,
+    HostConsent? venueConsent,
   }) => EventForm(
     eventId: identical(eventId, _keep) ? this.eventId : eventId as String?,
     title: title ?? this.title,
@@ -303,6 +311,7 @@ class EventForm {
         ? this.commitmentAt
         : commitmentAt as DateTime?,
     termsAccepted: termsAccepted ?? this.termsAccepted,
+    venueConsent: venueConsent ?? this.venueConsent,
   );
 
   DateTime? _at(int? minute) => day == null || minute == null
@@ -402,6 +411,8 @@ class EventForm {
     'entryFeeVnd': ?entryFeeVnd,
     'commitmentAt': ?commitmentAt?.toUtc().toIso8601String(),
     if (termsAccepted) 'termsAccepted': true,
+    if (venueConsent != HostConsent.notRequired)
+      'venueConsent': venueConsent.code,
   };
 
   /// Reads what [toJson] wrote; anything unreadable is left empty.
@@ -456,6 +467,7 @@ class EventForm {
           ? DateTime.tryParse(j['commitmentAt']! as String)?.toUtc()
           : null,
       termsAccepted: j['termsAccepted'] == true,
+      venueConsent: HostConsent.fromCode(text(j['venueConsent'])),
     );
   }
 

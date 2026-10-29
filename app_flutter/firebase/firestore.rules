@@ -842,11 +842,18 @@ service cloud.firestore {
             || staffIs('admin')
             || (staffIs('sales') && e.createdBy == request.auth.uid));
     }
-    // S30 Decision 16 (Task 10): the manager of the spot an event's venue names. Read only: it lets
-    // that manager read the event (a draft waiting for their consent included), nothing below it.
-    // Guarded so an event without a venue (null, or no spotId) is simply false, never an error.
+    // S30 Decision 16 (Task 10): the venue consent states in which the spot's manager was asked
+    // (pending) or answered / let it lapse (kept readable for the event_venue_* notification links).
+    // Never 'not_required': a draft whose venue names the spot but was not published yet (or that
+    // needs no consent) stays private to its own managers.
+    function venueConsentAsked(e) {
+      return e.get('venueConsent', 'not_required') in ['pending', 'accepted', 'declined', 'expired'];
+    }
+    // The manager of the spot an event's venue names, once that manager was asked. Read only: the event
+    // document, nothing below it. Guarded so an event without a venue (null, or no spotId) is false.
     function venueManagerOf(e) {
       return signedIn()
+        && venueConsentAsked(e)
         && e.get('venue', null) is map
         && e.venue.get('spotId', null) is string
         && get(/databases/$(database)/documents/spots/$(e.venue.spotId)).data.get('managedBy', null)
@@ -875,14 +882,16 @@ service cloud.firestore {
             || venueManagerOf(resource.data));
       // A public list must filter status (S11.01 uses status in [open, full]); the creator and
       // the named host list their own drafts with createdBy == uid or hostId == uid.
-      // S30.03 "Sự kiện ở đây chờ bạn đồng ý" lists venue.spotId == its spot (and venueConsent ==
-      // 'pending'); the spot is read from the query's venue.spotId (Task 10).
+      // S30.03 "Sự kiện ở đây chờ bạn đồng ý": the spot's manager lists venue.spotId == its spot with
+      // venueConsent == 'pending'. Both filters are needed: the consent state must be one where the manager
+      // was asked (venueConsentAsked) and the spot, read from the query's venue.spotId, must be theirs.
       allow list: if signedIn()
         && (resource.data.status in ['open', 'full', 'closed', 'completed']
             || resource.data.createdBy == request.auth.uid
             || resource.data.hostId == request.auth.uid
-            || get(/databases/$(database)/documents/spots/$(resource.data.venue.spotId)).data.get('managedBy', null)
-                 == request.auth.uid);
+            || (resource.data.venueConsent in ['pending', 'accepted', 'declined', 'expired']
+                && get(/databases/$(database)/documents/spots/$(resource.data.venue.spotId)).data.get('managedBy', null)
+                     == request.auth.uid));
       allow write: if false;
 
       // S11.05 timeline: visible rows for everyone signed in; pending and hidden rows for managers.

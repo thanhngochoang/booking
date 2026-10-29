@@ -493,7 +493,12 @@ class CreateEventController extends Notifier<CreateEventState> {
   /// [previous] is the spot that was chosen before: a place that still equals
   /// its auto-fill moves to the new spot, a place the organizer typed stays.
   void setSpot(SpotEntry? spot, {SpotEntry? previous}) {
-    var form = state.form.copyWith(spotId: spot?.spotId);
+    final moved = spot?.spotId != state.form.spotId;
+    var form = state.form.copyWith(
+      spotId: spot?.spotId,
+      // Another place asks again (the server's `venueFieldsOf`).
+      venueConsent: moved ? HostConsent.notRequired : null,
+    );
     final empty =
         form.placeName.trim().isEmpty && form.lat == null && form.lng == null;
     final autoFilled =
@@ -528,7 +533,14 @@ class CreateEventController extends Notifier<CreateEventState> {
       _edit(form, field: field, clearServer: {field});
 
   void setVenueKind(VenueKind kind) {
-    _editVenue(state.form.copyWith(venueKind: kind));
+    _editVenue(
+      state.form.copyWith(
+        venueKind: kind,
+        venueConsent: kind != state.form.venueKind
+            ? HostConsent.notRequired
+            : null,
+      ),
+    );
     _prefillEntryFee();
   }
 
@@ -658,6 +670,18 @@ class CreateEventController extends Notifier<CreateEventState> {
         _spotRefused('archived');
       case 'not_found' when eventErrorFieldOf(error) == 'spotId':
         _spotRefused('gone');
+      case 'invalid_argument'
+          when eventErrorFieldOf(error) == 'spotId' &&
+              state.form.venueKind == VenueKind.managedSpot:
+        // The domain's `venueSpot`: a managed-spot venue at a spot that has
+        // no manager.
+        state = state.copyWith(
+          serverErrors: {
+            ...state.serverErrors,
+            EventField.venue: 'not_managed',
+          },
+          failure: CreateEventFailure.none,
+        );
       case 'invalid_argument' when eventErrorFieldOf(error) == 'spotId':
         _spotRefused('far');
       case 'invalid_argument'
@@ -813,13 +837,16 @@ class CreateEventController extends Notifier<CreateEventState> {
     return id;
   }
 
-  /// `publishEvent` answers ok also when it only asked the venue's manager
-  /// (Decision 16: a managed spot whose manager is not the host); the event
-  /// then stays a draft. Known from the form and the spot read for it; the
-  /// manage page (S12.03) re-reads the event and shows "chờ đồng ý".
+  /// `publishEvent` answered ok: did it only ask the venue's manager?
+  /// (Decision 16: a managed spot whose manager is not the host, not yet
+  /// accepted; the event then stays a draft.) A venue the manager already
+  /// accepted publishes; a pending one is refused `venue_consent_required`
+  /// (handled by the caller). The manage page (S12.03) re-reads the event
+  /// and shows "chờ đồng ý".
   bool _waitsForVenue() {
     final spot = state.venueSpot;
-    return state.form.venueKind == VenueKind.managedSpot &&
+    return state.form.venueConsent != HostConsent.accepted &&
+        state.form.venueKind == VenueKind.managedSpot &&
         spot != null &&
         spot.id == state.form.spotId &&
         spot.managedBy != null &&

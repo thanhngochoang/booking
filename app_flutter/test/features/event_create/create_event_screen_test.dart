@@ -1048,6 +1048,49 @@ void main() {
       },
     );
 
+    for (final (consent, toast) in [
+      (HostConsent.accepted, 'Đã đăng sự kiện'),
+      (HostConsent.notRequired, 'Chờ địa điểm đồng ý'),
+    ]) {
+      testWidgets(
+        'a resumed draft at someone else\'s spot (${consent.code}) publishes with "$toast"',
+        (tester) async {
+          final w = _photographer();
+          final bd = makeSpot(id: 'bd', managedBy: 'org1');
+          w.spots
+            ..seedSpot(bd)
+            ..seedDirectory([makeSpotEntry(bd)]);
+          w.repo.putEvent(
+            detailOf(
+              'ev9',
+              status: EventStatus.draft,
+              createdBy: 'u1',
+              hostId: 'u1',
+              spotId: 'bd',
+              venue: const EventVenue(
+                kind: VenueKind.managedSpot,
+                spotId: 'bd',
+                termsVersion: organizerTermsVersion,
+              ),
+              venueConsent: consent,
+            ),
+          );
+          await w.pump(
+            tester,
+            path: '/events/new?draft=ev9',
+            organizer: true,
+            size: _size,
+          );
+          await _next(tester);
+          expect(find.text('2 / 2'), findsOneWidget);
+          await tester.tap(find.byKey(const Key('create-event-publish')));
+          await settle(tester);
+          expect(w.repo.published, ['ev9']);
+          expect(find.text(toast), findsOneWidget);
+        },
+      );
+    }
+
     testWidgets('fits 320 dp at 1.3× text with the venue errors showing', (
       tester,
     ) async {

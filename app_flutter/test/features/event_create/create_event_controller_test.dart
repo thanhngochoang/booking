@@ -595,6 +595,84 @@ void main() {
     );
 
     test(
+      'a resumed draft the manager accepted publishes (no waiting)',
+      () async {
+        final spots = FakeSpotRepository()
+          ..seedSpot(makeSpot(id: 'bd', managedBy: 'org1'));
+        final repo = FakeEventRepository(uid: 'u1');
+        final (c, _) = await _container(repo: repo, spots: spots);
+        final seed = _complete().copyWith(
+          eventId: 'ev9',
+          spotId: 'bd',
+          venue: const EventVenue(
+            kind: VenueKind.managedSpot,
+            spotId: 'bd',
+            termsVersion: organizerTermsVersion,
+          ),
+        );
+        final accepted = EventDraft.fromJson({
+          ...seed.toJson(),
+          'venueConsent': 'accepted',
+        });
+        expect(accepted.venueConsent, HostConsent.accepted);
+        final args = CreateEventArgs(resumeId: 'ev9', seed: accepted);
+        c.listen(createEventControllerProvider(args), (_, _) {});
+        final form = c.read(createEventControllerProvider(args)).form;
+        expect(form.venueConsent, HostConsent.accepted);
+        expect(
+          EventForm.fromJson(form.toJson()).venueConsent,
+          HostConsent.accepted,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(c.read(createEventControllerProvider(args)).venueSpot?.id, 'bd');
+        expect(
+          await c.read(createEventControllerProvider(args).notifier).publish(),
+          'ev9',
+        );
+        expect(
+          c.read(createEventControllerProvider(args)).awaitingVenue,
+          isFalse,
+        );
+        // Another spot starts over: the consent is asked again.
+        c
+            .read(createEventControllerProvider(args).notifier)
+            .setVenueKind(VenueKind.publicPlace);
+        expect(
+          c.read(createEventControllerProvider(args)).form.venueConsent,
+          HostConsent.notRequired,
+        );
+      },
+    );
+
+    test('invalid_argument spotId on a managed-spot venue: the spot has no manager', () async {
+      final repo = _PublishRefuses('invalid_argument', field: 'spotId');
+      final (c, _) = await _container(repo: repo);
+      final p = createEventControllerProvider(const CreateEventArgs());
+      final cover = await repo.uploadCover(
+        'x' * 20,
+        const PickedImage(path: '/c.jpg', name: 'c.jpg'),
+      );
+      final ctl = c.read(p.notifier)
+        ..setTitle('Photo walk')
+        ..setType(EventType.photoWalk)
+        ..setDay(DateTime.utc(2026, 10, 13))
+        ..setStart(9 * 60)
+        ..setEnd(12 * 60)
+        ..setCapacity(20)
+        ..setPrice(250000)
+        ..setPlaceText(name: 'Hồ')
+        ..chooseArea('hn-hoan-kiem', lat: 21, lng: 105)
+        ..setVenueKind(VenueKind.managedSpot)
+        ..setSpot(makeSpotEntry(makeSpot(id: 'unknown')))
+        ..setTerms(true)
+        ..debugSetCover(cover, repo.coverPathOf(cover)!);
+      expect(await ctl.publish(), isNull);
+      final s = c.read(p);
+      expect(s.serverErrors[EventField.venue], 'not_managed');
+      expect(s.serverErrors.containsKey(EventField.spot), isFalse);
+    });
+
+    test(
       'a publish at a managed spot of someone else waits for the venue',
       () async {
         final spots = FakeSpotRepository()

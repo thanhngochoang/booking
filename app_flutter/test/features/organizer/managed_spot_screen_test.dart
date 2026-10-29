@@ -361,6 +361,31 @@ void main() {
       },
     );
 
+    testWidgets('a request past its 72 h (not swept yet) is not listed', (
+      tester,
+    ) async {
+      final w = _world();
+      w.events.putEvent(
+        detailOf(
+          'ev3',
+          status: EventStatus.draft,
+          venue: const EventVenue(
+            kind: VenueKind.managedSpot,
+            spotId: 'bd',
+            termsVersion: organizerTermsVersion,
+          ),
+          venueConsent: HostConsent.pending,
+          venueConsentExpiresAt: organizerNow.subtract(
+            const Duration(minutes: 5),
+          ),
+        ),
+      );
+      await w.pump(tester, location: _path);
+      expect(find.text('Sự kiện ở đây chờ bạn đồng ý'), findsNothing);
+      expect(_key('managed-venue-request-ev3'), findsNothing);
+      expect(find.textContaining('hết hạn sau'), findsNothing);
+    });
+
     testWidgets('no section while nothing waits', (tester) async {
       final w = _world();
       await w.pump(tester, location: _path);

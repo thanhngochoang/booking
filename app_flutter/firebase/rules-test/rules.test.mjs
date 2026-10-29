@@ -3529,6 +3529,30 @@ describe('S30 organizers, entry tickets and passes', () => {
     await assertFails(getDocs(collection(as('s30_org'), 'events/s30_vev/registrations')));
   });
 
+  test('the venue manager reads nothing at their spot until the consent is asked', async () => {
+    await seed('spots/s30_vspot3', { name: 'Bãi đá sông Hồng', managedBy: 's30_org' });
+    const venue = { kind: 'managed_spot', spotId: 's30_vspot3', entryFee: { included: true, amountVnd: null }, commitmentAt: null, termsVersion: '2026-10-18' };
+    const base = {
+      host: { type: 'photographer', id: 's30_ph', name: 'Minh Trí', avatarUrl: null, verified: true },
+      hostId: 's30_ph', createdBy: 's30_ph', type: 'photo_walk', title: 'Photo walk', venue, publishedAt: null,
+    };
+    // saveEventDraft stores the venue before publish with venueConsent 'not_required'.
+    await seed('events/s30_vev_unasked', { ...base, status: 'draft', venueConsent: 'not_required' });
+    await seed('events/s30_vev_nofield', { ...base, status: 'draft' });
+    await seed('events/s30_vev_cancelled', { ...base, status: 'cancelled', venueConsent: 'not_required' });
+    // Answered or lapsed requests stay readable for the notification link.
+    await seed('events/s30_vev_declined', { ...base, status: 'cancelled', venueConsent: 'declined' });
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_unasked')));
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_nofield')));
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_cancelled')));
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'events/s30_vev_declined')));
+    // A list filtered by the spot only (no consent filter) is refused.
+    await assertFails(getDocs(query(collection(as('s30_org'), 'events'), where('venue.spotId', '==', 's30_vspot3'))));
+    // A list for a spot that does not exist is refused.
+    await assertFails(getDocs(query(collection(as('s30_org'), 'events'),
+      where('venue.spotId', '==', 's30_no_such_spot'), where('venueConsent', '==', 'pending'))));
+  });
+
   test('Storage spots/{spotId}/…: the spot\'s manager adds a JPEG cover; nobody else writes', async () => {
     await seed('spots/s30_spot2', { name: 'Bãi đá', managedBy: 's30_org' });
     const st = env.authenticatedContext('s30_org').storage();
