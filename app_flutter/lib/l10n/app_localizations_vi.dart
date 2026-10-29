@@ -12867,4 +12867,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String s1104_cancelUntil(String cutoff) {
     return 'Huỷ vé · hoàn 100% (tới $cutoff)';
   }
+
+  @override
+  String get s1104_refunding => 'Đang hoàn 100%';
 }

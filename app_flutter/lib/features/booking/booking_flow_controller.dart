@@ -680,6 +680,9 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     if (others + count + (providerTicket ? 1 : 0) > entryTicketsPerOrder) {
       return;
     }
+    // `createBooking.entry` needs at least one ticket of the customer's
+    // (`priceItems` refuses empty items): to buy none, switch the card off.
+    if (others + count == 0) return;
     if (count == 0) {
       picks.remove(typeId);
     } else {
@@ -703,15 +706,13 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       waiver: info.waiver,
     );
     if (quote.amount <= 0) return null;
-    return BookingEntryRequest(
-      eventId: e.id,
-      visitDay: day,
-      items: [
-        for (final t in e.visibleTicketTypes)
-          if ((picks[t.id] ?? 0) > 0)
-            EntryItem(ticketTypeId: t.id, qty: picks[t.id]!),
-      ],
-    );
+    final items = [
+      for (final t in e.visibleTicketTypes)
+        if ((picks[t.id] ?? 0) > 0)
+          EntryItem(ticketTypeId: t.id, qty: picks[t.id]!),
+    ];
+    if (items.isEmpty) return null;
+    return BookingEntryRequest(eventId: e.id, visitDay: day, items: items);
   }
 
   void next() {

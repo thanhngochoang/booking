@@ -26,6 +26,7 @@ class PermissionPrimer extends StatelessWidget {
     this.icon,
     this.enableLabel,
     this.laterLabel,
+    this.outlineEnable = false,
   });
 
   final String title;
@@ -45,6 +46,10 @@ class PermissionPrimer extends StatelessWidget {
   /// Replace "Bật thông báo" / "Để sau" for another permission.
   final String? enableLabel;
   final String? laterLabel;
+
+  /// The enable button as an outline instead of the gradient primary (S30.07
+  /// has no gradient button).
+  final bool outlineEnable;
 
   @override
   Widget build(BuildContext context) {
@@ -115,11 +120,20 @@ class PermissionPrimer extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpace.s3),
-          AppButton.primary(
-            enableLabel ?? l.primerEnableNotification,
-            loading: enabling,
-            onPressed: onEnable,
-          ),
+          if (outlineEnable)
+            AppButton.outline(
+              enableLabel ?? l.primerEnableNotification,
+              key: const ValueKey('primer_enable'),
+              loading: enabling,
+              onPressed: onEnable,
+            )
+          else
+            AppButton.primary(
+              enableLabel ?? l.primerEnableNotification,
+              key: const ValueKey('primer_enable'),
+              loading: enabling,
+              onPressed: onEnable,
+            ),
           const SizedBox(height: AppSpace.s2),
           AppButton.text(
             laterLabel ?? l.primerLater,

@@ -12,6 +12,8 @@ import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 import '../../support/event_world.dart';
 import '../../support/meta_finders.dart';
+import '../../support/organizer_world.dart'
+    show entryDetailOf, entryRegistration, makeEntryEvent;
 
 const _sw = Size(390, 1200);
 
@@ -516,5 +518,61 @@ void main() {
 
   test('l10n sanity: Không thu phí is the free tag', () {
     expect(AppLocalizationsVi().freeTag, 'Không thu phí');
+  });
+
+  group('entry events (S30, Task 9 fix)', () {
+    EventRegistration day(String id, String visitDay) =>
+        entryRegistration(id, day: visitDay);
+    // organizer_world's registrations belong to `c-<id>`; make them mine.
+    EventRegistration mine(EventRegistration r) => EventRegistration(
+      id: r.id,
+      eventId: r.eventId,
+      userId: 'u1',
+      userName: r.userName,
+      ticketCode: '',
+      quantity: r.quantity,
+      amount: r.amount,
+      status: r.status,
+      event: r.event,
+      createdAt: r.createdAt,
+      visitDay: r.visitDay,
+      items: r.items,
+    );
+
+    test('no single registration decides the bar: "Mua vé" while selling', () {
+      final e = entryDetailOf(makeEntryEvent());
+      final reg = mine(day('r1', '2026-11-12'));
+      expect(
+        eventJoinState(
+          e,
+          reg,
+          uid: 'u1',
+          now: DateTime.utc(2026, 11, 10, 3),
+          paymentsReady: true,
+        ),
+        EventJoinState.join,
+      );
+    });
+
+    testWidgets('the page of an entry event with tickets on two days offers '
+        'Mua vé → S30.05, never "Không thu phí"', (tester) async {
+      final w = EventsWorld(
+        events: [entryDetailOf(makeEntryEvent())],
+        registrations: [
+          mine(day('r1', '2026-11-12')),
+          mine(day('r2', '2026-11-14')),
+        ],
+        now: DateTime.utc(2026, 11, 10, 3),
+      );
+      await w.pump(tester, path: '/e/ent1', size: const Size(390, 1200));
+      expect(_byKey('event-view-ticket'), findsNothing);
+      final buy = tester.widget<AppButton>(_byKey('event-join'));
+      expect(buy.label, 'Mua vé');
+      expect(find.byType(FreeTag), findsNothing);
+      expect(find.byType(FreeBanner), findsNothing);
+      await tester.tap(_byKey('event-join'));
+      await settle(tester);
+      expect(w.location, '/spots/bd/tickets');
+    });
   });
 }

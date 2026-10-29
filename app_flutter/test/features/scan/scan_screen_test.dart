@@ -69,6 +69,19 @@ void main() {
     await w.pump(tester);
     expect(find.byKey(const Key('scan-camera-primer')), findsOneWidget);
     expect(find.text('Cho phép dùng camera để quét mã'), findsOneWidget);
+    // S30.07 has no gradient button: "Mở cài đặt" is an outline.
+    final settings = find.text('Mở cài đặt');
+    expect(
+      find.ancestor(of: settings, matching: find.byType(OutlinedButton)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('scan-camera-primer')),
+        matching: find.byType(FilledButton),
+      ),
+      findsNothing,
+    );
     await tester.tap(find.text('Mở cài đặt'));
     await settleScan(tester);
     expect(w.scanner.settingsOpened, 1);
@@ -338,8 +351,9 @@ void main() {
     w.scanner.emit(_code);
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const Key('scan-checking')), findsOneWidget);
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump(const Duration(milliseconds: 300));
+    // The answer lands at 1.2 s: the sheet must be up by 1.3 s (< 2 s).
+    await tester.pump(const Duration(milliseconds: 1150));
+    await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Đã vào · 3 người'), findsOneWidget);
   });
 

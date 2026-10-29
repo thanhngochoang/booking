@@ -8596,5 +8596,7 @@
   "s1104_gateHint": "Đưa mã cho nhân viên ở cổng. Dùng được cả nhóm, một lần.",
   "@s1104_gateHint": {"description": "S30 (#223) S11.04-entry hint."},
   "s1104_cancelUntil": "Huỷ vé · hoàn 100% (tới {cutoff})",
-  "@s1104_cancelUntil": {"description": "S30 (#223) S11.04-entry cancel label.", "placeholders": {"cutoff": {"type": "String"}}}
+  "@s1104_cancelUntil": {"description": "S30 (#223) S11.04-entry cancel label.", "placeholders": {"cutoff": {"type": "String"}}},
+  "s1104_refunding": "Đang hoàn 100%",
+  "@s1104_refunding": {"description": "S30 (#223) S11.04-entry: a refund due for another reason than a closed day (event cancelled, organizer suspended). Copy not in organizer.md (controller ruling, Task 9 fix round 1)."}
 }

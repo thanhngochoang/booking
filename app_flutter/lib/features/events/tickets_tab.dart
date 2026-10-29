@@ -15,6 +15,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/passes/pass_providers.dart';
 import 'package:photobooking/data/passes/pass_repository.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/disputes/dispute_entry.dart';
@@ -38,18 +39,21 @@ typedef TicketView = ({
 /// Pure: how one registration is drawn. `refundPercentIfCancelled` is null
 /// for a free ticket (no percent is shown), else 100 or 0 (the server's
 /// `ticketRefundPercent`, computed here for the label; the server decides).
+/// Entry tickets: [cutoffHours] is the event's `refundCutoffHours`;
+/// [dayClosed] says the visit day's `entry_days` row is closed.
 TicketView ticketViewOf(
   EventRegistration r, {
   required DateTime now,
   required AppLocalizations l,
+  int cutoffHours = _fullRefundHours,
+  bool dayClosed = false,
 }) {
   // An entry ticket refunds all of it up to its visit day 00:00 minus the
-  // cutoff (`entryRefundPercent`, 48 h by default; the snapshot carries no
-  // other cutoff), nothing after.
+  // event's cutoff (`entryRefundPercent`), nothing after.
   final refund = r.isFree
       ? null
       : r.isEntry
-      ? (!now.isAfter(entryCutoffAt(r.visitDay!, _fullRefundHours)) ? 100 : 0)
+      ? (!now.isAfter(entryCutoffAt(r.visitDay!, cutoffHours)) ? 100 : 0)
       : (r.event.startsAt.difference(now) >=
                 const Duration(hours: _fullRefundHours)
             ? 100
@@ -59,7 +63,11 @@ TicketView ticketViewOf(
   if (r.refundDue && r.status != RegistrationStatus.refunded) {
     return (
       state: TicketState.cancelled,
-      statusLabel: r.isEntry ? l.s1104_dayClosed : l.ticketRefunding,
+      // An entry ticket: "Ngày đóng cửa" only when its day was closed; an
+      // event cancel or a suspended organizer reads "Đang hoàn 100%".
+      statusLabel: !r.isEntry
+          ? l.ticketRefunding
+          : (dayClosed ? l.s1104_dayClosed : l.s1104_refunding),
       refundPercentIfCancelled: null,
     );
   }
@@ -87,7 +95,11 @@ TicketView ticketViewOf(
           refundPercentIfCancelled: null,
         );
       }
-      final over = !now.isBefore(r.event.endsAt);
+      // An entry ticket is over once its visit day is (whatever the
+      // snapshot's end says).
+      final over = r.isEntry
+          ? vnDateKey(now).compareTo(r.visitDay!) > 0
+          : !now.isBefore(r.event.endsAt);
       return (
         state: over ? TicketState.past : TicketState.upcoming,
         statusLabel: null,
@@ -186,7 +198,32 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
     DateTime now,
   ) {
     final l = context.l10n;
-    final views = {for (final r in all) r.id: ticketViewOf(r, now: now, l: l)};
+    // Entry tickets read their event's cutoff and, while a refund is due,
+    // whether their day was closed (S11.04-entry).
+    int cutoffOf(EventRegistration r) => r.isEntry
+        ? ref.watch(eventProvider(r.eventId)).value?.entry?.refundCutoffHours ??
+              _fullRefundHours
+        : _fullRefundHours;
+    bool closedOf(EventRegistration r) =>
+        r.isEntry &&
+        r.refundDue &&
+        r.status != RegistrationStatus.refunded &&
+        ref
+                .watch(entryDayProvider((eventId: r.eventId, day: r.visitDay!)))
+                .value
+                ?.closed ==
+            true;
+    final cutoffs = {for (final r in all) r.id: cutoffOf(r)};
+    final views = {
+      for (final r in all)
+        r.id: ticketViewOf(
+          r,
+          now: now,
+          l: l,
+          cutoffHours: cutoffs[r.id]!,
+          dayClosed: closedOf(r),
+        ),
+    };
     List<EventRegistration> of(bool Function(TicketView) f) => [
       for (final r in all)
         if (f(views[r.id]!)) r,
@@ -244,7 +281,13 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
               registration: r,
               view: left > Duration.zero
                   ? views[r.id]!
-                  : ticketViewOf(r, now: expiresAt, l: l),
+                  : ticketViewOf(
+                      r,
+                      now: expiresAt,
+                      l: l,
+                      cutoffHours: cutoffs[r.id]!,
+                    ),
+              cutoffHours: cutoffs[r.id]!,
               highlighted: r.id == emphasised,
               onRefundedCancel: _afterRefundedCancel,
             ),
@@ -254,6 +297,7 @@ class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
           key: ValueKey(r.id),
           registration: r,
           view: views[r.id]!,
+          cutoffHours: cutoffs[r.id]!,
           highlighted: r.id == emphasised,
           onRefundedCancel: _afterRefundedCancel,
         );
@@ -269,10 +313,14 @@ class _TicketTile extends ConsumerWidget {
     required this.view,
     required this.highlighted,
     required this.onRefundedCancel,
+    this.cutoffHours = _fullRefundHours,
   });
 
   final EventRegistration registration;
   final TicketView view;
+
+  /// An entry ticket's refund cutoff (the event's `refundCutoffHours`).
+  final int cutoffHours;
   final bool highlighted;
 
   /// Called after a cancel the server accepted with money back.
@@ -395,7 +443,7 @@ class _TicketTile extends ConsumerWidget {
         : (pass == null ? '' : passDisplay(pass));
     final entry = r.isEntry;
     final starts = toVn(r.event.startsAt);
-    final cutoff = entry ? entryCutoffLabel(r.visitDay!, _fullRefundHours) : '';
+    final cutoff = entry ? entryCutoffLabel(r.visitDay!, cutoffHours) : '';
     final card = TicketCard(
       ticket: TicketCardData(
         ticketCode: code,

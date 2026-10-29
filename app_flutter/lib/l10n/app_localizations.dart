@@ -21950,6 +21950,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Huỷ vé · hoàn 100% (tới {cutoff})'**
   String s1104_cancelUntil(String cutoff);
+
+  /// S30 (#223) S11.04-entry: a refund due for another reason than a closed day (event cancelled, organizer suspended). Copy not in organizer.md (controller ruling, Task 9 fix round 1).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoàn 100%'**
+  String get s1104_refunding;
 }
 
 class _AppLocalizationsDelegate

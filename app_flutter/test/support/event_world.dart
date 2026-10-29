@@ -566,6 +566,7 @@ class EventsWorld {
           '/setup',
           '/disputes/:id',
           '/scan',
+          '/spots/:spotId/tickets',
         ])
           GoRoute(path: p, builder: stub),
       ],

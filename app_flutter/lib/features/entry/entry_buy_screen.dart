@@ -69,7 +69,18 @@ class _EntryBuyScreenState extends ConsumerState<EntryBuyScreen> {
   }
 
   Future<void> _pay(EntryEvent e, String day) async {
-    final phone = ref.read(currentContactProvider).value?.phone;
+    // The contact may still be loading: wait for it before sending a
+    // customer who has a phone to S04.05.
+    String? phone;
+    final hold = ref.listenManual(currentContactProvider, (_, _) {});
+    try {
+      phone = (await ref.read(currentContactProvider.future))?.phone;
+    } catch (_) {
+      phone = null;
+    } finally {
+      hold.close();
+    }
+    if (!mounted) return;
     if (phone == null || phone.isEmpty) {
       _toPhone();
       return;

@@ -172,6 +172,32 @@ void main() {
     );
   });
 
+  testWidgets('your last ticket cannot go: no empty entry is sent', (
+    tester,
+  ) async {
+    final bookings = await _open(tester);
+    final minus = find.byKey(const Key('book-entry-t1-minus'));
+    expect(tester.widget<IconButton>(minus).onPressed, isNull);
+    await _tap(tester, find.byKey(const Key('book-entry-t2-plus')));
+    // With a child ticket the adult one may go to 0.
+    expect(tester.widget<IconButton>(minus).onPressed, isNotNull);
+    await _tap(tester, minus);
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('book-entry-t2-minus')))
+          .onPressed,
+      isNull,
+    );
+    await _tap(tester, find.text('Thanh toán 610.000₫'));
+    expect(
+      {
+        for (final i in bookings.createEntries.single!.items)
+          i.ticketTypeId: i.qty,
+      },
+      {'t2': 1},
+    );
+  });
+
   testWidgets('a resident who waives the photographer: the line says so', (
     tester,
   ) async {

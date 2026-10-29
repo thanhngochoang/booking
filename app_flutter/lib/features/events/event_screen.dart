@@ -19,6 +19,7 @@ import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/events/register_sheet.dart';
 import 'package:photobooking/features/events/timeline_controller.dart';
 import 'package:photobooking/features/events/timeline_tab.dart';
+import 'package:photobooking/features/organizer/organizer_routes.dart';
 import 'package:photobooking/features/safety/report_sheet.dart';
 
 /// The three tabs of an event (Decision 26): `/e/:id` opens "Thông tin",
@@ -88,6 +89,13 @@ class _EventScreenState extends ConsumerState<EventScreen> {
   /// reading the contact fails closed, so a failure also goes to S04.05.
   Future<void> _join(EventDetail event) async {
     if (_busy) {
+      return;
+    }
+    // S30: an entry event sells per visit day on S30.05, never through the
+    // one-registration S11.03 sheet.
+    final spotId = event.spotId;
+    if (event.isEntry && spotId != null) {
+      await context.push(spotTicketsPath(spotId));
       return;
     }
     setState(() => _busy = true);
@@ -228,7 +236,11 @@ class _EventScreenState extends ConsumerState<EventScreen> {
     final l = context.l10n;
     final uid = ref.watch(authStateProvider).value?.uid ?? '';
     final role = ref.watch(staffRoleProvider).value;
-    final reg = ref.watch(myEventRegistrationProvider(e.id)).value;
+    // An entry event holds one registration per visit day: there is no
+    // "the" registration (its tickets are on S11.04), so none is read.
+    final reg = e.isEntry
+        ? null
+        : ref.watch(myEventRegistrationProvider(e.id)).value;
     final manager = e.isManagedBy(uid, role);
     if (e.summary.status == EventStatus.draft && !manager) {
       return _gone();
@@ -332,7 +344,8 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                 moreTooltip: l.photoMoreOptions,
               ),
             if (cancelled) _CancelledStrip(text: l.eventCancelled),
-            if (s.isFree && !cancelled && !timeline) const FreeBanner(),
+            if (s.isFree && !e.isEntry && !cancelled && !timeline)
+              const FreeBanner(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpace.s4,

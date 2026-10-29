@@ -54,6 +54,9 @@ class EntryWorld {
   /// The signed-in user's contact; null = no phone yet (S04.05).
   UserContact? contact = const UserContact(phone: '+84912345678');
 
+  /// When set, the contact arrives this late (a slow first read).
+  Duration? contactDelay;
+
   late GoRouter router;
 
   String get location => router.state.uri.toString();
@@ -69,7 +72,13 @@ class EntryWorld {
     organizerRepositoryProvider.overrideWithValue(organizers),
     spotRepositoryProvider.overrideWithValue(spots),
     eventRepositoryProvider.overrideWithValue(events),
-    currentContactProvider.overrideWithValue(AsyncData(contact)),
+    if (contactDelay case final d?)
+      currentContactProvider.overrideWith((ref) async* {
+        await Future<void>.delayed(d);
+        yield contact;
+      })
+    else
+      currentContactProvider.overrideWithValue(AsyncData(contact)),
   ];
 
   Future<void> pump(

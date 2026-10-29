@@ -126,6 +126,19 @@ void main() {
     expect(w.events.entryRegistrations, isEmpty);
   });
 
+  testWidgets('a slow contact read with a phone still holds the tickets', (
+    tester,
+  ) async {
+    final w = EntryWorld()..contactDelay = const Duration(seconds: 2);
+    await w.pump(tester);
+    await tester.tap(find.byKey(const Key('entry-pay')));
+    await tester.pump(const Duration(seconds: 3));
+    await settleOrganizer(tester);
+    expect(w.location, isNot(startsWith('/profile/phone')));
+    expect(w.events.entryRegistrations, hasLength(1));
+    expect(w.location, startsWith('/e/ent1/pay/'));
+  });
+
   testWidgets('pay → registerEntry for the day and types, then S04.04', (
     tester,
   ) async {

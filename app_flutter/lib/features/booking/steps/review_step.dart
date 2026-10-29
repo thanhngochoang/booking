@@ -417,7 +417,8 @@ class _EntryCard extends ConsumerWidget {
                   QtyStepper(
                     keyPrefix: 'book-entry-${t.id}',
                     value: picks[t.id] ?? 0,
-                    min: 0,
+                    // At least one ticket of yours while the card is on.
+                    min: customers - (picks[t.id] ?? 0) > 0 ? 0 : 1,
                     max:
                         entryTicketsPerOrder -
                         (quote.providerTicket ? 1 : 0) -

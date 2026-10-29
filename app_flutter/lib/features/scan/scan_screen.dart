@@ -387,6 +387,8 @@ class _CameraOff extends StatelessWidget {
             benefits: [PrimerBenefit(AppIcons.qrScanner, l.s3007_cameraBody)],
             enableLabel: l.s3007_openSettings,
             laterLabel: l.s3007_manual,
+            // S30.07 has no gradient button (spec §10).
+            outlineEnable: true,
             onEnable: onSettings,
             onLater: onManual,
           ),

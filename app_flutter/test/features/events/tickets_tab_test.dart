@@ -17,12 +17,15 @@ import 'package:photobooking/features/events/tickets_tab.dart';
 import 'package:photobooking/l10n/app_localizations_vi.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/passes/pass_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/dispute_world.dart';
 import '../../support/event_world.dart';
+import '../../support/fake_organizer_repository.dart';
 import '../../support/fake_pass_repository.dart';
+import '../../support/organizer_world.dart' show entryDetailOf, makeEntryEvent;
 import '../../support/fake_pass_scanner.dart';
 import '../../support/fake_push.dart';
 
@@ -1093,13 +1096,42 @@ void main() {
 
     late FakePassRepository passes;
     late FakeScreenBrightness brightness;
+    late FakeOrganizerRepository organizers;
     List<Override> extra() {
       passes = FakePassRepository();
       brightness = FakeScreenBrightness();
+      organizers = FakeOrganizerRepository(uid: 'u1', clock: () => eventNow);
       return [
         passRepositoryProvider.overrideWithValue(passes),
         screenBrightnessProvider.overrideWithValue(brightness),
+        organizerRepositoryProvider.overrideWithValue(organizers),
       ];
+    }
+
+    /// The tab over the entry event `ent1` (cutoff [cutoffHours]).
+    Future<void> openEntry(
+      WidgetTester tester,
+      List<EventRegistration> regs,
+      List<Override> ov, {
+      int cutoffHours = 48,
+    }) async {
+      final w = EventsWorld(
+        events: [
+          entryDetailOf(
+            makeEntryEvent(
+              startDay: '2026-10-01',
+            ).copyWith(refundCutoffHours: cutoffHours),
+          ),
+        ],
+        registrations: regs,
+      );
+      await w.pump(
+        tester,
+        path: '/bookings',
+        size: const Size(390, 1400),
+        extra: ov,
+        bookings: (_) => const Scaffold(body: EventTicketsTab()),
+      );
     }
 
     testWidgets('entry tickets: tag, visit day with hours, per-type counts, '
@@ -1174,8 +1206,76 @@ void main() {
     testWidgets('a closed day: "Ngày đóng cửa · đang hoàn 100%"', (
       tester,
     ) async {
-      await _open(tester, [entryReg('e1', refundDue: true)], extra: extra());
+      final ov = extra();
+      organizers.putEntryDay(
+        const EntryDay(eventId: 'ent1', day: '2026-10-13', closed: true),
+      );
+      await _open(tester, [entryReg('e1', refundDue: true)], extra: ov);
       expect(find.text('NGÀY ĐÓNG CỬA · ĐANG HOÀN 100%'), findsOneWidget);
+    });
+
+    testWidgets('another refund (event cancelled, organizer suspended): '
+        '"Đang hoàn 100%", not a closed day', (tester) async {
+      final ov = extra();
+      organizers.putEntryDay(
+        const EntryDay(eventId: 'ent1', day: '2026-10-13', sold: 3),
+      );
+      await _open(tester, [entryReg('e1', refundDue: true)], extra: ov);
+      expect(find.text('ĐANG HOÀN 100%'), findsOneWidget);
+      expect(find.textContaining('NGÀY ĐÓNG CỬA'), findsNothing);
+    });
+
+    testWidgets('the cutoff is the event\'s refundCutoffHours', (tester) async {
+      final ov = extra();
+      passes.setRegistrationPass('e1', '7K2Q4R9X');
+      // 24 h: 13/10 00:00 − 24 h = 12/10 00:00 (48 h would be 11/10).
+      await openEntry(tester, [entryReg('e1')], ov, cutoffHours: 24);
+      expect(
+        find.text('Huỷ vé · hoàn 100% (tới 00:00 T2 12/10)'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a long cutoff (96 h) is already past 3 days before', (
+      tester,
+    ) async {
+      final ov = extra();
+      passes.setRegistrationPass('e1', '7K2Q4R9X');
+      // 13/10 00:00 − 96 h = 09/10 00:00, before now (10/10 10:00).
+      await openEntry(tester, [entryReg('e1')], ov, cutoffHours: 96);
+      expect(find.text('Đã qua mốc huỷ'), findsOneWidget);
+    });
+
+    testWidgets('a past visit day is over even when the snapshot ends later', (
+      tester,
+    ) async {
+      final ov = extra();
+      final past = entryReg('e1', day: '2026-10-09');
+      final stale = EventRegistration(
+        id: past.id,
+        eventId: past.eventId,
+        userId: past.userId,
+        userName: past.userName,
+        ticketCode: '',
+        quantity: past.quantity,
+        amount: past.amount,
+        status: past.status,
+        paymentId: past.paymentId,
+        visitDay: past.visitDay,
+        items: past.items,
+        // The sale range end, weeks away.
+        event: EventTicketSnapshot(
+          title: past.event.title,
+          type: EventType.entry,
+          startsAt: past.event.startsAt,
+          endsAt: DateTime.utc(2026, 12, 31, 17),
+          locationName: past.event.locationName,
+        ),
+        createdAt: past.createdAt,
+      );
+      await _open(tester, [stale], extra: ov);
+      expect(find.byKey(const Key('ticket-compact')), findsOneWidget);
+      expect(find.byType(QrImageView), findsNothing);
     });
 
     testWidgets('past the cutoff: "Đã qua mốc huỷ", cancel off', (
