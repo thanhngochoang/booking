@@ -12,7 +12,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.01 · Trở thành chủ sự kiện
 
-- **Thông tin**: `/organizer/apply` · mọi người dùng · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/organizer/apply` · mọi người dùng · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: có tư cách chủ sự kiện để tạo sự kiện và quản lý địa điểm.
 - **Điểm vào → điểm ra**:
   - Vào: S09.02, dòng "Tổ chức sự kiện / quản lý địa điểm". Nếu đã là chủ sự kiện, dòng này đổi thành "Địa điểm của tôi" → S30.03, hoặc → S30.02 khi chưa quản lý điểm nào.
@@ -33,7 +33,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.02 · Nhận quản lý điểm chụp
 
-- **Thông tin**: `/organizer/spots/claim` · chủ sự kiện · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/organizer/spots/claim` · chủ sự kiện · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: xin quyền quản lý một điểm S29.
 - **Điểm vào → điểm ra**: vào sau S30.01, hoặc từ S30.03 ("Thêm điểm"); gửi xong → S30.03 hiện dải "Đang chờ staff duyệt".
 - **Bố cục** (từ trên xuống):
@@ -52,7 +52,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.03 · Quản lý điểm
 
-- **Thông tin**: `/organizer/spots/:spotId` · chủ quản lý của điểm · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/organizer/spots/:spotId` · chủ quản lý của điểm · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: theo dõi vé, người vào, thợ tại điểm, và sự kiện của người khác ở điểm đang chờ đồng ý.
 - **Bố cục**: thanh trên có nút "Xem trang điểm" (mở S29.02); `SegmentedTabs` gồm ba tab:
   - **Vào cửa**:
@@ -77,7 +77,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.04 · Tạo / sửa vé vào cửa
 
-- **Thông tin**: `/organizer/entry/new`, `/organizer/entry/:eventId/edit` · chủ quản lý của điểm, đã xác minh doanh nghiệp · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/organizer/entry/new`, `/organizer/entry/:eventId/edit` · chủ quản lý của điểm, đã xác minh doanh nghiệp · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: mở bán vé vào cửa cho một khoảng ngày.
 - **Bố cục** (từ trên xuống):
   1. Tên.
@@ -99,7 +99,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.05 · Mua vé vào cửa
 
-- **Thông tin**: `/spots/:spotId/tickets` · khách · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/spots/:spotId/tickets` · khách · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: mua vé cho một ngày tham quan.
 - **Điểm vào → điểm ra**: vào từ "Mua vé" ở S29.02-entry; thanh toán ở S04.04; xong → S11.04-entry.
 - **Bố cục** (từ trên xuống):
@@ -116,7 +116,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.06 · Nhân viên soát vé
 
-- **Thông tin**: `/organizer/gate-staff` · chủ sự kiện · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/organizer/gate-staff` · chủ sự kiện · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: cho người ở cổng quyền quét mã, và chỉ quyền đó.
 - **Bố cục**:
   - Danh sách nhân viên: avatar, tên, số mã đã quét hôm nay, nhãn "Đang làm" hoặc "Đã mời".
@@ -129,7 +129,7 @@ Màn của [`../2026-10-12-spot-organizer-entry-tickets-design.md`](../2026-10-1
 
 ## S30.07 · Quét mã
 
-- **Thông tin**: `/scan` · chủ sự kiện, nhân viên soát vé, thợ, studio · đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)).
+- **Thông tin**: `/scan` · chủ sự kiện, nhân viên soát vé, thợ, studio · ✅ [#223](https://github.com/thanhngochoang/booking/issues/223) (PR #314).
 - **Mục đích**: soát vé ở cổng, check-in người tham gia sự kiện, hoặc thợ xác nhận đã gặp khách (booking chuyển `shooting`).
 - **Bố cục**:
   - Camera toàn màn hình, nền tối, khung quét.
