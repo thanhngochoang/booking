@@ -34,8 +34,21 @@ export interface SpotInput {
 
 export interface SpotAdminStore {
   getSpot(id: string): Promise<Spot | null>;
-  putSpot(s: Spot): Promise<void>;
+  /**
+   * Without `fields`, writes the whole spot (`spots add`). With `fields`, writes only those (final fix B-I1:
+   * a staff edit or flag never writes back `managedBy`, `access`, opening hours or stats it read earlier).
+   */
+  putSpot(s: Spot, fields?: readonly SpotField[]): Promise<void>;
 }
+
+export type SpotField = keyof Omit<Spot, 'id'>;
+
+/** What `spots edit` sets (identity, copy and cover); the manager's and the ranking's fields stay. */
+const EDIT_FIELDS: readonly SpotField[] = [
+  'name', 'city', 'areaCode', 'point', 'geohash', 'radiusM', 'cover', 'description', 'tips', 'seasonMonths', 'updatedAt', 'updatedBy',
+];
+/** What `spots pin|unpin|hide|unhide|archive` sets. */
+const FLAG_FIELDS: readonly SpotField[] = ['pinned', 'hidden', 'status', 'updatedAt', 'updatedBy'];
 
 export interface SpotAdminDeps {
   readonly spots: SpotAdminStore;
@@ -243,7 +256,7 @@ export async function editSpot(deps: SpotAdminDeps, actor: string, id: string, r
     updatedBy: actor,
   };
 
-  await deps.spots.putSpot(updated);
+  await deps.spots.putSpot(updated, EDIT_FIELDS);
   return updated;
 }
 
@@ -288,6 +301,6 @@ export async function setSpotFlag(
     updatedBy: actor,
   };
 
-  await deps.spots.putSpot(updated);
+  await deps.spots.putSpot(updated, FLAG_FIELDS);
   return updated;
 }

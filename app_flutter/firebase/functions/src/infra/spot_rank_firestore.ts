@@ -13,6 +13,7 @@ import {
   type SpotRankings,
   type DirectoryEntry,
   type SpotAdminStore,
+  type SpotField,
 } from '@photobooking/domain';
 import { db } from './admin.js';
 import { spotFromFirestore, spotToFirestore } from './spot_firestore.js';
@@ -91,11 +92,16 @@ export class FirestoreSpotRankStore implements SpotRankStore {
       .filter((s): s is Spot => s !== null);
   }
 
+  /**
+   * Only the fields the ranking computes (final fix B-I1): the job read the spot minutes earlier, and a claim
+   * approval (`managedBy`) or a manager's edit (cover, copy, hours, access) since then must stay.
+   */
   async saveSpot(s: Spot): Promise<void> {
+    const doc = spotToFirestore(s);
     await this.firestore
       .collection(SPOTS_COLLECTION)
       .doc(s.id)
-      .set(spotToFirestore(s), { merge: true });
+      .update({ stats: doc.stats, hotScore: doc.hotScore, rankedAt: doc.rankedAt, updatedAt: doc.updatedAt });
   }
 
   async listRankingKeys(): Promise<string[]> {
@@ -140,7 +146,14 @@ export class FirestoreSpotAdminStore implements SpotAdminStore {
     return spotFromFirestore(doc.id, doc.data());
   }
 
-  async putSpot(s: Spot): Promise<void> {
-    await this.firestore.collection(SPOTS_COLLECTION).doc(s.id).set(spotToFirestore(s));
+  /** `spots add` writes the whole spot; `edit` and the flags update only their own fields (final fix B-I1). */
+  async putSpot(s: Spot, fields?: readonly SpotField[]): Promise<void> {
+    const ref = this.firestore.collection(SPOTS_COLLECTION).doc(s.id);
+    if (fields === undefined) {
+      await ref.set(spotToFirestore(s));
+      return;
+    }
+    const doc = spotToFirestore(s);
+    await ref.update(Object.fromEntries(fields.map((f) => [f, doc[f]])));
   }
 }

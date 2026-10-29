@@ -577,7 +577,7 @@ async function main(): Promise<void> {
     saveRankings: (r, s) => rankStore.saveRankings(r, s),
     saveDirectory: (d, n) => rankStore.saveDirectory(d, n),
     getSpot: (id) => adminStore.getSpot(id),
-    putSpot: (s) => adminStore.putSpot(s),
+    putSpot: (s, fields) => adminStore.putSpot(s, fields),
   };
 
   const io: SpotCliIo = {

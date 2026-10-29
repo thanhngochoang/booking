@@ -9,7 +9,7 @@ import type {
   SpotRankings,
   DirectoryEntry,
 } from './spot_ranking.js';
-import type { SpotAdminStore } from './spot_admin.js';
+import type { SpotAdminStore, SpotField } from './spot_admin.js';
 
 export interface SpotCounterCounts {
   posts?: number;
@@ -79,8 +79,15 @@ export class MemorySpotRankStore implements SpotRankStore, SpotAdminStore {
     this.spots.set(s.id, s);
   }
 
-  async putSpot(s: Spot): Promise<void> {
-    this.spots.set(s.id, s);
+  async putSpot(s: Spot, fields?: readonly SpotField[]): Promise<void> {
+    const current = this.spots.get(s.id);
+    if (fields === undefined || current === undefined) {
+      this.spots.set(s.id, s);
+      return;
+    }
+    const next: Record<string, unknown> = { ...current };
+    for (const f of fields) next[f] = s[f];
+    this.spots.set(s.id, next as unknown as Spot);
   }
 
   async listRankingKeys(): Promise<string[]> {
