@@ -108,6 +108,9 @@ class _GateStaffScreenState extends ConsumerState<GateStaffScreen> {
       for (final g in staff)
         if (g.status != GateStaffStatus.removed) g,
     ]..sort((a, b) => a.status.index.compareTo(b.status.index) * -1);
+    // The 10 seats are active staff and open invites (domain `holdsGateSeat`);
+    // an expired invite stays listed as expired and frees its seat.
+    final seats = live.where((g) => g.holdsSeat(now)).length;
     final pending = [
       for (final g in invites)
         if (g.status == GateStaffStatus.invited) g,
@@ -133,7 +136,7 @@ class _GateStaffScreenState extends ConsumerState<GateStaffScreen> {
                   padding: const EdgeInsetsDirectional.only(end: AppSpace.s4),
                   child: Center(
                     child: Text(
-                      l.s3006_count(live.length),
+                      l.s3006_count(seats),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: context.mutedForeground,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -179,7 +182,7 @@ class _GateStaffScreenState extends ConsumerState<GateStaffScreen> {
                   child: AppButton.primary(
                     l.s3006_invite,
                     key: const Key('gate-invite'),
-                    onPressed: org.isActive ? () => _invite(live.length) : null,
+                    onPressed: org.isActive ? () => _invite(seats) : null,
                   ),
                 ),
         ),

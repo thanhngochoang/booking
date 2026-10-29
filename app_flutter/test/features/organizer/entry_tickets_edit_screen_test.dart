@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/features/organizer/organizer_controller.dart';
 
@@ -170,6 +171,33 @@ void main() {
     expect(w.events.published, hasLength(1));
     expect(w.location, '/organizer/spots/bd');
   });
+
+  testWidgets(
+    'a failed publish keeps the draft: the retry publishes the same draft',
+    (tester) async {
+      final w = _world();
+      await w.pump(tester, location: _newPath);
+      await _addType(tester, 'Người lớn', '70000');
+      w.events.publishFailWith = const EventError('business_required');
+      await tapOrganizer(tester, _key('entry-submit'));
+
+      expect(
+        find.text('Cần xác minh doanh nghiệp và tài khoản nhận tiền để bán vé'),
+        findsOneWidget,
+      );
+      expect(w.events.published, isEmpty);
+      final first = w.events.savedEntryDrafts.single;
+      expect(first.eventId, isNull);
+
+      await tapOrganizer(tester, _key('entry-submit'));
+      expect(w.events.savedEntryDrafts, hasLength(2));
+      final id = w.events.savedEntryDrafts.last.eventId;
+      expect(id, isNotNull);
+      // One draft: the retry saves over the first one and publishes it.
+      expect(w.events.published, [id]);
+      expect(w.location, '/organizer/spots/bd');
+    },
+  );
 
   testWidgets('validation messages on the form', (tester) async {
     final w = _world();

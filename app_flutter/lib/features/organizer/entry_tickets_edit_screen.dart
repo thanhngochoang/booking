@@ -62,6 +62,10 @@ class _EntryTicketsEditScreenState
   bool _busy = false;
   Map<EntryField, String> _errors = const {};
 
+  /// The entry draft a "Mở bán" already saved whose publish failed: a retry
+  /// saves over it and publishes it, never a second draft.
+  String? _savedDraftId;
+
   bool get _editing => widget.eventId != null;
 
   @override
@@ -244,7 +248,7 @@ class _EntryTicketsEditScreenState
     if (rules.isNotEmpty) return;
     final title = _name.text.trim();
     final draft = EntryEventDraft(
-      eventId: widget.eventId,
+      eventId: widget.eventId ?? _savedDraftId,
       spotId: spotId,
       title: title.isEmpty ? null : title,
       startDay: _startDay,
@@ -266,6 +270,7 @@ class _EntryTicketsEditScreenState
         await repo.updateEntryEvent(widget.eventId!, draft);
       } else {
         final id = await repo.saveEntryDraft(draft);
+        _savedDraftId = id;
         await repo.publish(id);
       }
     } catch (e) {

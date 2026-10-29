@@ -275,6 +275,11 @@ abstract class GateStaff with _$GateStaff {
   bool inviteOpen(DateTime now) =>
       status == GateStaffStatus.invited &&
       now.toUtc().isBefore(invitedAt.add(gateInviteValidity));
+
+  /// Mirrors the domain `holdsGateSeat`: active staff and invites still open
+  /// count towards the 10 seats; an expired invite frees its seat.
+  bool holdsSeat(DateTime now) =>
+      status == GateStaffStatus.active || inviteOpen(now);
 }
 
 GateStaff? gateStaffFromFirestore(

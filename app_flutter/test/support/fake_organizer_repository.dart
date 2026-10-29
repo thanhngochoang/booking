@@ -274,8 +274,9 @@ class FakeOrganizerRepository implements OrganizerRepository {
     final staffUid = accounts[target];
     if (staffUid == null) throw const OrganizerError('not_found');
     final rows = gateStaff[me] ??= {};
-    final live = rows.values.where((g) => g.status != GateStaffStatus.removed);
-    if (live.length >= 10) throw const OrganizerError('limit_exceeded');
+    final now = _clock();
+    final seats = rows.values.where((g) => g.holdsSeat(now));
+    if (seats.length >= 10) throw const OrganizerError('limit_exceeded');
     putGateStaff(
       GateStaff(
         organizerId: me,

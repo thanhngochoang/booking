@@ -444,9 +444,18 @@ class FakeEventRepository implements EventRepository {
     return (eventId: id, hashtag: tag);
   }
 
+  /// While set, the next [publish] throws it (then it clears); saves still
+  /// go through (S30.04's save-then-publish retry).
+  Object? publishFailWith;
+
   @override
   Future<void> publish(String eventId) async {
     _maybeFail();
+    final e = publishFailWith;
+    if (e != null) {
+      publishFailWith = null;
+      throw e;
+    }
     published.add(eventId);
   }
 

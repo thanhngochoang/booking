@@ -102,6 +102,37 @@ void main() {
     expect(w.organizers.calls, isEmpty);
   });
 
+  testWidgets(
+    'expired invites free their seat: 9 active + 2 expired → invite',
+    (tester) async {
+      final w = OrganizerWorld();
+      w.organizers.putOrganizer(makeOrganizer());
+      for (var i = 0; i < 9; i++) {
+        w.organizers.putGateStaff(_staff('s$i'));
+      }
+      for (final uid in ['x1', 'x2']) {
+        w.organizers.putGateStaff(
+          _staff(
+            uid,
+            status: GateStaffStatus.invited,
+            invitedAgo: const Duration(hours: 80),
+          ),
+        );
+      }
+      w.organizers.accounts['+84987654210'] = 'minh';
+      await w.pump(tester, location: _path, height: 1800);
+
+      expect(find.text('9 / 10'), findsOneWidget);
+      expect(find.text('Lời mời đã hết hạn'), findsNWidgets(2));
+      await tapOrganizer(tester, _key('gate-invite'));
+      expect(find.text('Tối đa 10 nhân viên'), findsNothing);
+      await tester.enterText(_key('invite-target'), '0987654210');
+      await tapOrganizer(tester, _key('invite-send'));
+      expectOnlyCall(w, ('inviteGateStaff', {'target': '+84987654210'}));
+      expect(find.text('Đã gửi lời mời'), findsOneWidget);
+    },
+  );
+
   testWidgets('remove via the red ConfirmSheet', (tester) async {
     final w = _world();
     await w.pump(tester, location: _path);
