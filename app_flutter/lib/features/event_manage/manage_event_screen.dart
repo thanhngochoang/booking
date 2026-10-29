@@ -16,6 +16,7 @@ import 'package:photobooking/features/event_create/create_event_screen.dart';
 import 'package:photobooking/features/event_manage/announce_sheet.dart';
 import 'package:photobooking/features/event_manage/cancel_event_sheet.dart';
 import 'package:photobooking/features/event_manage/checkin_sheet.dart';
+import 'package:photobooking/features/event_manage/entry_days_tab.dart';
 import 'package:photobooking/features/event_manage/manage_event_controller.dart';
 import 'package:photobooking/features/event_manage/ticket_scanner.dart';
 import 'package:photobooking/features/events/event_links.dart';
@@ -232,6 +233,14 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
             return EventRouteRedirect('/events/new?draft=${detail.id}');
           }
         }
+        // S12.03-entry: an entry event is managed per visit day.
+        if (detail.entry case final entry? when detail.isEntry) {
+          return _frame(
+            context,
+            title: context.l10n.s3004_title,
+            body: EntryDaysTab(event: entry),
+          );
+        }
         return _content(context, detail);
       },
     );
@@ -240,6 +249,7 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
   Widget _frame(
     BuildContext context, {
     required Widget body,
+    String? title,
     List<Widget>? actions,
     Widget? footer,
   }) {
@@ -256,7 +266,7 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
               icon: const AppIcon(AppIcons.back),
               onPressed: _back,
             ),
-            title: Text(l.manageTitle),
+            title: Text(title ?? l.manageTitle),
             actions: actions,
           ),
           body: body,

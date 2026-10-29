@@ -58,6 +58,12 @@ import 'package:photobooking/features/instant_work/offer_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
+import 'package:photobooking/features/organizer/entry_tickets_edit_screen.dart';
+import 'package:photobooking/features/organizer/gate_staff_screen.dart';
+import 'package:photobooking/features/organizer/managed_spot_screen.dart';
+import 'package:photobooking/features/organizer/organizer_apply_screen.dart';
+import 'package:photobooking/features/organizer/organizer_routes.dart';
+import 'package:photobooking/features/organizer/spot_claim_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
 import 'package:photobooking/features/payments/payment_history_screen.dart';
@@ -431,6 +437,40 @@ final routerProvider = Provider<GoRouter>((ref) {
           spotId: state.pathParameters['spotId']!,
           date: state.uri.queryParameters['date'],
         ),
+      ),
+      // S30 organizers (#223): open to any signed-in user; the screens and
+      // the callables check the organizer document.
+      GoRoute(
+        path: organizerApplyPath,
+        builder: (_, _) => const OrganizerApplyScreen(),
+      ),
+      GoRoute(
+        path: spotClaimPath,
+        builder: (_, _) => const SpotClaimScreen(),
+      ),
+      GoRoute(
+        path: '/organizer/spots/:spotId',
+        builder: (_, state) =>
+            ManagedSpotScreen(spotId: state.pathParameters['spotId']!),
+      ),
+      GoRoute(
+        path: '/organizer/entry/new',
+        builder: (_, state) =>
+            EntryTicketsEditScreen(spotId: state.uri.queryParameters['spot']),
+      ),
+      GoRoute(
+        path: '/organizer/entry/:eventId/edit',
+        builder: (_, state) =>
+            EntryTicketsEditScreen(eventId: state.pathParameters['eventId']),
+      ),
+      GoRoute(
+        path: gateStaffPath,
+        builder: (_, _) => const GateStaffScreen(),
+      ),
+      // S06.06 for an organizer (Task 1b): no photographer-only redirect.
+      GoRoute(
+        path: organizerPayoutPath,
+        builder: (_, _) => const PayoutAccountScreen(),
       ),
       GoRoute(
         path: '/u/:uid/book',

@@ -20072,6 +20072,1236 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Vé vào cửa'**
   String get eventTypeEntry;
+
+  /// S30 (#223) S30.01 app bar title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổ chức sự kiện'**
+  String get s3001_title;
+
+  /// S30 (#223) S30.01 headline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bán vé và quản lý địa điểm'**
+  String get s3001_headline;
+
+  /// S30 (#223) S30.01 line under the headline (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'Dành cho địa điểm, câu lạc bộ, ban tổ chức. Thợ ảnh vẫn tạo sự kiện bằng tài khoản thợ như cũ.'**
+  String get s3001_intro;
+
+  /// S30 (#223) S30.01 avatar picker label.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh đại diện'**
+  String get s3001_avatar;
+
+  /// S30 (#223) S30.01 name field (counter 60).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên tổ chức'**
+  String get s3001_name;
+
+  /// S30 (#223) S30.01 bio field (≤ 300).
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu'**
+  String get s3001_bio;
+
+  /// S30 (#223) S30.01 row when the phone is verified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại đã xác minh'**
+  String get s3001_phoneVerified;
+
+  /// S30 (#223) S30.01 masked phone, e.g. 0912 ••• 678.
+  ///
+  /// In vi, this message translates to:
+  /// **'{head} ••• {tail}'**
+  String s3001_phoneMasked(String head, String tail);
+
+  /// S30 (#223) S30.01 row when the phone is not verified.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác minh số điện thoại'**
+  String get s3001_phoneUnverified;
+
+  /// S30 (#223) S30.01 business row.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bán vé có thu phí: cần xác minh doanh nghiệp'**
+  String get s3001_businessNote;
+
+  /// S30 (#223) S30.01 business row second line (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế, tài khoản nhận tiền đứng tên doanh nghiệp · làm sau cũng được'**
+  String get s3001_businessSub;
+
+  /// S30 (#223) S30.01 primary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi yêu cầu'**
+  String get s3001_submit;
+
+  /// S30 (#223) S30.01 primary without a verified phone (→ S21.01).
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh số điện thoại'**
+  String get s3001_verifyPhone;
+
+  /// S30 (#223) S30.01 band for a suspended organizer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản tổ chức đang bị tạm khoá · Liên hệ hỗ trợ'**
+  String get s3001_suspended;
+
+  /// S30 (#223) S30.01 name error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên 3–60 ký tự'**
+  String get s3001_nameLength;
+
+  /// S30 (#223) S30.01 bio error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 300 ký tự'**
+  String get s3001_bioLength;
+
+  /// S30 (#223) S30.02 title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận quản lý điểm'**
+  String get s3002_title;
+
+  /// S30 (#223) S30.02 search field.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm điểm chụp'**
+  String get s3002_search;
+
+  /// S30 (#223) S30.02 dimmed spot row.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã có chủ quản lý'**
+  String get s3002_managed;
+
+  /// S30 (#223) S30.02 spot row that can be claimed (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'chưa có chủ quản lý'**
+  String get s3002_unmanaged;
+
+  /// S30 (#223) S30.02 spot row second line.
+  ///
+  /// In vi, this message translates to:
+  /// **'{city} · {state}'**
+  String s3002_spotMeta(String city, String state);
+
+  /// S30 (#223) S30.02 proofs section.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng là ban quản lý'**
+  String get s3002_proof;
+
+  /// S30 (#223) S30.02 add a proof.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ Thêm tệp (hợp đồng thuê, quyết định giao quản lý)'**
+  String get s3002_addFile;
+
+  /// S30 (#223) S30.02 proof row second line.
+  ///
+  /// In vi, this message translates to:
+  /// **'chỉ bạn và staff xem'**
+  String get s3002_filePrivate;
+
+  /// S30 (#223) S30.02 proof row second line with its size.
+  ///
+  /// In vi, this message translates to:
+  /// **'{size} · chỉ bạn và staff xem'**
+  String s3002_fileMeta(String size);
+
+  /// S30 (#223) S30.02 remove a proof (tooltip).
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ tệp'**
+  String get s3002_removeFile;
+
+  /// S30 (#223) S30.02 review note (mock text; the spec abbreviates it).
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff duyệt trong 2 ngày làm việc. Được duyệt, bạn sửa được giá vé, giờ mở cửa, thợ tại điểm và đồng ý cho sự kiện của người khác ở đây.'**
+  String get s3002_review;
+
+  /// S30 (#223) S30.02 proposal link.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thấy địa điểm của bạn? Gửi đề xuất điểm mới'**
+  String get s3002_propose;
+
+  /// S30 (#223) S30.02 proposal sheet title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đề xuất điểm mới'**
+  String get s3002_proposeTitle;
+
+  /// S30 (#223) S30.02 proposal name.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên địa điểm'**
+  String get s3002_proposeName;
+
+  /// S30 (#223) S30.02 proposal address.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ'**
+  String get s3002_proposeAddress;
+
+  /// S30 (#223) S30.02 proposal sheet button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng đề xuất này'**
+  String get s3002_proposeSend;
+
+  /// S30 (#223) S30.02 the chosen proposal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đề xuất: {name}'**
+  String s3002_proposal(String name);
+
+  /// S30 (#223) S30.02 proposal fields empty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên và địa chỉ'**
+  String get s3002_proposeRequired;
+
+  /// S30 (#223) S30.02 nothing chosen yet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn điểm bạn quản lý'**
+  String get s3002_pickSpot;
+
+  /// S30 (#223) S30.02 pending band.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ staff duyệt'**
+  String get s3002_pending;
+
+  /// S30 (#223) S30.02 rejected band.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bị từ chối: {reason}'**
+  String s3002_rejected(String reason);
+
+  /// S30 (#223) S30.02 rejected band without a reason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bị từ chối'**
+  String get s3002_rejectedPlain;
+
+  /// S30 (#223) S30.02 resend after a rejection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại'**
+  String get s3002_resend;
+
+  /// S30 (#223) S30.02 primary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi yêu cầu'**
+  String get s3002_submit;
+
+  /// S30 (#223) S30.02 no proof.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ít nhất một tệp'**
+  String get s3002_needFile;
+
+  /// S30 (#223) S30.02 a fourth proof.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 3 tệp'**
+  String get s3002_maxFiles;
+
+  /// S30 (#223) S30.02 spot_managed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này đã có chủ quản lý. Liên hệ hỗ trợ nếu bạn là ban quản lý.'**
+  String get s3002_managedError;
+
+  /// S30 (#223) S30.02 limit_exceeded (one pending claim).
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có một yêu cầu đang chờ duyệt cho điểm này.'**
+  String get s3002_limit;
+
+  /// S30 (#223) S30.02 sent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu'**
+  String get s3002_sent;
+
+  /// S30 (#223) S30.03 tab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào cửa'**
+  String get s3003_tabEntry;
+
+  /// S30 (#223) S30.03 tab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ tại điểm · {n}'**
+  String s3003_tabResidents(int n);
+
+  /// S30 (#223) S30.03 tab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin'**
+  String get s3003_tabInfo;
+
+  /// S30 (#223) S30.03 app bar action (→ S29.02).
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem trang điểm'**
+  String get s3003_viewSpot;
+
+  /// S30 (#223) S30.03 badge of the entry event on sale.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang bán'**
+  String get s3003_onSale;
+
+  /// S30 (#223) S30.03 ticket card dates and hours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from}–{to} · {open}–{close}'**
+  String s3003_range(String from, String to, String open, String close);
+
+  /// S30 (#223) S30.03 ticket card daily capacity.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} khách/ngày'**
+  String s3003_capacity(int n);
+
+  /// S30 (#223) S30.03 ticket type line.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {price}'**
+  String s3003_typeLine(String name, String price);
+
+  /// S30 (#223) S30.03 more ticket types.
+  ///
+  /// In vi, this message translates to:
+  /// **'+{n} loại'**
+  String s3003_moreTypes(int n);
+
+  /// S30 (#223) S30.03 empty ticket card.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bán vé qua app · Khách đang thấy giá tham khảo'**
+  String get s3003_noTickets;
+
+  /// S30 (#223) S30.03 KPI line (spec {in} is {entered}: `in` is a Dart keyword).
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay: bán {sold} · vào {entered} · giữ {held}'**
+  String s3003_kpiToday(int sold, int entered, int held);
+
+  /// S30 (#223) S30.03 outline button (→ S30.06).
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhân viên soát vé'**
+  String get s3003_gateStaff;
+
+  /// S30 (#223) S30.03 outline button (→ S30.07).
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét mã'**
+  String get s3003_scan;
+
+  /// S30 (#223) S30.03 section.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện ở đây chờ bạn đồng ý'**
+  String get s3003_pendingEvents;
+
+  /// S30 (#223) S30.03 payout account row and primary (→ S06.06, Task 1b).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản nhận tiền'**
+  String get s3003_payout;
+
+  /// S30 (#223) S30.03 payout account row second line.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đứng tên doanh nghiệp đã xác minh'**
+  String get s3003_payoutBody;
+
+  /// S30 (#223) S30.03 residents first row.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm thợ'**
+  String get s3003_addResident;
+
+  /// S30 (#223) S30.03 residents empty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm thợ chụp thường xuyên ở đây để khách biết họ được miễn vé'**
+  String get s3003_residentsEmpty;
+
+  /// S30 (#223) S30.03 resident row.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn vé thợ và khách'**
+  String get s3003_residentBoth;
+
+  /// S30 (#223) S30.03 resident row.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn vé thợ'**
+  String get s3003_residentProviderOnly;
+
+  /// S30 (#223) S30.03 resident row.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn vé khách của thợ'**
+  String get s3003_residentGuestsOnly;
+
+  /// S30 (#223) S30.03 resident row without waivers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không miễn vé'**
+  String get s3003_residentNone;
+
+  /// S30 (#223) S30.03 resident row guests cap.
+  ///
+  /// In vi, this message translates to:
+  /// **'tối đa {n} khách'**
+  String s3003_residentMax(int n);
+
+  /// S30 (#223) S30.03 resident row end day.
+  ///
+  /// In vi, this message translates to:
+  /// **'tới {date}'**
+  String s3003_residentUntil(String date);
+
+  /// S30 (#223) S30.03 resident row without an end.
+  ///
+  /// In vi, this message translates to:
+  /// **'không hết hạn'**
+  String get s3003_residentNoEnd;
+
+  /// S30 (#223) S30.03 resident row after its end day.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã hết hạn'**
+  String get s3003_residentExpired;
+
+  /// S30 (#223) S30.03-residents sheet title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm thợ tại điểm'**
+  String get s3003_residentAddTitle;
+
+  /// S30 (#223) S30.03-residents sheet title when editing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa thợ tại điểm'**
+  String get s3003_residentEditTitle;
+
+  /// S30 (#223) S30.03-residents search.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên, @username hoặc link hồ sơ'**
+  String get s3003_residentSearch;
+
+  /// S30 (#223) S30.03-residents candidate line.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang nhận đơn'**
+  String get s3003_residentAccepting;
+
+  /// S30 (#223) S30.03-residents no candidate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy thợ đang nhận đơn'**
+  String get s3003_residentNoMatch;
+
+  /// S30 (#223) S30.03-residents switch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn vé cho thợ'**
+  String get s3003_waiveProvider;
+
+  /// S30 (#223) S30.03-residents switch line.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ vào không cần vé'**
+  String get s3003_waiveProviderSub;
+
+  /// S30 (#223) S30.03-residents switch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn vé cho khách của thợ'**
+  String get s3003_waiveGuests;
+
+  /// S30 (#223) S30.03-residents guests switch line.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa {n} khách mỗi buổi'**
+  String s3003_maxGuests(int n);
+
+  /// S30 (#223) S30.03-residents guests cap field.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số khách tối đa mỗi buổi'**
+  String get s3003_maxGuestsField;
+
+  /// S30 (#223) S30.03-residents guests cap hint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để trống = không giới hạn'**
+  String get s3003_maxGuestsHint;
+
+  /// S30 (#223) S30.03-residents guests cap error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nguyên lớn hơn 0'**
+  String get s3003_maxGuestsInvalid;
+
+  /// S30 (#223) S30.03-residents end day.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiệu lực tới'**
+  String get s3003_validUntil;
+
+  /// S30 (#223) S30.03-residents no end day.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không hết hạn'**
+  String get s3003_noEnd;
+
+  /// S30 (#223) S30.03-residents note (mock text).
+  ///
+  /// In vi, this message translates to:
+  /// **'Thoả thuận giữa bạn và thợ (phí, hợp đồng) nằm ngoài app. Khách thấy nhãn \"Thợ tại điểm · miễn vé\".'**
+  String get s3003_offApp;
+
+  /// S30 (#223) S30.03-residents add button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm'**
+  String get s3003_addConfirm;
+
+  /// S30 (#223) S30.03-residents save button when editing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get s3003_saveResident;
+
+  /// S30 (#223) S30.03-residents red text when editing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ khỏi danh sách'**
+  String get s3003_removeResidentLink;
+
+  /// S30 (#223) S30.03 remove confirm button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ thợ'**
+  String get s3003_removeResident;
+
+  /// S30 (#223) S30.03 remove confirm title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ {name} khỏi thợ tại điểm?'**
+  String s3003_removeResidentTitle(String name);
+
+  /// S30 (#223) S30.03 limit_exceeded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 50 thợ tại điểm'**
+  String get s3003_residentLimit;
+
+  /// S30 (#223) S30.03 not_accepting_orders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ này đang không nhận đơn'**
+  String get s3003_notAccepting;
+
+  /// S30 (#223) S30.03 info field.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả'**
+  String get s3003_description;
+
+  /// S30 (#223) S30.03 info field.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mẹo chụp (mỗi dòng một mẹo)'**
+  String get s3003_tips;
+
+  /// S30 (#223) S30.03 info cover.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh bìa'**
+  String get s3003_cover;
+
+  /// S30 (#223) S30.03 info cover button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi ảnh bìa'**
+  String get s3003_changeCover;
+
+  /// S30 (#223) S30.03 info cover picked, not saved yet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh mới: {name}'**
+  String s3003_coverPicked(String name);
+
+  /// S30 (#223) S30.03 info section.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ mở cửa'**
+  String get s3003_openHours;
+
+  /// S30 (#223) S30.03 info section (spots.access).
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá tham khảo'**
+  String get s3003_refPrices;
+
+  /// S30 (#223) S30.03 info switch (access type ticket).
+  ///
+  /// In vi, this message translates to:
+  /// **'Thu phí vào cửa'**
+  String get s3003_ticketed;
+
+  /// S30 (#223) S30.03 info fee label.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhãn'**
+  String get s3003_feeLabel;
+
+  /// S30 (#223) S30.03 info fee amount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá (₫)'**
+  String get s3003_feeAmount;
+
+  /// S30 (#223) S30.03 info add fee line.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ Thêm giá'**
+  String get s3003_addFee;
+
+  /// S30 (#223) S30.03 info remove fee (tooltip).
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ dòng giá'**
+  String get s3003_removeFee;
+
+  /// S30 (#223) S30.03 info fee lines cap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 6 dòng giá'**
+  String get s3003_feesMax;
+
+  /// S30 (#223) S30.03 info fee line error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập nhãn và giá lớn hơn 0'**
+  String get s3003_feeInvalid;
+
+  /// S30 (#223) S30.03 info note (≤ 120).
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get s3003_feeNote;
+
+  /// S30 (#223) S30.03 info note error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 120 ký tự'**
+  String get s3003_noteLength;
+
+  /// S30 (#223) S30.03 info footnote (mock caption).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên, toạ độ, bán kính và mùa chỉ staff sửa.'**
+  String get s3003_staffOnly;
+
+  /// S30 (#223) S30.03 primary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo vé vào cửa'**
+  String get s3003_create;
+
+  /// S30 (#223) S30.03 primary with an entry event on sale.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa vé vào cửa'**
+  String get s3003_edit;
+
+  /// S30 (#223) S30.03 primary without a verified business (→ S21.04).
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp để bán vé'**
+  String get s3003_verifyBusiness;
+
+  /// S30 (#223) S30.03 info tab primary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get s3003_save;
+
+  /// S30 (#223) S30.03 saved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu'**
+  String get s3003_saved;
+
+  /// S30 (#223) S30.04 title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé vào cửa'**
+  String get s3004_title;
+
+  /// S30 (#223) S30.04 name.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên'**
+  String get s3004_name;
+
+  /// S30 (#223) S30.04 first day.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ ngày'**
+  String get s3004_from;
+
+  /// S30 (#223) S30.04 last day.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tới ngày'**
+  String get s3004_to;
+
+  /// S30 (#223) S30.04 opening time.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở'**
+  String get s3004_open;
+
+  /// S30 (#223) S30.04 closing time.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get s3004_close;
+
+  /// S30 (#223) S30.04 daily capacity (empty = no cap).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa/ngày'**
+  String get s3004_capacity;
+
+  /// S30 (#223) S30.04 daily capacity hint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để trống = không giới hạn'**
+  String get s3004_capacityHint;
+
+  /// S30 (#223) S30.04 daily capacity error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nguyên lớn hơn 0'**
+  String get s3004_capacityInvalid;
+
+  /// S30 (#223) S30.04 closed weekdays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ trong tuần'**
+  String get s3004_closedWeekdays;
+
+  /// S30 (#223) S30.04 closed days.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày nghỉ lẻ'**
+  String get s3004_closedDays;
+
+  /// S30 (#223) S30.04 add a closed day.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ Thêm ngày nghỉ'**
+  String get s3004_addClosedDay;
+
+  /// S30 (#223) S30.04 closed days cap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 30 ngày nghỉ lẻ'**
+  String get s3004_closedDaysMax;
+
+  /// S30 (#223) S30.04 ticket types header.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại vé · {n} / 6'**
+  String s3004_types(int n);
+
+  /// S30 (#223) S30.04 add a ticket type.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ Thêm loại'**
+  String get s3004_addType;
+
+  /// S30 (#223) S30.04 a seventh type.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 6 loại vé'**
+  String get s3004_typesMax;
+
+  /// S30 (#223) S30.04 no ticket type.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ít nhất một loại vé'**
+  String get s3004_typesEmpty;
+
+  /// S30 (#223) S30.04 type sheet title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm loại vé'**
+  String get s3004_typeSheetAdd;
+
+  /// S30 (#223) S30.04 type sheet title when editing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa loại vé'**
+  String get s3004_typeSheetEdit;
+
+  /// S30 (#223) S30.04 type name.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên loại vé'**
+  String get s3004_typeName;
+
+  /// S30 (#223) S30.04 type price.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá (₫)'**
+  String get s3004_typePrice;
+
+  /// S30 (#223) S30.04 type sheet button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get s3004_typeSave;
+
+  /// S30 (#223) S30.04 a sold type can only be hidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn loại vé'**
+  String get s3004_hideType;
+
+  /// S30 (#223) S30.04 show a hidden type again.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện lại loại vé'**
+  String get s3004_showType;
+
+  /// S30 (#223) S30.04 hidden type row.
+  ///
+  /// In vi, this message translates to:
+  /// **'đang ẩn'**
+  String get s3004_hidden;
+
+  /// S30 (#223) S30.04 delete an unsold type.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá loại vé'**
+  String get s3004_deleteType;
+
+  /// S30 (#223) S30.04 note (mock text; the spec abbreviates it).
+  ///
+  /// In vi, this message translates to:
+  /// **'Khung giờ chỉ là tên loại vé, app không kiểm giờ vào.'**
+  String get s3004_note;
+
+  /// S30 (#223) S30.04 refund and payout note.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách huỷ trước 48 giờ hoàn 100%. Tiền vé chuyển cho bạn sau ngày tham quan 1 ngày + 48 giờ.'**
+  String get s3004_refundNote;
+
+  /// S30 (#223) S30.04 primary when creating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở bán'**
+  String get s3004_submit;
+
+  /// S30 (#223) S30.04 primary when editing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get s3004_saveChanges;
+
+  /// S30 (#223) S30.04 created.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mở bán'**
+  String get s3004_published;
+
+  /// S30 (#223) S30.04 edited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thay đổi'**
+  String get s3004_saved;
+
+  /// S30 (#223) S30.04 range error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 180 ngày'**
+  String get s3004_rangeTooLong;
+
+  /// S30 (#223) S30.04 start error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày bắt đầu không ở quá khứ'**
+  String get s3004_startPast;
+
+  /// S30 (#223) S30.04 end error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày kết thúc không trước ngày bắt đầu'**
+  String get s3004_endBeforeStart;
+
+  /// S30 (#223) S30.04 time field error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ dạng 06:00'**
+  String get s3004_timeFormat;
+
+  /// S30 (#223) S30.04 hours error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ đóng cửa phải sau giờ mở cửa'**
+  String get s3004_hoursInvalid;
+
+  /// S30 (#223) S30.04 type name error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên 3–40 ký tự'**
+  String get s3004_typeNameLength;
+
+  /// S30 (#223) S30.04 type price error.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá là số nguyên lớn hơn 0'**
+  String get s3004_typePriceInvalid;
+
+  /// S30 (#223) S30.04 capacity under a day's sold tickets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày {day} đã bán {n} vé, không giảm dưới số đó'**
+  String s3004_capacityBelowSold(String day, int n);
+
+  /// S30 (#223) S30.04 business_required.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần xác minh doanh nghiệp và tài khoản nhận tiền để bán vé'**
+  String get s3004_businessRequired;
+
+  /// S30 (#223) S30.04 not_spot_manager.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không còn quản lý điểm này'**
+  String get s3004_notManager;
+
+  /// S30 (#223) S30.06 title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhân viên soát vé'**
+  String get s3006_title;
+
+  /// S30 (#223) S30.06 app bar count.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / 10'**
+  String s3006_count(int n);
+
+  /// S30 (#223) S30.06 primary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời nhân viên'**
+  String get s3006_invite;
+
+  /// S30 (#223) S30.06 invite field (an @username answers not_found until usernames exist).
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại hoặc @username'**
+  String get s3006_target;
+
+  /// S30 (#223) S30.06 invite field empty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số điện thoại'**
+  String get s3006_targetRequired;
+
+  /// S30 (#223) S30.06 invite sheet button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lời mời'**
+  String get s3006_inviteSend;
+
+  /// S30 (#223) S30.06 invite sent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi lời mời'**
+  String get s3006_inviteSent;
+
+  /// S30 (#223) S30.06 scope note (mock text; the spec abbreviates it).
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhân viên chỉ mở được màn quét mã và số người đã vào hôm nay. Không thấy doanh thu, số điện thoại khách, không sửa được gì.'**
+  String get s3006_scope;
+
+  /// S30 (#223) S30.06 empty list.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có nhân viên soát vé'**
+  String get s3006_empty;
+
+  /// S30 (#223) S30.06 badge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang làm'**
+  String get s3006_active;
+
+  /// S30 (#223) S30.06 badge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời'**
+  String get s3006_invited;
+
+  /// S30 (#223) S30.06 active row line.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} mã hôm nay'**
+  String s3006_scansToday(int n);
+
+  /// S30 (#223) S30.06 invited row line.
+  ///
+  /// In vi, this message translates to:
+  /// **'mời {n} giờ trước'**
+  String s3006_invitedAgo(int n);
+
+  /// S30 (#223) S30.06 red text and confirm button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ'**
+  String get s3006_remove;
+
+  /// S30 (#223) S30.06 remove confirm title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ {name} khỏi nhân viên soát vé?'**
+  String s3006_removeTitle(String name);
+
+  /// S30 (#223) S30.06 removed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gỡ nhân viên'**
+  String get s3006_removed;
+
+  /// S30 (#223) S30.06 limit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 10 nhân viên'**
+  String get s3006_limit;
+
+  /// S30 (#223) S30.06 not_found.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy tài khoản'**
+  String get s3006_notFound;
+
+  /// S30 (#223) S30.06 invitee sheet title.
+  ///
+  /// In vi, this message translates to:
+  /// **'{org} mời bạn soát vé'**
+  String s3006_inviteTitle(String org);
+
+  /// S30 (#223) S30.06 invitee accept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get s3006_accept;
+
+  /// S30 (#223) S30.06 invitee decline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get s3006_decline;
+
+  /// S30 (#223) S30.06 invitee accepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã nhận soát vé'**
+  String get s3006_accepted;
+
+  /// S30 (#223) S30.06 invitee declined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối lời mời'**
+  String get s3006_declined;
+
+  /// S30 (#223) S30.06 invitee sheet after 72 h.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời đã hết hạn'**
+  String get s3006_expired;
+
+  /// S30 (#223) S12.03-entry summary line.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from}–{to} · {n} loại vé'**
+  String s1203_range(String from, String to, int n);
+
+  /// S30 (#223) S12.03-entry day chip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get s1203_today;
+
+  /// S30 (#223) S12.03-entry calendar chip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get s1203_pickDay;
+
+  /// S30 (#223) S12.03-entry KPI line (spec {in} is {entered}).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bán {sold}/{cap} · đã vào {entered} · doanh thu {amount}'**
+  String s1203_dayKpi(int sold, int cap, int entered, String amount);
+
+  /// S30 (#223) S12.03-entry KPI line without a daily cap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bán {sold} · đã vào {entered} · doanh thu {amount}'**
+  String s1203_dayKpiNoCap(int sold, int entered, String amount);
+
+  /// S30 (#223) S12.03-entry per-type table.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo loại vé'**
+  String get s1203_byType;
+
+  /// S30 (#223) S12.03-entry per-type row.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} · {amount}'**
+  String s1203_typeRow(int n, String amount);
+
+  /// S30 (#223) S12.03-entry empty table.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bán vé nào ngày này'**
+  String get s1203_noSales;
+
+  /// S30 (#223) S12.03-entry red text.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng ngày này'**
+  String get s1203_closeDay;
+
+  /// S30 (#223) S12.03-entry confirm title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng ngày {day}?'**
+  String s1203_closeDayTitle(String day);
+
+  /// S30 (#223) S12.03-entry confirm body.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} vé · hoàn {amount} cho khách. Khách nhận thông báo ngay.'**
+  String s1203_closeDayBody(int n, String amount);
+
+  /// S30 (#223) S12.03-entry confirm button (red).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng ngày'**
+  String get s1203_closeDayConfirm;
+
+  /// S30 (#223) S12.03-entry closed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng ngày {day}'**
+  String s1203_closeDone(String day);
+
+  /// S30 (#223) S12.03-entry a closed day.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày này đã đóng · vé đã bán được hoàn 100%'**
+  String get s1203_closed;
+
+  /// S30 (#223) S12.03-entry secondary (→ S30.04).
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get s1203_edit;
+
+  /// S30 (#223) S12.03-entry primary (→ S30.07).
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét mã'**
+  String get s1203_scan;
+
+  /// S30 (#223) S09.02 row (→ S30.01).
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổ chức sự kiện / quản lý địa điểm'**
+  String get s0902_organizer;
+
+  /// S30 (#223) S09.02 row for an organizer (→ S30.03, or S30.02 without a spot).
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm của tôi'**
+  String get s0902_mySpots;
+
+  /// S30 (#223) S09.02 row for active gate staff (→ S30.07).
+  ///
+  /// In vi, this message translates to:
+  /// **'Soát vé · {spot}'**
+  String s0902_gate(String spot);
+
+  /// S30 (#223) Keep button of the S30 confirm sheets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get s30_keep;
+
+  /// S30 (#223) An S30 call failed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được, thử lại.'**
+  String get s30_error;
+
+  /// S30 (#223) An S30 call failed offline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa kết nối được, thử lại.'**
+  String get s30_network;
+
+  /// S30 (#223) S30 sheet close (tooltip).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get s30_close;
+
+  /// S30 (#223) S21.04 intro for an organizer (Task 1b); the studio intro speaks of the Studio seal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần để bán vé có thu phí và nhận tiền vé vào tài khoản đứng tên doanh nghiệp.'**
+  String get s2104_organizerIntro;
 }
 
 class _AppLocalizationsDelegate

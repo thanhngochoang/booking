@@ -90,6 +90,9 @@ flutter:
     - assets/brand/logo.png
     - assets/social/
     - assets/icons/
+    # S30 (#223) Decision 17: drafts until the lawyer's text arrives.
+    - assets/terms/organizer_terms_vi.md
+    - assets/terms/public_place_commitment_vi.md
   fonts:
     - family: Be Vietnam Pro
       fonts:

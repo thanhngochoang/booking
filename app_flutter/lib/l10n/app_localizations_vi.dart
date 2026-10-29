@@ -11764,4 +11764,698 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get eventTypeEntry => 'Vé vào cửa';
+
+  @override
+  String get s3001_title => 'Tổ chức sự kiện';
+
+  @override
+  String get s3001_headline => 'Bán vé và quản lý địa điểm';
+
+  @override
+  String get s3001_intro =>
+      'Dành cho địa điểm, câu lạc bộ, ban tổ chức. Thợ ảnh vẫn tạo sự kiện bằng tài khoản thợ như cũ.';
+
+  @override
+  String get s3001_avatar => 'Ảnh đại diện';
+
+  @override
+  String get s3001_name => 'Tên tổ chức';
+
+  @override
+  String get s3001_bio => 'Giới thiệu';
+
+  @override
+  String get s3001_phoneVerified => 'Số điện thoại đã xác minh';
+
+  @override
+  String s3001_phoneMasked(String head, String tail) {
+    return '$head ••• $tail';
+  }
+
+  @override
+  String get s3001_phoneUnverified => 'Chưa xác minh số điện thoại';
+
+  @override
+  String get s3001_businessNote =>
+      'Bán vé có thu phí: cần xác minh doanh nghiệp';
+
+  @override
+  String get s3001_businessSub =>
+      'Mã số thuế, tài khoản nhận tiền đứng tên doanh nghiệp · làm sau cũng được';
+
+  @override
+  String get s3001_submit => 'Gửi yêu cầu';
+
+  @override
+  String get s3001_verifyPhone => 'Xác minh số điện thoại';
+
+  @override
+  String get s3001_suspended =>
+      'Tài khoản tổ chức đang bị tạm khoá · Liên hệ hỗ trợ';
+
+  @override
+  String get s3001_nameLength => 'Tên 3–60 ký tự';
+
+  @override
+  String get s3001_bioLength => 'Tối đa 300 ký tự';
+
+  @override
+  String get s3002_title => 'Nhận quản lý điểm';
+
+  @override
+  String get s3002_search => 'Tìm điểm chụp';
+
+  @override
+  String get s3002_managed => 'đã có chủ quản lý';
+
+  @override
+  String get s3002_unmanaged => 'chưa có chủ quản lý';
+
+  @override
+  String s3002_spotMeta(String city, String state) {
+    return '$city · $state';
+  }
+
+  @override
+  String get s3002_proof => 'Minh chứng là ban quản lý';
+
+  @override
+  String get s3002_addFile =>
+      '+ Thêm tệp (hợp đồng thuê, quyết định giao quản lý)';
+
+  @override
+  String get s3002_filePrivate => 'chỉ bạn và staff xem';
+
+  @override
+  String s3002_fileMeta(String size) {
+    return '$size · chỉ bạn và staff xem';
+  }
+
+  @override
+  String get s3002_removeFile => 'Bỏ tệp';
+
+  @override
+  String get s3002_review =>
+      'Staff duyệt trong 2 ngày làm việc. Được duyệt, bạn sửa được giá vé, giờ mở cửa, thợ tại điểm và đồng ý cho sự kiện của người khác ở đây.';
+
+  @override
+  String get s3002_propose =>
+      'Không thấy địa điểm của bạn? Gửi đề xuất điểm mới';
+
+  @override
+  String get s3002_proposeTitle => 'Đề xuất điểm mới';
+
+  @override
+  String get s3002_proposeName => 'Tên địa điểm';
+
+  @override
+  String get s3002_proposeAddress => 'Địa chỉ';
+
+  @override
+  String get s3002_proposeSend => 'Dùng đề xuất này';
+
+  @override
+  String s3002_proposal(String name) {
+    return 'Đề xuất: $name';
+  }
+
+  @override
+  String get s3002_proposeRequired => 'Nhập tên và địa chỉ';
+
+  @override
+  String get s3002_pickSpot => 'Chọn điểm bạn quản lý';
+
+  @override
+  String get s3002_pending => 'Đang chờ staff duyệt';
+
+  @override
+  String s3002_rejected(String reason) {
+    return 'Bị từ chối: $reason';
+  }
+
+  @override
+  String get s3002_rejectedPlain => 'Bị từ chối';
+
+  @override
+  String get s3002_resend => 'Gửi lại';
+
+  @override
+  String get s3002_submit => 'Gửi yêu cầu';
+
+  @override
+  String get s3002_needFile => 'Thêm ít nhất một tệp';
+
+  @override
+  String get s3002_maxFiles => 'Tối đa 3 tệp';
+
+  @override
+  String get s3002_managedError =>
+      'Điểm này đã có chủ quản lý. Liên hệ hỗ trợ nếu bạn là ban quản lý.';
+
+  @override
+  String get s3002_limit =>
+      'Bạn đã có một yêu cầu đang chờ duyệt cho điểm này.';
+
+  @override
+  String get s3002_sent => 'Đã gửi yêu cầu';
+
+  @override
+  String get s3003_tabEntry => 'Vào cửa';
+
+  @override
+  String s3003_tabResidents(int n) {
+    return 'Thợ tại điểm · $n';
+  }
+
+  @override
+  String get s3003_tabInfo => 'Thông tin';
+
+  @override
+  String get s3003_viewSpot => 'Xem trang điểm';
+
+  @override
+  String get s3003_onSale => 'Đang bán';
+
+  @override
+  String s3003_range(String from, String to, String open, String close) {
+    return '$from–$to · $open–$close';
+  }
+
+  @override
+  String s3003_capacity(int n) {
+    return '$n khách/ngày';
+  }
+
+  @override
+  String s3003_typeLine(String name, String price) {
+    return '$name · $price';
+  }
+
+  @override
+  String s3003_moreTypes(int n) {
+    return '+$n loại';
+  }
+
+  @override
+  String get s3003_noTickets =>
+      'Chưa bán vé qua app · Khách đang thấy giá tham khảo';
+
+  @override
+  String s3003_kpiToday(int sold, int entered, int held) {
+    return 'Hôm nay: bán $sold · vào $entered · giữ $held';
+  }
+
+  @override
+  String get s3003_gateStaff => 'Nhân viên soát vé';
+
+  @override
+  String get s3003_scan => 'Quét mã';
+
+  @override
+  String get s3003_pendingEvents => 'Sự kiện ở đây chờ bạn đồng ý';
+
+  @override
+  String get s3003_payout => 'Tài khoản nhận tiền';
+
+  @override
+  String get s3003_payoutBody => 'Đứng tên doanh nghiệp đã xác minh';
+
+  @override
+  String get s3003_addResident => 'Thêm thợ';
+
+  @override
+  String get s3003_residentsEmpty =>
+      'Thêm thợ chụp thường xuyên ở đây để khách biết họ được miễn vé';
+
+  @override
+  String get s3003_residentBoth => 'Miễn vé thợ và khách';
+
+  @override
+  String get s3003_residentProviderOnly => 'Miễn vé thợ';
+
+  @override
+  String get s3003_residentGuestsOnly => 'Miễn vé khách của thợ';
+
+  @override
+  String get s3003_residentNone => 'Không miễn vé';
+
+  @override
+  String s3003_residentMax(int n) {
+    return 'tối đa $n khách';
+  }
+
+  @override
+  String s3003_residentUntil(String date) {
+    return 'tới $date';
+  }
+
+  @override
+  String get s3003_residentNoEnd => 'không hết hạn';
+
+  @override
+  String get s3003_residentExpired => 'đã hết hạn';
+
+  @override
+  String get s3003_residentAddTitle => 'Thêm thợ tại điểm';
+
+  @override
+  String get s3003_residentEditTitle => 'Sửa thợ tại điểm';
+
+  @override
+  String get s3003_residentSearch => 'Tên, @username hoặc link hồ sơ';
+
+  @override
+  String get s3003_residentAccepting => 'đang nhận đơn';
+
+  @override
+  String get s3003_residentNoMatch => 'Không tìm thấy thợ đang nhận đơn';
+
+  @override
+  String get s3003_waiveProvider => 'Miễn vé cho thợ';
+
+  @override
+  String get s3003_waiveProviderSub => 'Thợ vào không cần vé';
+
+  @override
+  String get s3003_waiveGuests => 'Miễn vé cho khách của thợ';
+
+  @override
+  String s3003_maxGuests(int n) {
+    return 'Tối đa $n khách mỗi buổi';
+  }
+
+  @override
+  String get s3003_maxGuestsField => 'Số khách tối đa mỗi buổi';
+
+  @override
+  String get s3003_maxGuestsHint => 'Để trống = không giới hạn';
+
+  @override
+  String get s3003_maxGuestsInvalid => 'Số nguyên lớn hơn 0';
+
+  @override
+  String get s3003_validUntil => 'Hiệu lực tới';
+
+  @override
+  String get s3003_noEnd => 'Không hết hạn';
+
+  @override
+  String get s3003_offApp =>
+      'Thoả thuận giữa bạn và thợ (phí, hợp đồng) nằm ngoài app. Khách thấy nhãn \"Thợ tại điểm · miễn vé\".';
+
+  @override
+  String get s3003_addConfirm => 'Thêm';
+
+  @override
+  String get s3003_saveResident => 'Lưu';
+
+  @override
+  String get s3003_removeResidentLink => 'Gỡ khỏi danh sách';
+
+  @override
+  String get s3003_removeResident => 'Gỡ thợ';
+
+  @override
+  String s3003_removeResidentTitle(String name) {
+    return 'Gỡ $name khỏi thợ tại điểm?';
+  }
+
+  @override
+  String get s3003_residentLimit => 'Tối đa 50 thợ tại điểm';
+
+  @override
+  String get s3003_notAccepting => 'Thợ này đang không nhận đơn';
+
+  @override
+  String get s3003_description => 'Mô tả';
+
+  @override
+  String get s3003_tips => 'Mẹo chụp (mỗi dòng một mẹo)';
+
+  @override
+  String get s3003_cover => 'Ảnh bìa';
+
+  @override
+  String get s3003_changeCover => 'Đổi ảnh bìa';
+
+  @override
+  String s3003_coverPicked(String name) {
+    return 'Ảnh mới: $name';
+  }
+
+  @override
+  String get s3003_openHours => 'Giờ mở cửa';
+
+  @override
+  String get s3003_refPrices => 'Giá tham khảo';
+
+  @override
+  String get s3003_ticketed => 'Thu phí vào cửa';
+
+  @override
+  String get s3003_feeLabel => 'Nhãn';
+
+  @override
+  String get s3003_feeAmount => 'Giá (₫)';
+
+  @override
+  String get s3003_addFee => '+ Thêm giá';
+
+  @override
+  String get s3003_removeFee => 'Bỏ dòng giá';
+
+  @override
+  String get s3003_feesMax => 'Tối đa 6 dòng giá';
+
+  @override
+  String get s3003_feeInvalid => 'Nhập nhãn và giá lớn hơn 0';
+
+  @override
+  String get s3003_feeNote => 'Ghi chú';
+
+  @override
+  String get s3003_noteLength => 'Tối đa 120 ký tự';
+
+  @override
+  String get s3003_staffOnly => 'Tên, toạ độ, bán kính và mùa chỉ staff sửa.';
+
+  @override
+  String get s3003_create => 'Tạo vé vào cửa';
+
+  @override
+  String get s3003_edit => 'Sửa vé vào cửa';
+
+  @override
+  String get s3003_verifyBusiness => 'Xác minh doanh nghiệp để bán vé';
+
+  @override
+  String get s3003_save => 'Lưu';
+
+  @override
+  String get s3003_saved => 'Đã lưu';
+
+  @override
+  String get s3004_title => 'Vé vào cửa';
+
+  @override
+  String get s3004_name => 'Tên';
+
+  @override
+  String get s3004_from => 'Từ ngày';
+
+  @override
+  String get s3004_to => 'Tới ngày';
+
+  @override
+  String get s3004_open => 'Mở';
+
+  @override
+  String get s3004_close => 'Đóng';
+
+  @override
+  String get s3004_capacity => 'Tối đa/ngày';
+
+  @override
+  String get s3004_capacityHint => 'Để trống = không giới hạn';
+
+  @override
+  String get s3004_capacityInvalid => 'Số nguyên lớn hơn 0';
+
+  @override
+  String get s3004_closedWeekdays => 'Nghỉ trong tuần';
+
+  @override
+  String get s3004_closedDays => 'Ngày nghỉ lẻ';
+
+  @override
+  String get s3004_addClosedDay => '+ Thêm ngày nghỉ';
+
+  @override
+  String get s3004_closedDaysMax => 'Tối đa 30 ngày nghỉ lẻ';
+
+  @override
+  String s3004_types(int n) {
+    return 'Loại vé · $n / 6';
+  }
+
+  @override
+  String get s3004_addType => '+ Thêm loại';
+
+  @override
+  String get s3004_typesMax => 'Tối đa 6 loại vé';
+
+  @override
+  String get s3004_typesEmpty => 'Thêm ít nhất một loại vé';
+
+  @override
+  String get s3004_typeSheetAdd => 'Thêm loại vé';
+
+  @override
+  String get s3004_typeSheetEdit => 'Sửa loại vé';
+
+  @override
+  String get s3004_typeName => 'Tên loại vé';
+
+  @override
+  String get s3004_typePrice => 'Giá (₫)';
+
+  @override
+  String get s3004_typeSave => 'Xong';
+
+  @override
+  String get s3004_hideType => 'Ẩn loại vé';
+
+  @override
+  String get s3004_showType => 'Hiện lại loại vé';
+
+  @override
+  String get s3004_hidden => 'đang ẩn';
+
+  @override
+  String get s3004_deleteType => 'Xoá loại vé';
+
+  @override
+  String get s3004_note =>
+      'Khung giờ chỉ là tên loại vé, app không kiểm giờ vào.';
+
+  @override
+  String get s3004_refundNote =>
+      'Khách huỷ trước 48 giờ hoàn 100%. Tiền vé chuyển cho bạn sau ngày tham quan 1 ngày + 48 giờ.';
+
+  @override
+  String get s3004_submit => 'Mở bán';
+
+  @override
+  String get s3004_saveChanges => 'Lưu thay đổi';
+
+  @override
+  String get s3004_published => 'Đã mở bán';
+
+  @override
+  String get s3004_saved => 'Đã lưu thay đổi';
+
+  @override
+  String get s3004_rangeTooLong => 'Tối đa 180 ngày';
+
+  @override
+  String get s3004_startPast => 'Ngày bắt đầu không ở quá khứ';
+
+  @override
+  String get s3004_endBeforeStart => 'Ngày kết thúc không trước ngày bắt đầu';
+
+  @override
+  String get s3004_timeFormat => 'Giờ dạng 06:00';
+
+  @override
+  String get s3004_hoursInvalid => 'Giờ đóng cửa phải sau giờ mở cửa';
+
+  @override
+  String get s3004_typeNameLength => 'Tên 3–40 ký tự';
+
+  @override
+  String get s3004_typePriceInvalid => 'Giá là số nguyên lớn hơn 0';
+
+  @override
+  String s3004_capacityBelowSold(String day, int n) {
+    return 'Ngày $day đã bán $n vé, không giảm dưới số đó';
+  }
+
+  @override
+  String get s3004_businessRequired =>
+      'Cần xác minh doanh nghiệp và tài khoản nhận tiền để bán vé';
+
+  @override
+  String get s3004_notManager => 'Bạn không còn quản lý điểm này';
+
+  @override
+  String get s3006_title => 'Nhân viên soát vé';
+
+  @override
+  String s3006_count(int n) {
+    return '$n / 10';
+  }
+
+  @override
+  String get s3006_invite => 'Mời nhân viên';
+
+  @override
+  String get s3006_target => 'Số điện thoại hoặc @username';
+
+  @override
+  String get s3006_targetRequired => 'Nhập số điện thoại';
+
+  @override
+  String get s3006_inviteSend => 'Gửi lời mời';
+
+  @override
+  String get s3006_inviteSent => 'Đã gửi lời mời';
+
+  @override
+  String get s3006_scope =>
+      'Nhân viên chỉ mở được màn quét mã và số người đã vào hôm nay. Không thấy doanh thu, số điện thoại khách, không sửa được gì.';
+
+  @override
+  String get s3006_empty => 'Chưa có nhân viên soát vé';
+
+  @override
+  String get s3006_active => 'Đang làm';
+
+  @override
+  String get s3006_invited => 'Đã mời';
+
+  @override
+  String s3006_scansToday(int n) {
+    return '$n mã hôm nay';
+  }
+
+  @override
+  String s3006_invitedAgo(int n) {
+    return 'mời $n giờ trước';
+  }
+
+  @override
+  String get s3006_remove => 'Gỡ';
+
+  @override
+  String s3006_removeTitle(String name) {
+    return 'Gỡ $name khỏi nhân viên soát vé?';
+  }
+
+  @override
+  String get s3006_removed => 'Đã gỡ nhân viên';
+
+  @override
+  String get s3006_limit => 'Tối đa 10 nhân viên';
+
+  @override
+  String get s3006_notFound => 'Không tìm thấy tài khoản';
+
+  @override
+  String s3006_inviteTitle(String org) {
+    return '$org mời bạn soát vé';
+  }
+
+  @override
+  String get s3006_accept => 'Nhận';
+
+  @override
+  String get s3006_decline => 'Từ chối';
+
+  @override
+  String get s3006_accepted => 'Bạn đã nhận soát vé';
+
+  @override
+  String get s3006_declined => 'Đã từ chối lời mời';
+
+  @override
+  String get s3006_expired => 'Lời mời đã hết hạn';
+
+  @override
+  String s1203_range(String from, String to, int n) {
+    return '$from–$to · $n loại vé';
+  }
+
+  @override
+  String get s1203_today => 'Hôm nay';
+
+  @override
+  String get s1203_pickDay => 'Chọn ngày';
+
+  @override
+  String s1203_dayKpi(int sold, int cap, int entered, String amount) {
+    return 'Đã bán $sold/$cap · đã vào $entered · doanh thu $amount';
+  }
+
+  @override
+  String s1203_dayKpiNoCap(int sold, int entered, String amount) {
+    return 'Đã bán $sold · đã vào $entered · doanh thu $amount';
+  }
+
+  @override
+  String get s1203_byType => 'Theo loại vé';
+
+  @override
+  String s1203_typeRow(int n, String amount) {
+    return '$n · $amount';
+  }
+
+  @override
+  String get s1203_noSales => 'Chưa bán vé nào ngày này';
+
+  @override
+  String get s1203_closeDay => 'Đóng ngày này';
+
+  @override
+  String s1203_closeDayTitle(String day) {
+    return 'Đóng ngày $day?';
+  }
+
+  @override
+  String s1203_closeDayBody(int n, String amount) {
+    return '$n vé · hoàn $amount cho khách. Khách nhận thông báo ngay.';
+  }
+
+  @override
+  String get s1203_closeDayConfirm => 'Đóng ngày';
+
+  @override
+  String s1203_closeDone(String day) {
+    return 'Đã đóng ngày $day';
+  }
+
+  @override
+  String get s1203_closed => 'Ngày này đã đóng · vé đã bán được hoàn 100%';
+
+  @override
+  String get s1203_edit => 'Sửa';
+
+  @override
+  String get s1203_scan => 'Quét mã';
+
+  @override
+  String get s0902_organizer => 'Tổ chức sự kiện / quản lý địa điểm';
+
+  @override
+  String get s0902_mySpots => 'Địa điểm của tôi';
+
+  @override
+  String s0902_gate(String spot) {
+    return 'Soát vé · $spot';
+  }
+
+  @override
+  String get s30_keep => 'Giữ lại';
+
+  @override
+  String get s30_error => 'Chưa gửi được, thử lại.';
+
+  @override
+  String get s30_network => 'Chưa kết nối được, thử lại.';
+
+  @override
+  String get s30_close => 'Đóng';
+
+  @override
+  String get s2104_organizerIntro =>
+      'Cần để bán vé có thu phí và nhận tiền vé vào tài khoản đứng tên doanh nghiệp.';
 }

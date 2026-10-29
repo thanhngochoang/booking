@@ -38,6 +38,22 @@ import 'package:photobooking/l10n/app_localizations.dart';
     // S30: the booking or ticket pass (QR) is ready.
     case 'pass_ready':
       return (icon: AppIcons.qrCode, tone: NotificationTone.success);
+    // S30 organizers (#223): spot claims, residents, venue consent → the
+    // spot glyph; gate staff invites → the scanner's QR; a closed visit day
+    // refunds the ticket.
+    case 'spot_claim_approved':
+      return (icon: AppIcons.place, tone: NotificationTone.success);
+    case 'spot_claim_rejected':
+      return (icon: AppIcons.place, tone: NotificationTone.danger);
+    case 'spot_resident_added':
+    case 'event_venue_answered':
+      return (icon: AppIcons.place, tone: NotificationTone.neutral);
+    case 'event_venue_requested':
+      return (icon: AppIcons.place, tone: NotificationTone.action);
+    case 'gate_staff_invited':
+      return (icon: AppIcons.qrCode, tone: NotificationTone.action);
+    case 'entry_day_closed':
+      return (icon: AppIcons.ticket, tone: NotificationTone.danger);
     case 'refund_done':
     case 'payout_released':
     case 'dispute_resolved':
