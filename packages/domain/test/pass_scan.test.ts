@@ -5,7 +5,7 @@ import { bookingContactUnlocked } from '../src/contact.js';
 import { openDispute } from '../src/dispute_use_cases.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import { checkInRegistration } from '../src/event_registration.js';
-import { SCAN_REFUSALS_PER_HOUR, afterRefusal, resolveScan, scanBudgetSpent, type ScanAttempts } from '../src/pass_scan.js';
+import { SCAN_REFUSALS_PER_HOUR, afterRefusal, resolveScan, scanBudgetSpent, scanPass, type ScanAttempts } from '../src/pass_scan.js';
 import { bookingView, createDisputeWorld, openInput, paidPayment } from './support/dispute_world.js';
 import {
   E1_TICKET, E2_TICKET, ENTRY_ID, P1, P2, P3, P4, P5, P7, P8, TODAY, at, createPassWorld, type PassWorld,
@@ -118,6 +118,21 @@ describe('scanPass attempt budget (final fix D-I3: 20 refusals per scanner per h
     w.setNow(new Date(at('13:00').getTime() + 61 * MIN));
     await assert.rejects(w.scan('p1', 'ZZZZ2347'), code('not_found'));
     assert.deepEqual(store.attempts.get('p1'), { uid: 'p1', windowStart: new Date(at('13:00').getTime() + 61 * MIN).toISOString(), count: 1 });
+  });
+
+  test('a refusal is counted in the scan transaction itself, so parallel guesses cannot pass the check together', async () => {
+    const w = await world();
+    const scans = w.deps.scans;
+    let txs = 0;
+    const counted = { ...w.deps, scans: { runTransaction: <T>(fn: Parameters<typeof scans.runTransaction<T>>[0]) => { txs += 1; return scans.runTransaction(fn); } } };
+    await assert.rejects(scanPass(counted, 'p1', { code: 'ZZZZ2345' }), code('not_found'));
+    await assert.rejects(scanPass(counted, 'p1', { code: 'not a code' }), code('not_found'));
+    assert.equal(txs, 2);
+    const store = scans as unknown as { attempts: Map<string, ScanAttempts> };
+    assert.equal(store.attempts.get('p1')?.count, 2);
+    // A malformed code is refused with limit_exceeded too once the budget is spent.
+    store.attempts.set('p1', { uid: 'p1', windowStart: at('14:00').toISOString(), count: SCAN_REFUSALS_PER_HOUR });
+    await assert.rejects(scanPass(counted, 'p1', { code: 'not a code' }), code('limit_exceeded'));
   });
 
   test('scanBudgetSpent and afterRefusal', () => {
@@ -354,6 +369,14 @@ describe('event tickets (legacy codes through ticket_codes)', () => {
     assert.deepEqual(await checkInRegistration(deps, h1, { eventId: 'e1', ticketCode: E1_TICKET.toLowerCase() }), { name: 'Nguyễn An', quantity: 1 });
     assert.equal(w.reg('e1', 'r4').checkedInAt?.getTime(), at('14:00').getTime());
     await assert.rejects(checkInRegistration(deps, h1, { eventId: 'e1', ticketCode: E1_TICKET }), code('conflict'));
+  });
+
+  test('checkInRegistration takes legacy ticket codes only: a pass code is not_found (no budget-free guessing)', async () => {
+    const w = await world();
+    const org1 = { uid: 'org1', staffRole: null };
+    // Before: a real pass code answered permission_denied, an unknown one not_found (an oracle).
+    await assert.rejects(checkInRegistration(w.be.entry.deps, org1, { eventId: ENTRY_ID, ticketCode: P2 }), code('not_found'));
+    assert.equal(w.reg(ENTRY_ID, 'r1').checkedInAt ?? null, null);
   });
 });
 

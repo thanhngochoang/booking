@@ -305,176 +305,196 @@ interface RunOut {
   readonly written: readonly RegistrationDoc[];
 }
 
-async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef, opts: RunOptions = {}): Promise<RunOut> {
-  return deps.scans.runTransaction(async (tx): Promise<RunOut> => {
+/**
+ * One transaction. With `budget`, the scanner's `scan_attempts` row is read first and a refusal is
+ * counted in this same transaction (the refused scan writes nothing else), so parallel guesses
+ * conflict on that row instead of all passing the check (final fix D-I3).
+ */
+async function runScan(deps: ScanDeps, caller: EventCaller, ref: ScanRef | null, opts: RunOptions = {}): Promise<RunOut> {
+  const out = await deps.scans.runTransaction(async (tx): Promise<RunOut | { readonly refused: DomainError }> => {
     const now = deps.clock.now();
-    const today = formatVnDate(now);
-    const managerOnly = opts.onlyEventId !== undefined;
-    if (opts.budget === true && scanBudgetSpent(await tx.getScanAttempts(caller.uid), now)) {
-      throw new DomainError('limit_exceeded');
+    if (opts.budget !== true) return scanInTx(deps, tx, now, caller, ref, opts);
+    const attempts = await tx.getScanAttempts(caller.uid);
+    if (scanBudgetSpent(attempts, now)) throw new DomainError('limit_exceeded');
+    try {
+      return await scanInTx(deps, tx, now, caller, ref, opts);
+    } catch (e) {
+      if (!(e instanceof DomainError) || !REFUSALS.includes(e.code)) throw e;
+      await tx.putScanAttempts(afterRefusal(attempts, caller.uid, now));
+      return { refused: e };
     }
+  });
+  if ('refused' in out) throw out.refused;
+  return out;
+}
 
-    // ---- reads: the pass and its parts ----
-    let bookingId: string | null = null;
-    let regRefs: { eventId: string; registrationId: string }[];
-    let pass: PassRecord | null = null;
-    if ('code8' in ref) {
-      pass = await tx.getPass(ref.code8);
-      if (pass === null) throw new DomainError('not_found');
-      bookingId = pass.bookingId;
-      const passEventId = pass.eventId;
-      regRefs = passEventId === null ? [] : pass.registrationIds.map((id) => ({ eventId: passEventId, registrationId: id }));
-    } else {
-      const found = await tx.findTicket(ref.ticketCode);
-      if (found === null) throw new DomainError('not_found');
-      regRefs = [found];
-    }
-    if (managerOnly) {
-      bookingId = null;
-      regRefs = regRefs.filter((r) => r.eventId === opts.onlyEventId);
-      if (regRefs.length === 0) throw new DomainError('not_found');
-    }
+async function scanInTx(
+  deps: ScanDeps, tx: ScanTx, now: Date, caller: EventCaller, ref: ScanRef | null, opts: RunOptions,
+): Promise<RunOut> {
+  if (ref === null) throw new DomainError('not_found');
+  const today = formatVnDate(now);
+  const managerOnly = opts.onlyEventId !== undefined;
 
-    const events = new Map<string, EventRecord | null>();
-    const eventOf = async (id: string): Promise<EventRecord | null> => {
-      if (!events.has(id)) events.set(id, await tx.getEvent(id));
-      return events.get(id) ?? null;
-    };
-    const dayRows = new Map<string, Map<string, EntryDay | null>>(); // eventId → day → row (read once)
-    const dayOf = async (eventId: string, day: string): Promise<EntryDay | null> => {
-      const rows = dayRows.get(eventId) ?? new Map<string, EntryDay | null>();
-      dayRows.set(eventId, rows);
-      if (!rows.has(day)) rows.set(day, await tx.getEntryDay(eventId, day));
-      return rows.get(day) ?? null;
-    };
-    const parts: ScanPart[] = [];
-    const booking = bookingId === null ? null : await tx.getBooking(bookingId);
-    if (booking !== null) {
-      parts.push({ kind: 'booking', booking });
-      // A closed booking's photographer is not coming: no waived head count (its kept tickets still scan).
-      const waives = booking.entry !== undefined && waivedCount(booking) > 0 && !CLOSED_BOOKING.includes(booking.status);
-      const entryEvent = waives && booking.entry !== undefined ? await eventOf(booking.entry.eventId) : null;
-      if (entryEvent !== null) {
-        await dayOf(entryEvent.id, booking.day);
-        parts.push({ kind: 'waived', booking, event: entryEvent, checkedInAt: pass?.waivedCheckedInAt ?? null });
-      }
-    }
-    for (const r of regRefs) {
-      const reg = await tx.getRegistration(r.eventId, r.registrationId);
-      const ev = await eventOf(r.eventId);
-      if (reg === null || ev === null) continue;
-      const visitDay = ev.type === 'entry' && typeof reg.visitDay === 'string' ? reg.visitDay : null;
-      const dayClosed = visitDay !== null && (await dayOf(ev.id, visitDay))?.closed === true;
-      parts.push({ kind: 'registration', registration: reg, event: ev, dayClosed });
-    }
-    if (parts.length === 0) throw new DomainError('not_found');
+  // ---- reads: the pass and its parts ----
+  let bookingId: string | null = null;
+  let regRefs: { eventId: string; registrationId: string }[];
+  let pass: PassRecord | null = null;
+  if ('code8' in ref) {
+    pass = await tx.getPass(ref.code8);
+    if (pass === null) throw new DomainError('not_found');
+    bookingId = pass.bookingId;
+    const passEventId = pass.eventId;
+    regRefs = passEventId === null ? [] : pass.registrationIds.map((id) => ({ eventId: passEventId, registrationId: id }));
+  } else {
+    const found = await tx.findTicket(ref.ticketCode);
+    if (found === null) throw new DomainError('not_found');
+    regRefs = [found];
+  }
+  if (managerOnly) {
+    bookingId = null;
+    regRefs = regRefs.filter((r) => r.eventId === opts.onlyEventId);
+    if (regRefs.length === 0) throw new DomainError('not_found');
+  }
 
-    // ---- reads: the scanner's roles for these parts only ----
-    const shooterOf = !managerOnly && booking !== null && shooterIdOf(booking) === caller.uid ? [booking.id] : [];
-    const managerOf = [...events.values()]
-      .filter((e): e is EventRecord => e !== null && e.type !== 'entry' && isEventManager(e, caller))
-      .map((e) => e.id);
-    const candidates = new Set<string>();
-    const venueManagers = new Map<string, string>(); // spotId → manager
-    if (!managerOnly) {
-      for (const p of parts) {
-        if (p.kind === 'booking') continue;
-        const host = p.event.host;
-        if ((p.kind === 'waived' || p.event.type === 'entry') && host.type === 'organizer' && host.id !== null) candidates.add(host.id);
-        const spotId = p.kind === 'registration' && p.event.type !== 'entry' ? (p.event.venue?.spotId ?? null) : null;
-        if (spotId !== null && !venueManagers.has(spotId)) {
-          const manager = (await tx.getSpot(spotId))?.managedBy ?? null;
-          if (manager !== null) {
-            venueManagers.set(spotId, manager);
-            candidates.add(manager);
-          }
+  const events = new Map<string, EventRecord | null>();
+  const eventOf = async (id: string): Promise<EventRecord | null> => {
+    if (!events.has(id)) events.set(id, await tx.getEvent(id));
+    return events.get(id) ?? null;
+  };
+  const dayRows = new Map<string, Map<string, EntryDay | null>>(); // eventId → day → row (read once)
+  const dayOf = async (eventId: string, day: string): Promise<EntryDay | null> => {
+    const rows = dayRows.get(eventId) ?? new Map<string, EntryDay | null>();
+    dayRows.set(eventId, rows);
+    if (!rows.has(day)) rows.set(day, await tx.getEntryDay(eventId, day));
+    return rows.get(day) ?? null;
+  };
+  const parts: ScanPart[] = [];
+  const booking = bookingId === null ? null : await tx.getBooking(bookingId);
+  if (booking !== null) {
+    parts.push({ kind: 'booking', booking });
+    // A closed booking's photographer is not coming: no waived head count (its kept tickets still scan).
+    const waives = booking.entry !== undefined && waivedCount(booking) > 0 && !CLOSED_BOOKING.includes(booking.status);
+    const entryEvent = waives && booking.entry !== undefined ? await eventOf(booking.entry.eventId) : null;
+    if (entryEvent !== null) {
+      await dayOf(entryEvent.id, booking.day);
+      parts.push({ kind: 'waived', booking, event: entryEvent, checkedInAt: pass?.waivedCheckedInAt ?? null });
+    }
+  }
+  for (const r of regRefs) {
+    const reg = await tx.getRegistration(r.eventId, r.registrationId);
+    const ev = await eventOf(r.eventId);
+    if (reg === null || ev === null) continue;
+    const visitDay = ev.type === 'entry' && typeof reg.visitDay === 'string' ? reg.visitDay : null;
+    const dayClosed = visitDay !== null && (await dayOf(ev.id, visitDay))?.closed === true;
+    parts.push({ kind: 'registration', registration: reg, event: ev, dayClosed });
+  }
+  if (parts.length === 0) throw new DomainError('not_found');
+
+  // ---- reads: the scanner's roles for these parts only ----
+  const shooterOf = !managerOnly && booking !== null && shooterIdOf(booking) === caller.uid ? [booking.id] : [];
+  const managerOf = [...events.values()]
+    .filter((e): e is EventRecord => e !== null && e.type !== 'entry' && isEventManager(e, caller))
+    .map((e) => e.id);
+  const candidates = new Set<string>();
+  const venueManagers = new Map<string, string>(); // spotId → manager
+  if (!managerOnly) {
+    for (const p of parts) {
+      if (p.kind === 'booking') continue;
+      const host = p.event.host;
+      if ((p.kind === 'waived' || p.event.type === 'entry') && host.type === 'organizer' && host.id !== null) candidates.add(host.id);
+      const spotId = p.kind === 'registration' && p.event.type !== 'entry' ? (p.event.venue?.spotId ?? null) : null;
+      if (spotId !== null && !venueManagers.has(spotId)) {
+        const manager = (await tx.getSpot(spotId))?.managedBy ?? null;
+        if (manager !== null) {
+          venueManagers.set(spotId, manager);
+          candidates.add(manager);
         }
       }
     }
-    const staffRows = new Map<string, GateStaff>(); // organizerId → the caller's active row
-    const gateOf: string[] = [];
-    for (const org of candidates) {
-      if (org === caller.uid) {
-        gateOf.push(org);
-        continue;
-      }
-      const row = await tx.getGateStaff(org, caller.uid);
-      if (row !== null && row.status === 'active') {
-        gateOf.push(org);
-        staffRows.set(org, row);
-      }
+  }
+  const staffRows = new Map<string, GateStaff>(); // organizerId → the caller's active row
+  const gateOf: string[] = [];
+  for (const org of candidates) {
+    if (org === caller.uid) {
+      gateOf.push(org);
+      continue;
     }
-    const managesSpots = [...venueManagers].filter(([, m]) => gateOf.includes(m)).map(([spotId]) => spotId);
-    const scanner: Scanner = { uid: caller.uid, shooterOf, managerOf, gateOf, managesSpots };
+    const row = await tx.getGateStaff(org, caller.uid);
+    if (row !== null && row.status === 'active') {
+      gateOf.push(org);
+      staffRows.set(org, row);
+    }
+  }
+  const managesSpots = [...venueManagers].filter(([, m]) => gateOf.includes(m)).map(([spotId]) => spotId);
+  const scanner: Scanner = { uid: caller.uid, shooterOf, managerOf, gateOf, managesSpots };
 
-    const names: Record<string, string> = {};
-    if (booking !== null && shooterOf.length > 0) names[booking.customerId] = await deps.names.displayName(booking.customerId);
-    const { updates, summary } = resolveScan(parts, scanner, now, names);
+  const names: Record<string, string> = {};
+  if (booking !== null && shooterOf.length > 0) names[booking.customerId] = await deps.names.displayName(booking.customerId);
+  const { updates, summary } = resolveScan(parts, scanner, now, names);
 
-    // ---- reads: the entry days the gate updates touch ----
-    const dayDeltas = new Map<string, EntryDayDelta[]>(); // eventId → deltas
-    const addDelta = (eventId: string, d: EntryDayDelta) => dayDeltas.set(eventId, [...(dayDeltas.get(eventId) ?? []), d]);
-    const gateOrgs = new Set<string>();
-    for (const u of updates) {
-      if (u.kind === 'booking_shooting') continue;
-      const ev = events.get(u.eventId) ?? null;
-      if (ev === null) continue;
-      if (u.kind === 'waived_gate') {
-        addDelta(ev.id, { day: (booking as Booking).day, checkedIn: u.count });
-        if (ev.host.id !== null) gateOrgs.add(ev.host.id);
-        continue;
-      }
-      const reg = parts.find((p): p is Extract<ScanPart, { kind: 'registration' }> =>
-        p.kind === 'registration' && p.registration.id === u.registrationId)?.registration;
-      if (reg === undefined) continue;
-      if (u.kind === 'registration_checked_in' && ev.type === 'entry' && typeof reg.visitDay === 'string') {
-        addDelta(ev.id, { day: reg.visitDay, checkedIn: reg.quantity });
-        if (ev.host.id !== null) gateOrgs.add(ev.host.id);
-      }
-      if (u.kind === 'registration_gate') {
-        const manager = venueManagers.get(ev.venue?.spotId ?? '');
-        if (manager !== undefined) gateOrgs.add(manager);
-      }
+  // ---- reads: the entry days the gate updates touch ----
+  const dayDeltas = new Map<string, EntryDayDelta[]>(); // eventId → deltas
+  const addDelta = (eventId: string, d: EntryDayDelta) => dayDeltas.set(eventId, [...(dayDeltas.get(eventId) ?? []), d]);
+  const gateOrgs = new Set<string>();
+  for (const u of updates) {
+    if (u.kind === 'booking_shooting') continue;
+    const ev = events.get(u.eventId) ?? null;
+    if (ev === null) continue;
+    if (u.kind === 'waived_gate') {
+      addDelta(ev.id, { day: (booking as Booking).day, checkedIn: u.count });
+      if (ev.host.id !== null) gateOrgs.add(ev.host.id);
+      continue;
     }
-    for (const [eventId, deltas] of dayDeltas) for (const d of deltas) await dayOf(eventId, d.day);
+    const reg = parts.find((p): p is Extract<ScanPart, { kind: 'registration' }> =>
+      p.kind === 'registration' && p.registration.id === u.registrationId)?.registration;
+    if (reg === undefined) continue;
+    if (u.kind === 'registration_checked_in' && ev.type === 'entry' && typeof reg.visitDay === 'string') {
+      addDelta(ev.id, { day: reg.visitDay, checkedIn: reg.quantity });
+      if (ev.host.id !== null) gateOrgs.add(ev.host.id);
+    }
+    if (u.kind === 'registration_gate') {
+      const manager = venueManagers.get(ev.venue?.spotId ?? '');
+      if (manager !== undefined) gateOrgs.add(manager);
+    }
+  }
+  for (const [eventId, deltas] of dayDeltas) for (const d of deltas) await dayOf(eventId, d.day);
 
-    // ---- writes ----
-    const at = now.toISOString();
-    const written: RegistrationDoc[] = [];
-    for (const u of updates) {
-      if (u.kind === 'waived_gate' && pass !== null) {
-        // The waived head count goes in once per pass (Task 4 fix 3).
-        await tx.putPass({ ...pass, waivedCheckedInAt: at });
-      } else if (u.kind === 'booking_shooting' && booking !== null) {
-        await tx.setBooking({ ...booking, status: 'shooting', checkedInAt: at, version: booking.version + 1, updatedAt: at });
-        await tx.addBookingEvent({ id: deps.ids.newId(), bookingId: booking.id, status: 'shooting', at, actorId: caller.uid });
-      } else if (u.kind === 'registration_checked_in' || u.kind === 'registration_gate') {
-        const part = parts.find((p): p is Extract<ScanPart, { kind: 'registration' }> =>
-          p.kind === 'registration' && p.registration.id === u.registrationId);
-        if (part === undefined) continue;
-        const reg = part.registration;
-        const next: RegistrationDoc = u.kind === 'registration_gate'
-          ? { ...reg, gateCheckedInAt: now, updatedAt: now, version: reg.version + 1 }
-          : { ...reg, checkedInAt: now, updatedAt: now, version: reg.version + 1 };
-        await tx.putRegistration(next);
-        written.push(next);
-      }
+  // ---- writes ----
+  const at = now.toISOString();
+  const written: RegistrationDoc[] = [];
+  for (const u of updates) {
+    if (u.kind === 'waived_gate' && pass !== null) {
+      // The waived head count goes in once per pass (Task 4 fix 3).
+      await tx.putPass({ ...pass, waivedCheckedInAt: at });
+    } else if (u.kind === 'booking_shooting' && booking !== null) {
+      await tx.setBooking({ ...booking, status: 'shooting', checkedInAt: at, version: booking.version + 1, updatedAt: at });
+      await tx.addBookingEvent({ id: deps.ids.newId(), bookingId: booking.id, status: 'shooting', at, actorId: caller.uid });
+    } else if (u.kind === 'registration_checked_in' || u.kind === 'registration_gate') {
+      const part = parts.find((p): p is Extract<ScanPart, { kind: 'registration' }> =>
+        p.kind === 'registration' && p.registration.id === u.registrationId);
+      if (part === undefined) continue;
+      const reg = part.registration;
+      const next: RegistrationDoc = u.kind === 'registration_gate'
+        ? { ...reg, gateCheckedInAt: now, updatedAt: now, version: reg.version + 1 }
+        : { ...reg, checkedInAt: now, updatedAt: now, version: reg.version + 1 };
+      await tx.putRegistration(next);
+      written.push(next);
     }
-    let todayCount: number | null = null;
-    for (const [eventId, deltas] of dayDeltas) {
-      for (const row of entryDaysAfter(eventId, dayRows.get(eventId) ?? new Map(), deltas, now)) {
-        await tx.putEntryDay(row);
-        if (row.day === today && todayCount === null) todayCount = row.checkedIn;
-      }
+  }
+  let todayCount: number | null = null;
+  for (const [eventId, deltas] of dayDeltas) {
+    for (const row of entryDaysAfter(eventId, dayRows.get(eventId) ?? new Map(), deltas, now)) {
+      await tx.putEntryDay(row);
+      if (row.day === today && todayCount === null) todayCount = row.checkedIn;
     }
-    for (const org of gateOrgs) {
-      const row = staffRows.get(org);
-      if (row === undefined) continue; // the organizer's own scan: no staff row
-      const count = row.scansToday?.day === today ? row.scansToday.count + 1 : 1;
-      await tx.putGateStaff(org, { ...row, scansToday: { day: today, count } });
-    }
-    return { result: { ...summary, todayCount }, written };
-  });
+  }
+  for (const org of gateOrgs) {
+    const row = staffRows.get(org);
+    if (row === undefined) continue; // the organizer's own scan: no staff row
+    const count = row.scansToday?.day === today ? row.scansToday.count + 1 : 1;
+    await tx.putGateStaff(org, { ...row, scansToday: { day: today, count } });
+  }
+  return { result: { ...summary, todayCount }, written };
 }
 
 function codeOf(raw: unknown): string {
@@ -486,27 +506,13 @@ function codeOf(raw: unknown): string {
 
 /**
  * S30.07: the scanner's scan of `{code}` (8 characters, `VE-XXXX-XXXX`, or a legacy `VE-XXXX-MMDD`).
- * `not_found` for an unknown code; the rest as `resolveScan`. One transaction. A `not_found` or
- * `not_your_pass` answer counts on the scanner's budget (a second, small transaction right after: the
- * refused scan writes nothing); a spent budget answers `limit_exceeded` (final fix D-I3).
+ * `not_found` for an unknown or malformed code; the rest as `resolveScan`. One transaction. A
+ * `not_found` or `not_your_pass` answer counts on the scanner's budget in that transaction; a spent
+ * budget answers `limit_exceeded`, a real code included (final fix D-I3).
  */
 export async function scanPass(deps: ScanDeps, callerId: string, raw: unknown): Promise<ScanResult> {
-  const code = codeOf(raw);
-  try {
-    const ref = scanRefOf(code);
-    if (ref === null) throw new DomainError('not_found');
-    return (await runScan(deps, { uid: callerId, staffRole: null }, ref, { budget: true })).result;
-  } catch (e) {
-    if (e instanceof DomainError && REFUSALS.includes(e.code)) await recordRefusal(deps, callerId);
-    throw e;
-  }
-}
-
-async function recordRefusal(deps: ScanDeps, uid: string): Promise<void> {
-  await deps.scans.runTransaction(async (tx) => {
-    const now = deps.clock.now();
-    await tx.putScanAttempts(afterRefusal(await tx.getScanAttempts(uid), uid, now));
-  });
+  const ref = scanRefOf(codeOf(raw));
+  return (await runScan(deps, { uid: callerId, staffRole: null }, ref, { budget: true })).result;
 }
 
 /** The old callable's codes for the scan reasons (old clients map these). */
@@ -539,8 +545,10 @@ export async function checkInByManager(
   if (ev === null || ev.status === 'draft') throw new DomainError('not_found');
   if (!isEventManager(ev, caller)) throw new DomainError('permission_denied');
   if (ev.status === 'cancelled') throw new DomainError('not_eligible');
+  // Old clients only ever had legacy ticket codes. A pass code here would let a manager tell a real
+  // code from a guess with no scan budget (final fix D-I3), so it is not_found.
   const ref = scanRefOf(r.ticketCode);
-  if (ref === null) throw new DomainError('not_found');
+  if (ref === null || !('ticketCode' in ref)) throw new DomainError('not_found');
   try {
     const out = await runScan(
       { scans: eventScanStore(deps.events), names: { displayName: async () => '' }, clock: deps.clock, ids: deps.ids },
