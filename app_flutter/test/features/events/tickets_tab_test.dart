@@ -16,9 +16,14 @@ import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/events/tickets_tab.dart';
 import 'package:photobooking/l10n/app_localizations_vi.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/passes/pass_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/dispute_world.dart';
 import '../../support/event_world.dart';
+import '../../support/fake_pass_repository.dart';
+import '../../support/fake_pass_scanner.dart';
 import '../../support/fake_push.dart';
 
 EventRegistration _reg(
@@ -1045,5 +1050,170 @@ void main() {
     await settle(tester);
     expect(tester.takeException(), isNull);
     expect(find.text('ĐÃ HUỶ · ĐANG HOÀN TIỀN'), findsOneWidget);
+  });
+
+  group('S11.04-entry (#223)', () {
+    EventRegistration entryReg(
+      String id, {
+      String day = '2026-10-13',
+      DateTime? checkedInAt,
+      bool refundDue = false,
+      String ticketCode = '',
+    }) {
+      final d = parseDayKey(day)!;
+      return EventRegistration(
+        id: id,
+        eventId: 'ent1',
+        userId: 'u1',
+        userName: 'Lan',
+        ticketCode: ticketCode,
+        quantity: 3,
+        amount: 190000,
+        status: RegistrationStatus.paid,
+        checkedInAt: checkedInAt,
+        refundDue: refundDue,
+        paymentId: 'pay-$id',
+        visitDay: day,
+        items: const [
+          EntryLine(ticketTypeId: 't1', name: 'Người lớn', price: 70000, qty: 2),
+          EntryLine(ticketTypeId: 't2', name: 'Trẻ em', price: 50000, qty: 1),
+        ],
+        event: EventTicketSnapshot(
+          title: 'Bãi đá sông Hồng',
+          type: EventType.entry,
+          startsAt: fromVnWallClock(d.add(const Duration(hours: 6))),
+          endsAt: fromVnWallClock(d.add(const Duration(hours: 22))),
+          locationName: 'Bãi đá sông Hồng',
+          lat: 21.07,
+          lng: 105.84,
+        ),
+        createdAt: eventNow,
+      );
+    }
+
+    late FakePassRepository passes;
+    late FakeScreenBrightness brightness;
+    List<Override> extra() {
+      passes = FakePassRepository();
+      brightness = FakeScreenBrightness();
+      return [
+        passRepositoryProvider.overrideWithValue(passes),
+        screenBrightnessProvider.overrideWithValue(brightness),
+      ];
+    }
+
+    testWidgets('entry tickets: tag, visit day with hours, per-type counts, '
+        'the gate hint and no chat', (tester) async {
+      final ov = extra();
+      passes.setRegistrationPass('e1', '7K2Q4R9X');
+      await _open(tester, [entryReg('e1')], extra: ov);
+      expect(find.text('Vé vào cửa'), findsOneWidget);
+      expect(find.text('T3 13/10 · 06:00–22:00 · 3 vé'), findsOneWidget);
+      expect(find.text('2 Người lớn · 1 Trẻ em'), findsOneWidget);
+      expect(
+        find.text('Đưa mã cho nhân viên ở cổng. Dùng được cả nhóm, một lần.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('ticket-chat')), findsNothing);
+      expect(find.text('Huỷ vé · hoàn 100% (tới 00:00 CN 11/10)'), findsOneWidget);
+    });
+
+    testWidgets('the QR comes from private/pass, legacy codes as they are', (
+      tester,
+    ) async {
+      final ov = extra();
+      passes.setRegistrationPass('e1', '7K2Q4R9X');
+      await _open(tester, [
+        entryReg('e1'),
+        entryReg('e2', day: '2026-10-14', ticketCode: 'VE-AB2C-1014'),
+      ], extra: ov);
+      expect(find.text('VE-7K2Q-4R9X'), findsOneWidget);
+      expect(find.text('VE-AB2C-1014'), findsOneWidget);
+      expect(find.byType(QrImageView), findsNWidgets(2));
+    });
+
+    testWidgets('offline, the saved pass still draws', (tester) async {
+      final ov = extra();
+      passes.failWith = Exception('offline');
+      SharedPreferences.setMockInitialValues({'pass.e1': '7K2Q4R9X'});
+      final w = EventsWorld(
+        events: [detailOf('ev1')],
+        registrations: [entryReg('e1')],
+      );
+      w.prefs = await tester.runAsync(SharedPreferences.getInstance);
+      await w.pump(
+        tester,
+        path: '/bookings',
+        size: const Size(390, 1400),
+        extra: ov,
+        bookings: (_) => const Scaffold(body: EventTicketsTab()),
+      );
+      expect(find.text('VE-7K2Q-4R9X'), findsOneWidget);
+    });
+
+    testWidgets('full screen raises the brightness', (tester) async {
+      final ov = extra();
+      passes.setRegistrationPass('e1', '7K2Q4R9X');
+      await _open(tester, [entryReg('e1')], extra: ov);
+      await tester.tap(find.byKey(const Key('ticket-qr')));
+      await settle(tester);
+      expect(find.byKey(const Key('ticket-qr-full')), findsOneWidget);
+      expect(brightness.raised, isTrue);
+      await tester.tap(find.text('Đóng'));
+      await settle(tester);
+      expect(brightness.calls, ['raise', 'restore']);
+    });
+
+    testWidgets('checked in: "Đã vào 07:42"', (tester) async {
+      await _open(tester, [
+        entryReg('e1', checkedInAt: DateTime.utc(2026, 10, 13, 0, 42)),
+      ], extra: extra());
+      expect(find.text('ĐÃ VÀO 07:42'), findsOneWidget);
+    });
+
+    testWidgets('a closed day: "Ngày đóng cửa · đang hoàn 100%"', (
+      tester,
+    ) async {
+      await _open(tester, [entryReg('e1', refundDue: true)], extra: extra());
+      expect(find.text('NGÀY ĐÓNG CỬA · ĐANG HOÀN 100%'), findsOneWidget);
+    });
+
+    testWidgets('past the cutoff: "Đã qua mốc huỷ", cancel off', (
+      tester,
+    ) async {
+      final ov = extra();
+      passes.setRegistrationPass('e1', '7K2Q4R9X');
+      await _open(tester, [entryReg('e1', day: '2026-10-11')], extra: ov);
+      final cancel = find.byKey(const Key('ticket-cancel'));
+      expect(
+        find.descendant(of: cancel, matching: find.text('Đã qua mốc huỷ')),
+        findsOneWidget,
+      );
+      expect(tester.widget<AppButton>(cancel).onPressed, isNull);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('fits 320 dp at 1.3× text (${b.name})', (tester) async {
+        final ov = extra();
+        passes.setRegistrationPass('e1', '7K2Q4R9X');
+        final w = EventsWorld(
+          events: [detailOf('ev1')],
+          registrations: [entryReg('e1')],
+        );
+        await w.pump(
+          tester,
+          path: '/bookings',
+          size: const Size(320, 1600),
+          textScale: 1.3,
+          extra: ov,
+          bookings: (_) => Theme(
+            data: b == Brightness.dark ? buildDarkTheme() : buildLightTheme(),
+            child: const Scaffold(body: EventTicketsTab()),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.text('2 Người lớn · 1 Trẻ em'), findsOneWidget);
+      });
+    }
   });
 }

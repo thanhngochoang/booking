@@ -565,6 +565,23 @@ void main() {
       },
     );
 
+    testWidgets(
+      'shooting (S30) with an empty preview keeps the accepted sentence',
+      (tester) async {
+        fakeChat.seedThread(
+          thread(
+            id: 'sh',
+            kind: ChatKind.booking,
+            bookingStatus: 'shooting',
+            preview: '',
+          ),
+        );
+        await pumpChatList(tester);
+        await settle(tester);
+        expect(find.text('Nhiếp ảnh gia đã nhận buổi chụp.'), findsOneWidget);
+      },
+    );
+
     testWidgets('a closed inquiry whose last sender is me shows chatClosed', (
       tester,
     ) async {

@@ -19,12 +19,18 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/delivery/delivery_providers.dart';
 import 'package:photobooking/data/payments/payment_history.dart';
+import 'package:photobooking/data/disputes/dispute.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
+import 'package:photobooking/features/booking/ask_shot_sheet.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/booking/widgets/pass_card.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
 import 'package:photobooking/features/booking/widgets/studio_assignee_block.dart';
 import 'package:photobooking/features/booking/widgets/studio_offer_line.dart';
@@ -254,9 +260,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
   }
 
-  /// S18.01 for [b]; a sent dispute opens S18.02.
-  Future<void> _reportProblem(Booking b, String counterpartName) async {
-    final closesAt = bookingDisputeClosesAt(b);
+  /// S18.01 for [b]; a sent dispute opens S18.02. [reason] presets the
+  /// reason (S05.02-askshot "Không diễn ra").
+  Future<void> _reportProblem(
+    Booking b,
+    String counterpartName, {
+    DisputeReason? reason,
+  }) async {
+    final closesAt = bookingDisputeClosesAt(b, now: ref.read(clockProvider)());
     if (closesAt == null) return;
     final l10n = context.l10n;
     final summary = bookingSummaryFor(b, name: counterpartName);
@@ -271,10 +282,44 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       ),
       closesAt: closesAt,
       origin: bookingDisputeOrigin(b),
+      reason: reason,
     );
     if (id == null || !mounted) return;
     _say(l10n.disputeSent);
     await context.push('/disputes/$id');
+  }
+
+  /// The shoot question was offered on this visit (S05.02-askshot).
+  bool _askOffered = false;
+
+  /// S05.02-askshot: the sheet; "Không diễn ra" opens S18.01 with the reason
+  /// preset (the booking stays `upcoming` with its money held).
+  Future<void> _askShot(Booking b, String name) async {
+    final happened = await showAskShotSheet(
+      context,
+      booking: b,
+      photographerName: name,
+    );
+    if (happened == null || !mounted) return;
+    if (happened) {
+      _say(context.l10n.s0502_askThanks);
+      return;
+    }
+    final denied = b.copyWith(shootDeniedAt: ref.read(clockProvider)());
+    await _reportProblem(denied, name, reason: DisputeReason.noShow);
+  }
+
+  void _maybeAskShot(Booking b, BookingRole role, String name, DateTime now) {
+    if (_askOffered ||
+        role != BookingRole.customer ||
+        !asksShootHappened(b, now)) {
+      return;
+    }
+    if (name.isEmpty && _nameLoading(b, role)) return;
+    _askOffered = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_askShot(b, name));
+    });
   }
 
   /// "Xin đổi thợ (1 lần)" → S26.05 (it confirms the request itself).
@@ -389,6 +434,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               );
               final name = _counterpartName(b, role);
               _maybeOpenSheet(b, role, actions, name);
+              _maybeAskShot(b, role, name, now);
               return _body(context, b, role, actions, now, name);
             },
           ),
@@ -499,9 +545,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ),
             const SizedBox(height: AppSpace.s3),
           ],
+          // S05.02-pass: the meeting pass on top, from 24 h before.
+          if (customer && showsPassCard(b, now)) ...[
+            PassCard(booking: b, photographerName: name, now: now),
+            const SizedBox(height: AppSpace.s3),
+          ],
+          // S05.02-askshot reopened from the screen.
+          if (customer && asksShootHappened(b, now)) ...[
+            AppButton.outline(
+              l10n.s0502_askOpen,
+              key: const Key('ask-shot-open'),
+              onPressed: () => _askShot(b, name),
+            ),
+            const SizedBox(height: AppSpace.s3),
+          ],
           BookingCard(
             data: bookingSummaryFor(b, name: name, thumbUrl: thumbUrl),
           ),
+          if (customer) _EntryLine(booking: b),
           const SizedBox(height: AppSpace.s4),
           // Mock S05.02-refund: a policy refund of a bank transfer waits for
           // the customer's account (server mirror) until S22.04 or 24 h.
@@ -831,7 +892,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       final now =
           ref.watch(nowTickerProvider(_tick)).value ??
           ref.read(clockProvider)();
-      final hours = disputeHoursLeft(bookingDisputeClosesAt(b)!, now) ?? 0;
+      final hours = disputeHoursLeft(bookingDisputeClosesAt(b, now: now)!, now) ?? 0;
       add(
         AppButton.text(
           l10n.disputeReportProblem(hours),
@@ -1124,6 +1185,50 @@ class _RefundAccountCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// S05.02 under the booking card: the entry tickets the booking carries
+/// ("Đã gồm vé vào cửa cho bạn và thợ"), or what the gate of a ticketed spot
+/// asks for both ("Tự mua tại cổng ≈ {x}"); nothing elsewhere.
+class _EntryLine extends ConsumerWidget {
+  const _EntryLine({required this.booking});
+
+  final Booking booking;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    String? text;
+    if (booking.entry != null) {
+      text = l10n.s0502_entryIncluded;
+    } else if (booking.spotId case final id?) {
+      final spot = ref.watch(spotProvider(id)).value;
+      if (spot != null && spot.isTicketed) {
+        final unit = entryUnitPrice(
+          ref.watch(entryEventProvider(id)).value,
+          spot.access,
+        );
+        if (unit != null) text = l10n.s0502_entryOnSite(formatMoney(unit * 2));
+      }
+    }
+    if (text == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s2),
+      child: Row(
+        key: const Key('detail-entry-line'),
+        children: [
+          AppIcon(
+            AppIcons.ticket,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: AppSpace.s2),
+          Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+        ],
       ),
     );
   }

@@ -3213,7 +3213,7 @@
   "registerError": "Chưa đăng ký được. Kiểm tra mạng rồi thử lại.",
   "registerLess": "Bớt một vé",
   "registerMore": "Thêm một vé",
-  "ticketsTab": "Vé sự kiện",
+  "ticketsTab": "Vé",
   "bookingsTabShoots": "Buổi chụp",
   "ticketCode": "Mã vé",
   "ticketCancelRefund": "Huỷ vé · hoàn {pct}%",

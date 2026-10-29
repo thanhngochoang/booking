@@ -8059,7 +8059,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketsTab.
   ///
   /// In vi, this message translates to:
-  /// **'Vé sự kiện'**
+  /// **'Vé'**
   String get ticketsTab;
 
   /// No description provided for @bookingsTabShoots.

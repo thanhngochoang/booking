@@ -88,10 +88,15 @@ Future<String?> showOpenDisputeSheet(
   required DisputeSubjectSummary summary,
   required DateTime closesAt,
   DisputeOrigin origin = DisputeOrigin.booking,
+  DisputeReason? reason,
 }) {
   // One id per sheet: the evidence lives under it and a retried submit is
   // answered with the same dispute (Decision 4).
-  final args = OpenDisputeArgs(disputeId: newUlid(), subject: subject);
+  final args = OpenDisputeArgs(
+    disputeId: newUlid(),
+    subject: subject,
+    initialReason: reason,
+  );
   return showAppSheet<String>(
     context,
     // The header handles the swipe (it asks first when something was typed).
@@ -131,10 +136,16 @@ bool _holdsMoney(EscrowStatus? s) =>
 /// has its own window: with a resolved dispute linked, only `approved` (the
 /// delivery check) stays open — that dispute was on the shoot milestone and
 /// the delivery money is still held. The server decides (`openDispute`).
-DateTime? bookingDisputeClosesAt(Booking b) {
+DateTime? bookingDisputeClosesAt(Booking b, {DateTime? now}) {
   if (!_holdsMoney(b.escrowStatus) ||
       (b.disputeId != null && b.status != BookingStatus.approved)) {
     return null;
+  }
+  // S05.02-askshot "Không diễn ra" (domain `disputeWindow`): an `upcoming`
+  // booking whose customer denied the shoot stays disputable; the window
+  // rolls with now while the money is held.
+  if (b.status == BookingStatus.upcoming && b.shootDeniedAt != null) {
+    return now?.add(const Duration(hours: disputeWindowHours));
   }
   return switch (b.status) {
     BookingStatus.shot => b.shotAt?.add(

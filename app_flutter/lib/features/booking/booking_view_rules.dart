@@ -133,7 +133,7 @@ List<DetailAction> detailActions(
     if (BookingRules.isReviewed(b) && features.review) {
       out.add(DetailAction.viewReview);
     }
-    final disputeClosesAt = bookingDisputeClosesAt(b);
+    final disputeClosesAt = bookingDisputeClosesAt(b, now: now);
     if (disputeClosesAt != null && now.isBefore(disputeClosesAt)) {
       out.add(DetailAction.reportProblem);
     }

@@ -4621,7 +4621,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get registerMore => 'Thêm một vé';
 
   @override
-  String get ticketsTab => 'Vé sự kiện';
+  String get ticketsTab => 'Vé';
 
   @override
   String get bookingsTabShoots => 'Buổi chụp';

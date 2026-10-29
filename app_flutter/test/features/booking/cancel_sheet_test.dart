@@ -492,4 +492,65 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(_inSheet(find.byType(MoneyBreakdown)), findsOneWidget);
   });
+
+  group('S05.03 "Giữ vé vào cửa" (#223)', () {
+    RecordingBookingRepository withTickets() => RecordingBookingRepository()
+      ..seedBooking(
+        _booking().copyWith(
+          entry: const BookingEntry(
+            eventId: 'ent1',
+            visitDay: '2026-10-12',
+            registrationId: 'reg1',
+            providerTicket: true,
+            amount: 140000,
+          ),
+        ),
+      )
+      ..seedContact('b1', testContactSnapshot);
+
+    testWidgets('a booking with tickets offers the switch, off by default; on '
+        'sends keepTickets', (tester) async {
+      final repo = withTickets();
+      await _openCustomer(
+        tester,
+        now: _startsAt.subtract(const Duration(days: 3)),
+        bookings: repo,
+      );
+      final sw = _inSheet(find.byKey(const Key('cancel-keep-tickets')));
+      expect(sw, findsOneWidget);
+      expect(_inSheet(find.text('Giữ vé vào cửa')), findsOneWidget);
+      expect(_inSheet(find.text('Vé vẫn dùng được ngày T2 12/10')), findsOneWidget);
+      expect(tester.widget<SwitchListTile>(sw).value, isFalse);
+      await tester.ensureVisible(sw);
+      await tester.tap(sw);
+      await _settle(tester);
+      final confirm = _inSheet(find.widgetWithText(AppButton, 'Huỷ buổi chụp'));
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await _settle(tester);
+      expect(repo.keepTicketsCalls, [true]);
+    });
+
+    testWidgets('left off, the tickets go with the booking', (tester) async {
+      final repo = withTickets();
+      await _openCustomer(
+        tester,
+        now: _startsAt.subtract(const Duration(days: 3)),
+        bookings: repo,
+      );
+      final confirm = _inSheet(find.widgetWithText(AppButton, 'Huỷ buổi chụp'));
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await _settle(tester);
+      expect(repo.keepTicketsCalls, [false]);
+    });
+
+    testWidgets('no switch without tickets', (tester) async {
+      await _openCustomer(
+        tester,
+        now: _startsAt.subtract(const Duration(days: 3)),
+      );
+      expect(find.byKey(const Key('cancel-keep-tickets')), findsNothing);
+    });
+  });
 }

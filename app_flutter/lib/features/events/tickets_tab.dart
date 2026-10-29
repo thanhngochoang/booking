@@ -13,9 +13,12 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/passes/pass_providers.dart';
+import 'package:photobooking/data/passes/pass_repository.dart';
 import 'package:photobooking/data/payments/payment_history.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/disputes/dispute_entry.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
@@ -40,17 +43,23 @@ TicketView ticketViewOf(
   required DateTime now,
   required AppLocalizations l,
 }) {
+  // An entry ticket refunds all of it up to its visit day 00:00 minus the
+  // cutoff (`entryRefundPercent`, 48 h by default; the snapshot carries no
+  // other cutoff), nothing after.
   final refund = r.isFree
       ? null
+      : r.isEntry
+      ? (!now.isAfter(entryCutoffAt(r.visitDay!, _fullRefundHours)) ? 100 : 0)
       : (r.event.startsAt.difference(now) >=
                 const Duration(hours: _fullRefundHours)
             ? 100
             : 0);
   // The event was cancelled with this ticket's money held: refund on its way.
+  // An entry ticket's day was closed by its organizer (S11.04-entry).
   if (r.refundDue && r.status != RegistrationStatus.refunded) {
     return (
       state: TicketState.cancelled,
-      statusLabel: l.ticketRefunding,
+      statusLabel: r.isEntry ? l.s1104_dayClosed : l.ticketRefunding,
       refundPercentIfCancelled: null,
     );
   }
@@ -72,7 +81,9 @@ TicketView ticketViewOf(
       if (r.isCheckedIn) {
         return (
           state: TicketState.attended,
-          statusLabel: null,
+          statusLabel: r.isEntry
+              ? l.s1104_checkedIn(formatHm(toVn(r.checkedInAt!)))
+              : null,
           refundPercentIfCancelled: null,
         );
       }
@@ -374,16 +385,33 @@ class _TicketTile extends ConsumerWidget {
         disputeClosesAt != null &&
         !now.isBefore(r.event.endsAt) &&
         now.isBefore(disputeClosesAt);
+    // The pass is private (Decision 8): read it for a ticket on screen
+    // whose public legacy code is empty; it stays on the phone offline.
+    final pass = r.ticketCode.isEmpty && view.state == TicketState.upcoming
+        ? ref.watch(myPassProvider(PassRef.registration(r.eventId, r.id))).value
+        : null;
+    final code = r.ticketCode.isNotEmpty
+        ? r.ticketCode
+        : (pass == null ? '' : passDisplay(pass));
+    final entry = r.isEntry;
+    final starts = toVn(r.event.startsAt);
+    final cutoff = entry ? entryCutoffLabel(r.visitDay!, _fullRefundHours) : '';
     final card = TicketCard(
       ticket: TicketCardData(
-        ticketCode: r.ticketCode,
+        ticketCode: code,
         eventTitle: r.event.title,
         typeLabel: r.event.type.label(l),
-        startsAt: toVn(r.event.startsAt),
+        startsAt: starts,
         quantity: r.quantity,
         state: view.state,
         placeName: r.event.locationName,
+        metaLine: entry
+            ? '${formatDay(starts)} · ${formatHm(starts)}–${formatHm(toVn(r.event.endsAt))} · ${l.ticketCount(r.quantity)}'
+            : null,
+        hint: entry ? l.s1104_gateHint : null,
+        detail: entry && r.items.isNotEmpty ? entryItemsLine(r.items) : null,
       ),
+      cancelEnabled: !(entry && pct == 0),
       highlighted: highlighted,
       // Mock S11.04: only the upcoming ticket is the big card; the others
       // (pending, expired, past, cancelled, refunded) are compact rows.
@@ -391,17 +419,20 @@ class _TicketTile extends ConsumerWidget {
       statusLabel: view.statusLabel,
       cancelLabel: pct == null
           ? null
+          : entry
+          ? (pct == 0 ? l.s1104_pastCutoff : l.s1104_cancelUntil(cutoff))
           : (pct == 0 ? l.ticketCancelNoRefund : l.ticketCancelRefund(pct)),
       qrHeroTag: 'ticket-qr-${r.id}',
-      onQrTap: () => _showQr(context, r),
+      onQrTap: code.isEmpty ? null : () => _showQr(context, r, code),
       onCancel: () => _cancel(context, ref),
       onPay: pending ? () => _continuePayment(context, ref) : null,
       payLabel: l.ticketPayContinue,
       onReportProblem: canReport
           ? () => _reportProblem(context, disputeClosesAt)
           : null,
-      // The group chat opens once the ticket is paid (a free ticket is paid at once).
-      onOpenChat: r.status == RegistrationStatus.paid
+      // The group chat opens once the ticket is paid (a free ticket is paid
+      // at once); an entry ticket has none.
+      onOpenChat: r.status == RegistrationStatus.paid && !entry
           ? () => context.push('/e/${r.eventId}/chat')
           : null,
       onDirections: () => launcher.open(
@@ -427,14 +458,14 @@ class _TicketTile extends ConsumerWidget {
     );
   }
 
-  void _showQr(BuildContext context, EventRegistration r) {
+  void _showQr(BuildContext context, EventRegistration r, String code) {
     Navigator.of(context).push(
       PageRouteBuilder<void>(
         opaque: false,
         barrierDismissible: true,
         barrierColor: Colors.black.withValues(alpha: 0.85),
         pageBuilder: (_, _, _) =>
-            _QrFullScreen(code: r.ticketCode, heroTag: 'ticket-qr-${r.id}'),
+            _QrFullScreen(code: code, heroTag: 'ticket-qr-${r.id}'),
       ),
     );
   }
@@ -449,13 +480,35 @@ class _TicketError implements Exception {
   String toString() => message;
 }
 
-/// The QR alone, big, on white: easy to scan from across a table. The system
-/// brightness is not touched (no plugin; ledgered).
-class _QrFullScreen extends StatelessWidget {
+/// The QR alone, big, on white: easy to scan from across a table, with the
+/// screen at full brightness while it is open (S30 Decision 19).
+class _QrFullScreen extends ConsumerStatefulWidget {
   const _QrFullScreen({required this.code, required this.heroTag});
 
   final String code;
   final String heroTag;
+
+  @override
+  ConsumerState<_QrFullScreen> createState() => _QrFullScreenState();
+}
+
+class _QrFullScreenState extends ConsumerState<_QrFullScreen> {
+  late final ScreenBrightness _brightness = ref.read(screenBrightnessProvider);
+
+  String get code => widget.code;
+  String get heroTag => widget.heroTag;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_brightness.raise());
+  }
+
+  @override
+  void dispose() {
+    unawaited(_brightness.restore());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
