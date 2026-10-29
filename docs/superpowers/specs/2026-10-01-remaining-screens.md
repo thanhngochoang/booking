@@ -91,26 +91,26 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S06 |
-| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · bước địa điểm chưa có bản đồ · dòng dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) | S07 |
-| S04.04 | Chờ thanh toán | `/b/:id/pay`, `/e/:eventId/pay/:regId` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · dùng chung mọi chủ thể (PR #200) | S08 |
+| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · bước địa điểm chưa có bản đồ · dòng dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · S30: biến thể vé vào cửa (S04.03-entry) [#223](https://github.com/thanhngochoang/booking/issues/223) | S07 |
+| S04.04 | Chờ thanh toán | `/b/:id/pay`, `/e/:eventId/pay/:regId` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · dùng chung mọi chủ thể (PR #200) · S30: vé vào cửa [#223](https://github.com/thanhngochoang/booking/issues/223) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
-| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S09 |
-| S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) · ScreenCode ✅ (#152) | S10 |
+| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e · khối dịch vụ đi kèm: [#232](https://github.com/thanhngochoang/booking/pull/232) · bàn giao: ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) · S30: biến thể mã gặp thợ, "Đang chụp" và câu hỏi buổi chụp (S05.02-pass, S05.02-askshot) [#223](https://github.com/thanhngochoang/booking/issues/223) | S09 |
+| S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) · ScreenCode ✅ (#152) · S30: công tắc "Giữ vé vào cửa" [#223](https://github.com/thanhngochoang/booking/issues/223) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
 | S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) · [#136](https://github.com/thanhngochoang/booking/issues/136) | S12 |
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | S05.08 | Huỷ phần bàn giao khi trễ hạn (sheet: hoàn mốc 2, thợ giữ mốc 1) | — (sheet) | khách | spec 10-05 §4.1.5 | kế hoạch `2026-10-18-s05-late-delivery-cancel.md` ([#207](https://github.com/thanhngochoang/booking/issues/207)) | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · Live Shutter: [#140](https://github.com/thanhngochoang/booking/issues/140) | S19 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi · Chờ bàn giao ✅ (#152) · [#136](https://github.com/thanhngochoang/booking/issues/136) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · Live Shutter: [#140](https://github.com/thanhngochoang/booking/issues/140) · S30: biến thể quét mã khách (S06.01-scan) [#223](https://github.com/thanhngochoang/booking/issues/223) | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
 | S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày · theo mốc ✅ (#152) | S43 |
-| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ (10b, #134) · tra tên, OTP, 72 giờ (cổng giả) | S44 |
+| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ (10b, #134) · tra tên, OTP, 72 giờ (cổng giả) · S30: mở cho chủ sự kiện [#223](https://github.com/thanhngochoang/booking/issues/223) | S44 |
 | S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ✅ đã làm (#152) | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) · ảnh, gửi lại ảnh (#131) | S11 |
@@ -125,21 +125,21 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio: [#136](https://github.com/thanhngochoang/booking/issues/136) | S31 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio: [#136](https://github.com/thanhngochoang/booking/issues/136) · S30: nhóm "Tổ chức sự kiện" [#223](https://github.com/thanhngochoang/booking/issues/223) | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S21 |
 | **S11** | **Tham gia sự kiện** | | | | | |
 | S11.01 | Danh sách sự kiện | `/events` | cả hai | 3b | ✅ đã làm (10c) | S15 |
-| S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ✅ đã làm (10c) | S16 |
-| S11.03 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ✅ đã làm (10c) · thanh toán qua S04.04 (PR #200) | S17 |
-| S11.04 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ✅ đã làm (10c) · thanh toán tiếp qua S04.04 (PR #200) | S18 |
+| S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ✅ đã làm (10c) · S30: biến thể địa điểm đồng ý (S11.02-venue-consent), dòng phí quản lý địa điểm [#223](https://github.com/thanhngochoang/booking/issues/223) | S16 |
+| S11.03 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ✅ đã làm (10c) · thanh toán qua S04.04 (PR #200) · S30: dòng phí quản lý địa điểm [#223](https://github.com/thanhngochoang/booking/issues/223) | S17 |
+| S11.04 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ✅ đã làm (10c) · thanh toán tiếp qua S04.04 (PR #200) · S30: biến thể vé vào cửa (S11.04-entry) [#223](https://github.com/thanhngochoang/booking/issues/223) | S18 |
 | S11.05 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S11.02) | cả hai | 3b | ✅ đã làm (10c) | S45 |
 | S11.06 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b | ✅ đã làm (10c) | S46 |
 | **S12** | **Tổ chức sự kiện** | | | | | |
-| S12.01 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ✅ đã làm (10c) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) | S25 |
+| S12.01 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ✅ đã làm (10c) · điểm chụp: [#194](https://github.com/thanhngochoang/booking/issues/194) · S30: khối Địa điểm (S12.01-venue) [#223](https://github.com/thanhngochoang/booking/issues/223) | S25 |
 | S12.02 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b | ✅ đã làm (10c) | S26 |
-| S12.03 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ✅ đã làm (10c) | S27 |
+| S12.03 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ✅ đã làm (10c) · S30: biến thể vé vào cửa (S12.03-entry), dòng trạng thái địa điểm [#223](https://github.com/thanhngochoang/booking/issues/223) | S27 |
 | **S13** | **Chụp ngay (khách)** | | | | | |
 | S13.01 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá; "Xem nhiếp ảnh gia phù hợp" | `/instant` | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140) | S47 |
 | S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | [#140](https://github.com/thanhngochoang/booking/issues/140), [#202](https://github.com/thanhngochoang/booking/issues/202) | — (mới) |
@@ -181,7 +181,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135, phí xác minh #203) · danh tính/thuế giả lập | — |
 | S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
-| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
+| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · S30: mở cho chủ sự kiện [#223](https://github.com/thanhngochoang/booking/issues/223) | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
 | S22.01 | Lịch sử thanh toán: đã trả, đang giữ (kể cả Chụp ngay chưa tìm được người), hoàn tiền, phương thức, trạng thái từng khoản | `/me/payments` | khách | mới | [#141](https://github.com/thanhngochoang/booking/issues/141) | — |
 | S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ✅ đã làm (#205) | — |
@@ -248,19 +248,19 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S28.10 | Tin nhắn: hỏi trước và hội thoại booking, chữ và ảnh | `/studio/messages` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
 | **S29** | **Điểm chụp đang hot** | | | | | |
 | S29.01 | Điểm chụp: danh sách, lọc khu vực / "Đang vào mùa" / "Cuối tuần này có thợ" (+ khu ở S02.01, lưới tab Địa điểm ở S02.03) | `/spots` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
-| S29.02 | Trang điểm chụp: mô tả, mẹo, bản đồ; thợ nhận chụp theo ngày; gói chia suất; sự kiện; ảnh (trống ngày, ngoài mùa) | `/spots/:spotId` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.02 | Trang điểm chụp: mô tả, mẹo, bản đồ; thợ nhận chụp theo ngày; gói chia suất; sự kiện; ảnh (trống ngày, ngoài mùa) | `/spots/:spotId` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) · S30: vào cửa (S29.02-entry) [#223](https://github.com/thanhngochoang/booking/issues/223) | — |
 | S29.03 | Lịch tại điểm của tôi | `/me/spot-schedules` | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
-| S29.04 | Thêm / sửa lịch tại điểm | `/me/spot-schedules/new`, `/me/spot-schedules/:id/edit` | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
+| S29.04 | Thêm / sửa lịch tại điểm | `/me/spot-schedules/new`, `/me/spot-schedules/:id/edit` | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) · S30: ghi chú vé vào cửa [#223](https://github.com/thanhngochoang/booking/issues/223) | — |
 | S29.05 | Gói chia suất (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
 | S29.06 | Chọn suất (sheet, phía khách) | — (sheet) | khách | spec 10-08 điểm chụp | [#194](https://github.com/thanhngochoang/booking/issues/194) | — |
 | **S30** | **Chủ sự kiện & vé vào cửa** | | | | | |
-| S30.01 | Trở thành chủ sự kiện | `/organizer/apply` | mọi người dùng | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
-| S30.02 | Nhận quản lý điểm chụp (minh chứng, staff duyệt) | `/organizer/spots/claim` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
-| S30.03 | Quản lý điểm: thông tin vào cửa, giờ mở cửa, thợ tại điểm | `/organizer/spots/:spotId` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
-| S30.04 | Tạo / sửa vé vào cửa: loại vé, khoảng ngày, ngày nghỉ, sức chứa/ngày | `/organizer/entry/new`, `/organizer/entry/:eventId/edit` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
-| S30.05 | Mua vé vào cửa: ngày và số lượng theo loại | `/spots/:spotId/tickets` | khách | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
-| S30.06 | Nhân viên soát vé | `/organizer/gate-staff` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
-| S30.07 | Quét mã: soát vé ở cổng, thợ gặp khách ("Đang chụp") | `/scan` | chủ sự kiện · nhân viên soát vé · thợ ảnh · studio | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.01 | Trở thành chủ sự kiện | `/organizer/apply` | mọi người dùng | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
+| S30.02 | Nhận quản lý điểm chụp (minh chứng, staff duyệt) | `/organizer/spots/claim` | chủ sự kiện | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
+| S30.03 | Quản lý điểm: thông tin vào cửa, giờ mở cửa, thợ tại điểm | `/organizer/spots/:spotId` | chủ sự kiện | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
+| S30.04 | Tạo / sửa vé vào cửa: loại vé, khoảng ngày, ngày nghỉ, sức chứa/ngày | `/organizer/entry/new`, `/organizer/entry/:eventId/edit` | chủ sự kiện | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
+| S30.05 | Mua vé vào cửa: ngày và số lượng theo loại | `/spots/:spotId/tickets` | khách | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
+| S30.06 | Nhân viên soát vé | `/organizer/gate-staff` | chủ sự kiện | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
+| S30.07 | Quét mã: soát vé ở cổng, thợ gặp khách ("Đang chụp") | `/scan` | chủ sự kiện · nhân viên soát vé · thợ ảnh · studio | spec 10-12 chủ sự kiện | đã làm, chờ PR ([#223](https://github.com/thanhngochoang/booking/issues/223)) | — |
 
 Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6; giai đoạn 1 chạy trên Functions + Firestore, hộp ở mục 5 của spec đó); từng màn của cả hai phía (S14.01–S14.03, thẻ ở S06.01; S13.01–S13.08, lối vào ở S02.01 và S02.06; S13.04 và S13.08 có cả hai phía) ở [`screens/instant.md`](screens/instant.md). Cả hai phía thuộc #140 (PR 1 điều phối và app thợ, PR 2 app khách); tiền ở #202.
 
