@@ -16,7 +16,7 @@ import { createPayout } from '../src/payout_use_cases.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { dispatchRefund, dispatchRefunds } from '../src/refunds.js';
 import { transitionBooking } from '../src/transition_booking.js';
-import { transferOf } from './support/booking_world.js';
+import { scanned, transferOf } from './support/booking_world.js';
 import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
 import { ADMIN, addAccount, createPayoutWorld, type PayoutWorld } from './support/payout_world.js';
 
@@ -38,6 +38,7 @@ async function bookingPaidWith(w: PayoutWorld, transfers: readonly number[]): Pr
 /** Completes the booking after the shoot and runs the clock past the dispute window. */
 async function completeAndRelease(w: PayoutWorld, bookingId: string): Promise<void> {
   w.clock.setTime(new Date('2026-10-16T09:30:00.000Z'));
+  scanned(w, bookingId);
   await transitionBooking(w.deps, { bookingId, action: 'complete', actorId: 'p1' });
   w.clock.setTime(new Date('2026-10-17T10:00:00.000Z'));
   assert.equal((await runBookingSweeps(w.deps)).releasedEscrows, 1);

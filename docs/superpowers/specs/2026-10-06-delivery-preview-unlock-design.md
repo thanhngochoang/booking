@@ -57,6 +57,8 @@ Hai mốc tiền: `payments/{id}` thêm `milestones: [{kind: shoot|delivery, amo
 ## 4. Máy trạng thái (thay §4.3 của spec 2026-10-05)
 
 ```
+upcoming ──(thợ quét mã của khách, S30)──▶ shooting ──(thợ "Đã chụp xong" | quá kết thúc + 24 giờ)──▶ shot
+upcoming ──(kết thúc + 24 giờ, không ai quét: hỏi khách "Buổi chụp có diễn ra không?")──▶ shot (khách trả lời "Có" hoặc im lặng 48 giờ)
 shot ──(nộp bàn giao)──▶ delivered
 delivered ──(khách yêu cầu sửa, còn lượt)──▶ revision_requested ──(nộp vòng mới)──▶ delivered
 delivered ──(khách đồng ý | im lặng 3 ngày)──▶ approved          link mở, checkUntil = +48 giờ
@@ -70,7 +72,8 @@ shot ──(quá deliveryDays, khách huỷ phần giao)──▶ completed (m�
 - Hết lượt sửa: `delivered` vẫn chờ khách; khách chọn đồng ý, "Xin thêm 1 vòng" (người bàn giao bấm "Cho thêm 1 vòng" → `revisionsGranted + 1`, `revisionsUsed + 1` và `revision_requested`, hoặc "Không thêm" → `declined`), hoặc khiếu nại. Người bàn giao cũng mở được khiếu nại nếu khách liên tục từ chối mà không còn lượt.
 - Đồng hồ tự đồng ý 3 ngày đặt lại mỗi khi có vòng ảnh mẫu mới.
 - Một job định kỳ `bookingClock` (mỗi 15 phút) xử lý `autoApproveAt`, nhắc trước 24 giờ (`autoApproveNoticeAt`), `checkUntil` (chuyển sang `completed` và giải ngân mốc 2 nếu không khiếu nại), và dọn dẹp ảnh mẫu sau 90 ngày (`samplesPurgeAfter`).
-- `mark_shot` thay thế `complete` để chuyển `upcoming → shot` sau khi buổi chụp kết thúc (hoặc tự động sau kết thúc 24 giờ).
+- `mark_shot` thay thế `complete` để chuyển `upcoming → shot` sau khi buổi chụp kết thúc. Từ #223 (S30), booking có mã gặp thợ phải qua `shooting` (thợ quét mã) trước khi thợ bấm "Đã chụp xong"; booking không có mã (Chụp ngay, thanh toán trước khi S30 ra mắt) vẫn bấm được sau khi kết thúc.
+- Việc tự chuyển `shot` lúc kết thúc + 24 giờ chỉ còn cho booking đã `shooting`. Booking vẫn `upcoming` lúc đó được hỏi khách "Buổi chụp có diễn ra không?" thay cho `shot` tự động: "Có" hoặc im lặng 48 giờ thì `shot` (`shotAt` = giờ kết thúc); "Không" ghi `shootDeniedAt`, tiền vẫn giữ, app mở khiếu nại S18 với lý do "Buổi chụp không diễn ra" (hệ thống tự mở sau 48 giờ nếu khách không mở). Chi tiết ở spec `2026-10-12-spot-organizer-entry-tickets-design.md` §6.3.
 
 ### Quyết định của chủ dự án 2026-10-18
 

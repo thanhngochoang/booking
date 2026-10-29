@@ -83,6 +83,8 @@ abstract final class AppIcons {
   static const IconData payment = Symbols.credit_card_rounded;
   static const IconData wallet = Symbols.account_balance_wallet_rounded;
   static const IconData qrCode = Symbols.qr_code_2_rounded;
+  static const IconData qrScanner = Symbols.qr_code_scanner_rounded;
+  static const IconData flashlight = Symbols.flashlight_on_rounded;
   static const IconData receipt = Symbols.receipt_long_rounded;
   static const IconData pin = Symbols.pin_rounded;
   static const IconData darkMode = Symbols.dark_mode_rounded;
@@ -100,6 +102,9 @@ abstract final class AppIcons {
   static const IconData verified = Symbols.verified_rounded;
   static const IconData work = Symbols.work_rounded;
   static const IconData store = Symbols.storefront_rounded;
+
+  /// S12.01-venue "Nơi công cộng" (mock `park`).
+  static const IconData park = Symbols.park_rounded;
 
   /// S27: a studio–collaborator relationship (S27.06, S09.02 "Cộng tác").
   static const IconData handshake = Symbols.handshake_rounded;

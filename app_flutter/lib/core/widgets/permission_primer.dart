@@ -23,6 +23,10 @@ class PermissionPrimer extends StatelessWidget {
     required this.onEnable,
     required this.onLater,
     this.enabling = false,
+    this.icon,
+    this.enableLabel,
+    this.laterLabel,
+    this.outlineEnable = false,
   });
 
   final String title;
@@ -35,6 +39,17 @@ class PermissionPrimer extends StatelessWidget {
 
   /// Puts the primary button in its loading state while the OS dialog is up.
   final bool enabling;
+
+  /// Defaults to the notification bell (S17.03); S30.07 shows a camera.
+  final IconData? icon;
+
+  /// Replace "Bật thông báo" / "Để sau" for another permission.
+  final String? enableLabel;
+  final String? laterLabel;
+
+  /// The enable button as an outline instead of the gradient primary (S30.07
+  /// has no gradient button).
+  final bool outlineEnable;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +82,7 @@ class PermissionPrimer extends StatelessWidget {
               ),
               child: Center(
                 child: AppIcon(
-                  AppIcons.notificationsActive,
+                  icon ?? AppIcons.notificationsActive,
                   size: 28,
                   color: context.mutedForeground,
                 ),
@@ -105,13 +120,25 @@ class PermissionPrimer extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpace.s3),
-          AppButton.primary(
-            l.primerEnableNotification,
-            loading: enabling,
-            onPressed: onEnable,
-          ),
+          if (outlineEnable)
+            AppButton.outline(
+              enableLabel ?? l.primerEnableNotification,
+              key: const ValueKey('primer_enable'),
+              loading: enabling,
+              onPressed: onEnable,
+            )
+          else
+            AppButton.primary(
+              enableLabel ?? l.primerEnableNotification,
+              key: const ValueKey('primer_enable'),
+              loading: enabling,
+              onPressed: onEnable,
+            ),
           const SizedBox(height: AppSpace.s2),
-          AppButton.text(l.primerLater, onPressed: enabling ? null : onLater),
+          AppButton.text(
+            laterLabel ?? l.primerLater,
+            onPressed: enabling ? null : onLater,
+          ),
           if (note != null) ...[
             const SizedBox(height: AppSpace.s2),
             Text(

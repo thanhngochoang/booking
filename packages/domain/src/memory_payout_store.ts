@@ -14,6 +14,10 @@ export class MemoryPayoutStore implements PayoutStore {
   constructor(readonly booking: MemoryBookingStore = new MemoryBookingStore()) {}
 
   readonly roles = new Map<string, string>();
+  /** `organizers/{uid}.status` (S30). */
+  readonly organizerStatuses = new Map<string, 'active' | 'suspended'>();
+  /** `organizers/{uid}.payoutAccountOk`, as written by `savePayoutAccount`. */
+  readonly organizerPayoutOk = new Map<string, boolean>();
   /** uid → provider type; missing → 'individual'. */
   readonly payeeTypes = new Map<string, ProviderType>();
   /** key `${userId}/${accountId}` */
@@ -30,6 +34,10 @@ export class MemoryPayoutStore implements PayoutStore {
 
   seedRole(uid: string, role: string): void {
     this.roles.set(uid, role);
+  }
+
+  seedOrganizer(uid: string, status: 'active' | 'suspended' = 'active'): void {
+    this.organizerStatuses.set(uid, status);
   }
 
   seedPayeeType(uid: string, t: ProviderType): void {
@@ -97,6 +105,10 @@ export class MemoryPayoutStore implements PayoutStore {
           read('getUserRole');
           return this.roles.get(uid) ?? null;
         },
+        getOrganizerStatus: async (uid) => {
+          read('getOrganizerStatus');
+          return this.organizerStatuses.get(uid) ?? null;
+        },
         getPayeeType: async (uid) => {
           read('getPayeeType');
           return this.payeeTypeOf(uid);
@@ -132,6 +144,7 @@ export class MemoryPayoutStore implements PayoutStore {
         },
         putAccount: (a) => stage(() => void this.accounts.set(`${a.userId}/${a.id}`, a)),
         putAccountView: (userId, v) => stage(() => void this.accountViews.set(userId, v)),
+        setOrganizerPayoutOk: (uid, ok) => stage(() => void this.organizerPayoutOk.set(uid, ok)),
         putPayout: (p) => stage(() => void this.payouts.set(p.id, p)),
         listPayablePayments: async (payeeId) => {
           read('listPayablePayments');

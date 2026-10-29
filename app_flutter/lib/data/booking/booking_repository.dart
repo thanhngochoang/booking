@@ -4,6 +4,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 
 export 'package:photobooking/data/payments/payments_repository.dart'
@@ -36,6 +37,11 @@ enum BookingErrorCode {
   outsideSchedule,
   slotTaken,
   spotArchived,
+
+  /// S30: the booking's ticket day is closed / sold out (`createBooking.entry`,
+  /// `createPayment` of a booking with tickets).
+  dayClosed,
+  soldOutDay,
   network,
   unknown,
 }
@@ -108,6 +114,10 @@ BookingErrorCode _codeToBookingError(String code) {
       return BookingErrorCode.slotTaken;
     case 'spot_archived':
       return BookingErrorCode.spotArchived;
+    case 'day_closed':
+      return BookingErrorCode.dayClosed;
+    case 'sold_out_day':
+      return BookingErrorCode.soldOutDay;
     case 'unavailable':
     case 'deadline-exceeded':
     case 'network':
@@ -185,7 +195,9 @@ abstract class BookingRepository {
 
   /// Creates a draft booking. [addons] are picks (the server prices them),
   /// [pickup] is required with a transport pick, [expectedTotal] is the total
-  /// the customer saw (a staleness check, never a price).
+  /// the customer saw (a staleness check, never a price). [entry] buys entry
+  /// tickets for the booking day with it (S04.03-entry; the payment is then
+  /// a group, `Booking.groupId`).
   Future<Booking> createBooking({
     required String photographerId,
     required String serviceId,
@@ -199,6 +211,7 @@ abstract class BookingRepository {
     int? expectedTotal,
     String? spotScheduleId,
     String? slotOfferId,
+    BookingEntryRequest? entry,
   });
 
   /// Starts (or restarts, "Tạo QR mới") the payment of a draft booking. The
@@ -221,11 +234,21 @@ abstract class BookingRepository {
     FakeTransferKind kind = FakeTransferKind.exact,
   });
 
-  /// Transitions booking lifecycle state.
+  /// Transitions booking lifecycle state. [keepTickets] (S05.03 "Giữ vé vào
+  /// cửa") keeps the paid entry tickets of a customer `cancel`.
   Future<Booking> transitionBooking({
     required String bookingId,
     required String action,
     String? reason,
+    bool keepTickets = false,
+  });
+
+  /// S05.02-askshot: the customer answers "Buổi chụp có diễn ra không?"
+  /// (`true` → `shot`; `false` keeps it `upcoming` for the dispute). Returns
+  /// the booking's status after the answer.
+  Future<BookingStatus> answerShootHappened(
+    String bookingId, {
+    required bool happened,
   });
 
   // ── Studio bookings (#136); refusals throw [BookingException] with the

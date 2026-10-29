@@ -9,16 +9,22 @@
 import { DomainError } from './errors.js';
 import type { ProviderType } from './provider_type.js';
 
+/**
+ * Who a payout line pays (S30 Decision 12): a provider by its type, or an organizer (a business that
+ * invoices its own customers: entry tickets, tickets of its events, venue fees; spec §4.3).
+ */
+export type PayeeKind = ProviderType | 'organizer';
+
 export interface PayoutPolicy {
-  /** Platform commission per provider type, in basis points of the gross amount. */
-  readonly feeBp: Readonly<Record<ProviderType, number>>;
+  /** Platform commission per payee kind, in basis points of the gross amount (`organizer` absent → 0). */
+  readonly feeBp: Readonly<Record<ProviderType, number>> & { readonly organizer?: number };
   /** Tax withheld from natural persons (`individual`, `artist`): GTGT + TNCN, basis points. */
   readonly individualTaxBp: { readonly vat: number; readonly pit: number };
 }
 
 /** No commission; 5 % GTGT + 2 % TNCN for natural persons; studios 0 (spec §7 "mặc định không khấu trừ"). */
 export const DEFAULT_PAYOUT_POLICY: PayoutPolicy = {
-  feeBp: { individual: 0, artist: 0, studio: 0 },
+  feeBp: { individual: 0, artist: 0, studio: 0, organizer: 0 },
   individualTaxBp: { vat: 500, pit: 200 },
 };
 
@@ -33,21 +39,25 @@ export interface PayoutLine {
 
 const BP = 10_000;
 
-/** The tax rate the policy applies to a payee type. */
-export function taxRateBpOf(payee: ProviderType, policy: PayoutPolicy): number {
-  return payee === 'studio' ? 0 : policy.individualTaxBp.vat + policy.individualTaxBp.pit;
+/** The tax rate the policy applies to a payee: none for studios and organizers (businesses). */
+export function taxRateBpOf(payee: PayeeKind, policy: PayoutPolicy): number {
+  return payee === 'studio' || payee === 'organizer' ? 0 : policy.individualTaxBp.vat + policy.individualTaxBp.pit;
 }
 
+/** The commission rate the policy applies to a payee kind (`organizer` absent → 0). */
+export const feeRateBpOf = (payee: PayeeKind, policy: PayoutPolicy): number =>
+  payee === 'organizer' ? (policy.feeBp.organizer ?? 0) : policy.feeBp[payee];
+
 /**
- * Integer VND; tax only for 'individual' and 'artist'; Math.round per line. Both fee and tax are
+ * Integer VND; tax only for 'individual' and 'artist' (never studios or organizers); Math.round per line. Both fee and tax are
  * taken on the gross amount and net = gross − fee − tax, never below 0. A negative or non-integer
  * gross is `invalid_argument`. `feeBp`, when given, replaces the policy's fee rate: a payment that
  * snapshotted its own (`Payment.feeBp`, an instant request's `platformFeeBp`, Decision 6).
  */
-export function payoutLineOf(gross: number, payee: ProviderType, policy: PayoutPolicy, feeBp?: number): PayoutLine {
+export function payoutLineOf(gross: number, payee: PayeeKind, policy: PayoutPolicy, feeBp?: number): PayoutLine {
   if (!Number.isSafeInteger(gross) || gross < 0) throw new DomainError('invalid_argument');
   const amount = gross;
-  const feeRateBp = feeBp ?? policy.feeBp[payee];
+  const feeRateBp = feeBp ?? feeRateBpOf(payee, policy);
   const taxRateBp = taxRateBpOf(payee, policy);
   const fee = Math.min(amount, Math.round((amount * feeRateBp) / BP));
   const tax = Math.min(amount - fee, Math.round((amount * taxRateBp) / BP));

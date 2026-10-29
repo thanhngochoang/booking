@@ -4,9 +4,12 @@ import { DomainError } from './errors.js';
 import { isId } from './ids.js';
 import { isValidHashtag } from './event_hashtag.js';
 import type { RefundStatus } from './escrow.js';
+import type { EntryLine, OpenHours, TicketType } from './entry_tickets.js';
 import type { UserContactRecord } from './ports.js';
+import type { Venue } from './event_venue.js';
 
-export const EVENT_TYPES = ['photo_walk', 'mini_session', 'workshop', 'cosplay', 'other'] as const;
+/** `entry` (S30, #223): entry tickets per visit day at a managed spot, hosted by an organizer (Decision 11). */
+export const EVENT_TYPES = ['photo_walk', 'mini_session', 'workshop', 'cosplay', 'other', 'entry'] as const;
 export const EVENT_STATUSES = ['draft', 'open', 'full', 'closed', 'cancelled', 'completed'] as const;
 export const REGISTRATION_STATUSES = ['held', 'paid', 'cancelled', 'refunded'] as const;
 export const HOST_CONSENTS = ['not_required', 'pending', 'accepted', 'declined', 'expired'] as const;
@@ -48,7 +51,8 @@ export interface EventCaller {
 }
 
 export interface EventHost {
-  readonly type: 'photographer' | 'platform';
+  /** `organizer` (S30, #223): an organizer document's owner (`id` = its uid); paid to the organizer. */
+  readonly type: 'photographer' | 'platform' | 'organizer';
   readonly id: string | null;
   readonly name: string | null;
   readonly avatarUrl: string | null;
@@ -119,6 +123,36 @@ export interface EventRecord {
    * Server-only; cleared when the marker is set. Optional (absent = `[]`).
    */
   readonly soonNotifiedRegIds?: readonly string[];
+  /*
+   * Entry events only (`type == 'entry'`, S30 Decision 11); absent on every other event. `startAt`/`endAt`
+   * hold the sale range (00:00 of the first day to 00:00 after the last day, Vietnam), `spotId` the
+   * managed spot, `location`/`cover*` the spot's; `capacity`, `price`, `dayKey`, `registrationDeadline`
+   * and `chatId` are null and the hashtag empty.
+   */
+  /** 0 = Sunday … 6 = Saturday. */
+  readonly closedWeekdays?: readonly number[];
+  readonly closedDays?: readonly string[];
+  readonly openHours?: OpenHours;
+  readonly ticketTypes?: readonly TicketType[];
+  /** Null: no daily limit. */
+  readonly dailyCapacity?: number | null;
+  readonly refundCutoffHours?: number;
+  /**
+   * S30 §7.1 (Decision 16): where the event takes place (`event_venue.ts`). A managed spot's manager and
+   * gate staff check tickets in at the gate (`gateCheckedInAt`). Required to publish an event created on
+   * or after `VENUE_REQUIRED_FROM`; absent or null on older events and on entry events (their spot).
+   */
+  readonly venue?: Venue | null;
+  /**
+   * §7.2: the spot manager's answer when the host is someone else (`pending` → `accepted` | `declined` |
+   * `expired`, 72 h). Absent = `not_required`.
+   */
+  readonly venueConsent?: HostConsent;
+  readonly venueConsentExpiresAt?: Date | null;
+  /** Part of the ticket price paid to the spot manager per guest (the `venue_fee` line); absent = 0. */
+  readonly venueFeePerGuest?: number;
+  /** The manager who accepted (the `venue_fee` payee); null until accepted. */
+  readonly venueManagerId?: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -155,6 +189,27 @@ export interface RegistrationDoc {
   readonly refundStatus?: RefundStatus | null;
   /** The ticket's latest dispute (S18), open or resolved; written only by the dispute transaction (server). */
   readonly disputeId?: string | null;
+  /*
+   * Entry tickets (S30): absent on event tickets (read as null / []). `ticketCode` stays the
+   * `ticket_codes` index key; `ticketCodeLast4` is what lists show (Decision 8).
+   */
+  /** The visit day (`yyyy-MM-dd`, Vietnam). */
+  readonly visitDay?: string | null;
+  /** The priced lines bought (the price paid, whatever later edits do). */
+  readonly items?: readonly EntryLine[];
+  /** A ticket bought with a booking (S04.03-entry, Task 3); null for a lone ticket. */
+  readonly bookingId?: string | null;
+  /**
+   * S30 (spec §5.3): what the booking this ticket was bought with left owed to it when it was declined,
+   * expired or cancelled, stamped in the booking's own transaction (with `refundDue`): 100 → refund it
+   * (`reason`), 0 → cancel it and keep the money held (a customer cancel after the entry cutoff). Cleared
+   * once settled (`settleBookingLine`, retried by the event clock). Absent or null: nothing owed.
+   */
+  readonly bookingLineDue?: BookingLineDue | null;
+  /** The gate's check-in (S30.07); `checkedInAt` stays the event manager's. */
+  readonly gateCheckedInAt?: Date | null;
+  /** The last 4 random characters of the ticket code. */
+  readonly ticketCodeLast4?: string;
   readonly event: {
     readonly title: string;
     readonly type: EventType;
@@ -168,6 +223,11 @@ export interface RegistrationDoc {
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+}
+
+export interface BookingLineDue {
+  readonly percent: 0 | 100;
+  readonly reason: 'provider_cancelled' | 'customer_cancel';
 }
 
 /** `registrations/{regId}/private/contact`; written only for tickets that unlock contact (O3). */
@@ -189,8 +249,9 @@ export function registrationContactOf(name: string, phone: string, record: UserC
 
 export const isFreeEvent = (e: Pick<EventRecord, 'price'>): boolean => (e.price ?? 0) === 0;
 
+/** The host (photographer or organizer), an admin, or the sales staff who created it. Gate staff are not managers. */
 export function isEventManager(e: Pick<EventRecord, 'host' | 'createdBy'>, c: EventCaller): boolean {
-  if (e.host.type === 'photographer' && e.host.id === c.uid) return true;
+  if ((e.host.type === 'photographer' || e.host.type === 'organizer') && e.host.id !== null && e.host.id === c.uid) return true;
   if (c.staffRole === 'admin') return true;
   return c.staffRole === 'sales' && e.createdBy === c.uid;
 }
@@ -200,8 +261,12 @@ export function seatsLeft(e: Pick<EventRecord, 'capacity' | 'registeredCount' | 
   return Math.max(0, e.capacity - e.registeredCount - e.heldCount);
 }
 
-/** `open ↔ full` by free seats; every other status is kept. A full event reopens only before the deadline. */
+/**
+ * `open ↔ full` by free seats; every other status is kept. A full event reopens only before the deadline.
+ * Entry events keep their status: their capacity is per day (`entry_days`), not `capacity`.
+ */
 export function statusAfterSeats(e: EventRecord, now: Date): EventStatus {
+  if (e.type === 'entry') return e.status;
   const left = seatsLeft(e);
   if (e.status === 'open' && left === 0) return 'full';
   if (e.status === 'full' && left > 0) {
@@ -349,6 +414,8 @@ export function validateEventFields(
     if (typeof r.type !== 'string' || !(EVENT_TYPES as readonly string[]).includes(r.type)) return bad();
     type = r.type as EventType;
   }
+  // Entry events have their own fields and rules (validateEntryEvent); never through this path.
+  if (type === 'entry') throw new DomainError('invalid_argument', 'type');
   if (type === undefined) return bad();
 
   const description = has('description') ? clean(r.description, EVENT_DESC_MAX, 0) : (existing?.description ?? '');

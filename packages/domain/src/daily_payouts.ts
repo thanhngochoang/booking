@@ -1,13 +1,13 @@
 /**
  * The daily payout run (payments spec M5 "chi tự động mỗi ngày, không ngưỡng tối thiểu"):
- * (a) one payout per due payee with an account whose activeFrom has come, (b) send every `pending`
+ * (a) one payout per due payee (and payee kind) with an account whose activeFrom has come, (b) send every `pending`
  * payout, approved ones included. One payee's or payout's failure never stops the others, and a
  * second run the same day creates nothing new (batched payments carry `payoutId`).
  */
 
 import { DomainError } from './errors.js';
 import type { PayoutDeps } from './payout_ports.js';
-import { SYSTEM_PAYOUT_ACTOR, createPayout, executePayout } from './payout_use_cases.js';
+import { SYSTEM_PAYOUT_ACTOR, createPayouts, executePayout } from './payout_use_cases.js';
 
 export interface DailyPayoutReport {
   created: number;
@@ -38,10 +38,12 @@ export async function runDailyPayouts(
       continue;
     }
     try {
-      const p = await createPayout(deps, SYSTEM_PAYOUT_ACTOR, due.payeeId);
-      r.created += 1;
-      if (p.status === 'needs_approval') r.needsApproval += 1;
-      if (p.status === 'on_hold') r.onHold += 1;
+      // One payout per payee kind (S30 Decision 12): a photographer who is also an organizer gets two.
+      for (const p of await createPayouts(deps, SYSTEM_PAYOUT_ACTOR, due.payeeId)) {
+        r.created += 1;
+        if (p.status === 'needs_approval') r.needsApproval += 1;
+        if (p.status === 'on_hold') r.onHold += 1;
+      }
     } catch (e) {
       // No money left after all, or the account is not active yet (the 72 hours after a change).
       if (e instanceof DomainError && e.code === 'not_eligible') {

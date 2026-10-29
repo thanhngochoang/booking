@@ -311,11 +311,11 @@ describe('Booking callables', () => {
       cleanedDrafts: 0,
       expiredRequests: 0,
       upcomingTransitions: 0,
-      autoShots: 0,
+      shootingShots: 0,
+      shootQuestionsExpired: 0,
       autoApprovals: 0,
       finishedChecks: 0,
       releasedEscrows: 0,
-      autoCompletions: 0,
     });
   });
 
@@ -341,6 +341,9 @@ describe('Booking callables', () => {
       createdAt: '2026-10-01T00:00:00.000Z',
       updatedAt: '2026-10-01T00:00:00.000Z',
       rankedAt: null,
+      managedBy: null,
+      access: null,
+      openHours: null,
       updatedBy: 'system',
     });
     store.schedules.set('sched1', {

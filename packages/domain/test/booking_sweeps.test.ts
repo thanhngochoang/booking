@@ -1,12 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit } from '../src/booking_policy.js';
-import { createBookingWorld, newDraft, payDraft } from './support/booking_world.js';
+import { createBookingWorld, newDraft, payDraft, scanned } from './support/booking_world.js';
 import { createPayment } from '../src/create_payment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
 import { freezeBookingPayment } from './support/dispute_world.js';
+import { newTicketPayment } from '../src/event_payments.js';
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
@@ -89,7 +90,7 @@ describe('Task 5: runBookingSweeps', () => {
     assert.equal(b?.status, 'upcoming');
   });
 
-  it('auto mark-shots upcoming booking 24h after end time', async () => {
+  it('S30: an unscanned upcoming booking is no longer auto-marked shot 24h after end; a scanned one is', async () => {
     // Booking end: 2026-10-15 16:00 VN = 09:00 UTC
     const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
     const draft = await createBookingDraft(world.deps, {
@@ -107,10 +108,13 @@ describe('Task 5: runBookingSweeps', () => {
     world.clock.setTime(new Date('2026-10-16T09:00:00.000Z'));
 
     const sweeps = await runBookingSweeps(world.deps);
-    assert.equal(sweeps.autoShots, 1);
+    assert.equal(sweeps.shootingShots, 0);
+    // The same run's T-24h step made it upcoming; nobody scanned, so it waits for the shoot question.
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'upcoming');
 
-    const b = await world.store.getBooking(draft.id);
-    assert.equal(b?.status, 'shot');
+    scanned(world, draft.id);
+    assert.equal((await runBookingSweeps(world.deps)).shootingShots, 1);
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'shot');
   });
 
   it('auto-approve a delivered booking past autoApproveAt', async () => {
@@ -250,6 +254,21 @@ describe('Task 5: runBookingSweeps', () => {
     assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
     assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
   });
+  it('an unpaid entry-ticket payment (releaseAfter set at creation, S30) is never released', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const intent = newTicketPayment({
+      id: 'pay_entry', event: { id: 'en1', host: { type: 'organizer', id: 'org1', name: null, avatarUrl: null, verified: true } },
+      registrationId: 'rg1', payerId: 'c1', method: 'bank_qr', provider: 'fake', amount: 70_000,
+      now: world.clock.now(), expiresAt: new Date('2026-10-10T10:15:00.000Z'),
+      lineKind: 'entry_ticket', releaseAfter: new Date('2026-10-12T10:00:00.000Z'),
+    });
+    world.store.payments.set(intent.id, intent);
+    world.clock.setTime(new Date('2026-10-13T10:00:00.000Z'));
+    assert.equal((await runBookingSweeps(world.deps)).releasedEscrows, 0);
+    assert.equal(world.store.payments.get(intent.id)?.escrowStatus, 'held');
+    assert.equal(world.store.payments.get(intent.id)?.status, 'created');
+  });
+
   it('a disputed payment is not released by runBookingSweeps even after releaseAfter', async () => {
     const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
     const legacy = await newDraft(world);
@@ -265,6 +284,7 @@ describe('Task 5: runBookingSweeps', () => {
     const lp = world.store.payments.get(legacyPay);
     assert.ok(lp && lp.milestones === undefined);
     world.store.payments.set(legacyPay, { ...lp, releaseAfter: '2026-10-17T09:30:00.000Z' });
+    scanned(world, split.id);
     await transitionBooking(world.deps, { bookingId: split.id, action: 'mark_shot', actorId: 'p1' });
     freezeBookingPayment(world.store, legacy.id, world.clock.now());
     freezeBookingPayment(world.store, split.id, world.clock.now(), 'shoot');
@@ -285,6 +305,7 @@ describe('Task 5: runBookingSweeps', () => {
     const { paymentId } = await payDraft(world, b.id);
     await transitionBooking(world.deps, { bookingId: b.id, action: 'accept', actorId: 'p1' });
     world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    scanned(world, b.id);
     await transitionBooking(world.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'p1' });
     freezeBookingPayment(world.store, b.id, world.clock.now(), 'delivery');
     assert.equal((await world.store.findReleasableEscrows(world.clock.now())).length, 0);
@@ -312,6 +333,7 @@ describe('Task 5: runBookingSweeps', () => {
     const { paymentId } = await payDraft(world, b.id);
     await transitionBooking(world.deps, { bookingId: b.id, action: 'accept', actorId: 'p1' });
     world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    scanned(world, b.id);
     await transitionBooking(world.deps, { bookingId: b.id, action: 'mark_shot', actorId: 'p1' });
     world.clock.setTime(new Date('2026-10-16T10:00:00.000Z'));
 

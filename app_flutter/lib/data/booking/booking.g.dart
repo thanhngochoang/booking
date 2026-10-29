@@ -136,6 +136,7 @@ const _$BookingStatusEnumMap = {
   BookingStatus.expired: 'expired',
   BookingStatus.cancelled: 'cancelled',
   BookingStatus.upcoming: 'upcoming',
+  BookingStatus.shooting: 'shooting',
   BookingStatus.shot: 'shot',
   BookingStatus.delivered: 'delivered',
   BookingStatus.revisionRequested: 'revisionRequested',
@@ -262,6 +263,20 @@ _Booking _$BookingFromJson(Map<String, dynamic> json) => _Booking(
   studio: json['studio'] == null
       ? null
       : StudioBookingInfo.fromJson(json['studio'] as Map<String, dynamic>),
+  checkedInAt: json['checkedInAt'] == null
+      ? null
+      : DateTime.parse(json['checkedInAt'] as String),
+  shootQuestionAt: json['shootQuestionAt'] == null
+      ? null
+      : DateTime.parse(json['shootQuestionAt'] as String),
+  shootQuestionUntil: json['shootQuestionUntil'] == null
+      ? null
+      : DateTime.parse(json['shootQuestionUntil'] as String),
+  shootDeniedAt: json['shootDeniedAt'] == null
+      ? null
+      : DateTime.parse(json['shootDeniedAt'] as String),
+  passCode4: json['passCode4'] as String?,
+  groupId: json['groupId'] as String?,
   refundAccountNeeded: json['refundAccountNeeded'] as bool? ?? false,
   version: (json['version'] as num?)?.toInt() ?? 1,
   createdAt: DateTime.parse(json['createdAt'] as String),
@@ -315,6 +330,12 @@ Map<String, dynamic> _$BookingToJson(_Booking instance) => <String, dynamic>{
   'quoteId': instance.quoteId,
   'disputeId': instance.disputeId,
   'studio': instance.studio,
+  'checkedInAt': instance.checkedInAt?.toIso8601String(),
+  'shootQuestionAt': instance.shootQuestionAt?.toIso8601String(),
+  'shootQuestionUntil': instance.shootQuestionUntil?.toIso8601String(),
+  'shootDeniedAt': instance.shootDeniedAt?.toIso8601String(),
+  'passCode4': instance.passCode4,
+  'groupId': instance.groupId,
   'refundAccountNeeded': instance.refundAccountNeeded,
   'version': instance.version,
   'createdAt': instance.createdAt.toIso8601String(),

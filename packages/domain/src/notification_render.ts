@@ -94,7 +94,20 @@ export type NotificationContent =
     }
   | { type: 'collab_pay_due'; name: string; amount: number; service: string; day: string }
   | { type: 'collab_pay_reported'; studio: string; amount: number; method: 'bank' | 'cash' | 'other' }
-  | { type: 'collab_pay_disputed'; name: string; amount: number; service: string; day: string };
+  | { type: 'collab_pay_disputed'; name: string; amount: number; service: string; day: string }
+  // S30 organizers (#223). `spot` null = a proposal for a new spot; `reason` is the staff's text or 'spot_managed'.
+  | { type: 'spot_claim_approved'; spot: string }
+  | { type: 'spot_claim_rejected'; spot: string | null; reason: string | null }
+  | { type: 'spot_resident_added'; organizer: string; spot: string }
+  | { type: 'gate_staff_invited'; organizer: string }
+  | { type: 'entry_day_closed'; spot: string; day: string }
+  // S30 Decision 16: `host` asks the spot's manager; the answer goes back to the host.
+  | { type: 'event_venue_requested'; title: string; host: string; spot: string }
+  | { type: 'event_venue_answered'; title: string; spot: string; accepted: boolean }
+  // S30 Decision 10 (S05.02-askshot): `provider` is the shooter's name.
+  | { type: 'shoot_question'; provider: string; day: string }
+  // S30 Decision 7: the customer's pass exists (`kind` booking: "Mã gặp thợ"; entry: entry tickets).
+  | { type: 'pass_ready'; kind: 'booking' | 'entry'; day: string };
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'] as const;
 
@@ -482,5 +495,49 @@ export function renderNotification(c: NotificationContent): { title: string; bod
         title: 'Cộng tác viên chưa nhận thù lao',
         body: `${c.name} báo chưa nhận ${formatVnd(c.amount)} cho buổi ${c.service} ${formatDayShortVi(c.day)}.`,
       };
+    case 'spot_claim_approved':
+      return {
+        title: `Bạn đã được duyệt quản lý ${c.spot}`,
+        body: 'Cập nhật giá vào cửa và thợ tại điểm để khách biết trước khi đến.',
+      };
+    case 'spot_claim_rejected':
+      return {
+        title: c.spot === null ? 'Đề xuất điểm mới chưa được duyệt' : `Yêu cầu quản lý ${c.spot} chưa được duyệt`,
+        body: c.reason === 'spot_managed'
+          ? 'Điểm này đã có chủ quản lý. Liên hệ hỗ trợ nếu bạn là ban quản lý.'
+          : c.reason
+            ? `Bị từ chối: ${truncateGraphemes(c.reason, 80)}`
+            : 'Xem lại minh chứng và gửi lại.',
+      };
+    case 'spot_resident_added':
+      return {
+        title: `${c.organizer} thêm bạn vào thợ tại ${c.spot}`,
+        body: 'Khách thấy nhãn “Thợ tại điểm · miễn vé” khi đặt bạn ở đây.',
+      };
+    case 'gate_staff_invited':
+      return { title: `${c.organizer} mời bạn soát vé`, body: 'Nhận lời mời trong 72 giờ để mở màn quét mã.' };
+    case 'entry_day_closed':
+      return {
+        title: `${c.spot} đóng cửa ${formatDayShortVi(c.day)}`,
+        body: 'Vé vào cửa ngày này được hoàn 100%. Xem trạng thái hoàn tiền trong mục Vé.',
+      };
+    case 'event_venue_requested':
+      return {
+        title: `Sự kiện xin tổ chức tại ${c.spot}`,
+        body: `${c.host} · “${truncateGraphemes(c.title, 60)}”. Trả lời trong 72 giờ, quá hạn sự kiện bị huỷ.`,
+      };
+    case 'event_venue_answered':
+      return c.accepted
+        ? { title: `${c.spot} đồng ý sự kiện của bạn`, body: `“${truncateGraphemes(c.title, 60)}” đã có thể đăng.` }
+        : { title: `${c.spot} từ chối sự kiện của bạn`, body: `“${truncateGraphemes(c.title, 60)}” đã bị huỷ.` };
+    case 'shoot_question':
+      return {
+        title: 'Buổi chụp có diễn ra không?',
+        body: `${c.provider} chưa quét mã của bạn hôm ${formatDayShortVi(c.day)}. Cho chúng tôi biết để giữ đúng tiền của bạn.`,
+      };
+    case 'pass_ready':
+      return c.kind === 'booking'
+        ? { title: 'Mã gặp thợ đã sẵn sàng', body: `Thợ quét mã này khi gặp bạn ${formatDayShortVi(c.day)}.` }
+        : { title: 'Vé vào cửa đã sẵn sàng', body: `Đưa mã QR ở cổng ngày ${formatDayShortVi(c.day)}.` };
   }
 }

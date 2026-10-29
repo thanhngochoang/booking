@@ -32,6 +32,7 @@ import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/earnings/earnings_screen.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/entry/entry_buy_screen.dart';
 import 'package:photobooking/features/event_manage/manage_event_screen.dart';
 import 'package:photobooking/features/event_chat/event_chat_screen.dart';
 import 'package:photobooking/features/event_manage/my_events_screen.dart';
@@ -58,6 +59,12 @@ import 'package:photobooking/features/instant_work/offer_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
+import 'package:photobooking/features/organizer/entry_tickets_edit_screen.dart';
+import 'package:photobooking/features/organizer/gate_staff_screen.dart';
+import 'package:photobooking/features/organizer/managed_spot_screen.dart';
+import 'package:photobooking/features/organizer/organizer_apply_screen.dart';
+import 'package:photobooking/features/organizer/organizer_routes.dart';
+import 'package:photobooking/features/organizer/spot_claim_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
 import 'package:photobooking/features/payments/payment_history_screen.dart';
@@ -69,6 +76,7 @@ import 'package:photobooking/features/photographer_setup/setup_draft_store.dart'
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 import 'package:photobooking/features/saved/followers_screen.dart';
+import 'package:photobooking/features/scan/scan_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
@@ -431,6 +439,55 @@ final routerProvider = Provider<GoRouter>((ref) {
           spotId: state.pathParameters['spotId']!,
           date: state.uri.queryParameters['date'],
         ),
+      ),
+      // S30.05: entry tickets of a spot for one visit day.
+      GoRoute(
+        path: '/spots/:spotId/tickets',
+        builder: (_, state) =>
+            EntryBuyScreen(spotId: state.pathParameters['spotId']!),
+      ),
+      // S30 organizers (#223): open to any signed-in user; the screens and
+      // the callables check the organizer document.
+      GoRoute(
+        path: organizerApplyPath,
+        builder: (_, _) => const OrganizerApplyScreen(),
+      ),
+      GoRoute(
+        path: spotClaimPath,
+        builder: (_, _) => const SpotClaimScreen(),
+      ),
+      GoRoute(
+        path: '/organizer/spots/:spotId',
+        builder: (_, state) =>
+            ManagedSpotScreen(spotId: state.pathParameters['spotId']!),
+      ),
+      GoRoute(
+        path: '/organizer/entry/new',
+        builder: (_, state) =>
+            EntryTicketsEditScreen(spotId: state.uri.queryParameters['spot']),
+      ),
+      GoRoute(
+        path: '/organizer/entry/:eventId/edit',
+        builder: (_, state) =>
+            EntryTicketsEditScreen(eventId: state.pathParameters['eventId']),
+      ),
+      GoRoute(
+        path: gateStaffPath,
+        builder: (_, _) => const GateStaffScreen(),
+      ),
+      // S30.07: the gate, event managers and the photographer (`?booking=`);
+      // the server decides what a scan may change (Decision 9).
+      GoRoute(
+        path: scanPath,
+        builder: (_, state) => ScanScreen(
+          bookingId: state.uri.queryParameters['booking'],
+          eventId: state.uri.queryParameters['event'],
+        ),
+      ),
+      // S06.06 for an organizer (Task 1b): no photographer-only redirect.
+      GoRoute(
+        path: organizerPayoutPath,
+        builder: (_, _) => const PayoutAccountScreen(),
       ),
       GoRoute(
         path: '/u/:uid/book',

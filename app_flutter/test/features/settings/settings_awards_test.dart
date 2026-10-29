@@ -11,7 +11,9 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import '../../support/studio_world.dart' show FakeStudioRepository;
+import '../../support/fake_organizer_repository.dart';
 
 Future<Widget> _app(UserRole role) async {
   SharedPreferences.setMockInitialValues({});
@@ -34,6 +36,7 @@ Future<Widget> _app(UserRole role) async {
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
       studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
+      organizerRepositoryProvider.overrideWithValue(FakeOrganizerRepository()),
       userRepositoryProvider.overrideWithValue(users),
       sharedPreferencesProvider.overrideWithValue(prefs),
     ],

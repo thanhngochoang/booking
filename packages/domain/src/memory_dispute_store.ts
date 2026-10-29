@@ -1,6 +1,8 @@
 import type { EscrowStatus } from './booking.js';
 import type { Dispute, DisputeStatus, DisputeSubjectType } from './dispute.js';
-import { pickSubjectPayment, type DisputeStore, type DisputeSubjectView, type DisputeTx } from './dispute_ports.js';
+import {
+  pickSubjectPayment, venueLinesAmong, type DisputeBookingEnd, type DisputeStore, type DisputeSubjectView, type DisputeTx,
+} from './dispute_ports.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import { MemorySupportStore } from './memory_support_store.js';
 import type { SupportTx } from './support_use_cases.js';
@@ -21,7 +23,10 @@ export class MemoryDisputeStore extends MemorySupportStore implements DisputeSto
   readonly refunds = new Map<string, Refund>();
   readonly ledger: LedgerEntry[] = [];
   /** What `linkSubject` wrote, by subject key (the booking / registration mirrors). */
-  readonly mirrors = new Map<string, { readonly disputeId: string; readonly escrowStatus?: EscrowStatus }>();
+  readonly mirrors = new Map<
+    string,
+    { readonly disputeId: string; readonly escrowStatus?: EscrowStatus; readonly end?: DisputeBookingEnd }
+  >();
 
   putSubject(view: DisputeSubjectView): void {
     this.subjects.set(disputeSubjectKey(view.type, view.id, view.eventId), view);
@@ -32,7 +37,7 @@ export class MemoryDisputeStore extends MemorySupportStore implements DisputeSto
     const payments = new Map<string, Payment>();
     const refunds = new Map<string, Refund>();
     const ledger: LedgerEntry[] = [];
-    const links = new Map<string, { view: DisputeSubjectView; disputeId: string; escrowStatus: EscrowStatus }>();
+    const links = new Map<string, { view: DisputeSubjectView; disputeId: string; escrowStatus: EscrowStatus; end?: DisputeBookingEnd }>();
     const threads = new Map<string, SupportThread>();
     const messages: SupportMessage[] = [];
     let written = false;
@@ -62,6 +67,7 @@ export class MemoryDisputeStore extends MemorySupportStore implements DisputeSto
             [...this.payments.values()].filter((p) => p.subjectType === 'booking' && p.subjectId === subject.id),
           );
         }),
+      venueLinesOf: (payment) => read(() => venueLinesAmong(payment, [...this.payments.values()])),
       setDispute: (d) => write(() => disputes.set(d.id, d)),
       setPayment: (p) => write(() => payments.set(p.id, p)),
       linkSubject: (view, patch) =>
@@ -78,10 +84,10 @@ export class MemoryDisputeStore extends MemorySupportStore implements DisputeSto
     for (const [id, p] of payments) this.payments.set(id, p);
     for (const [id, r] of refunds) this.refunds.set(id, r);
     this.ledger.push(...ledger);
-    for (const [key, { view, disputeId, escrowStatus }] of links) {
+    for (const [key, { view, disputeId, escrowStatus, end }] of links) {
       const current = this.subjects.get(key) ?? view;
-      this.subjects.set(key, { ...current, disputeId });
-      this.mirrors.set(key, view.type === 'booking' ? { disputeId, escrowStatus } : { disputeId });
+      this.subjects.set(key, { ...current, disputeId, ...(end !== undefined ? { state: end.status } : {}) });
+      this.mirrors.set(key, view.type === 'booking' ? { disputeId, escrowStatus, ...(end !== undefined ? { end } : {}) } : { disputeId });
     }
     for (const [id, t] of threads) this.threads.set(id, t);
     for (const m of messages) {

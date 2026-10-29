@@ -1,5 +1,7 @@
 import * as logger from 'firebase-functions/logger';
 import {
+  askShootHappened,
+  openDeniedShootDisputes,
   runBookingSweeps,
   sendDueReminders,
   sendVerificationNudges,
@@ -14,6 +16,7 @@ import {
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
+  type DisputeDeps,
   type InstantDeps,
   type JobDeps,
   type NotifyDeps,
@@ -26,6 +29,7 @@ import {
 import { db } from '../infra/admin.js';
 import { FirestoreBookingStore } from '../infra/booking_firestore.js';
 import { liveBookingDeps } from '../infra/live_booking.js';
+import { liveDisputeDeps } from '../infra/live_dispute.js';
 import { liveInstantDeps } from '../infra/live_instant.js';
 import { liveJobDeps } from '../infra/live_job.js';
 import { liveNotifyDeps } from '../infra/live_notification.js';
@@ -72,6 +76,11 @@ export interface BookingClockExtras {
    * Default `liveJobDeps()` when the clock runs live (`bookingDeps` omitted).
    */
   readonly jobs?: JobDeps;
+  /**
+   * S30 (Task 4 fix 1): opens the dispute of a denied shoot nobody disputed in 48 h. Default `liveDisputeDeps()`
+   * when the clock runs live; a test that passes its own BookingDeps and no `disputes` skips the step.
+   */
+  readonly disputes?: DisputeDeps;
 }
 
 export async function remindAutoApprovals(deps: BookingDeps, notify: NotifyDeps, limit = 50): Promise<number> {
@@ -116,6 +125,10 @@ export async function handleBookingClock(
   try {
     results = await runBookingSweeps(deps);
     logger.info('bookingClock sweep completed', results);
+    if (results.shootStepError !== undefined) {
+      // The shoot step runs last in its own try; the other steps already ran. Retried on the next tick.
+      logger.error('bookingClock shoot step failed', { error: results.shootStepError });
+    }
   } catch (e) {
     logger.error('bookingClock sweep failed', { error: String(e) });
     throw e;
@@ -128,6 +141,28 @@ export async function handleBookingClock(
     } catch (e) {
       logger.error('bookingClock reminders failed', { error: String(e) });
       reminderError = e;
+    }
+  }
+
+  // S30 (Decision 10): "Buổi chụp có diễn ra không?" for unscanned bookings at end + 24 h, its own try (the
+  // expiry of unanswered questions runs inside runBookingSweeps).
+  if (reminders) {
+    try {
+      const asked = await askShootHappened(deps, reminders.notify);
+      logger.info('bookingClock askShootHappened completed', { asked });
+    } catch (e) {
+      logger.error('bookingClock askShootHappened failed', { error: String(e) });
+    }
+  }
+
+  // S30 (Task 4 fix 1): a denied shoot without a dispute after 48 h gets one, opened by the system.
+  const disputes = extras.disputes;
+  if (disputes !== undefined || live) {
+    try {
+      const opened = await openDeniedShootDisputes(deps, disputes ?? liveDisputeDeps());
+      logger.info('bookingClock openDeniedShootDisputes completed', { opened });
+    } catch (e) {
+      logger.error('bookingClock openDeniedShootDisputes failed', { error: String(e) });
     }
   }
 

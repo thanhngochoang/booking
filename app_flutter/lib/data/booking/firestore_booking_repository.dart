@@ -150,6 +150,7 @@ class FirestoreBookingRepository implements BookingRepository {
     int? expectedTotal,
     String? spotScheduleId,
     String? slotOfferId,
+    BookingEntryRequest? entry,
   }) async {
     return _call(
       'createBooking',
@@ -176,6 +177,7 @@ class FirestoreBookingRepository implements BookingRepository {
         'expectedTotal': ?expectedTotal,
         'spotScheduleId': ?spotScheduleId,
         'slotOfferId': ?slotOfferId,
+        'entry': ?entry?.toCallable(),
       },
       (raw) {
         final map = (raw as Map).cast<String, dynamic>();
@@ -237,6 +239,7 @@ class FirestoreBookingRepository implements BookingRepository {
     required String bookingId,
     required String action,
     String? reason,
+    bool keepTickets = false,
   }) async {
     return _call(
       'transitionBooking',
@@ -244,6 +247,7 @@ class FirestoreBookingRepository implements BookingRepository {
         'bookingId': bookingId,
         'action': action,
         'reason': ?reason,
+        if (keepTickets) 'keepTickets': true,
       },
       (raw) {
         final map = (raw as Map).cast<String, dynamic>();
@@ -253,6 +257,22 @@ class FirestoreBookingRepository implements BookingRepository {
       },
     );
   }
+
+  @override
+  Future<BookingStatus> answerShootHappened(
+    String bookingId, {
+    required bool happened,
+  }) => _call(
+    'answerShootHappened',
+    {'bookingId': bookingId, 'happened': happened},
+    (raw) {
+      final status = bookingStatusFromCode(
+        raw is Map ? raw['status'] as String? : null,
+      );
+      if (status == null) throw const BookingException('invalid_response');
+      return status;
+    },
+  );
 
   Booking _bookingOf(dynamic raw) {
     final map = (raw as Map).cast<String, dynamic>();

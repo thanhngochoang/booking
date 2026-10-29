@@ -64,7 +64,9 @@ class BookingRules {
       BookingStatus.shot ||
       BookingStatus.delivered ||
       BookingStatus.revisionRequested => BookingTab.pending,
-      BookingStatus.accepted || BookingStatus.upcoming => BookingTab.upcoming,
+      BookingStatus.accepted ||
+      BookingStatus.upcoming ||
+      BookingStatus.shooting => BookingTab.upcoming,
       BookingStatus.approved ||
       BookingStatus.completed ||
       BookingStatus.reviewed ||
@@ -121,7 +123,8 @@ class BookingRules {
   static bool isReviewed(Booking booking) =>
       booking.reviewedAt != null || booking.status == BookingStatus.reviewed;
 
-  /// Checks if customer can cancel the booking.
+  /// Checks if customer can cancel the booking. Never once `shooting` (the
+  /// server answers `not_eligible`, spec §6.3).
   static bool canCustomerCancel(Booking booking) {
     return booking.status == BookingStatus.requested ||
         booking.status == BookingStatus.accepted ||
@@ -138,10 +141,15 @@ class BookingRules {
     return booking.status == BookingStatus.requested;
   }
 
-  /// Checks if photographer can complete the booking (after shoot ends).
+  /// Checks if photographer can complete the booking ("Đã chụp xong").
+  /// `shooting` (the pass was scanned): any time. A booking with a pass
+  /// (`passCode4`) that is still `upcoming`/`accepted`: never, the scan comes
+  /// first (Decision 14). A legacy booking: after the shoot ends.
   /// Never a studio booking without an assignee: nobody shot it, the server
   /// refuses `mark_shot` and cancels it at the start (#136).
   static bool canPhotographerComplete(Booking booking, DateTime now) {
+    if (booking.status == BookingStatus.shooting) return true;
+    if (booking.passCode4 != null) return false;
     if (booking.status != BookingStatus.upcoming &&
         booking.status != BookingStatus.accepted) {
       return false;
@@ -155,7 +163,7 @@ class BookingRules {
 
 /// S05.01 tab categories.
 enum BookingTab {
-  /// Sắp tới: accepted, upcoming
+  /// Sắp tới: accepted, upcoming, shooting
   upcoming,
 
   /// Đang chờ: requested

@@ -958,3 +958,165 @@ export async function notifyCollabPayDisputed(
     ...from(c),
   });
 }
+
+// ── S30 organizers (#223) ───────────────────────────────────────────────────────────────────
+
+/** An organizer as the actor: its own name and avatar (the organizer document), not the user profile's. */
+const organizerActor = (e: { organizerId: string; organizerName: string; organizerAvatarUrl?: string | null }): NotificationActor => ({
+  id: e.organizerId,
+  name: e.organizerName,
+  avatarUrl: e.organizerAvatarUrl ?? null,
+});
+
+/** Emitter: `reviewSpotClaim` (approve). Opens S30.03 of the spot. */
+export async function notifySpotClaimApproved(
+  deps: NotifyDeps,
+  e: { organizerId: string; claimId: string; spotId: string; spotName: string },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.organizerId,
+    content: { type: 'spot_claim_approved', spot: e.spotName },
+    target: `/organizer/spots/${e.spotId}`,
+    dedupeKey: `spot_claim_approved:${e.claimId}`,
+  });
+}
+
+/**
+ * Emitter: `reviewSpotClaim` (reject, or another claim of the spot approved: reason `spot_managed`).
+ * Opens S30.02, which shows the rejected claim and "Gửi lại".
+ */
+export async function notifySpotClaimRejected(
+  deps: NotifyDeps,
+  e: { organizerId: string; claimId: string; spotName: string | null; reason: string | null },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.organizerId,
+    content: { type: 'spot_claim_rejected', spot: e.spotName, reason: e.reason },
+    target: '/organizer/spots/claim',
+    dedupeKey: `spot_claim_rejected:${e.claimId}`,
+  });
+}
+
+/** Emitter: `saveResident` when the provider is newly added (not on an edit). Opens the spot page (S29.02). */
+export async function notifySpotResidentAdded(
+  deps: NotifyDeps,
+  e: { providerId: string; organizerId: string; organizerName: string; organizerAvatarUrl?: string | null; spotId: string; spotName: string; addedAt: string },
+): Promise<NotifyResult> {
+  const actor = organizerActor(e);
+  return notify(deps, {
+    userId: e.providerId,
+    content: { type: 'spot_resident_added', organizer: actor.name, spot: e.spotName },
+    target: `/spots/${e.spotId}`,
+    dedupeKey: `spot_resident_added:${e.spotId}_${e.providerId}_${e.addedAt}`,
+    ...from(actor),
+  });
+}
+
+/** Emitter: `inviteGateStaff` (a new or renewed invite). Opens S30.06, where the invitee accepts or declines. */
+export async function notifyGateStaffInvited(
+  deps: NotifyDeps,
+  e: { staffUid: string; organizerId: string; organizerName: string; organizerAvatarUrl?: string | null; invitedAt: string },
+): Promise<NotifyResult> {
+  const actor = organizerActor(e);
+  return notify(deps, {
+    userId: e.staffUid,
+    content: { type: 'gate_staff_invited', organizer: actor.name },
+    target: '/organizer/gate-staff',
+    dedupeKey: `gate_staff_invited:${e.organizerId}_${e.staffUid}_${e.invitedAt}`,
+    ...from(actor),
+  });
+}
+
+/** The customer's tickets (S11.04 "Vé sự kiện"): where a ticket's QR and its day state show. */
+const MY_TICKETS_TARGET = '/bookings?tab=events';
+
+/**
+ * Emitter: `closeEntryDay` (S30), once per paid ticket of the closed day. Opens the buyer's tickets
+ * (S11.04, `/bookings?tab=events`), where the ticket shows "Ngày đóng cửa · đang hoàn 100%" (final fix
+ * A-I3: the event page S11.02 shows no ticket).
+ */
+export async function notifyEntryDayClosed(
+  deps: NotifyDeps,
+  e: { userId: string; eventId: string; registrationId: string; spot: string; day: string; thumbUrl?: string | null },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.userId,
+    content: { type: 'entry_day_closed', spot: e.spot, day: e.day },
+    target: MY_TICKETS_TARGET,
+    dedupeKey: `entry_day_closed:${e.eventId}_${e.day}_${e.registrationId}`,
+    thumbUrl: e.thumbUrl ?? null,
+  });
+}
+
+/**
+ * Emitter: `publishEvent` (or a material edit of an accepted draft) when an event at a managed spot
+ * whose host is someone else asks the spot's manager (S30 Decision 16). Opens the event (S11.02), which
+ * shows the S11.02-venue-consent sheet to the manager. One notice per 72 h window.
+ */
+export async function notifyEventVenueRequested(
+  deps: NotifyDeps,
+  e: {
+    managerId: string; eventId: string; title: string; spot: string; expiresAt: string;
+    /** The event's host as stored on it (an organizer's own name, not its user profile's). */
+    host: { id: string | null; name: string | null; avatarUrl: string | null };
+  },
+): Promise<NotifyResult> {
+  const name = e.host.name ?? 'Ban tổ chức';
+  return notify(deps, {
+    userId: e.managerId,
+    content: { type: 'event_venue_requested', title: e.title, host: name, spot: e.spot },
+    target: `/e/${e.eventId}`,
+    dedupeKey: `event_venue_requested:${e.eventId}_${e.expiresAt}`,
+    ...(e.host.id === null ? {} : from({ id: e.host.id, name, avatarUrl: e.host.avatarUrl })),
+  });
+}
+
+/** Emitter: `respondVenueConsent`. Opens the host's S12.03 (the venue status line). */
+export async function notifyEventVenueAnswered(
+  deps: NotifyDeps,
+  e: { hostId: string; eventId: string; title: string; spot: string; accepted: boolean; requestExpiresAt: string },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.hostId,
+    content: { type: 'event_venue_answered', title: e.title, spot: e.spot, accepted: e.accepted },
+    target: `/events/${e.eventId}/manage`,
+    dedupeKey: `event_venue_answered:${e.eventId}_${e.requestExpiresAt}`,
+  });
+}
+
+// ── S30 passes and the shoot question (#223 Decisions 7, 10) ─────────────────────────────────
+
+/**
+ * Emitter: `askShootHappened` (the booking clock), once per booking at end + 24 h without a scan. Opens
+ * the booking (S05.02), which shows the S05.02-askshot sheet while the question is open.
+ */
+export async function notifyShootQuestion(
+  deps: NotifyDeps,
+  e: { bookingId: string; customerId: string; providerId: string; day: string },
+): Promise<NotifyResult> {
+  const p = await actorOf(deps, e.providerId, PHOTOGRAPHER);
+  return notify(deps, {
+    userId: e.customerId,
+    content: { type: 'shoot_question', provider: p.name, day: e.day },
+    target: `/b/${e.bookingId}`,
+    dedupeKey: `shoot_question:${e.bookingId}`,
+    ...from(p),
+  });
+}
+
+/**
+ * Emitter: the pass writer's trigger (Task 6: `passes/{code8}` created), once per pass. A booking's
+ * opens the booking (S05.02-pass), a ticket's the buyer's tickets (S11.04-entry, final fix A-I3).
+ */
+export async function notifyPassReady(
+  deps: NotifyDeps,
+  e: { customerId: string; day: string; bookingId: string | null; eventId: string | null; registrationId: string | null },
+): Promise<NotifyResult> {
+  return notify(deps, {
+    userId: e.customerId,
+    content: { type: 'pass_ready', kind: e.bookingId !== null ? 'booking' : 'entry', day: e.day },
+    target: e.bookingId !== null ? `/b/${e.bookingId}` : MY_TICKETS_TARGET,
+    // Never the code itself: only the customer's `private/pass` holds it.
+    dedupeKey: `pass_ready:${e.bookingId ?? `${e.eventId ?? ''}_${e.registrationId ?? ''}`}`,
+  });
+}

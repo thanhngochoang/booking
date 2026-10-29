@@ -1,3 +1,4 @@
+import type { OrganizerStatus } from './organizer.js';
 import type { PaymentGateway, TransferRecord } from './booking_ports.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import type { PaymentLookup } from './payment_settlement.js';
@@ -17,6 +18,12 @@ export interface ProviderVerificationView {
   readonly businessVerified: boolean;
 }
 
+/** What S21.04 reads of `organizers/{uid}` (S30): whether it may submit, and the flag its approval sets. */
+export interface OrganizerVerificationView {
+  readonly status: OrganizerStatus;
+  readonly businessVerified: boolean;
+}
+
 export interface VerificationAuditEntry {
   readonly id: string;
   readonly uid: string;
@@ -32,6 +39,8 @@ export interface VerificationAuditEntry {
 export interface VerificationTx {
   getVerification(uid: string): Promise<VerificationRecord | null>;
   getProvider(uid: string): Promise<ProviderVerificationView | null>;
+  /** `organizers/{uid}` (null when the user is not an organizer). */
+  getOrganizer(uid: string): Promise<OrganizerVerificationView | null>;
   getContact(uid: string): Promise<{ phone: string | null; phoneVerified: boolean }>;
   getIdentity(uid: string): Promise<IdentityRecord | null>;
   identityOwner(idHash: string): Promise<string | null>;
@@ -46,6 +55,8 @@ export interface VerificationTx {
     uid: string,
     patch: { verified?: boolean; verifiedAt?: string | null; acceptingOrders?: boolean; businessVerified?: boolean },
   ): void;
+  /** An organizer's business approval: patches `organizers/{uid}` only, never `photographers/{uid}`. */
+  setOrganizerFlags(uid: string, patch: { businessVerified?: boolean }): void;
   setPhoneVerified(uid: string): void;
   putIdentity(uid: string, r: IdentityRecord): void;
   putIdentityHash(idHash: string, uid: string): void;

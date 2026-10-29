@@ -16,6 +16,7 @@ import type {
   IdentitySessionRecord,
   IdentityStepRecord,
   LedgerEntry,
+  OrganizerVerificationView,
   Payment,
   PhoneStepRecord,
   ProviderVerificationView,
@@ -32,7 +33,7 @@ import type {
   VerificationStore,
   VerificationTx,
 } from '@photobooking/domain';
-import { providerTypeOf } from '@photobooking/domain';
+import { ORGANIZER_STATUSES, providerTypeOf } from '@photobooking/domain';
 import {
   LEDGER_COLLECTION,
   PAYMENTS_COLLECTION,
@@ -54,6 +55,7 @@ export const VERIFICATION_AUDIT_COLLECTION = 'verificationAudit';
 /** Emulator/dev overrides read by the fake identity verifier (Decision 6). */
 export const FAKE_IDENTITIES_COLLECTION = 'fake_identities';
 const PHOTOGRAPHERS_COLLECTION = 'photographers';
+const ORGANIZERS_COLLECTION = 'organizers';
 
 /** `users/{uid}/private/{docId}` (identity is server-only; contact is the owner's). */
 function privateDoc(firestore: Firestore, uid: string, docId: 'contact' | 'identity') {
@@ -127,6 +129,7 @@ export function verificationToFirestore(r: VerificationRecord): DocumentData {
     nudgedAt: toTimestamp(r.nudgedAt),
     business: r.business
       ? {
+          subject: r.business.subject,
           status: r.business.status,
           kind: r.business.kind,
           taxCode: r.business.taxCode,
@@ -212,6 +215,8 @@ export function verificationFromFirestore(d: DocumentData | null | undefined): V
   const b = d.business;
   const business: BusinessVerificationRecord | null = b
     ? {
+        // A record stored before organizers could verify a business is a studio's.
+        subject: b.subject === 'organizer' ? 'organizer' : 'studio',
         status: b.status,
         kind: b.kind,
         taxCode: String(b.taxCode),
@@ -309,6 +314,14 @@ export class FirestoreVerificationTx implements VerificationTx {
     };
   }
 
+  async getOrganizer(uid: string): Promise<OrganizerVerificationView | null> {
+    const snap = await this.tx.get(this.firestore.collection(ORGANIZERS_COLLECTION).doc(uid));
+    const d = snap.data();
+    const status = ORGANIZER_STATUSES.find((s) => s === d?.status);
+    if (d === undefined || status === undefined) return null;
+    return { status, businessVerified: d.businessVerified === true };
+  }
+
   async getContact(uid: string): Promise<{ phone: string | null; phoneVerified: boolean }> {
     const snap = await this.tx.get(privateDoc(this.firestore, uid, 'contact'));
     if (!snap.exists) {
@@ -404,6 +417,13 @@ export class FirestoreVerificationTx implements VerificationTx {
     if (patch.acceptingOrders !== undefined) data.acceptingOrders = patch.acceptingOrders;
     if (patch.businessVerified !== undefined) data.businessVerified = patch.businessVerified;
     this.tx.set(ref, data, { merge: true });
+  }
+
+  setOrganizerFlags(uid: string, patch: { businessVerified?: boolean }): void {
+    // An organizer's business approval (S30): the organizer's own document, never `photographers/{uid}`.
+    const data: DocumentData = { updatedAt: Timestamp.now() };
+    if (patch.businessVerified !== undefined) data.businessVerified = patch.businessVerified;
+    this.tx.set(this.firestore.collection(ORGANIZERS_COLLECTION).doc(uid), data, { merge: true });
   }
 
   setPhoneVerified(uid: string): void {

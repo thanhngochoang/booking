@@ -1,11 +1,15 @@
 import { DomainError } from './errors.js';
-import type {
-  BusinessVerificationRecord,
-  VerificationRecord,
+import {
+  emptyVerification,
+  type BusinessSubject,
+  type BusinessVerificationRecord,
+  type VerificationRecord,
 } from './verification.js';
 import type {
+  OrganizerVerificationView,
   TaxCodeInfo,
   VerificationDeps,
+  VerificationTx,
 } from './verification_ports.js';
 import type { VerificationChange } from './verification_use_cases.js';
 
@@ -23,6 +27,42 @@ export function isTaxCode(s: unknown): s is string {
   return tenOrBranch.test(clean) || twelve.test(clean);
 }
 
+/**
+ * Who may start or send S21.04 (plan #223 Decision 3): a verified studio, else a user with an `active`
+ * organizer document. A suspended organizer is `conflict`; someone who is neither is `permission_denied`
+ * (no provider profile) or `not_eligible` (a provider who is not a verified studio), as before.
+ */
+async function businessSubjectOf(
+  tx: VerificationTx,
+  uid: string,
+): Promise<{ subject: BusinessSubject; organizer: OrganizerVerificationView | null }> {
+  const provider = await tx.getProvider(uid);
+  const organizer = await tx.getOrganizer(uid);
+  if (provider !== null && provider.providerType === 'studio' && provider.verified) return { subject: 'studio', organizer };
+  if (organizer?.status === 'active') return { subject: 'organizer', organizer };
+  if (organizer?.status === 'suspended') throw new DomainError('conflict');
+  if (provider === null) throw new DomainError('permission_denied');
+  throw new DomainError('not_eligible');
+}
+
+/**
+ * The flag an approved business sets (Decision 3), in the transaction that decides it: a studio's lands on
+ * `photographers/{uid}`, an organizer's on `organizers/{uid}`, and a verified studio that is also an active
+ * organizer gets both (one business, two selling surfaces). `organizer` is read before the first write.
+ */
+export function patchBusinessVerified(
+  tx: VerificationTx,
+  uid: string,
+  subject: BusinessSubject,
+  organizer: OrganizerVerificationView | null,
+): void {
+  if (subject === 'studio') tx.setProviderFlags(uid, { businessVerified: true });
+  if (subject === 'organizer' || organizer?.status === 'active') tx.setOrganizerFlags(uid, { businessVerified: true });
+}
+
+const isOwnDoc = (docPath: string | null, uid: string): docPath is string =>
+  docPath !== null && docPath.startsWith(`businessDocs/${uid}/`);
+
 export async function lookupTaxCode(
   deps: VerificationDeps,
   uid: string,
@@ -30,11 +70,7 @@ export async function lookupTaxCode(
 ): Promise<TaxCodeInfo> {
   if (!deps.taxCodes) throw new DomainError('not_eligible');
 
-  const provider = await deps.store.runTransaction((tx) => tx.getProvider(uid));
-  if (!provider) throw new DomainError('permission_denied');
-  if (provider.providerType !== 'studio' || !provider.verified) {
-    throw new DomainError('not_eligible');
-  }
+  await deps.store.runTransaction((tx) => businessSubjectOf(tx, uid));
 
   if (typeof raw !== 'object' || raw === null) {
     throw new DomainError('invalid_argument');
@@ -57,11 +93,7 @@ export async function submitBusinessVerification(
 ): Promise<VerificationChange> {
   if (!deps.taxCodes || !deps.vault) throw new DomainError('not_eligible');
 
-  const provider = await deps.store.runTransaction((tx) => tx.getProvider(uid));
-  if (!provider) throw new DomainError('permission_denied');
-  if (provider.providerType !== 'studio' || !provider.verified) {
-    throw new DomainError('not_eligible');
-  }
+  const { subject } = await deps.store.runTransaction((tx) => businessSubjectOf(tx, uid));
 
   if (typeof raw !== 'object' || raw === null) {
     throw new DomainError('invalid_argument');
@@ -86,7 +118,7 @@ export async function submitBusinessVerification(
 
   // If company, registration photo is required
   if (info.kind === 'company') {
-    if (!docPath || !docPath.startsWith(`businessDocs/${uid}/`)) {
+    if (!isOwnDoc(docPath, uid)) {
       throw new DomainError('invalid_argument');
     }
   }
@@ -94,8 +126,13 @@ export async function submitBusinessVerification(
   const taxCodeHash = await deps.vault.hashId(taxCode);
 
   return deps.store.runTransaction(async (tx) => {
-    const rec = await tx.getVerification(uid);
-    if (!rec) throw new DomainError('not_eligible');
+    // Re-checked with the writes: the caller may have changed since the first read.
+    const standing = await businessSubjectOf(tx, uid);
+    if (standing.subject !== subject) throw new DomainError('conflict');
+    const stored = await tx.getVerification(uid);
+    // A studio's S21 record exists by then; an organizer has none until it first sends a business.
+    if (!stored && subject === 'studio') throw new DomainError('not_eligible');
+    const rec = stored ?? emptyVerification(uid, 'individual', now);
     // A pending record keeps its photo (the purge deletes that path) and an approved one keeps the
     // businessVerified flag it set; only a rejected record may be sent again.
     if (rec.business?.status === 'submitted' || rec.business?.status === 'approved') {
@@ -103,15 +140,23 @@ export async function submitBusinessVerification(
     }
 
     const identity = await tx.getIdentity(uid);
-    if (!identity) throw new DomainError('not_eligible');
+    // A studio's household code is matched to its owner's verified identity; an organizer needs none.
+    if (!identity && subject === 'studio') throw new DomainError('not_eligible');
 
     let bizRecord: BusinessVerificationRecord;
 
-    if (info.kind === 'household') {
-      const match = taxCodeHash === identity.idHash;
-      if (match) {
+    const matched = identity !== null && taxCodeHash === identity.idHash;
+    // A company always goes to staff. A household code is decided by the owner's identity: a studio is
+    // approved on a match and rejected otherwise; an organizer (who needs no identity) is approved on a
+    // match, and otherwise goes to staff with its photo like a company.
+    const toStaff = info.kind === 'company' || (subject === 'organizer' && !matched);
+    if (toStaff && !isOwnDoc(docPath, uid)) throw new DomainError('invalid_argument');
+
+    if (!toStaff) {
+      if (matched) {
         // Approved immediately
         bizRecord = {
+          subject,
           status: 'approved',
           kind: 'household',
           taxCode,
@@ -127,10 +172,11 @@ export async function submitBusinessVerification(
           purgeAfter: null,
         };
 
-        tx.setProviderFlags(uid, { businessVerified: true });
+        patchBusinessVerified(tx, uid, subject, standing.organizer);
       } else {
         // Rejected representative_mismatch
         bizRecord = {
+          subject,
           status: 'rejected',
           kind: 'household',
           taxCode,
@@ -150,10 +196,11 @@ export async function submitBusinessVerification(
         };
       }
     } else {
-      // Company: submitted for staff review
+      // Submitted for staff review
       bizRecord = {
+        subject,
         status: 'submitted',
-        kind: 'company',
+        kind: info.kind,
         taxCode,
         name: info.name,
         address: info.address,

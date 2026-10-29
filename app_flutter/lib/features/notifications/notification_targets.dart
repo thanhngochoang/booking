@@ -4,8 +4,9 @@
 ///
 /// The accepted set mirrors `CLIENT_TARGET_PATTERNS` in
 /// packages/domain/test/client_targets.ts (S17 Decision 8): keep both in step.
-/// Only `/u/:uid?tab=reviews`, `/studio/recruit?post=<id>` and
-/// `/collab?offer=<id>` may carry a query, exactly that one key once.
+/// Only `/u/:uid?tab=reviews`, `/bookings?tab=events`,
+/// `/studio/recruit?post=<id>` and `/collab?offer=<id>` may carry a query,
+/// exactly that one key once.
 ///
 /// Returns the path to push, or null when [raw] is not allowlisted.
 String? safeTarget(String raw) {
@@ -35,6 +36,15 @@ String? safeTarget(String raw) {
   }
 
   switch (segments) {
+    // A ticket's pass_ready / entry_day_closed: the buyer's tickets (S11.04).
+    case ['bookings'] when query.isNotEmpty:
+      final tab = query['tab'];
+      return query.length == 1 &&
+              tab != null &&
+              tab.length == 1 &&
+              tab.single == 'events'
+          ? '/bookings?tab=events'
+          : null;
     case ['bookings'] ||
         ['notifications'] ||
         ['me', 'awards'] ||
@@ -46,7 +56,9 @@ String? safeTarget(String raw) {
         ['verify', 'start'] ||
         ['verify', 'business'] ||
         ['help', 'chat'] ||
-        ['me', 'payments']:
+        ['me', 'payments'] ||
+        ['organizer', 'spots', 'claim'] ||
+        ['organizer', 'gate-staff']:
       return plain();
     case ['b', final seg] ||
         ['chat', final seg] ||
@@ -60,7 +72,9 @@ String? safeTarget(String raw) {
         ['b', final seg, 'delivery'] ||
         ['disputes', final seg] ||
         ['recruit', final seg] ||
-        ['u', final seg, 'badges']:
+        ['u', final seg, 'badges'] ||
+        ['organizer', 'spots', final seg] ||
+        ['spots', final seg]:
       return id(seg) ? plain() : null;
     case ['u', final uid]:
       if (!id(uid)) {

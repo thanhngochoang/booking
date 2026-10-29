@@ -25,6 +25,10 @@ import {
   notifyDisputeMessage,
   notifyDisputeOpened,
   notifyDisputeResolved,
+  notifyEntryDayClosed,
+  notifyEventVenueAnswered,
+  notifyEventVenueRequested,
+  notifyGateStaffInvited,
   notifyInstantArrived,
   notifyInstantAssigned,
   notifyInstantCancelled,
@@ -36,6 +40,7 @@ import {
   notifyJobExpiring,
   notifyJobInvited,
   notifyJobMatch,
+  notifyPassReady,
   notifyPayoutAccountChanged,
   notifyPayoutAccountNeeded,
   notifyPayoutReleased,
@@ -48,6 +53,9 @@ import {
   notifyRecruitPostNew,
   notifyRefundAccountNeeded,
   notifyReviewVerdict,
+  notifySpotClaimApproved,
+  notifySpotClaimRejected,
+  notifySpotResidentAdded,
   notifyStudioInvite,
   notifyStudioInviteAccepted,
   notifyStudioInviteExpiring,
@@ -110,6 +118,58 @@ const row = (userId: string, type: NotificationType, target: string, id: string,
 
 /** Every non-grouped hook of the plan's hooks table. */
 const CASES: readonly HookCase[] = [
+  // S30 organizers (#223)
+  {
+    name: 'notifySpotClaimApproved',
+    run: (d) => notifySpotClaimApproved(d, { organizerId: 's1', claimId: 'cl1', spotId: 'sp1', spotName: 'Bãi đá' }),
+    rows: [row('s1', 'spot_claim_approved', '/organizer/spots/sp1', 'n_spot_claim_approved_cl1', 'Bạn đã được duyệt quản lý Bãi đá')],
+  },
+  {
+    name: 'notifySpotClaimRejected',
+    run: (d) => notifySpotClaimRejected(d, { organizerId: 's1', claimId: 'cl2', spotName: 'Bãi đá', reason: 'Thiếu giấy tờ' }),
+    rows: [row('s1', 'spot_claim_rejected', '/organizer/spots/claim', 'n_spot_claim_rejected_cl2', 'Yêu cầu quản lý Bãi đá chưa được duyệt')],
+  },
+  {
+    name: 'notifySpotResidentAdded',
+    run: (d) => notifySpotResidentAdded(d, {
+      providerId: 'p1', organizerId: 's1', organizerName: 'Bãi đá sông Hồng', spotId: 'sp1', spotName: 'Bãi đá', addedAt: AT,
+    }),
+    rows: [row('p1', 'spot_resident_added', '/spots/sp1', 'n_spot_resident_added_sp1_p1_2026-10-10T10_00_00.000Z', 'Bãi đá sông Hồng thêm bạn vào thợ tại Bãi đá')],
+  },
+  {
+    name: 'notifyGateStaffInvited',
+    run: (d) => notifyGateStaffInvited(d, { staffUid: 'a1', organizerId: 's1', organizerName: 'Bãi đá sông Hồng', invitedAt: AT }),
+    rows: [row('a1', 'gate_staff_invited', '/organizer/gate-staff', 'n_gate_staff_invited_s1_a1_2026-10-10T10_00_00.000Z', 'Bãi đá sông Hồng mời bạn soát vé')],
+  },
+  {
+    name: 'notifyEntryDayClosed',
+    run: (d) => notifyEntryDayClosed(d, { userId: 'c1', eventId: 'ev1', registrationId: 'rg1', spot: 'Bãi đá', day: '2026-10-12' }),
+    // Final fix A-I3: the buyer's tickets (S11.04), not the event's sales page.
+    rows: [row('c1', 'entry_day_closed', '/bookings?tab=events', 'n_entry_day_closed_ev1_2026-10-12_rg1', 'Bãi đá đóng cửa T2 12/10')],
+  },
+  {
+    name: 'notifyPassReady (entry ticket)',
+    run: (d) => notifyPassReady(d, { customerId: 'c1', day: DAY, bookingId: null, eventId: 'ev1', registrationId: 'rg1' }),
+    rows: [row('c1', 'pass_ready', '/bookings?tab=events', 'n_pass_ready_ev1_rg1', 'Vé vào cửa đã sẵn sàng')],
+  },
+  {
+    name: 'notifyPassReady (booking)',
+    run: (d) => notifyPassReady(d, { customerId: 'c1', day: DAY, bookingId: 'b1', eventId: null, registrationId: null }),
+    rows: [row('c1', 'pass_ready', '/b/b1', 'n_pass_ready_b1', 'Mã gặp thợ đã sẵn sàng')],
+  },
+  {
+    name: 'notifyEventVenueRequested',
+    run: (d) => notifyEventVenueRequested(d, {
+      managerId: 'o1', eventId: 'ev1', title: 'Photo walk', spot: 'Bãi đá', expiresAt: AT,
+      host: { id: 'p1', name: 'Minh', avatarUrl: null },
+    }),
+    rows: [row('o1', 'event_venue_requested', '/e/ev1', 'n_event_venue_requested_ev1_2026-10-10T10_00_00.000Z', 'Sự kiện xin tổ chức tại Bãi đá')],
+  },
+  {
+    name: 'notifyEventVenueAnswered',
+    run: (d) => notifyEventVenueAnswered(d, { hostId: 'p1', eventId: 'ev1', title: 'Photo walk', spot: 'Bãi đá', accepted: true, requestExpiresAt: AT }),
+    rows: [row('p1', 'event_venue_answered', '/events/ev1/manage', 'n_event_venue_answered_ev1_2026-10-10T10_00_00.000Z', 'Bãi đá đồng ý sự kiện của bạn')],
+  },
   {
     name: 'notifyQuoteWithdrawn',
     run: (d) => notifyQuoteWithdrawn(d, { customerId: 'c1', jobId: 'j1', jobTitle: JOB, photographerId: 'p1', quoteVersion: 2, auto: false }),

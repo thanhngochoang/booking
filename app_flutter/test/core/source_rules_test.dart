@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yaml/yaml.dart';
 
 void main() {
   test('no CircularProgressIndicator in lib', () {
@@ -46,5 +47,40 @@ void main() {
       isEmpty,
       reason: 'Hand-written AsyncValue loading in: ${offenders.join(', ')}',
     );
+  });
+
+  test('MobilePassScanner is the only file importing mobile_scanner', () {
+    final importers = <String>[];
+    for (final file in Directory('lib').listSync(recursive: true)) {
+      if (file is File &&
+          file.path.endsWith('.dart') &&
+          file
+              .readAsStringSync()
+              .contains("import 'package:mobile_scanner/")) {
+        importers.add(file.path.replaceAll(Platform.pathSeparator, '/'));
+      }
+    }
+    expect(importers, ['lib/core/scan/mobile_pass_scanner.dart']);
+  });
+
+  test('screen_brightness is used only behind core/scan/brightness.dart', () {
+    final importers = <String>[];
+    for (final file in Directory('lib').listSync(recursive: true)) {
+      if (file is File &&
+          file.path.endsWith('.dart') &&
+          file
+              .readAsStringSync()
+              .contains("import 'package:screen_brightness/")) {
+        importers.add(file.path.replaceAll(Platform.pathSeparator, '/'));
+      }
+    }
+    expect(importers, ['lib/core/scan/brightness.dart']);
+  });
+
+  test('pubspec lists screen_brightness', () {
+    final pubspec =
+        loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
+    final deps = pubspec['dependencies'] as YamlMap;
+    expect(deps['screen_brightness'], '^2.1.0');
   });
 }

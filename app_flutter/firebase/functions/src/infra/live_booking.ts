@@ -3,6 +3,7 @@
  */
 
 import {
+  bookingTicketLines,
   newUlid,
   type BookingDeps,
   FakePaymentGateway,
@@ -44,5 +45,13 @@ export function liveBookingDeps(): BookingDeps & { readonly store: FirestoreBook
     cipher: liveAccountCipher(),
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
+    // S30 (#223 Decision 15): a declined, expired or cancelled booking with tickets settles its ticket line at once
+    // (the event clock retries a failure). The event deps are built only when a line is settled.
+    tickets: {
+      settle: async (line) => {
+        const { liveEventPaymentDeps } = await import('./live_event.js');
+        await bookingTicketLines(liveEventPaymentDeps()).settle(line);
+      },
+    },
   };
 }

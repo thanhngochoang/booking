@@ -18,6 +18,12 @@ import type { Spot } from './spot.js';
 import type { SpotSchedule } from './spot_schedule.js';
 import type { SlotOffer } from './spot_slots.js';
 import type { SpotDay } from './spot_booking.js';
+import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
+import type { EntryDay } from './entry_tickets.js';
+import type { Resident } from './organizer.js';
+import type { PaymentGroupView } from './group_settlement.js';
+import type { RandomBytes } from './ids.js';
+import type { PassRecord, PrivatePassRef } from './pass.js';
 
 export interface ServiceRecord {
   readonly id: string;
@@ -162,6 +168,30 @@ export interface BookingTx {
   getSlotOffer(id: string): Promise<SlotOffer | null>;
   getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null>;
   setSpotDay(spotDay: SpotDay): Promise<void>;
+  // ── S30 (#223 Decisions 6, 15): bookings with entry tickets, one transaction over both sides ──
+  // `getPayment`/`setPayment` reach every payment (a group's ticket line is an `event_registration` one).
+  /** `events/{id}` (a booking's entry event). */
+  getEntryEvent(id: string): Promise<EventRecord | null>;
+  /** `entry_days/{eventId}_{day}`. */
+  getEntryDay(eventId: string, day: string): Promise<EntryDay | null>;
+  /** `spots/{spotId}/residents/{providerId}`. */
+  residentOf(spotId: string, providerId: string): Promise<Resident | null>;
+  /** `events/{eventId}/registrations/{regId}`. */
+  getRegistration(eventId: string, regId: string): Promise<RegistrationDoc | null>;
+  /** The line payments of a group payment (`payments where groupId == groupId`). */
+  childrenOf(groupId: string): Promise<Payment[]>;
+  putEntryEvent(e: EventRecord): Promise<void>;
+  putEntryDay(d: EntryDay): Promise<void>;
+  putRegistration(r: RegistrationDoc): Promise<void>;
+  putRegistrationContact(eventId: string, regId: string, c: RegistrationContact): Promise<void>;
+  /** `payment_groups/{id}`: the read model the payer sees (S04.03-entry, S05.02). */
+  putGroupView(g: PaymentGroupView): Promise<void>;
+  // ── S30 passes (Decision 7): written in the transaction that pays the booking or its group ──
+  /** `passes/{code8}` exists. A read: callers ask before their first write. */
+  passTaken(code8: string): Promise<boolean>;
+  putPass(p: PassRecord): Promise<void>;
+  /** `bookings/{id}/private/pass` or `events/{e}/registrations/{r}/private/pass`: `{code}`, the customer's copy. */
+  putPrivatePass(ref: PrivatePassRef, code8: string): Promise<void>;
 }
 
 /**
@@ -223,16 +253,31 @@ export interface BookingStore {
   findPaymentsByTransferCode(code: string): Promise<readonly Payment[]>;
   getTransferRecord(id: string): Promise<TransferRecord | null>;
   // Sweep queries
-  /** Booking payments in `created` with `createdAt <= createdBefore`. */
+  /** Booking payments in `created` with `createdAt <= createdBefore` (a group's `awaiting_group` lines never are, S30). */
   findPaymentsToReconcile(createdBefore: Date, limit?: number): Promise<readonly Payment[]>;
-  /** Payments in `created` with `expiresAt <= now`. */
+  /** Payments in `created` with `expiresAt <= now` (never an `awaiting_group` line: it expires with its group). */
   findOverduePayments(now: Date, limit?: number): Promise<readonly Payment[]>;
   /** Drafts with `payableUntil <= now`; drafts without the field are never returned. */
   findExpiredDrafts(now: Date, limit?: number): Promise<readonly Booking[]>;
   findExpiredRequests(now: Date, limit?: number): Promise<readonly Booking[]>;
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
-  /** accepted | upcoming bookings ended before `cutoff`, without studio bookings that have no assignee. */
+  /**
+   * S30 (Decision 10): `shooting` bookings ended before `cutoff` (now − 24 h), which the sweep moves to
+   * `shot`. (Before S30: accepted | upcoming bookings, auto-marked shot; that step is gone.)
+   */
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /**
+   * `upcoming` bookings ended before `cutoff` (now − 24 h) that nobody scanned (`checkedInAt` absent) and
+   * whose customer was not asked yet (`shootQuestionAt` absent), without studio bookings that have no assignee.
+   */
+  findShootQuestionsDue(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /** `upcoming` bookings with `shootQuestionUntil <= now` and no `shootDeniedAt` (index `status, shootQuestionUntil`). */
+  findExpiredShootQuestions(now: Date, limit?: number): Promise<readonly Booking[]>;
+  /**
+   * S30: `upcoming` bookings whose customer denied the shoot (`shootDeniedAt <= cutoff`, now − 48 h) and that
+   * have no dispute yet (`disputeId` absent; index `status, disputeId, shootDeniedAt`).
+   */
+  findDeniedShootsDue(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
   /**
    * Payments with `releaseAfter <= cutoff` whose escrow is `held` or `partially_refunded`, or `disputed`
    * with milestones (another milestone may be due; S18 Decision 1). Never a disputed payment without milestones.
@@ -301,6 +346,16 @@ export interface PaymentGateway {
   }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly pending?: boolean; readonly error?: string }>;
 }
 
+/**
+ * S30 (Decision 15, spec §5.3): the entry-ticket line of a booking with tickets. The booking's own
+ * transaction stamps what is owed on the registration (`bookingLineDue` + `refundDue`); `settle` is the
+ * immediate attempt after it commits (refund 100%, or cancel keeping the money). A failure is retried
+ * by the event clock (`runEventSweeps`), so it never undoes the booking's transition.
+ */
+export interface BookingTicketLines {
+  settle(line: { readonly eventId: string; readonly registrationId: string }): Promise<void>;
+}
+
 export interface BookingDeps {
   readonly store: BookingStore;
   readonly services: ServiceCatalog;
@@ -314,4 +369,11 @@ export interface BookingDeps {
   readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
+  /** S30: draws pass codes (Decision 7); absent → the platform CSPRNG (`systemRandom`). */
+  readonly random?: RandomBytes;
+  /**
+   * S30: settles the ticket line at once when a booking with tickets is declined, expires or is
+   * cancelled. Absent → the line stays stamped and the event clock settles it.
+   */
+  readonly tickets?: BookingTicketLines;
 }

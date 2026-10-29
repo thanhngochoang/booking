@@ -19,6 +19,11 @@ export interface TransitionBookingInput {
   readonly action: TransitionAction;
   readonly actorId?: string;
   readonly reason?: string;
+  /**
+   * S30 (S05.03 "Giữ vé vào cửa"): a customer cancelling a booking with tickets keeps the tickets
+   * (still paid, still usable). Ignored for every other cancel.
+   */
+  readonly keepTickets?: boolean;
 }
 
 export async function transitionBooking(
@@ -26,6 +31,11 @@ export async function transitionBooking(
   input: TransitionBookingInput,
 ): Promise<Booking> {
   if (!isId(input.bookingId)) {
+    throw new DomainError('invalid_argument');
+  }
+  // S30: `upcoming → shooting` happens only through scanPass (the customer's pass proves the meeting), and a
+  // denied shoot ends only through resolveDispute.
+  if (input.action === 'scan' || input.action === 'dispute_refund' || input.action === 'dispute_release') {
     throw new DomainError('invalid_argument');
   }
 
@@ -65,5 +75,5 @@ export async function transitionBooking(
     input.reason,
   );
 
-  return commitTransition(deps, booking, decision, input.actorId);
+  return commitTransition(deps, booking, decision, input.actorId, { keepTickets: input.keepTickets === true });
 }

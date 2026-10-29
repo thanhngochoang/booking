@@ -99,6 +99,19 @@ export const NOTIFICATION_TYPES = {
   collab_pay_due: meta('jobs', 'activity'),
   collab_pay_reported: meta('jobs', 'activity'),
   collab_pay_disputed: meta('jobs', 'activity'),
+  // S30 organizers (#223): spot claims, residents and gate staff → the events channel.
+  spot_claim_approved: meta('events', 'system'),
+  spot_claim_rejected: meta('events', 'system'),
+  spot_resident_added: meta('events', 'system'),
+  gate_staff_invited: meta('events', 'events'),
+  // S30 entry tickets: the organizer closed a visit day; the ticket is refunded 100%.
+  entry_day_closed: meta('events', 'events'),
+  // S30 venue consent (Decision 16): the spot manager has 72 h to answer; the host hears the answer.
+  event_venue_requested: meta('events', 'events', true),
+  event_venue_answered: meta('events', 'events'),
+  // S30 passes and the shoot question (Decision 10): booking/activity; the question decides held money.
+  shoot_question: meta('booking', 'activity', true),
+  pass_ready: meta('booking', 'activity'),
   chat_message: meta('chat', 'system'),
   promo: meta('promo', 'system'),
 } as const satisfies Record<string, TypeMeta>;

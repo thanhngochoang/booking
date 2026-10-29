@@ -9,6 +9,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/safety/safety.dart';
 import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
@@ -1280,5 +1281,247 @@ void main() {
     expect(find.byKey(const Key('chip-day-2026-10-18')), findsNothing);
     expect(find.byKey(const Key('chip-day-2026-10-19')), findsOneWidget);
     expect(find.textContaining('CN 18/10'), findsWidgets);
+  });
+
+  group('S29.02-entry (#223)', () {
+    Spot ticketed({bool fees = true}) {
+      final b = _spot();
+      return Spot(
+        id: b.id,
+        name: b.name,
+        city: b.city,
+        areaCode: b.areaCode,
+        lat: b.lat,
+        lng: b.lng,
+        radiusM: b.radiusM,
+        cover: b.cover,
+        description: b.description,
+        tips: b.tips,
+        seasonMonths: b.seasonMonths,
+        pinned: false,
+        hidden: false,
+        archived: false,
+        stats: b.stats,
+        managedBy: 'org1',
+        openHours: const OpenHours(start: '06:00', end: '22:00'),
+        access: SpotAccess(
+          type: SpotAccessType.ticket,
+          fees: fees
+              ? const [AccessFee(label: 'Người lớn', amountVnd: 70000)]
+              : const [],
+          updatedAt: DateTime.utc(2026, 10, 2, 3),
+          source: SpotAccessSource.organizer,
+        ),
+      );
+    }
+
+    const entry = EntryEvent(
+      id: 'ent1',
+      title: 'Vé vào cửa',
+      spotId: 'spot1',
+      organizerId: 'org1',
+      organizerName: 'Vườn hoa Hồ Tây',
+      status: EventStatus.open,
+      startDay: '2026-10-01',
+      endDay: '2026-12-31',
+      openHours: OpenHours(start: '06:00', end: '22:00'),
+      ticketTypes: [
+        EntryTicketType(id: 't1', name: 'Người lớn trước 18h', price: 70000),
+        EntryTicketType(id: 't2', name: 'Trẻ em', price: 50000),
+        EntryTicketType(id: 't3', name: 'Cũ', price: 10000, hidden: true),
+      ],
+    );
+
+    Future<GoRouter> open(
+      WidgetTester tester,
+      FakeSpotRepository spots, {
+      DiscoveryWorld? world,
+    }) async {
+      final w = world ?? await _makeWorld();
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/spots/:spotId',
+            builder: (_, state) => SpotScreen(
+              spotId: state.pathParameters['spotId']!,
+              date: '2026-10-18',
+            ),
+          ),
+          GoRoute(
+            path: '/spots/:spotId/tickets',
+            builder: (_, s) => Scaffold(body: Text('stub ${s.uri}')),
+          ),
+        ],
+        initialLocation: '/spots/spot1',
+      );
+      tester.view.physicalSize = const Size(390, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        screenRouterApp(
+          router: router,
+          overrides: [
+            ...w.overrides,
+            spotRepositoryProvider.overrideWithValue(spots),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      return router;
+    }
+
+    testWidgets('no block at an open spot', (tester) async {
+      final spots = FakeSpotRepository()..seedSpot(_spot());
+      await open(tester, spots);
+      expect(find.byKey(const Key('spot-entry')), findsNothing);
+      expect(find.textContaining('Cần vé cho bạn và thợ'), findsNothing);
+    });
+
+    testWidgets('tickets on sale: prices by type, hours, Bán bởi and Mua vé '
+        '→ S30.05, above the providers', (tester) async {
+      final spots = FakeSpotRepository()
+        ..seedSpot(ticketed())
+        ..seedEntryEvent('spot1', entry);
+      final router = await open(tester, spots);
+      expect(find.text('Vào cửa'), findsOneWidget);
+      expect(find.text('06:00–22:00'), findsOneWidget);
+      expect(find.text('Người lớn trước 18h · 70.000₫'), findsOneWidget);
+      expect(find.text('Trẻ em · 50.000₫'), findsOneWidget);
+      expect(find.textContaining('Cũ'), findsNothing);
+      expect(find.text('Bán bởi Vườn hoa Hồ Tây'), findsOneWidget);
+      expect(find.byKey(const Key('spot-entry-ref')), findsNothing);
+      expect(
+        tester.getTopLeft(find.byKey(const Key('spot-entry'))).dy,
+        lessThan(tester.getTopLeft(find.text('Thợ nhận chụp ở đây')).dy),
+      );
+      await tester.tap(find.byKey(const Key('spot-entry-buy')));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.toString(), '/spots/spot1/tickets');
+    });
+
+    testWidgets('an open entry event at a spot without access still sells: '
+        'Vào cửa and Mua vé (spec §3.3, final fix A-C1)', (tester) async {
+      final spots = FakeSpotRepository()
+        ..seedSpot(_spot())
+        ..seedEntryEvent('spot1', entry);
+      final router = await open(tester, spots);
+      expect(find.byKey(const Key('spot-entry')), findsOneWidget);
+      expect(find.text('Người lớn trước 18h · 70.000₫'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('spot-entry-buy')));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.toString(), '/spots/spot1/tickets');
+    });
+
+    testWidgets('without tickets on sale: Giá tham khảo · cập nhật {date}, '
+        'no button', (tester) async {
+      final spots = FakeSpotRepository()..seedSpot(ticketed());
+      await open(tester, spots);
+      expect(find.text('Người lớn · 70.000₫'), findsOneWidget);
+      expect(find.text('Giá tham khảo · cập nhật 02/10'), findsOneWidget);
+      expect(find.byKey(const Key('spot-entry-buy')), findsNothing);
+    });
+
+    testWidgets('residents first with the tag; the others need tickets', (
+      tester,
+    ) async {
+      final world = await _makeWorld();
+      world.photographers.add(fixturePhotographer('p2', name: 'Hồng Nhung'));
+      world.photographers.add(fixturePhotographer('p3', name: 'Gia Huy'));
+      final spots = FakeSpotRepository()
+        ..seedSpot(ticketed())
+        ..seedEntryEvent('spot1', entry)
+        ..seedSchedule(_schedule(id: 'sched1', providerId: 'p1'))
+        ..seedSchedule(_schedule(id: 'sched2', providerId: 'p2'))
+        ..seedSchedule(_schedule(id: 'sched3', providerId: 'p3'))
+        ..seedResidents('spot1', const [
+          Resident(providerId: 'p2', waivesProvider: true, waivesGuests: true),
+          Resident(providerId: 'p3', waivesProvider: true, waivesGuests: false),
+        ]);
+      await open(tester, spots, world: world);
+      final y1 = tester.getTopLeft(find.byKey(const Key('spot-provider-sched1'))).dy;
+      final y2 = tester.getTopLeft(find.byKey(const Key('spot-provider-sched2'))).dy;
+      final y3 = tester.getTopLeft(find.byKey(const Key('spot-provider-sched3'))).dy;
+      expect(y2, lessThan(y1));
+      expect(y3, lessThan(y1));
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('spot-provider-sched2')),
+          matching: find.text('Thợ tại điểm · miễn vé'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('spot-provider-sched3')),
+          matching: find.text('Thợ tại điểm · miễn vé thợ'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('spot-provider-sched1')),
+          matching: find.text('Cần vé cho bạn và thợ ≈ 140.000₫'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an expired residency is no waiver', (tester) async {
+      final spots = FakeSpotRepository()
+        ..seedSpot(ticketed())
+        ..seedSchedule(_schedule(id: 'sched1', providerId: 'p1'))
+        ..seedResidents('spot1', const [
+          Resident(
+            providerId: 'p1',
+            waivesProvider: true,
+            waivesGuests: true,
+            validUntil: '2026-10-17',
+          ),
+        ]);
+      await open(tester, spots);
+      expect(find.byKey(const Key('spot-provider-resident')), findsNothing);
+      expect(find.text('Cần vé cho bạn và thợ ≈ 140.000₫'), findsOneWidget);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('the block fits 320 dp at 1.3× text (${b.name})', (
+        tester,
+      ) async {
+        final world = await _makeWorld();
+        final spots = FakeSpotRepository()
+          ..seedSpot(ticketed())
+          ..seedEntryEvent('spot1', entry)
+          ..seedSchedule(_schedule());
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/spots/:spotId',
+              builder: (_, state) => SpotScreen(
+                spotId: state.pathParameters['spotId']!,
+                date: '2026-10-18',
+              ),
+            ),
+          ],
+          initialLocation: '/spots/spot1',
+        );
+        tester.view.physicalSize = const Size(320, 3000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          screenRouterApp(
+            router: router,
+            brightness: b,
+            textScale: 1.3,
+            overrides: [
+              ...world.overrides,
+              spotRepositoryProvider.overrideWithValue(spots),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('spot-entry')), findsOneWidget);
+      });
+    }
   });
 }

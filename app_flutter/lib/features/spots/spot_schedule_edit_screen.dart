@@ -10,6 +10,8 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
@@ -18,6 +20,7 @@ import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/spots/slot_offer_sheet.dart';
 import 'package:photobooking/features/spots/spot_format.dart';
 import 'package:photobooking/features/spots/spot_schedule_edit_controller.dart';
@@ -319,6 +322,7 @@ class _FormState extends ConsumerState<_Form> {
                   );
                 },
               ),
+              if (s.spotId case final id?) _EntryNote(spotId: id),
               if (s.studio) ...[
                 label(l.spotScheduleMember),
                 _MemberPicker(
@@ -1058,6 +1062,51 @@ class _SpotPickerState extends ConsumerState<_SpotPicker> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// S29.04 at a ticketed spot, for a provider who is not one of its
+/// residents: "Điểm này thu vé ≈ {x}/người. …" (spec §8).
+class _EntryNote extends ConsumerWidget {
+  const _EntryNote({required this.spotId});
+
+  final String spotId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spot = ref.watch(spotProvider(spotId)).value;
+    final onSale = ref.watch(entryEventProvider(spotId)).value;
+    if (spot == null || !spot.ticketedWith(onSale)) {
+      return const SizedBox.shrink();
+    }
+    final uid = ref.watch(authStateProvider).value?.uid;
+    final today = vnDateKey(ref.watch(clockProvider)());
+    final residents =
+        ref.watch(spotResidentsProvider(spotId)).value ?? const <Resident>[];
+    final mine = residents.where((r) => r.providerId == uid).firstOrNull;
+    if (mine != null && mine.waiverFor(today).provider) {
+      return const SizedBox.shrink();
+    }
+    final price = entryUnitPrice(onSale, spot.access);
+    if (price == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon(AppIcons.ticket, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: AppSpace.s2),
+          Expanded(
+            child: Text(
+              context.l10n.s2904_entryNote(formatMoney(price)),
+              key: const Key('spot-schedule-entry-note'),
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

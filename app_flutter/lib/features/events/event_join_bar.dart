@@ -43,6 +43,14 @@ EventJoinState eventJoinState(
   if (event.isManagedBy(uid, role)) {
     return EventJoinState.manage;
   }
+  // S30: an entry event has one registration per visit day, so no single
+  // registration decides the bar: "Mua vé" (S30.05) while it sells.
+  if (event.isEntry) {
+    return (s.status == EventStatus.open || s.status == EventStatus.full) &&
+            now.isBefore(event.endsAt)
+        ? EventJoinState.join
+        : EventJoinState.ended;
+  }
   // A lapsed hold no longer holds a seat: the viewer may register again.
   if (registration != null &&
       registration.isActive &&
@@ -89,11 +97,14 @@ class EventJoinBar extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final secondary = theme.textTheme.bodySmall?.color;
-    final free = event.summary.isFree;
+    // An entry event is never "Không thu phí" (Decision 11): its prices are
+    // on S30.05.
+    final entry = event.isEntry;
+    final free = event.summary.isFree && !entry;
 
     final Widget action = switch (state) {
       EventJoinState.join => AppButton.primary(
-        l.eventJoin,
+        entry ? l.s2902_buy : l.eventJoin,
         key: const Key('event-join'),
         loading: busy,
         onPressed: busy ? null : onJoin,
@@ -128,7 +139,9 @@ class EventJoinBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (free)
+                if (entry)
+                  const SizedBox.shrink()
+                else if (free)
                   const Align(alignment: Alignment.centerLeft, child: FreeTag())
                 else ...[
                   FittedBox(

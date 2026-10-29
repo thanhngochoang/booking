@@ -244,4 +244,37 @@ describe('spot_admin', () => {
       );
     });
   });
+
+  describe('field-scoped writes (final fix B-I1)', () => {
+    it('editSpot and setSpotFlag name only their own fields; addSpot writes the whole spot', async () => {
+      const calls: (readonly string[] | undefined)[] = [];
+      const spied: SpotAdminDeps = {
+        ...deps,
+        spots: {
+          getSpot: (id) => store.getSpot(id),
+          putSpot: async (s, fields) => {
+            calls.push(fields);
+            await store.putSpot(s, fields);
+          },
+        },
+      };
+      const input = {
+        name: 'Hồ Tây', city: 'Hà Nội', areaCode: 'hn', lat: 21.055, lng: 105.823, radiusM: 2000, description: 'D', tips: [], seasonMonths: [],
+      };
+      const spot = await addSpot(spied, 'admin1', input);
+      // Meanwhile the spot is claimed and its manager sets access (another writer).
+      const claimed = { ...spot, managedBy: 'org1', access: { type: 'ticket' as const, fees: [], note: '', updatedAt: spot.updatedAt, source: 'organizer' as const } };
+      await store.putSpot(claimed);
+      await editSpot(spied, 'admin2', spot.id, { ...input, name: 'Hồ Tây Mùa Sen' });
+      await setSpotFlag(spied, 'admin3', spot.id, 'pin');
+      assert.equal(calls[0], undefined);
+      assert.ok(calls[1]?.includes('name') && !calls[1].includes('managedBy') && !calls[1].includes('access') && !calls[1].includes('stats'));
+      assert.deepEqual(calls[2], ['pinned', 'hidden', 'status', 'updatedAt', 'updatedBy']);
+      const after = await store.getSpot(spot.id);
+      assert.equal(after?.managedBy, 'org1');
+      assert.equal(after?.access?.type, 'ticket');
+      assert.equal(after?.name, 'Hồ Tây Mùa Sen');
+      assert.equal(after?.pinned, true);
+    });
+  });
 });

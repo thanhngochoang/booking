@@ -1,4 +1,4 @@
-import type { EscrowStatus } from './booking.js';
+import type { Booking, BookingCancel, BookingEventRecord, EscrowStatus } from './booking.js';
 import type { PaymentGateway } from './booking_ports.js';
 import type { Dispute, DisputeSnapshot, DisputeStatus, DisputeSubjectType } from './dispute.js';
 import { isSettledPayment, type LedgerEntry, type Payment, type Refund } from './escrow.js';
@@ -23,6 +23,8 @@ export interface DisputeSubjectView {
   /** #152 booking fields. */
   readonly shotAt: Date | null;
   readonly checkUntil: Date | null;
+  /** S30 (Decision 10): the customer answered "Không diễn ra" to the shoot question (booking only). */
+  readonly shootDeniedAt?: Date | null;
   /** 0 for a free ticket. */
   readonly amount: number;
   /** Registration's paymentId; null for bookings (looked up by `findSubjectPayment`). */
@@ -30,6 +32,21 @@ export interface DisputeSubjectView {
   /** The subject's latest dispute (open or resolved). */
   readonly disputeId: string | null;
   readonly snapshot: DisputeSnapshot;
+  /** Booking only: the booking as read (S30: `resolveDispute` ends a denied shoot through the machine). */
+  readonly booking?: Booking;
+}
+
+/**
+ * S30 (final fix D-I2): what `resolveDispute` writes on a denied shoot's booking with its mirrors (the same
+ * transaction): `cancelled` with the system's cancel record, or `completed` with `completedAt`, + one
+ * history row. No money: the dispute already moved it.
+ */
+export interface DisputeBookingEnd {
+  readonly status: 'cancelled' | 'completed';
+  readonly cancel: BookingCancel | null;
+  readonly completedAt: string | null;
+  readonly at: string;
+  readonly event: BookingEventRecord;
 }
 
 /**
@@ -37,6 +54,13 @@ export interface DisputeSubjectView {
  * `created` or expired payment never counts), the one still holding money first. Every store's
  * `findSubjectPayment` uses it, so the memory and Firestore stores pick the same payment.
  */
+/** The `venue_fee` siblings of `payment` among `candidates` (every store filters the same way). */
+export function venueLinesAmong(payment: Payment, candidates: readonly Payment[]): Payment[] {
+  if (payment.groupId === undefined || payment.subjectType !== 'event_registration') return [];
+  return candidates.filter((c) => c.id !== payment.id && c.groupId === payment.groupId
+    && c.subjectId === payment.subjectId && c.lineKind === 'venue_fee');
+}
+
 export function pickSubjectPayment(payments: readonly Payment[]): Payment | null {
   const settled = payments.filter(isSettledPayment);
   const holding = (p: Payment) => p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || p.escrowStatus === 'disputed';
@@ -55,10 +79,21 @@ export interface DisputeTx {
    * payment never counts, a holding one first); ticket: the registration's `paymentId`. The use case checks what it holds.
    */
   findSubjectPayment(subject: DisputeSubjectView): Promise<Payment | null>;
+  /**
+   * S30 Decision 16: the `venue_fee` lines riding on a ticket payment (same `groupId`, same subject);
+   * none for a payment outside a group. A ticket dispute freezes and settles them with the ticket.
+   */
+  venueLinesOf(payment: Payment): Promise<Payment[]>;
   setDispute(d: Dispute): void;
   setPayment(p: Payment): void;
-  /** Booking: `disputeId` + the `escrowStatus` mirror; registration: `disputeId` only. */
-  linkSubject(subject: DisputeSubjectView, patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus }): void;
+  /**
+   * Booking: `disputeId` + the `escrowStatus` mirror (+ `end`: a denied shoot's end, S30); registration:
+   * `disputeId` only.
+   */
+  linkSubject(
+    subject: DisputeSubjectView,
+    patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus; readonly end?: DisputeBookingEnd },
+  ): void;
   /** Creates or replaces a refund. */
   addRefund(r: Refund): void;
   addLedgerEntry(e: LedgerEntry): void;

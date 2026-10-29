@@ -61,6 +61,7 @@ dependencies:
   permission_handler: ^13.0.2
   mobile_scanner: ^7.4.2
   flutter_image_compress: ^2.5.1
+  screen_brightness: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -89,6 +90,9 @@ flutter:
     - assets/brand/logo.png
     - assets/social/
     - assets/icons/
+    # S30 (#223) Decision 17: drafts until the lawyer's text arrives.
+    - assets/terms/organizer_terms_vi.md
+    - assets/terms/public_place_commitment_vi.md
   fonts:
     - family: Be Vietnam Pro
       fonts:

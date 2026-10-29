@@ -166,7 +166,8 @@ describe('seed fixtures', () => {
     for (const d of seedDocuments(NOW)) {
       if (d.path.includes('/private/')) continue;
       assert.doesNotMatch(JSON.stringify(d.data), /\+\d{8,15}/, d.path);
-      assert.ok(!Object.keys(d.data).some((k) => /phone/i.test(k)), d.path);
+      // A boolean `phoneVerified` (S30 organizers/{uid}, Contract) is a flag, not a number.
+      assert.ok(!Object.keys(d.data).some((k) => /phone/i.test(k) && !(k === 'phoneVerified' && typeof d.data[k] === 'boolean')), d.path);
     }
     for (const p of SEED_PHOTOGRAPHERS) {
       assert.ok(isVnE164(p.numbers.phone), p.uid);
@@ -411,10 +412,11 @@ describe('seed payouts and earnings', () => {
     //   - revision_requested: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - approved: shoot released (soon 750k), delivery released (soon 750k) -> soon 1.5m
     // - Lan's paid ticket of the past workshop (S18): held 250k until the end + 24 h
-    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) = 9.25m
+    // - S30: Lan's booking with a pass today at Bãi đá sông Hồng (held 1.5m)
+    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) + 1.5m (S30) = 10.75m
     // Total soon = 1.5m (recent) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 4.5m
     // Total received = 1.5m (completed-old)
-    assert.equal(e?.heldAmount, 9_250_000);
+    assert.equal(e?.heldAmount, 10_750_000);
     const ticket = get('earnings/seed-photographer-an/items/seed-payment-ticket-lan-past');
     assert.equal(ticket?.state, 'held');
     assert.equal(ticket?.amount, 250_000);
@@ -481,8 +483,9 @@ describe('seed event reminder (S17)', () => {
     assert.ok(isTicketCode(String(reg?.ticketCode)));
     assert.deepEqual(get(`ticket_codes/${String(reg?.ticketCode)}`), { eventId: SEED_EVENT_SOON, registrationId: SEED_REGISTRATION_LAN_SOON });
     // Every other seed event is still more than 48 hours away (only this one is reminded).
-    // (The S18 past workshop has already ended: no reminder either.)
-    for (const d of docs.filter((x) => /^events\/[^/]+$/.test(x.path) && x.path !== `events/${SEED_EVENT_SOON}` && x.path !== `events/${SEED_EVENT_PAST}`)) {
+    // (The S18 past workshop has already ended: no reminder either. S30 entry events are never reminded.)
+    for (const d of docs.filter((x) => /^events\/[^/]+$/.test(x.path) && x.path !== `events/${SEED_EVENT_SOON}` && x.path !== `events/${SEED_EVENT_PAST}`
+      && x.data.type !== 'entry')) {
       assert.ok((d.data.startAt as Timestamp).toMillis() > NOW.getTime() + 48 * 3_600_000, d.path);
     }
   });
@@ -1270,6 +1273,111 @@ describe('seed payment history (S22.01, #141)', () => {
     const json = JSON.stringify(docs.filter((d) => /^users\/[^/]+\/(payments\/|private\/paymentTotals)/.test(d.path)));
     for (const secret of ['accountNumberEnc', 'holderName', 'payer"', 'providerRef', 'instructions', 'v1:', 'title"']) {
       assert.equal(json.includes(secret), false, secret);
+    }
+  });
+});
+
+describe('seed organizer, entry tickets and passes (S30, #223)', async () => {
+  const s30 = await import('../../seed/fixtures.js');
+  const { canSell, entryReleaseAt, formatVnDate, isPassCode, passCode4 } = await import('@photobooking/domain');
+  const { eventFromFirestore, registrationFromFirestore } = await import('../../src/infra/event_firestore.js');
+  const { organizerFromFirestore, residentFromFirestore, gateStaffFromFirestore } = await import('../../src/infra/organizer_firestore.js');
+  const { spotFromFirestore } = await import('../../src/infra/spot_firestore.js');
+  const { passFromFirestore } = await import('../../src/infra/pass_firestore.js');
+  const { paymentFromFirestore } = await import('../../src/infra/booking_firestore.js');
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data as Record<string, unknown> | undefined;
+  const today = formatVnDate(NOW);
+  const tomorrow = formatVnDate(new Date(NOW.getTime() + 86_400_000));
+  const ORG = s30.SEED_ORGANIZER_BAI_DA;
+  const SPOT = s30.SEED_SPOT_BAI_DA;
+  const EVENT = s30.SEED_EVENT_ENTRY_BAI_DA;
+
+  test('the seed organizer manages the seed spot, the entry event is open with 2 types, Lan\'s ticket has a private pass and a passes/{code8} row, the booking has a pass', () => {
+    // "Bãi đá sông Hồng": an active organizer that can sell, managing seed-spot-bai-da (access: ticket 70 000).
+    const org = organizerFromFirestore(ORG, get(`organizers/${ORG}`));
+    assert.ok(org);
+    assert.equal(org.name, 'Bãi đá sông Hồng');
+    assert.deepEqual(org.managedSpotIds, [SPOT]);
+    assert.equal(canSell(org), true);
+    assert.equal(SEED_USERS.some((u) => u.uid === ORG), true);
+    assert.equal(get(`users/${ORG}/private/contact`)?.phoneVerified, true);
+    const spot = spotFromFirestore(SPOT, get(`spots/${SPOT}`));
+    assert.equal(spot?.managedBy, ORG);
+    assert.deepEqual([spot?.access?.type, spot?.access?.fees.map((f) => f.amountVnd)], ['ticket', [70_000]]);
+
+    // Resident An with both waivers; gate staff Dũng, active.
+    const an = residentFromFirestore(AN, get(`spots/${SPOT}/residents/${AN}`));
+    assert.deepEqual([an?.waivesProvider, an?.waivesGuests, an?.validUntil], [true, true, null]);
+    assert.equal(gateStaffFromFirestore(DUNG, get(`organizers/${ORG}/gate_staff/${DUNG}`))?.status, 'active');
+
+    // The open entry event with two ticket types.
+    const raw = get(`events/${EVENT}`);
+    assert.ok(raw);
+    const ev = eventFromFirestore(EVENT, raw);
+    assert.deepEqual([ev.type, ev.status, ev.host.type, ev.host.id, ev.spotId], ['entry', 'open', 'organizer', ORG, SPOT]);
+    assert.deepEqual(ev.ticketTypes?.map((t) => [t.name, t.price]), [['Người lớn', 70_000], ['Trẻ em', 40_000]]);
+    assert.equal(ev.registeredCount, 1);
+
+    // Lan's paid ticket for tomorrow: no public code, the last 4 shown, the code in private/pass and passes/{code8}.
+    const regPath = `events/${EVENT}/registrations/${s30.SEED_REGISTRATION_LAN_ENTRY}`;
+    const regRaw = get(regPath);
+    assert.ok(regRaw);
+    assert.equal('ticketCode' in regRaw, false);
+    const reg = registrationFromFirestore(s30.SEED_REGISTRATION_LAN_ENTRY, regRaw);
+    assert.deepEqual([reg.userId, reg.status, reg.visitDay, reg.quantity, reg.amount], [LAN, 'paid', tomorrow, 1, 70_000]);
+    const code = get(`${regPath}/private/pass`)?.code;
+    assert.equal(code, s30.SEED_PASS_ENTRY_LAN);
+    assert.ok(isPassCode(String(code)));
+    assert.equal(reg.ticketCodeLast4, passCode4(String(code)));
+    const pass = passFromFirestore(String(code), get(`passes/${String(code)}`));
+    assert.deepEqual([pass?.customerId, pass?.day, pass?.bookingId, pass?.eventId, pass?.registrationIds], [LAN, tomorrow, null, EVENT, [reg.id]]);
+    assert.equal(get(`entry_days/${EVENT}_${tomorrow}`)?.sold, 1);
+    const pay = paymentFromFirestore(String(reg.paymentId), get(`payments/${String(reg.paymentId)}`));
+    assert.deepEqual(
+      [pay?.status, pay?.escrowStatus, pay?.payeeId, pay?.payeeKind, pay?.lineKind, pay?.amount],
+      ['paid', 'held', ORG, 'organizer', 'entry_ticket', 70_000],
+    );
+    assert.equal(pay?.releaseAfter, entryReleaseAt(tomorrow).toISOString());
+    assert.equal(get(`ticket_codes/${String(code)}`), undefined);
+
+    // Lan ↔ An (verified, accepting orders) today 15:30, paid, with a pass.
+    const bPath = `bookings/${s30.SEED_BOOKING_LAN_AN_PASS}`;
+    const b = bookingFromFirestore(s30.SEED_BOOKING_LAN_AN_PASS, get(bPath));
+    assert.deepEqual([b?.customerId, b?.photographerId, b?.status, b?.day, b?.start], [LAN, AN, 'upcoming', today, '15:30']);
+    assert.equal(get(`photographers/${AN}`)?.acceptingOrders, true);
+    const bCode = String(get(`${bPath}/private/pass`)?.code);
+    assert.equal(bCode, s30.SEED_PASS_BOOKING_LAN_AN);
+    assert.equal(b?.passCode4, passCode4(bCode));
+    const bPass = passFromFirestore(bCode, get(`passes/${bCode}`));
+    assert.deepEqual([bPass?.customerId, bPass?.bookingId, bPass?.day, bPass?.registrationIds], [LAN, b?.id, today, []]);
+    assert.equal(get(`payments/seed-payment-${s30.SEED_BOOKING_LAN_AN_PASS}`)?.escrowStatus, 'held');
+  });
+
+  test('the two passes are the only passes and their codes appear in no public document', () => {
+    const codes = docs.filter((d) => d.path.startsWith('passes/')).map((d) => d.path.slice('passes/'.length)).sort();
+    assert.deepEqual(codes, [s30.SEED_PASS_BOOKING_LAN_AN, s30.SEED_PASS_ENTRY_LAN].sort());
+    for (const d of docs) {
+      if (d.path.startsWith('passes/') || d.path.endsWith('/private/pass')) continue;
+      for (const c of codes) assert.equal(JSON.stringify(d.data).includes(c), false, d.path);
+    }
+  });
+
+  test('the organizer can sell from its sources: an approved S21.04 business and a payout account in that name', async () => {
+    const { MemoryFirestore } = await import('./support/memory_firestore.js');
+    const { firestoreOrganizerPeople } = await import('../../src/infra/organizer_firestore.js');
+    const db = new MemoryFirestore();
+    for (const d of docs) db.seed(d.path, d.data);
+    const people = firestoreOrganizerPeople(db.asFirestore(), async () => false);
+    assert.equal(await people.businessVerified(ORG), true);
+    assert.equal(await people.payoutAccountOk(ORG), true);
+    assert.equal(await people.phoneVerified(ORG), true);
+  });
+
+  test('the S30 seed is written once on any day, An\'s booked day included', () => {
+    for (const at of [NOW, new Date('2026-10-25T03:00:00Z'), new Date('2026-10-24T20:00:00Z')]) {
+      const paths = seedDocuments(at).map((d) => d.path);
+      assert.equal(new Set(paths).size, paths.length, at.toISOString());
     }
   });
 });

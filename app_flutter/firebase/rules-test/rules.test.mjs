@@ -1030,6 +1030,16 @@ test('a user uploads, replaces and deletes only their own avatar, JPEG up to 512
 });
 
 // ---- Plan 4a: bookings, contact copy and escrow rules ----
+test('S30: a shooting booking keeps the contact unlocked for the photographer (isBookingContactUnlocked)', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'bookings/b_shooting'), { customerId: 'c1', photographerId: 'p1', status: 'shooting' });
+    await setDoc(doc(f, 'bookings/b_shooting/private/contact'), { name: 'Customer C1', phone: '+84903123456' });
+  });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('p1').firestore(), 'bookings/b_shooting/private/contact')));
+  await assertFails(getDoc(doc(env.authenticatedContext('stranger').firestore(), 'bookings/b_shooting/private/contact')));
+});
+
 test('bookings/private/contact is readable by customer always, photographer only when unlocked', async () => {
   await env.withSecurityRulesDisabled(async (c) => {
     const f = c.firestore();
@@ -3372,5 +3382,195 @@ describe('S22.01 payment history', () => {
     await assertFails(updateDoc(doc(db, 'users/pay_u1/payments/pay_c'), { status: 'refunded' }));
     await assertFails(deleteDoc(doc(db, 'users/pay_u1/payments/pay_c')));
     await assertFails(setDoc(doc(db, 'users/pay_u1/private/paymentTotals'), { held: 0, refunding: 0 }));
+  });
+});
+
+// ---- S30 organizers, entry tickets and passes (#223, plan Task 6; written here, run by CI) ----
+
+describe('S30 organizers, entry tickets and passes', () => {
+  const as = (uid, claims) => env.authenticatedContext(uid, claims).firestore();
+  const seed = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+  const orgHost = { type: 'organizer', id: 's30_org', name: 'Bãi đá sông Hồng', avatarUrl: null, verified: true };
+  const entryEvent = { host: orgHost, hostId: 's30_org', createdBy: 's30_org', status: 'open', type: 'entry', title: 'Vé vào cửa', endAt: Timestamp.now() };
+
+  test('the photographer cannot read bookings/{id}/private/pass; the customer can', async () => {
+    await seed('bookings/s30_b1', { customerId: 's30_cus', photographerId: 's30_ph', status: 'upcoming', passCode4: '4M9P' });
+    await seed('bookings/s30_b1/private/pass', { code: '7K2Q4M9P' });
+    await assertSucceeds(getDoc(doc(as('s30_cus'), 'bookings/s30_b1/private/pass')));
+    await assertFails(getDoc(doc(as('s30_ph'), 'bookings/s30_b1/private/pass')));
+    await assertFails(getDoc(doc(as('s30_adm', { staffRole: 'admin' }), 'bookings/s30_b1/private/pass')));
+    await assertFails(getDoc(doc(as('s30_stranger'), 'bookings/s30_b1/private/pass')));
+    await assertFails(setDoc(doc(as('s30_cus'), 'bookings/s30_b1/private/pass'), { code: 'AAAAAAAA' }));
+  });
+
+  test('the host cannot read registrations/{id}/private/pass; the buyer can', async () => {
+    await seed('events/s30_en1', entryEvent);
+    await seed('events/s30_en1/registrations/r1', { userId: 's30_cus', status: 'paid', ticketCodeLast4: '4M9P', visitDay: '2026-10-20' });
+    await seed('events/s30_en1/registrations/r1/private/pass', { code: '7K2Q4M9P' });
+    await assertSucceeds(getDoc(doc(as('s30_cus'), 'events/s30_en1/registrations/r1/private/pass')));
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_en1/registrations/r1/private/pass')));
+    await assertFails(getDoc(doc(as('s30_adm', { staffRole: 'admin' }), 'events/s30_en1/registrations/r1/private/pass')));
+    // The organizer host is the event's manager: it reads the registration (the last 4 only), not the code.
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'events/s30_en1/registrations/r1')));
+  });
+
+  test('nobody reads passes/*', async () => {
+    await seed('passes/7K2Q4M9P', { customerId: 's30_cus', day: '2026-10-20', bookingId: 's30_b1', eventId: null, registrationIds: [] });
+    for (const db of [as('s30_cus'), as('s30_ph'), as('s30_adm', { staffRole: 'admin' }), env.unauthenticatedContext().firestore()]) {
+      await assertFails(getDoc(doc(db, 'passes/7K2Q4M9P')));
+      await assertFails(setDoc(doc(db, 'passes/AAAAAAAA'), { customerId: 's30_cus' }));
+    }
+  });
+
+  test('nobody reads or writes scan_attempts/* (the scan budget is server-only)', async () => {
+    await seed('scan_attempts/s30_ph', { uid: 's30_ph', windowStart: Timestamp.fromDate(new Date()), count: 20 });
+    for (const db of [as('s30_ph'), as('s30_cus'), as('s30_adm', { staffRole: 'admin' }), env.unauthenticatedContext().firestore()]) {
+      await assertFails(getDoc(doc(db, 'scan_attempts/s30_ph')));
+      await assertFails(setDoc(doc(db, 'scan_attempts/s30_ph'), { uid: 's30_ph', count: 0 }));
+      await assertFails(deleteDoc(doc(db, 'scan_attempts/s30_ph')));
+    }
+  });
+
+  test('gate staff cannot read registrations/*/private/contact', async () => {
+    await seed('events/s30_en2', { ...entryEvent, endAt: Timestamp.fromDate(new Date(Date.now() + 86_400_000)) });
+    await seed('events/s30_en2/registrations/r1', { userId: 's30_cus', status: 'paid', contactEligible: true, visitDay: '2026-10-20' });
+    await seed('events/s30_en2/registrations/r1/private/contact', { name: 'Khách', phone: '+84903123456' });
+    await seed('organizers/s30_org/gate_staff/s30_gate', { staffUid: 's30_gate', organizerId: 's30_org', status: 'active' });
+    await assertFails(getDoc(doc(as('s30_gate'), 'events/s30_en2/registrations/r1/private/contact')));
+    await assertFails(getDoc(doc(as('s30_gate'), 'events/s30_en2/registrations/r1')));
+    // The organizer (a manager) reads a paid ticket's contact like any host.
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'events/s30_en2/registrations/r1/private/contact')));
+  });
+
+  test('a stranger cannot read spot_claims; the claimant and admin can', async () => {
+    await seed('spot_claims/s30_c1', { organizerId: 's30_org', spotId: 's30_spot', status: 'pending', proofPaths: ['spot_claims/s30_org/s30_c1/hd.pdf'] });
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'spot_claims/s30_c1')));
+    await assertSucceeds(getDoc(doc(as('s30_adm', { staffRole: 'admin' }), 'spot_claims/s30_c1')));
+    await assertFails(getDoc(doc(as('s30_stranger'), 'spot_claims/s30_c1')));
+    await assertFails(getDoc(doc(as('s30_sales', { staffRole: 'sales' }), 'spot_claims/s30_c1')));
+    // S30.02 "Đang chờ staff duyệt": the claimant lists their own claims.
+    await assertSucceeds(getDocs(query(collection(as('s30_org'), 'spot_claims'), where('organizerId', '==', 's30_org'))));
+    await assertFails(getDocs(collection(as('s30_org'), 'spot_claims')));
+    await assertFails(setDoc(doc(as('s30_org'), 'spot_claims/s30_c2'), { organizerId: 's30_org', status: 'approved' }));
+  });
+
+  test('organizers/* and residents/* and entry_days/* are readable signed-in and never writable', async () => {
+    await seed('organizers/s30_org', { name: 'Bãi đá sông Hồng', status: 'active', managedSpotIds: ['s30_spot'] });
+    await seed('spots/s30_spot', { name: 'Bãi đá sông Hồng', managedBy: 's30_org' });
+    await seed('spots/s30_spot/residents/s30_ph', { waivesProvider: true, waivesGuests: true, maxGuests: 4, validUntil: null });
+    await seed('entry_days/s30_en1_2026-10-20', { eventId: 's30_en1', day: '2026-10-20', sold: 3, held: 1, checkedIn: 0, closed: false });
+    const signed = as('s30_stranger');
+    for (const path of ['organizers/s30_org', 'spots/s30_spot/residents/s30_ph', 'entry_days/s30_en1_2026-10-20']) {
+      await assertSucceeds(getDoc(doc(signed, path)));
+      await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), path)));
+      await assertFails(setDoc(doc(as('s30_org'), path), { hacked: true }));
+      await assertFails(deleteDoc(doc(as('s30_org'), path)));
+    }
+    await assertSucceeds(getDocs(collection(signed, 'spots/s30_spot/residents')));
+  });
+
+  test('gate_staff rows: the organizer and that staff member; the invitee lists their invites', async () => {
+    await seed('organizers/s30_org/gate_staff/s30_gate', { staffUid: 's30_gate', organizerId: 's30_org', status: 'invited' });
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'organizers/s30_org/gate_staff/s30_gate')));
+    await assertSucceeds(getDoc(doc(as('s30_gate'), 'organizers/s30_org/gate_staff/s30_gate')));
+    await assertFails(getDoc(doc(as('s30_stranger'), 'organizers/s30_org/gate_staff/s30_gate')));
+    await assertSucceeds(getDocs(query(collectionGroup(as('s30_gate'), 'gate_staff'), where('staffUid', '==', 's30_gate'))));
+    await assertFails(getDocs(query(collectionGroup(as('s30_stranger'), 'gate_staff'), where('staffUid', '==', 's30_gate'))));
+    await assertFails(setDoc(doc(as('s30_gate'), 'organizers/s30_org/gate_staff/s30_gate'), { status: 'active' }));
+  });
+
+  test('payment_groups readable by the payer only', async () => {
+    await seed('payment_groups/s30_g1', { payerId: 's30_cus', total: 1_140_000, status: 'created', lines: [] });
+    await assertSucceeds(getDoc(doc(as('s30_cus'), 'payment_groups/s30_g1')));
+    await assertFails(getDoc(doc(as('s30_ph'), 'payment_groups/s30_g1')));
+    await assertFails(getDoc(doc(as('s30_org'), 'payment_groups/s30_g1')));
+    await assertFails(setDoc(doc(as('s30_cus'), 'payment_groups/s30_g1'), { payerId: 's30_cus', status: 'paid' }));
+  });
+
+  test('Storage spot_claims/{uid}/… create by uid with PDF/JPEG/PNG ≤ 10 MB, read by uid or staff', async () => {
+    const st = env.authenticatedContext('s30_org').storage();
+    const MB10 = 10 * 1024 * 1024;
+    await assertSucceeds(uploadBytes(ref(st, 'spot_claims/s30_org/c1/hd.pdf'), photo(), { contentType: 'application/pdf' }));
+    await assertSucceeds(uploadBytes(ref(st, 'spot_claims/s30_org/c1/a.jpg'), photo(), jpeg));
+    await assertSucceeds(uploadBytes(ref(st, 'spot_claims/s30_org/c1/b.png'), photo(MB10), { contentType: 'image/png' }));
+    await assertFails(uploadBytes(ref(st, 'spot_claims/s30_org/c1/big.pdf'), photo(MB10 + 1), { contentType: 'application/pdf' }));
+    await assertFails(uploadBytes(ref(st, 'spot_claims/s30_org/c1/x.gif'), photo(), { contentType: 'image/gif' }));
+    await assertFails(uploadBytes(ref(st, 'spot_claims/s30_org/c1/x.svg'), photo(), { contentType: 'image/svg+xml' }));
+    // Create once; never deleted by the client.
+    await assertFails(uploadBytes(ref(st, 'spot_claims/s30_org/c1/hd.pdf'), photo(), { contentType: 'application/pdf' }));
+    await assertFails(deleteObject(ref(st, 'spot_claims/s30_org/c1/hd.pdf')));
+    // Someone else's folder.
+    await assertFails(uploadBytes(ref(env.authenticatedContext('s30_stranger').storage(), 'spot_claims/s30_org/c1/y.pdf'), photo(), { contentType: 'application/pdf' }));
+    await assertSucceeds(getBytes(ref(st, 'spot_claims/s30_org/c1/hd.pdf')));
+    await assertSucceeds(getBytes(ref(env.authenticatedContext('s30_adm', { staffRole: 'admin' }).storage(), 'spot_claims/s30_org/c1/hd.pdf')));
+    await assertFails(getBytes(ref(env.authenticatedContext('s30_stranger').storage(), 'spot_claims/s30_org/c1/hd.pdf')));
+    await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), 'spot_claims/s30_org/c1/hd.pdf')));
+  });
+
+  // Task 10 (carried from Task 8): S11.02-venue-consent and S30.03 "Sự kiện ở đây chờ bạn đồng ý". A draft
+  // that waits for the venue is read by the manager of its venue spot too; nobody else gains a read.
+  test('the venue manager reads a pending-venue draft at their spot; another organizer cannot', async () => {
+    await seed('spots/s30_vspot', { name: 'Bãi đá sông Hồng', managedBy: 's30_org' });
+    await seed('spots/s30_vother', { name: 'Vườn khác', managedBy: 's30_org2' });
+    const venue = { kind: 'managed_spot', spotId: 's30_vspot', entryFee: { included: true, amountVnd: null }, commitmentAt: null, termsVersion: '2026-10-18' };
+    const draft = {
+      host: { type: 'photographer', id: 's30_ph', name: 'Minh Trí', avatarUrl: null, verified: true },
+      hostId: 's30_ph', createdBy: 's30_ph', status: 'draft', type: 'photo_walk', title: 'Photo walk cúc hoạ mi',
+      venue, venueConsent: 'pending', publishedAt: null,
+    };
+    await seed('events/s30_vev', draft);
+    await seed('events/s30_vev_none', { ...draft, venue: null, venueConsent: 'not_required' });
+    // The manager of the venue spot reads it, and lists the spot's pending requests.
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'events/s30_vev')));
+    await assertSucceeds(getDocs(query(collection(as('s30_org'), 'events'),
+      where('venue.spotId', '==', 's30_vspot'), where('venueConsent', '==', 'pending'))));
+    // Another organizer (manager of another spot), a stranger and gate staff do not.
+    await assertFails(getDoc(doc(as('s30_org2'), 'events/s30_vev')));
+    await assertFails(getDocs(query(collection(as('s30_org2'), 'events'),
+      where('venue.spotId', '==', 's30_vspot'), where('venueConsent', '==', 'pending'))));
+    await assertFails(getDoc(doc(as('s30_stranger'), 'events/s30_vev')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'events/s30_vev')));
+    // A draft without a venue stays private to its manager (the guard does not error into a read).
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_none')));
+    await assertSucceeds(getDoc(doc(as('s30_ph'), 'events/s30_vev_none')));
+    // Read only: the venue manager writes nothing and reads no registrations.
+    await assertFails(setDoc(doc(as('s30_org'), 'events/s30_vev'), { ...draft, venueConsent: 'accepted' }));
+    await assertFails(getDocs(collection(as('s30_org'), 'events/s30_vev/registrations')));
+  });
+
+  test('the venue manager reads nothing at their spot until the consent is asked', async () => {
+    await seed('spots/s30_vspot3', { name: 'Bãi đá sông Hồng', managedBy: 's30_org' });
+    const venue = { kind: 'managed_spot', spotId: 's30_vspot3', entryFee: { included: true, amountVnd: null }, commitmentAt: null, termsVersion: '2026-10-18' };
+    const base = {
+      host: { type: 'photographer', id: 's30_ph', name: 'Minh Trí', avatarUrl: null, verified: true },
+      hostId: 's30_ph', createdBy: 's30_ph', type: 'photo_walk', title: 'Photo walk', venue, publishedAt: null,
+    };
+    // saveEventDraft stores the venue before publish with venueConsent 'not_required'.
+    await seed('events/s30_vev_unasked', { ...base, status: 'draft', venueConsent: 'not_required' });
+    await seed('events/s30_vev_nofield', { ...base, status: 'draft' });
+    await seed('events/s30_vev_cancelled', { ...base, status: 'cancelled', venueConsent: 'not_required' });
+    // Answered or lapsed requests stay readable for the notification link.
+    await seed('events/s30_vev_declined', { ...base, status: 'cancelled', venueConsent: 'declined' });
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_unasked')));
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_nofield')));
+    await assertFails(getDoc(doc(as('s30_org'), 'events/s30_vev_cancelled')));
+    await assertSucceeds(getDoc(doc(as('s30_org'), 'events/s30_vev_declined')));
+    // A list filtered by the spot only (no consent filter) is refused.
+    await assertFails(getDocs(query(collection(as('s30_org'), 'events'), where('venue.spotId', '==', 's30_vspot3'))));
+    // A list for a spot that does not exist is refused.
+    await assertFails(getDocs(query(collection(as('s30_org'), 'events'),
+      where('venue.spotId', '==', 's30_no_such_spot'), where('venueConsent', '==', 'pending'))));
+  });
+
+  test('Storage spots/{spotId}/…: the spot\'s manager adds a JPEG cover; nobody else writes', async () => {
+    await seed('spots/s30_spot2', { name: 'Bãi đá', managedBy: 's30_org' });
+    const st = env.authenticatedContext('s30_org').storage();
+    await assertSucceeds(uploadBytes(ref(st, 'spots/s30_spot2/01JCOVER.jpg'), photo(), jpeg));
+    await assertFails(uploadBytes(ref(st, 'spots/s30_spot2/01JCOVER.jpg'), photo(), jpeg));
+    await assertFails(uploadBytes(ref(st, 'spots/s30_spot2/big.jpg'), photo(2 * 1024 * 1024 + 1), jpeg));
+    await assertFails(uploadBytes(ref(st, 'spots/s30_spot2/a.png'), photo(), { contentType: 'image/png' }));
+    await assertFails(deleteObject(ref(st, 'spots/s30_spot2/01JCOVER.jpg')));
+    await assertFails(uploadBytes(ref(env.authenticatedContext('s30_stranger').storage(), 'spots/s30_spot2/x.jpg'), photo(), jpeg));
+    await assertSucceeds(getBytes(ref(env.authenticatedContext('s30_stranger').storage(), 'spots/s30_spot2/01JCOVER.jpg')));
   });
 });

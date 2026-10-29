@@ -24,6 +24,7 @@ import 'package:photobooking/features/event_create/create_event_controller.dart'
 import 'package:photobooking/features/event_create/event_draft_store.dart';
 import 'package:photobooking/features/event_create/place_field.dart';
 import 'package:photobooking/features/event_create/spot_field.dart';
+import 'package:photobooking/features/event_create/venue_field.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -72,6 +73,8 @@ String eventFieldErrorText(AppLocalizations l, EventField field, String code) {
     (EventField.spot, 'gone') => l.eventSpotGone,
     (EventField.spot, 'far') => l.eventSpotFar,
     (EventField.spot, _) => l.eventSpotRequired,
+    (EventField.venue, _) => venueErrorText(l, code),
+    (EventField.terms, _) => l.s1201_termsRequired,
     (EventField.type, _) => l.createEventErrType,
     (EventField.description, _) => l.createEventErrDescLong,
     (EventField.day, _) => l.createEventErrDay,
@@ -358,6 +361,12 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
     }
     if (ok) {
       _scrollTop();
+      // Step 2 is laid out on the next frame: start it at its top.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollTop();
+        }
+      });
     } else {
       final s = ref.read(createEventControllerProvider(widget.args));
       if (s.failure != CreateEventFailure.none) {
@@ -365,6 +374,10 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
       } else if (!s.form.spotDecided) {
         // The spot choice is missing: its error shows under the field.
         _jumpTo(EventField.spot);
+      } else if (_ctl.fieldErrors.containsKey(EventField.venue)) {
+        _jumpTo(EventField.venue);
+      } else if (_ctl.fieldErrors.containsKey(EventField.terms)) {
+        _jumpTo(EventField.terms);
       } else if (s.serverErrors.isNotEmpty) {
         // The server refused one field (day, hashtag, spot): go to it.
         _jumpTo(s.serverErrors.keys.first);
@@ -401,7 +414,12 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
       return;
     }
     if (id != null) {
-      _say(l.createEventPublished);
+      // Decision 16: at a managed spot of someone else the publish only
+      // asked its manager; the event stays a draft until they accept.
+      final waits = ref
+          .read(createEventControllerProvider(widget.args))
+          .awaitingVenue;
+      _say(waits ? l.s1102_consentPending : l.createEventPublished);
       context.replace('/events/$id/manage');
       return;
     }
@@ -619,6 +637,23 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
 
   // ---- step 1 -------------------------------------------------------------
 
+  /// The chosen managed spot is someone else's (Decision 16: the host, or
+  /// the platform for staff events): its manager must consent in 72 h.
+  bool _consentNeeded(CreateEventState s) {
+    final spot = s.venueSpot;
+    if (s.form.venueKind != VenueKind.managedSpot ||
+        s.form.venueConsent == HostConsent.accepted ||
+        spot == null ||
+        spot.id != s.form.spotId ||
+        spot.managedBy == null) {
+      return false;
+    }
+    final host = widget.platform
+        ? null
+        : ref.read(authStateProvider).value?.uid;
+    return spot.managedBy != host;
+  }
+
   List<Widget> _stepOne(
     BuildContext context,
     CreateEventState s,
@@ -665,19 +700,45 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
         ),
       ),
       const SizedBox(height: AppSpace.s3),
+      // S12.01-venue: the venue replaces the "Điểm chụp" tile of S12.01-spot
+      // and holds it (the venue's spot is the event's S29 spot).
       KeyedSubtree(
-        key: _keys[EventField.spot],
-        child: _SpotSection(
-          value: s.form.spotId,
-          decided: s.form.spotDecided,
-          lat: s.form.lat,
-          lng: s.form.lng,
-          error: errorOf(EventField.spot),
-          focusNode: _nodes[EventField.spot]!,
+        key: _keys[EventField.venue],
+        child: VenueField(
+          kind: s.form.venueKind,
+          placeName: s.form.placeName,
+          feeIncluded: s.form.entryFeeIncluded,
+          feeVnd: s.form.entryFeeVnd,
+          committed: s.form.commitmentAt != null,
+          termsAccepted: s.form.termsAccepted,
+          consentNote: _consentNeeded(s),
+          error: ctl.shownErrors[EventField.venue],
+          termsError: ctl.shownErrors.containsKey(EventField.terms),
+          focusNode: _nodes[EventField.venue],
           enabled: !busy,
-          onChanged: (spot, previous) => ctl.setSpot(spot, previous: previous),
+          onKind: ctl.setVenueKind,
+          onPlaceName: (v) => ctl.setPlaceText(name: v),
+          onFeeIncluded: ctl.setEntryFeeIncluded,
+          onFee: ctl.setEntryFee,
+          onCommitment: ctl.setCommitment,
+          onTerms: ctl.setTerms,
+          spotTile: KeyedSubtree(
+            key: _keys[EventField.spot],
+            child: _SpotSection(
+              value: s.form.spotId,
+              decided: s.form.spotDecided,
+              lat: s.form.lat,
+              lng: s.form.lng,
+              error: errorOf(EventField.spot),
+              focusNode: _nodes[EventField.spot]!,
+              enabled: !busy,
+              onChanged: (spot, previous) =>
+                  ctl.setSpot(spot, previous: previous),
+            ),
+          ),
         ),
       ),
+      KeyedSubtree(key: _keys[EventField.terms], child: const SizedBox()),
       const SizedBox(height: AppSpace.s3),
       KeyedSubtree(
         key: _keys[EventField.type],
@@ -690,7 +751,7 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
               spacing: AppSpace.s2,
               runSpacing: AppSpace.s1,
               children: [
-                for (final t in EventType.values)
+                for (final t in EventType.listed)
                   AppChip(
                     key: Key('create-event-type-${t.code}'),
                     label: t.label(l),

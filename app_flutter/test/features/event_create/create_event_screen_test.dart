@@ -14,7 +14,11 @@ import 'package:photobooking/features/event_create/create_event_screen.dart';
 import 'package:photobooking/features/event_create/event_draft_store.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/spots/spot.dart';
+
 import '../../support/event_world.dart';
+import '../../support/organizer_world.dart' show makeSpot, makeSpotEntry;
 
 const _size = Size(390, 900);
 const _args = CreateEventArgs();
@@ -70,19 +74,32 @@ Future<void> _stepOne(WidgetTester tester, {bool cover = true}) async {
     find.byKey(const Key('create-event-title')),
     'Photo walk phố cổ',
   );
+  await _tapType(tester, 'photo_walk');
+  // S29: "Không thuộc điểm chụp nào" (the sheet has its own tests).
+  _ctl(tester).setSpot(null);
+  // S12.01-venue: a public place, committed, terms ticked (own tests below).
+  _publicVenue(tester);
+  await settle(tester);
+}
+
+void _publicVenue(WidgetTester tester) => _ctl(tester)
+  ..setVenueKind(VenueKind.publicPlace)
+  ..setCommitment(true)
+  ..setTerms(true);
+
+/// The type chips sit under the S12.01-venue block: scroll one to the middle
+/// of the view (clear of the footer), then tap it.
+Future<void> _tapType(WidgetTester tester, String code) async {
+  final chip = find.byKey(Key('create-event-type-$code'));
   await tester.scrollUntilVisible(
-    find.byKey(const Key('create-event-type-photo_walk')),
+    chip,
     100,
     scrollable: find.byType(Scrollable).first,
   );
-  await tester.ensureVisible(
-    find.byKey(const Key('create-event-type-photo_walk')),
-  );
-  await tester.pump();
-  await tester.tap(find.byKey(const Key('create-event-type-photo_walk')));
+  await Scrollable.ensureVisible(tester.element(chip), alignment: 0.5);
+  // Let the drag of scrollUntilVisible end (children ignore taps meanwhile).
   await settle(tester);
-  // S29: "Không thuộc điểm chụp nào" (the sheet has its own tests).
-  _ctl(tester).setSpot(null);
+  await tester.tap(chip);
   await settle(tester);
 }
 
@@ -146,8 +163,7 @@ void main() {
       );
       await tester.pump();
       expect(_enabled(tester, 'create-event-next'), isFalse);
-      await tester.tap(find.byKey(const Key('create-event-type-workshop')));
-      await settle(tester);
+      await _tapType(tester, 'workshop');
       expect(_enabled(tester, 'create-event-next'), isTrue);
     });
 
@@ -158,9 +174,8 @@ void main() {
         expect(find.text(t), findsOneWidget);
       }
       expect(find.text('Khác'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('create-event-type-cosplay')));
-      await tester.tap(find.byKey(const Key('create-event-type-other')));
-      await settle(tester);
+      await _tapType(tester, 'cosplay');
+      await _tapType(tester, 'other');
       expect(_state(tester).form.type, EventType.other);
     });
 
@@ -171,8 +186,7 @@ void main() {
         find.byKey(const Key('create-event-title')),
         'Mini session mùa thu',
       );
-      await tester.tap(find.byKey(const Key('create-event-type-mini_session')));
-      await settle(tester);
+      await _tapType(tester, 'mini_session');
       expect(w.prefs!.getString(EventDraftStore.key('u1')), isNotNull);
 
       // A new app run over the same storage.
@@ -255,7 +269,7 @@ void main() {
         ..failWith = const EventError('network')
         ..failOnce = true;
       await _next(tester);
-      expect(find.text('Thông tin sự kiện'), findsOneWidget);
+      expect(find.text('1 / 2'), findsOneWidget);
       expect(
         find.text('Không lưu được nháp. Kiểm tra mạng rồi thử lại.'),
         findsWidgets,
@@ -783,6 +797,12 @@ void main() {
           createdBy: 'u1',
           hostId: 'u1',
           spotId: 'cau-dat',
+          venue: EventVenue(
+            kind: VenueKind.publicPlace,
+            spotId: 'cau-dat',
+            commitmentAt: eventNow,
+            termsVersion: organizerTermsVersion,
+          ),
         ),
       );
       await w.pump(
@@ -823,6 +843,274 @@ void main() {
       );
       await settle(tester);
       expect(w.location, '/events/ev9/manage');
+    });
+  });
+
+  group('S12.01-venue', () {
+    /// Cover, title and type without a venue; "Không thuộc điểm chụp nào".
+    Future<EventsWorld> stepOneBare(
+      WidgetTester tester, {
+      List<Spot> spots = const [],
+      Size size = _size,
+    }) async {
+      final w = _photographer();
+      for (final s in spots) {
+        w.spots.seedSpot(s);
+      }
+      w.spots.seedDirectory([for (final s in spots) makeSpotEntry(s)]);
+      await _open(tester, w, size: size);
+      await tester.tap(find.byKey(const Key('create-event-cover')));
+      await settle(tester);
+      await tester.enterText(
+        find.byKey(const Key('create-event-title')),
+        'Photo walk ven sông',
+      );
+      _ctl(tester)
+        ..setType(EventType.photoWalk)
+        ..setSpot(null);
+      await settle(tester);
+      return w;
+    }
+
+    Future<void> tap(WidgetTester tester, String key) async {
+      await tester.ensureVisible(find.byKey(Key(key)));
+      await tester.pump();
+      await tester.tap(find.byKey(Key(key)));
+      await settle(tester);
+    }
+
+    testWidgets('the venue block sits under the name, before the type', (
+      tester,
+    ) async {
+      await stepOneBare(tester, size: const Size(390, 2400));
+      final venue = tester.getTopLeft(find.text('Địa điểm · bắt buộc')).dy;
+      expect(
+        venue,
+        greaterThan(
+          tester.getTopLeft(find.byKey(const Key('create-event-title'))).dy,
+        ),
+      );
+      expect(
+        venue,
+        lessThan(
+          tester
+              .getTopLeft(find.byKey(const Key('create-event-type-photo_walk')))
+              .dy,
+        ),
+      );
+    });
+
+    testWidgets(
+      'Tiếp tục without a venue or the terms shows both errors and saves nothing',
+      (tester) async {
+        final w = await stepOneBare(tester);
+        await _next(tester);
+        expect(find.text('Chọn loại địa điểm'), findsOneWidget);
+        expect(find.text('Đồng ý điều khoản để đăng'), findsOneWidget);
+        expect(find.text('1 / 2'), findsOneWidget);
+        expect(w.repo.savedDrafts, isEmpty);
+      },
+    );
+
+    testWidgets('a public place without the commitment is refused', (
+      tester,
+    ) async {
+      final w = await stepOneBare(tester);
+      await tap(tester, 'venue-kind-public');
+      await tap(tester, 'venue-terms');
+      await _next(tester);
+      expect(find.text('Tick cam kết để đăng ở nơi công cộng'), findsOneWidget);
+      expect(w.repo.savedDrafts, isEmpty);
+    });
+
+    testWidgets('the draft saves the venue (public, committed, terms)', (
+      tester,
+    ) async {
+      final w = await stepOneBare(tester);
+      await tap(tester, 'venue-kind-public');
+      await tap(tester, 'venue-commitment');
+      await tap(tester, 'venue-terms');
+      await _next(tester);
+      expect(find.text('2 / 2'), findsOneWidget);
+      final v = w.repo.savedDrafts.last.venue!;
+      expect(v.kind, VenueKind.publicPlace);
+      expect(v.commitmentAt, eventNow);
+      expect(v.termsVersion, organizerTermsVersion);
+      expect(v.spotId, isNull);
+      final sent = w.repo.savedDrafts.last.toCallable()['venue']! as Map;
+      expect(sent['kind'], 'public');
+    });
+
+    testWidgets(
+      'a paid place at an S29 spot: "Chưa gồm" prefills the amount from its access',
+      (tester) async {
+        final park = makeSpot(
+          id: 'yen-so',
+          name: 'Công viên Yên Sở',
+          access: const SpotAccess(
+            type: SpotAccessType.ticket,
+            fees: [AccessFee(label: 'Người lớn', amountVnd: 20000)],
+          ),
+        );
+        final w = await stepOneBare(tester, spots: [park]);
+        await tap(tester, 'venue-kind-paid_place');
+        _ctl(tester).setSpot(makeSpotEntry(park));
+        await settle(tester);
+        await tap(tester, 'venue-terms');
+        await _next(tester);
+        expect(
+          find.text('Chọn đã gồm hay chưa gồm phí vào cửa'),
+          findsOneWidget,
+        );
+        expect(w.repo.savedDrafts, isEmpty);
+
+        await tester.ensureVisible(find.text('Chưa gồm'));
+        await tester.tap(find.text('Chưa gồm'));
+        await settle(tester);
+        expect(find.text('20.000'), findsOneWidget);
+        await _next(tester);
+        final v = w.repo.savedDrafts.last.venue!;
+        expect(v.kind, VenueKind.paidPlace);
+        expect(v.spotId, 'yen-so');
+        expect(v.entryFeeIncluded, isFalse);
+        expect(v.entryFeeVnd, 20000);
+      },
+    );
+
+    testWidgets('a paid place not included needs an amount', (tester) async {
+      final w = await stepOneBare(tester);
+      await tap(tester, 'venue-kind-paid_place');
+      await tester.ensureVisible(find.text('Chưa gồm'));
+      await tester.tap(find.text('Chưa gồm'));
+      await settle(tester);
+      await tap(tester, 'venue-terms');
+      await _next(tester);
+      expect(find.text('Nhập giá vé vào cửa tham khảo'), findsOneWidget);
+      expect(w.repo.savedDrafts, isEmpty);
+    });
+
+    testWidgets(
+      'a managed spot of someone else shows the 72 h consent note; my own does not',
+      (tester) async {
+        final theirs = makeSpot(id: 'bd', managedBy: 'org1');
+        final mine = makeSpot(
+          id: 'mine',
+          name: 'Vườn của tôi',
+          managedBy: 'u1',
+        );
+        await stepOneBare(tester, spots: [theirs, mine]);
+        const note =
+            'Chủ điểm cần đồng ý trong 72 giờ. Sự kiện ở trạng thái nháp tới lúc đó.';
+        await tap(tester, 'venue-kind-managed_spot');
+        expect(find.text(note), findsNothing);
+        _ctl(tester).setSpot(makeSpotEntry(theirs));
+        await settle(tester);
+        expect(find.text(note), findsOneWidget);
+        _ctl(tester).setSpot(makeSpotEntry(mine));
+        await settle(tester);
+        expect(find.text(note), findsNothing);
+      },
+    );
+
+    testWidgets('a managed spot needs a spot that has a manager', (
+      tester,
+    ) async {
+      final free = makeSpot(id: 'ho-tay', name: 'Hồ Tây');
+      final w = await stepOneBare(tester, spots: [free]);
+      await tap(tester, 'venue-kind-managed_spot');
+      await tap(tester, 'venue-terms');
+      await _next(tester);
+      expect(find.text('Chọn một điểm có chủ quản lý'), findsOneWidget);
+      _ctl(tester).setSpot(makeSpotEntry(free));
+      await settle(tester);
+      await _next(tester);
+      expect(
+        find.text('Điểm này chưa có chủ quản lý. Chọn loại địa điểm khác.'),
+        findsOneWidget,
+      );
+      expect(w.repo.savedDrafts, isEmpty);
+    });
+
+    testWidgets(
+      'publish at a managed spot that still waits says "Chờ địa điểm đồng ý"',
+      (tester) async {
+        final w = _photographer();
+        await _open(tester, w);
+        await _stepOne(tester);
+        await _next(tester);
+        await _fillStepTwo(tester);
+        w.repo.publishFailWith = const EventError('venue_consent_required');
+        await tester.tap(find.byKey(const Key('create-event-publish')));
+        await settle(tester);
+        expect(find.text('Chờ địa điểm đồng ý'), findsOneWidget);
+        expect(w.location, endsWith('/manage'));
+        expect(w.prefs!.getString(EventDraftStore.key('u1')), isNull);
+      },
+    );
+
+    for (final (consent, toast) in [
+      (HostConsent.accepted, 'Đã đăng sự kiện'),
+      (HostConsent.notRequired, 'Chờ địa điểm đồng ý'),
+    ]) {
+      testWidgets(
+        'a resumed draft at someone else\'s spot (${consent.code}) publishes with "$toast"',
+        (tester) async {
+          final w = _photographer();
+          final bd = makeSpot(id: 'bd', managedBy: 'org1');
+          w.spots
+            ..seedSpot(bd)
+            ..seedDirectory([makeSpotEntry(bd)]);
+          w.repo.putEvent(
+            detailOf(
+              'ev9',
+              status: EventStatus.draft,
+              createdBy: 'u1',
+              hostId: 'u1',
+              spotId: 'bd',
+              venue: const EventVenue(
+                kind: VenueKind.managedSpot,
+                spotId: 'bd',
+                termsVersion: organizerTermsVersion,
+              ),
+              venueConsent: consent,
+            ),
+          );
+          await w.pump(
+            tester,
+            path: '/events/new?draft=ev9',
+            organizer: true,
+            size: _size,
+          );
+          await _next(tester);
+          expect(find.text('2 / 2'), findsOneWidget);
+          await tester.tap(find.byKey(const Key('create-event-publish')));
+          await settle(tester);
+          expect(w.repo.published, ['ev9']);
+          expect(find.text(toast), findsOneWidget);
+        },
+      );
+    }
+
+    testWidgets('fits 320 dp at 1.3× text with the venue errors showing', (
+      tester,
+    ) async {
+      for (final b in Brightness.values) {
+        final w = _photographer();
+        await w.pump(
+          tester,
+          path: '/events/new',
+          organizer: true,
+          textScale: 1.3,
+          size: const Size(320, 640),
+          brightness: b,
+        );
+        _ctl(tester)
+          ..setVenueKind(VenueKind.paidPlace)
+          ..setEntryFeeIncluded(false)
+          ..touchAll();
+        await settle(tester);
+        expect(tester.takeException(), isNull, reason: '$b');
+      }
     });
   });
 }

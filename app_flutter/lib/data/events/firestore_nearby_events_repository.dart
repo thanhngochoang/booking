@@ -6,7 +6,7 @@ import 'package:photobooking/data/events/firestore_event_mapping.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 
 /// Explore's reads over `events`. Only public events (`open`, `full`) are
-/// asked for, as the security rules require. Geohash cells are prefix ranges on
+/// asked for, as the security rules require; entry-ticket events are left out. Geohash cells are prefix ranges on
 /// `location.geohash` (index `status, location.geohash, startAt`).
 class FirestoreNearbyEventsRepository implements NearbyEventsRepository {
   FirestoreNearbyEventsRepository({FirebaseFirestore? db, this.pageSize = 100})
@@ -19,6 +19,10 @@ class FirestoreNearbyEventsRepository implements NearbyEventsRepository {
 
   FirebaseFirestore get _db => _override ?? FirebaseFirestore.instance;
   static const _public = ['open', 'full'];
+
+  /// Decision 11: entry-ticket events are not events to explore; dropped
+  /// after the read (a `type != entry` filter would need new indexes).
+  static bool _isEntry(Map<String, dynamic> d) => d['type'] == 'entry';
 
   Query<Map<String, dynamic>> _base() =>
       _db.collection('events').where('status', whereIn: _public);
@@ -67,6 +71,7 @@ class FirestoreNearbyEventsRepository implements NearbyEventsRepository {
     ]);
     for (final docs in reads) {
       for (final d in docs) {
+        if (_isEntry(d.data())) continue;
         final e = eventSummaryFromFirestore(d.id, d.data());
         if (e != null) {
           byId[e.id] = e;
@@ -90,7 +95,8 @@ class FirestoreNearbyEventsRepository implements NearbyEventsRepository {
         .limit(limit)
         .get();
     return [
-      for (final d in snap.docs) ?eventSummaryFromFirestore(d.id, d.data()),
+      for (final d in snap.docs)
+        if (!_isEntry(d.data())) ?eventSummaryFromFirestore(d.id, d.data()),
     ];
   }
 
@@ -122,7 +128,7 @@ class FirestoreNearbyEventsRepository implements NearbyEventsRepository {
       }
       // The capped number is all Explore shows, so read at most [cap] rows.
       final snap = await q.limit(cap - total).get();
-      total += snap.docs.length;
+      total += snap.docs.where((d) => !_isEntry(d.data())).length;
       if (total >= cap) {
         return cap;
       }

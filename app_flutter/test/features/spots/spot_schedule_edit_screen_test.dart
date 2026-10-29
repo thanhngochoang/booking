@@ -15,6 +15,7 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
@@ -22,6 +23,7 @@ import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/spots/spot_schedule_edit_screen.dart';
 
 import '../../support/fake_spot_repository.dart';
+import '../../support/organizer_world.dart' show makeSpot;
 import '../../support/screen_host.dart';
 import '../../support/spot_entry_fixture.dart';
 
@@ -378,4 +380,63 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('S29.04 at a ticketed spot (#223)', () {
+    FakeSpotRepository repoWith({List<Resident> residents = const []}) {
+      final repo = FakeSpotRepository()
+        ..ownerId = _uid
+        ..seedDirectory(_directory())
+        ..seedSpot(
+          makeSpot(
+            id: 'spot_ht',
+            name: 'Hồ Tây',
+            access: SpotAccess(
+              type: SpotAccessType.ticket,
+              fees: const [AccessFee(label: 'Người lớn', amountVnd: 70000)],
+              updatedAt: _october,
+              source: SpotAccessSource.staff,
+            ),
+          ),
+        );
+      if (residents.isNotEmpty) repo.seedResidents('spot_ht', residents);
+      return repo;
+    }
+
+    testWidgets('a non-resident reads that customers buy their ticket', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        path: '/me/spot-schedules/new?spotId=spot_ht',
+        spots: repoWith(),
+      );
+      await _settle(tester);
+      expect(
+        find.text(
+          'Điểm này thu vé ≈ 70.000₫/người. Bạn chưa thuộc thợ tại điểm, khách sẽ mua vé cho bạn.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a resident whose own ticket is waived sees no note', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        path: '/me/spot-schedules/new?spotId=spot_ht',
+        spots: repoWith(
+          residents: const [
+            Resident(
+              providerId: _uid,
+              waivesProvider: true,
+              waivesGuests: false,
+            ),
+          ],
+        ),
+      );
+      await _settle(tester);
+      expect(find.byKey(const Key('spot-schedule-entry-note')), findsNothing);
+    });
+  });
 }

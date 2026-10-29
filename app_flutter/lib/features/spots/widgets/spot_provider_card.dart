@@ -15,6 +15,8 @@ class SpotProviderCard extends StatelessWidget {
     required this.day,
     this.onProfile,
     this.onBook,
+    this.residentTag,
+    this.entryLine,
   });
 
   final PhotographerSummary summary;
@@ -22,6 +24,13 @@ class SpotProviderCard extends StatelessWidget {
   final String day;
   final VoidCallback? onProfile;
   final VoidCallback? onBook;
+
+  /// S29.02-entry: "Thợ tại điểm · miễn vé" (or "… miễn vé thợ") on a
+  /// resident of a ticketed spot.
+  final String? residentTag;
+
+  /// S29.02-entry: "Cần vé cho bạn và thợ ≈ {x}" on the other providers.
+  final String? entryLine;
 
   /// The card's shape while S29.02's providers load.
   static Widget skeleton({Key? key}) => _SpotProviderCardSkeleton(key: key);
@@ -152,6 +161,56 @@ class SpotProviderCard extends StatelessWidget {
                             ),
                         ],
                       ),
+                      if (residentTag case final tag?) ...[
+                        const SizedBox(height: AppSpace.s1),
+                        Container(
+                          key: const Key('spot-provider-resident'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: dark
+                                ? AppColorsDark.primarySubtle
+                                : AppColors.primarySubtle,
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppIcon(
+                                AppIcons.verified,
+                                size: 12,
+                                color: scheme.primary,
+                              ),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  tag,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: scheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (entryLine case final line?) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          line,
+                          key: const Key('spot-provider-entry'),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11.5,
+                            color: dark
+                                ? AppColorsDark.foregroundSecondary
+                                : AppColors.foregroundSecondary,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

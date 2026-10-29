@@ -9,7 +9,7 @@ import type { ProviderType } from './provider_type.js';
 export class MemoryProviderStore implements ProviderStore {
   readonly profiles = new Map<string, ProviderProfile>();
   readonly studioAddresses = new Map<string, StudioAddress>();
-  /** Seed: number of requested | accepted | upcoming bookings per photographer. */
+  /** Seed: number of requested | accepted | upcoming | shooting bookings per photographer. */
   readonly activeBookings = new Map<string, number>();
   /** Seed: number of held | partially_refunded | disputed payments per payee. */
   readonly heldPayments = new Map<string, number>();

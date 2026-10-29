@@ -35,6 +35,9 @@ Future<bool?> showCancelSheet(
   // Written by the content, read when the red button is tapped. No listener
   // is ever attached, so it needs no dispose.
   final reason = ValueNotifier<String?>(null);
+  // S05.03 "Giữ vé vào cửa": the customer keeps the entry tickets bought
+  // with the booking (Decision 15, `keepTickets`).
+  final keepTickets = ValueNotifier<bool>(false);
   return showConfirmSheet(
     context,
     title: role == BookingRole.customer
@@ -45,6 +48,7 @@ Future<bool?> showCancelSheet(
       role: role,
       counterpartName: counterpartName,
       reason: reason,
+      keepTickets: keepTickets,
     ),
     confirmLabel: l10n.cancelConfirm,
     keepLabel: l10n.cancelKeep,
@@ -55,6 +59,7 @@ Future<bool?> showCancelSheet(
         bookingId: booking.id,
         action: BookingAction.cancel.code,
         reason: reason.value,
+        keepTickets: keepTickets.value,
       ),
     ),
   );
@@ -143,12 +148,14 @@ class _CancelContent extends ConsumerStatefulWidget {
     required this.role,
     required this.counterpartName,
     required this.reason,
+    required this.keepTickets,
   });
 
   final Booking booking;
   final BookingRole role;
   final String counterpartName;
   final ValueNotifier<String?> reason;
+  final ValueNotifier<bool> keepTickets;
 
   @override
   ConsumerState<_CancelContent> createState() => _CancelContentState();
@@ -249,6 +256,27 @@ class _CancelContentState extends ConsumerState<_CancelContent> {
                   ),
           ],
         ),
+        if (customer && b.entry != null) ...[
+          const SizedBox(height: AppSpace.s2),
+          // Its own transparent Material: the sheet's frame is a coloured box.
+          Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile(
+              key: const Key('cancel-keep-tickets'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.s0503_keepTickets),
+              subtitle: Text(
+                l10n.s0503_keepTicketsSub(
+                  formatDay(
+                    parseDayKey(b.entry!.visitDay) ?? DateTime.parse(b.day),
+                  ),
+                ),
+              ),
+              value: widget.keepTickets.value,
+              onChanged: (v) => setState(() => widget.keepTickets.value = v),
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpace.s3),
         ReasonPicker(
           reasons: _reasons(),

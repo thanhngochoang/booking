@@ -17,9 +17,11 @@ import {
   formatVnTime,
   isEscrowRefund,
   pickSubjectPayment,
+  venueLinesAmong,
   ticketPayeeOf,
   type Booking,
   type Dispute,
+  type DisputeBookingEnd,
   type DisputeStatus,
   type DisputeStore,
   type DisputeSubjectType,
@@ -76,9 +78,13 @@ export function bookingDisputeView(
     windowStart: dateOf(b.completedAt),
     shotAt: dateOf(b.shotAt),
     checkUntil: dateOf(b.checkUntil),
+    // S30: "Không diễn ra" makes an upcoming booking disputable (dispute.ts).
+    shootDeniedAt: dateOf(b.shootDeniedAt),
     amount: b.deposit,
     paymentId: null,
     disputeId: b.disputeId ?? null,
+    // S30 (final fix D-I2): resolveDispute ends a denied shoot from the booking itself.
+    booking: b,
     snapshot: {
       title: name !== '' ? `${name} · ${b.serviceSnapshot.name}` : b.serviceSnapshot.name,
       subtitle: `${formatDayShortVi(b.day)} · ${b.start}–${b.end}`,
@@ -111,7 +117,8 @@ export function ticketDisputeView(reg: RegistrationDoc, ev: EventRecord): Disput
     snapshot: {
       title: ev.title || reg.event.title,
       subtitle: `${formatDayShortVi(formatVnDate(start))} · ${formatVnTime(start)}–${formatVnTime(end)}`,
-      providerName: ev.host.type === 'photographer' ? ev.host.name : null,
+      // S30: an organizer host is the payee too; its name is the organizer's (`host.name`).
+      providerName: ev.host.type === 'photographer' || ev.host.type === 'organizer' ? ev.host.name : null,
       thumbUrl: ev.coverUrl ?? reg.event.coverUrl,
     },
   };
@@ -123,7 +130,10 @@ type RefundMirror =
   | { readonly kind: 'ticket'; readonly ref: DocumentReference; readonly refundId: string | null; refundStatus: RefundStatus | null };
 
 export class FirestoreDisputeTx extends FirestoreSupportTx implements DisputeTx {
-  private readonly links: { readonly subject: DisputeSubjectView; readonly patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus } }[] = [];
+  private readonly links: {
+    readonly subject: DisputeSubjectView;
+    readonly patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus; readonly end?: DisputeBookingEnd };
+  }[] = [];
   /** Refunds created in this transaction (the dispute's refund at resolution). */
   private readonly created: Refund[] = [];
   private readonly mirrors = new Map<string, RefundMirror>();
@@ -193,6 +203,14 @@ export class FirestoreDisputeTx extends FirestoreSupportTx implements DisputeTx 
     return pickSubjectPayment(snap.docs.map((d) => paymentFromFirestore(d.id, d.data())).filter((p): p is Payment => p !== null));
   }
 
+  /** S30 Decision 16: the group's lines (single-field `groupId`), filtered to the ticket's venue-fee lines. */
+  async venueLinesOf(payment: Payment): Promise<Payment[]> {
+    if (payment.groupId === undefined || payment.subjectType !== 'event_registration') return [];
+    const snap = await this.tx.get(this.firestore.collection(PAYMENTS_COLLECTION).where('groupId', '==', payment.groupId));
+    const all = snap.docs.map((d) => paymentFromFirestore(d.id, d.data())).filter((p): p is Payment => p !== null);
+    return venueLinesAmong(payment, all);
+  }
+
   setDispute(d: Dispute): void {
     this.tx.set(this.firestore.collection(DISPUTES_COLLECTION).doc(d.id), disputeToFirestore(d));
   }
@@ -201,7 +219,10 @@ export class FirestoreDisputeTx extends FirestoreSupportTx implements DisputeTx 
     this.tx.set(this.firestore.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p));
   }
 
-  linkSubject(subject: DisputeSubjectView, patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus }): void {
+  linkSubject(
+    subject: DisputeSubjectView,
+    patch: { readonly disputeId: string; readonly escrowStatus: EscrowStatus; readonly end?: DisputeBookingEnd },
+  ): void {
     this.links.push({ subject, patch });
   }
 
@@ -230,6 +251,33 @@ export class FirestoreDisputeTx extends FirestoreSupportTx implements DisputeTx 
   }
 
   /**
+   * S30 (final fix D-I2): a denied shoot's end, as fields of the one booking update (status, the system's
+   * cancel record or `completedAt`, version), + its history row `bookings/{id}/events/{eventId}`.
+   */
+  private bookingEnd(bookingId: string, end: DisputeBookingEnd): DocumentData {
+    const at = Timestamp.fromDate(new Date(end.at));
+    this.tx.set(this.bookingRef(bookingId).collection('events').doc(end.event.id), {
+      status: end.event.status, at: Timestamp.fromDate(new Date(end.event.at)), actorId: end.event.actorId ?? null,
+    });
+    return {
+      status: end.status,
+      ...(end.cancel !== null
+        ? {
+            cancel: {
+              by: end.cancel.by,
+              reason: end.cancel.reason ?? null,
+              at: Timestamp.fromDate(new Date(end.cancel.at)),
+              refundPercent: end.cancel.refundPercent,
+            },
+          }
+        : {}),
+      ...(end.completedAt !== null ? { completedAt: Timestamp.fromDate(new Date(end.completedAt)) } : {}),
+      updatedAt: at,
+      version: FieldValue.increment(1),
+    };
+  }
+
+  /**
    * Writes the subject mirrors, one update per subject (called after the use case, before commit):
    * booking `disputeId` + `escrowStatus` (+ `depositRefunded` grows by a refund created here);
    * registration `disputeId` (+ `refundId`/`refundStatus` of a refund created here).
@@ -240,6 +288,7 @@ export class FirestoreDisputeTx extends FirestoreSupportTx implements DisputeTx 
         const refunded = this.created.filter((r) => r.subjectType === 'booking').reduce((sum, r) => sum + r.amount, 0);
         const data: DocumentData = { disputeId: patch.disputeId, escrowStatus: patch.escrowStatus };
         if (refunded > 0) data.depositRefunded = FieldValue.increment(refunded);
+        if (patch.end !== undefined) Object.assign(data, this.bookingEnd(subject.id, patch.end));
         this.tx.update(this.bookingRef(subject.id), data);
       } else if (subject.eventId !== null) {
         const refund = this.created.filter((r) => r.subjectType === 'event_registration').at(-1);

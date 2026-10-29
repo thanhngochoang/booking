@@ -10,6 +10,7 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/addons/addon_format.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
 class ReviewStep extends ConsumerStatefulWidget {
@@ -74,7 +75,27 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
     final packagesAsync = ref.watch(profilePackagesProvider(widget.args.photographerId));
 
     final price = state.priceVnd ?? 0;
-    final payNow = state.payVnd ?? 0;
+    // S04.03-entry: the tickets of a ticketed spot ride on the same payment.
+    final spotId = state.spot?.schedule.spotId;
+    final entryInfo = spotId == null || state.day == null
+        ? null
+        : ref.watch(
+            bookingEntryInfoProvider((
+              spotId: spotId,
+              providerId: widget.args.photographerId,
+              day: state.day!,
+            )),
+          );
+    final sells = entryInfo != null && entryInfo.sellsOn(state.day!);
+    final quote = sells
+        ? quoteBookingEntry(
+            event: entryInfo.event!,
+            picks: entryPicksOf(state, entryInfo.event!),
+            waiver: entryInfo.waiver,
+          )
+        : null;
+    final entryVnd = quote != null && state.entryOn ? quote.amount : 0;
+    final payNow = (state.payVnd ?? 0) + entryVnd;
     final addonLines = <MoneyLine>[
       for (final a in state.applicableAddons)
         if (state.picks[a.id] case final qty?)
@@ -175,6 +196,18 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                       children: [
                         BookingCard(data: summary),
                         const SizedBox(height: AppSpace.s3),
+                        if (quote != null) ...[
+                          _EntryCard(
+                            args: widget.args,
+                            info: entryInfo!,
+                            quote: quote,
+                            providerName: photographerName,
+                          ),
+                          const SizedBox(height: AppSpace.s3),
+                        ] else if (entryInfo?.unitPrice case final unit?) ...[
+                          _OnSiteCosts(unit: unit),
+                          const SizedBox(height: AppSpace.s3),
+                        ],
                         IntrinsicHeight(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,6 +249,11 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                               vnd: price,
                             ),
                             ...addonLines,
+                            if (entryVnd > 0)
+                              MoneyLine(
+                                label: l10n.s0403_entryLine(quote!.count),
+                                vnd: entryVnd,
+                              ),
                             MoneyLine(
                               label: l10n.bookDepositToday,
                               vnd: payNow,
@@ -223,6 +261,17 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                             ),
                           ],
                         ),
+                        if (entryVnd > 0) ...[
+                          const SizedBox(height: AppSpace.s2),
+                          Text(
+                            l10n.s0403_twoPayees,
+                            key: const Key('book-entry-payees'),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: AppSpace.s2),
                         Text(
                           l10n.bookPolicy,
@@ -271,3 +320,183 @@ BookingAddonLine _lineOf(ServiceAddon a, int qty) => BookingAddonLine(
   qty: qty,
   amount: a.price * qty,
 );
+
+/// S04.03-entry "Vé vào cửa · {ngày}": the switch (on by default), the
+/// customer's counters per type, the photographer's fixed ticket or its
+/// waiver; "Bạn và thợ được miễn vé" when nothing is left to buy; switched
+/// off, "Tự mua vé tại cổng ≈ {x}".
+class _EntryCard extends ConsumerWidget {
+  const _EntryCard({
+    required this.args,
+    required this.info,
+    required this.quote,
+    required this.providerName,
+  });
+
+  final BookingFlowArgs args;
+  final BookingEntryInfo info;
+  final BookingEntryQuote quote;
+  final String providerName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final state = ref.watch(bookingFlowControllerProvider(args));
+    final ctl = ref.read(bookingFlowControllerProvider(args).notifier);
+    final e = info.event!;
+    final picks = entryPicksOf(state, e);
+    final day = parseDayKey(state.day!)!;
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final customers = picks.values.fold(0, (n, q) => n + q);
+    Widget row(String label, Widget trailing, {Key? key}) => Padding(
+      key: key,
+      padding: const EdgeInsets.only(top: AppSpace.s1),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+            ),
+          ),
+          trailing,
+        ],
+      ),
+    );
+    return GlassCard(
+      key: const Key('book-entry'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s3,
+          AppSpace.s2,
+          AppSpace.s3,
+          AppSpace.s3,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                AppIcon(AppIcons.ticket, size: 18, color: muted),
+                const SizedBox(width: AppSpace.s2),
+                Expanded(
+                  child: Text(
+                    l10n.s0403_entryCard(formatDay(day)),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Semantics(
+                  label: l10n.s0403_entrySwitch,
+                  child: Switch(
+                    key: const Key('book-entry-switch'),
+                    value: state.entryOn,
+                    onChanged: state.busy ? null : ctl.setEntryOn,
+                  ),
+                ),
+              ],
+            ),
+            if (!state.entryOn)
+              Text(
+                l10n.s0403_entryOff(formatMoney(quote.amount)),
+                key: const Key('book-entry-off'),
+                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+              )
+            else if (quote.allWaived)
+              Text(
+                l10n.s0403_entryWaivedAll,
+                key: const Key('book-entry-waived'),
+                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+              )
+            else ...[
+              for (final t in e.visibleTicketTypes)
+                row(
+                  l10n.s0403_entryCustomer(t.name),
+                  QtyStepper(
+                    keyPrefix: 'book-entry-${t.id}',
+                    value: picks[t.id] ?? 0,
+                    // At least one ticket of yours while the card is on.
+                    min: customers - (picks[t.id] ?? 0) > 0 ? 0 : 1,
+                    max:
+                        entryTicketsPerOrder -
+                        (quote.providerTicket ? 1 : 0) -
+                        (customers - (picks[t.id] ?? 0)),
+                    enabled: !state.busy,
+                    valueLabel: l10n.ticketCount(picks[t.id] ?? 0),
+                    decrementLabel: l10n.s3005_less(t.name),
+                    incrementLabel: l10n.s3005_more(t.name),
+                    onChanged: (n) => ctl.setEntryCount(
+                      e,
+                      t.id,
+                      n,
+                      providerTicket: quote.providerTicket,
+                    ),
+                  ),
+                ),
+              row(
+                quote.providerTicket
+                    ? (providerName.isEmpty
+                          ? l10n.s0403_entryProvider
+                          : l10n.s0403_entryProviderName(providerName))
+                    : l10n.s0403_entryWaivedProvider,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s4,
+                    vertical: AppSpace.s2,
+                  ),
+                  child: Text(
+                    quote.providerTicket ? '1' : '',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                key: const Key('book-entry-provider'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A spot with reference prices only: "Chi phí tại chỗ (không qua app) ·
+/// Vé vào cửa ≈ {x} × 2 (bạn và thợ)".
+class _OnSiteCosts extends StatelessWidget {
+  const _OnSiteCosts({required this.unit});
+
+  final int unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    return GlassCard(
+      key: const Key('book-entry-onsite'),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.s0403_onSite,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpace.s1),
+            Text(
+              l10n.s0403_onSiteTickets(formatMoney(unit)),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

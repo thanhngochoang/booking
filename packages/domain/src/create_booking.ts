@@ -4,7 +4,7 @@
  * Every order path builds its booking with `buildBookingDraft`; later units extend it only through the slots.
  */
 
-import type { AddonLine, Booking, BookingPickup } from './booking.js';
+import type { AddonLine, Booking, BookingEntry, BookingPickup } from './booking.js';
 import {
   DRAFT_EXPIRY_MINUTES,
   addMinutesToTime,
@@ -32,6 +32,9 @@ import { memberDayReleasable, studioDayCapacity, studioDayLoadWith } from './stu
 import { studioDraftFields } from './studio_assignment.js';
 
 import { addonDraftFields, bookingTotal, priceAddonLines, requirePickup } from './addon_pricing.js';
+
+// slot #223 (S30 entry tickets)
+import { assertEntryBookable, bookingEntryDefaults } from './booking_entry.js';
 
 // ── end draft slot imports ──
 
@@ -70,6 +73,9 @@ export interface BookingDraftInput extends BookingDraftCore {
 
   readonly addons?: readonly AddonLine[];
   readonly pickup?: BookingPickup;
+
+  // slot #223 (S30): entry tickets bought with the booking (`bookingEntryDefaults`).
+  readonly entry?: BookingEntry;
 }
 
 /** The amount the customer pays; #190 replaces the body (Decision 3). */
@@ -132,6 +138,9 @@ export function buildBookingDraft(i: BookingDraftInput): Booking {
     ...spotDraftFields(i),
 
     ...addonDraftFields(i),
+
+    // #223: entry tickets
+    ...(i.entry ? { entry: i.entry } : {}),
   };
 }
 
@@ -295,6 +304,28 @@ export async function createBookingDraft(
     const load = loadOwner ? await tx.getStudioDayLoad(loadOwner, input.day) : null;
     const memberDays = loadOwner && !ctx ? await tx.getMemberDays(loadOwner, input.day) : [];
 
+    // S30 (Decision 15): the tickets the booking carries, from the entry event and the provider's residency.
+    let entry: BookingEntry | undefined;
+    if (input.entry !== undefined) {
+      const event = await tx.getEntryEvent(input.entry.eventId);
+      const spotId = event?.type === 'entry' && typeof event.spotId === 'string' ? event.spotId : null;
+      const resident = spotId !== null ? await tx.residentOf(spotId, input.photographerId) : null;
+      const entryDay = spotId !== null ? await tx.getEntryDay(input.entry.eventId, input.entry.visitDay) : null;
+      const defaults = event?.type === 'entry'
+        ? bookingEntryDefaults({ event, resident, customerItems: input.entry.items, visitDay: input.entry.visitDay })
+        : null;
+      assertEntryBookable({
+        event,
+        visitDay: input.entry.visitDay,
+        bookingDay: input.day,
+        spotId: ctx ? ctx.spot.id : null,
+        day: entryDay,
+        qty: defaults?.items.reduce((n, l) => n + l.qty, 0) ?? 0,
+        now,
+      });
+      entry = { eventId: input.entry.eventId, visitDay: input.entry.visitDay, ...(defaults as NonNullable<typeof defaults>), registrationId: null };
+    }
+
     if (ctx) {
       if (day?.state !== 'spot' || day.scheduleId !== ctx.schedule.id) {
         throw new DomainError('outside_schedule');
@@ -378,6 +409,7 @@ export async function createBookingDraft(
           }
         : undefined,
       assigneeId: ctx?.schedule.assigneeId ?? undefined,
+      entry,
     });
 
     await tx.setBooking(booking);

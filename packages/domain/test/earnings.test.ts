@@ -18,6 +18,7 @@ import type { ProviderType } from '../src/provider_type.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { ADMIN, addAccount, createPayoutWorld, paidBooking } from './support/payout_world.js';
 import { freezeBookingPayment } from './support/dispute_world.js';
+import { scanned } from './support/booking_world.js';
 
 const NOW = new Date('2026-10-20T10:00:00.000Z');
 const subject = { counterpartName: 'Khách Hàng Một', label: 'Gói Chân dung', day: '2026-10-15', milestones: null };
@@ -210,6 +211,8 @@ describe('earnings summary', () => {
 
     // B and C complete; C is disputed; B is released after the window.
     w.clock.setTime(new Date('2026-10-17T09:30:00.000Z'));
+    scanned(w, b.bookingId);
+    scanned(w, c.bookingId);
     await transitionBooking(w.deps, { bookingId: b.bookingId, action: 'complete', actorId: 'p1' });
     await transitionBooking(w.deps, { bookingId: c.bookingId, action: 'complete', actorId: 'p1' });
     w.clock.setTime(new Date('2026-10-17T10:00:00.000Z'));

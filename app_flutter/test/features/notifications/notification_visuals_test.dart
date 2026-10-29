@@ -64,6 +64,8 @@ final Map<String, _Visual> _contract = {
   'booking_cancelled': (AppIcons.calendar, NotificationTone.danger),
   'refund_done': (AppIcons.payment, NotificationTone.success),
   'shoot_reminder': (AppIcons.camera, NotificationTone.neutral),
+  'shoot_question': (AppIcons.camera, NotificationTone.action),
+  'pass_ready': (AppIcons.qrCode, NotificationTone.success),
   'payout_released': (AppIcons.payment, NotificationTone.success),
   'quote_new': (AppIcons.work, NotificationTone.neutral),
   'quote_withdrawn': (AppIcons.work, NotificationTone.neutral),
@@ -82,6 +84,14 @@ final Map<String, _Visual> _contract = {
   'badge_new': (AppIcons.award, NotificationTone.neutral),
   'review_new': (AppIcons.star, NotificationTone.neutral),
   'chat_message': (AppIcons.chat, NotificationTone.neutral),
+  // S30 organizers (#223 Task 8).
+  'spot_claim_approved': (AppIcons.place, NotificationTone.success),
+  'spot_claim_rejected': (AppIcons.place, NotificationTone.danger),
+  'spot_resident_added': (AppIcons.place, NotificationTone.neutral),
+  'gate_staff_invited': (AppIcons.qrCode, NotificationTone.action),
+  'entry_day_closed': (AppIcons.ticket, NotificationTone.danger),
+  'event_venue_requested': (AppIcons.place, NotificationTone.action),
+  'event_venue_answered': (AppIcons.place, NotificationTone.neutral),
 };
 
 /// Every key of `NOTIFICATION_TYPES` in packages/domain/src/notification.ts
@@ -94,6 +104,8 @@ const _serverTypes = [
   'booking_cancelled',
   'refund_done',
   'shoot_reminder',
+  'shoot_question',
+  'pass_ready',
   'payout_released',
   'quote_new',
   'quote_withdrawn',
@@ -161,6 +173,13 @@ const _serverTypes = [
   'collab_pay_due',
   'collab_pay_reported',
   'collab_pay_disputed',
+  'spot_claim_approved',
+  'spot_claim_rejected',
+  'spot_resident_added',
+  'gate_staff_invited',
+  'entry_day_closed',
+  'event_venue_requested',
+  'event_venue_answered',
   'chat_message',
 ];
 

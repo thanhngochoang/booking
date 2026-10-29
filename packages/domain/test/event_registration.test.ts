@@ -263,7 +263,7 @@ describe('cancelRegistration', () => {
     const w = createEventWorld();
     await publishedEvent(w);
     await register(w, cu1, 'ev1_aaaaaaaaaaaaaaaaaaaa');
-    w.clock.set(new Date('2026-10-03T17:00:00.000Z')); // 00:00 on the event day in Vietnam
+    w.clock.set(new Date('2026-10-04T00:00:00.000Z')); // the scan opens 2 h before the 09:00 start (S30)
     const ticketCode = must(w.store.registrations.get(`ev1_aaaaaaaaaaaaaaaaaaaa/${regId(w, 'cu1')}`)).ticketCode;
     await checkInRegistration(w.deps, ph1, { eventId: 'ev1_aaaaaaaaaaaaaaaaaaaa', ticketCode });
     await assert.rejects(
@@ -321,7 +321,8 @@ describe('cancelRegistration', () => {
 });
 
 describe('checkInRegistration', () => {
-  const dayStart = new Date('2026-10-03T17:00:00.000Z');
+  /** S30 (Decision 9): the check-in is the scan's, open from startAt − 2 h (07:00 in Vietnam). */
+  const dayStart = new Date('2026-10-04T00:00:00.000Z');
   const ticketOf = (w: EventWorld, uid: string) => must(w.store.registrations.get(`ev1_aaaaaaaaaaaaaaaaaaaa/${regId(w, uid)}`)).ticketCode;
 
   test('check-in sets checkedInAt and returns name and quantity', async () => {

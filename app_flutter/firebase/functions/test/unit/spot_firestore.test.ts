@@ -49,6 +49,15 @@ describe('spot_firestore mappers', () => {
     updatedAt: '2026-10-02T12:00:00.000Z',
     rankedAt: '2026-10-02T12:00:00.000Z',
     updatedBy: 'admin_1',
+    managedBy: 'org_1',
+    access: {
+      type: 'ticket',
+      fees: [{ label: 'Người lớn', amountVnd: 70_000 }],
+      note: 'Gửi xe 5.000₫',
+      updatedAt: '2026-10-02T12:00:00.000Z',
+      source: 'organizer',
+    },
+    openHours: { start: '07:00', end: '18:00' },
   };
 
   it('spot round-trips with cover set, GeoPoint, Timestamps, and stats', () => {
@@ -61,6 +70,8 @@ describe('spot_firestore mappers', () => {
     assert.ok(docData.rankedAt instanceof Timestamp);
     assert.deepEqual(docData.cover, sampleSpot.cover);
     assert.deepEqual(docData.stats, sampleSpot.stats);
+    assert.equal(docData.managedBy, 'org_1');
+    assert.ok(docData.access.updatedAt instanceof Timestamp);
 
     const restored = spotFromFirestore('spot_01', docData);
     assert.ok(restored);
@@ -75,6 +86,17 @@ describe('spot_firestore mappers', () => {
     const restored = spotFromFirestore('spot_01', docData);
     assert.ok(restored);
     assert.equal(restored.cover, null);
+  });
+
+  it('a spot written before S30 (no managedBy, access, openHours) reads them as null', () => {
+    const docData = spotToFirestore(sampleSpot);
+    delete docData.managedBy;
+    delete docData.access;
+    delete docData.openHours;
+    const restored = spotFromFirestore('spot_01', docData);
+    assert.deepEqual([restored?.managedBy, restored?.access, restored?.openHours], [null, null, null]);
+    const bad = spotFromFirestore('spot_01', { ...spotToFirestore(sampleSpot), access: { type: 'free', fees: [] } });
+    assert.equal(bad?.access, null);
   });
 
   it('schedule round-trips (assigneeId null and set, priceFrom null)', () => {

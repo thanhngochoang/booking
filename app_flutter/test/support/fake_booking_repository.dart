@@ -22,6 +22,15 @@ class FakeBookingRepository implements BookingRepository {
   final _eventChanges = StreamController<String>.broadcast();
 
   BookingErrorCode? nextError;
+
+  /// S30: the `entry` of every createBooking call, in order (null = none).
+  final List<BookingEntryRequest?> createEntries = [];
+
+  /// S30: the `keepTickets` flag of every transitionBooking call.
+  final List<bool> keepTicketsCalls = [];
+
+  /// S30: every answerShootHappened call.
+  final List<({String bookingId, bool happened})> shootAnswers = [];
   BookingErrorCode? nextPaymentError;
   final createCalls =
       <
@@ -108,6 +117,8 @@ class FakeBookingRepository implements BookingRepository {
       BookingErrorCode.outsideSchedule => 'outside_schedule',
       BookingErrorCode.slotTaken => 'slot_taken',
       BookingErrorCode.spotArchived => 'spot_archived',
+      BookingErrorCode.dayClosed => 'day_closed',
+      BookingErrorCode.soldOutDay => 'sold_out_day',
       BookingErrorCode.network => 'unavailable',
       BookingErrorCode.unknown => 'unknown',
     };
@@ -229,8 +240,10 @@ class FakeBookingRepository implements BookingRepository {
     int? expectedTotal,
     String? spotScheduleId,
     String? slotOfferId,
+    BookingEntryRequest? entry,
   }) async {
     _checkNextError();
+    createEntries.add(entry);
     createCalls.add((
       photographerId: photographerId,
       serviceId: serviceId,
@@ -267,6 +280,9 @@ class FakeBookingRepository implements BookingRepository {
       remaining: 0,
       spotScheduleId: spotScheduleId,
       slotOfferId: slotOfferId,
+      entry: entry == null
+          ? null
+          : BookingEntry(eventId: entry.eventId, visitDay: entry.visitDay),
       createdAt: now,
       updatedAt: now,
     );
@@ -370,8 +386,10 @@ class FakeBookingRepository implements BookingRepository {
     required String bookingId,
     required String action,
     String? reason,
+    bool keepTickets = false,
   }) async {
     _checkNextError();
+    keepTicketsCalls.add(keepTickets);
     final b = bookings[bookingId];
     if (b == null) throw StateError('Booking not found');
 
@@ -422,6 +440,24 @@ class FakeBookingRepository implements BookingRepository {
     bookings[bookingId] = updated;
     _bookingChanges.add(bookingId);
     return updated;
+  }
+
+  @override
+  Future<BookingStatus> answerShootHappened(
+    String bookingId, {
+    required bool happened,
+  }) async {
+    _checkNextError();
+    shootAnswers.add((bookingId: bookingId, happened: happened));
+    final b = bookings[bookingId];
+    if (b == null) throw const BookingException('not_found');
+    final nowUtc = _clock().toUtc();
+    final updated = happened
+        ? b.copyWith(status: BookingStatus.shot, shotAt: nowUtc, updatedAt: nowUtc)
+        : b.copyWith(shootDeniedAt: nowUtc, updatedAt: nowUtc);
+    bookings[bookingId] = updated;
+    _bookingChanges.add(bookingId);
+    return updated.status;
   }
 
   /// Studio callables made, in order: `(name, payload)` with the payload the

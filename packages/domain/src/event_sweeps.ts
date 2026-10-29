@@ -2,11 +2,32 @@ import type { PaymentGateway } from './booking_ports.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { EventDeps } from './event_ports.js';
 import { GROUP_READONLY_DAYS } from './event_chat.js';
-import { refundTicket, stampTicketRelease } from './event_payments.js';
+import { refundTicket, settleBookingLine, stampTicketRelease } from './event_payments.js';
 import { expireHostConsent } from './event_use_cases.js';
+import { expireVenueConsent } from './event_venue.js';
 import { MemoryPaymentLookup, type PaymentSource } from './memory_payment_lookup.js';
+import type { RegistrationDoc } from './event.js';
+import type { TicketRefundReason } from './event_payments.js';
 
-export type EventSweepStep = 'close' | 'complete' | 'consent' | 'refund';
+/**
+ * `refundClosedDays` (S30 Decision 13): a `refundDue` entry ticket whose visit day is closed is a
+ * leftover of `closeEntryDay` (reason `day_closed`); every other one belongs to a cancelled event.
+ */
+async function refundReasonOf(deps: EventDeps, r: RegistrationDoc): Promise<TicketRefundReason> {
+  const day = r.visitDay ?? null;
+  if (day === null) return 'event_cancelled';
+  const row = await deps.events.runTransaction(async (tx) => {
+    const ev = await tx.getEvent(r.eventId);
+    return ev === null || ev.status === 'cancelled' ? null : tx.getEntryDay(r.eventId, day);
+  });
+  return row?.closed === true ? 'day_closed' : 'event_cancelled';
+}
+
+/**
+ * `refund_day` (S30): a ticket of a closed entry day `closeEntryDay` left to the clock.
+ * `booking_line` (S30): a ticket a declined, expired or cancelled booking left owed (`bookingLineDue`).
+ */
+export type EventSweepStep = 'close' | 'complete' | 'consent' | 'venue_consent' | 'refund' | 'refund_day' | 'booking_line';
 
 const BATCH = 200;
 const DAY_MS = 86_400_000;
@@ -14,8 +35,11 @@ const DAY_MS = 86_400_000;
 /**
  * The event clock (every 5 minutes): closes registration after the deadline, completes events after
  * `endAt` (stamping `releaseAfter` on their held ticket money, Task 9), cancels drafts whose
- * photographer did not answer within 24 h (O1), and refunds tickets of cancelled events that are
- * still due (both need the gateway; the gateway keys refunds by id). Every step re-reads inside its own
+ * photographer did not answer within 24 h (O1) or whose spot manager did not answer within 72 h (S30
+ * `expireVenueConsent`, counted in `consentExpired`), and refunds tickets of cancelled events that are
+ * still due, the tickets of closed entry days `closeEntryDay` left over (`refundClosedDays`, S30) and
+ * the ticket lines declined, expired or cancelled bookings left owed (`settleBookingLine`, S30;
+ * both need the gateway; the gateway keys refunds by id). Every step re-reads inside its own
  * transaction, so a second run (or a parallel one) changes nothing more.
  */
 export async function runEventSweeps(
@@ -74,14 +98,38 @@ export async function runEventSweeps(
     if (did) consentExpired += 1;
   }
 
+  // S30 Decision 16: a spot manager who did not answer within 72 h cancels the draft (`expireVenueConsent`).
+  for (const due of await deps.events.dueForVenueConsentExpiry(deps.clock.now(), BATCH)) {
+    const did = await guarded(due.id, 'venue_consent', async () => deps.events.runTransaction(async (tx) => {
+      const now = deps.clock.now();
+      const ev = await tx.getEvent(due.id);
+      if (ev === null || ev.status !== 'draft' || ev.venueConsent !== 'pending') return false;
+      const until = ev.venueConsentExpiresAt ?? null;
+      if (until === null || until.getTime() > now.getTime()) return false;
+      expireVenueConsent(tx, ev, now);
+      return true;
+    }));
+    if (did) consentExpired += 1;
+  }
+
   let refunded = 0;
   const { gateway, cipher } = deps;
   if (gateway !== undefined && cipher !== undefined) {
     const payments = new MemoryPaymentLookup([deps.events as unknown as PaymentSource]);
     const payDeps = { ...deps, gateway, cipher, payments };
     for (const due of await deps.events.paidUnrefundedOfCancelled(BATCH)) {
-      const did = await guarded(due.eventId, 'refund', async () =>
-        (await refundTicket(payDeps, due.eventId, due.id, 100, 'event_cancelled')) === 'refunded');
+      if ((due.bookingLineDue ?? null) !== null) {
+        const did = await guarded(due.eventId, 'booking_line', async () =>
+          (await settleBookingLine(payDeps, due.eventId, due.id)) !== 'skipped');
+        if (did) refunded += 1;
+        continue;
+      }
+      const reason = await refundReasonOf(deps, due);
+      const step: EventSweepStep = reason === 'day_closed' ? 'refund_day' : 'refund';
+      const did = await guarded(due.eventId, step, async () =>
+        (await refundTicket(payDeps, due.eventId, due.id, 100, reason,
+          // A closed day never refunds a ticket already used at the gate (Task 4 fix 4).
+          reason === 'day_closed' ? { unusedOnly: true } : {})) === 'refunded');
       if (did) refunded += 1;
     }
   }

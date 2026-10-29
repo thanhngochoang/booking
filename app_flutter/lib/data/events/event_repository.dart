@@ -10,6 +10,7 @@ import 'package:photobooking/data/events/event_draft.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/payments/payment_instructions.dart';
 
 /// A refused or failed event call. [code] is the domain code the callable sent
@@ -68,6 +69,45 @@ class RegisterOutcome {
   final DateTime? holdExpiresAt;
 }
 
+/// Why S30.05 could not hold the tickets (`registerEntry`'s refusals).
+enum RegisterRefusal {
+  /// `sold_out_day`: "Ngày này vừa hết vé. Chọn ngày khác."
+  soldOutDay,
+
+  /// `day_closed`: "Ngày này đóng cửa."
+  dayClosed,
+
+  /// `limit_exceeded`: "Tối đa 10 vé mỗi đơn".
+  limit,
+  phoneRequired,
+  blocked,
+
+  /// `conflict`: another active order of mine for that day.
+  conflict,
+
+  /// `deadline_passed`: the event stopped selling.
+  deadlinePassed,
+
+  /// `not_eligible`: the organizer cannot sell right now.
+  notEligible,
+  network,
+  other,
+}
+
+RegisterRefusal registerRefusalOf(Object error) =>
+    switch (eventErrorCodeOf(error)) {
+      'sold_out_day' => RegisterRefusal.soldOutDay,
+      'day_closed' => RegisterRefusal.dayClosed,
+      'limit_exceeded' => RegisterRefusal.limit,
+      'phone_required' => RegisterRefusal.phoneRequired,
+      'blocked' => RegisterRefusal.blocked,
+      'conflict' => RegisterRefusal.conflict,
+      'deadline_passed' => RegisterRefusal.deadlinePassed,
+      'not_eligible' => RegisterRefusal.notEligible,
+      'network' => RegisterRefusal.network,
+      _ => RegisterRefusal.other,
+    };
+
 abstract class EventRepository {
   /// Public events (`open` / `full`) starting at or after [from], soonest
   /// first. [freeOnly] keeps price 0.
@@ -91,6 +131,12 @@ abstract class EventRepository {
   /// decision O1), soonest expiry first.
   Stream<List<EventDetail>> watchHostInvitations();
 
+  /// S30.03 "Sự kiện ở đây chờ bạn đồng ý": events that ask to take place at
+  /// [spotId] and wait for its manager (`venue.spotId == spotId`,
+  /// `venueConsent == pending`), soonest expiry first. Readable by the spot's
+  /// manager only (rules); anyone else gets an empty list.
+  Stream<List<EventDetail>> watchVenueRequests(String spotId);
+
   /// My active (`held` / `paid`) registration for the event, else my latest.
   Stream<EventRegistration?> watchMyRegistration(String eventId);
 
@@ -99,6 +145,15 @@ abstract class EventRepository {
 
   /// Every registration of an event (managers), newest first.
   Stream<List<EventRegistration>> watchRegistrations(String eventId);
+
+  /// An entry event's registrations of one visit [day] (S12.03-entry), or
+  /// of [fromDay] on (S30.04), never the whole season (final fix A-I4).
+  /// Managers only; equality or range on `visitDay` alone (auto-indexed).
+  Stream<List<EventRegistration>> watchEntryRegistrations(
+    String eventId, {
+    String? day,
+    String? fromDay,
+  });
 
   /// The attendee's phone snapshot for a manager. Null unless the ticket is
   /// paid and contact-eligible: a free ticket never exposes a phone (O3).
@@ -127,6 +182,34 @@ abstract class EventRepository {
     String eventId,
     String registrationId,
   );
+
+  /// S30.05: holds entry tickets for [visitDay] (15 minutes) and returns the
+  /// payment as [register] does. Refusals are [EventError]s; read them with
+  /// [registerRefusalOf].
+  Future<RegisterOutcome> registerEntry({
+    required String eventId,
+    required String visitDay,
+    required List<EntryItem> items,
+    required String name,
+    PayMethod? method,
+  });
+
+  /// S30.04 "Mở bán" path: creates or saves an entry event draft
+  /// (`saveEventDraft` with `type: entry`) and returns its id; [publish]
+  /// then opens the sale.
+  Future<String> saveEntryDraft(EntryEventDraft draft);
+
+  /// S30.04 "Lưu thay đổi" on a published entry event (`updateEvent`): a
+  /// sold type can only be hidden, a day's cap not below its sales.
+  Future<void> updateEntryEvent(String eventId, EntryEventDraft draft);
+
+  /// S11.02-venue-consent: the spot's manager answers an event at the spot.
+  /// [venueFeePerGuest] (integer VND) only with [accept].
+  Future<void> respondVenueConsent(
+    String eventId, {
+    required bool accept,
+    int? venueFeePerGuest,
+  });
 
   /// Asks the gateway about a held ticket's payment and applies it if paid.
   Future<({bool paid, RegistrationStatus status})> checkTicketPayment(
@@ -317,6 +400,24 @@ class FakeEventRepository implements EventRepository {
     return out;
   });
 
+  @override
+  Stream<List<EventDetail>> watchVenueRequests(String spotId) => _watch(() {
+    final out =
+        _events.values
+            .where(
+              (e) =>
+                  e.venue?.spotId == spotId &&
+                  e.venueConsent == HostConsent.pending &&
+                  e.summary.status == EventStatus.draft,
+            )
+            .toList()
+          ..sort(
+            (a, b) => (a.venueConsentExpiresAt ?? a.summary.createdAt)
+                .compareTo(b.venueConsentExpiresAt ?? b.summary.createdAt),
+          );
+    return out;
+  });
+
   EventRegistration? _mineFor(String eventId) {
     final mine =
         _registrations
@@ -350,6 +451,28 @@ class FakeEventRepository implements EventRepository {
         return all;
       });
 
+  /// Every `watchEntryRegistrations` call, for tests (day / fromDay).
+  final entryQueries = <({String eventId, String? day, String? fromDay})>[];
+
+  @override
+  Stream<List<EventRegistration>> watchEntryRegistrations(
+    String eventId, {
+    String? day,
+    String? fromDay,
+  }) {
+    entryQueries.add((eventId: eventId, day: day, fromDay: fromDay));
+    return _watch(
+      () => [
+        for (final r in _registrations)
+          if (r.eventId == eventId &&
+              r.visitDay != null &&
+              (day == null || r.visitDay == day) &&
+              (fromDay == null || r.visitDay!.compareTo(fromDay) >= 0))
+            r,
+      ],
+    );
+  }
+
   @override
   Stream<BookingContactSnapshot?> watchRegistrationContact(
     String eventId,
@@ -376,9 +499,18 @@ class FakeEventRepository implements EventRepository {
     return (eventId: id, hashtag: tag);
   }
 
+  /// While set, the next [publish] throws it (then it clears); saves still
+  /// go through (S30.04's save-then-publish retry).
+  Object? publishFailWith;
+
   @override
   Future<void> publish(String eventId) async {
     _maybeFail();
+    final e = publishFailWith;
+    if (e != null) {
+      publishFailWith = null;
+      throw e;
+    }
     published.add(eventId);
   }
 
@@ -400,6 +532,139 @@ class FakeEventRepository implements EventRepository {
   }) async {
     _maybeFail();
     consentAnswers.add((eventId: eventId, accept: accept));
+  }
+
+  /// S30 calls, in order.
+  final List<EntryEventDraft> savedEntryDrafts = [];
+  final List<({String eventId, EntryEventDraft draft})> updatedEntryEvents = [];
+  final List<({String eventId, bool accept, int? venueFeePerGuest})>
+  venueAnswers = [];
+  final List<({String eventId, String visitDay, List<EntryItem> items})>
+  entryRegistrations = [];
+
+  /// A domain code `registerEntry` refuses with while set (`sold_out_day`,
+  /// `day_closed`, …); cleared after one refusal.
+  String? nextEntryRefusal;
+
+  @override
+  Future<RegisterOutcome> registerEntry({
+    required String eventId,
+    required String visitDay,
+    required List<EntryItem> items,
+    required String name,
+    PayMethod? method,
+  }) async {
+    _maybeFail();
+    entryRegistrations.add((
+      eventId: eventId,
+      visitDay: visitDay,
+      items: items,
+    ));
+    final refusal = nextEntryRefusal;
+    if (refusal != null) {
+      nextEntryRefusal = null;
+      throw EventError(refusal);
+    }
+    final me = uid;
+    final e = _events[eventId];
+    final entry = e?.entry;
+    if (me == null || e == null || entry == null) {
+      throw const EventError('not_found');
+    }
+    if (!hasPhone) throw const EventError('phone_required');
+    if (!entry.isOpenDay(visitDay)) throw const EventError('day_closed');
+    final quantity = items.fold(0, (n, i) => n + i.qty);
+    if (quantity < 1) throw const EventError('invalid_argument');
+    if (quantity > 10) throw const EventError('limit_exceeded');
+    final lines = [
+      for (final i in items)
+        for (final t in entry.ticketTypes)
+          if (t.id == i.ticketTypeId && !t.hidden)
+            EntryLine(
+              ticketTypeId: t.id,
+              name: t.name,
+              price: t.price,
+              qty: i.qty,
+            ),
+    ];
+    if (lines.length != items.length) {
+      throw const EventError('invalid_argument');
+    }
+    final amount = lines.fold(0, (n, l) => n + l.amount);
+    final now = _clock();
+    final id = 'reg-${++_seq}-${'z' * 16}';
+    final hold = now.add(const Duration(minutes: 15));
+    final reg = EventRegistration(
+      id: id,
+      eventId: eventId,
+      userId: me,
+      userName: name,
+      ticketCode: '',
+      quantity: quantity,
+      amount: amount,
+      status: RegistrationStatus.held,
+      holdExpiresAt: hold,
+      paymentId: 'pay-$id',
+      visitDay: visitDay,
+      items: lines,
+      event: EventTicketSnapshot(
+        title: e.summary.title,
+        type: e.summary.type,
+        startsAt: e.summary.startsAt,
+        endsAt: e.endsAt,
+        locationName: e.summary.locationName,
+        lat: e.summary.lat,
+        lng: e.summary.lng,
+        coverUrl: e.summary.coverUrl,
+      ),
+      createdAt: now,
+    );
+    _registrations.add(reg);
+    _changes.add(null);
+    return RegisterOutcome(
+      registrationId: id,
+      status: RegistrationStatus.held,
+      paymentId: reg.paymentId,
+      instructions: PaymentInstructions(
+        paymentId: 'pay-$id',
+        method: method ?? PayMethod.bankQr,
+        amount: amount,
+        expiresAt: hold,
+        transferCode: 'PB 7F3K2Q',
+        bankName: 'BIDV',
+        accountMasked: '9624 •••• 3812',
+        qrPayload: '000201010212...',
+        payUrl: 'https://pay.test/$id',
+      ),
+      holdExpiresAt: hold,
+    );
+  }
+
+  @override
+  Future<String> saveEntryDraft(EntryEventDraft draft) async {
+    _maybeFail();
+    savedEntryDrafts.add(draft);
+    return draft.eventId ?? 'fake-entry-${++_seq}-${'x' * 12}';
+  }
+
+  @override
+  Future<void> updateEntryEvent(String eventId, EntryEventDraft draft) async {
+    _maybeFail();
+    updatedEntryEvents.add((eventId: eventId, draft: draft));
+  }
+
+  @override
+  Future<void> respondVenueConsent(
+    String eventId, {
+    required bool accept,
+    int? venueFeePerGuest,
+  }) async {
+    _maybeFail();
+    venueAnswers.add((
+      eventId: eventId,
+      accept: accept,
+      venueFeePerGuest: venueFeePerGuest,
+    ));
   }
 
   EventDetail _withStatus(
@@ -454,6 +719,11 @@ class FakeEventRepository implements EventRepository {
       capacitySet: e.capacitySet,
       spotId: e.spotId,
       spotDecided: e.spotDecided,
+      venue: e.venue,
+      venueConsent: e.venueConsent,
+      venueConsentExpiresAt: e.venueConsentExpiresAt,
+      venueFeePerGuest: e.venueFeePerGuest,
+      entry: e.entry,
     );
   }
 
@@ -638,6 +908,11 @@ class FakeEventRepository implements EventRepository {
       refundPercent: percent,
       // The fake gateway pays back at once.
       refundStatus: percent == 100 ? TicketRefundStatus.done : null,
+      visitDay: r.visitDay,
+      items: r.items,
+      bookingId: r.bookingId,
+      gateCheckedInAt: r.gateCheckedInAt,
+      ticketCodeLast4: r.ticketCodeLast4,
     );
     final s = e.summary;
     final wasHeld = r.status == RegistrationStatus.held;
@@ -695,6 +970,11 @@ class FakeEventRepository implements EventRepository {
     contactEligible: contactEligible ?? r.contactEligible,
     refundDue: refundDue ?? r.refundDue,
     refundStatus: refundStatus ?? r.refundStatus,
+    visitDay: r.visitDay,
+    items: r.items,
+    bookingId: r.bookingId,
+    gateCheckedInAt: r.gateCheckedInAt,
+    ticketCodeLast4: r.ticketCodeLast4,
   );
 
   /// The hold at [i] gives its seats back (expired or paid too late).
@@ -837,6 +1117,11 @@ class FakeEventRepository implements EventRepository {
       paymentId: r.paymentId,
       checkedInAt: _clock(),
       contactEligible: r.contactEligible,
+      visitDay: r.visitDay,
+      items: r.items,
+      bookingId: r.bookingId,
+      gateCheckedInAt: r.gateCheckedInAt,
+      ticketCodeLast4: r.ticketCodeLast4,
     );
     checkedIn.add(ticketCode);
     _changes.add(null);

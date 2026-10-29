@@ -8,10 +8,23 @@ enum EventType {
   miniSession('mini_session'),
   workshop('workshop'),
   cosplay('cosplay'),
-  other('other');
+  other('other'),
+
+  /// S30: an organizer's entry tickets (Decision 11). Never listed publicly,
+  /// never offered as a choice: see [listed].
+  entry('entry');
 
   const EventType(this.code);
   final String code;
+
+  /// The types S11.01 filters by and S12.01 offers (every type but [entry]).
+  static const List<EventType> listed = [
+    photoWalk,
+    miniSession,
+    workshop,
+    cosplay,
+    other,
+  ];
 
   static EventType fromCode(String? code) =>
       values.firstWhere((t) => t.code == code, orElse: () => EventType.other);
@@ -28,6 +41,7 @@ extension EventTypeX on EventType {
     EventType.workshop => l.eventTypeWorkshop,
     EventType.cosplay => l.eventTypeCosplay,
     EventType.other => l.eventTypeOther,
+    EventType.entry => l.eventTypeEntry,
   };
 }
 
@@ -47,16 +61,20 @@ enum EventStatus {
   );
 }
 
-/// Who runs an event: a photographer, or the app itself (staff-created,
-/// platform-hosted events have no host id).
+/// Who runs an event: a photographer, an organizer (S30: a venue's account),
+/// or the app itself (staff-created, platform-hosted events have no host id).
 enum HostType {
   photographer,
+  organizer,
   platform;
 
   String get code => name;
 
-  static HostType fromCode(String? code) =>
-      code == 'photographer' ? HostType.photographer : HostType.platform;
+  static HostType fromCode(String? code) => switch (code) {
+    'photographer' => HostType.photographer,
+    'organizer' => HostType.organizer,
+    _ => HostType.platform,
+  };
 }
 
 /// What a list or card needs to know about an event. The full entity
@@ -95,7 +113,7 @@ class EventSummary {
   final bool hostVerified;
   final HostType hostType;
 
-  /// The hosting photographer; null for a platform-hosted event.
+  /// The hosting photographer or organizer; null for a platform-hosted event.
   final String? hostId;
 
   /// Who created it (the host, or the staff member who created it for them).

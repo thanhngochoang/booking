@@ -6,12 +6,15 @@
 import type { Booking } from './booking.js';
 import type { TransitionDecision } from './booking_machine.js';
 import { parseVnDateTime } from './booking_policy.js';
-import type { BookingDeps } from './booking_ports.js';
+import type { BookingDeps, BookingTx } from './booking_ports.js';
 import { DomainError } from './errors.js';
 import { applyRefundToPayment, isSettledPayment, type Payment, type Refund } from './escrow.js';
 import { releaseMilestone, splitMilestones, withMilestones } from './milestones.js';
 import { dispatchRefund } from './refunds.js';
 import { withoutInterval } from './spot_booking.js';
+import { refundPlan, type GroupLine, type RefundCancelBy } from './group_settlement.js';
+import { entryFieldsOf, entryRefundPercent } from './entry_tickets.js';
+import type { BookingLineDue, RegistrationDoc } from './event.js';
 import { studioDayLoadWith } from './studio_capacity.js';
 
 export async function commitTransition(
@@ -19,6 +22,7 @@ export async function commitTransition(
   booking: Booking,
   decision: TransitionDecision,
   actorId?: string,
+  options: { readonly keepTickets?: boolean } = {},
 ): Promise<Booking> {
   const now = deps.clock.now();
   let pendingRefund: { refund: Refund; provider: Payment['provider'] } | undefined;
@@ -35,6 +39,8 @@ export async function commitTransition(
 
     const { nextStatus } = decision;
     const startsAt = parseVnDateTime(current.day, current.start);
+    // S30 (spec §5.3): what the booking leaves owed to its tickets (reads first; stamped with the writes).
+    const ticketLine = await ticketLineDue(tx, current, decision, now, options.keepTickets === true);
 
     // 1. Calendar availability updates. A studio booking is held on the studio's day load, never on the
     // studio's own day, and its assignee's day is booked by assignBooking (#136 Decision 26). A spot booking
@@ -180,7 +186,7 @@ export async function commitTransition(
       depositRefunded: depositRefunded > 0 ? depositRefunded : undefined,
       ...(refundAccountNeeded !== undefined ? { refundAccountNeeded } : {}),
       cancel: decision.cancelRecord ?? current.cancel,
-      shotAt: nextStatus === 'shot' ? (current.shotAt ?? now.toISOString()) : current.shotAt,
+      shotAt: nextStatus === 'shot' ? (current.shotAt ?? decision.shotAt ?? now.toISOString()) : current.shotAt,
       completedAt: nextStatus === 'completed' ? now.toISOString() : current.completedAt,
       reviewedAt: nextStatus === 'reviewed' ? now.toISOString() : current.reviewedAt,
       samplesPurgeAfter,
@@ -189,6 +195,12 @@ export async function commitTransition(
     };
 
     await tx.setBooking(resultBooking);
+    if (ticketLine !== null) {
+      // Durable: the event clock settles it if the attempt below fails (`settleBookingLine`).
+      await tx.putRegistration({
+        ...ticketLine.reg, refundDue: true, bookingLineDue: ticketLine.due, updatedAt: now, version: ticketLine.reg.version + 1,
+      });
+    }
     await tx.addBookingEvent({
       id: deps.ids.newId(),
       bookingId: current.id,
@@ -205,5 +217,56 @@ export async function commitTransition(
     await dispatchRefund(deps, pendingRefund.refund, pendingRefund.provider);
   }
 
+  // 5. S30: the immediate attempt at the stamped ticket line; a failure is the event clock's to retry.
+  const entry = updatedBooking.entry;
+  if (deps.tickets !== undefined && entry?.registrationId != null && updatedBooking.groupId !== undefined) {
+    try {
+      await deps.tickets.settle({ eventId: entry.eventId, registrationId: entry.registrationId });
+    } catch {
+      // Still stamped (`bookingLineDue`, `refundDue`): runEventSweeps settles it.
+    }
+  }
+
   return updatedBooking;
+}
+
+/**
+ * Reads only. The ticket line of a paid booking with tickets being declined, expired or cancelled, by
+ * `refundPlan`: the provider's side (decline, expiry, provider or studio cancel) owes it 100%
+ * (`provider_cancelled`); the customer's cancel the entry rule of its event (`entryRefundPercent`, 0 =
+ * cancelled, money kept) unless `keepTickets`. Null when nothing is owed (no tickets, `keepTickets`,
+ * the ticket no longer paid or already used).
+ */
+async function ticketLineDue(
+  tx: BookingTx,
+  booking: Booking,
+  decision: TransitionDecision,
+  now: Date,
+  keepTickets: boolean,
+): Promise<{ readonly reg: RegistrationDoc; readonly due: BookingLineDue } | null> {
+  const entry = booking.entry;
+  const cancel = decision.cancelRecord;
+  if (entry?.registrationId == null || booking.groupId === undefined || cancel === undefined) return null;
+  if (!['declined', 'expired', 'cancelled'].includes(decision.nextStatus)) return null;
+  const cancelBy: RefundCancelBy = cancel.by === 'customer' ? 'customer' : 'provider';
+  if (cancelBy === 'customer' && keepTickets) return null;
+  const reg = await tx.getRegistration(entry.eventId, entry.registrationId);
+  if (reg === null || reg.status !== 'paid' || reg.checkedInAt !== null || (reg.gateCheckedInAt ?? null) !== null) return null;
+  const ev = cancelBy === 'customer' ? await tx.getEntryEvent(entry.eventId) : null;
+  const entryPercent = ev !== null && ev.type === 'entry'
+    ? entryRefundPercent(entry.visitDay, now, entryFieldsOf(ev).refundCutoffHours)
+    : 0;
+  const line: GroupLine = {
+    paymentId: reg.paymentId ?? '', kind: 'entry_ticket', subjectType: 'event_registration', subjectId: reg.id,
+    payeeId: '', amount: entry.amount,
+  };
+  const step = refundPlan([line], cancelBy, keepTickets, decision.refundPercent, entryPercent)[0];
+  if (step === undefined) return null;
+  return {
+    reg,
+    due: {
+      percent: step.percent >= 100 ? 100 : 0,
+      reason: step.reason === 'provider_cancelled' ? 'provider_cancelled' : 'customer_cancel',
+    },
+  };
 }

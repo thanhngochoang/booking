@@ -176,7 +176,7 @@ export function newCollabJob(input: {
   };
 }
 
-const OPEN_FOR_COLLABORATOR: readonly string[] = ['requested', 'accepted', 'upcoming', 'shot', 'delivered', 'revision_requested', 'approved'];
+const OPEN_FOR_COLLABORATOR: readonly string[] = ['requested', 'accepted', 'upcoming', 'shooting', 'shot', 'delivered', 'revision_requested', 'approved'];
 
 /**
  * R8 (Review Focus 3): whether the assignee may read the customer's contact. A member follows S26

@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 
 enum RegistrationStatus {
   held,
@@ -86,6 +87,11 @@ class EventRegistration {
     this.refundDue = false,
     this.refundStatus,
     this.disputeId,
+    this.visitDay,
+    this.items = const [],
+    this.bookingId,
+    this.gateCheckedInAt,
+    this.ticketCodeLast4 = '',
   });
 
   final String id;
@@ -93,8 +99,20 @@ class EventRegistration {
   final String userId;
   final String userName;
 
-  /// `VE-XXXX-MMDD`; empty until the registration is `paid`.
+  /// Legacy `VE-XXXX-MMDD`; empty until the registration is `paid`, and
+  /// always empty on a registration made after S30 (the code is in
+  /// `private/pass`, Decision 8).
   final String ticketCode;
+
+  /// S30 entry tickets: the visit day (`yyyy-MM-dd`), the priced lines, the
+  /// booking they came with, and the venue gate's scan of an event ticket.
+  final String? visitDay;
+  final List<EntryLine> items;
+  final String? bookingId;
+  final DateTime? gateCheckedInAt;
+
+  /// The last 4 random characters of the pass (S12.03 attendee list).
+  final String ticketCodeLast4;
   final String? userAvatarUrl;
   final String? paymentId;
   final int quantity;
@@ -128,6 +146,17 @@ class EventRegistration {
   final DateTime createdAt;
 
   bool get isActive => status.isActive;
+
+  /// An entry ticket (S30.05 / S04.03-entry), sold per visit day.
+  bool get isEntry => visitDay != null;
+
+  /// What the manager's list shows: [ticketCodeLast4], or the last 4 of a
+  /// legacy code.
+  String get codeLast4 => ticketCodeLast4.isNotEmpty
+      ? ticketCodeLast4
+      : ticketCode.length >= 4
+      ? ticketCode.substring(ticketCode.length - 4)
+      : '';
   bool get isFree => amount == 0;
   bool get isCheckedIn => checkedInAt != null;
 

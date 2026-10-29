@@ -263,7 +263,7 @@ class _TagRow extends StatelessWidget {
     final l = context.l10n;
     final entries = <(EventType?, String)>[
       (null, l.eventsAll),
-      for (final t in EventType.values) (t, t.tag),
+      for (final t in EventType.listed) (t, t.tag),
     ];
     return SizedBox(
       height: 48,

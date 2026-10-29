@@ -13,6 +13,7 @@ import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
@@ -32,6 +33,7 @@ import 'package:photobooking/features/verification/verify_phone_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
 import 'package:photobooking/features/verification/verify_start_screen.dart';
 
+import 'fake_organizer_repository.dart';
 import 'fake_payments_repository.dart';
 import 'screen_host.dart';
 
@@ -89,6 +91,9 @@ class VerificationWorld {
   final launcher = FakeExternalLauncher();
   final uploader = FakeMediaUploader();
 
+  /// S30 organizers: S21.04 accepts an active one (Task 1b).
+  late final organizers = FakeOrganizerRepository(uid: uid);
+
   /// The gallery answers, in order (S21.04's registration photo).
   FakeImagePicker picker = FakeImagePicker([
     const [PickedImage(path: '/tmp/gpkd.jpg', name: 'gpkd.jpg')],
@@ -145,6 +150,7 @@ class VerificationWorld {
     imagePickerProvider.overrideWithValue(picker),
     paymentsRepositoryProvider.overrideWithValue(payments),
     realPaymentsProvider.overrideWithValue(realPayments),
+    organizerRepositoryProvider.overrideWithValue(organizers),
   ];
 
   Widget app({String location = '/verify/phone', double textScale = 1.0}) {

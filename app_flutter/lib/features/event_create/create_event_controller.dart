@@ -16,6 +16,7 @@ import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/features/event_create/event_draft_store.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
@@ -27,6 +28,13 @@ enum EventField {
 
   /// S12.01 "Điểm chụp" (S29): a spot, or "Không thuộc điểm chụp nào".
   spot(1),
+
+  /// S12.01-venue "Địa điểm · bắt buộc" (Decision 16): the kind and its
+  /// parts (see [EventForm.venueIssue] for the codes).
+  venue(1),
+
+  /// S12.01-venue "Tôi đồng ý điều khoản tổ chức sự kiện."
+  terms(1),
   type(1),
   description(1),
   day(2),
@@ -87,6 +95,10 @@ Map<EventField, String> createEventErrors(
   }
   if (!d.spotDecided) {
     errors[EventField.spot] = 'required';
+  }
+  // Events made after `VENUE_REQUIRED_FROM` (in the past) publish with one.
+  if (d.venue == null) {
+    errors[EventField.venue] = 'required';
   }
   if ((d.description ?? '').trim().characters.length > eventDescriptionMax) {
     errors[EventField.description] = 'too_long';
@@ -149,11 +161,21 @@ Map<EventField, String> createEventErrors(
 
 /// [createEventErrors] on what the person typed: a day chosen without times,
 /// or a place name without a point, are told apart from "nothing entered".
+/// [venueSpot] is the venue's spot once read (its manager decides which
+/// kinds fit).
 Map<EventField, String> eventFormErrors(
   EventForm form, {
   required DateTime now,
+  Spot? venueSpot,
 }) {
-  final errors = createEventErrors(form.toDraft(), now: now);
+  final errors = createEventErrors(form.toDraft(), now: now)
+    ..remove(EventField.venue);
+  if (form.venueIssue(spot: venueSpot) case final issue?) {
+    errors[EventField.venue] = issue;
+  }
+  if (!form.termsAccepted) {
+    errors[EventField.terms] = 'required';
+  }
   if (form.day != null) {
     if (errors[EventField.day] == 'required') {
       errors.remove(EventField.day);
@@ -211,6 +233,8 @@ class CreateEventState {
     this.summary = false,
     this.busy = false,
     this.failure = CreateEventFailure.none,
+    this.venueSpot,
+    this.awaitingVenue = false,
   });
 
   final EventForm form;
@@ -231,6 +255,14 @@ class CreateEventState {
   final bool busy;
   final CreateEventFailure failure;
 
+  /// The chosen spot as read from `spots/{id}` (its manager and reference
+  /// fees); null until read, or without a spot.
+  final Spot? venueSpot;
+
+  /// The last publish only asked the venue's manager (Decision 16): the
+  /// event stays a draft "Chờ địa điểm đồng ý".
+  final bool awaitingVenue;
+
   bool get hasCover => pendingCover != null || form.coverUrl != null;
 
   /// "Tiếp tục" needs the cover, a title and a type.
@@ -246,6 +278,8 @@ class CreateEventState {
     bool? summary,
     bool? busy,
     CreateEventFailure? failure,
+    Object? venueSpot = _keep,
+    bool? awaitingVenue,
   }) => CreateEventState(
     form: form ?? this.form,
     step: step ?? this.step,
@@ -257,6 +291,10 @@ class CreateEventState {
     summary: summary ?? this.summary,
     busy: busy ?? this.busy,
     failure: failure ?? this.failure,
+    venueSpot: identical(venueSpot, _keep)
+        ? this.venueSpot
+        : venueSpot as Spot?,
+    awaitingVenue: awaitingVenue ?? this.awaitingVenue,
   );
 }
 
@@ -299,13 +337,48 @@ class CreateEventController extends Notifier<CreateEventState> {
     } else {
       form = stored ?? const EventForm();
     }
+    final spotId = form.spotId;
+    if (spotId != null) {
+      Future.microtask(() => _loadVenueSpot(spotId));
+    }
     return CreateEventState(form: form);
+  }
+
+  /// Reads the chosen spot for the venue part (its manager, its reference
+  /// fees). Best effort: an unreadable spot leaves the checks to the server.
+  Future<void> _loadVenueSpot(String spotId) async {
+    Spot? spot;
+    try {
+      spot = await ref.read(spotRepositoryProvider).spot(spotId);
+    } catch (_) {
+      spot = null;
+    }
+    if (!ref.mounted || state.form.spotId != spotId) {
+      return;
+    }
+    state = state.copyWith(venueSpot: spot);
+    _prefillEntryFee();
+  }
+
+  /// §7.1: a paid place not included at a spot with reference fees gets the
+  /// first one while the host typed none.
+  void _prefillEntryFee() {
+    final f = state.form;
+    final first = state.venueSpot?.access?.fees.firstOrNull;
+    if (f.venueKind == VenueKind.paidPlace &&
+        f.entryFeeIncluded == false &&
+        f.entryFeeVnd == null &&
+        first != null &&
+        state.venueSpot?.id == f.spotId) {
+      state = state.copyWith(form: f.copyWith(entryFeeVnd: first.amountVnd));
+      _persist();
+    }
   }
 
   EventRepository get _repo => ref.read(eventRepositoryProvider);
 
   Map<EventField, String> get fieldErrors =>
-      eventFormErrors(state.form, now: _now);
+      eventFormErrors(state.form, now: _now, venueSpot: state.venueSpot);
 
   /// Errors the screen shows now: those of touched fields, plus the server's.
   Map<EventField, String> get shownErrors {
@@ -420,7 +493,12 @@ class CreateEventController extends Notifier<CreateEventState> {
   /// [previous] is the spot that was chosen before: a place that still equals
   /// its auto-fill moves to the new spot, a place the organizer typed stays.
   void setSpot(SpotEntry? spot, {SpotEntry? previous}) {
-    var form = state.form.copyWith(spotId: spot?.spotId);
+    final moved = spot?.spotId != state.form.spotId;
+    var form = state.form.copyWith(
+      spotId: spot?.spotId,
+      // Another place asks again (the server's `venueFieldsOf`).
+      venueConsent: moved ? HostConsent.notRequired : null,
+    );
     final empty =
         form.placeName.trim().isEmpty && form.lat == null && form.lng == null;
     final autoFilled =
@@ -437,8 +515,53 @@ class CreateEventController extends Notifier<CreateEventState> {
         lng: spot.lng,
       );
     }
-    _edit(form, field: EventField.spot, clearServer: {EventField.spot});
+    _edit(
+      form,
+      field: EventField.spot,
+      clearServer: {EventField.spot, EventField.venue},
+    );
+    final id = spot?.spotId;
+    state = state.copyWith(venueSpot: null);
+    if (id != null) {
+      unawaited(_loadVenueSpot(id));
+    }
   }
+
+  // ---- S12.01-venue -------------------------------------------------------
+
+  void _editVenue(EventForm form, {EventField field = EventField.venue}) =>
+      _edit(form, field: field, clearServer: {field});
+
+  void setVenueKind(VenueKind kind) {
+    _editVenue(
+      state.form.copyWith(
+        venueKind: kind,
+        venueConsent: kind != state.form.venueKind
+            ? HostConsent.notRequired
+            : null,
+      ),
+    );
+    _prefillEntryFee();
+  }
+
+  /// A paid place: "Đã gồm phí vào cửa" (true) or "Chưa gồm" (false).
+  void setEntryFeeIncluded(bool included) {
+    _editVenue(state.form.copyWith(entryFeeIncluded: included));
+    _prefillEntryFee();
+  }
+
+  /// The reference fee per guest; null when the field is emptied.
+  void setEntryFee(int? vnd) =>
+      _editVenue(state.form.copyWith(entryFeeVnd: vnd));
+
+  /// A public place: the commitment tick, stamped with the clock.
+  void setCommitment(bool ticked) =>
+      _editVenue(state.form.copyWith(commitmentAt: ticked ? _now : null));
+
+  void setTerms(bool accepted) => _editVenue(
+    state.form.copyWith(termsAccepted: accepted),
+    field: EventField.terms,
+  );
 
   /// The place's name and meeting point as typed.
   void setPlaceText({String? name, String? meetingPoint}) => _edit(
@@ -547,8 +670,27 @@ class CreateEventController extends Notifier<CreateEventState> {
         _spotRefused('archived');
       case 'not_found' when eventErrorFieldOf(error) == 'spotId':
         _spotRefused('gone');
+      case 'invalid_argument'
+          when eventErrorFieldOf(error) == 'spotId' &&
+              state.form.venueKind == VenueKind.managedSpot:
+        // The domain's `venueSpot`: a managed-spot venue at a spot that has
+        // no manager.
+        state = state.copyWith(
+          serverErrors: {
+            ...state.serverErrors,
+            EventField.venue: 'not_managed',
+          },
+          failure: CreateEventFailure.none,
+        );
       case 'invalid_argument' when eventErrorFieldOf(error) == 'spotId':
         _spotRefused('far');
+      case 'invalid_argument'
+          when _venueCodes.containsKey(eventErrorFieldOf(error)):
+        final (field, venueCode) = _venueCodes[eventErrorFieldOf(error)]!;
+        state = state.copyWith(
+          serverErrors: {...state.serverErrors, field: venueCode},
+          failure: CreateEventFailure.none,
+        );
       case 'network':
         state = state.copyWith(failure: CreateEventFailure.network);
       default:
@@ -560,6 +702,15 @@ class CreateEventController extends Notifier<CreateEventState> {
     }
   }
 
+  /// `invalid_argument` fields of the venue block → where they show.
+  static const _venueCodes = {
+    'venue': (EventField.venue, 'required'),
+    'kind': (EventField.venue, 'managed'),
+    'entryFee': (EventField.venue, 'fee'),
+    'commitmentAt': (EventField.venue, 'commitment'),
+    'termsVersion': (EventField.terms, 'required'),
+  };
+
   void _spotRefused(String code) => state = state.copyWith(
     serverErrors: {...state.serverErrors, EventField.spot: code},
     failure: CreateEventFailure.none,
@@ -570,10 +721,19 @@ class CreateEventController extends Notifier<CreateEventState> {
     if (state.busy || !state.stepOneReady) {
       return false;
     }
-    if (!state.form.spotDecided) {
-      // The choice is required: show "Chọn một điểm chụp…" under the field.
+    final errors = fieldErrors;
+    final venueOk =
+        !errors.containsKey(EventField.venue) &&
+        !errors.containsKey(EventField.terms);
+    if (!state.form.spotDecided || !venueOk) {
+      // The choices are required: their errors show under the fields.
       state = state.copyWith(
-        touched: {...state.touched, EventField.spot},
+        touched: {
+          ...state.touched,
+          EventField.spot,
+          EventField.venue,
+          EventField.terms,
+        },
         failure: CreateEventFailure.none,
       );
       return false;
@@ -642,18 +802,30 @@ class CreateEventController extends Notifier<CreateEventState> {
       );
       return null;
     }
+    var awaiting = false;
     try {
       await _repo.publish(id);
+      // `publishEvent` also answers ok when it only asked the venue's
+      // manager: the event is then still a draft (Decision 16).
+      awaiting = _waitsForVenue();
     } catch (e) {
       if (!ref.mounted) {
         return null;
       }
-      _fail(e, saving: false);
-      state = state.copyWith(
-        busy: false,
-        summary: state.serverErrors.isNotEmpty,
-      );
-      return null;
+      if (eventErrorCodeOf(e) == 'venue_consent_required') {
+        // Asked before and not answered yet: still "Chờ địa điểm đồng ý".
+        awaiting = true;
+      } else {
+        _fail(e, saving: false);
+        state = state.copyWith(
+          busy: false,
+          summary: state.serverErrors.isNotEmpty,
+        );
+        return null;
+      }
+    }
+    if (ref.mounted) {
+      state = state.copyWith(awaitingVenue: awaiting);
     }
     final uid = _uid;
     if (uid != null) {
@@ -663,6 +835,22 @@ class CreateEventController extends Notifier<CreateEventState> {
       state = state.copyWith(busy: false);
     }
     return id;
+  }
+
+  /// `publishEvent` answered ok: did it only ask the venue's manager?
+  /// (Decision 16: a managed spot whose manager is not the host, not yet
+  /// accepted; the event then stays a draft.) A venue the manager already
+  /// accepted publishes; a pending one is refused `venue_consent_required`
+  /// (handled by the caller). The manage page (S12.03) re-reads the event
+  /// and shows "chờ đồng ý".
+  bool _waitsForVenue() {
+    final spot = state.venueSpot;
+    return state.form.venueConsent != HostConsent.accepted &&
+        state.form.venueKind == VenueKind.managedSpot &&
+        spot != null &&
+        spot.id == state.form.spotId &&
+        spot.managedBy != null &&
+        spot.managedBy != _uid;
   }
 
   /// "Bỏ" in the leave prompt: forgets the local copy (a server draft stays).

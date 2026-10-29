@@ -6,6 +6,7 @@ import type {
   VerificationRecord,
 } from './verification.js';
 import type {
+  OrganizerVerificationView,
   ProviderVerificationView,
   VerificationAuditEntry,
   VerificationStore,
@@ -15,6 +16,9 @@ import type {
 export class MemoryVerificationStore implements VerificationStore, PaymentSource {
   readonly verifications = new Map<string, VerificationRecord>();
   readonly providers = new Map<string, ProviderVerificationView>();
+  /** `organizers/{uid}` as S21.04 sees it (S30). */
+  readonly organizers = new Map<string, OrganizerVerificationView>();
+  readonly organizerFlags = new Map<string, { businessVerified?: boolean }>();
   readonly contacts = new Map<string, { phone: string | null; phoneVerified: boolean }>();
   readonly identities = new Map<string, IdentityRecord>();
   readonly identityHashes = new Map<string, string>(); // hash -> uid
@@ -29,6 +33,7 @@ export class MemoryVerificationStore implements VerificationStore, PaymentSource
   async runTransaction<T>(fn: (tx: VerificationTx) => Promise<T>): Promise<T> {
     const stagedVerifications = new Map<string, VerificationRecord>();
     const stagedProviderFlags = new Map<string, { verified?: boolean; verifiedAt?: string | null; acceptingOrders?: boolean; businessVerified?: boolean }>();
+    const stagedOrganizerFlags = new Map<string, { businessVerified?: boolean }>();
     const stagedPhoneVerified = new Set<string>();
     const stagedIdentities = new Map<string, IdentityRecord>();
     const stagedHashes = new Map<string, string>();
@@ -54,6 +59,12 @@ export class MemoryVerificationStore implements VerificationStore, PaymentSource
           verified: flags.verified ?? p.verified,
           businessVerified: flags.businessVerified ?? p.businessVerified,
         };
+      },
+      getOrganizer: async (uid) => {
+        const o = this.organizers.get(uid);
+        if (!o) return null;
+        const flags = stagedOrganizerFlags.get(uid) ?? this.organizerFlags.get(uid);
+        return flags ? { ...o, businessVerified: flags.businessVerified ?? o.businessVerified } : o;
       },
       getContact: async (uid) => {
         const c = this.contacts.get(uid) ?? { phone: null, phoneVerified: false };
@@ -86,6 +97,10 @@ export class MemoryVerificationStore implements VerificationStore, PaymentSource
       setProviderFlags: (uid, patch) => {
         const existing = stagedProviderFlags.get(uid) ?? this.providerFlags.get(uid) ?? {};
         stagedProviderFlags.set(uid, { ...existing, ...patch });
+      },
+      setOrganizerFlags: (uid, patch) => {
+        const existing = stagedOrganizerFlags.get(uid) ?? this.organizerFlags.get(uid) ?? {};
+        stagedOrganizerFlags.set(uid, { ...existing, ...patch });
       },
       setPhoneVerified: (uid) => {
         stagedPhoneVerified.add(uid);
@@ -128,6 +143,11 @@ export class MemoryVerificationStore implements VerificationStore, PaymentSource
           businessVerified: patch.businessVerified ?? p.businessVerified,
         });
       }
+    }
+    for (const [uid, patch] of stagedOrganizerFlags) {
+      this.organizerFlags.set(uid, patch);
+      const o = this.organizers.get(uid);
+      if (o) this.organizers.set(uid, { ...o, businessVerified: patch.businessVerified ?? o.businessVerified });
     }
     for (const uid of stagedPhoneVerified) {
       const c = this.contacts.get(uid) ?? { phone: null, phoneVerified: false };

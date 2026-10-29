@@ -9,6 +9,7 @@ import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/features/events/event_info_tab.dart';
 import 'package:photobooking/features/events/register_controller.dart';
 import 'package:photobooking/features/payment/open_payment.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
@@ -283,6 +284,14 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
                 ),
               ],
             ),
+            if (eventEntryFeeLine(l, widget.event) case final line?) ...[
+              const SizedBox(height: AppSpace.s2),
+              Text(
+                line,
+                key: const Key('register-entry-fee'),
+                style: secondary,
+              ),
+            ],
             if (_args.paid) ..._paidSection(context, state, controller),
             if (error != null) ...[
               const SizedBox(height: AppSpace.s2),
@@ -338,6 +347,16 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
           ),
         ],
       ),
+      // Decision 16: the venue fee is inside the price, never added on top.
+      if (eventVenueFeeLine(l, widget.event, quantity: state.quantity)
+          case final fee?) ...[
+        const SizedBox(height: AppSpace.s1),
+        Text(
+          fee,
+          key: const Key('register-venue-fee'),
+          style: theme.textTheme.bodySmall,
+        ),
+      ],
       const SizedBox(height: AppSpace.s3),
       EscrowNotice(text: l.escrowNoticeTicket),
       const SizedBox(height: AppSpace.s2),

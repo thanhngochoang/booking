@@ -1230,6 +1230,7 @@ create table verifications (
   nudged_at      timestamptz,
   version        int not null default 1,
   -- nhánh doanh nghiệp (Firestore: verifications/{uid}.business)
+  business_subject text check (business_subject in ('studio','organizer')),   -- chủ hồ sơ doanh nghiệp (S30, #223); bản ghi cũ không có thì là 'studio'
   business_status text check (business_status in ('submitted','approved','rejected')),
   business_kind  text check (business_kind in ('company','household')),
   business_tax_code text,                           -- hộ kinh doanh: số định danh 12 số của chủ, hiện lưu dạng rõ (câu hỏi mở 9 của spec xác minh)
@@ -1705,6 +1706,248 @@ alter table booking_assignments
 -- Chat studio–CTV: chats.kind thêm 'collab' (id 'collab_{studioId}_{collaboratorId}'; studio ở customer_id, CTV ở photographer_id)
 ```
 
+### 2.14 Chủ sự kiện, nhận quản lý điểm, thợ tại điểm, nhân viên soát vé (S30, #223)
+
+`domain-model.md` mục 2.16; bất biến 56–58.
+
+```sql
+-- Tài khoản chủ sự kiện: một dòng mỗi người dùng (là tài liệu, không phải vai trò).
+create table organizers (
+  user_id            text primary key references users(id) on delete cascade,
+  name               text not null check (char_length(name) between 3 and 60),
+  bio                text not null default '' check (char_length(bio) <= 300),
+  avatar_url         text,
+  status             text not null default 'active' check (status in ('active','suspended')),
+  phone_verified     boolean not null default false,
+  business_verified  boolean not null default false,
+  payout_account_ok  boolean not null default false,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+-- managedSpotIds của Firestore là dẫn xuất: select id from spots where managed_by = user_id.
+
+-- Nhân viên soát vé (tối đa 10 giữ chỗ: active + invited chưa quá 72 giờ, kiểm trong use case).
+create table organizer_gate_staff (
+  organizer_id       text not null references organizers(user_id) on delete cascade,
+  staff_user_id      text not null references users(id) on delete cascade,
+  status             text not null default 'invited' check (status in ('invited','active','removed')),
+  invited_at         timestamptz not null,
+  responded_at       timestamptz,
+  scans_day          date,                                                     -- scansToday.day (S30.07)
+  scans_count        int not null default 0,
+  primary key (organizer_id, staff_user_id),
+  check (organizer_id <> staff_user_id)
+);
+create index ix_organizer_gate_staff_staff on organizer_gate_staff (staff_user_id, status);
+
+-- Điểm (#194) thêm chủ quản lý, giá vào cửa tham khảo và giờ mở cửa.
+alter table spots
+  add column managed_by         text references organizers(user_id) on delete set null,  -- tối đa một chủ mỗi điểm
+  add column access_type        text check (access_type in ('open','ticket')),           -- null = chưa có access
+  add column access_note        text check (char_length(access_note) <= 120),
+  add column access_source      text check (access_source in ('staff','organizer')),
+  add column access_updated_at  timestamptz,
+  add column open_time          time,
+  add column close_time         time,
+  add constraint ck_spots_open_hours check (open_time is null or close_time > open_time),
+  add constraint ck_spots_access check ((access_type is null) = (access_source is null) and (access_type is null) = (access_updated_at is null));
+create index ix_spots_managed_by on spots (managed_by) where managed_by is not null;
+
+-- access.fees[] (≤ 6, kiểm trong use case).
+create table spot_access_fees (
+  spot_id            text not null references spots(id) on delete cascade,
+  position           smallint not null check (position between 0 and 5),
+  label              text not null check (char_length(label) between 1 and 40),
+  amount_vnd         bigint not null check (amount_vnd > 0),
+  primary key (spot_id, position)
+);
+
+-- Yêu cầu nhận quản lý điểm (staff duyệt). spot_id null = đề xuất điểm mới (proposal_*).
+create table spot_claims (
+  id                 text primary key,                                         -- ULID
+  spot_id            text references spots(id) on delete cascade,
+  proposal_name      text,
+  proposal_address   text,
+  organizer_id       text not null references organizers(user_id) on delete cascade,
+  status             text not null default 'pending' check (status in ('pending','approved','rejected')),
+  proof_paths        text[] not null check (cardinality(proof_paths) between 1 and 3), -- Storage spot_claims/{uid}/…
+  note               text not null default '' check (char_length(note) <= 300),
+  reason             text,                                                     -- lý do của staff, hoặc 'spot_managed'
+  created_at         timestamptz not null default now(),
+  reviewed_at        timestamptz,
+  reviewed_by        text references users(id),
+  check ((spot_id is null) = (proposal_name is not null and proposal_address is not null))
+);
+-- Mỗi điểm (hoặc mỗi chủ với đề xuất) tối đa một yêu cầu đang chờ.
+create unique index ux_spot_claims_pending on spot_claims (coalesce(spot_id, ''), organizer_id) where status = 'pending';
+create index ix_spot_claims_status_created on spot_claims (status, created_at);
+
+-- Thợ tại điểm (≤ 50 mỗi điểm, kiểm trong use case); chỉ nhà cung cấp acceptsOrders.
+create table spot_residents (
+  spot_id            text not null references spots(id) on delete cascade,
+  provider_id        text not null references photographers(user_id) on delete cascade,
+  waives_provider    boolean not null default false,
+  waives_guests      boolean not null default false,
+  max_guests         smallint check (max_guests between 1 and 100),
+  valid_until        date,                                                     -- tính cả ngày đó (giờ VN)
+  added_at           timestamptz not null default now(),
+  added_by           text not null references users(id),
+  primary key (spot_id, provider_id)
+);
+create index ix_spot_residents_valid_until on spot_residents (valid_until) where valid_until is not null;
+
+-- Sự kiện do chủ sự kiện tổ chức (EventHost.type = 'organizer'); cột vé vào cửa thêm ở S30 phần vé.
+alter table events
+  drop constraint if exists events_host_type_check,
+  add constraint ck_events_host_type check (host_type in ('photographer','platform','organizer')),
+  add column host_organizer_id text references organizers(user_id),
+  add constraint ck_events_host_organizer check (host_type <> 'organizer' or host_organizer_id is not null);
+
+-- Địa điểm của sự kiện (S30, Decision 16): bắt buộc để đăng sự kiện tạo từ VENUE_REQUIRED_FROM; chủ điểm
+-- đồng ý trong 72 giờ khi host không phải chủ điểm; phí quản lý mỗi khách nằm trong giá vé (dòng venue_fee).
+alter table events
+  add column venue_kind          text check (venue_kind in ('managed_spot','paid_place','public')),
+  add column venue_spot_id       text references spots(id),
+  add column venue_fee_included  boolean,
+  add column venue_fee_amount    bigint check (venue_fee_amount is null or venue_fee_amount > 0),  -- giá vào cửa tham khảo
+  add column venue_commitment_at timestamptz,                                                     -- public: lúc tick cam kết
+  add column venue_terms_version text,
+  add column venue_consent       text not null default 'not_required'
+    check (venue_consent in ('not_required','pending','accepted','declined','expired')),
+  add column venue_consent_expires_at timestamptz,                                                -- lúc xin + 72 giờ
+  add column venue_fee_per_guest bigint not null default 0 check (venue_fee_per_guest >= 0),
+  add column venue_manager_id    text references organizers(user_id),                             -- chủ điểm đã đồng ý
+  add constraint ck_events_venue_managed check (venue_kind is distinct from 'managed_spot' or venue_spot_id is not null),
+  add constraint ck_events_venue_public check (venue_kind is distinct from 'public' or venue_commitment_at is not null),
+  add constraint ck_events_venue_fee check (venue_fee_per_guest = 0 or (venue_manager_id is not null and venue_fee_per_guest < price));
+create index ix_events_venue_consent on events (venue_spot_id, venue_consent);
+create index ix_events_venue_consent_due on events (venue_consent_expires_at) where venue_consent = 'pending';
+
+-- Vé vào cửa (S30, Decision 11): sự kiện type = 'entry' của chủ sự kiện ở điểm họ quản lý; khoảng bán
+-- là starts_at/ends_at (≤ 180 ngày), sức chứa theo ngày ở entry_days; capacity/price/day_key rỗng.
+alter table events
+  drop constraint if exists events_type_check,
+  add constraint ck_events_type check (type in ('photo_walk','mini_session','workshop','cosplay','other','entry')),
+  add column closed_weekdays     smallint[] not null default '{}',   -- 0 = Chủ nhật … 6 = thứ Bảy
+  add column closed_days         date[] not null default '{}',       -- ≤ 30
+  add column open_time           time,                               -- openHours.start
+  add column close_time          time,                               -- openHours.end
+  add column daily_capacity      int check (daily_capacity is null or daily_capacity >= 1),  -- rỗng = không giới hạn
+  add column refund_cutoff_hours smallint check (refund_cutoff_hours between 0 and 168),       -- mặc định 48
+  add constraint ck_events_entry check (type <> 'entry' or (host_type = 'organizer' and spot_id is not null
+    and open_time is not null and close_time > open_time and refund_cutoff_hours is not null));
+
+create table event_ticket_types (
+  event_id   text not null references events(id) on delete cascade,
+  id         text not null,                                  -- giữ nguyên qua các lần sửa (vé đã bán trỏ vào)
+  position   smallint not null,
+  name       text not null check (char_length(name) between 3 and 40),
+  price      bigint not null check (price > 0),
+  hidden     boolean not null default false,                 -- loại đã bán chỉ được ẩn, không xoá
+  primary key (event_id, id)
+);
+
+create table entry_days (
+  event_id   text not null references events(id) on delete cascade,
+  day        date not null,
+  sold       int not null default 0 check (sold >= 0),
+  held       int not null default 0 check (held >= 0),
+  checked_in int not null default 0 check (checked_in >= 0),
+  closed     boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (event_id, day)
+);
+
+alter table event_registrations
+  drop constraint if exists event_registrations_quantity_check,
+  add constraint ck_event_regs_quantity check (quantity between 1 and 10),   -- 1..4 vé sự kiện, 1..10 vé vào cửa (use case kiểm)
+  add column visit_day          date,                                   -- vé vào cửa
+  add column booking_id         text references bookings(id),           -- vé mua kèm buổi chụp (S04.03-entry)
+  add column gate_checked_in_at timestamptz,
+  add column ticket_code_last4  char(4);
+create table event_registration_items (
+  registration_id text not null references event_registrations(id) on delete cascade,
+  ticket_type_id  text not null,
+  name            text not null,                               -- tên và giá lúc mua
+  price           bigint not null check (price > 0),
+  qty             smallint not null check (qty >= 1),
+  primary key (registration_id, ticket_type_id)
+);
+drop index if exists ux_event_regs_active;
+create unique index ux_event_regs_active on event_registrations (event_id, user_id, coalesce(visit_day, '0001-01-01'))
+  where status in ('held','paid') and booking_id is null;   -- một vé lẻ mỗi ngày tham quan
+create index ix_event_regs_visit_day on event_registrations (visit_day, status) where visit_day is not null;
+
+alter table payments
+  add column line_kind  text check (line_kind in ('booking','entry_ticket','event_ticket','venue_fee')),
+  add column payee_kind text check (payee_kind in ('organizer'));   -- rỗng = theo loại nhà cung cấp của người nhận
+
+-- Thanh toán nhóm (S30, Decision 6): khách trả một khoản 'payment_group' (mã chuyển khoản riêng) tách thành
+-- các khoản dòng 'awaiting_group' (không có mã) có group_id; trả đủ thì mọi dòng thành 'paid' cùng giao dịch.
+alter table payments
+  drop constraint if exists payments_subject_type_check,
+  add constraint ck_payments_subject_type check (subject_type in ('booking','event_registration','instant_request','verification_fee','payment_group')),
+  drop constraint if exists payments_status_check,
+  add constraint ck_payments_status check (status in ('created','paid','expired','needs_review','refunded','partially_refunded','awaiting_group')),
+  add column group_id text references payments(id);   -- khoản nhóm của dòng này
+create index ix_payments_group on payments (group_id) where group_id is not null;
+alter table refunds
+  drop constraint if exists refunds_subject_type_check,
+  add constraint ck_refunds_subject_type check (subject_type in ('booking','event_registration','instant_request','verification_fee','payment_group'));
+
+-- Vé vào cửa mua kèm buổi chụp (S30, Decision 15).
+alter table bookings
+  add column entry_event_id        text references events(id),
+  add column entry_visit_day       date,                                -- = day
+  add column entry_items           jsonb,                               -- [{ticketTypeId, name, price, qty}] vé phải trả, giá lúc đặt
+  add column entry_provider_ticket boolean,
+  add column entry_waived_provider boolean,
+  add column entry_waived_guests   boolean,
+  add column entry_amount          bigint check (entry_amount >= 0),
+  add column entry_registration_id text references event_registrations(id),  -- vé đang giữ/đã trả, có sau createPayment
+  add column group_id              text references payments(id);        -- khoản nhóm gần nhất
+alter table event_registrations
+  add column booking_line_due_percent smallint check (booking_line_due_percent in (0, 100)),   -- vé booking để lại: hoàn 100 hoặc huỷ giữ tiền 0
+  add column booking_line_due_reason  text check (booking_line_due_reason in ('provider_cancelled','customer_cancel'));
+
+-- Mã gặp thợ / mã vào cửa (S30, Decisions 7–10): một mã 8 ký tự cho mỗi booking đã trả (trừ instant) hoặc vé vào
+-- cửa đã trả; booking kèm vé dùng chung một mã. Chỉ máy chủ đọc; khách đọc bản sao của mình (Firestore
+-- */private/pass), tài liệu công khai chỉ có 4 ký tự cuối. Vé vào cửa mới không còn ticket_code công khai.
+create table passes (
+  code        char(8) primary key check (code ~ '^[2-9A-HJ-NP-TV-Z]{8}$'),
+  customer_id text not null references users(id),
+  day         date not null,                                   -- ngày buổi chụp hoặc ngày tham quan
+  booking_id  text unique references bookings(id),
+  event_id    text references events(id),                      -- sự kiện của các vé (một mã không thuộc hai sự kiện)
+  waived_checked_in_at timestamptz,                            -- cổng đã cho số người được miễn vé vào (một lần)
+  created_at  timestamptz not null default now()
+);
+create table pass_registrations (
+  code            char(8) not null references passes(code) on delete cascade,
+  registration_id text not null unique references event_registrations(id),
+  primary key (code, registration_id)
+);
+-- "Đang chụp" và câu hỏi "Buổi chụp có diễn ra không?" (S30, Decision 10); danh sách trạng thái đầy đủ
+-- (gồm các trạng thái bàn giao #152 mà khối đầu chưa liệt kê).
+alter table bookings
+  drop constraint if exists bookings_status_check,
+  add constraint ck_bookings_status check (status in ('draft','requested','accepted','declined','expired','cancelled','upcoming',
+    'shooting','shot','delivered','revision_requested','approved','completed','reviewed')),
+  add column pass_code4           char(4),                      -- 4 ký tự cuối của passes.code; rỗng: instant hoặc trả trước S30
+  add column checked_in_at        timestamptz,                  -- thợ quét mã: upcoming → shooting
+  add column shoot_question_at    timestamptz,
+  add column shoot_question_until timestamptz,                  -- = shoot_question_at + 48 giờ; không trả lời → shot
+  add column shoot_denied_at      timestamptz,                  -- "Không diễn ra": vẫn upcoming, tiền giữ chờ khiếu nại
+  add column entry_waived_guest_count smallint check (entry_waived_guest_count >= 0);   -- số vé của khách được thợ tại điểm miễn
+create index ix_bookings_shoot_question on bookings (status, shoot_question_until) where shoot_question_until is not null and shoot_denied_at is null;
+create index ix_bookings_shoot_denied on bookings (status, shoot_denied_at) where shoot_denied_at is not null;   -- khiếu nại hệ thống sau 48 giờ
+alter table disputes
+  drop constraint if exists disputes_opened_by_check,
+  add constraint ck_disputes_opened_by check (opened_by in ('customer','system'));   -- system: booking khách trả lời "Không diễn ra" 48 giờ chưa khiếu nại
+drop index if exists ux_bookings_active_day;
+create unique index ux_bookings_active_day on bookings (photographer_id, day) where status in ('requested','accepted','upcoming','shooting');
+```
+
 ## 3. Ánh xạ Firestore → bảng
 
 Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` → `timestamptz`; `GeoPoint` → `lat`+`lng`; mảng → bảng liên kết; tài liệu con (`map`) → cột phẳng có tiền tố; số đếm ghi bởi Functions → cột dẫn xuất.
@@ -1749,6 +1992,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `collab_jobs/{bookingId}_{uid}` | `collab_jobs` | Id ghép thành khoá `(booking_id, collaborator_id)`; `shoot.*`→`shoot_day`, `shoot_start`, `shoot_end`, `service_name`, `place_name`; `pay.*`→`pay_*` (`pay.amount` = `agreed_fee`, không thành cột riêng); `pay.paidOn` (`yyyy-MM-dd`) → `pay_paid_on date` |
 | `photographers/{uid}/private/recruit` | `recruit_counters` | `{day, count}` của `postActions`, `collabActions`, `applyActions`, `notices` → cặp `*_day`, `*`; `notices.postIds`→`notice_post_ids`; `unpaidFlags[]`→`timestamptz[]` |
 | `photographers/{uid}.recruitMatchKeys[]` | `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
+| `organizers/{uid}.managedSpotIds[]` | (dẫn xuất từ `spots.managed_by`) | S30; ghi cùng giao dịch duyệt `spot_claims`; bảng không lưu cột riêng |
 | `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
 | `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
@@ -1771,7 +2015,20 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
-| `spots/{id}` | `spots` | Điểm chụp |
+| `spots/{id}` | `spots` (+ `spot_access_fees`) | Điểm chụp; S30: `managedBy` → `managed_by`, `access.{type,note,source,updatedAt}` → `access_*`, `access.fees[]` → `spot_access_fees` (thứ tự → `position`), `openHours.{start,end}` → `open_time`, `close_time` |
+| `spots/{id}/residents/{providerId}` | `spot_residents` | S30 thợ tại điểm; khoá `(spot_id, provider_id)` lấy từ đường dẫn |
+| `organizers/{uid}` | `organizers` | S30; `managedSpotIds[]` không thành cột (dẫn xuất từ `spots.managed_by`) |
+| `organizers/{uid}/gate_staff/{staffUid}` | `organizer_gate_staff` | S30; `scansToday.{day,count}` → `scans_day`, `scans_count`; `staffUid`, `organizerId` trong tài liệu chỉ để truy vấn collection group (đã có ở khoá) |
+| `events/{id}` (`type = entry`) | `events` + `event_ticket_types` | S30 vé vào cửa; `openHours.{start,end}` → `open_time`, `close_time`; `ticketTypes[]` → `event_ticket_types` (thứ tự → `position`); `closedWeekdays[]`, `closedDays[]` → mảng |
+| `entry_days/{eventId}_{day}` | `entry_days` | S30; khoá `(event_id, day)` tách từ id |
+| `events/{id}/registrations/{id}` (vé vào cửa) | `event_registrations` + `event_registration_items` | S30; `visitDay`, `bookingId`, `gateCheckedInAt`, `ticketCodeLast4` → cột; `items[]` → `event_registration_items` |
+| `payments/{id}` (khoản nhóm, dòng) | `payments` | S30; `groupId` → `group_id`; `subjectType = payment_group`, `status = awaiting_group` |
+| `payment_groups/{id}` | (không có bảng) | S30; read model của người trả, dẫn xuất từ `payments` của khoản nhóm và các dòng (`group_id`) |
+| `bookings/{id}.entry`, `groupId` | `bookings` | S30; `entry.{eventId,visitDay,items,providerTicket,amount,registrationId}` → `entry_*`, `entry.waived.{provider,guests}` → `entry_waived_*`; `groupId` → `group_id` |
+| `passes/{code8}` | `passes` + `pass_registrations` | S30; id → `code`; `registrationIds[]` → `pass_registrations`; chỉ máy chủ |
+| `bookings/{id}/private/pass`, `events/{e}/registrations/{r}/private/pass` | (không có bảng) | S30; bản sao `{code}` cho khách, dẫn xuất từ `passes.booking_id` / `pass_registrations` |
+| `bookings/{id}` (S30 mã và câu hỏi) | `bookings` | `passCode4` → `pass_code4`, `checkedInAt` → `checked_in_at`, `shootQuestionAt`/`Until` → `shoot_question_*`, `shootDeniedAt` → `shoot_denied_at`, `entry.waivedGuests` → `entry_waived_guest_count` (`entry.waived.guests` vẫn là `entry_waived_guests`) |
+| `spot_claims/{id}` | `spot_claims` | S30; `proposal.{name,address}` → `proposal_*`; `proofPaths[]` → `proof_paths text[]` (đường dẫn Storage, không phải URL) |
 | `spot_rankings/{key}` | (không có bảng) | Bảng xếp hạng dẫn xuất từ `spots`, ghi định kỳ bởi job `rankSpots` |
 | `spot_directory/{key}` | (không có bảng) | Danh mục điểm chụp hoạt động, ghi định kỳ bởi job `rankSpots` |
 | `spot_schedules/{id}` | `spot_schedules` + `spot_schedule_days` | `days[]` → `spot_schedule_days` |
@@ -1809,11 +2066,13 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | Số dư treo/chờ chi trả | `ledger_entries` | Truy vấn tổng; không lưu cột số dư riêng |
 | Lịch sử thanh toán của khách và tổng "Đang giữ / Đang hoàn" (S22.01, #141) | `payments`, `refunds` | View `payer_payment_rows`; Firestore giữ hình chiếu do trigger ghi |
 | `recruit_posts.application_count`, `recruit_counters.*_count` | `recruit_applications`, `recruit_posts`, `studio_collaborations` | Use case S27 cập nhật trong cùng giao dịch với đổi trạng thái (kể cả job); đếm lại được bằng truy vấn |
+| `organizers.managedSpotIds` (Firestore) | `spots.managed_by` | Ghi cùng giao dịch duyệt `spot_claims` (S30); bảng không lưu cột riêng |
+| `entry_days.sold`, `held`, `checked_in` | `event_registrations` (`visit_day`, `status`) | S30; ghi trong cùng giao dịch với vé (giữ, trả, hết hạn, hoàn, soát); đối soát được bằng tổng `quantity` theo ngày |
 | `photographer_recruit_match_keys` | `photographers.service_*`, `photographer_specialties`, `users.role` | `onPhotographerWrite`, `onUserWrite` (đổi vai trò); studio và tài khoản ở vai khách không có dòng |
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `spots` → `photographers` và bảng con → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` → `event_registrations`, `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `organizers` → `organizer_gate_staff` → `spots` (+`spot_access_fees`) → `spot_claims` → `photographers` và bảng con → `spot_residents` → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` (+`event_ticket_types`, `entry_days`) → `event_registrations` (+`event_registration_items`), `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

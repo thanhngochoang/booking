@@ -1,7 +1,7 @@
 // lib/features/booking/booking_flow_controller.dart
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show mapEquals;
+import 'package:flutter/foundation.dart' show immutable, mapEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
@@ -15,12 +15,15 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_state.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
 export 'booking_flow_state.dart';
@@ -87,6 +90,61 @@ final bookingSpotContextProvider = FutureProvider.autoDispose
         archived: spot.archived,
       );
     });
+
+/// What S04.03-entry knows about the booking's spot (spec §5.1): the spot,
+/// its entry event on sale and the provider's waiver on the day. A booking
+/// "at" a spot is one from its schedule (`spotId`); a typed place carries
+/// no coordinates, so `spotCoversPoint` has nothing to test in the flow.
+@immutable
+class BookingEntryInfo {
+  const BookingEntryInfo({
+    required this.spot,
+    required this.event,
+    required this.waiver,
+  });
+
+  final Spot spot;
+
+  /// Null: the spot only has reference prices ("Chi phí tại chỗ").
+  final EntryEvent? event;
+  final Waiver waiver;
+
+  /// "≈ {x}" for one person.
+  int? get unitPrice => entryUnitPrice(event, spot.access);
+
+  /// Tickets can be bought with the booking for [day].
+  bool sellsOn(String day) => event != null && event!.isOpenDay(day);
+}
+
+typedef BookingEntryKey = ({String spotId, String providerId, String day});
+
+/// Null while loading, for an open spot, or a spot without any price.
+final bookingEntryInfoProvider = Provider.autoDispose
+    .family<BookingEntryInfo?, BookingEntryKey>((ref, k) {
+      final spot = ref.watch(spotProvider(k.spotId)).value;
+      if (spot == null) return null;
+      final event = ref.watch(entryEventProvider(k.spotId));
+      if (!event.hasValue || !spot.ticketedWith(event.value)) return null;
+      final residents = ref.watch(spotResidentsProvider(k.spotId));
+      if (!residents.hasValue) return null;
+      final mine = residents.value!
+          .where((r) => r.providerId == k.providerId)
+          .firstOrNull;
+      return BookingEntryInfo(
+        spot: spot,
+        event: event.value,
+        waiver:
+            mine?.waiverFor(k.day) ??
+            (provider: false, guests: false, maxGuests: null),
+      );
+    });
+
+/// The customer's ticket picks (one of the first type by default).
+Map<String, int> entryPicksOf(BookingFlowState s, EntryEvent e) =>
+    s.entryPicks ??
+    {
+      if (e.visibleTicketTypes.firstOrNull case final t?) t.id: 1,
+    };
 
 final bookingFlowControllerProvider = NotifierProvider.autoDispose
     .family<BookingFlowController, BookingFlowState, BookingFlowArgs>(
@@ -590,6 +648,74 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     state = state.copyWith(method: m);
   }
 
+  /// The S04.03-entry info of the current spot and day, if any.
+  BookingEntryInfo? entryInfo() {
+    final spotId = state.spot?.schedule.spotId;
+    final day = state.day;
+    if (spotId == null || day == null) return null;
+    return ref.read(
+      bookingEntryInfoProvider((
+        spotId: spotId,
+        providerId: args.photographerId,
+        day: day,
+      )),
+    );
+  }
+
+  /// "Vé vào cửa" switch (S04.03-entry).
+  void setEntryOn(bool on) {
+    if (state.busy) return;
+    state = state.copyWith(entryOn: on);
+  }
+
+  /// The customer's count of [typeId]; the order (with the provider's
+  /// ticket) stays within [entryTicketsPerOrder].
+  void setEntryCount(EntryEvent e, String typeId, int count, {
+    required bool providerTicket,
+  }) {
+    if (state.busy || count < 0) return;
+    final picks = Map<String, int>.of(entryPicksOf(state, e));
+    final others = picks.entries
+        .where((x) => x.key != typeId)
+        .fold(0, (n, x) => n + x.value);
+    if (others + count + (providerTicket ? 1 : 0) > entryTicketsPerOrder) {
+      return;
+    }
+    // `createBooking.entry` needs at least one ticket of the customer's
+    // (`priceItems` refuses empty items): to buy none, switch the card off.
+    if (others + count == 0) return;
+    if (count == 0) {
+      picks.remove(typeId);
+    } else {
+      picks[typeId] = count;
+    }
+    state = state.copyWith(entryPicks: picks);
+  }
+
+  /// What `createBooking.entry` carries: the customer's picks for the
+  /// booking day when the switch is on and something is to be paid.
+  BookingEntryRequest? _entryRequest(BookingFlowState s) {
+    final info = entryInfo();
+    final day = s.day;
+    final e = info?.event;
+    if (!s.entryOn || info == null || e == null || day == null) return null;
+    if (!info.sellsOn(day)) return null;
+    final picks = entryPicksOf(s, e);
+    final quote = quoteBookingEntry(
+      event: e,
+      picks: picks,
+      waiver: info.waiver,
+    );
+    if (quote.amount <= 0) return null;
+    final items = [
+      for (final t in e.visibleTicketTypes)
+        if ((picks[t.id] ?? 0) > 0)
+          EntryItem(ticketTypeId: t.id, qty: picks[t.id]!),
+    ];
+    if (items.isEmpty) return null;
+    return BookingEntryRequest(eventId: e.id, visitDay: day, items: items);
+  }
+
   void next() {
     if (!state.canContinue) return;
     _userActed = true;
@@ -672,6 +798,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
             expectedTotal: picks.isEmpty ? null : s.totalVnd,
             spotScheduleId: spot?.schedule.id,
             slotOfferId: spot?.offer?.id,
+            entry: _entryRequest(s),
           ))
               .id;
 
@@ -727,6 +854,9 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.notFound:
       case BookingErrorCode.notAcceptingOrders:
       case BookingErrorCode.blocked:
+      // S30: the ticket day closed or sold out (S04.03-entry copy: Task 9).
+      case BookingErrorCode.dayClosed:
+      case BookingErrorCode.soldOutDay:
         state = state.copyWith(
           clearBookingId: true,
           phase: SubmitPhase.idle,

@@ -5,6 +5,7 @@
 
 import { formatVnDate } from './booking_policy.js';
 import { DomainError } from './errors.js';
+import type { PayoutHolder } from './account_lookup.js';
 import {
   NAME_LOOKUPS_PER_DAY,
   holderNameDecision,
@@ -38,25 +39,55 @@ export async function isSameAccount(
 }
 
 /**
+ * Who is using S06.06 (plan #223 Decision 3): a provider (role `photographer`, as before) or an active
+ * organizer; anyone else, a customer who is not an organizer or a suspended organizer, is `permission_denied`.
+ */
+export async function payoutHolderOf(tx: PayoutTx, uid: string): Promise<PayoutHolder> {
+  return (await payoutStandingOf(tx, uid)).holder;
+}
+
+/**
+ * `payoutHolderOf` plus whether the caller also has an `active` organizer document: a provider who is
+ * one too keeps the identity-name check and, in addition, may set `organizers/{uid}.payoutAccountOk`.
+ */
+export async function payoutStandingOf(tx: PayoutTx, uid: string): Promise<{ holder: PayoutHolder; organizer: boolean }> {
+  const isProvider = (await tx.getUserRole(uid)) === 'photographer';
+  const organizer = (await tx.getOrganizerStatus(uid)) === 'active';
+  if (isProvider) return { holder: 'provider', organizer };
+  if (organizer) return { holder: 'organizer', organizer };
+  throw new DomainError('permission_denied');
+}
+
+/** The name the account's holder must match: the identity's for a provider, the verified business's for an organizer. */
+export async function verifiedNameFor(
+  deps: Pick<PayoutAccountDeps, 'names' | 'businessNames'>,
+  holder: PayoutHolder,
+  uid: string,
+): Promise<string | null> {
+  if (holder === 'provider') return deps.names.legalName(uid);
+  return deps.businessNames === undefined ? null : deps.businessNames.legalName(uid);
+}
+
+/**
  * One transaction before any bank lookup (`lookupPayoutAccountName` and `savePayoutAccount`): the
- * caller must be a photographer, then `guard` (refusals that must not spend a lookup), then one
- * lookup is charged to the caller's Vietnam day; the 21st is `limit_exceeded` and charges nothing.
- * Returns what `guard` returned.
+ * caller must be a provider or an active organizer, then `guard` (refusals that must not spend a
+ * lookup), then one lookup is charged to the caller's Vietnam day; the 21st is `limit_exceeded` and
+ * charges nothing. Returns who the caller is (`organizer`: also an active organizer) and what `guard` returned.
  */
 export async function chargeLookup<T>(
   deps: Pick<PayoutAccountDeps, 'store' | 'clock'>,
   uid: string,
   guard: (tx: PayoutTx) => Promise<T>,
-): Promise<T> {
+): Promise<{ holder: PayoutHolder; organizer: boolean; guarded: T }> {
   return deps.store.runTransaction(async (tx) => {
-    if ((await tx.getUserRole(uid)) !== 'photographer') throw new DomainError('permission_denied');
+    const { holder, organizer } = await payoutStandingOf(tx, uid);
     const guarded = await guard(tx);
     const day = formatVnDate(deps.clock.now());
     const quota = await tx.getLookupQuota(uid);
     const count = quota !== null && quota.day === day ? quota.count : 0;
     if (count >= NAME_LOOKUPS_PER_DAY) throw new DomainError('limit_exceeded');
     tx.putLookupQuota(uid, { day, count: count + 1 });
-    return guarded;
+    return { holder, organizer, guarded };
   });
 }
 
@@ -73,11 +104,11 @@ export async function lookupPayoutAccountName(
   const target = parseAccountTarget(raw, false);
   if (target === null) throw new DomainError('invalid_argument');
 
-  await chargeLookup(deps, caller.uid, async () => undefined);
+  const { holder } = await chargeLookup(deps, caller.uid, async () => undefined);
 
-  const stored = await deps.names.legalName(caller.uid);
+  const stored = await verifiedNameFor(deps, holder, caller.uid);
   const verifiedName = stored !== null && stored.trim() !== '' ? stored.trim() : null;
-  const lookup = await deps.lookup.lookup({ bankCode: target.bank.code, accountNumber: target.number });
+  const lookup = await deps.lookup.lookup({ bankCode: target.bank.code, accountNumber: target.number, holder });
   const found = lookup.status === 'found' ? holderNameKey(lookup.holderName) : '';
   return {
     decision: holderNameDecision(lookup, verifiedName),
@@ -88,7 +119,7 @@ export async function lookupPayoutAccountName(
 
 /**
  * raw: exactly {bankCode, accountNumber} (the account the code will be allowed to save). Only for
- * a change (a current account exists), to the photographer's phone; resend after 60 s, 5 sends per
+ * a change (a current account exists), to the caller's phone; resend after 60 s, 5 sends per
  * Vietnam day; never for the account already active (`conflict`). Stores salted hashes only; the
  * code goes out after the commit.
  */
@@ -101,8 +132,8 @@ export async function requestPayoutOtp(
   if (target === null) throw new DomainError('invalid_argument');
 
   const sent = await deps.store.runTransaction(async (tx) => {
-    // The role first: nothing is read or generated for anyone else.
-    if ((await tx.getUserRole(caller.uid)) !== 'photographer') throw new DomainError('permission_denied');
+    // The caller's standing first: nothing is read or generated for anyone else.
+    await payoutHolderOf(tx, caller.uid);
     const current = await tx.getActiveAccount(caller.uid);
     if (current === null) throw new DomainError('not_eligible');
     // No code for the account already active: saving it would be refused anyway.

@@ -18,6 +18,7 @@ Password for every account: `seed-password-1`
 | `giang.pending@seed.test` | `seed-photographer-giang` | photographer | not verified, Cần Thơ; Gọi only; `+84976000001` (also her Auth phone); S21 verification submitted, waiting for staff (see "Verification (S21)") |
 | `hoa.ctv@seed.test` | `seed-photographer-hoa` | photographer | verified individual, TP.HCM (cưới, gia đình), in no studio; Gọi only; `+84909000001`; S27 applicant Cúc can accept (see "Studio recruiting (S27)") |
 | `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and `resolveDispute`, and is the `--actor` of `npm run awards` |
+| `bai.da.organizer@seed.test` | `seed-organizer-bai-da` | customer + organizer | "Bãi đá sông Hồng": `organizers/{uid}` active, can sell (approved S21.04 business "CÔNG TY TNHH BÃI ĐÁ SÔNG HỒNG", payout account in that name), manages `seed-spot-bai-da`; verified private phone `+84903000009` (see "Chủ sự kiện & vé vào cửa (S30)") |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
 |---|---|---|---|
@@ -432,9 +433,27 @@ request on the emulators (S13).
 | `seed-spot-ho-tay` (Hồ Tây) | Hà Nội (`hn`) | Quanh năm (ghim) | An (2 cuối tuần tới, 06:00–11:00) | "Bình minh Hồ Tây 30 phút" (490.000₫ · 30/10) |
 | `seed-spot-cau-vang` (Cầu Vàng) | Đà Nẵng (`dn`) | Quanh năm | — (Bình chưa nhận đơn) | — |
 | `seed-spot-mu-cang-chai` (Mù Cang Chải) | Yên Bái (`yen-bai`) | Tháng 9–10 | — | — |
+| `seed-spot-bai-da` (Bãi đá sông Hồng) | Hà Nội (`hn`) | Tháng 10–1 | — (An là thợ tại điểm) | — · có chủ quản lý, vé vào cửa 70.000₫ (S30) |
 
 Đăng nhập Lan, Trang chủ → Điểm chụp đang hot → Hồ Tây để thử S29.02 và đặt suất (S29.06).
 Chạy `scripts/spots-local.sh rank` sau khi đổi dữ liệu để cập nhật bảng xếp hạng trên emulator.
+
+## Chủ sự kiện & vé vào cửa (S30, #223)
+
+| What | Seed | Try it |
+|---|---|---|
+| Organizer | `seed-organizer-bai-da` "Bãi đá sông Hồng", active, `managedSpotIds: [seed-spot-bai-da]`; `businessVerified` and `payoutAccountOk` mirror their sources: `verifications/{uid}.business` approved (company, subject organizer) and `payoutAccounts/{uid}` (VCB ···7766, holder "CONG TY TNHH BAI DA SONG HONG", matched), so `organizers sync` keeps them | sign in as `bai.da.organizer@seed.test`: S09.02 "Địa điểm của tôi" → S30.03 |
+| Managed spot | `seed-spot-bai-da`: `managedBy` the organizer, `access` ticket "Vé vào cửa" 70.000₫, open 07:00–18:00 | S29.02 as Lan shows "Vào cửa", "Bán bởi Bãi đá sông Hồng" and "Mua vé" |
+| Resident | An (`spots/seed-spot-bai-da/residents/seed-photographer-an`): waives the provider's and the guests' tickets, no end date | S29.02 "Thợ tại điểm · miễn vé"; a booking of An there carries no ticket |
+| Gate staff | Dũng (`organizers/seed-organizer-bai-da/gate_staff/seed-photographer-dung`), active | sign in as Dũng: S09.02 "Soát vé · Bãi đá sông Hồng" → S30.07 |
+| Entry event | `seed-event-entry-bai-da`, open from the seed day for 90 days, types "Người lớn" 70.000₫ and "Trẻ em" 40.000₫, 300 a day, refunds up to 48 h before | S30.05 as Minh or Lan |
+| Lan's ticket | `seed-registration-lan-entry`: 1 adult for tomorrow, paid (`seed-payment-entry-lan`, held for the organizer until the day + 1 day + 48 h); pass `VE-VAQC-SEED` in its `private/pass` and `passes/VAQCSEED`; the list shows `SEED`; no public ticket code | S11.04 as Lan shows the QR; Dũng scanning it today gets "Vé ngày …" (`wrong_day`) |
+| Booking with a pass | `seed-booking-lan-an-pass`: Lan ↔ An (verified, accepting orders; the spot's resident, so no ticket) today 15:30–17:30 at Bãi đá sông Hồng, paid (held), pass `VE-BKNG-SEED` (`bookings/…/private/pass`, `passes/BKNGSEED`), not scanned | S05.02 as Lan shows "Mã gặp thợ"; from 13:30 An's scan moves it to "Đang chụp" |
+
+Staff tools (`scripts/spots-local.sh`, actor `seed-staff-admin`): `claims list`, `claims approve <id> [--spot <spotId>]`,
+`claims reject <id> --reason …`, `access <spotId> --type open|ticket|none [--fee "Người lớn=70000"]… [--note …]`,
+`organizers suspend <uid>` (cancels every open event of the organizer with 100% refunds) and `organizers sync <uid>`.
+Spot claims are made in the app (S30.02, proofs under `spot_claims/{uid}/…` in Storage); the seed has none.
 
 ## Đăng tin tìm thợ & Báo giá (S15–S16, #139)
 

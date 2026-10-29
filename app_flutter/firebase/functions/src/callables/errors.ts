@@ -60,6 +60,18 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   // S27 recruiting (#151): collaboration caps reached; studio temporarily blocked after unpaid-fee flags.
   collab_full: 'resource-exhausted',
   recruit_blocked: 'failed-precondition',
+  // S30 organizers, entry tickets and passes (#223): the client shows the matching S30 message.
+  spot_managed: 'failed-precondition',
+  not_spot_manager: 'failed-precondition',
+  day_closed: 'failed-precondition',
+  venue_consent_required: 'failed-precondition',
+  business_required: 'failed-precondition',
+  wrong_day: 'failed-precondition',
+  too_early: 'failed-precondition',
+  refunded: 'failed-precondition',
+  sold_out_day: 'resource-exhausted',
+  not_your_pass: 'permission-denied',
+  already_checked_in: 'already-exists',
 };
 
 /**
