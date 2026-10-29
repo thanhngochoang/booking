@@ -12,6 +12,7 @@ class FakePassScanner implements PassScanner {
   /// Set before the preview builds to draw the error state instead.
   PassScannerFailure? failure;
   int torchToggles = 0;
+  int settingsOpened = 0;
   bool disposed = false;
 
   void emit(String code) => _codes.add(code);
@@ -33,6 +34,9 @@ class FakePassScanner implements PassScanner {
     }
     return const SizedBox.expand(key: Key('fake-pass-scanner-preview'));
   }
+
+  @override
+  Future<void> openSettings() async => settingsOpened++;
 
   @override
   void dispose() {

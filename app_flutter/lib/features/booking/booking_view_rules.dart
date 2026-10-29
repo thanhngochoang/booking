@@ -53,6 +53,11 @@ enum DetailAction {
 bool _isActive(BookingStatus s) =>
     s == BookingStatus.accepted || s == BookingStatus.upcoming;
 
+/// Scanned (S30, Decision 10): the shoot is on. It joins [_isActive] for
+/// contact, directions, "Đã chụp xong" and S06.01 "today", never for
+/// reschedule, cancel or assign (t4 sites).
+bool _isOn(BookingStatus s) => _isActive(s) || s == BookingStatus.shooting;
+
 bool _isStopped(BookingStatus s) =>
     s == BookingStatus.declined ||
     s == BookingStatus.expired ||
@@ -93,7 +98,7 @@ List<DetailAction> detailActions(
 
   if (role == BookingRole.customer) {
     if (s == BookingStatus.requested ||
-        _isActive(s) ||
+        _isOn(s) ||
         s == BookingStatus.shot ||
         s == BookingStatus.delivered ||
         s == BookingStatus.revisionRequested ||
@@ -103,7 +108,7 @@ List<DetailAction> detailActions(
     if (_isActive(s) && canReschedule) {
       out.add(DetailAction.reschedule);
     }
-    if (_isActive(s) && _inDirectionsWindow(b, now)) {
+    if (_isOn(s) && _inDirectionsWindow(b, now)) {
       out.add(DetailAction.directions);
     }
     if ((s == BookingStatus.requested || _isActive(s)) && beforeStart) {
@@ -140,8 +145,8 @@ List<DetailAction> detailActions(
   // S06.01); the studio answers, moves, cancels and delivers (no S06.07
   // entry).
   if (assignee) {
-    if (_isActive(s) || s == BookingStatus.shot) out.add(DetailAction.contact);
-    if (_isActive(s) && BookingRules.canPhotographerComplete(b, now)) {
+    if (_isOn(s) || s == BookingStatus.shot) out.add(DetailAction.contact);
+    if (_isOn(s) && BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
     }
     // A studio's spot booking keeps the schedule's member (#194 Decision 7).
@@ -164,16 +169,17 @@ List<DetailAction> detailActions(
     }
     return out;
   }
-  if (_isActive(s)) {
+  if (_isOn(s)) {
+    final active = _isActive(s);
     out.add(DetailAction.contact);
-    if (canReschedule) out.add(DetailAction.reschedule);
-    if (b.studio != null && b.spotScheduleId == null && beforeStart) {
+    if (active && canReschedule) out.add(DetailAction.reschedule);
+    if (active && b.studio != null && b.spotScheduleId == null && beforeStart) {
       out.add(DetailAction.assign);
     }
     if (BookingRules.canPhotographerComplete(b, now)) {
       out.add(DetailAction.markShot);
     }
-    if (beforeStart) out.add(DetailAction.cancel);
+    if (active && beforeStart) out.add(DetailAction.cancel);
     return out;
   }
   if (s == BookingStatus.shot || s == BookingStatus.revisionRequested) {
@@ -286,13 +292,23 @@ List<TimelineStep> timelineSteps(
         : l.timelineConfirmedHint,
     state: st,
   );
+  // A booking with a meeting pass (S05.02-pass): the photographer scans it
+  // when they meet, and the shoot step reads "Đang chụp" with the scan time.
+  final passed = b.hasPass || s == BookingStatus.shooting;
   TimelineStep step4(TimelineStepState st) => TimelineStep(
     title: l.timelineUpcoming(day == null ? b.day : formatDay(day)),
-    subtitle: l.timelineUpcomingHint,
+    subtitle: passed && st != done ? l.s0502_passHint : l.timelineUpcomingHint,
     state: st,
   );
-  TimelineStep step5(TimelineStepState st) =>
-      TimelineStep(title: l.timelineShoot, state: st);
+  TimelineStep step5(TimelineStepState st) => passed
+      ? TimelineStep(
+          title: l.timelineShooting,
+          subtitle: b.checkedInAt == null
+              ? null
+              : _when(b.checkedInAt!, now, l),
+          state: st,
+        )
+      : TimelineStep(title: l.timelineShoot, state: st);
 
   final isCustomer = photographerName != l.detailYou;
   final roundNum = b.deliveryRound > 0 ? b.deliveryRound : 1;
@@ -407,7 +423,9 @@ List<TimelineStep> timelineSteps(
     case BookingStatus.accepted:
     case BookingStatus.upcoming:
       final started = !now.isBefore(startsAtOf(b));
-      final TimelineStepState st4 = started
+      // With a pass, the shoot starts at the scan, not at the clock.
+      final begun = started && !passed;
+      final TimelineStepState st4 = begun
           ? done
           : (s == BookingStatus.upcoming ? current : upcoming);
       final waitingForAssign =
@@ -418,14 +436,13 @@ List<TimelineStep> timelineSteps(
         step3(done),
         ...assignStep(),
         step4(waitingForAssign && st4 == current ? upcoming : st4),
-        step5(started ? current : upcoming),
+        step5(begun ? current : upcoming),
         stepDelivery(upcoming),
         step6(upcoming),
         step7(upcoming),
       ];
     case BookingStatus.shooting:
-      // S30: the pass was scanned, the shoot is on (Task 9 adds the
-      // "Đang chụp" step, `timelineShooting`).
+      // S30: the pass was scanned, the shoot is on: "Đang chụp" is current.
       return [
         step1,
         step2(done),
@@ -509,6 +526,7 @@ class WorkDashboard {
     required this.heldVnd,
     required this.upcomingCount,
     this.toDeliver = const [],
+    this.shooting = const [],
     this.studioJobs = const [],
     this.assignedJobs = const [],
   });
@@ -522,6 +540,10 @@ class WorkDashboard {
   final int monthRevenueVnd;
   final int heldVnd;
   final int upcomingCount;
+
+  /// Scanned shoots (`shooting`) other than [today]: "Đang chụp" cards with
+  /// "Đã chụp xong" (S06.01-scan).
+  final List<Booking> shooting;
 
   /// Bookings waiting for delivery actions (shot, revisionRequested, or delivered with pending extra round).
   final List<Booking> toDeliver;
@@ -537,6 +559,7 @@ class WorkDashboard {
   /// No shoot today, no requests, nothing to deliver and nothing upcoming.
   bool get isEmpty =>
       today == null &&
+      shooting.isEmpty &&
       requests.isEmpty &&
       toDeliver.isEmpty &&
       studioJobs.isEmpty &&
@@ -566,9 +589,16 @@ WorkDashboard workDashboard(
     for (final b in mine)
       if (_isActive(b.status)) b,
   ];
+  // "Hôm nay": the next shoot of today still to meet (accepted / upcoming)
+  // first; a scanned one (`shooting`) is today's card only when none is
+  // left, the others are listed under it with "Đang chụp" (S06.01-scan).
   final todays = [
     for (final b in active)
       if (b.day == todayKey) b,
+  ]..sort((a, b) => startsAtOf(a).compareTo(startsAtOf(b)));
+  final shooting = [
+    for (final b in mine)
+      if (b.status == BookingStatus.shooting) b,
   ]..sort((a, b) => startsAtOf(a).compareTo(startsAtOf(b)));
 
   final own = [
@@ -617,7 +647,9 @@ WorkDashboard workDashboard(
     }
   }
 
-  final today = todays.isEmpty ? null : todays.first;
+  final today = todays.isNotEmpty
+      ? todays.first
+      : (shooting.isEmpty ? null : shooting.first);
   List<Booking> ahead(bool Function(Booking) where) => [
     for (final b in active)
       if (b.studio != null &&
@@ -634,6 +666,10 @@ WorkDashboard workDashboard(
     heldVnd: held,
     upcomingCount: active.length,
     toDeliver: toDeliver,
+    shooting: [
+      for (final b in shooting)
+        if (b.id != today?.id) b,
+    ],
     studioJobs: ahead((b) => b.photographerId == uid),
     assignedJobs: ahead(
       (b) => b.photographerId != uid && b.studio!.assigneeId == uid,

@@ -24,6 +24,9 @@ abstract class PassScanner {
     errorBuilder,
   });
 
+  /// S30.07 "Mở cài đặt" after a refused camera: the app's system settings.
+  Future<void> openSettings();
+
   void dispose();
 }
 

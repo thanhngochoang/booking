@@ -47,7 +47,6 @@ import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
 import 'package:photobooking/features/event_manage/manage_event_screen.dart';
 import 'package:photobooking/features/event_manage/my_events_screen.dart';
-import 'package:photobooking/features/event_manage/ticket_scanner.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -56,7 +55,6 @@ import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
 import 'fake_push.dart';
-import 'fake_ticket_scanner.dart';
 import 'screen_host.dart';
 
 import 'package:photobooking/core/core.dart';
@@ -389,7 +387,6 @@ class EventsWorld {
   SharedPreferences? prefs;
 
   final FakeImagePicker picker;
-  final scanner = FakeTicketScanner();
   final locationRepo = FakeLocationRepository(
     status: LocationPermissionStatus.granted,
     position: (lat: 10.8, lng: 106.7),
@@ -432,7 +429,6 @@ class EventsWorld {
     eventChatRepositoryProvider.overrideWithValue(chat),
     if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs!),
     imagePickerProvider.overrideWithValue(picker),
-    ticketScannerProvider.overrideWithValue(scanner),
     locationRepositoryProvider.overrideWithValue(locationRepo),
     nearbyEventsRepositoryProvider.overrideWithValue(nearby),
     externalLauncherProvider.overrideWithValue(launcher),
@@ -569,6 +565,7 @@ class EventsWorld {
           '/u/:uid/ask',
           '/setup',
           '/disputes/:id',
+          '/scan',
         ])
           GoRoute(path: p, builder: stub),
       ],

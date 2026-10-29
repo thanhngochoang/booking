@@ -83,6 +83,8 @@ abstract final class AppIcons {
   static const IconData payment = Symbols.credit_card_rounded;
   static const IconData wallet = Symbols.account_balance_wallet_rounded;
   static const IconData qrCode = Symbols.qr_code_2_rounded;
+  static const IconData qrScanner = Symbols.qr_code_scanner_rounded;
+  static const IconData flashlight = Symbols.flashlight_on_rounded;
   static const IconData receipt = Symbols.receipt_long_rounded;
   static const IconData pin = Symbols.pin_rounded;
   static const IconData darkMode = Symbols.dark_mode_rounded;

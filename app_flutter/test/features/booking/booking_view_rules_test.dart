@@ -1334,4 +1334,119 @@ void main() {
       }
     });
   });
+
+  group('S30 shooting (#223, t4 sites)', () {
+    final during = DateTime.utc(2026, 10, 12, 9); // 16:00 VN
+    Booking shooting() => _b(BookingStatus.shooting, chatId: 'ch1').copyWith(
+      passCode4: '4R9X',
+      checkedInAt: DateTime.utc(2026, 10, 12, 8, 35),
+    );
+
+    test('photographer: contact and Đã chụp xong; never reschedule, cancel '
+        'or assign', () {
+      final a = detailActions(
+        shooting(),
+        BookingRole.photographer,
+        during,
+        _on,
+      );
+      expect(a, contains(DetailAction.contact));
+      expect(a, contains(DetailAction.markShot));
+      expect(a, isNot(contains(DetailAction.reschedule)));
+      expect(a, isNot(contains(DetailAction.cancel)));
+      expect(a, isNot(contains(DetailAction.assign)));
+    });
+
+    test('customer: contact and directions; no cancel, no reschedule', () {
+      final a = detailActions(shooting(), BookingRole.customer, during, _on);
+      expect(a, contains(DetailAction.contact));
+      expect(a, contains(DetailAction.directions));
+      expect(a, isNot(contains(DetailAction.cancel)));
+      expect(a, isNot(contains(DetailAction.reschedule)));
+    });
+
+    test('a studio assignee may contact and mark shot while shooting', () {
+      final a = detailActions(
+        shooting(),
+        BookingRole.photographer,
+        during,
+        _off,
+        assignee: true,
+      );
+      expect(a, containsAll([DetailAction.contact, DetailAction.markShot]));
+      expect(a, isNot(contains(DetailAction.returnJob)));
+    });
+
+    test('a pass booking still upcoming after the end: no Đã chụp xong', () {
+      final b = _b(BookingStatus.upcoming).copyWith(passCode4: '4R9X');
+      final a = detailActions(
+        b,
+        BookingRole.photographer,
+        endsAt.add(const Duration(hours: 1)),
+        _off,
+      );
+      expect(a, isNot(contains(DetailAction.markShot)));
+    });
+
+    test('timeline: "Đang chụp" is current with the scan time', () {
+      final steps = timelineSteps(
+        shooting(),
+        const [],
+        during,
+        l,
+        photographerName: 'Minh Trí',
+      );
+      final i = steps.indexWhere((s) => s.title == 'Đang chụp');
+      expect(i, greaterThan(0));
+      expect(steps[i].state, TimelineStepState.current);
+      expect(steps[i].subtitle, 'Hôm nay 15:35');
+      expect(steps[i - 1].state, TimelineStepState.done);
+    });
+
+    test('timeline: a pass booking waits for the scan, not the clock', () {
+      final b = _b(BookingStatus.upcoming).copyWith(passCode4: '4R9X');
+      final steps = timelineSteps(
+        b,
+        const [],
+        during,
+        l,
+        photographerName: 'Minh Trí',
+      );
+      final up = steps.indexWhere((s) => s.subtitle == 'Thợ quét mã này khi gặp bạn');
+      expect(up, greaterThan(0));
+      expect(steps[up].state, TimelineStepState.current);
+      expect(steps[up + 1].title, 'Đang chụp');
+      expect(steps[up + 1].state, TimelineStepState.upcoming);
+    });
+
+    test('timeline of a legacy booking keeps "Buổi chụp"', () {
+      final steps = timelineSteps(
+        _b(BookingStatus.upcoming),
+        const [],
+        during,
+        l,
+        photographerName: 'Minh Trí',
+      );
+      expect(steps.map((s) => s.title), contains('Buổi chụp'));
+      expect(steps.map((s) => s.title), isNot(contains('Đang chụp')));
+    });
+
+    test('S06.01: a scanned shoot is today\'s card when nothing is left to '
+        'meet, else listed under it', () {
+      final only = workDashboard([shooting()], during, uid: 'p1');
+      expect(only.today?.id, 'b1');
+      expect(only.shooting, isEmpty);
+
+      final next = _b(
+        BookingStatus.upcoming,
+        id: 'b2',
+        start: '18:00',
+        end: '19:00',
+      );
+      final both = workDashboard([shooting(), next], during, uid: 'p1');
+      expect(both.today?.id, 'b2');
+      expect(both.shooting.map((b) => b.id), ['b1']);
+      expect(both.isEmpty, isFalse);
+    });
+  });
 }

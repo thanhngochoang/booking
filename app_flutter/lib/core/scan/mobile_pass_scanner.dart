@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart' as perm;
 
 import 'package:photobooking/core/scan/pass_scanner.dart';
 
@@ -43,6 +44,13 @@ class MobilePassScanner implements PassScanner {
             _ => PassScannerFailure.unavailable,
           }),
   );
+
+  @override
+  Future<void> openSettings() async {
+    try {
+      await perm.openAppSettings();
+    } catch (_) {}
+  }
 
   @override
   void dispose() => unawaited(_controller.dispose());

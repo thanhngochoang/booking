@@ -13,12 +13,11 @@ import 'package:photobooking/data/events/event_social_providers.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/scan/scan_screen.dart';
 import 'package:photobooking/features/event_manage/announce_sheet.dart';
 import 'package:photobooking/features/event_manage/cancel_event_sheet.dart';
-import 'package:photobooking/features/event_manage/checkin_sheet.dart';
 import 'package:photobooking/features/event_manage/entry_days_tab.dart';
 import 'package:photobooking/features/event_manage/manage_event_controller.dart';
-import 'package:photobooking/features/event_manage/ticket_scanner.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/explore/event_routes.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -96,12 +95,6 @@ class ManageEventScreen extends ConsumerStatefulWidget {
 }
 
 class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
-  /// A scan or result sheet is open: the button is off, without a loader.
-  bool _scanning = false;
-
-  /// A check-in call is on its way: the only time the button shows a loader.
-  bool _checking = false;
-
   void _say(String text) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(text)));
@@ -115,50 +108,10 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
     }
   }
 
-  Future<void> _scan(EventDetail event) async {
-    if (_scanning) {
-      return;
-    }
-    setState(() => _scanning = true);
-    final ctl = ref.read(
-      manageEventControllerProvider(widget.eventId).notifier,
-    );
-    try {
-      while (true) {
-        if (!mounted) {
-          return;
-        }
-        final code = await ref.read(ticketScannerProvider).scan(context);
-        if (code == null || !mounted) {
-          return;
-        }
-        setState(() => _checking = true);
-        final CheckinResult result;
-        try {
-          result = await ctl.checkIn(
-            code,
-            event: event,
-            now: ref.read(clockProvider)(),
-          );
-        } finally {
-          if (mounted) {
-            setState(() => _checking = false);
-          }
-        }
-        if (!mounted) {
-          return;
-        }
-        final again = await showCheckinResultSheet(context, result);
-        if (!again) {
-          return;
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _scanning = false);
-      }
-    }
-  }
+  /// S30.07 for this event (`scanPass` checks the ticket in as its
+  /// manager; the old in-screen scanner is gone, Task 9).
+  void _scan(EventDetail event) =>
+      context.push(scanLocation(eventId: event.id));
 
   /// "Nhắn nhóm": pins an announcement at the top of the group chat.
   Future<void> _announce() async {
@@ -367,10 +320,7 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
                       child: AppButton.primary(
                         l.manageScan,
                         key: const Key('manage-scan'),
-                        loading: _checking,
-                        onPressed: scanOpen && !_scanning && !busy
-                            ? () => _scan(e)
-                            : null,
+                        onPressed: scanOpen && !busy ? () => _scan(e) : null,
                       ),
                     ),
                   ),
@@ -444,7 +394,7 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
           _ParticipantsHeader(
             title: l.manageParticipants,
             linkLabel: cancelled ? null : l.manageCheckinLink,
-            onLink: scanOpen && !_scanning && !busy ? () => _scan(e) : null,
+            onLink: scanOpen && !busy ? () => _scan(e) : null,
           ),
           AsyncView<List<EventRegistration>>(
             value: regs,

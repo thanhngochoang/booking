@@ -12458,4 +12458,413 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get s2104_organizerIntro =>
       'Cần để bán vé có thu phí và nhận tiền vé vào tài khoản đứng tên doanh nghiệp.';
+
+  @override
+  String get s3005_title => 'Vé vào cửa';
+
+  @override
+  String get s3005_pickDay => 'Chọn ngày';
+
+  @override
+  String get s3005_soldOut => 'Hết vé';
+
+  @override
+  String s3005_dayChipSoldOut(String day) {
+    return '$day · Hết vé';
+  }
+
+  @override
+  String s3005_total(int n, String day) {
+    return '$n vé · $day';
+  }
+
+  @override
+  String get s3005_oneQr => 'Một mã QR cho cả nhóm, đưa ở cổng.';
+
+  @override
+  String s3005_refund(String cutoff) {
+    return 'Huỷ trước 48 giờ (trước $cutoff) hoàn 100%, sau đó không hoàn.';
+  }
+
+  @override
+  String s3005_pay(String amount) {
+    return 'Thanh toán $amount';
+  }
+
+  @override
+  String get s3005_soldOutError => 'Ngày này vừa hết vé. Chọn ngày khác.';
+
+  @override
+  String get s3005_dayClosed => 'Ngày này đóng cửa.';
+
+  @override
+  String get s3005_limit => 'Tối đa 10 vé mỗi đơn';
+
+  @override
+  String s3005_bought(int n) {
+    return 'Đã mua $n vé';
+  }
+
+  @override
+  String s3005_spotMeta(String hours, String org) {
+    return 'Mở cửa $hours · $org';
+  }
+
+  @override
+  String get s3005_noSale => 'Điểm này chưa bán vé qua app';
+
+  @override
+  String get s3005_noDays => 'Chưa có ngày mở bán trong 14 ngày tới';
+
+  @override
+  String get s3005_conflict => 'Bạn đã có vé chờ thanh toán ngày này';
+
+  @override
+  String s3005_less(String type) {
+    return 'Bớt một vé $type';
+  }
+
+  @override
+  String s3005_more(String type) {
+    return 'Thêm một vé $type';
+  }
+
+  @override
+  String get s3007_hint => 'Đưa mã QR vào khung';
+
+  @override
+  String get s3007_manual => 'Nhập mã 8 ký tự';
+
+  @override
+  String s3007_today(int entered, int sold) {
+    return 'Hôm nay: $entered / $sold khách đã vào';
+  }
+
+  @override
+  String s3007_entered(int n) {
+    return 'Đã vào · $n người';
+  }
+
+  @override
+  String s3007_shooting(String name) {
+    return 'Đang chụp · $name';
+  }
+
+  @override
+  String s3007_gate(int n) {
+    return 'Vào cổng · $n người';
+  }
+
+  @override
+  String s3007_wrongDay(String day) {
+    return 'Vé ngày $day';
+  }
+
+  @override
+  String get s3007_wrongDayNote =>
+      'Khách đổi ngày bằng cách huỷ vé (trước 48 giờ) và mua lại. Không cho vào bằng vé này hôm nay.';
+
+  @override
+  String s3007_already(String time) {
+    return 'Đã vào lúc $time';
+  }
+
+  @override
+  String s3007_tooEarly(String time) {
+    return 'Mở quét từ $time';
+  }
+
+  @override
+  String get s3007_refunded => 'Vé đã hoàn';
+
+  @override
+  String get s3007_notYours =>
+      'Mã này không thuộc sự kiện hoặc buổi chụp của bạn';
+
+  @override
+  String get s3007_notFound => 'Không tìm thấy mã';
+
+  @override
+  String get s3007_next => 'Quét tiếp';
+
+  @override
+  String get s3007_backToShoot => 'Về buổi chụp';
+
+  @override
+  String get s3007_offline => 'Chưa quét được, kiểm tra kết nối';
+
+  @override
+  String get s3007_failed => 'Chưa quét được, thử lại';
+
+  @override
+  String get s3007_retry => 'Thử lại';
+
+  @override
+  String get s3007_torch => 'Đèn pin';
+
+  @override
+  String get s3007_openSettings => 'Mở cài đặt';
+
+  @override
+  String get s3007_title => 'Quét mã';
+
+  @override
+  String s3007_gateTitle(String spot) {
+    return 'Soát vé · $spot';
+  }
+
+  @override
+  String get s3007_cameraTitle => 'Cho phép dùng camera để quét mã';
+
+  @override
+  String get s3007_cameraBody => 'Mã được đọc ngay trên máy, không lưu ảnh.';
+
+  @override
+  String get s3007_cameraOff => 'Camera không dùng được. Nhập mã 8 ký tự.';
+
+  @override
+  String get s3007_manualHint => 'VE-XXXX-XXXX';
+
+  @override
+  String get s3007_manualSubmit => 'Kiểm tra';
+
+  @override
+  String get s3007_manualInvalid => 'Mã gồm 8 ký tự chữ và số';
+
+  @override
+  String get s3007_ticketBought =>
+      'Khách đã mua vé vào cửa cho bạn qua app. Nhân viên cổng quét cùng mã này.';
+
+  @override
+  String get s3007_ticketWaived => 'Bạn được miễn vé (thợ tại điểm).';
+
+  @override
+  String get s3007_ticketOnSite => 'Khách tự mua vé tại cổng.';
+
+  @override
+  String get s2902_entry => 'Vào cửa';
+
+  @override
+  String get s2902_buy => 'Mua vé';
+
+  @override
+  String s2902_soldBy(String org) {
+    return 'Bán bởi $org';
+  }
+
+  @override
+  String s2902_refPrice(String date) {
+    return 'Giá tham khảo · cập nhật $date';
+  }
+
+  @override
+  String get s2902_resident => 'Thợ tại điểm · miễn vé';
+
+  @override
+  String get s2902_residentProvider => 'Thợ tại điểm · miễn vé thợ';
+
+  @override
+  String s2902_needTickets(String amount) {
+    return 'Cần vé cho bạn và thợ ≈ $amount';
+  }
+
+  @override
+  String s2902_typePrice(String name, String price) {
+    return '$name · $price';
+  }
+
+  @override
+  String s2904_entryNote(String amount) {
+    return 'Điểm này thu vé ≈ $amount/người. Bạn chưa thuộc thợ tại điểm, khách sẽ mua vé cho bạn.';
+  }
+
+  @override
+  String s0403_entryCard(String day) {
+    return 'Vé vào cửa · $day';
+  }
+
+  @override
+  String get s0403_entrySwitch => 'Mua vé vào cửa cùng booking';
+
+  @override
+  String s0403_entryCustomer(String type) {
+    return '$type · bạn';
+  }
+
+  @override
+  String get s0403_entryProvider => 'Vé cho thợ';
+
+  @override
+  String s0403_entryProviderName(String name) {
+    return 'Vé cho thợ ($name)';
+  }
+
+  @override
+  String get s0403_entryWaivedProvider => 'Thợ tại điểm · miễn vé';
+
+  @override
+  String get s0403_entryWaivedAll => 'Bạn và thợ được miễn vé';
+
+  @override
+  String s0403_entryOff(String amount) {
+    return 'Tự mua vé tại cổng ≈ $amount';
+  }
+
+  @override
+  String s0403_entryLine(int n) {
+    return 'Vé vào cửa × $n';
+  }
+
+  @override
+  String get s0403_twoPayees =>
+      'Tiền buổi chụp chuyển cho thợ, tiền vé chuyển cho địa điểm.';
+
+  @override
+  String get s0403_onSite => 'Chi phí tại chỗ (không qua app)';
+
+  @override
+  String s0403_onSiteTickets(String amount) {
+    return 'Vé vào cửa ≈ $amount × 2 (bạn và thợ)';
+  }
+
+  @override
+  String get s0403_soldOutDay =>
+      'Ngày này vừa hết vé vào cửa. Tắt vé hoặc chọn ngày khác.';
+
+  @override
+  String get s0403_dayClosed => 'Điểm đóng cửa ngày này. Chọn ngày khác.';
+
+  @override
+  String get s0502_passTitle => 'Mã gặp thợ';
+
+  @override
+  String get s0502_passHint => 'Thợ quét mã này khi gặp bạn';
+
+  @override
+  String s0502_passShow(String name) {
+    return 'Đưa mã cho $name khi gặp';
+  }
+
+  @override
+  String s0502_passShowGate(String name) {
+    return 'Đưa mã cho $name khi gặp, và cho nhân viên ở cổng.';
+  }
+
+  @override
+  String s0502_passTickets(int n) {
+    return 'Kèm $n vé vào cửa';
+  }
+
+  @override
+  String s0502_passWhen(String day, String time, String place) {
+    return '$day · $time · $place';
+  }
+
+  @override
+  String get s0502_passOpen => 'Mở mã toàn màn hình';
+
+  @override
+  String get s0502_entryIncluded => 'Đã gồm vé vào cửa cho bạn và thợ';
+
+  @override
+  String s0502_entryOnSite(String amount) {
+    return 'Tự mua tại cổng ≈ $amount';
+  }
+
+  @override
+  String get s0502_askTitle => 'Buổi chụp có diễn ra không?';
+
+  @override
+  String s0502_askBody(String name, String day) {
+    return '$name chưa quét mã của bạn hôm $day. Cho chúng tôi biết để giữ đúng tiền của bạn.';
+  }
+
+  @override
+  String get s0502_askYes => 'Có, đã chụp';
+
+  @override
+  String get s0502_askYesSub => 'Thợ quên quét mã';
+
+  @override
+  String get s0502_askNo => 'Không diễn ra';
+
+  @override
+  String get s0502_askNoSub => 'Mở khiếu nại, tiền vẫn được giữ';
+
+  @override
+  String get s0502_askTimeout =>
+      'Không trả lời trong 48 giờ thì coi như đã chụp.';
+
+  @override
+  String get s0502_askSend => 'Gửi';
+
+  @override
+  String get s0502_askOpen => 'Trả lời: buổi chụp có diễn ra không?';
+
+  @override
+  String get s0502_askThanks => 'Đã ghi nhận, cảm ơn bạn';
+
+  @override
+  String get timelineShooting => 'Đang chụp';
+
+  @override
+  String get s0503_keepTickets => 'Giữ vé vào cửa';
+
+  @override
+  String s0503_keepTicketsSub(String day) {
+    return 'Vé vẫn dùng được ngày $day';
+  }
+
+  @override
+  String get s0601_scan => 'Quét mã khách';
+
+  @override
+  String s0601_scanOpensAt(String time) {
+    return 'Mở lúc $time';
+  }
+
+  @override
+  String get s0601_ticketBought => 'khách đã mua vé cho bạn';
+
+  @override
+  String get s0601_ticketWaived => 'bạn được miễn vé';
+
+  @override
+  String s0601_ticketOnSite(String amount) {
+    return 'khách tự mua vé tại cổng ≈ $amount';
+  }
+
+  @override
+  String get s0601_shooting => 'Đang chụp';
+
+  @override
+  String get s0601_markShot => 'Đã chụp xong';
+
+  @override
+  String get s1104_entry => 'Vé vào cửa';
+
+  @override
+  String s1104_entryDay(String day, String hours) {
+    return 'Ngày tham quan $day · $hours';
+  }
+
+  @override
+  String s1104_checkedIn(String time) {
+    return 'Đã vào $time';
+  }
+
+  @override
+  String get s1104_dayClosed => 'Ngày đóng cửa · đang hoàn 100%';
+
+  @override
+  String get s1104_pastCutoff => 'Đã qua mốc huỷ';
+
+  @override
+  String get s1104_gateHint =>
+      'Đưa mã cho nhân viên ở cổng. Dùng được cả nhóm, một lần.';
+
+  @override
+  String s1104_cancelUntil(String cutoff) {
+    return 'Huỷ vé · hoàn 100% (tới $cutoff)';
+  }
 }

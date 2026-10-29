@@ -75,6 +75,7 @@ import 'package:photobooking/features/photographer_setup/setup_draft_store.dart'
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 import 'package:photobooking/features/saved/followers_screen.dart';
+import 'package:photobooking/features/scan/scan_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
@@ -466,6 +467,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: gateStaffPath,
         builder: (_, _) => const GateStaffScreen(),
+      ),
+      // S30.07: the gate, event managers and the photographer (`?booking=`);
+      // the server decides what a scan may change (Decision 9).
+      GoRoute(
+        path: scanPath,
+        builder: (_, state) => ScanScreen(
+          bookingId: state.uri.queryParameters['booking'],
+          eventId: state.uri.queryParameters['event'],
+        ),
       ),
       // S06.06 for an organizer (Task 1b): no photographer-only redirect.
       GoRoute(

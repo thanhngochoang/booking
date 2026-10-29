@@ -1,21 +1,18 @@
 // test/features/event_manage/manage_event_screen_test.dart
 //
-// S12.03. No camera, no endless animation: the scanner is the fake from
-// `test/support`, every fake stream emits at once, and pumps are bounded
-// (`settle`).
+// S12.03. No camera here: "Quét mã" opens S30.07 (`/scan?event=`, tested
+// in test/features/scan); every fake stream emits at once, and pumps are
+// bounded (`settle`).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
-import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
-import 'package:photobooking/features/event_manage/checkin_sheet.dart';
-import 'package:photobooking/features/event_manage/manage_event_controller.dart';
 
 import '../../support/event_world.dart';
 
@@ -293,26 +290,19 @@ void main() {
     expect(find.byKey(const Key('manage-empty-share')), findsOneWidget);
   });
 
-  testWidgets('scan success says Đã vào', (tester) async {
+  testWidgets('Quét mã opens S30.07 for this event (the scanner moved)', (
+    tester,
+  ) async {
     final w = _host(
       now: _eventDay,
       registrations: [
         registrationOf('r1', 'ev1', userName: 'Lan Anh', quantity: 2),
       ],
     );
-    w.scanner.enqueue('VE-AB2C-1013');
     await _open(tester, w);
     expect(_scanEnabled(tester), isTrue);
-
     await _tap(tester, find.byKey(const Key('manage-scan')));
-    expect(w.repo.checkedIn, ['VE-AB2C-1013']);
-    expect(find.text('Đã vào · Lan Anh · 2 vé'), findsOneWidget);
-
-    // "Quét tiếp" asks the scanner again; closing it ends the loop.
-    await _tap(tester, find.byKey(const Key('checkin-next')));
-    expect(w.scanner.calls, 2);
-    expect(find.byKey(const Key('checkin-result')), findsNothing);
-    expect(find.text(_badge('Đã vào')), findsOneWidget); // the row's badge
+    expect(w.location, '/scan?event=ev1');
   });
 
   testWidgets('the Check‑in link opens the same scanner (O3)', (tester) async {
@@ -322,7 +312,6 @@ void main() {
         registrationOf('r1', 'ev1', userName: 'Lan Anh', quantity: 2),
       ],
     );
-    w.scanner.enqueue('VE-AB2C-1013');
     await _open(tester, w);
     final link = find.byKey(const Key('manage-checkin-link'));
     expect(
@@ -331,9 +320,7 @@ void main() {
     );
     expect(tester.getSize(link).height, greaterThanOrEqualTo(48));
     await _tap(tester, link);
-    expect(w.scanner.calls, 1);
-    expect(w.repo.checkedIn, ['VE-AB2C-1013']);
-    expect(find.text('Đã vào · Lan Anh · 2 vé'), findsOneWidget);
+    expect(w.location, '/scan?event=ev1');
   });
 
   testWidgets('the Check‑in link follows the scan window (O3)', (tester) async {
@@ -348,56 +335,6 @@ void main() {
           .onPressed,
       isNull,
     );
-  });
-
-  testWidgets('scanning a used ticket says Vé đã dùng', (tester) async {
-    final w = _host(
-      now: _eventDay,
-      registrations: [
-        registrationOf(
-          'r1',
-          'ev1',
-          checkedInAt: eventNow.subtract(const Duration(minutes: 5)),
-        ),
-      ],
-    );
-    w.scanner.enqueue('VE-AB2C-1013');
-    await _open(tester, w);
-    await _tap(tester, find.byKey(const Key('manage-scan')));
-    expect(find.text('Vé đã dùng'), findsOneWidget);
-    expect(w.repo.checkedIn, isEmpty);
-  });
-
-  testWidgets('an unknown code says Vé không hợp lệ', (tester) async {
-    final w = _host(
-      now: _eventDay,
-      registrations: [registrationOf('r1', 'ev1')],
-    );
-    w.scanner.enqueue('VE-ZZZZ-1013');
-    await _open(tester, w);
-    await _tap(tester, find.byKey(const Key('manage-scan')));
-    expect(find.text('Vé không hợp lệ'), findsOneWidget);
-  });
-
-  testWidgets('manual code entry checks in', (tester) async {
-    final w = _host(
-      now: _eventDay,
-      registrations: [registrationOf('r1', 'ev1', userName: 'Lan Anh')],
-    );
-    w.scanner.manual = true;
-    await _open(tester, w);
-    await _tap(tester, find.byKey(const Key('manage-scan')));
-
-    expect(find.text('Nhập mã vé'), findsOneWidget);
-    await tester.enterText(
-      find.byKey(const Key('checkin-code')),
-      ' ve-ab2c-1013 ',
-    );
-    await tester.pump();
-    await _tap(tester, find.byKey(const Key('checkin-submit')));
-
-    expect(w.repo.checkedIn, ['VE-AB2C-1013']);
-    expect(find.text('Đã vào · Lan Anh · 1 vé'), findsOneWidget);
   });
 
   // detailOf: starts eventNow + 3 days, ends two hours later.
@@ -437,63 +374,13 @@ void main() {
     expect(_scanEnabled(tester), isTrue);
   });
 
-  test('a not_eligible answer reads not yet / closed, never invalid', () {
-    final e = detailOf('ev1');
-    const err = EventError('not_eligible');
-    expect(
-      checkinOutcomeOf(err, event: e, now: eventNow),
-      CheckinOutcome.notYet,
-    );
-    expect(
-      checkinOutcomeOf(
-        err,
-        event: e,
-        now: e.endsAt.add(const Duration(hours: 3)),
-      ),
-      CheckinOutcome.closed,
-    );
-    expect(
-      checkinOutcomeOf(const EventError('not_found')),
-      CheckinOutcome.invalid,
-    );
-    expect(checkinOutcomeOf(const EventError('conflict')), CheckinOutcome.used);
-  });
-
-  testWidgets('no loader spins while a scan or result sheet waits', (
-    tester,
-  ) async {
-    final w = _host(
-      now: _eventDay,
-      registrations: [registrationOf('r1', 'ev1', userName: 'Lan Anh')],
-    );
-    w.scanner.manual = true;
-    await _open(tester, w);
-    AppButton scan() =>
-        tester.widget<AppButton>(find.byKey(const Key('manage-scan')));
-
-    await _tap(tester, find.byKey(const Key('manage-scan')));
-    expect(find.byKey(const Key('checkin-code')), findsOneWidget);
-    expect(scan().loading, isFalse);
-    expect(scan().onPressed, isNull);
-
-    await tester.enterText(
-      find.byKey(const Key('checkin-code')),
-      'VE-AB2C-1013',
-    );
-    await tester.pump();
-    await _tap(tester, find.byKey(const Key('checkin-submit')));
-    expect(find.byKey(const Key('checkin-result')), findsOneWidget);
-    expect(scan().loading, isFalse);
-    expect(find.byType(DotRingLoader), findsNothing);
-  });
-
   testWidgets('scan is disabled two hours after the end', (tester) async {
     final w = _host(now: end.add(const Duration(hours: 2, minutes: 1)));
     await _open(tester, w);
     expect(_scanEnabled(tester), isFalse);
     await tester.tap(find.byKey(const Key('manage-scan')));
     await settle(tester);
-    expect(w.scanner.calls, 0);
+    expect(w.location, isNot(startsWith('/scan')));
   });
 
   testWidgets('cancel asks with the count and calls cancelEvent', (
