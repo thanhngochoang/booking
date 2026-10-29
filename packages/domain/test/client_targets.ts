@@ -53,6 +53,8 @@ export const CLIENT_TARGET_PATTERNS = [
   '/organizer/spots/:id',
   '/organizer/gate-staff',
   '/spots/:id',
+  // Final fix A-I3: a ticket's pass_ready and entry_day_closed open the buyer's tickets (S11.04)
+  '/bookings?tab=events',
 ] as const;
 
 const ID = /^[A-Za-z0-9_-]{1,128}$/;

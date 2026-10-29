@@ -272,7 +272,7 @@ describe('entry refunds, closing a day and holds', () => {
     assert.deepEqual([day(w)?.closed, day(w)?.sold], [true, 0]);
     assert.equal(day(w, '2026-10-23')?.closed, false);
     for (const uid of ['cu1', 'cu2']) {
-      assert.deepEqual(w.notify.store.rowsOf(uid).map((r) => [r.type, r.target]), [['entry_day_closed', `/e/${ENTRY_ID}`]]);
+      assert.deepEqual(w.notify.store.rowsOf(uid).map((r) => [r.type, r.target]), [['entry_day_closed', '/bookings?tab=events']]);
     }
     assert.equal(w.notify.store.rowsOf('cu3').length, 0);
     await assert.rejects(buy(w, cu3), code('day_closed'));

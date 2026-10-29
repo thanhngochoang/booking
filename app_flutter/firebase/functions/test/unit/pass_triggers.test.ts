@@ -39,7 +39,7 @@ describe('S30 pass and shooting triggers', () => {
     await handlePassCreated('TKTS2345', passToFirestore({
       code8: 'TKTS2345', customerId: 'c2', day: '2026-10-20', bookingId: null, eventId: 'en1', registrationIds: ['r1'], createdAt: NOW.toISOString(),
     }), n.deps);
-    assert.deepEqual(n.store.rowsOf('c2').map((r) => [r.type, r.target]), [['pass_ready', '/e/en1']]);
+    assert.deepEqual(n.store.rowsOf('c2').map((r) => [r.type, r.target]), [['pass_ready', '/bookings?tab=events']]);
     // A malformed document sends nothing.
     await handlePassCreated('BAD', { day: 1 }, n.deps);
     assert.equal(n.store.rowsOf('c2').length, 1);

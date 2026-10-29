@@ -50,6 +50,8 @@ const _accepted = [
   '/organizer/spots/x',
   '/organizer/gate-staff',
   '/spots/x',
+  // A ticket's pass_ready / entry_day_closed (final fix A-I3)
+  '/bookings?tab=events',
 ];
 
 void main() {
@@ -160,7 +162,10 @@ void main() {
       '/u/p1?tab=reviews&tab=reviews',
       '/u/p1?tab=albums&tab=reviews',
       '/u/p1?tab=reviews&tab=albums',
-      '/bookings?tab=events',
+      // Only `tab=events` (final fix A-I3), exactly once.
+      '/bookings?tab=archive',
+      '/bookings?tab=events&tab=events',
+      '/bookings?tab=events&highlight=r1',
     ]) {
       expect(safeTarget(t), isNull, reason: t);
     }

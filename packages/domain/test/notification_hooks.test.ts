@@ -40,6 +40,7 @@ import {
   notifyJobExpiring,
   notifyJobInvited,
   notifyJobMatch,
+  notifyPassReady,
   notifyPayoutAccountChanged,
   notifyPayoutAccountNeeded,
   notifyPayoutReleased,
@@ -143,7 +144,18 @@ const CASES: readonly HookCase[] = [
   {
     name: 'notifyEntryDayClosed',
     run: (d) => notifyEntryDayClosed(d, { userId: 'c1', eventId: 'ev1', registrationId: 'rg1', spot: 'Bãi đá', day: '2026-10-12' }),
-    rows: [row('c1', 'entry_day_closed', '/e/ev1', 'n_entry_day_closed_ev1_2026-10-12_rg1', 'Bãi đá đóng cửa T2 12/10')],
+    // Final fix A-I3: the buyer's tickets (S11.04), not the event's sales page.
+    rows: [row('c1', 'entry_day_closed', '/bookings?tab=events', 'n_entry_day_closed_ev1_2026-10-12_rg1', 'Bãi đá đóng cửa T2 12/10')],
+  },
+  {
+    name: 'notifyPassReady (entry ticket)',
+    run: (d) => notifyPassReady(d, { customerId: 'c1', day: DAY, bookingId: null, eventId: 'ev1', registrationId: 'rg1' }),
+    rows: [row('c1', 'pass_ready', '/bookings?tab=events', 'n_pass_ready_ev1_rg1', 'Vé vào cửa đã sẵn sàng')],
+  },
+  {
+    name: 'notifyPassReady (booking)',
+    run: (d) => notifyPassReady(d, { customerId: 'c1', day: DAY, bookingId: 'b1', eventId: null, registrationId: null }),
+    rows: [row('c1', 'pass_ready', '/b/b1', 'n_pass_ready_b1', 'Mã gặp thợ đã sẵn sàng')],
   },
   {
     name: 'notifyEventVenueRequested',

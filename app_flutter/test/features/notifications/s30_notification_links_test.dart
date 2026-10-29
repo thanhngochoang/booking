@@ -18,7 +18,8 @@ const _targets = {
   'spot_claim_rejected': '/organizer/spots/claim',
   'spot_resident_added': '/spots/bd',
   'gate_staff_invited': '/organizer/gate-staff',
-  'entry_day_closed': '/e/ent1',
+  // Final fix A-I3: a ticket's notices open the buyer's tickets (S11.04).
+  'entry_day_closed': '/bookings?tab=events',
   'event_venue_requested': '/e/ev1',
   'event_venue_answered': '/events/ev1/manage',
   'shoot_question': '/b/b1',
@@ -36,6 +37,13 @@ void main() {
         reason: type,
       );
     }
+  });
+
+  test('an entry ticket\'s pass_ready opens the buyer\'s tickets, and so '
+      'does the tap (final fix A-I3)', () {
+    expect(safeTarget('/bookings?tab=events'), '/bookings?tab=events');
+    expect(safeTarget('/bookings?tab=other'), isNull);
+    expect(safeTarget('/bookings?tab=events&x=1'), isNull);
   });
 
   test('each S30 target is allowlisted and routed', () {

@@ -1027,9 +1027,13 @@ export async function notifyGateStaffInvited(
   });
 }
 
+/** The customer's tickets (S11.04 "Vé sự kiện"): where a ticket's QR and its day state show. */
+const MY_TICKETS_TARGET = '/bookings?tab=events';
+
 /**
- * Emitter: `closeEntryDay` (S30), once per paid ticket of the closed day. Opens the event (S11.02),
- * whose tickets tab shows "Ngày đóng cửa · đang hoàn 100%".
+ * Emitter: `closeEntryDay` (S30), once per paid ticket of the closed day. Opens the buyer's tickets
+ * (S11.04, `/bookings?tab=events`), where the ticket shows "Ngày đóng cửa · đang hoàn 100%" (final fix
+ * A-I3: the event page S11.02 shows no ticket).
  */
 export async function notifyEntryDayClosed(
   deps: NotifyDeps,
@@ -1038,7 +1042,7 @@ export async function notifyEntryDayClosed(
   return notify(deps, {
     userId: e.userId,
     content: { type: 'entry_day_closed', spot: e.spot, day: e.day },
-    target: `/e/${e.eventId}`,
+    target: MY_TICKETS_TARGET,
     dedupeKey: `entry_day_closed:${e.eventId}_${e.day}_${e.registrationId}`,
     thumbUrl: e.thumbUrl ?? null,
   });
@@ -1102,7 +1106,7 @@ export async function notifyShootQuestion(
 
 /**
  * Emitter: the pass writer's trigger (Task 6: `passes/{code8}` created), once per pass. A booking's
- * opens the booking (S05.02-pass), an entry ticket's the event's tickets (S11.04-entry).
+ * opens the booking (S05.02-pass), a ticket's the buyer's tickets (S11.04-entry, final fix A-I3).
  */
 export async function notifyPassReady(
   deps: NotifyDeps,
@@ -1111,7 +1115,7 @@ export async function notifyPassReady(
   return notify(deps, {
     userId: e.customerId,
     content: { type: 'pass_ready', kind: e.bookingId !== null ? 'booking' : 'entry', day: e.day },
-    target: e.bookingId !== null ? `/b/${e.bookingId}` : `/e/${e.eventId ?? ''}`,
+    target: e.bookingId !== null ? `/b/${e.bookingId}` : MY_TICKETS_TARGET,
     // Never the code itself: only the customer's `private/pass` holds it.
     dedupeKey: `pass_ready:${e.bookingId ?? `${e.eventId ?? ''}_${e.registrationId ?? ''}`}`,
   });
