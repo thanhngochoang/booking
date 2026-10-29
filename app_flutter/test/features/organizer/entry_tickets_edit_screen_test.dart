@@ -259,6 +259,11 @@ void main() {
     await tapOrganizer(tester, _key('entry-type-1'));
     expect(_key('type-delete'), findsOneWidget);
     expect(_key('type-hide'), findsNothing);
+    // Only registrations from today on are read, never the season (A-I4).
+    expect(
+      w.events.entryQueries.map((q) => (q.day, q.fromDay)).toSet(),
+      {(null, organizerToday)},
+    );
   });
 
   testWidgets('capacity under sold → s3004_capacityBelowSold', (tester) async {

@@ -213,6 +213,49 @@ void main() {
           ),
         );
 
+    group('entry registrations by visit day (final fix A-I4)', () {
+      Map<String, dynamic> reg(String day, {String status = 'paid'}) => {
+        'eventId': 'e1',
+        'userId': 'u1',
+        'createdAt': _ts('2026-10-20T00:00:00Z'),
+        'status': status,
+        'quantity': 1,
+        'amount': 70000,
+        'visitDay': day,
+        'items': [
+          {'ticketTypeId': 't1', 'name': 'Người lớn', 'price': 70000, 'qty': 1},
+        ],
+        'event': {'title': 'Vé vào cửa', 'type': 'entry'},
+      };
+
+      Future<void> seedRegs() async {
+        final regs = db
+            .collection('events')
+            .doc('e1')
+            .collection('registrations');
+        await regs.doc('past').set(reg('2026-11-20'));
+        await regs.doc('a').set(reg('2026-11-21'));
+        await regs.doc('b').set(reg('2026-11-21', status: 'held'));
+        await regs.doc('later').set(reg('2026-11-22'));
+      }
+
+      test('one day: only that visitDay is read (S12.03-entry)', () async {
+        await seedRegs();
+        final day = await repo
+            .watchEntryRegistrations('e1', day: '2026-11-21')
+            .first;
+        expect(day.map((r) => r.id).toSet(), {'a', 'b'});
+      });
+
+      test('from a day on: visitDay >= the day (S30.04)', () async {
+        await seedRegs();
+        final from = await repo
+            .watchEntryRegistrations('e1', fromDay: '2026-11-21')
+            .first;
+        expect(from.map((r) => r.id).toSet(), {'a', 'b', 'later'});
+      });
+    });
+
     test(
       'registerEntry sends {eventId, visitDay, items, name, method}',
       () async {

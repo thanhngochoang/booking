@@ -159,6 +159,11 @@ void main() {
         (await refusal({'code': 'not_found'})).code,
         PassErrorCode.notFound,
       );
+      // Final fix D-I3: the server's scan budget.
+      expect(
+        (await refusal({'code': 'limit_exceeded'})).code,
+        PassErrorCode.limitExceeded,
+      );
     });
 
     test('an unreachable server is a network error', () async {

@@ -252,6 +252,16 @@ void main() {
     expect(find.text('Thanh toán 490.000₫'), findsOneWidget);
   });
 
+  testWidgets('a spot without access but with an open entry event offers '
+      'the tickets (spec §3.3, final fix A-C1)', (tester) async {
+    await _open(
+      tester,
+      spots: spotBookingRepo()..seedEntryEvent(spotBookingSpotId, _entry),
+    );
+    expect(find.byKey(const Key('book-entry-switch')), findsOneWidget);
+    expect(find.text('Vé vào cửa × 2'), findsOneWidget);
+  });
+
   testWidgets('an open spot has no entry card', (tester) async {
     await _open(tester, spots: spotBookingRepo());
     expect(find.byKey(const Key('book-entry')), findsNothing);

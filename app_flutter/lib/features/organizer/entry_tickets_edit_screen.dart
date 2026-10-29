@@ -316,7 +316,18 @@ class _EntryTicketsEditScreenState
     if (_editing) {
       final id = widget.eventId!;
       final event = ref.watch(eventProvider(id));
-      final regs = ref.watch(eventRegistrationsProvider(id)).value ?? const [];
+      // From today on only, never the whole season (final fix A-I4): a type
+      // sold only on past days is refused by the server, not flagged here.
+      final regs =
+          ref
+              .watch(
+                entryRegistrationsFromProvider((
+                  eventId: id,
+                  fromDay: _today(),
+                )),
+              )
+              .value ??
+          const [];
       soldPerDay = entrySoldPerDay(regs, _today());
       soldIds = entrySoldTypeIds(regs);
       final sold = soldIds;

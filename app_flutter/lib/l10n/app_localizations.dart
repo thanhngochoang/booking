@@ -21501,6 +21501,12 @@ abstract class AppLocalizations {
   /// **'Về buổi chụp'**
   String get s3007_backToShoot;
 
+  /// S30 (#223) S30.07 limit_exceeded: the scanner's 20 refused scans of the hour are spent (final fix D-I3).
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã quét sai quá nhiều lần. Thử lại sau ít phút.'**
+  String get s3007_limitExceeded;
+
   /// S30 (#223) S30.07 offline.
   ///
   /// In vi, this message translates to:

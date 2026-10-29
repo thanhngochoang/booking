@@ -8447,6 +8447,8 @@
   "@s3007_next": {"description": "S30 (#223) S30.07 secondary."},
   "s3007_backToShoot": "Về buổi chụp",
   "@s3007_backToShoot": {"description": "S30 (#223) S30.07 shooter secondary."},
+  "s3007_limitExceeded": "Bạn đã quét sai quá nhiều lần. Thử lại sau ít phút.",
+  "@s3007_limitExceeded": {"description": "S30 (#223) S30.07 limit_exceeded: the scanner's 20 refused scans of the hour are spent (final fix D-I3)."},
   "s3007_offline": "Chưa quét được, kiểm tra kết nối",
   "@s3007_offline": {"description": "S30 (#223) S30.07 offline."},
   "s3007_failed": "Chưa quét được, thử lại",

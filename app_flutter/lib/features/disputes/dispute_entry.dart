@@ -129,7 +129,8 @@ bool _holdsMoney(EscrowStatus? s) =>
 
 /// When the customer's dispute window on [b] closes, or null when there is
 /// none. Mirrors the server's `disputeWindow` (Decision 2): `shot` → 24 h
-/// after the shoot; `approved` → the end of the delivery check; `completed`
+/// after the shoot; `shooting` → 24 h from now; `approved` → the end of the
+/// delivery check; `completed`
 /// / `reviewed` with money still held (a payment without milestones) → 24 h
 /// after completion. Only while money is held (`disputed` = the linked
 /// dispute is still open). One open dispute per booking, but each milestone
@@ -145,6 +146,11 @@ DateTime? bookingDisputeClosesAt(Booking b, {DateTime? now}) {
   // booking whose customer denied the shoot stays disputable; the window
   // rolls with now while the money is held.
   if (b.status == BookingStatus.upcoming && b.shootDeniedAt != null) {
+    return now?.add(const Duration(hours: disputeWindowHours));
+  }
+  // S30 `shooting` (spec §6.3: after the scan only a dispute is left; the
+  // server's window rolls with now as above; final fix A-I2).
+  if (b.status == BookingStatus.shooting) {
     return now?.add(const Duration(hours: disputeWindowHours));
   }
   return switch (b.status) {

@@ -68,6 +68,12 @@ void main() {
       find.text('Đã bán 0/500 · đã vào 0 · doanh thu 140.000₫'),
       findsOneWidget,
     );
+    // Each chip reads its own visit day, never the whole season (A-I4).
+    expect(
+      w.events.entryQueries.map((q) => q.day).toSet(),
+      {organizerToday, '2026-11-12'},
+    );
+    expect(w.events.entryQueries.every((q) => q.fromDay == null), isTrue);
   });
 
   testWidgets(

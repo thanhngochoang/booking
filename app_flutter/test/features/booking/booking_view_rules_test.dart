@@ -1357,10 +1357,12 @@ void main() {
       expect(a, isNot(contains(DetailAction.assign)));
     });
 
-    test('customer: contact and directions; no cancel, no reschedule', () {
+    test('customer: contact, directions and Báo vấn đề; no cancel, no '
+        'reschedule (spec §6.3, final fix A-I2)', () {
       final a = detailActions(shooting(), BookingRole.customer, during, _on);
       expect(a, contains(DetailAction.contact));
       expect(a, contains(DetailAction.directions));
+      expect(a, contains(DetailAction.reportProblem));
       expect(a, isNot(contains(DetailAction.cancel)));
       expect(a, isNot(contains(DetailAction.reschedule)));
     });

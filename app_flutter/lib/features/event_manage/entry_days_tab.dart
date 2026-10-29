@@ -142,7 +142,12 @@ class _EntryDaysTabState extends ConsumerState<EntryDaysTab> {
     final entryDay = ref
         .watch(entryDayProvider((eventId: e.id, day: day)))
         .value;
-    final regs = ref.watch(eventRegistrationsProvider(e.id)).value ?? const [];
+    // One visit day only, never the whole season (final fix A-I4).
+    final regs =
+        ref
+            .watch(entryDayRegistrationsProvider((eventId: e.id, day: day)))
+            .value ??
+        const [];
     final sales = entryDaySales(e, regs, day);
     final cap = e.dailyCapacity;
     final sold = entryDay?.sold ?? 0;

@@ -48,6 +48,22 @@ final venueRequestsProvider = StreamProvider.autoDispose
           ref.watch(eventRepositoryProvider).watchVenueRequests(spotId),
     );
 
+/// An entry event's registrations of one visit day (S12.03-entry).
+final entryDayRegistrationsProvider = StreamProvider.autoDispose
+    .family<List<EventRegistration>, ({String eventId, String day})>(
+      (ref, k) => ref
+          .watch(eventRepositoryProvider)
+          .watchEntryRegistrations(k.eventId, day: k.day),
+    );
+
+/// An entry event's registrations from a visit day on (S30.04).
+final entryRegistrationsFromProvider = StreamProvider.autoDispose
+    .family<List<EventRegistration>, ({String eventId, String fromDay})>(
+      (ref, k) => ref
+          .watch(eventRepositoryProvider)
+          .watchEntryRegistrations(k.eventId, fromDay: k.fromDay),
+    );
+
 final eventRegistrationsProvider = StreamProvider.autoDispose
     .family<List<EventRegistration>, String>(
       (ref, eventId) =>

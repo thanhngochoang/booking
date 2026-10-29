@@ -124,11 +124,9 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     final spotId = b.spotId;
     if (spotId == null) return null;
     final spot = ref.watch(spotProvider(spotId)).value;
-    if (spot == null || !spot.isTicketed) return null;
-    final price = entryUnitPrice(
-      ref.watch(entryEventProvider(spotId)).value,
-      spot.access,
-    );
+    final onSale = ref.watch(entryEventProvider(spotId)).value;
+    if (spot == null || !spot.ticketedWith(onSale)) return null;
+    final price = entryUnitPrice(onSale, spot.access);
     return price == null ? null : l10n.s0601_ticketOnSite(formatMoney(price));
   }
 

@@ -118,6 +118,11 @@ class Spot {
   /// The spot sells or asks for tickets at the gate.
   bool get isTicketed => access?.type == SpotAccessType.ticket;
 
+  /// Spec §3.3 (final fix A-C1): an open entry event on sale at the spot
+  /// makes it ticketed ("Mua vé") whatever `access.type` says; without one,
+  /// `access.type == ticket` decides. Every S30 ticket site asks this.
+  bool ticketedWith(EntryEvent? onSale) => onSale != null || isTicketed;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

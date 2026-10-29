@@ -12,7 +12,8 @@ enum PassScannerFailure { permissionDenied, unsupported, unavailable }
 /// torch, and the preview to put on screen. `MobilePassScanner` is the only
 /// adapter (and the only `mobile_scanner` import); tests use a fake.
 abstract class PassScanner {
-  /// Each code read once (trimmed, non-empty), as a broadcast stream.
+  /// Every code read (trimmed, non-empty), again on each read while it
+  /// stays in view, as a broadcast stream.
   Stream<String> codes();
 
   /// S30.07 "Đèn pin".

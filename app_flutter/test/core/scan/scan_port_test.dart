@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/core/scan/mobile_pass_scanner.dart';
 
 import '../../support/fake_pass_scanner.dart';
 
@@ -12,6 +13,11 @@ void main() {
     const b = PluginScreenBrightness();
     await b.raise();
     await b.restore();
+  });
+
+  test('the camera adapter reports every read, so a code seen while a sheet '
+      'was up is read again after it (final fix A-I1)', () {
+    expect(MobilePassScanner().reportsEveryRead, isTrue);
   });
 
   test('the scanner factory is overridable with a fake', () {

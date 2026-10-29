@@ -126,6 +126,21 @@ void main() {
       );
     });
 
+    test('shooting: open, rolling 24 h from now while the money is held '
+        '(dispute.ts, spec §6.3; final fix A-I2)', () {
+      expect(
+        bookingDisputeClosesAt(_booking(BookingStatus.shooting), now: _now),
+        _now.add(const Duration(hours: disputeWindowHours)),
+      );
+      expect(
+        bookingDisputeClosesAt(
+          _booking(BookingStatus.shooting, disputeId: 'd1'),
+          now: _now,
+        ),
+        isNull,
+      );
+    });
+
     test('nothing held, a dispute already linked, or another state → null', () {
       final done = _now.subtract(const Duration(hours: 2));
       expect(

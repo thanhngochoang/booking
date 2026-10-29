@@ -1076,7 +1076,10 @@ class _EntryNote extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final spot = ref.watch(spotProvider(spotId)).value;
-    if (spot == null || !spot.isTicketed) return const SizedBox.shrink();
+    final onSale = ref.watch(entryEventProvider(spotId)).value;
+    if (spot == null || !spot.ticketedWith(onSale)) {
+      return const SizedBox.shrink();
+    }
     final uid = ref.watch(authStateProvider).value?.uid;
     final today = vnDateKey(ref.watch(clockProvider)());
     final residents =
@@ -1085,10 +1088,7 @@ class _EntryNote extends ConsumerWidget {
     if (mine != null && mine.waiverFor(today).provider) {
       return const SizedBox.shrink();
     }
-    final price = entryUnitPrice(
-      ref.watch(entryEventProvider(spotId)).value,
-      spot.access,
-    );
+    final price = entryUnitPrice(onSale, spot.access);
     if (price == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Padding(

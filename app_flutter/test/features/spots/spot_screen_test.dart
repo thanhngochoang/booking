@@ -1399,6 +1399,19 @@ void main() {
       expect(router.state.uri.toString(), '/spots/spot1/tickets');
     });
 
+    testWidgets('an open entry event at a spot without access still sells: '
+        'Vào cửa and Mua vé (spec §3.3, final fix A-C1)', (tester) async {
+      final spots = FakeSpotRepository()
+        ..seedSpot(_spot())
+        ..seedEntryEvent('spot1', entry);
+      final router = await open(tester, spots);
+      expect(find.byKey(const Key('spot-entry')), findsOneWidget);
+      expect(find.text('Người lớn trước 18h · 70.000₫'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('spot-entry-buy')));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.toString(), '/spots/spot1/tickets');
+    });
+
     testWidgets('without tickets on sale: Giá tham khảo · cập nhật {date}, '
         'no button', (tester) async {
       final spots = FakeSpotRepository()..seedSpot(ticketed());

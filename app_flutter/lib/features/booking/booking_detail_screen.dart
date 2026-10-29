@@ -1206,11 +1206,9 @@ class _EntryLine extends ConsumerWidget {
       text = l10n.s0502_entryIncluded;
     } else if (booking.spotId case final id?) {
       final spot = ref.watch(spotProvider(id)).value;
-      if (spot != null && spot.isTicketed) {
-        final unit = entryUnitPrice(
-          ref.watch(entryEventProvider(id)).value,
-          spot.access,
-        );
+      final onSale = ref.watch(entryEventProvider(id)).value;
+      if (spot != null && spot.ticketedWith(onSale)) {
+        final unit = entryUnitPrice(onSale, spot.access);
         if (unit != null) text = l10n.s0502_entryOnSite(formatMoney(unit * 2));
       }
     }

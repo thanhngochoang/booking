@@ -146,6 +146,15 @@ abstract class EventRepository {
   /// Every registration of an event (managers), newest first.
   Stream<List<EventRegistration>> watchRegistrations(String eventId);
 
+  /// An entry event's registrations of one visit [day] (S12.03-entry), or
+  /// of [fromDay] on (S30.04), never the whole season (final fix A-I4).
+  /// Managers only; equality or range on `visitDay` alone (auto-indexed).
+  Stream<List<EventRegistration>> watchEntryRegistrations(
+    String eventId, {
+    String? day,
+    String? fromDay,
+  });
+
   /// The attendee's phone snapshot for a manager. Null unless the ticket is
   /// paid and contact-eligible: a free ticket never exposes a phone (O3).
   Stream<BookingContactSnapshot?> watchRegistrationContact(
@@ -441,6 +450,28 @@ class FakeEventRepository implements EventRepository {
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return all;
       });
+
+  /// Every `watchEntryRegistrations` call, for tests (day / fromDay).
+  final entryQueries = <({String eventId, String? day, String? fromDay})>[];
+
+  @override
+  Stream<List<EventRegistration>> watchEntryRegistrations(
+    String eventId, {
+    String? day,
+    String? fromDay,
+  }) {
+    entryQueries.add((eventId: eventId, day: day, fromDay: fromDay));
+    return _watch(
+      () => [
+        for (final r in _registrations)
+          if (r.eventId == eventId &&
+              r.visitDay != null &&
+              (day == null || r.visitDay == day) &&
+              (fromDay == null || r.visitDay!.compareTo(fromDay) >= 0))
+            r,
+      ],
+    );
+  }
 
   @override
   Stream<BookingContactSnapshot?> watchRegistrationContact(

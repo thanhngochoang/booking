@@ -57,6 +57,17 @@ final entryEventProvider = StreamProvider.autoDispose
           ref.watch(spotRepositoryProvider).watchEntryEvent(spotId),
     );
 
+/// Whether the spot is ticketed (`Spot.ticketedWith` its entry event on
+/// sale); false while the spot loads or when it does not read.
+final spotTicketedProvider = Provider.autoDispose.family<bool, String>((
+  ref,
+  spotId,
+) {
+  final spot = ref.watch(spotProvider(spotId)).value;
+  if (spot == null) return false;
+  return spot.ticketedWith(ref.watch(entryEventProvider(spotId)).value);
+});
+
 /// `entry_days/{eventId}_{day}`.
 final entryDayProvider = StreamProvider.autoDispose
     .family<EntryDay?, ({String eventId, String day})>(

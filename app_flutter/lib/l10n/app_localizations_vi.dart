@@ -12591,6 +12591,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s3007_backToShoot => 'Về buổi chụp';
 
   @override
+  String get s3007_limitExceeded =>
+      'Bạn đã quét sai quá nhiều lần. Thử lại sau ít phút.';
+
+  @override
   String get s3007_offline => 'Chưa quét được, kiểm tra kết nối';
 
   @override

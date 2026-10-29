@@ -158,6 +158,50 @@ void main() {
     },
   );
 
+  group('the camera reports every read (final fix A-I1)', () {
+    const codeB = 'VE-AB2C-3D4E';
+    const normB = 'AB2C3D4E';
+
+    testWidgets('the next customer\'s code read while the sheet is up is '
+        'scanned after Quét tiếp', (tester) async {
+      final w = ScanWorld();
+      w.passes
+        ..answerScan(_code, _entryResult())
+        ..answerScan(codeB, _entryResult(qty: 2));
+      await w.pump(tester);
+      await _scan(tester, w, _code);
+      // The next customer holds up their QR during the success sheet.
+      w.scanner.emit(codeB);
+      await settleScan(tester);
+      expect(w.passes.scans, [_norm]);
+      await tester.tap(find.byKey(const Key('scan-next')));
+      await settleScan(tester);
+      // Still in view: the camera reads it again, and now it is sent.
+      await _scan(tester, w, codeB);
+      expect(w.passes.scans, [_norm, normB]);
+      expect(find.text('Đã vào · 2 người'), findsOneWidget);
+    });
+
+    testWidgets('the code just handled is ignored while it stays in view, and '
+        'scanned again once shown anew', (tester) async {
+      final w = ScanWorld();
+      w.passes.answerScan(_code, const PassError(PassErrorCode.tooEarly));
+      await w.pump(tester);
+      await _scan(tester, w, _code);
+      w.scanner.emit(_code);
+      await settleScan(tester);
+      await tester.tap(find.byKey(const Key('scan-next')));
+      await settleScan(tester);
+      // Held in view right after the sheet: no second scan of the same code.
+      await _scan(tester, w, _code);
+      expect(w.passes.scans, [_norm]);
+      // Out of view for 2 s, then shown again (13:31 for a 13:30 opening).
+      await tester.pump(const Duration(seconds: 2));
+      await _scan(tester, w, _code);
+      expect(w.passes.scans, [_norm, _norm]);
+    });
+  });
+
   testWidgets('Quét tiếp returns to the camera', (tester) async {
     final w = ScanWorld();
     w.passes.answerScan(_code, _entryResult());
@@ -198,6 +242,11 @@ void main() {
       'Mã này không thuộc sự kiện hoặc buổi chụp của bạn',
     ),
     (const PassError(PassErrorCode.notFound), 'Không tìm thấy mã'),
+    // The scanner's refusal budget is spent (final fix D-I3).
+    (
+      const PassError(PassErrorCode.limitExceeded),
+      'Bạn đã quét sai quá nhiều lần. Thử lại sau ít phút.',
+    ),
   ];
   for (final (error, text) in errors) {
     testWidgets('error ${error.code.name}: red sheet "$text", long vibration', (

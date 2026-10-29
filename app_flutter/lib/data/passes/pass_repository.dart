@@ -179,6 +179,8 @@ enum PassErrorCode {
   notEligible,
   invalidArgument,
   permissionDenied,
+  /// The scanner's refused scans of the hour are spent (final fix D-I3).
+  limitExceeded,
   network,
   unknown,
 }
@@ -208,6 +210,7 @@ PassErrorCode passErrorCodeOf(String code) => switch (code) {
   'not_eligible' => PassErrorCode.notEligible,
   'invalid_argument' || 'invalid-argument' => PassErrorCode.invalidArgument,
   'permission_denied' || 'permission-denied' => PassErrorCode.permissionDenied,
+  'limit_exceeded' || 'resource-exhausted' => PassErrorCode.limitExceeded,
   'network' || 'unavailable' || 'deadline-exceeded' => PassErrorCode.network,
   _ => PassErrorCode.unknown,
 };

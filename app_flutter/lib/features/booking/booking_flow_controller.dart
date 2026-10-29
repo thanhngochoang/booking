@@ -122,10 +122,11 @@ typedef BookingEntryKey = ({String spotId, String providerId, String day});
 final bookingEntryInfoProvider = Provider.autoDispose
     .family<BookingEntryInfo?, BookingEntryKey>((ref, k) {
       final spot = ref.watch(spotProvider(k.spotId)).value;
-      if (spot == null || !spot.isTicketed) return null;
+      if (spot == null) return null;
       final event = ref.watch(entryEventProvider(k.spotId));
+      if (!event.hasValue || !spot.ticketedWith(event.value)) return null;
       final residents = ref.watch(spotResidentsProvider(k.spotId));
-      if (!event.hasValue || !residents.hasValue) return null;
+      if (!residents.hasValue) return null;
       final mine = residents.value!
           .where((r) => r.providerId == k.providerId)
           .firstOrNull;

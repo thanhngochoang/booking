@@ -52,6 +52,7 @@ String scanErrorTitle(PassError e, AppLocalizations l) => switch (e.code) {
   PassErrorCode.notEligible ||
   PassErrorCode.permissionDenied => l.s3007_notYours,
   PassErrorCode.notFound || PassErrorCode.invalidArgument => l.s3007_notFound,
+  PassErrorCode.limitExceeded => l.s3007_limitExceeded,
   PassErrorCode.network => l.s3007_offline,
   PassErrorCode.unknown => l.s3007_failed,
 };

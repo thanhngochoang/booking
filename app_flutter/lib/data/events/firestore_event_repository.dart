@@ -279,6 +279,25 @@ class FirestoreEventRepository implements EventRepository {
   }
 
   @override
+  Stream<List<EventRegistration>> watchEntryRegistrations(
+    String eventId, {
+    String? day,
+    String? fromDay,
+  }) {
+    if (!_validId(eventId) || (day == null && fromDay == null)) {
+      return Stream.value(const []);
+    }
+    Query<Map<String, dynamic>> q = _registrations(eventId);
+    q = day != null
+        ? q.where('visitDay', isEqualTo: day)
+        : q.where('visitDay', isGreaterThanOrEqualTo: fromDay);
+    return _orIfDenied<List<EventRegistration>>(
+      q.snapshots().map((qs) => _parseRegistrations(qs.docs)),
+      const [],
+    );
+  }
+
+  @override
   Stream<BookingContactSnapshot?> watchRegistrationContact(
     String eventId,
     String registrationId,

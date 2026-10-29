@@ -23,6 +23,10 @@ import 'package:photobooking/features/scan/scan_result_sheet.dart';
 /// S06.01-scan "Mở lúc {time}" until then).
 const scanOpensBefore = Duration(hours: 2);
 
+/// The code just handled counts again once the camera has not read it for
+/// this long (it left the frame and is shown anew; final fix A-I1).
+const scanRepeatQuiet = Duration(seconds: 2);
+
 /// `/scan`, with `?booking=<id>` from S06.01 ("Quét mã khách") or
 /// `?event=<id>` from S12.03 ("Quét mã check-in").
 String scanLocation({String? bookingId, String? eventId}) => Uri(
@@ -47,6 +51,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   StreamSubscription<String>? _codes;
   bool _sheetOpen = false;
 
+  /// The camera code last sent, ignored while [_quiet] runs (each read of it
+  /// restarts the timer): a QR held in view is not scanned twice.
+  String? _handled;
+  Timer? _quiet;
+
   /// Why the preview shows no camera (set after the frame that drew it):
   /// the primer replaces the frame and the hint.
   PassScannerFailure? _failure;
@@ -61,14 +70,24 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   @override
   void dispose() {
+    _quiet?.cancel();
     unawaited(_codes?.cancel());
     _scanner.dispose();
     super.dispose();
   }
 
   void _onCode(String raw) {
-    if (_sheetOpen || ref.read(scanControllerProvider).busy) return;
+    final held = raw == _handled && (_quiet?.isActive ?? false);
+    if (raw == _handled) _quiet = _restartQuiet();
+    if (held || _sheetOpen || ref.read(scanControllerProvider).busy) return;
+    _handled = raw;
+    _quiet = _restartQuiet();
     unawaited(ref.read(scanControllerProvider.notifier).submit(raw));
+  }
+
+  Timer _restartQuiet() {
+    _quiet?.cancel();
+    return Timer(scanRepeatQuiet, () {});
   }
 
   Future<void> _manual() async {
@@ -134,8 +153,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     }
     final spotId = b.spotId;
     if (spotId == null) return null;
-    final spot = ref.read(spotProvider(spotId)).value;
-    return spot?.isTicketed == true ? l.s3007_ticketOnSite : null;
+    return ref.read(spotTicketedProvider(spotId)) ? l.s3007_ticketOnSite : null;
   }
 
   /// The spot the scanner keeps the gate of: my first managed spot, else
@@ -161,7 +179,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     if (_shooter) {
       // Read ahead: the result sheet names the shoot and the ticket.
       final b = ref.watch(bookingProvider(widget.bookingId!)).value;
-      if (b?.spotId case final id?) ref.watch(spotProvider(id));
+      if (b?.spotId case final id?) ref.watch(spotTicketedProvider(id));
     }
     final spotId = _shooter || widget.eventId != null ? null : _gateSpotId();
     final spotName = spotId == null

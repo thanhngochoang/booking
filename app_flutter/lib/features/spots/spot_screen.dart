@@ -486,7 +486,9 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                 // 6. Providers Block ("Thợ nhận chụp ở đây"), under the
                 // S29.02-entry block of a ticketed spot.
                 if (!spot.archived) ...[
-                  if (spot.isTicketed)
+                  if (spot.ticketedWith(
+                    ref.watch(entryEventProvider(spot.id)).value,
+                  ))
                     SliverToBoxAdapter(child: _EntryBlock(spot: spot)),
                   SliverToBoxAdapter(
                     child: Padding(
@@ -732,7 +734,8 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
 
     // S29.02-entry: at a ticketed spot, residents (waiver valid on the day)
     // first with their tag; the others say what the tickets cost.
-    final ticketed = spot.isTicketed;
+    final onSale = ref.watch(entryEventProvider(spot.id)).value;
+    final ticketed = spot.ticketedWith(onSale);
     final residents = {
       if (ticketed)
         for (final r
@@ -745,12 +748,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
       return w != null && (w.provider || w.guests);
     }
 
-    final unit = ticketed
-        ? entryUnitPrice(
-            ref.watch(entryEventProvider(spot.id)).value,
-            spot.access,
-          )
-        : null;
+    final unit = ticketed ? entryUnitPrice(onSale, spot.access) : null;
 
     // Schedules of the day whose provider still takes orders (spec §12).
     final daySchedules = schedules
