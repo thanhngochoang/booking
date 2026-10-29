@@ -41,7 +41,13 @@ Commits (`git log --oneline 5d4fc91f..HEAD`), by task:
 | 10 | `0d7d8156` | Rules: the venue manager reads pending events at their spot |
 | 10 | `c8808379` | S12.01-venue, S11.02-venue-consent, fee lines, S12.03 venue line |
 | 10 | `b09593ea` | Fix: venue reads only after consent is asked, consent-aware states |
-| 11 | this commit | This ledger and the spec status cells |
+| 11 | `0d0cac24` | This ledger and the spec status cells |
+| Final | `b53e9f30` | Fix: kept tickets pass the gate, scan attempt budget, gate check-ins for every ticket |
+| Final | `381014f0` | Fix: a denied shoot's resolved dispute ends the booking |
+| Final | `de9a56c2` | Fix: ranking and spot edits write only their own fields |
+| Final | `2f6e7a72` | Fix: entry ticket notices open the buyer's tickets |
+| Final | `b9a8e792` | Fix: open entry events sell anywhere, scanner reads again, shooting disputes, day-scoped reads |
+| Final | `b17888d0` | Fix: refused scans counted in the scan transaction, legacy codes only on the old callable |
 
 Counts at the end: 14 new callables (9 organizer, 3 entry/venue, 2 scan/shoot), no new Scheduler job (the 10 jobs of `2026-10-07-google-cloud-costs.md` stay), 7 new composite indexes and 3 field overrides (section 6), 11 new error codes and 9 new notification types across the domain (`spot_claim_approved`, `spot_claim_rejected`, `spot_resident_added`, `gate_staff_invited`, `entry_day_closed`, `shoot_question`, `pass_ready`, `event_venue_requested`, `event_venue_answered`). Last full runs: Functions 980/980 after Task 6's fix round; Flutter `+5658 ~42` all passed (Task 8, full affected-test fallback), later folders re-run per task, `flutter analyze --no-pub` clean at every task.
 
@@ -265,6 +271,23 @@ Task 10
 36. The venue manager reads an event at their spot only once consent was asked (`venueConsent` in pending, accepted, declined, expired; answered states stay readable for the notification link), never `not_required`: the request is the moment the host shares the event. Cost: none.
 37. Overdue not-yet-swept venue requests show as expired (not "hết hạn sau 1 giờ"); `invalid_argument` `spotId` is mapped by venue kind (`managed_spot` without a manager → `s1201_spotNotManaged`) (re-graded minors, fixed now). Cost (derived): a managed spot that is only too far also reads "not managed" (no client radius discriminator; see Deferred minors).
 
+Final review
+38. The pass code brute force (the booking shows `passCode4`, the last 4 of 8 characters, and `scanPass` had no attempt limit) is closed with a budget: 20 refused scans (`not_found`, `not_your_pass`) per scanner per hour, counted in the scan's own transaction in `scan_attempts/{uid}` (server-only). A spent budget answers `limit_exceeded`, a real code included. The old `checkInRegistration` takes legacy ticket codes only. Decision 7/8's `passCode4` stays. Cost if wrong: replacing `passCode4` with a `hasPass` flag is a small follow-up.
+39. An open entry event at a spot shows "Mua vé" and the tickets in the booking sheet, whatever `spot.access.type` says (spec §3.3 over the plan's test line), through one helper, `Spot.ticketedWith`. Cost if wrong: an organizer whose spot staff marked "open" can still sell tickets.
+40. A denied shoot (`upcoming` + `shootDeniedAt`) ends when its dispute is resolved. Any refund moves it to `cancelled` by the system; a release-only outcome moves it to `completed`, in the same transaction. The normal cancel side effects are skipped, because the shoot day has passed and the dispute settles the money. Cost if wrong: one transition to change.
+41. Ticket `pass_ready` and `entry_day_closed` notifications open `/bookings?tab=events` (a server target change; the app allowlists exactly that query). Cost if wrong: a photographer who bought tickets lands on their Today view.
+42. S12.03-entry and S30.04 read registrations of the selected or upcoming days only. A ticket type sold only on past days is not pre-flagged "Ẩn loại vé"; the server still refuses its deletion. Cost if wrong: one refused save.
+43. The final reviewers' "declined to judge" items stand as built:
+   - Gateway refunds of group children: fake rails only.
+   - A suspended organizer's payouts and cover uploads: Ruling 7.
+   - The public read of `entry_days`, and phone-to-name lookup on S30.06: spec choices.
+   - Re-reads of denied bookings by the shoot-question job: about $0.2/month at (c).
+   - Deleting an organizer account: not in the plan.
+   - `becomeOrganizer` reads flags outside its transaction: repaired by `organizers sync`.
+   - No partial-transfer UI.
+   - No `hostAs` choice in S12.01.
+   Cost if wrong: separate follow-ups.
+
 ---
 
 ## 10. Needs the owner
@@ -295,6 +318,12 @@ From the plan's "Needs the owner" and what was built by default:
 5. A scanned (`shooting`) booking whose photographer never taps "Đã chụp xong" moves to `shot` by itself at end + 24 h. Built: yes.
 6. The venue fee is part of the ticket price, not added on top; a free event at a managed spot cannot carry a venue fee. Built: as written (consent sheet locks the fee at 0 for free events).
 
+From the final review:
+
+- **The scan budget of 20 refusals an hour applies to the gate too.** A busy gate that scans many wrong or foreign passes can be paused for up to an hour. Options: raise it for gate staff and organizers, or keep 20.
+- **A denied shoot ended by its dispute keeps the bundled entry tickets paid.** A normal system cancel would refund unused tickets 100%. Options: refund them as well, or keep them.
+- **The booking-write trigger sends a system-cancel notice next to the dispute's result message** when a denied shoot is cancelled.
+
 ---
 
 ## 11. Deferred minors
@@ -322,6 +351,34 @@ Condensed from every `minor (deferred)` line of the SDD ledger.
 **Task 9.** `bookingEntryInfoProvider`/`quoteBookingEntry` mirror the domain's `bookingEntryDefaults` in Dart (a parity fixture test is advisable). `_EntryNote` wording for a resident without a provider waiver. The entry-error colour token family. The `_ctl.start` post-frame flicker. `scan_screen` `_gateSpotId` is the first managed spot. The small "Mua vé" primary on S29.02 against provider cards. `entryBuyPath` duplicates `spotTicketsPath`. No `DetailAction.answerShoot` in the action table. The "closes after 3 s" test does not assert still open at 2.9 s. Unformatted edited files and large files (`review_step` +230, `work_screen` +190, scan/entry_buy ~390). The S11.04 cutoff/label flickers while event/entry_day load. Entry events show "join" even when `paymentsReady` is false. An empty `SizedBox` in the entry join bar. `myEventRegistrationProvider` returns the first active registration for multi-day entry events (the event page join bar still uses it). The 48 h cutoff is assumed on S11.04.
 
 **Task 10.** The event page turns `_gone()` after the manager answers. An unnecessary `ref.invalidate(venueRequestsProvider)`. The terms tick has no link to the terms asset. An `invalid_argument` `spotId` for a managed spot that is too far now shows "not managed" (no client radius discriminator). Switching the venue kind away and back resets `venueConsent` client-side, giving a wrong waiting toast. The publish controller decides "Chờ địa điểm đồng ý" from known state: if the spot read failed, the toast says "Đã đăng sự kiện" while S12.03 shows the pending line. While the spot read is in flight the venue manager briefly sees the "gone" state.
+
+**Final review.**
+- Domain:
+  - The booking path does not check `canSell(org)`.
+  - A waived head count enters on a closed day.
+  - `entry` on a non-spot booking is not refused, and a reschedule leaves tickets on the old day.
+  - The booking path counts lapsed holds against `dailyCapacity`.
+- Backend:
+  - `closeEntryDay` reads the whole event's held tickets.
+  - A dual-role (studio) payout save never sets `payoutAccountOk`.
+  - Every entry purchase writes the event document (`heldCount`).
+- App:
+  - A scanned booking with no `at` reads "Vé đã hoàn".
+  - S12.03 prints full legacy codes.
+  - "Tạo QR mới" fails generically on a closed or sold-out day.
+  - `canPhotographerComplete` ignores `shootDeniedAt`.
+  - A studio owner sees "Quét mã khách" for a member's booking.
+  - The scan screen's shooter line comes from `?booking=`.
+  - Ticket lines go stale after `closeEntryDay`.
+  - `pass.*` prefs are kept after sign-out.
+  - An unknown claim status reads as rejected.
+  - `business_required` falls to the generic publish error.
+  - Payment-group rows on S22.01 have no title.
+  - `paymentGroupProvider` and `payTotalVnd` are dead code.
+  - Opening hours cannot be cleared.
+- Fix round:
+  - With two QR codes in frame, the older one can be sent again.
+  - The denied-cancel leaves the customer's own contact snapshot.
 
 ---
 
