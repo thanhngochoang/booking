@@ -20060,6 +20060,126 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn tài khoản để nhận tiền hoàn.'**
   String get detailRefundAccountBody;
+
+  /// No description provided for @detailDeliveryDue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn bàn giao {date}'**
+  String detailDeliveryDue(String date);
+
+  /// No description provided for @detailDeliveryOverdue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn bàn giao {date} · đã quá {n} ngày'**
+  String detailDeliveryOverdue(String date, int n);
+
+  /// No description provided for @lateDeliverySection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao ảnh'**
+  String get lateDeliverySection;
+
+  /// No description provided for @lateDeliveryOverdueLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá hạn'**
+  String get lateDeliveryOverdueLabel;
+
+  /// No description provided for @lateDeliveryTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} chưa bàn giao đúng hạn (trước {date})'**
+  String lateDeliveryTitle(String name, String date);
+
+  /// No description provided for @lateDeliveryBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có thể chờ thêm hoặc huỷ phần bàn giao và nhận lại mốc 2.'**
+  String get lateDeliveryBody;
+
+  /// No description provided for @lateDeliveryCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ phần bàn giao'**
+  String get lateDeliveryCancel;
+
+  /// No description provided for @lateCancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ phần bàn giao?'**
+  String get lateCancelTitle;
+
+  /// No description provided for @lateCancelRefundRow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn mốc 2 cho bạn'**
+  String get lateCancelRefundRow;
+
+  /// No description provided for @lateCancelKeepRow.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} giữ mốc 1 (buổi chụp)'**
+  String lateCancelKeepRow(String name);
+
+  /// No description provided for @lateCancelNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp được tính là hoàn thành, bạn sẽ không nhận ảnh. Nếu {name} bàn giao sau khi huỷ thì không còn qua app.'**
+  String lateCancelNote(String name);
+
+  /// No description provided for @lateCancelWait.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ thêm'**
+  String get lateCancelWait;
+
+  /// No description provided for @lateCancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ phần bàn giao'**
+  String get lateCancelConfirm;
+
+  /// No description provided for @lateCancelDoneToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ phần bàn giao · hoàn {amount}'**
+  String lateCancelDoneToast(String amount);
+
+  /// No description provided for @lateCancelNotLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa quá hạn bàn giao.'**
+  String get lateCancelNotLate;
+
+  /// No description provided for @lateCancelDisputed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Booking đang khiếu nại, không huỷ được.'**
+  String get lateCancelDisputed;
+
+  /// No description provided for @lateCancelAlreadyDelivered.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} vừa nộp bàn giao. Xem bàn giao trước khi quyết định.'**
+  String lateCancelAlreadyDelivered(String name);
+
+  /// No description provided for @detailLateCancelledProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã huỷ phần bàn giao vì quá hạn (hạn {date}). Bạn giữ mốc 1, mốc 2 đã hoàn cho khách.'**
+  String detailLateCancelledProvider(String date);
+
+  /// No description provided for @timelineLateCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ phần bàn giao · hoàn {amount}'**
+  String timelineLateCancelled(String amount);
+
+  /// No description provided for @earningsMilestoneRefundedSuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **' · mốc {n} đã hoàn cho khách'**
+  String earningsMilestoneRefundedSuffix(int n);
 }
 
 class _AppLocalizationsDelegate

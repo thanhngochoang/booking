@@ -146,7 +146,7 @@ describe('earning rows', () => {
     assert.equal(row?.netAmount, 465_000);
   });
 
-  it('milestones from the subject reach the row; null when absent', () => {
+  it('milestones from the subject reach the row; null when absent; refunded milestone excluded from total', () => {
     const withMilestones = earningItemOf({
       payment: payment(),
       refunded: 0,
@@ -158,6 +158,29 @@ describe('earning rows', () => {
     });
     assert.equal(withMilestones?.milestonesDone, 1);
     assert.equal(withMilestones?.milestonesTotal, 2);
+    assert.equal(withMilestones?.milestonesRefunded, undefined);
+
+    const withRefunded = earningItemOf({
+      payment: payment({
+        amount: 1_000_000,
+        status: 'partially_refunded',
+        escrowStatus: 'released',
+        milestones: [
+          { kind: 'shoot', amount: 500_000, status: 'released', releaseAfter: null, releasedAt: NOW.toISOString(), payoutId: null },
+          { kind: 'delivery', amount: 500_000, status: 'refunded', releaseAfter: null, releasedAt: null, payoutId: null },
+        ],
+      }),
+      refunded: 500_000,
+      subject,
+      payout: null,
+      payeeType: 'individual',
+      policy: DEFAULT_PAYOUT_POLICY,
+      now: NOW,
+    });
+    assert.equal(withRefunded?.milestonesDone, 1);
+    assert.equal(withRefunded?.milestonesTotal, 1);
+    assert.deepEqual(withRefunded?.milestonesRefunded, ['delivery']);
+
     const none = item(payment());
     assert.equal(none?.milestonesDone, null);
     assert.equal(none?.milestonesTotal, null);

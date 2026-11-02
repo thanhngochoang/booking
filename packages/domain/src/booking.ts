@@ -198,6 +198,14 @@ export interface Booking {
   readonly payableUntil?: string;
   /** Number of free revision rounds included in this booking. */
   readonly revisionsIncluded?: number;
+  /** Delivery deadline in days from `shotAt` (snapshot at draft time, 1–90, default 7; #207). */
+  readonly deliveryDays?: number;
+  /** Set when the customer cancels the delivery part after `shotAt + deliveryDays` (#207). */
+  readonly deliveryCancel?: {
+    readonly at: string;
+    readonly dueAt: string;
+    readonly refundedAmount: number;
+  } | null;
   readonly revisionsUsed?: number;
   readonly revisionsGranted?: number;
   readonly deliveryRound?: number;

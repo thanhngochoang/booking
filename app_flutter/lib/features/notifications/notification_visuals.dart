@@ -116,6 +116,8 @@ import 'package:photobooking/l10n/app_localizations.dart';
       return (icon: AppIcons.image, tone: NotificationTone.success);
     case 'delivery_extra_round':
       return (icon: AppIcons.image, tone: NotificationTone.neutral);
+    case 'delivery_cancelled_late':
+      return (icon: AppIcons.info, tone: NotificationTone.danger);
     case 'delivery_auto_approve_soon':
     case 'verification_reminder':
       return (icon: AppIcons.schedule, tone: NotificationTone.action);

@@ -114,11 +114,18 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
     assert.equal(i.milestonesTotal, null);
   });
 
-  it('milestones count the released documents; no documents is null', () => {
+  it('milestones count the released documents; refunded excluded from total and reported (#207)', () => {
     assert.equal(milestonesOfDocs([]), null);
     assert.deepEqual(milestonesOfDocs([{ status: 'released' }, { status: 'held' }]), { done: 1, total: 2 });
     assert.deepEqual(milestonesOfDocs([{ status: 'released' }, { status: 'released' }]), { done: 2, total: 2 });
     assert.deepEqual(milestonesOfDocs([{}]), { done: 0, total: 1 });
+    assert.deepEqual(
+      milestonesOfDocs([
+        { kind: 'shoot', status: 'released' },
+        { kind: 'delivery', status: 'refunded' },
+      ]),
+      { done: 1, total: 1, refunded: ['delivery'] },
+    );
   });
 
   it('the summary document carries Timestamps and the last payout', () => {

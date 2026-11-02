@@ -62,6 +62,7 @@ export const NOTIFICATION_TYPES = {
   delivery_approved: meta('booking', 'activity'),
   delivery_auto_approve_soon: meta('booking', 'activity'),
   delivery_extra_round: meta('booking', 'activity'),
+  delivery_cancelled_late: meta('booking', 'activity', true),
   studio_invite: meta('booking', 'system'),
   studio_join_request: meta('booking', 'system'),
   studio_invite_accepted: meta('booking', 'system'),

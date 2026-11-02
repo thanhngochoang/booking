@@ -25,7 +25,9 @@ import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/booking/late_cancel_sheet.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';
+import 'package:photobooking/features/booking/widgets/late_delivery_card.dart';
 import 'package:photobooking/features/booking/widgets/studio_assignee_block.dart';
 import 'package:photobooking/features/booking/widgets/studio_offer_line.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
@@ -251,6 +253,52 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ref.read(partyProfileProvider(b.photographerId)).value?.displayName ??
               '',
         );
+      case DetailAction.cancelLateDelivery:
+        final l10n = context.l10n;
+        final name = counterpartName.isEmpty
+            ? l10n.earningsCustomerFallback
+            : counterpartName;
+        final outcome = await showLateCancelSheet(
+          context,
+          booking: b,
+          providerName: name,
+          milestones: ref.read(bookingMilestonesProvider(b.id)).value,
+        );
+        if (!mounted) return;
+        switch (outcome) {
+          case LateCancelOutcome.cancelled:
+            final net = (b.deposit - (b.depositRefunded ?? 0)).clamp(
+              0,
+              b.deposit,
+            );
+            final refunded =
+                ref
+                    .read(bookingProvider(b.id))
+                    .value
+                    ?.deliveryCancel
+                    ?.refundedAmount ??
+                ref
+                    .read(bookingMilestonesProvider(b.id))
+                    .value
+                    ?.deliveryAmount ??
+                (net - (net ~/ 2));
+            _say(l10n.lateCancelDoneToast(formatMoney(refunded)));
+          case LateCancelOutcome.alreadyDelivered:
+            _say(l10n.lateCancelAlreadyDelivered(name));
+            ref.invalidate(bookingProvider(b.id));
+          case LateCancelOutcome.notLate:
+            _say(l10n.lateCancelNotLate);
+            ref.invalidate(bookingProvider(b.id));
+          case LateCancelOutcome.disputed:
+            _say(l10n.lateCancelDisputed);
+            ref.invalidate(bookingProvider(b.id));
+          case LateCancelOutcome.notEligible:
+            _say(l10n.detailErrorNotEligible);
+            ref.invalidate(bookingProvider(b.id));
+          case LateCancelOutcome.kept:
+          case LateCancelOutcome.failed:
+            break;
+        }
     }
   }
 
@@ -546,6 +594,15 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             BookingAddonsBlock(booking: b),
             const SizedBox(height: AppSpace.s4),
           ],
+          if (actions.contains(DetailAction.cancelLateDelivery)) ...[
+            LateDeliveryCard(
+              booking: b,
+              providerName: name,
+              busy: _busy != null,
+              onCancel: () => run(DetailAction.cancelLateDelivery),
+            ),
+            const SizedBox(height: AppSpace.s4),
+          ],
           AsyncView<List<BookingEventRecord>>(
             value: ref.watch(bookingEventsProvider(b.id)),
             skeleton: (_) => StatusTimeline.skeleton(steps: 7),
@@ -755,6 +812,17 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           _StatusNoticeCard(
             text: l10n.detailApprovedProvider,
             icon: AppIcons.checkCircle,
+          ),
+        );
+      } else if ((b.status == BookingStatus.completed ||
+              b.status == BookingStatus.reviewed) &&
+          b.deliveryCancel != null) {
+        add(
+          _StatusNoticeCard(
+            text: l10n.detailLateCancelledProvider(
+              formatDayMonth(toVn(b.deliveryCancel!.dueAt)),
+            ),
+            icon: AppIcons.info,
           ),
         );
       }

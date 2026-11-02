@@ -407,19 +407,20 @@ describe('seed payouts and earnings', () => {
     // - Legacy bookings: accepted (held 1.5m), upcoming (held 1.5m), disputed (held 1.5m), completed-window (held 1.5m, S18), completed-recent (soon 1.5m), completed-old (received 1.5m)
     // - Delivery milestone bookings (1.5m deposit each, 750k shoot / 750k delivery):
     //   - shot: shoot held (750k), delivery held (750k) -> held 1.5m
+    //   - shot-late: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - delivered: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - revision_requested: shoot released (soon 750k), delivery held (750k) -> held 750k, soon 750k
     //   - approved: shoot released (soon 750k), delivery released (soon 750k) -> soon 1.5m
     // - Lan's paid ticket of the past workshop (S18): held 250k until the end + 24 h
-    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (delivered) + 750k (revision) + 250k (ticket) = 9.25m
-    // Total soon = 1.5m (recent) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 4.5m
+    // Total held = 1.5m * 4 + 1.5m (shot) + 750k (shot-late) + 750k (delivered) + 750k (revision) + 250k (ticket) = 10.0m
+    // Total soon = 1.5m (recent) + 750k (shot-late) + 750k (delivered) + 750k (revision) + 1.5m (approved) = 5.25m
     // Total received = 1.5m (completed-old)
-    assert.equal(e?.heldAmount, 9_250_000);
+    assert.equal(e?.heldAmount, 10_000_000);
     const ticket = get('earnings/seed-photographer-an/items/seed-payment-ticket-lan-past');
     assert.equal(ticket?.state, 'held');
     assert.equal(ticket?.amount, 250_000);
     assert.equal(ticket?.counterpartName, 'Lan (seed)');
-    assert.equal(e?.soonAmount, 4_500_000);
+    assert.equal(e?.soonAmount, 5_250_000);
     assert.equal(e?.receivedAmount, dep(1_500_000));
     assert.equal((e?.lastPayout as { status: string }).status, 'paid');
     assert.equal(get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old')?.state, 'paid_out');
@@ -458,6 +459,17 @@ describe('seed payouts and earnings', () => {
     assert.equal(shootMilestone?.status, 'released');
     const deliveryMilestone = docs.find((d) => d.path === 'bookings/seed-booking-approved/milestones/delivery')?.data;
     assert.equal(deliveryMilestone?.status, 'released');
+
+    // S05 (#207): the late seed booking is shot 240 h ago, deliveryDays 5, with a delivery milestone held.
+    const late = docs.find((d) => d.path === 'bookings/seed-booking-shot-late')?.data;
+    assert.ok(late);
+    assert.equal(late.status, 'shot');
+    assert.equal(late.deliveryDays, 5);
+    assert.equal(millis(late.shotAt), NOW.getTime() - 240 * 3_600_000);
+    const lateShootMilestone = docs.find((d) => d.path === 'bookings/seed-booking-shot-late/milestones/shoot')?.data;
+    assert.equal(lateShootMilestone?.status, 'released');
+    const lateDeliveryMilestone = docs.find((d) => d.path === 'bookings/seed-booking-shot-late/milestones/delivery')?.data;
+    assert.equal(lateDeliveryMilestone?.status, 'held');
   });
 });
 

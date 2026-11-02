@@ -1,6 +1,14 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MemoryDiscoveryStore, MemoryChatStore, type DiscoveryDeps } from '@photobooking/domain';
+import {
+  MemoryDiscoveryStore,
+  MemoryChatStore,
+  MemoryNotificationStore,
+  MemoryPushSender,
+  MemoryUserDirectory,
+  MemoryBadgeStore,
+  type DiscoveryDeps,
+} from '@photobooking/domain';
 import { handleAvailabilityWrite } from '../../src/triggers/availability_write.js';
 import { handleEngagementWrite } from '../../src/triggers/engagement_write.js';
 import { handleServiceDiscovery } from '../../src/triggers/service_write.js';
@@ -182,5 +190,77 @@ describe('discovery triggers (in-memory deps)', () => {
     const totals = await handleRollNextFree(deps);
     assert.equal(totals.refreshed, 1);
     assert.equal(totals.pages, 1);
+  });
+
+  test('shot -> completed with deliveryCancel sends delivery_cancelled_late to the provider once and does not refresh the completed count or badges; completed without deliveryCancel behaves as today', async () => {
+    const store = new MemoryDiscoveryStore();
+    store.addPhotographer('p1', { completedCount: 0 });
+    store.addBooking('p1', 'completed');
+    const deps = createDiscoveryDeps(store);
+    const chatStore = new MemoryChatStore();
+    const chatDeps = {
+      chats: chatStore,
+      photographers: { acceptsInquiries: async () => true },
+      blocks: { isBlockedEitherWay: async () => false },
+      clock: { now: () => NOW },
+      ids: { newId: () => 'id1' },
+    };
+    const notifications = new MemoryNotificationStore();
+    const notify = {
+      store: notifications,
+      push: new MemoryPushSender(),
+      users: new MemoryUserDirectory(),
+      clock: { now: () => NOW },
+    };
+    let badgeEvaluated = 0;
+    const badgeStore = new MemoryBadgeStore();
+    const badges = {
+      badges: badgeStore,
+      metrics: {
+        isPhotographer: async () => {
+          badgeEvaluated += 1;
+          return false;
+        },
+        read: async () => ({}),
+      },
+      notify,
+      clock: { now: () => NOW },
+    };
+    const baseBooking = {
+      customerId: 'c1',
+      photographerId: 'p1',
+      serviceId: 's1',
+      serviceSnapshot: { name: 'Service', price: 1_000_000, durationMinutes: 60 },
+      day: '2026-10-05',
+      start: '10:00',
+      end: '11:00',
+      place: { name: 'Studio' },
+    };
+
+    await handleBookingWrite(
+      {
+        id: 'b_late',
+        before: { ...baseBooking, status: 'shot' },
+        after: {
+          ...baseBooking,
+          status: 'completed',
+          deliveryCancel: {
+            at: '2026-10-15T10:00:00.000Z',
+            dueAt: '2026-10-12T10:00:00.000Z',
+            refundedAmount: 500_000,
+          },
+        },
+      },
+      chatDeps,
+      undefined,
+      { notify, badges },
+      deps,
+    );
+
+    const rows = notifications.rowsOf('p1');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.type, 'delivery_cancelled_late');
+    assert.equal((await store.snapshot('p1'))?.completedCount, 0);
+    assert.equal(badgeEvaluated, 0);
   });
 });

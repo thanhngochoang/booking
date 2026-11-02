@@ -37,6 +37,20 @@ describe('serviceRecordOf', () => {
     assert.equal('revisions' in s, false);
   });
 
+  it('deliverables.deliveryDays 5 -> ServiceRecord.deliveryDays 5; absent -> undefined', () => {
+    const withDays = serviceRecordOf('srv_01', 'p1', {
+      name: 'Chân dung',
+      deliverables: { deliveryDays: 5 },
+    });
+    assert.equal(withDays.deliveryDays, 5);
+
+    const withoutDays = serviceRecordOf('srv_01', 'p1', {
+      name: 'Chân dung',
+    });
+    assert.equal(withoutDays.deliveryDays, undefined);
+    assert.equal('deliveryDays' in withoutDays, false);
+  });
+
   it('defaults are unchanged', () => {
     const d1: DocumentData = {};
     const s1 = serviceRecordOf('srv_empty', 'p1', d1);

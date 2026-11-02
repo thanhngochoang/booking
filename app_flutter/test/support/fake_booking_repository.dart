@@ -16,10 +16,12 @@ class FakeBookingRepository implements BookingRepository {
   final Map<String, Booking> bookings = {};
   final Map<String, BookingContactSnapshot> contacts = {};
   final Map<String, List<BookingEventRecord>> events = {};
+  final Map<String, BookingMilestones> milestones = {};
 
   final _bookingChanges = StreamController<String>.broadcast();
   final _contactChanges = StreamController<String>.broadcast();
   final _eventChanges = StreamController<String>.broadcast();
+  final _milestoneChanges = StreamController<String>.broadcast();
 
   BookingErrorCode? nextError;
   BookingErrorCode? nextPaymentError;
@@ -94,6 +96,8 @@ class FakeBookingRepository implements BookingRepository {
       BookingErrorCode.phoneRequired => 'phone_required',
       BookingErrorCode.priceChanged => 'price_changed',
       BookingErrorCode.notEligible => 'not_eligible',
+      BookingErrorCode.alreadyDelivered => 'already_delivered',
+      BookingErrorCode.notLate => 'not_late',
       BookingErrorCode.notAcceptingOrders => 'not_accepting_orders',
       BookingErrorCode.blocked => 'blocked',
       BookingErrorCode.deadlinePassed => 'deadline_passed',
@@ -132,6 +136,11 @@ class FakeBookingRepository implements BookingRepository {
     final list = events.putIfAbsent(event.bookingId, () => []);
     list.add(event);
     _eventChanges.add(event.bookingId);
+  }
+
+  void seedMilestones(String bookingId, BookingMilestones ms) {
+    milestones[bookingId] = ms;
+    _milestoneChanges.add(bookingId);
   }
 
   @override
@@ -213,6 +222,14 @@ class FakeBookingRepository implements BookingRepository {
         .where((id) => id == bookingId)
         .map((_) => list())
         .startWith(list());
+  }
+
+  @override
+  Stream<BookingMilestones?> watchMilestones(String bookingId) {
+    return _milestoneChanges.stream
+        .where((id) => id == bookingId)
+        .map((_) => milestones[bookingId])
+        .startWith(milestones[bookingId]);
   }
 
   @override
@@ -421,6 +438,64 @@ class FakeBookingRepository implements BookingRepository {
     );
     bookings[bookingId] = updated;
     _bookingChanges.add(bookingId);
+    return updated;
+  }
+
+  final cancelLateCalls = <String>[];
+
+  @override
+  Future<Booking> cancelLateDelivery({required String bookingId}) async {
+    _checkNextError();
+    cancelLateCalls.add(bookingId);
+    final b = bookings[bookingId];
+    if (b == null) throw const BookingException('not_found');
+    if (b.status == BookingStatus.delivered ||
+        b.status == BookingStatus.revisionRequested ||
+        b.status == BookingStatus.approved) {
+      throw const BookingException('not_eligible', field: 'delivered');
+    }
+    if (b.status != BookingStatus.shot) {
+      throw const BookingException('not_eligible', field: 'status');
+    }
+    if (b.escrowStatus == EscrowStatus.disputed) {
+      throw const BookingException('conflict');
+    }
+    final nowUtc = _clock().toUtc();
+    final shotAt = b.shotAt ?? nowUtc;
+    final dueAt = shotAt.add(Duration(days: b.deliveryDays));
+    if (!nowUtc.isAfter(dueAt)) {
+      throw const BookingException('not_eligible', field: 'not_late');
+    }
+    final ms = milestones[bookingId];
+    final refundAmount =
+        ms?.deliveryAmount ??
+        ((b.deposit - (b.depositRefunded ?? 0)) -
+            ((b.deposit - (b.depositRefunded ?? 0)) ~/ 2));
+    final updated = b.copyWith(
+      status: BookingStatus.completed,
+      completedAt: nowUtc,
+      escrowStatus: EscrowStatus.partiallyRefunded,
+      depositRefunded: (b.depositRefunded ?? 0) + refundAmount,
+      deliveryCancel: DeliveryCancel(
+        at: nowUtc,
+        dueAt: dueAt,
+        refundedAmount: refundAmount,
+      ),
+      updatedAt: nowUtc,
+    );
+    bookings[bookingId] = updated;
+    _bookingChanges.add(bookingId);
+    if (ms != null) {
+      seedMilestones(
+        bookingId,
+        BookingMilestones(
+          shootAmount: ms.shootAmount,
+          deliveryAmount: ms.deliveryAmount,
+          shootStatus: ms.shootStatus,
+          deliveryStatus: 'refunded',
+        ),
+      );
+    }
     return updated;
   }
 

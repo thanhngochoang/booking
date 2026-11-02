@@ -19,6 +19,7 @@ import {
   notifyCollabPayReported,
   notifyDeliveryApproved,
   notifyDeliveryAutoApproveSoon,
+  notifyDeliveryCancelledLate,
   notifyDeliveryExtraRound,
   notifyDeliveryRevisionRequested,
   notifyDeliverySubmitted,
@@ -239,6 +240,11 @@ const CASES: readonly HookCase[] = [
     name: 'notifyDeliveryExtraRound',
     run: (d) => notifyDeliveryExtraRound(d, { bookingId: 'b1', customerId: 'c1', delivererId: 'p1', round: 2, granted: true }),
     rows: [row('c1', 'delivery_extra_round', '/b/b1/delivery', 'n_delivery_extra_b1_2', 'Minh Trí cho thêm một vòng sửa')],
+  },
+  {
+    name: 'notifyDeliveryCancelledLate',
+    run: (d) => notifyDeliveryCancelledLate(d, { bookingId: 'b1', customerId: 'c1', providerId: 'p1', amount: 500_000 }),
+    rows: [row('p1', 'delivery_cancelled_late', '/b/b1', 'n_delivery_cancelled_late_b1', 'Khách đã huỷ phần bàn giao')],
   },
   {
     name: 'notifyStudioInvite',

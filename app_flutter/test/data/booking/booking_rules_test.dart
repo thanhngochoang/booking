@@ -357,6 +357,73 @@ void main() {
         expect(bookingErrorOf(const BookingException('unknown_code_foo')), BookingErrorCode.unknown);
         expect(bookingErrorOf(Exception('Random exception')), BookingErrorCode.unknown);
       });
+
+      test('BookingRules.deliveryDueAt = shotAt + deliveryDays days; null without shotAt', () {
+        final shotAt = DateTime.utc(2026, 10, 10, 8, 30);
+        final base = Booking(
+          id: 'b1',
+          customerId: 'c1',
+          photographerId: 'p1',
+          serviceId: 's1',
+          serviceSnapshot: const BookingServiceSnapshot(
+            name: 'Gói',
+            price: 1000000,
+            durationMinutes: 60,
+          ),
+          day: '2026-10-10',
+          start: '08:00',
+          end: '09:00',
+          place: const BookingPlace(name: 'Hà Nội'),
+          status: BookingStatus.shot,
+          deposit: 1000000,
+          remaining: 0,
+          deliveryDays: 5,
+          shotAt: shotAt,
+          createdAt: shotAt,
+          updatedAt: shotAt,
+        );
+        expect(BookingRules.deliveryDueAt(base), DateTime.utc(2026, 10, 15, 8, 30));
+        expect(BookingRules.deliveryDueAt(base.copyWith(shotAt: null)), isNull);
+      });
+
+      test('BookingRules.isDeliveryLate is true only for shot past dueAt', () {
+        final shotAt = DateTime.utc(2026, 10, 10, 8, 30);
+        final dueAt = DateTime.utc(2026, 10, 15, 8, 30);
+        final base = Booking(
+          id: 'b1',
+          customerId: 'c1',
+          photographerId: 'p1',
+          serviceId: 's1',
+          serviceSnapshot: const BookingServiceSnapshot(
+            name: 'Gói',
+            price: 1000000,
+            durationMinutes: 60,
+          ),
+          day: '2026-10-10',
+          start: '08:00',
+          end: '09:00',
+          place: const BookingPlace(name: 'Hà Nội'),
+          status: BookingStatus.shot,
+          deposit: 1000000,
+          remaining: 0,
+          deliveryDays: 5,
+          shotAt: shotAt,
+          createdAt: shotAt,
+          updatedAt: shotAt,
+        );
+        expect(BookingRules.isDeliveryLate(base, dueAt), isFalse);
+        expect(
+          BookingRules.isDeliveryLate(base, dueAt.add(const Duration(seconds: 1))),
+          isTrue,
+        );
+        expect(
+          BookingRules.isDeliveryLate(
+            base.copyWith(status: BookingStatus.delivered),
+            dueAt.add(const Duration(days: 2)),
+          ),
+          isFalse,
+        );
+      });
     });
   });
 }

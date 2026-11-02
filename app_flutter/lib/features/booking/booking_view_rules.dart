@@ -48,6 +48,10 @@ enum DetailAction {
   /// "Báo vấn đề · còn {h} giờ" (S18.01): the customer while a dispute
   /// window is open and its money held (`bookingDisputeClosesAt`, #142).
   reportProblem,
+
+  /// "Huỷ phần bàn giao" (S05.08): the customer when the provider is overdue
+  /// on submitting the first delivery round (#207).
+  cancelLateDelivery,
 }
 
 bool _isActive(BookingStatus s) =>
@@ -117,6 +121,9 @@ List<DetailAction> detailActions(
         s == BookingStatus.revisionRequested ||
         s == BookingStatus.approved) {
       out.add(DetailAction.viewDelivery);
+    }
+    if (BookingRules.isDeliveryLate(b, now)) {
+      out.add(DetailAction.cancelLateDelivery);
     }
     if (_isStopped(s)) out.add(DetailAction.bookAgain);
     // A studio booking is reviewed with who shot it: none, no review.
@@ -299,9 +306,20 @@ List<TimelineStep> timelineSteps(
   String? deliverySubtitle;
   switch (s) {
     case BookingStatus.shot:
-      deliverySubtitle = isCustomer
-          ? l.timelineDeliveryWaitCustomer(photographerName)
-          : l.timelineDeliveryWaitProvider;
+      final due = BookingRules.deliveryDueAt(b);
+      if (due != null) {
+        final dueText = formatDayMonth(toVn(due));
+        if (BookingRules.isDeliveryLate(b, now)) {
+          final days = now.difference(due).inDays.clamp(1, 999);
+          deliverySubtitle = l.detailDeliveryOverdue(dueText, days);
+        } else {
+          deliverySubtitle = l.detailDeliveryDue(dueText);
+        }
+      } else {
+        deliverySubtitle = isCustomer
+            ? l.timelineDeliveryWaitCustomer(photographerName)
+            : l.timelineDeliveryWaitProvider;
+      }
     case BookingStatus.delivered:
       deliverySubtitle = isCustomer
           ? l.timelineDeliveryReviewCustomer(roundNum)
@@ -452,6 +470,26 @@ List<TimelineStep> timelineSteps(
     case BookingStatus.completed:
     case BookingStatus.reviewed:
       final reviewed = BookingRules.isReviewed(b);
+      if (b.deliveryCancel != null) {
+        return [
+          step1,
+          step2(done),
+          step3(done),
+          ...assignStep(),
+          step4(done),
+          step5(done),
+          TimelineStep(
+            title: l.timelineLateCancelled(
+              formatMoney(b.deliveryCancel!.refundedAmount),
+            ),
+            subtitle: b.completedAt != null
+                ? _when(b.completedAt!, now, l)
+                : null,
+            state: done,
+          ),
+          step7(reviewed ? done : upcoming),
+        ];
+      }
       return [
         step1,
         step2(done),

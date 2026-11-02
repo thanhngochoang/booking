@@ -224,6 +224,7 @@ const CASES: readonly (readonly [NotificationContent, string, string])[] = [
   [{ type: 'collab_pay_reported', studio: 'Studio Mây', amount: 1_500_000, method: 'cash' }, 'Studio báo đã trả thù lao', 'Studio Mây báo đã trả 1.500.000₫ (tiền mặt). Bấm Đã nhận hoặc Chưa nhận.'],
   [{ type: 'collab_pay_reported', studio: 'Studio Mây', amount: 1_500_000, method: 'other' }, 'Studio báo đã trả thù lao', 'Studio Mây báo đã trả 1.500.000₫ (cách khác). Bấm Đã nhận hoặc Chưa nhận.'],
   [{ type: 'collab_pay_disputed', name: 'Minh Trí', amount: 1_500_000, service: 'Cưới', day: DAY }, 'Cộng tác viên chưa nhận thù lao', 'Minh Trí báo chưa nhận 1.500.000₫ cho buổi Cưới T2 12/10.'],
+  [{ type: 'delivery_cancelled_late', customer: 'An', amount: 500_000 }, 'Khách đã huỷ phần bàn giao', 'An huỷ vì quá hạn bàn giao · hoàn 500.000₫ (mốc 2) cho khách'],
 ];
 
 /** Types rendered by the tests above this table (copy from earlier plans). */

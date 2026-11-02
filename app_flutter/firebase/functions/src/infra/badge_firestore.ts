@@ -133,8 +133,18 @@ export class FirestoreBadgeMetricsReader implements BadgeMetricsReader {
     const m: Record<string, number | null> = {};
     const db = this.db;
     const jobs: Promise<void>[] = [];
-    const count = (metric: BadgeMetric, q: { count(): { get(): Promise<{ data(): { count: number } }> } }) =>
+    type Countable = { count(): { get(): Promise<{ data(): { count: number } }> } };
+    const count = (metric: BadgeMetric, q: Countable) =>
       jobs.push(q.count().get().then((s) => { m[metric] = s.data().count; }));
+    // Shoots ended by a late delivery cancel do not count (#207 Decision 17). Subtracted rather than
+    // filtered with `deliveryCancel == null`, which would drop every booking written without the field.
+    const shoots = (metric: BadgeMetric, party: 'photographerId' | 'customerId') =>
+      jobs.push(
+        Promise.all([
+          db.collection('bookings').where(party, '==', uid).where('status', 'in', ['completed', 'reviewed']).count().get(),
+          db.collection('bookings').where(party, '==', uid).where('deliveryCancel', '!=', null).count().get(),
+        ]).then(([all, late]) => { m[metric] = Math.max(0, all.data().count - late.data().count); }),
+      );
 
     if (GROUP_STATS.some((k) => metrics.has(k))) {
       jobs.push(
@@ -169,10 +179,10 @@ export class FirestoreBadgeMetricsReader implements BadgeMetricsReader {
       );
     }
     if (metrics.has('completedShoots')) {
-      count('completedShoots', db.collection('bookings').where('photographerId', '==', uid).where('status', 'in', ['completed', 'reviewed']));
+      shoots('completedShoots', 'photographerId');
     }
     if (metrics.has('customerShoots')) {
-      count('customerShoots', db.collection('bookings').where('customerId', '==', uid).where('status', 'in', ['completed', 'reviewed']));
+      shoots('customerShoots', 'customerId');
     }
     if (metrics.has('workPosts')) {
       count('workPosts', db.collection('posts').where('photographerId', '==', uid).where('kind', '==', 'work'));

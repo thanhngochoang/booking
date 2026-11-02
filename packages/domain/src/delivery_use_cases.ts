@@ -10,7 +10,12 @@ import {
   validateRevisionRequest,
   validateSubmitDelivery,
 } from './delivery.js';
+import { deliveryDueAt, isDeliveryLate } from './delivery_deadline.js';
 import { DomainError } from './errors.js';
+import { isSettledPayment, type Payment, type Refund } from './escrow.js';
+import { isId } from './ids.js';
+import { refundMilestone } from './milestones.js';
+import { dispatchRefund } from './refunds.js';
 
 export async function submitDelivery(
   deps: BookingDeps,
@@ -322,3 +327,72 @@ export async function answerExtraRound(
     }
   });
 }
+
+export interface CancelLateDeliveryInput {
+  readonly bookingId: string;
+  readonly customerId: string;
+}
+
+export async function cancelLateDelivery(
+  deps: BookingDeps,
+  input: CancelLateDeliveryInput,
+): Promise<Booking> {
+  if (!isId(input.bookingId) || !isId(input.customerId)) throw new DomainError('invalid_argument');
+  const now = deps.clock.now();
+  const at = now.toISOString();
+  let pending: { refund: Refund; provider: Payment['provider'] } | undefined;
+  const updated = await deps.store.runTransaction(async (tx) => {
+    const b = await tx.getBooking(input.bookingId);
+    if (!b) throw new DomainError('not_found');
+    if (b.customerId !== input.customerId) throw new DomainError('permission_denied');
+    if (['delivered', 'revision_requested', 'approved'].includes(b.status)) {
+      throw new DomainError('not_eligible', 'delivered');
+    }
+    if (b.status !== 'shot') throw new DomainError('not_eligible', 'status');
+    if (b.escrowStatus === 'disputed') throw new DomainError('conflict');
+    const due = deliveryDueAt(b);
+    if (!isDeliveryLate(b, now) || !due) throw new DomainError('not_eligible', 'not_late');
+    const found = (await deps.store.getPaymentsForBooking(b.id)).find(
+      (p) => isSettledPayment(p) && p.milestones,
+    );
+    const payment = found ? await tx.getPayment(found.id) : null;
+    if (!payment || !payment.milestones) throw new DomainError('not_eligible', 'status');
+    const r = refundMilestone(
+      payment,
+      'delivery',
+      deps.ids.newId(),
+      deps.ids.newId(),
+      now,
+      'late_delivery',
+    );
+    await tx.setPayment(r.payment);
+    await tx.addRefund(r.refund);
+    await tx.addLedgerEntry(r.ledgerEntry);
+    const dueAt = due.toISOString();
+    const next: Booking = {
+      ...b,
+      status: 'completed',
+      completedAt: at,
+      escrowStatus: r.payment.escrowStatus,
+      depositRefunded: (b.depositRefunded ?? 0) + r.refund.amount,
+      deliveryCancel: { at, dueAt, refundedAmount: r.refund.amount },
+      version: b.version + 1,
+      updatedAt: at,
+    };
+    await tx.setBooking(next);
+    await tx.addBookingEvent({
+      id: deps.ids.newId(),
+      bookingId: b.id,
+      status: 'completed',
+      at,
+      actorId: input.customerId,
+    });
+    pending = { refund: r.refund, provider: payment.provider };
+    return next;
+  });
+  if (pending && pending.refund.status === 'pending') {
+    await dispatchRefund(deps, pending.refund, pending.provider);
+  }
+  return updated;
+}
+

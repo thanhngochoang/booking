@@ -13,6 +13,7 @@ import { handleDisputeWrite } from './triggers/dispute_write.js';
 import {
   handleSubmitDelivery,
   handleApproveDelivery,
+  handleCancelLateDelivery,
   handleRequestRevision,
   handleAnswerExtraRound,
 } from './callables/delivery.js';
@@ -345,6 +346,11 @@ export const submitDelivery = onCall(CALLABLE_OPTIONS, (request) => handleSubmit
 
 /** Delivery: customer approves round and unlocks original link */
 export const approveDelivery = onCall(CALLABLE_OPTIONS, (request) => handleApproveDelivery(request, liveBookingDeps()));
+
+/** Delivery: customer cancels the delivery part when the provider is late and refunds milestone 2 */
+export const cancelLateDelivery = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (request) =>
+  handleCancelLateDelivery(request, liveBookingDeps()),
+);
 
 /** Delivery: customer requests revision */
 export const requestRevision = onCall(CALLABLE_OPTIONS, (request) => handleRequestRevision(request, liveBookingDeps()));
