@@ -10,6 +10,7 @@ import {
   notifyDeliveryRevisionRequested,
   notifyDeliveryApproved,
   notifyDeliveryExtraRound,
+  notifyDeliveryCancelledLate,
   awardJobFromBooking,
   withdrawQuotesForDay,
   type BadgeDeps,
@@ -115,9 +116,18 @@ export async function handleBookingWrite(
           });
         }
       }
+
+      if (before?.status === 'shot' && after.status === 'completed' && after.deliveryCancel) {
+        await notifyDeliveryCancelledLate(extras.notify, {
+          bookingId: after.id,
+          customerId: after.customerId,
+          providerId: after.photographerId,
+          amount: after.deliveryCancel.refundedAmount,
+        });
+      }
     }
 
-    if (after && before?.status !== 'completed' && after.status === 'completed') {
+    if (after && before?.status !== 'completed' && after.status === 'completed' && !after.deliveryCancel) {
       const results = await Promise.allSettled(
         [after.customerId, after.photographerId].map((uid) => evaluateUserBadges(extras.badges, uid)),
       );
@@ -133,8 +143,8 @@ export async function handleBookingWrite(
     }
   }
 
-  // Refresh completedCount when a booking enters completed
-  if (discovery && after && before?.status !== 'completed' && after.status === 'completed') {
+  // Refresh completedCount when a booking enters completed (excluding late-cancelled delivery, Decision 17)
+  if (discovery && after && before?.status !== 'completed' && after.status === 'completed' && !after.deliveryCancel) {
     await refreshCompletedCount(discovery, after.photographerId);
   }
 

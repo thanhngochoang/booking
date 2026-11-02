@@ -917,6 +917,8 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
+      case BookingErrorCode.alreadyDelivered:
+      case BookingErrorCode.notLate:
       case BookingErrorCode.permissionDenied:
       case BookingErrorCode.invalidArgument:
       case BookingErrorCode.unknown:

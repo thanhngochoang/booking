@@ -107,7 +107,8 @@ export type NotificationContent =
   // S30 Decision 10 (S05.02-askshot): `provider` is the shooter's name.
   | { type: 'shoot_question'; provider: string; day: string }
   // S30 Decision 7: the customer's pass exists (`kind` booking: "Mã gặp thợ"; entry: entry tickets).
-  | { type: 'pass_ready'; kind: 'booking' | 'entry'; day: string };
+  | { type: 'pass_ready'; kind: 'booking' | 'entry'; day: string }
+  | { type: 'delivery_cancelled_late'; customer: string; amount: number };
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'] as const;
 
@@ -327,6 +328,11 @@ export function renderNotification(c: NotificationContent): { title: string; bod
             title: `${c.deliverer} không cho thêm vòng sửa`,
             body: 'Bạn vẫn có thể đồng ý ảnh hoặc báo vấn đề với ảnh gốc.',
           };
+    case 'delivery_cancelled_late':
+      return {
+        title: 'Khách đã huỷ phần bàn giao',
+        body: `${c.customer} huỷ vì quá hạn bàn giao · hoàn ${formatVnd(c.amount)} (mốc 2) cho khách`,
+      };
     case 'studio_invite':
       return { title: `${c.studio} mời bạn làm thành viên`, body: 'Lời mời hết hạn sau 7 ngày.' };
     case 'studio_join_request':

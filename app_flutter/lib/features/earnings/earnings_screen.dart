@@ -431,16 +431,21 @@ class _Rows extends ConsumerWidget {
 }
 
 /// "T3 01/10 · đủ 2 mốc": the day, then the milestones when the booking has
-/// them.
+/// them; a refunded milestone appends " · mốc {n} đã hoàn cho khách" (#207).
 String _meta(AppLocalizations l, EarningItem item, DateTime? day) {
   final date = day == null ? item.day : formatDay(day);
   final total = item.milestonesTotal;
   if (total == null || total <= 0) return date;
   final done = item.milestonesDone ?? 0;
-  final milestones = done >= total
+  final refunded = item.milestonesRefunded;
+  final milestones = done >= total && refunded.isEmpty
       ? l.earningsMilestonesAll(total)
       : l.earningsMilestones(done, total);
-  return '$date · $milestones';
+  final suffix = [
+    for (final k in refunded)
+      l.earningsMilestoneRefundedSuffix(k == 'shoot' ? 1 : 2),
+  ].join();
+  return '$date · $milestones$suffix';
 }
 
 /// `700` is "7%", `750` is "7,5%".

@@ -128,3 +128,9 @@ final bookingContactProvider =
     StreamProvider.autoDispose.family<BookingContactSnapshot?, String>(
       (ref, id) => ref.watch(bookingRepositoryProvider).watchBookingContact(id),
     );
+
+/// Auto-disposed milestones stream provider for S05.08 (`bookings/{id}/milestones`).
+final bookingMilestonesProvider =
+    StreamProvider.autoDispose.family<BookingMilestones?, String>(
+      (ref, id) => ref.watch(bookingRepositoryProvider).watchMilestones(id),
+    );

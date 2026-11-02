@@ -1143,6 +1143,8 @@ alter table bookings
   add column job_id          text references jobs(id),
   add column quote_id        text references quotes(id),
   add column revisions_used  smallint not null default 0,
+  add column delivery_days   smallint not null default 7 check (delivery_days between 1 and 90),   -- #207: snapshot lúc đặt; delivery_due_at dẫn xuất = shot_at + delivery_days * interval '1 day'
+  add column delivery_cancelled_at timestamptz,                                                    -- #207: từ deliveryCancel.at; dueAt dẫn xuất từ shot_at + delivery_days, refundedAmount từ refunds (reason = 'late_delivery')
   add column shot_at timestamptz, add column delivered_at timestamptz, add column approved_at timestamptz, add column auto_approve_at timestamptz;
 create table booking_milestones (
   booking_id    text not null references bookings(id) on delete cascade,
@@ -1708,7 +1710,7 @@ alter table booking_assignments
 
 ### 2.14 Chủ sự kiện, nhận quản lý điểm, thợ tại điểm, nhân viên soát vé (S30, #223)
 
-`domain-model.md` mục 2.16; bất biến 56–58.
+`domain-model.md` mục 2.16; bất biến 57–59.
 
 ```sql
 -- Tài khoản chủ sự kiện: một dòng mỗi người dùng (là tài liệu, không phải vai trò).

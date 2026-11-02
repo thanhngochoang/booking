@@ -4,6 +4,7 @@ import { HttpsError } from 'firebase-functions/v2/https';
 import {
   type Booking,
   type BookingDeps,
+  type Payment,
   MemoryBookingStore,
   FakePaymentGateway,
   FakeBlockGate,
@@ -14,6 +15,7 @@ import {
 import {
   handleSubmitDelivery,
   handleApproveDelivery,
+  handleCancelLateDelivery,
   handleRequestRevision,
   handleAnswerExtraRound,
 } from '../../src/callables/delivery.js';
@@ -387,6 +389,116 @@ describe('delivery callables', () => {
       await assert.rejects(
         () => handleAnswerExtraRound(req, deps),
         (err: unknown) => err instanceof HttpsError && err.code === 'permission-denied',
+      );
+    });
+  });
+
+  describe('handleCancelLateDelivery', () => {
+    function makeLatePayment(): Payment {
+      return {
+        id: 'pay1',
+        subjectType: 'booking',
+        subjectId: 'b1',
+        payerId: 'c1',
+        payeeId: 'p1',
+        provider: 'fake',
+        amount: 1_000_000,
+        status: 'paid',
+        escrowStatus: 'held',
+        idempotencyKey: 'k1',
+        method: 'momo',
+        receivedAmount: 1_000_000,
+        paidAt: '2026-10-08T08:00:00.000Z',
+        milestones: [
+          { kind: 'shoot', amount: 500_000, status: 'released', releaseAfter: '2026-10-10T10:00:00.000Z', releasedAt: '2026-10-10T10:00:00.000Z', payoutId: null },
+          { kind: 'delivery', amount: 500_000, status: 'held', releaseAfter: null, releasedAt: null, payoutId: null },
+        ],
+        createdAt: '2026-10-08T08:00:00.000Z',
+        updatedAt: '2026-10-10T10:00:00.000Z',
+      };
+    }
+
+    test('handleCancelLateDelivery: unauthenticated without auth; passes {bookingId, customerId: uid}; returns {status: "completed", refundedAmount}; maps not_eligible -> failed-precondition and conflict -> aborted', async () => {
+      const { deps, store } = createTestDeps();
+      await assert.rejects(
+        () => handleCancelLateDelivery({ auth: undefined, data: { bookingId: 'b1' } }, deps),
+        (err: unknown) => err instanceof HttpsError && err.code === 'unauthenticated',
+      );
+
+      // Not late yet -> not_eligible (failed-precondition) with details.field = 'not_late'
+      await store.runTransaction(async (tx) => {
+        await tx.setBooking({
+          ...makeShotBooking('b1'),
+          shotAt: '2026-10-15T12:00:00.000Z',
+          deliveryDays: 7,
+        });
+        await tx.setPayment(makeLatePayment());
+      });
+      await assert.rejects(
+        () => handleCancelLateDelivery({ auth: { uid: 'c1' }, data: { bookingId: 'b1' } }, deps),
+        (err: unknown) =>
+          err instanceof HttpsError &&
+          err.code === 'failed-precondition' &&
+          (err.details as { code?: string; field?: string })?.code === 'not_eligible' &&
+          (err.details as { code?: string; field?: string })?.field === 'not_late',
+      );
+
+      // Late -> succeeds and returns { status: 'completed', refundedAmount: 500_000 }
+      await store.runTransaction(async (tx) => {
+        await tx.setBooking({
+          ...makeShotBooking('b1'),
+          shotAt: '2026-10-09T10:00:00.000Z',
+          deliveryDays: 7,
+        });
+      });
+      const res = await handleCancelLateDelivery({ auth: { uid: 'c1' }, data: { bookingId: 'b1' } }, deps);
+      assert.deepEqual(res, { status: 'completed', refundedAmount: 500_000 });
+
+      // Disputed -> conflict (aborted)
+      await store.runTransaction(async (tx) => {
+        await tx.setBooking({
+          ...makeShotBooking('b2'),
+          shotAt: '2026-10-09T10:00:00.000Z',
+          deliveryDays: 7,
+          disputeId: 'dsp_1',
+        });
+        await tx.setPayment({
+          ...makeLatePayment(),
+          id: 'pay2',
+          subjectId: 'b2',
+          escrowStatus: 'disputed',
+          milestones: [
+            { kind: 'shoot', amount: 500_000, status: 'released', releaseAfter: '2026-10-10T10:00:00.000Z', releasedAt: '2026-10-10T10:00:00.000Z', payoutId: null },
+            { kind: 'delivery', amount: 500_000, status: 'disputed', releaseAfter: null, releasedAt: null, payoutId: null },
+          ],
+        });
+      });
+      await assert.rejects(
+        () => handleCancelLateDelivery({ auth: { uid: 'c1' }, data: { bookingId: 'b2' } }, deps),
+        (err: unknown) => err instanceof HttpsError && err.code === 'aborted',
+      );
+    });
+
+    test('callable returns the refundedAmount of the first call only', async () => {
+      const { deps, store } = createTestDeps();
+      await store.runTransaction(async (tx) => {
+        await tx.setBooking({
+          ...makeShotBooking('b1'),
+          shotAt: '2026-10-09T10:00:00.000Z',
+          deliveryDays: 7,
+        });
+        await tx.setPayment(makeLatePayment());
+      });
+
+      const first = await handleCancelLateDelivery({ auth: { uid: 'c1' }, data: { bookingId: 'b1' } }, deps);
+      assert.deepEqual(first, { status: 'completed', refundedAmount: 500_000 });
+
+      await assert.rejects(
+        () => handleCancelLateDelivery({ auth: { uid: 'c1' }, data: { bookingId: 'b1' } }, deps),
+        (err: unknown) =>
+          err instanceof HttpsError &&
+          err.code === 'failed-precondition' &&
+          (err.details as { code?: string })?.code === 'not_eligible',
       );
     });
   });

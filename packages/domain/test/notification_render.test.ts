@@ -238,6 +238,7 @@ const CASES: readonly (readonly [NotificationContent, string, string])[] = [
   [{ type: 'shoot_question', provider: 'Minh Trí', day: DAY }, 'Buổi chụp có diễn ra không?', 'Minh Trí chưa quét mã của bạn hôm T2 12/10. Cho chúng tôi biết để giữ đúng tiền của bạn.'],
   [{ type: 'pass_ready', kind: 'booking', day: DAY }, 'Mã gặp thợ đã sẵn sàng', 'Thợ quét mã này khi gặp bạn T2 12/10.'],
   [{ type: 'pass_ready', kind: 'entry', day: DAY }, 'Vé vào cửa đã sẵn sàng', 'Đưa mã QR ở cổng ngày T2 12/10.'],
+  [{ type: 'delivery_cancelled_late', customer: 'An', amount: 500_000 }, 'Khách đã huỷ phần bàn giao', 'An huỷ vì quá hạn bàn giao · hoàn 500.000₫ (mốc 2) cho khách'],
 ];
 
 /** Types rendered by the tests above this table (copy from earlier plans). */

@@ -19,8 +19,12 @@ export interface EarningSubject {
   readonly counterpartName: string;
   readonly label: string;
   readonly day: string;
-  /** Released / all milestones of the booking; null when it has none (yet). */
-  readonly milestones: { readonly done: number; readonly total: number } | null;
+  /** Released / non-refunded milestones of the booking; null when it has none (yet). */
+  readonly milestones: {
+    readonly done: number;
+    readonly total: number;
+    readonly refunded?: readonly ('shoot' | 'delivery')[];
+  } | null;
 }
 
 export interface EarningItem {
@@ -46,6 +50,7 @@ export interface EarningItem {
   readonly estimated: boolean;
   readonly milestonesDone: number | null;
   readonly milestonesTotal: number | null;
+  readonly milestonesRefunded?: readonly ('shoot' | 'delivery')[];
   readonly state: EarningState;
   readonly holdReason: string | null;
   readonly paidOutAt: string | null;
@@ -124,6 +129,10 @@ export function earningItemOf(i: {
 
   let milestonesDone = subject.milestones?.done ?? null;
   let milestonesTotal = subject.milestones?.total ?? null;
+  let milestonesRefunded: readonly ('shoot' | 'delivery')[] | undefined =
+    subject.milestones?.refunded && subject.milestones.refunded.length > 0
+      ? subject.milestones.refunded
+      : undefined;
 
   if (payment.milestones) {
     heldAmount = payment.milestones
@@ -138,7 +147,11 @@ export function earningItemOf(i: {
 
     const doneCount = payment.milestones.filter((m) => m.status === 'released' || m.status === 'paid_out').length;
     milestonesDone = doneCount;
-    milestonesTotal = payment.milestones.length;
+    milestonesTotal = payment.milestones.filter((m) => m.status !== 'refunded').length;
+    const refundedKinds = payment.milestones
+      .filter((m) => m.status === 'refunded')
+      .map((m) => m.kind);
+    milestonesRefunded = refundedKinds.length > 0 ? refundedKinds : undefined;
   }
 
   // S30 Decision 12: an organizer's line (entry tickets, venue fees) takes no commission and no tax.
@@ -158,6 +171,7 @@ export function earningItemOf(i: {
     ...breakdown,
     milestonesDone,
     milestonesTotal,
+    ...(milestonesRefunded !== undefined ? { milestonesRefunded } : {}),
     state,
     holdReason,
     paidOutAt: state === 'paid_out' ? (payout?.paidAt ?? payment.updatedAt) : null,

@@ -22,9 +22,13 @@ export function eventStartInDays(days: number, now = Date.now()): Date {
 export const bucketUrl = (path: string): string =>
   `http://127.0.0.1:9199/v0/b/${emulatorProject()}.firebasestorage.app/o/${encodeURIComponent(path)}?alt=media&token=t`;
 
-/** Polls until `fn` returns a value (a trigger ran), or fails after ~15 s. */
-export async function waitFor<T>(what: string, fn: () => Promise<T | null | undefined | false>): Promise<T> {
-  const until = Date.now() + 15_000;
+/** Polls until `fn` returns a value (a trigger ran), or fails after `timeoutMs` (~15 s by default). */
+export async function waitFor<T>(
+  what: string,
+  fn: () => Promise<T | null | undefined | false>,
+  timeoutMs = 15_000,
+): Promise<T> {
+  const until = Date.now() + timeoutMs;
   for (;;) {
     const v = await fn();
     if (v !== null && v !== undefined && v !== false) return v;

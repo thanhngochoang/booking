@@ -85,4 +85,33 @@ describe('discovery firestore adapter mapping', () => {
     // Should not throw
     await store.apply('missing_p', { nextFreeDate: '2026-10-15' });
   });
+
+  test('completedBookings subtracts late-cancelled bookings and keeps bookings without the deliveryCancel field (#207)', async () => {
+    const asked: string[] = [];
+    const counts: Record<string, number> = {
+      'photographerId == "p1" & status in ["completed","reviewed"]': 40,
+      'photographerId == "p1" & deliveryCancel != null': 3,
+    };
+    const query = (filters: string[]): unknown => ({
+      where: (f: string, op: string, v: unknown) => query([...filters, `${f} ${op} ${JSON.stringify(v)}`]),
+      count: () => ({
+        get: async () => {
+          const key = filters.join(' & ');
+          asked.push(key);
+          return { data: () => ({ count: counts[key] ?? 0 }) };
+        },
+      }),
+    });
+    const fakeDb = {
+      collection(col: string) {
+        assert.equal(col, 'bookings');
+        return query([]);
+      },
+    } as unknown as Firestore;
+
+    const n = await new FirestoreDiscoveryStatsStore(fakeDb).completedBookings('p1');
+
+    assert.equal(n, 37);
+    assert.ok(asked.every((k) => !k.includes('deliveryCancel == null')));
+  });
 });
