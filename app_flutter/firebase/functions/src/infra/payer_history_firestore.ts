@@ -221,6 +221,9 @@ export class FirestorePayerHistoryStore implements PayerHistoryStore {
       case 'verification_fee':
         // The app's own title (`verifyFeeTitle`); nothing to read.
         return EMPTY_PAYER_SUBJECT;
+      case 'payment_group':
+        // S30: the group's lines carry the subjects; the group row (an unsplit or refunded group) has none.
+        return stored(EMPTY_PAYER_SUBJECT);
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/staff_role.dart';
+import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
@@ -73,6 +74,12 @@ Future<void> _stepOneWithoutSpot(WidgetTester tester) async {
   );
   await tester.pump();
   await tester.tap(find.byKey(const Key('create-event-type-photo_walk')));
+  await settle(tester);
+  // S12.01-venue: a public place, committed, terms ticked (own tests).
+  _ctl(tester)
+    ..setVenueKind(VenueKind.publicPlace)
+    ..setCommitment(true)
+    ..setTerms(true);
   await settle(tester);
 }
 

@@ -50,6 +50,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
 ## 4. Cloud Scheduler, Pub/Sub, Eventarc
 
 - Cloud Scheduler: **$0.10/job/31 ngày, 3 job miễn phí mỗi billing account** (không phải mỗi dự án) **[S]** https://cloud.google.com/scheduler/pricing (2026-10-07). 6 job của repo = 3 job tính tiền = **$0.30/tháng**; thêm cùng billing account khác (prod + dev) thì dùng chung 3 job free. Số lần chạy không tính tiền Scheduler, chỉ tính Function.
+- S30 (#223) **không thêm job nào**: vẫn 10 job. Các bước mới nằm trong `bookingClock` (câu hỏi "Buổi chụp có diễn ra không?", hết hạn câu hỏi, mở khiếu nại khi khách trả lời "Không"), `eventClock` (hết hạn đồng ý của chủ địa điểm, hoàn tiền ngày đóng cửa quá 20 vé) và `rankSpots` (xoá thợ tại điểm hết hạn). Lời mời nhân viên soát vé hết hạn được kiểm khi đọc, không có job.
 - Pub/Sub và Eventarc cho hàm lập lịch/trigger Firestore: phụ phí cho gen2 chưa xác nhận (Eventarc với nguồn sự kiện Google thường không tính riêng). Kết luận tạm: coi như không đáng kể, ghi "chưa xác nhận".
 
 ## 5. Cloud Storage for Firebase, Hosting
@@ -152,6 +153,8 @@ Hai cột: "xấu nhất" = giả định ở trên, không dọn gì; "thiết 
 3. **Đọc Firestore**: `get` có phân trang (cursor 20 doc) cho danh sách; listener chỉ cho chat, thông báo/huy hiệu (một doc), trạng thái booking đang mở; `limit()` mọi truy vấn; không đếm bằng đọc (dùng bộ đếm denormalized `reconcileBadges`); tắt listener khi màn không hiển thị; dùng persistence cache.
 4. **Lịch chạy**: `releaseEventHolds` mỗi phút = 43.200 lần/tháng, mỗi lần ít nhất 1 lần đọc (~1.440 đọc/ngày, nuốt 3% hạn mức miễn phí) và 43.200 lần gọi Function. Nên đổi sang Cloud Tasks hẹn giờ theo từng hold, hoặc nới thành 5 phút khi quy mô còn nhỏ; thêm lịch mới ở tần suất phút phải có lý do.
 5. **Function CPU**: `minInstances: 0`, `maxInstances` có trần, 256 MiB cho callable thường, chỉ hàm watermark dùng 512 MiB-1 GiB; gộp trigger `onDocumentWritten` trùng tài liệu, tránh trigger ghi lại chính doc (vòng lặp), timeout ngắn; dọn Artifact Registry sau deploy.
+
+Cách đọc mới của S30 (#223), để tính khi lập kế hoạch sau: `passes/{code}` chỉ server đọc, mỗi lần quét `scanPass` đọc một pass cộng booking/registration/sự kiện của pass đó và các dòng `gate_staff` của người quét trong một transaction (khoảng 4–8 lượt đọc mỗi lần quét, ghi 1–3); `entry_days/{eventId}_{day}` là một doc nhỏ mỗi ngày: S30.05 đọc tối đa 14 doc (chip ngày) mỗi lần mở, S29.02 không đọc, S30.03 và S12.03-entry nghe một doc của ngày đang xem; bản sao mã của khách (`private/pass`) là một doc nghe được, có bản lưu trong máy để dùng khi mất mạng; danh sách sự kiện bỏ sự kiện `entry` sau khi đọc (không thêm chỉ mục), nên một trang có thể ngắn hơn và đọc dư vài doc.
 
 ## 14. Quy tắc cho người viết plan
 

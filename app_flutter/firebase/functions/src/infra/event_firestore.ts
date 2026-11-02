@@ -10,7 +10,13 @@ import {
   MAX_TX_ATTEMPTS,
   REFUND_STATUSES,
   RetryableConflict,
+  entryDayId,
   type AvailabilityRecord,
+  type BookingLineDue,
+  type EntryDay,
+  type EntryLine,
+  type EventHost,
+  type TicketType,
   type EventFaq,
   type EventGroupChatSeed,
   type EventPeople,
@@ -23,7 +29,9 @@ import {
   type RegistrationDoc,
   type RegistrationReader,
   type TransferRecord,
+  type Venue,
 } from '@photobooking/domain';
+import { PASSES_COLLECTION, passFromFirestore, passToFirestore, privatePassRef } from './pass_firestore.js';
 import {
   LEDGER_COLLECTION,
   PAYMENTS_COLLECTION,
@@ -36,12 +44,17 @@ import {
   refundToFirestore,
   transferRecordFromFirestore,
   transferRecordToFirestore,
+  PAYMENT_GROUPS_COLLECTION,
+  paymentGroupToFirestore,
 } from './booking_firestore.js';
 import { SPOTS_COLLECTION, spotFromFirestore } from './spot_firestore.js';
+import { ORGANIZERS_COLLECTION, RESIDENTS_SUBCOLLECTION, organizerFromFirestore, residentFromFirestore } from './organizer_firestore.js';
 
 export const EVENTS_COLLECTION = 'events';
 export const EVENT_HASHTAGS = 'event_hashtags';
 export const TICKET_CODES = 'ticket_codes';
+/** S30: `entry_days/{eventId}_{day}`. */
+export const ENTRY_DAYS = 'entry_days';
 
 function toDate(v: unknown): Date | null {
   if (v instanceof Timestamp) return v.toDate();
@@ -58,6 +71,97 @@ type Obj = Record<string, unknown>;
 const asObj = (v: unknown): Obj => (typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Obj) : {});
 
 // ---- events/{id} ---------------------------------------------------------------------------
+
+/** `host.type` as stored; anything unknown reads as the platform (older documents). */
+const hostTypeOf = (v: unknown): EventHost['type'] =>
+  v === 'photographer' || v === 'organizer' ? v : 'platform';
+
+/**
+ * S30 Decision 16: the venue block and its consent. `venueConsent` is always written (default
+ * `not_required`) so the 72 h expiry query (`venueConsent == pending`) matches it.
+ */
+function venueFieldsToFirestore(e: EventRecord): DocumentData {
+  const v = e.venue ?? null;
+  return {
+    venue: v === null
+      ? null
+      : {
+        kind: v.kind,
+        spotId: v.spotId,
+        entryFee: { included: v.entryFee.included, amountVnd: v.entryFee.amountVnd },
+        commitmentAt: v.commitmentAt,
+        termsVersion: v.termsVersion,
+      },
+    venueConsent: e.venueConsent ?? 'not_required',
+    venueConsentExpiresAt: ts(e.venueConsentExpiresAt ?? null),
+    venueFeePerGuest: e.venueFeePerGuest ?? 0,
+    venueManagerId: e.venueManagerId ?? null,
+  };
+}
+
+const VENUE_KIND_VALUES: readonly string[] = ['managed_spot', 'paid_place', 'public'];
+const CONSENT_VALUES: readonly string[] = ['not_required', 'pending', 'accepted', 'declined', 'expired'];
+
+function venueFromFirestore(v: unknown): Venue | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;
+  const o = asObj(v);
+  const kind = str(o.kind);
+  if (kind === null || !VENUE_KIND_VALUES.includes(kind)) return null;
+  const fee = asObj(o.entryFee);
+  return {
+    kind: kind as Venue['kind'],
+    spotId: str(o.spotId),
+    entryFee: { included: fee.included !== false, amountVnd: num(fee.amountVnd) },
+    commitmentAt: str(o.commitmentAt),
+    termsVersion: String(o.termsVersion ?? ''),
+  };
+}
+
+function venueFieldsFromFirestore(d: DocumentData): Partial<EventRecord> {
+  const consent = str(d.venueConsent);
+  return {
+    venue: venueFromFirestore(d.venue),
+    venueConsent: (consent !== null && CONSENT_VALUES.includes(consent) ? consent : 'not_required') as EventRecord['hostConsent'],
+    venueConsentExpiresAt: toDate(d.venueConsentExpiresAt),
+    venueFeePerGuest: int(d.venueFeePerGuest),
+    venueManagerId: str(d.venueManagerId),
+  };
+}
+
+/** S30 entry events only (Decision 11): the per-day rules; absent on every other event. */
+function entryFieldsToFirestore(e: EventRecord): DocumentData {
+  if (e.type !== 'entry') return {};
+  return {
+    closedWeekdays: [...(e.closedWeekdays ?? [])],
+    closedDays: [...(e.closedDays ?? [])],
+    openHours: e.openHours === undefined ? null : { start: e.openHours.start, end: e.openHours.end },
+    ticketTypes: (e.ticketTypes ?? []).map((t) => ({ id: t.id, name: t.name, price: t.price, hidden: t.hidden })),
+    dailyCapacity: e.dailyCapacity ?? null,
+    refundCutoffHours: e.refundCutoffHours ?? null,
+  };
+}
+
+function entryFieldsFromFirestore(d: DocumentData): Partial<EventRecord> {
+  if (d.type !== 'entry') return {};
+  const hours = asObj(d.openHours);
+  const ints = (v: unknown): number[] => (Array.isArray(v) ? v.filter((x): x is number => Number.isInteger(x)) : []);
+  const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  const types: TicketType[] = Array.isArray(d.ticketTypes)
+    ? d.ticketTypes.map((x: unknown) => asObj(x)).map((t) => ({
+      id: String(t.id ?? ''), name: String(t.name ?? ''), price: int(t.price), hidden: t.hidden === true,
+    }))
+    : [];
+  return {
+    closedWeekdays: ints(d.closedWeekdays),
+    closedDays: strs(d.closedDays),
+    ...(str(hours.start) !== null && str(hours.end) !== null
+      ? { openHours: { start: str(hours.start) as string, end: str(hours.end) as string } }
+      : {}),
+    ticketTypes: types,
+    dailyCapacity: num(d.dailyCapacity),
+    ...(num(d.refundCutoffHours) !== null ? { refundCutoffHours: num(d.refundCutoffHours) as number } : {}),
+  };
+}
 
 export function eventToFirestore(e: EventRecord): DocumentData {
   return {
@@ -113,6 +217,8 @@ export function eventToFirestore(e: EventRecord): DocumentData {
     soonNoticeAt: ts(e.soonNoticeAt ?? null),
     // S17 Ruling 7: server-only list of registrations already reminded while the marker is unset.
     soonNotifiedRegIds: [...(e.soonNotifiedRegIds ?? [])],
+    ...venueFieldsToFirestore(e),
+    ...entryFieldsToFirestore(e),
     createdAt: Timestamp.fromDate(e.createdAt),
     updatedAt: Timestamp.fromDate(e.updatedAt),
   };
@@ -127,7 +233,7 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
   return {
     id,
     host: {
-      type: host.type === 'photographer' ? 'photographer' : 'platform',
+      type: hostTypeOf(host.type),
       id: str(host.id),
       name: str(host.name),
       avatarUrl: str(host.avatarUrl),
@@ -177,12 +283,92 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
     soonNotifiedRegIds: Array.isArray(d.soonNotifiedRegIds)
       ? d.soonNotifiedRegIds.filter((x: unknown): x is string => typeof x === 'string')
       : [],
+    ...venueFieldsFromFirestore(d),
+    ...entryFieldsFromFirestore(d),
     createdAt: toDate(d.createdAt) ?? new Date(0),
     updatedAt: toDate(d.updatedAt) ?? new Date(0),
   };
 }
 
 // ---- events/{id}/registrations/{regId} -----------------------------------------------------
+
+/**
+ * S30 entry tickets only (a string `visitDay`); event tickets carry none of these fields. `gateCheckedInAt`
+ * is mapped for every registration (a venue gate checks in ordinary event tickets too: final fix B-C1).
+ */
+function entryTicketToFirestore(r: RegistrationDoc): DocumentData {
+  if (typeof r.visitDay !== 'string') return {};
+  return {
+    visitDay: r.visitDay,
+    items: (r.items ?? []).map((i) => ({ ticketTypeId: i.ticketTypeId, name: i.name, price: i.price, qty: i.qty })),
+    bookingId: r.bookingId ?? null,
+    ticketCodeLast4: r.ticketCodeLast4 ?? '',
+  };
+}
+
+/**
+ * S30 Decision 8 (Review Focus 3): a ticket with a pass has no public `ticketCode` (the code lives in its
+ * `private/pass`); a legacy ticket keeps its `VE-XXXX-MMDD`. `ticketCodeLast4` is what the manager's list shows.
+ */
+function ticketCodeToFirestore(r: RegistrationDoc): DocumentData {
+  return {
+    ...(r.ticketCode !== '' ? { ticketCode: r.ticketCode } : {}),
+    ...(r.ticketCodeLast4 !== undefined && r.ticketCodeLast4 !== '' ? { ticketCodeLast4: r.ticketCodeLast4 } : {}),
+  };
+}
+
+function entryTicketFromFirestore(d: DocumentData): Partial<RegistrationDoc> {
+  const visitDay = str(d.visitDay);
+  if (visitDay === null) return {};
+  const items: EntryLine[] = Array.isArray(d.items)
+    ? d.items.map((x: unknown) => asObj(x)).map((i) => ({
+      ticketTypeId: String(i.ticketTypeId ?? ''), name: String(i.name ?? ''), price: int(i.price), qty: int(i.qty),
+    }))
+    : [];
+  return {
+    visitDay,
+    items,
+    bookingId: str(d.bookingId),
+    gateCheckedInAt: toDate(d.gateCheckedInAt),
+    ticketCodeLast4: String(d.ticketCodeLast4 ?? ''),
+  };
+}
+
+// ---- entry_days/{eventId}_{day} ------------------------------------------------------------
+
+export function entryDayToFirestore(d: EntryDay): DocumentData {
+  return {
+    eventId: d.eventId,
+    day: d.day,
+    sold: d.sold,
+    held: d.held,
+    checkedIn: d.checkedIn,
+    closed: d.closed,
+    updatedAt: Timestamp.fromDate(new Date(d.updatedAt)),
+  };
+}
+
+export function entryDayFromFirestore(d: DocumentData | undefined): EntryDay | null {
+  if (d === undefined) return null;
+  const at = toDate(d.updatedAt);
+  return {
+    eventId: String(d.eventId ?? ''),
+    day: String(d.day ?? ''),
+    sold: int(d.sold),
+    held: int(d.held),
+    checkedIn: int(d.checkedIn),
+    closed: d.closed === true,
+    updatedAt: (at ?? new Date(0)).toISOString(),
+  };
+}
+
+/** S30: `bookingLineDue` of a registration bought with a booking (`{percent: 0 | 100, reason}`), or null. */
+function bookingLineDueOf(v: unknown): BookingLineDue | null {
+  const o = asObj(v);
+  const percent = o.percent === 0 || o.percent === 100 ? o.percent : null;
+  const reason = o.reason === 'provider_cancelled' || o.reason === 'customer_cancel' ? o.reason : null;
+  return percent === null || reason === null ? null : { percent, reason };
+}
 
 export function registrationToFirestore(r: RegistrationDoc): DocumentData {
   return {
@@ -195,17 +381,21 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     amount: r.amount,
     status: r.status,
     holdExpiresAt: ts(r.holdExpiresAt),
-    ticketCode: r.ticketCode,
+    ...ticketCodeToFirestore(r),
     paymentId: r.paymentId,
     contactEligible: r.contactEligible,
     checkedInAt: ts(r.checkedInAt),
     cancelledAt: ts(r.cancelledAt),
     refundPercent: r.refundPercent,
     refundDue: r.refundDue === true,
+    bookingLineDue: r.bookingLineDue ? { percent: r.bookingLineDue.percent, reason: r.bookingLineDue.reason } : null,
     refundId: r.refundId ?? null,
     refundStatus: r.refundStatus ?? null,
     // S18: the dispute mirror (written by the dispute transaction) survives every registration write.
     disputeId: r.disputeId ?? null,
+    // S30: a venue gate's check-in (`venue_gate` scans), for every registration (final fix B-C1).
+    gateCheckedInAt: ts(r.gateCheckedInAt ?? null),
+    ...entryTicketToFirestore(r),
     event: {
       title: r.event.title,
       type: r.event.type,
@@ -241,9 +431,14 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     cancelledAt: toDate(d.cancelledAt),
     refundPercent: num(d.refundPercent),
     ...(d.refundDue === true ? { refundDue: true } : {}),
+    ...(bookingLineDueOf(d.bookingLineDue) !== null ? { bookingLineDue: bookingLineDueOf(d.bookingLineDue) } : {}),
     ...(str(d.refundId) !== null ? { refundId: str(d.refundId) as string } : {}),
     ...((REFUND_STATUSES as readonly unknown[]).includes(d.refundStatus) ? { refundStatus: d.refundStatus as RefundStatus } : {}),
     ...(str(d.disputeId) !== null ? { disputeId: str(d.disputeId) as string } : {}),
+    ...(str(d.ticketCodeLast4) !== null ? { ticketCodeLast4: str(d.ticketCodeLast4) as string } : {}),
+    // Every registration (final fix B-C1); an entry ticket also reads it as null below when unset.
+    ...(toDate(d.gateCheckedInAt) !== null ? { gateCheckedInAt: toDate(d.gateCheckedInAt) } : {}),
+    ...entryTicketFromFirestore(d),
     event: {
       title: String(ev.title ?? ''),
       type: (str(ev.type) ?? 'other') as RegistrationDoc['event']['type'],
@@ -337,12 +532,23 @@ export class FirestoreEventStore implements EventStore {
           const d = s.data();
           return s.exists && d ? registrationFromFirestore(regId, d) : null;
         },
-        activeRegistrationOf: async (eventId, userId) => {
-          const rows = await queryRegs(
-            regsOf(eventId).where('userId', '==', userId).where('status', 'in', ['held', 'paid']).limit(1),
-          );
-          return rows[0] ?? null;
+        activeRegistrationOf: async (eventId, userId, visitDay) => {
+          const mine = regsOf(eventId).where('userId', '==', userId).where('status', 'in', ['held', 'paid']);
+          if (visitDay === undefined) return (await queryRegs(mine.limit(1)))[0] ?? null;
+          // Entry tickets (S30): the lone ticket of that visit day; a customer holds a few at most.
+          const rows = await queryRegs(mine);
+          return rows.find((r) => r.visitDay === visitDay && (r.bookingId ?? null) === null) ?? null;
         },
+        registrationsOfDay: (eventId, day) =>
+          queryRegs(regsOf(eventId).where('visitDay', '==', day).where('status', '==', 'paid')),
+        getEntryDay: async (eventId, day) =>
+          entryDayFromFirestore((await fTx.get(fs.collection(ENTRY_DAYS).doc(entryDayId(eventId, day)))).data()),
+        getOrganizer: async (uid) =>
+          organizerFromFirestore(uid, (await fTx.get(fs.collection(ORGANIZERS_COLLECTION).doc(uid))).data()),
+        residentOf: async (spotId, providerId) =>
+          residentFromFirestore(providerId, (await fTx.get(
+            fs.collection(SPOTS_COLLECTION).doc(spotId).collection(RESIDENTS_SUBCOLLECTION).doc(providerId),
+          )).data()),
         activeRegistrations: (eventId) => queryRegs(regsOf(eventId).where('status', 'in', ['held', 'paid'])),
         expiredHolds: (eventId, now) =>
           queryRegs(regsOf(eventId).where('status', '==', 'held').where('holdExpiresAt', '<=', Timestamp.fromDate(now))),
@@ -385,11 +591,23 @@ export class FirestoreEventStore implements EventStore {
           const s = await fTx.get(fs.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(id));
           return s.exists ? transferRecordFromFirestore(s.id, s.data()) : null;
         },
+        // S30 passes (Decision 7; the scan adapter is Task 6's).
+        getPass: async (code8) => passFromFirestore(code8, (await fTx.get(fs.collection(PASSES_COLLECTION).doc(code8))).data()),
+        passTaken: async (code8) => (await fTx.get(fs.collection(PASSES_COLLECTION).doc(code8))).exists,
+        putPass: (p) => {
+          writes.push(() => fTx.set(fs.collection(PASSES_COLLECTION).doc(p.code8), passToFirestore(p)));
+        },
+        putPrivatePass: (ref, code8) => {
+          writes.push(() => fTx.set(privatePassRef(fs, ref), { code: code8 }));
+        },
         putTransferRecord: (r: TransferRecord) => {
           writes.push(() => fTx.set(fs.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(r.id), transferRecordToFirestore(r)));
         },
         putEvent: (e) => {
           writes.push(() => fTx.set(eventRef(e.id), eventToFirestore(e)));
+        },
+        putEntryDay: (d) => {
+          writes.push(() => fTx.set(fs.collection(ENTRY_DAYS).doc(entryDayId(d.eventId, d.day)), entryDayToFirestore(d)));
         },
         putHashtag: (key, eventId) => {
           writes.push(() => fTx.set(fs.collection(EVENT_HASHTAGS).doc(key), { eventId }));
@@ -398,6 +616,8 @@ export class FirestoreEventStore implements EventStore {
           writes.push(() => fTx.delete(fs.collection(EVENT_HASHTAGS).doc(key)));
         },
         putTicketCode: (code, eventId, registrationId) => {
+          // A ticket with a pass has no public code (S30): never an empty `ticket_codes/` row.
+          if (code === '') return;
           writes.push(() => fTx.set(fs.collection(TICKET_CODES).doc(code), { eventId, registrationId }));
         },
         putRegistration: (r) => {
@@ -418,6 +638,9 @@ export class FirestoreEventStore implements EventStore {
         },
         putPayment: (p) => {
           writes.push(() => fTx.set(fs.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p)));
+        },
+        putGroupView: (g) => {
+          writes.push(() => fTx.set(fs.collection(PAYMENT_GROUPS_COLLECTION).doc(g.id), paymentGroupToFirestore(g)));
         },
         putRefund: (r) => {
           writes.push(() => fTx.set(fs.collection(REFUNDS_COLLECTION).doc(r.id), refundToFirestore(r)));
@@ -519,6 +742,17 @@ export class FirestoreEventStore implements EventStore {
         .where('soonNoticeAt', '==', null)
         .where('startAt', '>', Timestamp.fromDate(now))
         .where('startAt', '<=', Timestamp.fromDate(horizon)),
+      limit,
+    );
+  }
+
+  /** S30 Decision 16. Needs the composite index `events(status, venueConsent, venueConsentExpiresAt)` (Task 6). */
+  dueForVenueConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {
+    return this.due(
+      this.firestore.collection(EVENTS_COLLECTION)
+        .where('status', '==', 'draft')
+        .where('venueConsent', '==', 'pending')
+        .where('venueConsentExpiresAt', '<=', Timestamp.fromDate(now)),
       limit,
     );
   }

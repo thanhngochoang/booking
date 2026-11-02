@@ -6,6 +6,7 @@
 
 import {
   disputeProviderName,
+  type OpenDisputeInput,
   disputeThreadId,
   disputeWindow,
   outcomeAmounts,
@@ -16,7 +17,8 @@ import {
   type ResolveDisputeInput,
 } from './dispute.js';
 import { formatVnDate, formatVnTime } from './booking_policy.js';
-import type { DisputeDeps, DisputeSubjectView } from './dispute_ports.js';
+import { decideTransition } from './booking_machine.js';
+import type { DisputeBookingEnd, DisputeDeps, DisputeSubjectView, DisputeTx } from './dispute_ports.js';
 import { DomainError } from './errors.js';
 import {
   applyRefundToPayment,
@@ -84,7 +86,28 @@ function sameOpen(existing: Dispute, callerId: string): Dispute {
  * and opens the three-party thread with a system message and the description as the first message.
  */
 export async function openDispute(deps: DisputeDeps, callerId: string, raw: unknown): Promise<Dispute> {
-  const input = parseOpenDisputeInput(raw, callerId);
+  return openParsed(deps, parseOpenDisputeInput(raw, callerId), { kind: 'customer', uid: callerId });
+}
+
+/** Who opens: the paying customer (S18.01), or the system for a denied shoot (S30). */
+type Opener = { readonly kind: 'customer'; readonly uid: string } | { readonly kind: 'system' };
+
+/**
+ * S30 (Task 4 fix 1): the booking clock opens the dispute of a booking whose customer answered
+ * "Không diễn ra" and opened none within 48 h, on the customer's behalf, through the same rules as
+ * `openDispute` (window, one open dispute, the frozen money). `conflict` when the subject already has a
+ * dispute (open or resolved); the same `disputeId` again returns the existing one.
+ */
+export async function openDisputeAsSystem(
+  deps: DisputeDeps,
+  input: Pick<OpenDisputeInput, 'disputeId' | 'subjectType' | 'subjectId' | 'eventId' | 'reason' | 'description'>,
+): Promise<Dispute> {
+  return openParsed(deps, { ...input, evidencePaths: [] }, { kind: 'system' });
+}
+
+async function openParsed(deps: DisputeDeps, input: OpenDisputeInput, opener: Opener): Promise<Dispute> {
+  const callerId = opener.kind === 'customer' ? opener.uid : null;
+  const again = (d: Dispute): Dispute => (callerId === null ? d : sameOpen(d, callerId));
   const now = deps.clock.now();
   const at = now.toISOString();
 
@@ -94,18 +117,22 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     if (existing) return { existing, paymentId: null };
     const subject = await tx.getSubject(input.subjectType, input.subjectId, input.eventId);
     const payment = subject ? await tx.findSubjectPayment(subject) : null;
-    return { existing: null, paymentId: payment?.id ?? null };
+    const lines = payment ? await tx.venueLinesOf(payment) : [];
+    return { existing: null, paymentId: payment?.id ?? null, lineIds: lines.map((l) => l.id) };
   });
-  if (pre.existing) return sameOpen(pre.existing, callerId);
+  if (pre.existing) return again(pre.existing);
   const refundsSoFar = pre.paymentId ? escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.paymentId)) : 0;
-  const customerName = (await deps.names.displayName(callerId)) || 'Khách';
+  const lineRefundsSoFar = await escrowRefundsOf(deps, pre.lineIds ?? []);
+  const customerName = callerId === null ? SYSTEM_NAME : (await deps.names.displayName(callerId)) || 'Khách';
 
   return deps.store.runTransaction(async (tx) => {
     const existing = await tx.getDispute(input.disputeId);
-    if (existing) return sameOpen(existing, callerId);
+    if (existing) return again(existing);
     const subject = await tx.getSubject(input.subjectType, input.subjectId, input.eventId);
     if (!subject) throw new DomainError('not_found');
-    if (subject.customerId !== callerId) throw new DomainError('permission_denied');
+    if (callerId !== null && subject.customerId !== callerId) throw new DomainError('permission_denied');
+    // The system never opens a second dispute next to the customer's (open or resolved).
+    if (callerId === null && subject.disputeId) throw new DomainError('conflict');
     const payment = await tx.findSubjectPayment(subject);
     const window = disputeWindow(subject, now, payment?.milestones !== undefined);
     // One OPEN dispute per subject (spec §3i.1). After a resolved shoot dispute the delivery milestone
@@ -138,6 +165,18 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       };
     }
     if (amountHeld <= 0) throw new DomainError('not_eligible');
+    // S30 Decision 16: the ticket's venue-fee line is frozen with it (its money is part of the ticket).
+    const lines = (await tx.venueLinesOf(payment))
+      .filter((l) => l.escrowStatus === 'held' || l.escrowStatus === 'partially_refunded');
+    if (lines.some((l) => !lineRefundsSoFar.has(l.id))) throw new DomainError('conflict');
+    const frozenLines = lines.map((l): Payment => ({
+      ...disputeEscrowPayment(l, now),
+      dispute: {
+        reason: input.reason, openedAt: at, disputeId: input.disputeId, milestone: null,
+        prevEscrowStatus: l.escrowStatus === 'partially_refunded' ? 'partially_refunded' : 'held',
+      },
+    }));
+    amountHeld += lines.reduce((n, l) => n + l.amount - (lineRefundsSoFar.get(l.id) ?? 0), 0);
 
     const dispute: Dispute = {
       id: input.disputeId,
@@ -148,7 +187,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       customerId: subject.customerId,
       providerId: subject.providerId,
       parties: subject.providerId === PLATFORM ? [subject.customerId] : [subject.customerId, subject.providerId],
-      openedBy: 'customer',
+      openedBy: opener.kind,
       reason: input.reason,
       description: input.description,
       evidencePaths: input.evidencePaths,
@@ -169,7 +208,7 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       id: deps.ids.newId(),
       threadId: dispute.threadId,
       senderId: callerId,
-      senderRole: 'customer',
+      senderRole: callerId === null ? 'system' : 'customer',
       senderName: customerName,
       body: input.description,
       createdAt: firstAt,
@@ -179,10 +218,11 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
       ...newDisputeThread(dispute, at),
       lastMessageAt: firstAt,
       lastMessagePreview: truncateGraphemes(input.description, PREVIEW_MAX),
-      lastSenderRole: 'customer',
+      lastSenderRole: callerId === null ? 'system' : 'customer',
     };
 
     tx.setPayment(frozen);
+    for (const l of frozenLines) tx.setPayment(l);
     tx.linkSubject(subject, { disputeId: dispute.id, escrowStatus: frozen.escrowStatus });
     tx.setDispute(dispute);
     tx.putThread(thread);
@@ -190,6 +230,49 @@ export async function openDispute(deps: DisputeDeps, callerId: string, raw: unkn
     tx.addMessage(first);
     return dispute;
   });
+}
+
+/** What escrow already gave back of each payment (read outside the transaction, like the main payment's). */
+async function escrowRefundsOf(deps: DisputeDeps, ids: readonly string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  for (const id of ids) out.set(id, escrowRefundedTotal(await deps.store.getRefundsForPayment(id)));
+  return out;
+}
+
+/**
+ * Writes only (S30 Decision 16): a frozen venue-fee line gets the dispute's outcome on its own amount
+ * (the same percent), back to its previous status, refunded and released like a ticket payment.
+ */
+function settleVenueLine(
+  tx: DisputeTx,
+  deps: DisputeDeps,
+  line: Payment,
+  refundsSoFar: number,
+  d: Dispute,
+  input: ResolveDisputeInput,
+  now: Date,
+): { readonly refundAmount: number; readonly releaseAmount: number; readonly refund: Refund | null; readonly payment: Payment } {
+  const at = now.toISOString();
+  const a = outcomeAmounts(line.amount - refundsSoFar, input.kind, input.refundPercent);
+  let pay: Payment = { ...line, escrowStatus: line.dispute?.prevEscrowStatus ?? 'held', updatedAt: at };
+  let refund: Refund | null = null;
+  if (a.refundAmount > 0) {
+    const r = applyRefundToPayment({
+      payment: pay, refundId: deps.ids.newId(), percent: a.refundPercent, amount: a.refundAmount, escrowRefunded: refundsSoFar,
+      ledgerEntryId: deps.ids.newId(), reason: `dispute:${d.id}`, now, waitForAccount: true,
+    });
+    pay = r.payment;
+    refund = r.refund;
+    tx.addRefund(r.refund);
+    tx.addLedgerEntry(r.ledgerEntry);
+  }
+  if (a.releaseAmount > 0) {
+    const r = releaseEscrowPayment({ payment: pay, refundAmount: refundsSoFar + a.refundAmount, ledgerEntryId: deps.ids.newId(), now });
+    pay = r.payment;
+    tx.addLedgerEntry(r.ledgerEntry);
+  }
+  tx.setPayment(pay);
+  return { refundAmount: a.refundAmount, releaseAmount: a.releaseAmount, refund, payment: pay };
 }
 
 function outcomeLine(kind: DisputeOutcomeKind, refund: number, release: number, provider: string): string {
@@ -236,26 +319,40 @@ export async function resolveDispute(
   deps: DisputeDeps,
   staffId: string,
   raw: unknown,
-): Promise<{ dispute: Dispute; refund: Refund | null }> {
+): Promise<{
+  dispute: Dispute;
+  refund: Refund | null;
+  /** S30 Decision 16: the refunds of the ticket's venue-fee lines, for the caller to send like `refund`. */
+  lineRefunds: readonly { readonly payment: Payment; readonly refund: Refund }[];
+}> {
   const input = parseResolveDisputeInput(raw);
   const now = deps.clock.now();
   const at = now.toISOString();
 
-  const pre = await deps.store.runTransaction((tx) => tx.getDispute(input.disputeId));
+  const pre = await deps.store.runTransaction(async (tx) => {
+    const d = await tx.getDispute(input.disputeId);
+    const p = d ? await tx.getPayment(d.paymentId) : null;
+    const lines = p ? await tx.venueLinesOf(p) : [];
+    return d ? { d, lineIds: lines.map((l) => l.id) } : null;
+  });
   if (!pre) throw new DomainError('not_found');
-  const refundsSoFar = escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.paymentId));
+  const refundsSoFar = escrowRefundedTotal(await deps.store.getRefundsForPayment(pre.d.paymentId));
+  const lineRefundsSoFar = await escrowRefundsOf(deps, pre.lineIds);
 
   return deps.store.runTransaction(async (tx) => {
     const d = await tx.getDispute(input.disputeId);
     // A retry after a lost response (same staff, same decision) gets the stored outcome, not conflict.
     if (d?.status === 'resolved' && d.outcome && isSameDecision(d.outcome, staffId, input)) {
       const stored = d.outcome.refundId ? await tx.getRefund(d.outcome.refundId) : null;
-      return { dispute: d, refund: stored };
+      return { dispute: d, refund: stored, lineRefunds: [] };
     }
     const p = d ? await tx.getPayment(d.paymentId) : null;
     const subject: DisputeSubjectView | null = d ? await tx.getSubject(d.subjectType, d.subjectId, d.eventId) : null;
     const thread = d ? await tx.getThread(d.threadId) : null;
     if (!d || !p || !subject) throw new DomainError('not_found');
+    const frozenLines = (await tx.venueLinesOf(p))
+      .filter((l) => l.escrowStatus === 'disputed' && l.dispute?.disputeId === d.id);
+    if (frozenLines.some((l) => !lineRefundsSoFar.has(l.id))) throw new DomainError('conflict');
 
     const kind = frozenMilestone(p);
     const ms = kind ? p.milestones?.find((m) => m.kind === kind) : undefined;
@@ -326,14 +423,19 @@ export async function resolveDispute(
       tx.addLedgerEntry(r.ledgerEntry);
     }
 
+    // S30 Decision 16: the venue-fee lines take the same outcome on their own amounts (writes only).
+    const settledLines = frozenLines.map((l) => settleVenueLine(tx, deps, l, lineRefundsSoFar.get(l.id) ?? 0, d, input, now));
+    const refundTotal = a.refundAmount + settledLines.reduce((n, l) => n + l.refundAmount, 0);
+    const releaseTotal = a.releaseAmount + settledLines.reduce((n, l) => n + l.releaseAmount, 0);
+
     const resolved: Dispute = {
       ...d,
       status: 'resolved',
       outcome: {
         kind: input.kind,
         refundPercent: a.refundPercent,
-        refundAmount: a.refundAmount,
-        releaseAmount: a.releaseAmount,
+        refundAmount: refundTotal,
+        releaseAmount: releaseTotal,
         note: input.note,
         decidedBy: staffId,
         decidedAt: at,
@@ -344,7 +446,7 @@ export async function resolveDispute(
       version: d.version + 1,
     };
     const provider = disputeProviderName(d);
-    const body = `Khiếu nại đã có kết quả: ${outcomeLine(input.kind, a.refundAmount, a.releaseAmount, provider)}. Ghi chú của hỗ trợ: ${input.note}`;
+    const body = `Khiếu nại đã có kết quả: ${outcomeLine(input.kind, refundTotal, releaseTotal, provider)}. Ghi chú của hỗ trợ: ${input.note}`;
     const closed: SupportThread = {
       ...(thread ?? newDisputeThread(d, at)),
       status: 'closed',
@@ -356,12 +458,43 @@ export async function resolveDispute(
     };
 
     tx.setPayment(pay);
-    tx.linkSubject(subject, { disputeId: d.id, escrowStatus: pay.escrowStatus });
+    const end = deniedShootEnd(subject, d, a.refundAmount > 0 ? a.refundPercent : 0, deps.ids.newId(), now);
+    tx.linkSubject(subject, { disputeId: d.id, escrowStatus: pay.escrowStatus, ...(end !== null ? { end } : {}) });
     tx.setDispute(resolved);
     tx.putThread(closed);
     tx.addMessage(systemMessage(d.threadId, deps.ids.newId(), body, at));
-    return { dispute: resolved, refund };
+    const lineRefunds = settledLines.flatMap((l) => (l.refund === null ? [] : [{ payment: l.payment, refund: l.refund }]));
+    return { dispute: resolved, refund, lineRefunds };
   });
+}
+
+/**
+ * S30 (final fix D-I2): a denied shoot (`upcoming` + `shootDeniedAt`) has no other end, so its resolution
+ * ends the booking through the machine: any refund → `cancelled` by the system (`dispute:{id}`, the
+ * refund percent on the record); a release only → `completed`. Null for every other subject (the milder
+ * `shooting` + full refund case is deferred).
+ */
+function deniedShootEnd(
+  subject: DisputeSubjectView,
+  d: Dispute,
+  refundPercent: number,
+  eventId: string,
+  now: Date,
+): DisputeBookingEnd | null {
+  const b = subject.booking;
+  if (subject.type !== 'booking' || subject.state !== 'upcoming' || b === undefined || b.shootDeniedAt === undefined) return null;
+  const at = now.toISOString();
+  const decision = refundPercent > 0
+    ? decideTransition(b, 'dispute_refund', { role: 'system' }, now, `dispute:${d.id}`)
+    : decideTransition(b, 'dispute_release', { role: 'system' }, now);
+  const status = decision.nextStatus === 'cancelled' ? 'cancelled' : 'completed';
+  return {
+    status,
+    cancel: decision.cancelRecord ? { ...decision.cancelRecord, refundPercent } : null,
+    completedAt: status === 'completed' ? at : null,
+    at,
+    event: { id: eventId, bookingId: b.id, status, at },
+  };
 }
 
 /**

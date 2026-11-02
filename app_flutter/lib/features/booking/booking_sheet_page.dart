@@ -139,6 +139,15 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookTryAgain)),
         );
+      // S04.03-entry: the tickets' day closed or sold out meanwhile.
+      case BookingErrorCode.dayClosed:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.s0403_dayClosed)),
+        );
+      case BookingErrorCode.soldOutDay:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.s0403_soldOutDay)),
+        );
       case BookingErrorCode.notEligible:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookPaymentsOff)),

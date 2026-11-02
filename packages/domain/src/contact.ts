@@ -65,7 +65,8 @@ export const TICKET_CONTACT_DAYS = 7;
 const DAY_MS = 86_400_000;
 
 /**
- * `contact_unlocked` for a booking (domain-model.md §5): `requested | accepted | upcoming`, or
+ * `contact_unlocked` for a booking (domain-model.md §5): `requested | accepted | upcoming | shooting` (S30)
+ * through `approved`, or
  * `completed | reviewed` for 30 days after completion (inclusive; unknown completion time stays
  * locked). Same boundaries as the client's `contactAccessForBooking` (plan 2b, Task 7).
  */
@@ -77,6 +78,7 @@ export function bookingContactUnlocked(
     case 'requested':
     case 'accepted':
     case 'upcoming':
+    case 'shooting':
     case 'shot':
     case 'delivered':
     case 'revision_requested':

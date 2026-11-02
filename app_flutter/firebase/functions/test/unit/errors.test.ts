@@ -59,6 +59,17 @@ describe('toHttpsError', () => {
       outside_service_area: 'failed-precondition',
       collab_full: 'resource-exhausted',
       recruit_blocked: 'failed-precondition',
+      spot_managed: 'failed-precondition',
+      not_spot_manager: 'failed-precondition',
+      day_closed: 'failed-precondition',
+      venue_consent_required: 'failed-precondition',
+      business_required: 'failed-precondition',
+      wrong_day: 'failed-precondition',
+      too_early: 'failed-precondition',
+      refunded: 'failed-precondition',
+      sold_out_day: 'resource-exhausted',
+      not_your_pass: 'permission-denied',
+      already_checked_in: 'already-exists',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

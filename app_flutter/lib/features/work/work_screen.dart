@@ -9,10 +9,12 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/recruit/recruit_post.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
@@ -23,11 +25,13 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/event_manage/my_events_section.dart';
 import 'package:photobooking/features/instant_work/live_shutter_card.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/recruit/recruit_list_screen.dart';
 import 'package:photobooking/features/recruit/recruit_list_view.dart';
+import 'package:photobooking/features/scan/scan_screen.dart';
 import 'package:photobooking/features/studio/assign_sheet.dart';
 import 'package:photobooking/features/studio/decline_change_sheet.dart';
 import 'package:photobooking/features/studio/return_job_sheet.dart';
@@ -83,6 +87,48 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
 
   /// The request being accepted; every Nhận/Từ chối waits for it.
   String? _accepting;
+
+  /// The booking whose "Đã chụp xong" is on its way.
+  String? _marking;
+
+  /// "Đã chụp xong" (S06.01-scan): `mark_shot`; with a pass only after the
+  /// scan (Decision 14), legacy bookings after the end.
+  Future<void> _markShot(Booking b) async {
+    if (_marking != null) return;
+    setState(() => _marking = b.id);
+    final l10n = context.l10n;
+    try {
+      await ref
+          .read(bookingRepositoryProvider)
+          .transitionBooking(
+            bookingId: b.id,
+            action: BookingAction.markShot.code,
+          );
+    } catch (e) {
+      if (mounted) _say(bookingErrorText(e, l10n));
+    } finally {
+      if (mounted) setState(() => _marking = null);
+    }
+  }
+
+  /// The photographer's entry ticket under the place (S06.01-scan): bought
+  /// with the booking, waived as a resident, or "≈ {x}" at the gate of a
+  /// ticketed spot; null elsewhere.
+  String? _ticketLine(Booking b) {
+    final l10n = context.l10n;
+    final entry = b.entry;
+    if (entry != null) {
+      if (entry.providerTicket) return l10n.s0601_ticketBought;
+      if (entry.waivedProvider) return l10n.s0601_ticketWaived;
+    }
+    final spotId = b.spotId;
+    if (spotId == null) return null;
+    final spot = ref.watch(spotProvider(spotId)).value;
+    final onSale = ref.watch(entryEventProvider(spotId)).value;
+    if (spot == null || !spot.ticketedWith(onSale)) return null;
+    final price = entryUnitPrice(onSale, spot.access);
+    return price == null ? null : l10n.s0601_ticketOnSite(formatMoney(price));
+  }
 
   /// Customer names seen on the cards, kept for the expiry toast after the
   /// card is gone (Decision 11).
@@ -395,8 +441,29 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         const _InstantEntry(),
         if (today != null) ...[
           SectionHeader(title: l10n.workToday),
-          Padding(padding: gutter, child: _todayCard(context, today, features)),
+          Padding(
+            padding: gutter,
+            child: _todayCard(context, today, features, now),
+          ),
           const SizedBox(height: AppSpace.s2),
+        ],
+        // S06.01-scan: other scanned shoots, "Đang chụp" with "Đã chụp xong".
+        for (final b in d.shooting) ...[
+          Padding(
+            padding: gutter,
+            child: BookingCard(
+              key: Key('work-shooting-${b.id}'),
+              data: bookingSummaryFor(
+                b,
+                name: _customerName(b),
+                thumbUrl: _customerAvatar(b),
+              ),
+              size: BookingCardSize.compact,
+              onTap: () => context.push('/b/${b.id}'),
+              actions: _markShotButton(b, now),
+            ),
+          ),
+          const SizedBox(height: AppSpace.s3),
         ],
         // S06.01-studio: the studio's accepted bookings to staff.
         for (final b in d.studioJobs) ...[
@@ -534,48 +601,119 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     );
   }
 
+  /// "Đã chụp xong" (outline), or nothing while it may not be used.
+  Widget? _markShotButton(Booking b, DateTime now) {
+    if (!BookingRules.canPhotographerComplete(b, now)) return null;
+    return AppButton.outline(
+      context.l10n.s0601_markShot,
+      key: Key('work-mark-shot-${b.id}'),
+      size: AppButtonSize.small,
+      loading: _marking == b.id,
+      onPressed: _marking == null ? () => _markShot(b) : null,
+    );
+  }
+
   /// Today's shoot: the only highlighted card on the screen (mock).
-  Widget _todayCard(BuildContext context, Booking b, BookingFeatures features) {
+  /// S06.01-scan: a booking with a pass offers "Quét mã khách" from two
+  /// hours before its start ("Mở lúc {time}" until then); "Đã chụp xong"
+  /// shows once it may be used (after the scan, or after the end of a
+  /// booking without a pass).
+  Widget _todayCard(
+    BuildContext context,
+    Booking b,
+    BookingFeatures features,
+    DateTime now,
+  ) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
     final message = features.chat && b.chatId != null;
+    final toMeet =
+        b.hasPass &&
+        (b.status == BookingStatus.accepted ||
+            b.status == BookingStatus.upcoming);
+    final opensAt = startsAtOf(b).subtract(scanOpensBefore);
+    final scanOpen = !now.isBefore(opensAt);
+    final markShot = _markShotButton(b, now);
+    final ticket = _ticketLine(b);
     final uid = ref.watch(authStateProvider).value?.uid;
     // A studio's booking assigned to me (Decision 18): name the studio.
     final studio = uid == null || b.photographerId == uid
         ? null
         : ref.watch(partyProfileProvider(b.photographerId)).value?.displayName;
-    return BookingCard(
-      data: bookingSummaryFor(
-        b,
-        name: _customerName(b),
-        thumbUrl: _customerAvatar(b),
-        tag: studio == null || studio.isEmpty
+    final summary = bookingSummaryFor(
+      b,
+      name: _customerName(b),
+      thumbUrl: _customerAvatar(b),
+      tag: studio == null || studio.isEmpty
             ? null
             : b.studio?.assigneeKind == 'collaborator'
             ? l10n.workCollabLabel(studio)
             : l10n.workAssignedBy(studio),
-      ),
+    );
+    return BookingCard(
+      data: ticket == null
+          ? summary
+          : BookingSummary(
+              photographerName: summary.photographerName,
+              serviceName: summary.serviceName,
+              thumbUrl: summary.thumbUrl,
+              day: summary.day,
+              start: summary.start,
+              end: summary.end,
+              placeName: '${summary.placeName} · $ticket',
+              status: summary.status,
+              tag: summary.tag,
+            ),
       highlight: true,
       onTap: () => context.push('/b/${b.id}'),
-      actions: Row(
+      actions: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (message) ...[
-            Expanded(
-              child: AppButton.outline(
-                l10n.workMessage,
-                size: AppButtonSize.small,
-                onPressed: () => _onMessage(b),
+          Row(
+            children: [
+              if (message) ...[
+                Expanded(
+                  child: AppButton.outline(
+                    l10n.workMessage,
+                    size: AppButtonSize.small,
+                    onPressed: () => _onMessage(b),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s2),
+              ],
+              Expanded(
+                child: toMeet
+                    ? AppButton.primary(
+                        l10n.s0601_scan,
+                        key: const Key('work-scan'),
+                        size: AppButtonSize.small,
+                        icon: const AppIcon(AppIcons.qrScanner, size: 18),
+                        onPressed: scanOpen
+                            ? () => context.push(scanLocation(bookingId: b.id))
+                            : null,
+                      )
+                    : AppButton.outline(
+                        l10n.workDirections,
+                        size: AppButtonSize.small,
+                        icon: const AppIcon(AppIcons.nearMe, size: 18),
+                        onPressed: () => _onDirections(b),
+                      ),
               ),
-            ),
-            const SizedBox(width: AppSpace.s2),
-          ],
-          Expanded(
-            child: AppButton.outline(
-              l10n.workDirections,
-              size: AppButtonSize.small,
-              icon: const AppIcon(AppIcons.nearMe, size: 18),
-              onPressed: () => _onDirections(b),
-            ),
+            ],
           ),
+          if (toMeet && !scanOpen) ...[
+            const SizedBox(height: AppSpace.s1),
+            Text(
+              l10n.s0601_scanOpensAt(formatHm(toVn(opensAt))),
+              key: const Key('work-scan-opens'),
+              textAlign: TextAlign.end,
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+          if (markShot != null) ...[
+            const SizedBox(height: AppSpace.s2),
+            markShot,
+          ],
         ],
       ),
     );

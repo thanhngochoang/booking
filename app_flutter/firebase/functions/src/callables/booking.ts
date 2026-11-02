@@ -51,6 +51,8 @@ export async function handleTransitionBooking(request: CallableInput, deps: Book
       action: data.action as TransitionAction,
       actorId: uid,
       reason: typeof data.reason === 'string' ? data.reason : undefined,
+      // S30 (S05.03 "Giữ vé vào cửa"): a customer cancel of a booking with tickets may keep the tickets.
+      keepTickets: data.keepTickets === true,
     });
   } catch (e) {
     handleCallableError('transitionBooking', e);

@@ -103,7 +103,7 @@ export function disputeFromFirestore(d: DocumentData | null | undefined): Disput
     customerId: String(d.customerId ?? ''),
     providerId: String(d.providerId ?? ''),
     parties: strings(d.parties),
-    openedBy: 'customer',
+    openedBy: d.openedBy === 'system' ? 'system' : 'customer',
     reason: oneOf(DISPUTE_REASONS, d.reason, 'other'),
     description: String(d.description ?? ''),
     evidencePaths: strings(d.evidencePaths),

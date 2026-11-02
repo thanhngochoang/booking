@@ -6,6 +6,7 @@ import 'package:cloud_functions/cloud_functions.dart'
 import 'package:flutter/foundation.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 
@@ -42,7 +43,18 @@ abstract class SpotRepository {
   });
 
   /// Upcoming events at a spot (`status in [open, full]`, `startAt >= now`).
+  /// Entry-ticket events are never listed (Decision 11): S29.02 shows the
+  /// spot's entry event through [watchEntryEvent].
   Future<List<EventSummary>> eventsAt(String spotId, {int limit = 10});
+
+  /// The spot's resident photographers (`spots/{id}/residents`, S29.02,
+  /// S30.03), expired rows included: callers apply `Resident.waiverFor`.
+  Stream<List<Resident>> watchResidents(String spotId);
+
+  /// The spot's entry-ticket event on sale: `events` where `type == entry`,
+  /// `spotId == id`, `status in [open, full]` (index `type, spotId, status`);
+  /// null when it sells none.
+  Stream<EntryEvent?> watchEntryEvent(String spotId);
 
   /// Watches provider's open schedules (`providerId == uid, status == open`).
   Stream<List<SpotSchedule>> watchMine(String uid);

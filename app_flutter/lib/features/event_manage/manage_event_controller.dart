@@ -9,7 +9,6 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
-import 'package:photobooking/features/event_manage/checkin_sheet.dart';
 
 /// Check-in stays open this long after the event ends (domain
 /// `CHECKIN_GRACE_HOURS`).
@@ -131,27 +130,6 @@ class ManageStats {
   }
 }
 
-/// Maps what the server said to what the host reads after a scan.
-/// `not_eligible` is the time window (or a cancelled event): before the event
-/// day it reads "not yet", after `endAt + 2 h` "closed", never "invalid".
-CheckinOutcome checkinOutcomeOf(
-  Object error, {
-  EventDetail? event,
-  DateTime? now,
-}) => switch (eventErrorCodeOf(error)) {
-  'not_eligible' when event != null && now != null => switch (checkinWindowOf(
-    event,
-    now,
-  )) {
-    CheckinWindow.notYet => CheckinOutcome.notYet,
-    CheckinWindow.closed => CheckinOutcome.closed,
-    CheckinWindow.open => CheckinOutcome.invalid,
-  },
-  'not_found' || 'not_eligible' || 'invalid_argument' => CheckinOutcome.invalid,
-  'conflict' => CheckinOutcome.used,
-  _ => CheckinOutcome.failed,
-};
-
 final manageEventControllerProvider = NotifierProvider.autoDispose
     .family<ManageEventController, ManageEventState, String>(
       ManageEventController.new,
@@ -163,7 +141,7 @@ class ManageEventState {
   final bool busy;
 }
 
-/// The writes of S12.03: check-in, cancelling the event, answering the
+/// The writes of S12.03: cancelling the event, answering the
 /// invitation of a staff-created event (O1).
 class ManageEventController extends Notifier<ManageEventState> {
   ManageEventController(this.eventId);
@@ -173,25 +151,6 @@ class ManageEventController extends Notifier<ManageEventState> {
   ManageEventState build() => const ManageEventState();
 
   EventRepository get _repo => ref.read(eventRepositoryProvider);
-
-  /// [event] and [now] let a `not_eligible` answer say "not yet" or
-  /// "closed" instead of "invalid".
-  Future<CheckinResult> checkIn(
-    String code, {
-    EventDetail? event,
-    DateTime? now,
-  }) async {
-    try {
-      final r = await _repo.checkIn(eventId, code);
-      return CheckinResult(
-        CheckinOutcome.ok,
-        name: r.name,
-        quantity: r.quantity,
-      );
-    } catch (e) {
-      return CheckinResult(checkinOutcomeOf(e, event: event, now: now));
-    }
-  }
 
   /// True when the event was cancelled.
   Future<bool> cancelEvent() async {

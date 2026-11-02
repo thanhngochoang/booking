@@ -283,6 +283,10 @@ export class FirestorePayoutStore implements PayoutStore {
           const role: unknown = (await fTx.get(this.db.collection('users').doc(uid))).data()?.role;
           return typeof role === 'string' ? role : null;
         },
+        getOrganizerStatus: async (uid) => {
+          const status: unknown = (await fTx.get(this.db.collection('organizers').doc(uid))).data()?.status;
+          return status === 'active' || status === 'suspended' ? status : null;
+        },
         getPayeeType: async (uid) =>
           providerTypeOf((await fTx.get(this.db.collection(PHOTOGRAPHERS_COLLECTION).doc(uid))).data()?.providerType),
         getActiveAccount: async (userId) => {
@@ -325,6 +329,10 @@ export class FirestorePayoutStore implements PayoutStore {
         putAccount: (a) => writes.push((t) => t.set(accounts(a.userId).doc(a.id), accountToFirestore(a))),
         putAccountView: (userId, v) =>
           writes.push((t) => t.set(this.db.collection(PAYOUT_ACCOUNTS_COLLECTION).doc(userId), accountViewToFirestore(v))),
+        setOrganizerPayoutOk: (uid, ok) =>
+          writes.push((t) =>
+            t.set(this.db.collection('organizers').doc(uid), { payoutAccountOk: ok, updatedAt: Timestamp.now() }, { merge: true }),
+          ),
         putPayout: (p) => writes.push((t) => t.set(this.db.collection(PAYOUTS_COLLECTION).doc(p.id), payoutToFirestore(p))),
         listPayablePayments: async (payeeId) => {
           const snapReleased = await fTx.get(

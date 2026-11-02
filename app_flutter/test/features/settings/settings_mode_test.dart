@@ -28,9 +28,11 @@ import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 
 import '../../support/fake_push.dart';
 import '../../support/studio_world.dart' show FakeStudioRepository;
+import '../../support/fake_organizer_repository.dart';
 
 /// Holds [setRole] until [hold] completes, to look at the screen mid-switch.
 class _HeldUsers extends FakeUserRepository {
@@ -101,6 +103,7 @@ Future<Widget> _app(
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
       studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
+      organizerRepositoryProvider.overrideWithValue(FakeOrganizerRepository()),
       userRepositoryProvider.overrideWithValue(users),
       photographerIntroRepositoryProvider.overrideWithValue(
         intro ?? FakePhotographerIntroRepository(),

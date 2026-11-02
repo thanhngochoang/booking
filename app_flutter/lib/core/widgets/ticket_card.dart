@@ -24,6 +24,9 @@ class TicketCardData {
     required this.quantity,
     required this.state,
     this.placeName,
+    this.metaLine,
+    this.hint,
+    this.detail,
   });
 
   final String ticketCode;
@@ -37,6 +40,15 @@ class TicketCardData {
   final int quantity;
   final TicketState state;
   final String? placeName;
+
+  /// Replaces "{day} · {HH:mm} · {n} vé" (S11.04-entry: the opening hours).
+  final String? metaLine;
+
+  /// Replaces the hint next to the QR (S11.04-entry: the gate).
+  final String? hint;
+
+  /// A small line under the code (S11.04-entry: the counts per type).
+  final String? detail;
 }
 
 class TicketCard extends StatelessWidget {
@@ -57,6 +69,7 @@ class TicketCard extends StatelessWidget {
     this.compact = false,
     this.onReportProblem,
     this.reportProblemLabel,
+    this.cancelEnabled = true,
   });
 
   final TicketCardData ticket;
@@ -99,6 +112,9 @@ class TicketCard extends StatelessWidget {
 
   /// Replaces "Báo vấn đề".
   final String? reportProblemLabel;
+
+  /// False shows the cancel line disabled (S11.04-entry past the cutoff).
+  final bool cancelEnabled;
 
   static Widget skeleton() => const _TicketCardSkeleton();
 
@@ -285,6 +301,7 @@ class TicketCard extends StatelessWidget {
     }
 
     final meta =
+        ticket.metaLine ??
         '${formatDay(ticket.startsAt)} · ${_two(ticket.startsAt.hour)}:${_two(ticket.startsAt.minute)} · ${l.ticketCount(ticket.quantity)}';
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +366,7 @@ class TicketCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                l.ticketShowHint,
+                ticket.hint ?? l.ticketShowHint,
                 key: const Key('ticket-hint'),
                 style: TextStyle(fontSize: AppText.sm, color: fgSec),
               ),
@@ -363,6 +380,14 @@ class TicketCard extends StatelessWidget {
                   color: fg,
                 ),
               ),
+              if (ticket.detail case final detail?) ...[
+                const SizedBox(height: AppSpace.s1),
+                Text(
+                  detail,
+                  key: const Key('ticket-detail'),
+                  style: TextStyle(fontSize: AppText.xs, color: fgSec),
+                ),
+              ],
             ],
           ),
         ),
@@ -419,8 +444,11 @@ class TicketCard extends StatelessWidget {
           children: [
             header,
             if (isUpcoming) ...[
-              const SizedBox(height: AppSpace.s3),
-              qrRow,
+              // No code yet (the pass is still loading): no empty QR.
+              if (ticket.ticketCode.isNotEmpty) ...[
+                const SizedBox(height: AppSpace.s3),
+                qrRow,
+              ],
               const SizedBox(height: AppSpace.s3),
               buttons,
               if (onOpenChat != null)
@@ -460,7 +488,7 @@ class TicketCard extends StatelessWidget {
         AppButton.text(
           cancelLabel ?? l.ticketCancel,
           key: const Key('ticket-cancel'),
-          onPressed: onCancel,
+          onPressed: cancelEnabled ? onCancel : null,
           size: AppButtonSize.small,
           style: TextButton.styleFrom(foregroundColor: AppColors.error),
         ),

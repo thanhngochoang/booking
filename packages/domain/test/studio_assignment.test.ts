@@ -448,6 +448,9 @@ describe('spot bookings of a studio (#194 Decision 7)', () => {
     createdAt: '2026-10-01T00:00:00.000Z',
     updatedAt: '2026-10-01T00:00:00.000Z',
     rankedAt: null,
+    managedBy: null,
+    access: null,
+    openHours: null,
     updatedBy: 'staff',
   };
   const schedule: SpotSchedule = {

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_draft.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/spots/spot.dart';
 
 const _keep = Object();
 
@@ -41,6 +42,12 @@ class EventForm {
     this.faq,
     this.spotId,
     this.spotDecided = false,
+    this.venueKind,
+    this.entryFeeIncluded,
+    this.entryFeeVnd,
+    this.commitmentAt,
+    this.termsAccepted = false,
+    this.venueConsent = HostConsent.notRequired,
   });
 
   /// Resume a server draft in the form.
@@ -50,6 +57,8 @@ class EventForm {
     final deadline = d.registrationDeadline == null
         ? null
         : _vnParts(d.registrationDeadline!);
+    final v = d.venue;
+    final paid = v?.kind == VenueKind.paidPlace;
     return EventForm(
       eventId: d.eventId,
       title: d.title ?? '',
@@ -70,8 +79,14 @@ class EventForm {
       deadlineDay: deadline?.day,
       hashtag: d.hashtag,
       faq: d.faq,
-      spotId: d.spotId,
-      spotDecided: d.spotDecided,
+      spotId: d.spotId ?? v?.spotId,
+      spotDecided: d.spotDecided || v?.spotId != null,
+      venueKind: v?.kind,
+      entryFeeIncluded: paid ? v!.entryFeeIncluded : null,
+      entryFeeVnd: paid ? v!.entryFeeVnd : null,
+      commitmentAt: v?.commitmentAt,
+      termsAccepted: v != null && v.termsVersion == organizerTermsVersion,
+      venueConsent: d.venueConsent,
     );
   }
 
@@ -115,6 +130,81 @@ class EventForm {
   /// The organizer chose (a spot or none); publishing needs it.
   final bool spotDecided;
 
+  /// S12.01-venue (Decision 16): the venue kind; its spot is [spotId].
+  final VenueKind? venueKind;
+
+  /// A paid place: "Đã gồm phí vào cửa" (true) / "Chưa gồm" (false); null
+  /// until chosen.
+  final bool? entryFeeIncluded;
+
+  /// A paid place not included: the reference fee per guest (integer VND).
+  final int? entryFeeVnd;
+
+  /// A public place: when the host ticked the commitment; null = not ticked.
+  final DateTime? commitmentAt;
+
+  /// "Tôi đồng ý điều khoản tổ chức sự kiện." ([organizerTermsVersion]).
+  final bool termsAccepted;
+
+  /// Never sent: the venue manager's answer on the server draft this form
+  /// resumes, for the venue as loaded. A new kind or spot starts over
+  /// (`notRequired`), as the server does (`venueFieldsOf`).
+  final HostConsent venueConsent;
+
+  /// What the venue part still lacks, as an [EventField.venue] code:
+  /// `required` (no kind), `spot` (a managed spot without a spot),
+  /// `not_managed` / `managed` (the chosen spot, when [spot] has been read,
+  /// does not fit the kind: the domain's `venueSpot`), `fee` (a paid place
+  /// without the included choice), `amount` (not included without a fee),
+  /// `commitment` (a public place without the tick). Null when complete.
+  String? venueIssue({Spot? spot}) {
+    final kind = venueKind;
+    if (kind == null) {
+      return 'required';
+    }
+    final read = spot != null && spot.id == spotId ? spot : null;
+    if (kind == VenueKind.managedSpot) {
+      if (spotId == null) {
+        return 'spot';
+      }
+      if (read != null && !read.isManaged) {
+        return 'not_managed';
+      }
+    } else if (read != null && read.isManaged) {
+      return 'managed';
+    }
+    if (kind == VenueKind.paidPlace) {
+      if (entryFeeIncluded == null) {
+        return 'fee';
+      }
+      if (entryFeeIncluded == false && (entryFeeVnd ?? 0) <= 0) {
+        return 'amount';
+      }
+    }
+    if (kind == VenueKind.publicPlace && commitmentAt == null) {
+      return 'commitment';
+    }
+    return null;
+  }
+
+  /// The `venue` block, once complete (the server checks it whole, so a
+  /// partial one is never sent: [toDraft] leaves the stored venue alone).
+  EventVenue? get venue {
+    final kind = venueKind;
+    if (kind == null || !termsAccepted || venueIssue() != null) {
+      return null;
+    }
+    final paid = kind == VenueKind.paidPlace;
+    return EventVenue(
+      kind: kind,
+      spotId: spotId,
+      entryFeeIncluded: paid ? entryFeeIncluded! : true,
+      entryFeeVnd: paid && entryFeeIncluded == false ? entryFeeVnd : null,
+      commitmentAt: kind == VenueKind.publicPlace ? commitmentAt : null,
+      termsVersion: organizerTermsVersion,
+    );
+  }
+
   /// The rows with both a question and an answer, trimmed: what is sent.
   List<EventFaq>? get completeFaq => faq == null
       ? null
@@ -145,6 +235,8 @@ class EventForm {
       areaId == null &&
       deadlineDay == null &&
       !spotDecided &&
+      venueKind == null &&
+      !termsAccepted &&
       (faq ?? const <EventFaq>[]).every(
         (f) => f.question.trim().isEmpty && f.answer.trim().isEmpty,
       );
@@ -171,6 +263,12 @@ class EventForm {
     List<EventFaq>? faq,
     Object? spotId = _keep,
     bool? spotDecided,
+    Object? venueKind = _keep,
+    Object? entryFeeIncluded = _keep,
+    Object? entryFeeVnd = _keep,
+    Object? commitmentAt = _keep,
+    bool? termsAccepted,
+    HostConsent? venueConsent,
   }) => EventForm(
     eventId: identical(eventId, _keep) ? this.eventId : eventId as String?,
     title: title ?? this.title,
@@ -200,6 +298,20 @@ class EventForm {
     spotId: identical(spotId, _keep) ? this.spotId : spotId as String?,
     spotDecided:
         spotDecided ?? (identical(spotId, _keep) ? this.spotDecided : true),
+    venueKind: identical(venueKind, _keep)
+        ? this.venueKind
+        : venueKind as VenueKind?,
+    entryFeeIncluded: identical(entryFeeIncluded, _keep)
+        ? this.entryFeeIncluded
+        : entryFeeIncluded as bool?,
+    entryFeeVnd: identical(entryFeeVnd, _keep)
+        ? this.entryFeeVnd
+        : entryFeeVnd as int?,
+    commitmentAt: identical(commitmentAt, _keep)
+        ? this.commitmentAt
+        : commitmentAt as DateTime?,
+    termsAccepted: termsAccepted ?? this.termsAccepted,
+    venueConsent: venueConsent ?? this.venueConsent,
   );
 
   DateTime? _at(int? minute) => day == null || minute == null
@@ -262,6 +374,7 @@ class EventForm {
       faq: completeFaq,
       spotId: spotId,
       spotDecided: spotDecided,
+      venue: venue,
       cleared: {
         if (existing && cover == null) 'cover',
         if (existing && place == null) 'place',
@@ -293,6 +406,13 @@ class EventForm {
     'faq': ?faq?.map((f) => f.toJson()).toList(),
     'spotId': ?spotId,
     if (spotDecided) 'spotDecided': true,
+    'venueKind': ?venueKind?.code,
+    'entryFeeIncluded': ?entryFeeIncluded,
+    'entryFeeVnd': ?entryFeeVnd,
+    'commitmentAt': ?commitmentAt?.toUtc().toIso8601String(),
+    if (termsAccepted) 'termsAccepted': true,
+    if (venueConsent != HostConsent.notRequired)
+      'venueConsent': venueConsent.code,
   };
 
   /// Reads what [toJson] wrote; anything unreadable is left empty.
@@ -338,6 +458,16 @@ class EventForm {
           : null,
       spotId: text(j['spotId']),
       spotDecided: j['spotDecided'] == true || text(j['spotId']) != null,
+      venueKind: VenueKind.fromCode(j['venueKind']),
+      entryFeeIncluded: j['entryFeeIncluded'] is bool
+          ? j['entryFeeIncluded']! as bool
+          : null,
+      entryFeeVnd: integer(j['entryFeeVnd']),
+      commitmentAt: j['commitmentAt'] is String
+          ? DateTime.tryParse(j['commitmentAt']! as String)?.toUtc()
+          : null,
+      termsAccepted: j['termsAccepted'] == true,
+      venueConsent: HostConsent.fromCode(text(j['venueConsent'])),
     );
   }
 

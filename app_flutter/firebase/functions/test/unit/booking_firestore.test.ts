@@ -18,6 +18,46 @@ import {
 import { PAYMENT_METHODS, type Booking, type Payment, type Refund, type LedgerEntry, type TransferRecord } from '@photobooking/domain';
 import { GeoPoint, Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
 
+describe('S30 booking fields (Task 6)', () => {
+  it('bookingToFirestore writes shooting, checkedInAt, shootQuestion*, passCode4, entry, groupId', () => {
+    const b: Booking = {
+      id: 'b_s30', customerId: 'c1', photographerId: 'p1', serviceId: 'srv_01',
+      serviceSnapshot: { name: 'Chân dung', price: 1_000_000, durationMinutes: 120 },
+      day: '2026-10-20', start: '15:30', end: '17:30', place: { name: 'Bãi đá sông Hồng' },
+      status: 'shooting', deposit: 1_000_000, remaining: 0, version: 4,
+      createdAt: '2026-10-10T10:00:00.000Z', updatedAt: '2026-10-20T08:40:00.000Z',
+      checkedInAt: '2026-10-20T08:40:00.000Z',
+      shootQuestionAt: '2026-10-21T10:30:00.000Z',
+      shootQuestionUntil: '2026-10-23T10:30:00.000Z',
+      shootDeniedAt: '2026-10-22T01:00:00.000Z',
+      passCode4: '4M9P',
+      groupId: 'grp_1',
+      entry: {
+        eventId: 'en1', visitDay: '2026-10-20', items: [{ ticketTypeId: 'adult', name: 'Người lớn', price: 70_000, qty: 2 }],
+        providerTicket: true, waived: { provider: false, guests: false }, waivedGuests: 0, amount: 140_000, registrationId: 'r1',
+      },
+    };
+    const d = bookingToFirestore(b);
+    assert.equal(d.status, 'shooting');
+    assert.ok(d.checkedInAt instanceof Timestamp);
+    assert.ok(d.shootQuestionAt instanceof Timestamp);
+    assert.ok(d.shootQuestionUntil instanceof Timestamp);
+    assert.ok(d.shootDeniedAt instanceof Timestamp);
+    assert.deepEqual([d.passCode4, d.groupId, d.entry?.eventId, d.entry?.registrationId], ['4M9P', 'grp_1', 'en1', 'r1']);
+    const back = bookingFromFirestore(b.id, d);
+    assert.ok(back);
+    for (const k of ['status', 'checkedInAt', 'shootQuestionAt', 'shootQuestionUntil', 'shootDeniedAt', 'passCode4', 'groupId', 'entry'] as const) {
+      assert.deepEqual(back[k], b[k], k);
+    }
+    // A booking written before S30 has none of them; the null fields keep the clock queries matching.
+    const old = bookingToFirestore({ ...b, status: 'upcoming', checkedInAt: undefined, shootQuestionAt: undefined, shootQuestionUntil: undefined,
+      shootDeniedAt: undefined, passCode4: undefined, groupId: undefined, entry: undefined });
+    assert.deepEqual([old.checkedInAt, old.shootQuestionUntil, old.shootDeniedAt, old.passCode4, old.groupId, old.entry], [null, null, null, null, null, null]);
+    const oldBack = bookingFromFirestore(b.id, old);
+    assert.deepEqual([oldBack?.passCode4, oldBack?.groupId, oldBack?.entry, oldBack?.checkedInAt], [undefined, undefined, undefined, undefined]);
+  });
+});
+
 describe('Firestore <-> Domain booking mappers', () => {
   const sampleBooking: Booking = {
     id: 'b_01',

@@ -18,6 +18,7 @@ import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 
 /// Reads `events` (and `registrations`) directly; every write is a callable.
 class FirestoreEventRepository implements EventRepository {
@@ -79,13 +80,21 @@ class FirestoreEventRepository implements EventRepository {
     }
     // One extra row says whether another page exists.
     final snap = await q.limit(limit + 1).get();
-    final rows = [
-      for (final d in snap.docs) ?eventSummaryFromFirestore(d.id, d.data()),
+    final docs = snap.docs.take(limit).toList();
+    // Decision 11: entry-ticket events never show in S11.01. They are dropped
+    // here rather than with `type != 'entry'` in the query (that would need
+    // another composite index per filter); the cursor is the last document
+    // read, so paging never skips or repeats a row.
+    final page = [
+      for (final d in docs)
+        if (d.data()['type'] != EventType.entry.code)
+          ?eventSummaryFromFirestore(d.id, d.data()),
     ];
-    final page = rows.take(limit).toList();
     return EventPage(
       events: page,
-      nextCursor: rows.length > limit && page.isNotEmpty ? page.last.id : null,
+      nextCursor: snap.docs.length > limit && docs.isNotEmpty
+          ? docs.last.id
+          : null,
     );
   }
 
@@ -170,6 +179,31 @@ class FirestoreEventRepository implements EventRepository {
         });
   }
 
+  @override
+  Stream<List<EventDetail>> watchVenueRequests(String spotId) {
+    if (uid == null) {
+      return Stream.value(const []);
+    }
+    // Composite index `events(venue.spotId, venueConsent)`.
+    final query = _events
+        .where('venue.spotId', isEqualTo: spotId)
+        .where('venueConsent', isEqualTo: HostConsent.pending.code)
+        .snapshots()
+        .map((qs) {
+          final out = [
+            for (final d in qs.docs)
+              if (eventDetailFromFirestore(d.id, d.data()) case final e?)
+                if (e.summary.status == EventStatus.draft) e,
+          ];
+          out.sort(
+            (a, b) => (a.venueConsentExpiresAt ?? a.summary.createdAt)
+                .compareTo(b.venueConsentExpiresAt ?? b.summary.createdAt),
+          );
+          return out;
+        });
+    return _orIfDenied(query, const <EventDetail>[]);
+  }
+
   /// A read the rules refuse (a draft or contact the viewer may not see)
   /// is "nothing there", not a failed stream.
   Stream<T> _orIfDenied<T>(Stream<T> source, T fallback) => source.transform(
@@ -240,6 +274,25 @@ class FirestoreEventRepository implements EventRepository {
       _registrations(eventId)
           .snapshots()
           .map((qs) => _parseRegistrations(qs.docs)),
+      const [],
+    );
+  }
+
+  @override
+  Stream<List<EventRegistration>> watchEntryRegistrations(
+    String eventId, {
+    String? day,
+    String? fromDay,
+  }) {
+    if (!_validId(eventId) || (day == null && fromDay == null)) {
+      return Stream.value(const []);
+    }
+    Query<Map<String, dynamic>> q = _registrations(eventId);
+    q = day != null
+        ? q.where('visitDay', isEqualTo: day)
+        : q.where('visitDay', isGreaterThanOrEqualTo: fromDay);
+    return _orIfDenied<List<EventRegistration>>(
+      q.snapshots().map((qs) => _parseRegistrations(qs.docs)),
       const [],
     );
   }
@@ -391,6 +444,65 @@ class FirestoreEventRepository implements EventRepository {
       instructions: paymentInstructionsFrom(data['instructions']),
       holdExpiresAt: hold is String ? DateTime.tryParse(hold)?.toUtc() : null,
     );
+  }
+
+  @override
+  Future<RegisterOutcome> registerEntry({
+    required String eventId,
+    required String visitDay,
+    required List<EntryItem> items,
+    required String name,
+    PayMethod? method,
+  }) async {
+    final data = _asMap(
+      await _call('registerEntry', {
+        'eventId': eventId,
+        'visitDay': visitDay,
+        'items': [for (final i in items) i.toCallable()],
+        'name': name,
+        'method': ?method?.code,
+      }, timeout: _paymentTimeout),
+    );
+    final id = data['registrationId'];
+    if (id is! String) {
+      throw const EventError('internal');
+    }
+    final hold = data['holdExpiresAt'];
+    return RegisterOutcome(
+      registrationId: id,
+      status: RegistrationStatus.fromCode(data['status'] as String?),
+      paymentId: data['paymentId'] as String?,
+      instructions: paymentInstructionsFrom(data['instructions']),
+      holdExpiresAt: hold is String ? DateTime.tryParse(hold)?.toUtc() : null,
+    );
+  }
+
+  @override
+  Future<String> saveEntryDraft(EntryEventDraft draft) async {
+    final data = _asMap(await _call('saveEventDraft', draft.toCallable()));
+    final id = data['eventId'];
+    if (id is! String) {
+      throw const EventError('internal');
+    }
+    return id;
+  }
+
+  @override
+  Future<void> updateEntryEvent(String eventId, EntryEventDraft draft) async {
+    await _call('updateEvent', {...draft.toCallable(), 'eventId': eventId});
+  }
+
+  @override
+  Future<void> respondVenueConsent(
+    String eventId, {
+    required bool accept,
+    int? venueFeePerGuest,
+  }) async {
+    await _call('respondVenueConsent', {
+      'eventId': eventId,
+      'accept': accept,
+      if (accept) 'venueFeePerGuest': ?venueFeePerGuest,
+    });
   }
 
   @override

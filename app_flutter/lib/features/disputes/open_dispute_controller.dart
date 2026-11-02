@@ -25,10 +25,17 @@ const _maxParallelUploads = 2;
 /// retried submit is answered with the same dispute) and its subject.
 @immutable
 class OpenDisputeArgs {
-  const OpenDisputeArgs({required this.disputeId, required this.subject});
+  const OpenDisputeArgs({
+    required this.disputeId,
+    required this.subject,
+    this.initialReason,
+  });
 
   final String disputeId;
   final DisputeSubject subject;
+
+  /// The reason set when the sheet opens (S05.02-askshot "Không diễn ra").
+  final DisputeReason? initialReason;
 
   @override
   bool operator ==(Object other) =>
@@ -160,7 +167,7 @@ class OpenDisputeController extends Notifier<OpenDisputeState> {
         discard();
       }
     });
-    return const OpenDisputeState();
+    return OpenDisputeState(reason: args.initialReason);
   }
 
   void setReason(DisputeReason reason) =>

@@ -195,10 +195,10 @@ describe('Task 2: Booking state machine & transitions', () => {
       assert.equal(res.nextStatus, 'shot');
     });
 
-    it('system mark_shot needs end + 24 h', () => {
+    it('system mark_shot of a shooting booking needs end + 24 h (S30)', () => {
       // end + 24h: 2026-10-16 09:00 UTC
       const nowBefore = new Date('2026-10-16T08:59:00.000Z');
-      const booking = { ...baseBooking, status: 'upcoming' as const };
+      const booking = { ...baseBooking, status: 'shooting' as const, checkedInAt: '2026-10-15T07:00:00.000Z' };
       assert.throws(
         () => decideTransition(booking, 'mark_shot', { role: 'system' }, nowBefore),
         (err: unknown) => err instanceof DomainError && err.code === 'conflict',
@@ -207,6 +207,40 @@ describe('Task 2: Booking state machine & transitions', () => {
       const now = new Date('2026-10-16T09:00:00.000Z');
       const res = decideTransition(booking, 'mark_shot', { role: 'system' }, now);
       assert.equal(res.nextStatus, 'shot');
+      assert.equal(res.shotAt, undefined);
+    });
+
+    it('system mark_shot of an upcoming booking only after the shoot question, dated at its end (S30)', () => {
+      const now = new Date('2026-10-19T09:00:00.000Z');
+      const upcoming = { ...baseBooking, status: 'upcoming' as const };
+      assert.throws(
+        () => decideTransition(upcoming, 'mark_shot', { role: 'system' }, now),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+      const asked = { ...upcoming, shootQuestionAt: '2026-10-16T09:00:00.000Z', shootQuestionUntil: '2026-10-18T09:00:00.000Z' };
+      assert.deepEqual(decideTransition(asked, 'mark_shot', { role: 'system' }, now), {
+        nextStatus: 'shot', refundPercent: 0, shotAt: '2026-10-15T09:00:00.000Z',
+      });
+      assert.throws(
+        () => decideTransition({ ...asked, shootDeniedAt: '2026-10-16T10:00:00.000Z' }, 'mark_shot', { role: 'system' }, now),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict',
+      );
+    });
+
+    it('scan: the photographer moves upcoming to shooting inside the window (S30)', () => {
+      const booking = { ...baseBooking, status: 'upcoming' as const };
+      const p = { id: baseBooking.photographerId, role: 'photographer' as const };
+      // start 2026-10-15 14:00 VN: opens 12:00 VN (05:00Z), closes end 16:00 + 2 h (11:00Z)
+      assert.deepEqual(decideTransition(booking, 'scan', p, new Date('2026-10-15T05:00:00.000Z')), { nextStatus: 'shooting', refundPercent: 0 });
+      assert.deepEqual(decideTransition(booking, 'scan', p, new Date('2026-10-15T11:00:00.000Z')), { nextStatus: 'shooting', refundPercent: 0 });
+      assert.throws(() => decideTransition(booking, 'scan', p, new Date('2026-10-15T04:59:00.000Z')),
+        (err: unknown) => err instanceof DomainError && err.code === 'too_early');
+      assert.throws(() => decideTransition(booking, 'scan', p, new Date('2026-10-15T11:01:00.000Z')),
+        (err: unknown) => err instanceof DomainError && err.code === 'wrong_day');
+      assert.throws(() => decideTransition(booking, 'scan', { id: 'cust_01', role: 'customer' }, new Date('2026-10-15T06:00:00.000Z')),
+        (err: unknown) => err instanceof DomainError && (err.code === 'permission_denied'));
+      assert.throws(() => decideTransition({ ...booking, status: 'accepted' }, 'scan', p, new Date('2026-10-15T06:00:00.000Z')),
+        (err: unknown) => err instanceof DomainError && err.code === 'conflict');
     });
 
     it('finish moves approved to completed after checkUntil', () => {
@@ -335,7 +369,7 @@ describe('Task 2: Booking state machine & transitions', () => {
         }
       }
       const assigned = { ...unassigned, assigneeId: 'm1', assignStatus: 'assigned' as const };
-      assert.equal(decideTransition(assigned, 'mark_shot', { role: 'system' }, afterAuto).nextStatus, 'shot');
+      assert.equal(decideTransition({ ...assigned, status: 'shooting' }, 'mark_shot', { role: 'system' }, afterAuto).nextStatus, 'shot');
       assert.equal(
         decideTransition({ ...assigned, status: 'upcoming' }, 'complete', { id: 'photog_01', role: 'photographer' }, afterAuto)
           .nextStatus,

@@ -11,6 +11,9 @@ enum BookingStatus {
   expired,
   cancelled,
   upcoming,
+
+  /// S30: the photographer scanned the customer's pass; the shoot is on.
+  shooting,
   shot,
   delivered,
   revisionRequested,
@@ -40,6 +43,7 @@ extension BookingStatusX on BookingStatus {
     BookingStatus.cancelled ||
     BookingStatus.expired => AppColors.bookingDenied,
     BookingStatus.upcoming ||
+    BookingStatus.shooting ||
     BookingStatus.shot ||
     BookingStatus.revisionRequested => AppColors.bookingOpened,
     BookingStatus.completed ||
@@ -49,6 +53,7 @@ extension BookingStatusX on BookingStatus {
   /// Text color on top of [color]; the warning yellow needs dark text.
   Color get onColor =>
       (this == BookingStatus.upcoming ||
+          this == BookingStatus.shooting ||
           this == BookingStatus.shot ||
           this == BookingStatus.revisionRequested)
       ? AppColors.foreground
@@ -61,6 +66,7 @@ extension BookingStatusX on BookingStatus {
     BookingStatus.expired => l.statusExpired,
     BookingStatus.cancelled => l.statusCancelled,
     BookingStatus.upcoming => l.statusUpcoming,
+    BookingStatus.shooting => l.statusShooting,
     BookingStatus.shot => l.statusShot,
     BookingStatus.delivered => l.statusDelivered,
     BookingStatus.revisionRequested => l.statusRevisionRequested,

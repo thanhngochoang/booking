@@ -123,11 +123,29 @@ service firebase.storage {
       allow write: if false;
     }
 
-    // Spots (plan 2026-10-08 S29): spots/{spotId}/{file}. Signed-in users read;
-    // only the server (CLI) uploads.
+    // Spots (plan 2026-10-08 S29): spots/{spotId}/{file}. Signed-in users read; the server (CLI)
+    // uploads, and S30.03's manager (`spots/{spotId}.managedBy`) adds a new cover (purpose share, 2 MiB,
+    // a fresh name per upload; `updateManagedSpot` then points the spot at it). No overwrite, no delete.
     match /spots/{spotId}/{file} {
       allow read: if signedIn();
-      allow write: if false;
+      allow create: if signedIn()
+        && resource == null
+        && firestore.get(/databases/(default)/documents/spots/$(spotId)).data.get('managedBy', null) == request.auth.uid
+        && jpegUpTo(2 * 1024 * 1024);
+      allow update, delete: if false;
+    }
+
+    // Spot claim proofs (S30.02, #223 Decision 4): spot_claims/{uid}/{claimId}/{file}, uploaded by the
+    // claimant before claimSpot (PDF, JPEG or PNG, at most 10 MiB, create once); the claimant and staff
+    // admins read them (staff review in the CLI). The uid segment is what proves the uploader.
+    match /spot_claims/{uid}/{claimId}/{file} {
+      allow create: if isOwner(uid)
+        && resource == null
+        && (jpegUpTo(10 * 1024 * 1024)
+            || (request.resource.contentType in ['image/png', 'application/pdf']
+                && request.resource.size <= 10 * 1024 * 1024));
+      allow read: if isOwner(uid) || (signedIn() && request.auth.token.get('staffRole', '') == 'admin');
+      allow update, delete: if false;
     }
 
     // Job reference photos (S15–S16, #139, purpose share, 1600 px): jobRefs/{uid}/{draftId}/{file}.

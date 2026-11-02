@@ -359,4 +359,106 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('register-submit')), findsOneWidget);
   });
+
+  group('S11.03 venue variants', () {
+    testWidgets(
+      'the total is price × quantity: the venue fee is inside the price (Decision 16)',
+      (tester) async {
+        await _open(
+          tester,
+          event: detailOf(
+            'ev1',
+            priceVnd: 400000,
+            venue: const EventVenue(
+              kind: VenueKind.managedSpot,
+              spotId: 'bd',
+              termsVersion: organizerTermsVersion,
+            ),
+            venueConsent: HostConsent.accepted,
+            venueFeePerGuest: 50000,
+          ),
+        );
+        await _plus(tester, 1);
+        expect(find.text('Thanh toán 800.000₫'), findsOneWidget);
+        expect(find.text('gồm phí quản lý địa điểm 100.000₫'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(RegisterSheet),
+            matching: find.text('Đã gồm vé vào cửa'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a paid place not included: the gate fee line', (tester) async {
+      await _open(
+        tester,
+        event: detailOf(
+          'ev1',
+          priceVnd: 250000,
+          venue: const EventVenue(
+            kind: VenueKind.paidPlace,
+            entryFeeIncluded: false,
+            entryFeeVnd: 20000,
+            termsVersion: organizerTermsVersion,
+          ),
+        ),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(RegisterSheet),
+          matching: find.text('Chưa gồm vé vào cửa ≈ 20.000₫ · trả tại cổng'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('gồm phí quản lý'), findsNothing);
+      expect(find.text('Thanh toán 250.000₫'), findsOneWidget);
+    });
+
+    testWidgets('a free event at a paid place keeps the line', (tester) async {
+      await _open(
+        tester,
+        event: detailOf(
+          'ev1',
+          priceVnd: 0,
+          venue: const EventVenue(
+            kind: VenueKind.paidPlace,
+            entryFeeIncluded: false,
+            entryFeeVnd: 20000,
+            termsVersion: organizerTermsVersion,
+          ),
+        ),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(RegisterSheet),
+          matching: find.text('Chưa gồm vé vào cửa ≈ 20.000₫ · trả tại cổng'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('fits 320 dp at 1.3× text with the venue lines', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        size: const Size(320, 700),
+        textScale: 1.3,
+        event: detailOf(
+          'ev1',
+          priceVnd: 400000,
+          venue: const EventVenue(
+            kind: VenueKind.managedSpot,
+            spotId: 'bd',
+            termsVersion: organizerTermsVersion,
+          ),
+          venueConsent: HostConsent.accepted,
+          venueFeePerGuest: 50000,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

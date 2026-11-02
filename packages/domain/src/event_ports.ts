@@ -6,6 +6,10 @@ import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactReader } from './ports.js';
 import type { RandomBytes } from './ids.js';
 import type { Spot } from './spot.js';
+import type { EntryDay } from './entry_tickets.js';
+import type { Organizer, Resident } from './organizer.js';
+import type { PassRecord, PrivatePassRef } from './pass.js';
+import type { PaymentGroupView } from './group_settlement.js';
 
 /** Thrown inside a transaction to ask the adapter to run it again (it holds no state of its own). */
 export class RetryableConflict extends Error {
@@ -47,8 +51,11 @@ export interface EventTx {
   ticketCodeTaken(code: string): Promise<boolean>;
   findTicket(code: string): Promise<{ eventId: string; registrationId: string } | null>;
   getRegistration(eventId: string, regId: string): Promise<RegistrationDoc | null>;
-  /** held | paid. */
-  activeRegistrationOf(eventId: string, userId: string): Promise<RegistrationDoc | null>;
+  /**
+   * held | paid. With `visitDay` (entry events, S30 Decision 11): the customer's lone ticket of that day,
+   * ignoring tickets bought with a booking (`bookingId` set).
+   */
+  activeRegistrationOf(eventId: string, userId: string, visitDay?: string): Promise<RegistrationDoc | null>;
   /** All held | paid registrations of the event (cancelling an event). */
   activeRegistrations(eventId: string): Promise<RegistrationDoc[]>;
   /** held, `holdExpiresAt <= now`. */
@@ -64,7 +71,22 @@ export interface EventTx {
   heldTicketPayments(eventId: string): Promise<Payment[]>;
   /** `refunds/{id}`. */
   getRefund(id: string): Promise<Refund | null>;
+  /** `entry_days/{eventId}_{day}` (S30). */
+  getEntryDay(eventId: string, day: string): Promise<EntryDay | null>;
+  /** Paid registrations of an entry event's visit day (closing a day). */
+  registrationsOfDay(eventId: string, day: string): Promise<RegistrationDoc[]>;
+  /** `organizers/{uid}` (S30): the host of an entry event. */
+  getOrganizer(uid: string): Promise<Organizer | null>;
+  /** `spots/{spotId}/residents/{providerId}` (S30; read by bookings with tickets, Task 3). */
+  residentOf(spotId: string, providerId: string): Promise<Resident | null>;
+  /** `passes/{code8}` (S30 Decision 7). */
+  getPass(code8: string): Promise<PassRecord | null>;
+  passTaken(code8: string): Promise<boolean>;
   putEvent(e: EventRecord): void;
+  putPass(p: PassRecord): void;
+  /** The customer's copy of a pass (`…/private/pass {code}`). */
+  putPrivatePass(ref: PrivatePassRef, code8: string): void;
+  putEntryDay(d: EntryDay): void;
   putHashtag(key: string, eventId: string): void;
   deleteHashtag(key: string): void;
   putTicketCode(code: string, eventId: string, registrationId: string): void;
@@ -73,6 +95,8 @@ export interface EventTx {
   /** The phone snapshot goes when the ticket stops unlocking contact (cancelled or refunded). */
   deleteRegistrationContact(eventId: string, regId: string): void;
   putPayment(p: Payment): void;
+  /** `payment_groups/{id}` (S30 Decision 6): a ticket with a venue fee is paid as a group (Decision 16). */
+  putGroupView(g: PaymentGroupView): void;
   putRefund(r: Refund): void;
   putLedgerEntry(e: LedgerEntry): void;
   getTransferRecord(id: string): Promise<TransferRecord | null>;
@@ -92,6 +116,8 @@ export interface EventStore {
   dueForCompletion(now: Date, limit: number): Promise<EventRecord[]>;
   /** O1: drafts with `hostConsent = pending` and `hostConsentExpiresAt <= now`. */
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]>;
+  /** S30 Decision 16: drafts with `venueConsent = pending` and `venueConsentExpiresAt <= now`. */
+  dueForVenueConsentExpiry(now: Date, limit: number): Promise<EventRecord[]>;
   /** S17: open | full | closed, `soonNoticeAt == null`, `now < startAt <= horizon` (the 48-hour reminder). */
   dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]>;
   /** `held` registrations of any event with `holdExpiresAt <= now` (the 1-minute hold sweep). */

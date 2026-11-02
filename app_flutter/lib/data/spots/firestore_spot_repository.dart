@@ -6,6 +6,7 @@ import 'package:photobooking/data/content/firestore_post_repository.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/firestore_event_mapping.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_repository.dart';
 
@@ -153,9 +154,44 @@ class FirestoreSpotRepository implements SpotRepository {
         .get();
 
     return snap.docs
+        .where((d) => d.data()['type'] != 'entry')
         .map((d) => eventSummaryFromFirestore(d.id, d.data()))
         .whereType<EventSummary>()
         .toList();
+  }
+
+  @override
+  Stream<List<Resident>> watchResidents(String spotId) {
+    if (spotId.isEmpty || spotId.contains('/')) return Stream.value(const []);
+    return _db
+        .collection('spots')
+        .doc(spotId)
+        .collection('residents')
+        .snapshots()
+        .map(
+          (qs) => [
+            for (final d in qs.docs) ?residentFromFirestore(d.id, d.data()),
+          ],
+        );
+  }
+
+  @override
+  Stream<EntryEvent?> watchEntryEvent(String spotId) {
+    if (spotId.isEmpty || spotId.contains('/')) return Stream.value(null);
+    return _db
+        .collection('events')
+        .where('type', isEqualTo: 'entry')
+        .where('spotId', isEqualTo: spotId)
+        .where('status', whereIn: ['open', 'full'])
+        .snapshots()
+        .map((qs) {
+          // One entry event per spot is the rule; the soonest start wins if
+          // a second one ever exists.
+          final events = [
+            for (final d in qs.docs) ?entryEventFromFirestore(d.id, d.data()),
+          ]..sort((a, b) => a.startDay.compareTo(b.startDay));
+          return events.isEmpty ? null : events.first;
+        });
   }
 
   @override

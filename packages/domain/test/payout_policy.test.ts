@@ -56,7 +56,7 @@ describe('payout policy', () => {
   });
 
   it('the default policy is 0 fee and 5% + 2% individual tax', () => {
-    assert.deepEqual(DEFAULT_PAYOUT_POLICY.feeBp, { individual: 0, artist: 0, studio: 0 });
+    assert.deepEqual(DEFAULT_PAYOUT_POLICY.feeBp, { individual: 0, artist: 0, studio: 0, organizer: 0 });
     assert.deepEqual(DEFAULT_PAYOUT_POLICY.individualTaxBp, { vat: 500, pit: 200 });
   });
   it("an explicit fee rate (an instant payment's platformFeeBp, Decision 6) replaces the policy's", () => {
@@ -64,5 +64,18 @@ describe('payout policy', () => {
       gross: 690_000, fee: 69_000, tax: 0, net: 621_000, feeRateBp: 1_000, taxRateBp: 0,
     });
     assert.equal(payoutLineOf(690_000, 'individual', DEFAULT_PAYOUT_POLICY, 0).fee, 0);
+  });
+});
+
+describe('payout policy for organizers (S30 Decision 12)', () => {
+  it('payoutLineOf/taxRateBpOf for payeeKind organizer is 0 fee and 0 tax', async () => {
+    const { taxRateBpOf } = await import('../src/payout_policy.js');
+    assert.equal(taxRateBpOf('organizer', DEFAULT_PAYOUT_POLICY), 0);
+    assert.equal(DEFAULT_PAYOUT_POLICY.feeBp.organizer, 0);
+    assert.deepEqual(payoutLineOf(1_500_000, 'organizer', DEFAULT_PAYOUT_POLICY),
+      { gross: 1_500_000, fee: 0, tax: 0, net: 1_500_000, feeRateBp: 0, taxRateBp: 0 });
+    // A policy without an organizer rate takes no commission from organizers.
+    const policy: PayoutPolicy = { ...DEFAULT_PAYOUT_POLICY, feeBp: { individual: 1000, artist: 1000, studio: 1000 } };
+    assert.equal(payoutLineOf(100_000, 'organizer', policy).fee, 0);
   });
 });

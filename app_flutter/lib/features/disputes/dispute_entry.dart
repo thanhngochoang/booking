@@ -88,10 +88,15 @@ Future<String?> showOpenDisputeSheet(
   required DisputeSubjectSummary summary,
   required DateTime closesAt,
   DisputeOrigin origin = DisputeOrigin.booking,
+  DisputeReason? reason,
 }) {
   // One id per sheet: the evidence lives under it and a retried submit is
   // answered with the same dispute (Decision 4).
-  final args = OpenDisputeArgs(disputeId: newUlid(), subject: subject);
+  final args = OpenDisputeArgs(
+    disputeId: newUlid(),
+    subject: subject,
+    initialReason: reason,
+  );
   return showAppSheet<String>(
     context,
     // The header handles the swipe (it asks first when something was typed).
@@ -124,17 +129,29 @@ bool _holdsMoney(EscrowStatus? s) =>
 
 /// When the customer's dispute window on [b] closes, or null when there is
 /// none. Mirrors the server's `disputeWindow` (Decision 2): `shot` → 24 h
-/// after the shoot; `approved` → the end of the delivery check; `completed`
+/// after the shoot; `shooting` → 24 h from now; `approved` → the end of the
+/// delivery check; `completed`
 /// / `reviewed` with money still held (a payment without milestones) → 24 h
 /// after completion. Only while money is held (`disputed` = the linked
 /// dispute is still open). One open dispute per booking, but each milestone
 /// has its own window: with a resolved dispute linked, only `approved` (the
 /// delivery check) stays open — that dispute was on the shoot milestone and
 /// the delivery money is still held. The server decides (`openDispute`).
-DateTime? bookingDisputeClosesAt(Booking b) {
+DateTime? bookingDisputeClosesAt(Booking b, {DateTime? now}) {
   if (!_holdsMoney(b.escrowStatus) ||
       (b.disputeId != null && b.status != BookingStatus.approved)) {
     return null;
+  }
+  // S05.02-askshot "Không diễn ra" (domain `disputeWindow`): an `upcoming`
+  // booking whose customer denied the shoot stays disputable; the window
+  // rolls with now while the money is held.
+  if (b.status == BookingStatus.upcoming && b.shootDeniedAt != null) {
+    return now?.add(const Duration(hours: disputeWindowHours));
+  }
+  // S30 `shooting` (spec §6.3: after the scan only a dispute is left; the
+  // server's window rolls with now as above; final fix A-I2).
+  if (b.status == BookingStatus.shooting) {
+    return now?.add(const Duration(hours: disputeWindowHours));
   }
   return switch (b.status) {
     BookingStatus.shot => b.shotAt?.add(

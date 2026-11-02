@@ -53,6 +53,7 @@ class _ServerLikeRepository extends RecordingBookingRepository {
     int? expectedTotal,
     String? spotScheduleId,
     String? slotOfferId,
+    BookingEntryRequest? entry,
   }) async {
     final b = await super.createBooking(
       photographerId: photographerId,
@@ -67,6 +68,7 @@ class _ServerLikeRepository extends RecordingBookingRepository {
       expectedTotal: expectedTotal,
       spotScheduleId: spotScheduleId,
       slotOfferId: slotOfferId,
+      entry: entry,
     );
     final fixed = b.copyWith(
       serviceSnapshot: const BookingServiceSnapshot(
@@ -120,11 +122,13 @@ class _ServerLikeRepository extends RecordingBookingRepository {
     required String bookingId,
     required String action,
     String? reason,
+    bool keepTickets = false,
   }) async {
     final b = await super.transitionBooking(
       bookingId: bookingId,
       action: action,
       reason: reason,
+      keepTickets: keepTickets,
     );
     final fixed = b.copyWith(
       updatedAt: clock.now,

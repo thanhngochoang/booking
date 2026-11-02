@@ -34,12 +34,14 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/photo_scope.dart';
 import '../../support/recruit_world.dart';
 import '../../support/studio_world.dart';
+import '../../support/fake_organizer_repository.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
 
@@ -137,6 +139,9 @@ Future<void> _open(
         ),
         photographerIntroRepositoryProvider.overrideWithValue(intros),
         studioRepositoryProvider.overrideWithValue(studios),
+        organizerRepositoryProvider.overrideWithValue(
+          FakeOrganizerRepository(),
+        ),
         collabRepositoryProvider.overrideWithValue(collabs),
         clockProvider.overrideWithValue(() => recruitNow),
         recruitRepositoryProvider.overrideWithValue(recruits),

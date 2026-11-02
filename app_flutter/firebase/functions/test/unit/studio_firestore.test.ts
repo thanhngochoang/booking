@@ -227,12 +227,68 @@ describe('studio booking sweep queries', () => {
     );
   });
 
-  it('findAutoCompletions leaves out studio bookings without an assignee', async () => {
+  it('findAutoCompletions: shooting bookings ended before the cutoff, without studio bookings that have no assignee (S30)', async () => {
     const db = new MemoryFirestore();
-    seedBooking(db, studioBooking({ id: 'unassigned', day: '2026-10-01' }));
-    seedBooking(db, studioBooking({ id: 'assigned', day: '2026-10-01', assignStatus: 'assigned', assigneeId: 'm1', status: 'upcoming' }));
+    seedBooking(db, studioBooking({ id: 'unassigned', day: '2026-10-01', status: 'shooting' }));
+    seedBooking(db, studioBooking({ id: 'assigned', day: '2026-10-01', assignStatus: 'assigned', assigneeId: 'm1', status: 'shooting' }));
+    seedBooking(db, studioBooking({ id: 'not_scanned', day: '2026-10-01', assignStatus: 'assigned', assigneeId: 'm1', status: 'upcoming' }));
+    seedBooking(db, studioBooking({ id: 'later', day: '2026-10-11', assignStatus: 'assigned', assigneeId: 'm1', status: 'shooting' }));
     const store = new FirestoreBookingStore(db.asFirestore());
     assert.deepEqual((await store.findAutoCompletions(NOW)).map((b) => b.id), ['assigned']);
+  });
+
+  it('findShootQuestionsDue: upcoming, ended before the cutoff, not scanned, not asked (S30)', async () => {
+    const db = new MemoryFirestore();
+    const assigned = { assignStatus: 'assigned' as const, assigneeId: 'm1', status: 'upcoming' as const };
+    seedBooking(db, studioBooking({ id: 'due', day: '2026-10-01', ...assigned }));
+    seedBooking(db, studioBooking({ id: 'scanned', day: '2026-10-01', ...assigned, checkedInAt: '2026-10-01T07:00:00.000Z' }));
+    seedBooking(db, studioBooking({ id: 'asked', day: '2026-10-01', ...assigned, shootQuestionAt: '2026-10-02T09:00:00.000Z' }));
+    seedBooking(db, studioBooking({ id: 'unassigned', day: '2026-10-01', status: 'upcoming' }));
+    seedBooking(db, studioBooking({ id: 'today', day: '2026-10-10', ...assigned }));
+    const store = new FirestoreBookingStore(db.asFirestore());
+    assert.deepEqual((await store.findShootQuestionsDue(NOW)).map((b) => b.id), ['due']);
+  });
+
+  it('findShootQuestionsDue pages past asked and denied upcoming bookings (startAfter), so due ones are never starved (S30 fix 2)', async () => {
+    const db = new MemoryFirestore();
+    const assigned = { assignStatus: 'assigned' as const, assigneeId: 'm1', status: 'upcoming' as const };
+    for (let i = 0; i < 5; i++) {
+      seedBooking(db, studioBooking({ id: `asked_${i}`, day: '2026-10-02', start: `0${i}:00`, ...assigned, shootQuestionAt: '2026-10-03T09:00:00.000Z' }));
+    }
+    seedBooking(db, studioBooking({ id: 'denied', day: '2026-10-02', start: '06:00', ...assigned, shootQuestionAt: '2026-10-03T09:00:00.000Z', shootDeniedAt: '2026-10-03T10:00:00.000Z' }));
+    seedBooking(db, studioBooking({ id: 'due', day: '2026-10-03', ...assigned }));
+    seedBooking(db, studioBooking({ id: 'too_old', day: '2026-09-01', ...assigned }));
+    const store = new FirestoreBookingStore(db.asFirestore());
+    assert.deepEqual((await store.findShootQuestionsDue(NOW, 2)).map((b) => b.id), ['due']);
+  });
+
+  it('findDeniedShootsDue: upcoming, denied before the cutoff, no dispute (S30 fix 1)', async () => {
+    const db = new MemoryFirestore();
+    const denied = { status: 'upcoming' as const, shootQuestionAt: '2026-10-05T03:00:00.000Z' };
+    seedBooking(db, studioBooking({ id: 'due', ...denied, shootDeniedAt: '2026-10-07T03:00:00.000Z' }));
+    seedBooking(db, studioBooking({ id: 'recent', ...denied, shootDeniedAt: '2026-10-09T03:00:00.000Z' }));
+    seedBooking(db, studioBooking({ id: 'disputed', ...denied, shootDeniedAt: '2026-10-07T03:00:00.000Z', disputeId: 'd1' }));
+    seedBooking(db, studioBooking({ id: 'not_denied', ...denied }));
+    const store = new FirestoreBookingStore(db.asFirestore());
+    const cutoff = new Date(NOW.getTime() - 48 * 3_600_000);
+    assert.deepEqual((await store.findDeniedShootsDue(cutoff)).map((b) => b.id), ['due']);
+  });
+
+  it('findExpiredShootQuestions: upcoming with shootQuestionUntil passed and no denial; the fields round-trip (S30)', async () => {
+    const db = new MemoryFirestore();
+    const asked = { status: 'upcoming' as const, shootQuestionAt: '2026-10-07T03:00:00.000Z' };
+    seedBooking(db, studioBooking({ id: 'expired', ...asked, shootQuestionUntil: '2026-10-09T03:00:00.000Z', passCode4: '4M9P' }));
+    seedBooking(db, studioBooking({ id: 'open', ...asked, shootQuestionUntil: '2026-10-11T03:00:00.000Z' }));
+    seedBooking(db, studioBooking({
+      id: 'denied', ...asked, shootQuestionUntil: '2026-10-09T03:00:00.000Z', shootDeniedAt: '2026-10-08T03:00:00.000Z',
+    }));
+    const store = new FirestoreBookingStore(db.asFirestore());
+    const found = await store.findExpiredShootQuestions(NOW);
+    assert.deepEqual(found.map((b) => b.id), ['expired']);
+    assert.deepEqual(
+      [found[0]?.passCode4, found[0]?.shootQuestionAt, found[0]?.shootQuestionUntil, found[0]?.checkedInAt],
+      ['4M9P', '2026-10-07T03:00:00.000Z', '2026-10-09T03:00:00.000Z', undefined],
+    );
   });
 
   it('findDueChangeRequests: pending and past respondBy, oldest first', async () => {
@@ -426,6 +482,27 @@ describe('recomputeStudioDay (Decision 26)', () => {
     assert.equal(db.data(`availability/${STUDIO}/days/${DAY}`)?.state, 'full');
     assert.equal(db.data(`availability/${STUDIO}/days/2026-10-20`), undefined);
     assert.equal(db.data(`availability/${STUDIO}/days/2026-10-01`), undefined);
+  });
+});
+
+describe('S30 booking indexes (Task 4 fix 2)', () => {
+  it('the shoot question, denied-shoot and shooting queries have their composite indexes', () => {
+    const json = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as {
+      indexes: { collectionGroup: string; queryScope: string; fields: { fieldPath: string; order: string }[] }[];
+    };
+    const shapes = json.indexes
+      .filter((i) => i.queryScope === 'COLLECTION')
+      .map((i) => `${i.collectionGroup}: ${i.fields.map((f) => `${f.fieldPath} ${f.order}`).join(', ')}`);
+    for (const shape of [
+      // findShootQuestionsDue, findAutoCompletions (shooting)
+      'bookings: status ASCENDING, day ASCENDING, start ASCENDING, __name__ ASCENDING',
+      // findExpiredShootQuestions
+      'bookings: status ASCENDING, shootDeniedAt ASCENDING, shootQuestionUntil ASCENDING',
+      // findDeniedShootsDue
+      'bookings: status ASCENDING, disputeId ASCENDING, shootDeniedAt ASCENDING',
+    ]) {
+      assert.ok(shapes.includes(shape), shape);
+    }
   });
 });
 

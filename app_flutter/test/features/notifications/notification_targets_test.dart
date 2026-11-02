@@ -45,6 +45,13 @@ const _accepted = [
   '/studio/recruit?post=x',
   '/collab',
   '/collab?offer=x',
+  // S30 organizers (#223): S30.02, S30.03, S30.06 and the spot page S29.02
+  '/organizer/spots/claim',
+  '/organizer/spots/x',
+  '/organizer/gate-staff',
+  '/spots/x',
+  // A ticket's pass_ready / entry_day_closed (final fix A-I3)
+  '/bookings?tab=events',
 ];
 
 void main() {
@@ -109,6 +116,10 @@ void main() {
       '/me/payments',
       '/recruit/x',
       '/collab',
+      '/organizer/spots/claim',
+      '/organizer/spots/x',
+      '/organizer/gate-staff',
+      '/spots/x',
     ]) {
       expect(safeTarget(t), t, reason: t);
       expect(safeTarget('$t?x=1'), isNull, reason: '$t?x=1');
@@ -151,7 +162,10 @@ void main() {
       '/u/p1?tab=reviews&tab=reviews',
       '/u/p1?tab=albums&tab=reviews',
       '/u/p1?tab=reviews&tab=albums',
-      '/bookings?tab=events',
+      // Only `tab=events` (final fix A-I3), exactly once.
+      '/bookings?tab=archive',
+      '/bookings?tab=events&tab=events',
+      '/bookings?tab=events&highlight=r1',
     ]) {
       expect(safeTarget(t), isNull, reason: t);
     }

@@ -180,7 +180,10 @@ function refundView(r: Refund): PayerRefundView {
   };
 }
 
-/** Null when no money ever arrived (Decision 2). Status by Decision 3. */
+const isSplitGroup = (p: Payment): boolean =>
+  p.subjectType === 'payment_group' && p.status === 'paid' && p.escrowStatus === 'released';
+
+/** Null when no money ever arrived (Decision 2), or for a group shown by its lines. Status by Decision 3. */
 export function payerRowOf(
   p: Payment,
   refunds: readonly Refund[],
@@ -190,6 +193,9 @@ export function payerRowOf(
   const mine = refunds.filter((r) => r.paymentId === p.id);
   if (!paymentHasMoney(p, mine)) return null;
   const excess = sum(mine.filter((r) => !isEscrowRefund(r)));
+  // S30 (Decision 6): a group paid in full is shown by its lines (each its own row); the group keeps a
+  // row only while unsplit (open, part-paid, expired, refunded late) or for an excess sent back.
+  if (isSplitGroup(p) && excess === 0) return null;
   // Paid: the amount plus anything sent above it. Never paid: every transfer (an expired QR's
   // received money is in its `underpaid_expired` refund, so only an open QR adds receivedAmount).
   const amount = everPaid(p)

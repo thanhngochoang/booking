@@ -50,6 +50,7 @@ class _OrderedBookingRepository extends FakeBookingRepository {
     int? expectedTotal,
     String? spotScheduleId,
     String? slotOfferId,
+    BookingEntryRequest? entry,
   }) {
     log.add('createBooking');
     return super.createBooking(
@@ -65,6 +66,7 @@ class _OrderedBookingRepository extends FakeBookingRepository {
       expectedTotal: expectedTotal,
       spotScheduleId: spotScheduleId,
       slotOfferId: slotOfferId,
+      entry: entry,
     );
   }
 

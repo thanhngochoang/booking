@@ -4,8 +4,9 @@ import { Timestamp, type Firestore } from 'firebase-admin/firestore';
 import { DomainError, type OtpChallenge } from '@photobooking/domain';
 import { DEV_PROJECT_ID } from '../../src/config.js';
 import { FirestorePhotographerPhoneReader, fakeOtpAllowed, nodeOtpCrypto, otpSender } from '../../src/infra/otp.js';
-import { FirestoreVerifiedNameReader, accountNameLookup, lookupMode } from '../../src/infra/payout_lookup.js';
+import { FirestoreBusinessNameReader, FirestoreVerifiedNameReader, accountNameLookup, lookupMode } from '../../src/infra/payout_lookup.js';
 import {
+  FirestorePayoutStore,
   OTP_CHALLENGES_COLLECTION,
   PAYOUT_LOOKUPS_COLLECTION,
   otpChallengeDocId,
@@ -130,7 +131,92 @@ describe('OTP adapters', () => {
     assert.equal(await phones.phoneOf('p1'), '+84912000001');
     assert.equal(await phones.phoneOf('p2'), null);
     assert.equal(await phones.phoneOf('p3'), null);
-    assert.deepEqual(reads, ['photographers/p1/private/contact', 'photographers/p2/private/contact', 'photographers/p3/private/contact']);
+    assert.deepEqual(reads, [
+      'photographers/p1/private/contact',
+      'photographers/p2/private/contact',
+      'users/p2/private/contact',
+      'photographers/p3/private/contact',
+      'users/p3/private/contact',
+    ]);
+  });
+
+  it('an organizer has no photographer document: its phone is users/{uid}/private/contact.phone', async () => {
+    const { db, reads } = docsDb({
+      'users/org1/private/contact': { phone: '+84912000009', phoneVerified: true },
+      'users/org2/private/contact': { phone: '  ' },
+    });
+    const phones = new FirestorePhotographerPhoneReader(db);
+    assert.equal(await phones.phoneOf('org1'), '+84912000009');
+    assert.equal(await phones.phoneOf('org2'), null);
+    assert.deepEqual(reads, [
+      'photographers/org1/private/contact',
+      'users/org1/private/contact',
+      'photographers/org2/private/contact',
+      'users/org2/private/contact',
+    ]);
+  });
+});
+
+describe('organizer payout adapters (S06.06 for organizers)', () => {
+  const record = (business: Record<string, unknown> | null) => ({ uid: 'org1', business });
+
+  it("the business legal name is the approved organizer record's name; submitted, rejected, studio or blank is null", async () => {
+    const { db, reads } = docsDb({
+      'verifications/org1': record({ subject: 'organizer', status: 'approved', name: 'CÔNG TY TNHH BÃI ĐÁ SÔNG HỒNG' }),
+      'verifications/org2': record({ subject: 'organizer', status: 'submitted', name: 'CÔNG TY A' }),
+      'verifications/org3': record({ subject: 'organizer', status: 'rejected', name: 'CÔNG TY B' }),
+      'verifications/s1': record({ subject: 'studio', status: 'approved', name: 'STUDIO' }),
+      'verifications/org4': record({ subject: 'organizer', status: 'approved', name: '  ' }),
+      'verifications/org5': record(null),
+    });
+    const names = new FirestoreBusinessNameReader(db);
+    assert.equal(await names.legalName('org1'), 'CÔNG TY TNHH BÃI ĐÁ SÔNG HỒNG');
+    for (const uid of ['org2', 'org3', 's1', 'org4', 'org5', 'nobody']) assert.equal(await names.legalName(uid), null);
+    assert.equal(reads.every((r) => r.startsWith('verifications/')), true);
+  });
+
+  /** One transaction over the docs: reads by path, `set` recorded as [path, data, merge]. */
+  function txDb(docs: Record<string, Record<string, unknown>>) {
+    const writes: [string, Record<string, unknown>, boolean][] = [];
+    const ref = (path: string): unknown => ({
+      path,
+      collection: (c: string) => ({ doc: (d: string) => ref(`${path}/${c}/${d}`) }),
+    });
+    const db = {
+      collection: (c: string) => ({ doc: (d: string) => ref(`${c}/${d}`) }),
+      runTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => {
+        const staged: [string, Record<string, unknown>, boolean][] = [];
+        const t = {
+          get: async (r: { path: string }) => ({ exists: r.path in docs, data: () => docs[r.path] }),
+          set: (r: { path: string }, data: Record<string, unknown>, opts?: { merge?: boolean }) =>
+            void staged.push([r.path, data, opts?.merge === true]),
+        };
+        const out = await fn(t);
+        writes.push(...staged);
+        return out;
+      },
+    };
+    return { db: db as unknown as Firestore, writes };
+  }
+
+  it('getOrganizerStatus reads organizers/{uid}; setOrganizerPayoutOk merges payoutAccountOk into it and writes nothing else', async () => {
+    const { db, writes } = txDb({
+      'organizers/org1': { status: 'active' },
+      'organizers/org2': { status: 'suspended' },
+      'organizers/org3': { status: 'banned' },
+    });
+    await new FirestorePayoutStore(db).runTransaction(async (tx) => {
+      assert.equal(await tx.getOrganizerStatus('org1'), 'active');
+      assert.equal(await tx.getOrganizerStatus('org2'), 'suspended');
+      assert.equal(await tx.getOrganizerStatus('org3'), null);
+      assert.equal(await tx.getOrganizerStatus('nobody'), null);
+      tx.setOrganizerPayoutOk('org1', true);
+    });
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0]?.[0], 'organizers/org1');
+    assert.equal(writes[0]?.[1].payoutAccountOk, true);
+    assert.ok(writes[0]?.[1].updatedAt instanceof Timestamp);
+    assert.equal(writes[0]?.[2], true);
   });
 });
 

@@ -70,6 +70,29 @@ export const ERROR_CODES = [
   'collab_full',
   /** S27 (#151): the studio is temporarily blocked from recruiting after unpaid-fee flags (no new posts, invites or collaborator jobs). */
   'recruit_blocked',
+  // S30 organizers and entry tickets (#223).
+  /** The spot already has a manager (one per spot); a claim or its approval is refused. */
+  'spot_managed',
+  /** The caller does not manage this spot (organizer screens, residents, venue consent). */
+  'not_spot_manager',
+  /** The entry day is closed by the organizer, a closed weekday or a closed day. */
+  'day_closed',
+  /** The entry day's capacity (`dailyCapacity`) is reached. */
+  'sold_out_day',
+  /** The scanned pass has no part this scanner may check (another shoot, event or organizer). */
+  'not_your_pass',
+  /** The pass is for another day. */
+  'wrong_day',
+  /** Scanning opens 2 hours before the start. */
+  'too_early',
+  /** The pass part was already checked in. */
+  'already_checked_in',
+  /** The event at a managed spot still waits for the spot manager's consent. */
+  'venue_consent_required',
+  /** Priced tickets or a venue fee need a verified business and its payout account (`canSell`). */
+  'business_required',
+  /** The ticket on the pass was refunded. */
+  'refunded',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

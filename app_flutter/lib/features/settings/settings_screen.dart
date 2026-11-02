@@ -7,6 +7,9 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
@@ -21,6 +24,7 @@ import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/collab/collab_controller.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
+import 'package:photobooking/features/organizer/organizer_routes.dart';
 import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/provider_type_sheet.dart';
@@ -38,6 +42,7 @@ const settingsGroupOrder = [
   'appearance',
   'buttonStyle',
   'notifications',
+  'organizer',
   'paymentsData',
   'support',
   'debug',
@@ -283,6 +288,15 @@ class SettingsScreen extends ConsumerWidget {
                         path: '/settings/notifications',
                       ),
                     ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  // S30 (#223): organizer and gate-staff rows.
+                  _SectionLabel(
+                    l.s3001_title,
+                    key: const Key('settings-group-organizer'),
+                  ),
+                  guard(
+                    const GlassCard(highlight: false, child: _OrganizerRows()),
                   ),
                   const SizedBox(height: AppSpace.s6),
                   _SectionLabel(
@@ -759,6 +773,67 @@ class _StudioAddressTile extends ConsumerWidget {
           ref.invalidate(photographerProfileProvider(uid));
         }
       },
+    );
+  }
+}
+
+/// S30 rows (S09.02 spec): "Tổ chức sự kiện / quản lý địa điểm" (→ S30.01)
+/// for everyone; an organizer sees "Địa điểm của tôi" (→ S30.03 of the first
+/// managed spot, or S30.02 without one); active gate staff see one "Soát vé
+/// · {spot}" row per organizer (→ S30.07).
+class _OrganizerRows extends ConsumerWidget {
+  const _OrganizerRows();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final org = ref.watch(myOrganizerProvider).value;
+    final gates = [
+      for (final g in ref.watch(myGateInvitesProvider).value ?? const [])
+        if (g.status == GateStaffStatus.active) g,
+    ];
+    final spots = org?.managedSpotIds ?? const <String>[];
+    return Column(
+      children: [
+        _LinkTile(
+          key: const Key('settings-organizer'),
+          icon: AppIcons.ticket,
+          title: org == null ? l.s0902_organizer : l.s0902_mySpots,
+          path: org == null
+              ? organizerApplyPath
+              : spots.isEmpty
+              ? spotClaimPath
+              : managedSpotPath(spots.first),
+        ),
+        for (final g in gates) ...[
+          const _RowDivider(),
+          _GateTile(organizerId: g.organizerId),
+        ],
+      ],
+    );
+  }
+}
+
+/// "Soát vé · {spot}": the organizer's first managed spot (its name once
+/// read), else the organizer's name.
+class _GateTile extends ConsumerWidget {
+  const _GateTile({required this.organizerId});
+
+  final String organizerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final org = ref.watch(organizerProvider(organizerId)).value;
+    final spotId = org?.managedSpotIds.firstOrNull;
+    final spotName = spotId == null
+        ? null
+        : ref.watch(spotProvider(spotId)).value?.name;
+    return _LinkTile(
+      key: Key('settings-gate-$organizerId'),
+      icon: AppIcons.qrCode,
+      title: l.s0902_gate(spotName ?? org?.name ?? ''),
+      path: scanPath,
     );
   }
 }

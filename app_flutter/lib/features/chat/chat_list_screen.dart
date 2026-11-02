@@ -124,10 +124,12 @@ class _ChatRow extends ConsumerWidget {
     if (thread.isClosedInquiryAt(now)) {
       preview = l10n.chatClosed;
     } else if (lastText.isEmpty) {
-      // A status message has no preview text: show its sentence. upcoming and
-      // reviewed post no message of their own, so the last posted one stays.
+      // A status message has no preview text: show its sentence. upcoming,
+      // shooting (S30) and reviewed post no message of their own, so the
+      // last posted one stays.
       final posted = switch (status) {
-        BookingStatus.upcoming => BookingStatus.accepted,
+        BookingStatus.upcoming || BookingStatus.shooting =>
+          BookingStatus.accepted,
         BookingStatus.reviewed => BookingStatus.completed,
         _ => status,
       };

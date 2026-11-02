@@ -95,8 +95,10 @@ export async function handlePaymentWrite(
   if (formerPayee !== undefined && formerPayee !== payeeId && formerPayee !== PLATFORM_PAYEE) {
     await refreshEarnings(deps, { payeeId: formerPayee, paymentIds: [paymentId] });
   }
-  // Platform-hosted event tickets: the platform keeps the money; it has no earnings page.
-  const earningsPayee = payeeId === undefined || payeeId === PLATFORM_PAYEE ? null : payeeId;
+  // Platform-hosted event tickets: the platform keeps the money; it has no earnings page. A group payment
+  // (S30) is the customer's own transfer (payee = payer): its lines are the earnings.
+  const isGroup = after?.subjectType === 'payment_group' || before?.subjectType === 'payment_group';
+  const earningsPayee = payeeId === undefined || payeeId === PLATFORM_PAYEE || isGroup ? null : payeeId;
   if (earningsPayee !== null) {
     await refreshEarnings(deps, { payeeId: earningsPayee, paymentIds: [paymentId] });
     logger.info('onPaymentWritten', { payeeId: earningsPayee });

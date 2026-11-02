@@ -1,6 +1,6 @@
 # Chủ sự kiện & vé vào cửa (S30)
 
-Ngày: 2026-10-12 · Trạng thái: thiết kế đã chốt với chủ dự án (brainstorm 2026-10-12) · Issue: #223 · Dựa trên: `2026-10-08-trending-spots-design.md` (S29, điểm chụp), spec chính `2026-10-01-remaining-screens.md` §3 (sự kiện S11–S12, vé có QR, `checkInRegistration`), `2026-10-06-payments-payouts-design.md` (trả 100% trước, giữ, chi theo mốc, hoa hồng M7), `2026-10-06-identity-verification-design.md` (S21.04 xác minh doanh nghiệp), `2026-10-05-provider-types-portfolio-jobs-design.md` (trạng thái `shot`, mốc 1), `2026-10-06-studio-members-design.md` (thợ được giao).
+Ngày: 2026-10-12 · Trạng thái: thiết kế đã chốt với chủ dự án (brainstorm 2026-10-12); đang làm (#223), PR: [#223](https://github.com/thanhngochoang/booking/issues/223) · Issue: #223 · Dựa trên: `2026-10-08-trending-spots-design.md` (S29, điểm chụp), spec chính `2026-10-01-remaining-screens.md` §3 (sự kiện S11–S12, vé có QR, `checkInRegistration`), `2026-10-06-payments-payouts-design.md` (trả 100% trước, giữ, chi theo mốc, hoa hồng M7), `2026-10-06-identity-verification-design.md` (S21.04 xác minh doanh nghiệp), `2026-10-05-provider-types-portfolio-jobs-design.md` (trạng thái `shot`, mốc 1), `2026-10-06-studio-members-design.md` (thợ được giao).
 
 ## 1. Mục tiêu
 
@@ -149,6 +149,7 @@ lines: [{kind: booking | entry_ticket | event_ticket | venue_fee,
 - Webhook `paid`: mỗi dòng được đánh dấu riêng (booking theo luồng cũ; registration thành `paid` và sinh mã), và **mỗi dòng có một khoản giữ riêng** với bên nhận riêng.
 - Chuyển thiếu hoặc quá hạn: cả đơn hết hạn, mọi registration `held` được nhả (luồng §3.3 của spec thanh toán không đổi).
 - Tổ chức trung gian phải chi được cho **nhiều bên nhận** từ cùng một khoản thu hộ. Điều kiện này được thêm vào danh sách chọn đối tác (spec thanh toán §10).
+- **Ghi chú khi làm (#223, Quyết định 6):** `Payment.lines` không được dùng. Mã chuyển khoản thuộc về một **khoản thanh toán nhóm** (`subjectType: payment_group`) và mỗi dòng là một Payment con (`awaiting_group` cho tới khi nhóm được trả, rồi `paid` và giữ riêng). Mốc, chi trả, hoàn tiền và thu nhập giữ nguyên theo từng Payment con. Nhóm chỉ có khi có từ 2 dòng; một dòng vẫn là khoản thanh toán trực tiếp.
 
 ### 5.3 Huỷ
 
@@ -165,6 +166,7 @@ lines: [{kind: booking | entry_ticket | event_ticket | venue_fee,
 - Mỗi registration đã `paid` và mỗi booking đã thanh toán có một **mã vào cửa** (`pass`). Booking kèm vé thì **dùng chung một mã**.
 - `passes/{code}` (chỉ server đọc và ghi): `{customerId, day, bookingId?, registrationIds[]}`.
 - `code` gồm 8 ký tự từ bảng `23456789ABCDEFGHJKMNPQRSTVWXYZ`, hiển thị dạng `VE-7K2Q-0420` (giữ định dạng `ticketCode` hiện tại; registration của sự kiện thường vẫn dùng `ticketCode` làm mã).
+- **Ghi chú khi làm (#223, Quyết định 7):** 4 ký tự cuối của mã là ký tự ngẫu nhiên, không phải ngày như `VE-7K2Q-0420` ở ví dụ trên (ví dụ chỉ minh hoạ định dạng). Mã gặp thợ và vé vào cửa mới dùng 8 ký tự ngẫu nhiên từ bảng trên; `ticketCode` cũ `VE-XXXX-MMDD` của sự kiện thường vẫn quét được và vẫn công khai.
 - Khách xem mã ở **"Vé của tôi" (S11.04)** và ở chi tiết booking (S05, mục "Mã gặp thợ"). Màn hiện QR lớn, mã chữ phía dưới và độ sáng màn hình tăng lên. Màn này dùng được khi không có mạng (QR được lưu sẵn trên máy).
 - **Chỉ khách đọc được mã của mình**: bản sao nằm ở `bookings/{id}/private/pass` và `registrations/{regId}/private/pass`, rules chỉ cho khách đó đọc. Thợ, host và nhân viên không đọc được. Nếu đọc được thì họ tự "quét" mà không cần gặp khách, và `shooting` mất giá trị làm bằng chứng. `ticketCode` cũ của sự kiện chuyển vào chỗ này: danh sách người tham gia ở S12.03 chỉ hiện 4 ký tự cuối.
 

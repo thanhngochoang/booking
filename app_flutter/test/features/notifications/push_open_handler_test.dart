@@ -112,6 +112,17 @@ void main() {
     expect(find.text('stub /bookings'), findsOneWidget);
   });
 
+  testWidgets('an entry ticket push opens the buyer\'s tickets tab, switched '
+      'not stacked (final fix A-I3)', (tester) async {
+    final (world, router) = await _mount(tester);
+    world.push.emitOpened(
+      const PushOpen(target: '/bookings?tab=events', notificationId: 'n1'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('stub /bookings?tab=events'), findsOneWidget);
+    expect(router.canPop(), isFalse);
+  });
+
   testWidgets('an instant offer push (no inbox row) opens S14.02', (
     tester,
   ) async {

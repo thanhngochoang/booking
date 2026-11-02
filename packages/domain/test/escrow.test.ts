@@ -383,7 +383,8 @@ describe('Task 3: Escrow & ledger maths', () => {
     });
 
     it('lists the statuses and methods of the payments spec, without failed', () => {
-      assert.deepEqual([...PAYMENT_STATUSES], ['created', 'paid', 'expired', 'needs_review', 'refunded', 'partially_refunded']);
+      // `awaiting_group`: a group payment's line (S30 Decision 6).
+      assert.deepEqual([...PAYMENT_STATUSES], ['created', 'paid', 'expired', 'needs_review', 'refunded', 'partially_refunded', 'awaiting_group']);
       assert.deepEqual([...PAYMENT_METHODS], ['bank_qr', 'momo', 'zalopay']);
       assert.deepEqual([...RESERVED_PAYMENT_METHODS], ['domestic_card', 'intl_card']);
       assert.ok(LEDGER_ENTRY_TYPES.includes('payment_received'));

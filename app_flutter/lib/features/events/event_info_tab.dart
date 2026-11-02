@@ -13,6 +13,43 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
+
+/// S11.02/S11.03 entry-fee line of an event's venue (no S11.02-fee frame:
+/// organizer.md copy): a paid place says whether the ticket includes the
+/// gate fee; a managed spot's gate scans the event ticket, so it is
+/// included; a public place has no gate. Null when there is nothing to say.
+String? eventEntryFeeLine(AppLocalizations l, EventDetail e) {
+  final v = e.venue;
+  if (v == null || e.isEntry) {
+    return null;
+  }
+  return switch (v.kind) {
+    VenueKind.publicPlace => null,
+    VenueKind.managedSpot => l.s1102_feeIncluded,
+    VenueKind.paidPlace when v.entryFeeIncluded => l.s1102_feeIncluded,
+    VenueKind.paidPlace => switch (v.entryFeeVnd) {
+      final amount? when amount > 0 => l.s1102_feeNotIncluded(
+        formatMoney(amount),
+      ),
+      _ => null,
+    },
+  };
+}
+
+/// "gồm phí quản lý địa điểm {y}" for [quantity] tickets: the venue fee the
+/// manager accepted, inside the price (Decision 16); null without one.
+String? eventVenueFeeLine(
+  AppLocalizations l,
+  EventDetail e, {
+  int quantity = 1,
+}) {
+  final fee = e.venueFeePerGuest;
+  if (fee <= 0 || e.summary.isFree || e.isEntry) {
+    return null;
+  }
+  return l.s1102_venueFee(formatMoney(fee * quantity));
+}
 
 /// "Thông tin" of S11.02: host, when, where, seats, description and, for
 /// platform-hosted events, the staff Q&A and the support line.
@@ -86,6 +123,10 @@ class EventInfoTab extends ConsumerWidget {
             ),
           ),
         ),
+        if (_feeRow(l, event) case final row?) ...[
+          const SizedBox(height: AppSpace.s3),
+          row,
+        ],
         const SizedBox(height: AppSpace.s3),
         CapacityBar(
           key: const Key('event-capacity'),
@@ -141,6 +182,24 @@ class EventInfoTab extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// The price with the venue fee inside it, and the entry-fee line.
+Widget? _feeRow(AppLocalizations l, EventDetail e) {
+  final entry = eventEntryFeeLine(l, e);
+  final venueFee = eventVenueFeeLine(l, e);
+  final price = venueFee == null
+      ? null
+      : l.s1102_priceWithVenueFee(formatMoney(e.summary.priceVnd), venueFee);
+  if (entry == null && price == null) {
+    return null;
+  }
+  return _InfoRow(
+    key: const Key('event-fees'),
+    icon: AppIcons.ticket,
+    title: price ?? entry!,
+    subtitle: price == null ? null : entry,
+  );
 }
 
 class _InfoRow extends StatelessWidget {

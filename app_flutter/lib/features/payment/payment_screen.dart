@@ -1,6 +1,8 @@
 // lib/features/payment/payment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/events/event_registration.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
@@ -55,7 +57,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         _backToVerification(path, paid: paid);
       } else if (mounted) {
         final router = GoRouter.of(context);
-        if (widget.subject is TicketPay) {
+        final subject = widget.subject;
+        final entry = subject is TicketPay
+            ? _entryTicket(subject.eventId, subject.registrationId)
+            : null;
+        if (entry != null) {
+          // S30.05: "Đã mua {n} vé"; an entry ticket has no group chat.
+          showPaymentSnack(
+            ScaffoldMessenger.of(context),
+            context.l10n.s3005_bought(entry.quantity),
+          );
+        } else if (widget.subject is TicketPay) {
           final l10n = context.l10n;
           final messenger = ScaffoldMessenger.of(context);
           final eventId = (widget.subject as TicketPay).eventId;
@@ -74,6 +86,18 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         router.go(path);
       }
     });
+  }
+
+  /// The paid registration when it is an entry ticket (S30.05), else null.
+  EventRegistration? _entryTicket(String eventId, String registrationId) {
+    final candidates = [
+      ref.read(myEventRegistrationProvider(eventId)).value,
+      ...?ref.read(myTicketsProvider).value,
+    ];
+    final reg = candidates
+        .where((r) => r?.id == registrationId)
+        .firstOrNull;
+    return reg != null && reg.isEntry ? reg : null;
   }
 
   /// The fee is a step of S21.02 ([path]): pop back to it when it is in the

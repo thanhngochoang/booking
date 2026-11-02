@@ -13,12 +13,15 @@ import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/features/events/event_info_tab.dart';
 import 'package:photobooking/features/events/event_join_bar.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/events/register_sheet.dart';
 import 'package:photobooking/features/events/timeline_controller.dart';
 import 'package:photobooking/features/events/timeline_tab.dart';
+import 'package:photobooking/features/events/venue_consent_sheet.dart';
+import 'package:photobooking/features/organizer/organizer_routes.dart';
 import 'package:photobooking/features/safety/report_sheet.dart';
 
 /// The three tabs of an event (Decision 26): `/e/:id` opens "Thông tin",
@@ -52,6 +55,19 @@ class _EventScreenState extends ConsumerState<EventScreen> {
   late EventTab _tab = widget.initialTab;
   bool _busy = false;
   bool _autoJoinDone = false;
+  bool _consentShown = false;
+
+  /// S11.02-venue-consent: the manager of the venue's spot answers.
+  Future<void> _answerVenue(EventDetail e, String spotName) async {
+    final done = await showVenueConsentSheet(
+      context,
+      event: e,
+      spotName: spotName,
+    );
+    if (done && mounted) {
+      ref.invalidate(venueRequestsProvider);
+    }
+  }
 
   void _back() {
     if (context.canPop()) {
@@ -88,6 +104,13 @@ class _EventScreenState extends ConsumerState<EventScreen> {
   /// reading the contact fails closed, so a failure also goes to S04.05.
   Future<void> _join(EventDetail event) async {
     if (_busy) {
+      return;
+    }
+    // S30: an entry event sells per visit day on S30.05, never through the
+    // one-registration S11.03 sheet.
+    final spotId = event.spotId;
+    if (event.isEntry && spotId != null) {
+      await context.push(spotTicketsPath(spotId));
       return;
     }
     setState(() => _busy = true);
@@ -228,10 +251,37 @@ class _EventScreenState extends ConsumerState<EventScreen> {
     final l = context.l10n;
     final uid = ref.watch(authStateProvider).value?.uid ?? '';
     final role = ref.watch(staffRoleProvider).value;
-    final reg = ref.watch(myEventRegistrationProvider(e.id)).value;
+    // An entry event holds one registration per visit day: there is no
+    // "the" registration (its tickets are on S11.04), so none is read.
+    final reg = e.isEntry
+        ? null
+        : ref.watch(myEventRegistrationProvider(e.id)).value;
     final manager = e.isManagedBy(uid, role);
-    if (e.summary.status == EventStatus.draft && !manager) {
+    // Decision 16: a draft that waits for its venue is also the spot
+    // manager's to answer (`event_venue_requested` opens `/e/:id`).
+    final venueSpotId = e.venue?.kind == VenueKind.managedSpot
+        ? e.venue?.spotId
+        : null;
+    final waitsForVenue =
+        e.summary.status == EventStatus.draft &&
+        e.venueConsent == HostConsent.pending &&
+        venueSpotId != null &&
+        !manager;
+    final venueSpot = waitsForVenue
+        ? ref.watch(spotProvider(venueSpotId)).value
+        : null;
+    final venueManager =
+        venueSpot != null && uid.isNotEmpty && venueSpot.managedBy == uid;
+    if (e.summary.status == EventStatus.draft && !manager && !venueManager) {
       return _gone();
+    }
+    if (venueManager && !_consentShown) {
+      _consentShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _answerVenue(e, venueSpot.name);
+        }
+      });
     }
     final now = ref.watch(clockProvider)();
     final state = eventJoinState(
@@ -332,7 +382,8 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                 moreTooltip: l.photoMoreOptions,
               ),
             if (cancelled) _CancelledStrip(text: l.eventCancelled),
-            if (s.isFree && !cancelled && !timeline) const FreeBanner(),
+            if (s.isFree && !e.isEntry && !cancelled && !timeline)
+              const FreeBanner(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpace.s4,
@@ -389,6 +440,14 @@ class _EventScreenState extends ConsumerState<EventScreen> {
       ),
       bottomNavigationBar: cancelled
           ? null
+          : venueManager
+          ? AppFooterBar(
+              child: AppButton.primary(
+                l.s1102_consentRespond,
+                key: const Key('event-venue-respond'),
+                onPressed: () => _answerVenue(e, venueSpot.name),
+              ),
+            )
           : postMode != TimelinePostMode.none && timeline
           ? TimelinePostBar(
               mode: postMode,

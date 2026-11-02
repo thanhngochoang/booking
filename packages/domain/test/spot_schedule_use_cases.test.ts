@@ -50,6 +50,9 @@ describe('spot_schedule_use_cases', () => {
     createdAt: '2026-10-01T00:00:00Z',
     updatedAt: '2026-10-01T00:00:00Z',
     rankedAt: null,
+    managedBy: null,
+    access: null,
+    openHours: null,
     updatedBy: 'staff-1',
   };
 

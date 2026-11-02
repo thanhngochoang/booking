@@ -13,6 +13,7 @@ import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/verification/verification.dart';
@@ -45,6 +46,9 @@ class VerifyBusinessScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final intro = ref.watch(myIntroProvider);
+    // Task 1b (Decision 3): an active organizer verifies the business it
+    // sells tickets as, without a studio or an identity.
+    final organizer = ref.watch(myOrganizerProvider).value?.isActive ?? false;
     return ScreenCode(
       ScreenCodes.verifyBusiness,
       child: AuroraBackground(
@@ -63,6 +67,8 @@ class VerifyBusinessScreen extends ConsumerWidget {
                       intro.verified &&
                       intro.providerType == ProviderType.studio
                   ? const _BusinessBody()
+                  : organizer
+                  ? const _BusinessBody(organizer: true)
                   : _Scroll(
                       children: [
                         VerifyMeta(l.verifyBizIntro),
@@ -82,7 +88,10 @@ class VerifyBusinessScreen extends ConsumerWidget {
 }
 
 class _BusinessBody extends ConsumerWidget {
-  const _BusinessBody();
+  const _BusinessBody({this.organizer = false});
+
+  /// An organizer (not a verified studio) verifies its business.
+  final bool organizer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -105,7 +114,8 @@ class _BusinessBody extends ConsumerWidget {
             heading: l.verifyBizApproved,
             icon: AppIcons.businessVerify,
           ),
-          BusinessStatus.rejected || null => _BusinessForm(rejected: b),
+          BusinessStatus.rejected ||
+          null => _BusinessForm(rejected: b, organizer: organizer),
         };
       },
     );
@@ -179,7 +189,9 @@ class _Decided extends StatelessWidget {
 }
 
 class _BusinessForm extends ConsumerStatefulWidget {
-  const _BusinessForm({this.rejected});
+  const _BusinessForm({this.rejected, this.organizer = false});
+
+  final bool organizer;
 
   /// The last record when staff (or the household match) rejected it.
   final BusinessVerification? rejected;
@@ -415,7 +427,9 @@ class _BusinessFormState extends ConsumerState<_BusinessForm> {
           ),
           const SizedBox(height: AppSpace.s3),
         ],
-        VerifyMeta(l.verifyBizIntro),
+        VerifyMeta(
+          widget.organizer ? l.s2104_organizerIntro : l.verifyBizIntro,
+        ),
         const SizedBox(height: AppSpace.s3),
         TextField(
           key: const Key('verify-biz-tax-code'),

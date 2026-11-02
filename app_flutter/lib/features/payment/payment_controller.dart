@@ -429,8 +429,18 @@ class PaymentController extends Notifier<PayView> {
       return _seededView(canRenew: false) ??
           PayGone(PayGoneKind.ticket, '/e/$eventId');
     }
-    final reg = regAsync.requireValue;
+    var reg = regAsync.requireValue;
     if (reg == null || reg.id != registrationId) {
+      // S30: an entry event holds one registration per visit day, and
+      // "my registration" is the first active one; find this one among
+      // all my tickets.
+      final mine = ref.watch(myTicketsProvider);
+      if (mine.isLoading && !mine.hasValue) {
+        return _seededView(canRenew: false) ?? const PayLoading();
+      }
+      reg = mine.value?.where((r) => r.id == registrationId).firstOrNull;
+    }
+    if (reg == null) {
       return PayGone(PayGoneKind.ticket, '/e/$eventId');
     }
 

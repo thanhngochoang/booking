@@ -34,12 +34,14 @@ import 'package:photobooking/features/settings/show_screen_codes_controller.dart
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:photobooking/data/studio/studio_providers.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/idle.dart';
 import '../../support/photo_scope.dart';
 import '../../support/studio_world.dart' show FakeStudioRepository;
+import '../../support/fake_organizer_repository.dart';
 
 Future<Widget> _app({
   required FakeAuthRepository auth,
@@ -99,6 +101,7 @@ Future<Widget> _app({
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
       studioRepositoryProvider.overrideWithValue(FakeStudioRepository()),
+      organizerRepositoryProvider.overrideWithValue(FakeOrganizerRepository()),
       userRepositoryProvider.overrideWithValue(users),
       userContactRepositoryProvider.overrideWithValue(
         contacts ?? FakeUserContactRepository(),
@@ -1232,7 +1235,8 @@ void main() {
         type: ProviderType.studio,
         district: 'Thành phố Thủ Đức',
         flags: true,
-        size: const Size(320, 4800),
+        // Tall enough for every group, S30's organizer rows included.
+        size: const Size(320, 5400),
         textScale: 1.3,
       );
       expect(tester.takeException(), isNull);

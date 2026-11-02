@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
 
 /// Where the event happens: a named place with a point (from an area or the
 /// device position). The server derives the geohash.
@@ -88,6 +89,8 @@ class EventDraft {
     this.hostPhotographerId,
     this.spotId,
     this.spotDecided = false,
+    this.venue,
+    this.venueConsent = HostConsent.notRequired,
     this.cleared = const {},
   });
 
@@ -120,6 +123,8 @@ class EventDraft {
       hostPhotographerId: s.hostType == HostType.photographer ? s.hostId : null,
       spotId: d.spotId,
       spotDecided: d.spotDecided,
+      venue: d.venue,
+      venueConsent: d.venueConsent,
     );
   }
 
@@ -162,6 +167,14 @@ class EventDraft {
   /// stored value alone.
   final bool spotDecided;
 
+  /// S12.01-venue (Decision 16): required to publish events created after
+  /// `VENUE_REQUIRED_FROM`; saved step by step like the rest.
+  final EventVenue? venue;
+
+  /// Read only (never sent): where the venue's manager stands on this draft
+  /// as the server last said (Decision 16). An accepted venue publishes.
+  final HostConsent venueConsent;
+
   /// Fields the user emptied on a draft that already exists on the server
   /// (`cover`, `place`, `deadline`, `schedule`): [toCallable] sends an explicit
   /// null for them, because leaving a key out keeps the stored value. Set by
@@ -191,6 +204,8 @@ class EventDraft {
     String? spotId,
     bool? spotDecided,
     bool clearSpot = false,
+    EventVenue? venue,
+    bool clearVenue = false,
   }) {
     final next = {...cleared};
     void track(String key, bool clear, Object? value) {
@@ -205,6 +220,7 @@ class EventDraft {
     track('place', clearPlace, place);
     track('deadline', clearDeadline, registrationDeadline);
     track('schedule', clearSchedule, startsAt ?? endsAt);
+    track('venue', clearVenue, venue);
     return EventDraft(
       eventId: eventId ?? this.eventId,
       title: title ?? this.title,
@@ -226,6 +242,8 @@ class EventDraft {
       spotId: clearSpot ? null : (spotId ?? this.spotId),
       spotDecided:
           spotDecided ?? (clearSpot || this.spotDecided || spotId != null),
+      venue: clearVenue ? null : (venue ?? this.venue),
+      venueConsent: venueConsent,
       cleared: next,
     );
   }
@@ -249,6 +267,8 @@ class EventDraft {
     'faq': ?faq?.map((f) => f.toJson()).toList(),
     'hostPhotographerId': ?hostPhotographerId,
     if (spotDecided || spotId != null) 'spotId': spotId,
+    'venue': ?venue?.toJson(),
+    if (cleared.contains('venue') && venue == null) 'venue': null,
     if (cleared.contains('cover') && coverUrl == null) ...{
       'coverUrl': null,
       'coverPath': null,
@@ -280,6 +300,9 @@ class EventDraft {
     'hostPhotographerId': ?hostPhotographerId,
     'spotId': ?spotId,
     if (spotDecided) 'spotDecided': true,
+    'venue': ?venue?.toJson(),
+    if (venueConsent != HostConsent.notRequired)
+      'venueConsent': venueConsent.code,
     if (cleared.isNotEmpty) 'cleared': cleared.toList()..sort(),
   };
 
@@ -317,6 +340,8 @@ class EventDraft {
       hostPhotographerId: text(json['hostPhotographerId']),
       spotId: text(json['spotId']),
       spotDecided: json['spotDecided'] == true || text(json['spotId']) != null,
+      venue: EventVenue.fromJson(json['venue']),
+      venueConsent: HostConsent.fromCode(text(json['venueConsent'])),
       cleared: json['cleared'] is List
           ? {
               for (final k in json['cleared']! as List)
@@ -332,4 +357,74 @@ class EventDraft {
 
   @override
   int get hashCode => jsonEncode(toJson()).hashCode;
+}
+
+/// S30.04: an entry-ticket event as the organizer edits it (Decision 11).
+/// [startDay]/[endDay] are Vietnam days `yyyy-MM-dd` (the server stores the
+/// range as instants); a new ticket type has an empty id.
+@immutable
+class EntryEventDraft {
+  const EntryEventDraft({
+    this.eventId,
+    required this.spotId,
+    this.title,
+    required this.startDay,
+    required this.endDay,
+    this.closedWeekdays = const [],
+    this.closedDays = const [],
+    required this.openHours,
+    required this.ticketTypes,
+    this.dailyCapacity,
+    this.refundCutoffHours = 48,
+  });
+
+  final String? eventId;
+  final String spotId;
+
+  /// Null keeps the stored title (the spot's name on a new event).
+  final String? title;
+  final String startDay;
+  final String endDay;
+
+  /// 0 = Sunday … 6 = Saturday (the domain's `weekdayOf`).
+  final List<int> closedWeekdays;
+  final List<String> closedDays;
+  final OpenHours openHours;
+  final List<EntryTicketType> ticketTypes;
+
+  /// Null = no daily cap.
+  final int? dailyCapacity;
+  final int refundCutoffHours;
+
+  /// Resume an entry event in S30.04.
+  factory EntryEventDraft.fromEvent(EntryEvent e) => EntryEventDraft(
+    eventId: e.id,
+    spotId: e.spotId,
+    title: e.title,
+    startDay: e.startDay,
+    endDay: e.endDay,
+    closedWeekdays: e.closedWeekdays,
+    closedDays: e.closedDays,
+    openHours: e.openHours,
+    ticketTypes: e.ticketTypes,
+    dailyCapacity: e.dailyCapacity,
+    refundCutoffHours: e.refundCutoffHours,
+  );
+
+  /// The `saveEventDraft` / `updateEvent` payload (`type: entry`); the
+  /// server validates it whole (`validateEntryEvent`).
+  Map<String, Object?> toCallable() => {
+    'eventId': ?eventId,
+    'type': EventType.entry.code,
+    'spotId': spotId,
+    'title': ?title,
+    'startAt': startDay,
+    'endAt': endDay,
+    'closedWeekdays': closedWeekdays,
+    'closedDays': closedDays,
+    'openHours': openHours.toCallable(),
+    'ticketTypes': [for (final t in ticketTypes) t.toCallable()],
+    'dailyCapacity': dailyCapacity,
+    'refundCutoffHours': refundCutoffHours,
+  };
 }

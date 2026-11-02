@@ -377,7 +377,7 @@ class _BellDisc extends StatelessWidget {
 
 /// Tab destinations switch tabs; everything else opens on top.
 void openNotificationTarget(GoRouter router, String path) {
-  if (path == AppTab.bookings.path) {
+  if (Uri.parse(path).path == AppTab.bookings.path) {
     router.go(path);
   } else if (isOfferPath(path) && offerScreenOnTop(router)) {
     // One S14.02 at a time: a second offer's push replaces the open one

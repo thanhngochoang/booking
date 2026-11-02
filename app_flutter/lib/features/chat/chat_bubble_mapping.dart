@@ -12,7 +12,7 @@ BubbleSendState sendStateOf(MessageSendState s) => switch (s) {
 
 /// The system sentence for a booking [status] (also the S07.02 row preview
 /// when the last message is a status message); null for the states that post
-/// no message (draft, upcoming, reviewed).
+/// no message (draft, upcoming, shooting, reviewed).
 String? bookingStatusSentence(BookingStatus status, AppLocalizations l) =>
     switch (status) {
       BookingStatus.requested => l.chatSysRequested,
@@ -23,6 +23,8 @@ String? bookingStatusSentence(BookingStatus status, AppLocalizations l) =>
       BookingStatus.completed => l.chatSysCompleted,
       BookingStatus.draft ||
       BookingStatus.upcoming ||
+      // S30: the server posts no system message for the scan.
+      BookingStatus.shooting ||
       BookingStatus.shot ||
       BookingStatus.delivered ||
       BookingStatus.revisionRequested ||

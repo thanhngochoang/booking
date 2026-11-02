@@ -27,8 +27,10 @@ import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
 import 'package:photobooking/features/payment/payment_screen.dart';
+
 import 'fake_payments_repository.dart';
 import 'fake_spot_repository.dart';
+
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
@@ -47,7 +49,6 @@ import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
 import 'package:photobooking/features/event_manage/manage_event_screen.dart';
 import 'package:photobooking/features/event_manage/my_events_screen.dart';
-import 'package:photobooking/features/event_manage/ticket_scanner.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -56,7 +57,6 @@ import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
 import 'fake_push.dart';
-import 'fake_ticket_scanner.dart';
 import 'screen_host.dart';
 
 import 'package:photobooking/core/core.dart';
@@ -254,6 +254,11 @@ EventDetail detailOf(
   DateTime? completedAt,
   String? spotId,
   bool spotDecided = false,
+  EventVenue? venue,
+  HostConsent venueConsent = HostConsent.notRequired,
+  DateTime? venueConsentExpiresAt,
+  int venueFeePerGuest = 0,
+  String title = 'Photo walk',
 }) {
   final s = summaryOf(
     id,
@@ -266,6 +271,7 @@ EventDetail detailOf(
     status: status,
     startsIn: startsIn,
     schedule: schedule,
+    title: title,
   );
   return EventDetail(
     summary: s,
@@ -282,6 +288,10 @@ EventDetail detailOf(
     hostConsentExpiresAt: hostConsentExpiresAt,
     spotId: spotId,
     spotDecided: spotDecided || spotId != null,
+    venue: venue,
+    venueConsent: venueConsent,
+    venueConsentExpiresAt: venueConsentExpiresAt,
+    venueFeePerGuest: venueFeePerGuest,
   );
 }
 
@@ -389,7 +399,6 @@ class EventsWorld {
   SharedPreferences? prefs;
 
   final FakeImagePicker picker;
-  final scanner = FakeTicketScanner();
   final locationRepo = FakeLocationRepository(
     status: LocationPermissionStatus.granted,
     position: (lat: 10.8, lng: 106.7),
@@ -432,7 +441,6 @@ class EventsWorld {
     eventChatRepositoryProvider.overrideWithValue(chat),
     if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs!),
     imagePickerProvider.overrideWithValue(picker),
-    ticketScannerProvider.overrideWithValue(scanner),
     locationRepositoryProvider.overrideWithValue(locationRepo),
     nearbyEventsRepositoryProvider.overrideWithValue(nearby),
     externalLauncherProvider.overrideWithValue(launcher),
@@ -483,6 +491,7 @@ class EventsWorld {
 
     /// The real S12 screens (create, manage, mine) instead of stubs.
     bool organizer = false,
+    Brightness brightness = Brightness.dark,
   }) async {
     if (prefs == null) {
       SharedPreferences.setMockInitialValues(prefsValues);
@@ -569,6 +578,8 @@ class EventsWorld {
           '/u/:uid/ask',
           '/setup',
           '/disputes/:id',
+          '/scan',
+          '/spots/:spotId/tickets',
         ])
           GoRoute(path: p, builder: stub),
       ],
@@ -584,6 +595,7 @@ class EventsWorld {
           ...extra,
         ],
         textScale: textScale,
+        brightness: brightness,
       ),
     );
     await settle(tester);

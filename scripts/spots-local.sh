@@ -20,6 +20,11 @@ Example:
   scripts/spots-local.sh list
   scripts/spots-local.sh rank
   scripts/spots-local.sh pin seed-spot-cau-dat --actor seed-staff-admin
+  scripts/spots-local.sh claims list
+  scripts/spots-local.sh claims approve <claimId> --actor seed-staff-admin
+  scripts/spots-local.sh claims reject <claimId> --reason "Giấy tờ không khớp" --actor seed-staff-admin
+  scripts/spots-local.sh access seed-spot-ho-tay --type ticket --fee "Người lớn=50000" --actor seed-staff-admin
+  scripts/spots-local.sh organizers suspend seed-organizer-bai-da --actor seed-staff-admin
 
 CLI usage:
 EOF2

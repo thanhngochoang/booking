@@ -438,7 +438,7 @@ void main() {
         await pumpTickets(tester);
         expect(find.byType(EventTicketsTab), findsNothing);
         expect(find.byType(SegmentedTabs<BookingTab>), findsOneWidget);
-        await tester.tap(find.text('Vé sự kiện'));
+        await tester.tap(find.text('Vé')); // S11.04-entry: "Vé sự kiện" → "Vé"
         await _settle(tester);
         expect(find.byType(EventTicketsTab), findsOneWidget);
         await tester.tap(find.text('Buổi chụp'));
@@ -463,7 +463,7 @@ void main() {
       tester,
     ) async {
       await pumpTickets(tester, showTickets: false);
-      expect(find.text('Vé sự kiện'), findsNothing);
+      expect(find.text('Vé'), findsNothing);
       expect(find.text('Buổi chụp'), findsOneWidget);
       expect(find.text('Việc đăng'), findsOneWidget);
     });

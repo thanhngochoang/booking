@@ -9,15 +9,26 @@ export type NameLookupResult =
   | { readonly status: 'unsupported' }
   | { readonly status: 'not_found' };
 
+/**
+ * Whose account it is (S06.06): a provider's, whose holder must match the verified identity name, or an active
+ * organizer's, whose holder must match the verified business legal name (S21.04, plan #223 Decision 3).
+ */
+export type PayoutHolder = 'provider' | 'organizer';
+
 export interface AccountNameLookup {
-  /** `accountNumber` is normalised digits; the adapter never logs it. */
-  lookup(r: { bankCode: string; accountNumber: string }): Promise<NameLookupResult>;
+  /**
+   * `accountNumber` is normalised digits; the adapter never logs it. `holder` (set by the use cases) tells a
+   * fake which verified name to echo; a real bank ignores it.
+   */
+  lookup(r: { bankCode: string; accountNumber: string; holder?: PayoutHolder }): Promise<NameLookupResult>;
 }
 
 /** `users/{uid}/private/identity.legalName` (written by identity verification, S21). */
 export interface VerifiedNameReader {
   legalName(uid: string): Promise<string | null>;
 }
+// An organizer's business legal name (`verifications/{uid}.business.name`, approved) is read through the
+// same port (`PayoutAccountDeps.businessNames`).
 
 export interface OtpSender {
   send(r: { phone: string; code: string; purpose: 'payout_account' }): Promise<void>;

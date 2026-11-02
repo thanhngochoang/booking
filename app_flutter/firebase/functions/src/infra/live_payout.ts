@@ -22,7 +22,7 @@ import { FirestoreEarningsStore } from './earnings_firestore.js';
 import { fakePayoutsMode } from './fake_payments.js';
 import { liveNotifyDeps } from './live_notification.js';
 import { FirestorePhotographerPhoneReader, nodeOtpCrypto, otpSender } from './otp.js';
-import { FirestoreVerifiedNameReader, accountNameLookup, lookupMode } from './payout_lookup.js';
+import { FirestoreBusinessNameReader, FirestoreVerifiedNameReader, accountNameLookup, lookupMode } from './payout_lookup.js';
 import { FirestorePayoutStore } from './payout_firestore.js';
 
 /** A log-safe code for an error: the domain code, else the error's class name; never its message. */
@@ -92,27 +92,37 @@ function sharedFake(): FakePayoutGateway {
 export function livePayoutAccountDeps(uid: string, mode: 'fake' | 'off' = lookupMode()): PayoutAccountDeps {
   const lazy = lazyAccountCipher(() => PAYOUT_ACCOUNT_KEY.value());
   const firestore = db();
-  const reader = new FirestoreVerifiedNameReader(firestore);
-  const read = new Map<string, Promise<string | null>>();
-  const names: VerifiedNameReader = {
-    legalName: (who) => {
-      let name = read.get(who);
-      if (name === undefined) {
-        name = reader.legalName(who);
-        read.set(who, name);
-      }
-      return name;
-    },
+  // Each reader answers at most once per uid and call, and only when the use case asks for it.
+  const once = (reader: VerifiedNameReader): VerifiedNameReader => {
+    const read = new Map<string, Promise<string | null>>();
+    return {
+      legalName: (who) => {
+        let name = read.get(who);
+        if (name === undefined) {
+          name = reader.legalName(who);
+          read.set(who, name);
+        }
+        return name;
+      },
+    };
   };
+  const names = once(new FirestoreVerifiedNameReader(firestore));
+  // An organizer's holder name is its verified business legal name (S21.04), not an identity name.
+  const businessNames = once(new FirestoreBusinessNameReader(firestore));
   return {
     store: new FirestorePayoutStore(firestore),
     cipher: lazy,
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
     lookup: {
-      lookup: async (r) => accountNameLookup(mode, mode === 'fake' ? await names.legalName(uid) : null).lookup(r),
+      lookup: async (r) =>
+        accountNameLookup(
+          mode,
+          mode === 'fake' ? await (r.holder === 'organizer' ? businessNames : names).legalName(uid) : null,
+        ).lookup(r),
     },
     names,
+    businessNames,
     otp: {
       sender: otpSender(process.env, uid),
       phones: new FirestorePhotographerPhoneReader(firestore),

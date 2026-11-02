@@ -35,7 +35,7 @@ export function refundWithoutPayment(stored: Refund, now: Date): Refund {
 }
 
 /**
- * Booking refunds: record re-reads the refund in a BookingTx, merges, and sets booking.depositRefundedAt once
+ * Booking refunds (and a group payment's, S30: the group payment lives with bookings): record re-reads the refund in a BookingTx, merges, and sets booking.depositRefundedAt once
  * when an escrow refund becomes done (the rule refunds.ts has today).
  */
 export function bookingRefundHandler(deps: BookingDeps): RefundSubjectHandler {
@@ -99,7 +99,7 @@ export async function resendPendingRefunds(
   let skipped = 0;
 
   for (const r of pending) {
-    const handler = (!r.subjectType || r.subjectType === 'booking')
+    const handler = (!r.subjectType || r.subjectType === 'booking' || r.subjectType === 'payment_group')
       ? bookingRefundHandler(deps)
       : subjects[r.subjectType];
 
@@ -171,7 +171,7 @@ export async function applyRefundEvent(
     updatedAt: deps.clock.now().toISOString(),
   };
 
-  const handler = (!stored.subjectType || stored.subjectType === 'booking')
+  const handler = (!stored.subjectType || stored.subjectType === 'booking' || stored.subjectType === 'payment_group')
     ? bookingRefundHandler(deps)
     : subjects[stored.subjectType];
 

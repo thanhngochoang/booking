@@ -11,11 +11,15 @@ import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/events/event_card_data_of.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/organizer/organizer.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/entry/entry_rules.dart';
+import 'package:photobooking/features/organizer/organizer_routes.dart';
 import 'package:photobooking/features/explore/event_routes.dart';
 import 'package:photobooking/features/spots/slot_pick_sheet.dart';
 import 'package:photobooking/features/spots/spot_format.dart';
@@ -479,8 +483,13 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                   ),
                 ),
 
-                // 6. Providers Block ("Thợ nhận chụp ở đây")
+                // 6. Providers Block ("Thợ nhận chụp ở đây"), under the
+                // S29.02-entry block of a ticketed spot.
                 if (!spot.archived) ...[
+                  if (spot.ticketedWith(
+                    ref.watch(entryEventProvider(spot.id)).value,
+                  ))
+                    SliverToBoxAdapter(child: _EntryBlock(spot: spot)),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(
@@ -514,6 +523,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                       ),
                       data: (context, v) => _providersBlock(
                         context,
+                        spot: spot,
                         schedules: v.$1,
                         summaries: v.$2,
                         todayStr: todayStr,
@@ -709,6 +719,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
   /// Day chips, then the providers of [effectiveDay] (or the empty card).
   Widget _providersBlock(
     BuildContext context, {
+    required Spot spot,
     required List<SpotSchedule> schedules,
     required Map<String, PhotographerSummary> summaries,
     required String todayStr,
@@ -721,11 +732,38 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
     final dark = theme.brightness == Brightness.dark;
     final scheme = theme.colorScheme;
 
+    // S29.02-entry: at a ticketed spot, residents (waiver valid on the day)
+    // first with their tag; the others say what the tickets cost.
+    final onSale = ref.watch(entryEventProvider(spot.id)).value;
+    final ticketed = spot.ticketedWith(onSale);
+    final residents = {
+      if (ticketed)
+        for (final r
+            in ref.watch(spotResidentsProvider(spot.id)).value ??
+                const <Resident>[])
+          r.providerId: r.waiverFor(effectiveDay),
+    };
+    bool resident(String id) {
+      final w = residents[id];
+      return w != null && (w.provider || w.guests);
+    }
+
+    final unit = ticketed ? entryUnitPrice(onSale, spot.access) : null;
+
     // Schedules of the day whose provider still takes orders (spec §12).
     final daySchedules = schedules
         .where((s) => s.days.contains(effectiveDay))
         .where((s) => summaries[s.providerId]?.acceptingOrders != false)
         .toList();
+    if (ticketed) {
+      final first = [
+        for (final s in daySchedules)
+          if (resident(s.providerId)) s,
+      ];
+      daySchedules
+        ..removeWhere((s) => resident(s.providerId))
+        ..insertAll(0, first);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -840,6 +878,17 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                               ),
                           schedule: schedule,
                           day: effectiveDay,
+                          residentTag: !resident(schedule.providerId)
+                              ? null
+                              : residents[schedule.providerId]!.guests
+                              ? l.s2902_resident
+                              : l.s2902_residentProvider,
+                          entryLine:
+                              ticketed &&
+                                  !resident(schedule.providerId) &&
+                                  unit != null
+                              ? l.s2902_needTickets(formatMoney(unit * 2))
+                              : null,
                           onProfile: () =>
                               context.push('/u/${schedule.providerId}'),
                           onBook: () => startBooking(
@@ -1121,6 +1170,120 @@ class _PhotosSkeleton extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// S29.02-entry: the spot's entry fee above "Thợ nhận chụp ở đây". With
+/// tickets on sale: the prices per type, the opening hours, "Bán bởi {chủ}"
+/// and a small "Mua vé" (→ S30.05); else the reference prices with their
+/// date and no button.
+class _EntryBlock extends ConsumerWidget {
+  const _EntryBlock({required this.spot});
+
+  final Spot spot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final secondary = dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    final event = ref.watch(entryEventProvider(spot.id)).value;
+    final types = event?.visibleTicketTypes ?? const <EntryTicketType>[];
+    final onSale = types.isNotEmpty;
+    final hours = event?.openHours ?? spot.openHours;
+    final access = spot.access;
+    final rows = onSale
+        ? [
+            for (final t in types)
+              l.s2902_typePrice(t.name, formatMoney(t.price)),
+          ]
+        : [
+            for (final f in access?.fees ?? const <AccessFee>[])
+              l.s2902_typePrice(f.label, formatMoney(f.amountVnd)),
+          ];
+    final updated = access?.updatedAt;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s4,
+        AppSpace.s5,
+        AppSpace.s4,
+        0,
+      ),
+      child: GlassCard(
+        key: const Key('spot-entry'),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.s3),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  AppIcon(AppIcons.ticket, size: 18, color: secondary),
+                  const SizedBox(width: AppSpace.s2),
+                  Expanded(
+                    child: Text(
+                      l.s2902_entry,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (hours != null)
+                    Text(
+                      '${hours.start}–${hours.end}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: secondary,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                ],
+              ),
+              if (rows.isNotEmpty) ...[
+                const SizedBox(height: AppSpace.s2),
+                Wrap(
+                  spacing: AppSpace.s3,
+                  runSpacing: AppSpace.s1,
+                  children: [
+                    for (final r in rows)
+                      Text(r, style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AppSpace.s2),
+              if (onSale)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l.s2902_soldBy(event!.organizerName),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: secondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s2),
+                    AppButton.primary(
+                      l.s2902_buy,
+                      key: const Key('spot-entry-buy'),
+                      size: AppButtonSize.xsmall,
+                      onPressed: () => context.push(spotTicketsPath(spot.id)),
+                    ),
+                  ],
+                )
+              else if (updated != null)
+                Text(
+                  l.s2902_refPrice(formatDayMonth(toVn(updated))),
+                  key: const Key('spot-entry-ref'),
+                  style: theme.textTheme.bodySmall?.copyWith(color: secondary),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

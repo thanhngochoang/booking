@@ -72,6 +72,8 @@ export interface PayoutWorld extends BookingWorld {
   readonly notices: RecordingPayoutNotices;
   /** uid → verified legal name (`users/{uid}/private/identity.legalName`). */
   readonly names: Map<string, string>;
+  /** uid → the verified business legal name of an organizer (`verifications/{uid}.business.name`, S21.04). */
+  readonly businessNames: Map<string, string>;
   /** uid → phone (`photographers/{uid}/private/contact.phone`). */
   readonly phones: Map<string, string>;
   readonly otpSender: FakeOtpSender;
@@ -88,6 +90,7 @@ export function createPayoutWorld(start = new Date('2026-10-10T10:00:00.000Z')):
   const notices = new RecordingPayoutNotices();
   const names = new Map([['p1', 'Nguyễn Văn An']]);
   const phones = new Map([['p1', '0912345678']]);
+  const businessNames = new Map<string, string>();
   const otpSender = new FakeOtpSender();
   const otpCrypto = new TestOtpCrypto();
   const payoutDeps: PayoutDeps & PayoutAccountDeps = {
@@ -103,6 +106,7 @@ export function createPayoutWorld(start = new Date('2026-10-10T10:00:00.000Z')):
     notices,
     lookup: echoLookup(names, 'p1'),
     names: { legalName: async (uid) => names.get(uid) ?? null },
+    businessNames: { legalName: async (uid) => businessNames.get(uid) ?? null },
     otp: { sender: otpSender, phones: { phoneOf: async (uid) => phones.get(uid) ?? null }, crypto: otpCrypto },
   };
   return {
@@ -115,6 +119,7 @@ export function createPayoutWorld(start = new Date('2026-10-10T10:00:00.000Z')):
     payGateway,
     notices,
     names,
+    businessNames,
     phones,
     otpSender,
     otpCrypto,

@@ -12,7 +12,7 @@ const spot = (id: string, over: Partial<Spot> = {}): Spot => ({
   id, name: 'Hồ Gươm', city: 'Hà Nội', areaCode: 'hn', point: { lat: 21.0285, lng: 105.8542 }, geohash: 'w7er8',
   radiusM: 500, cover: null, description: '', tips: [], seasonMonths: [], pinned: false, hidden: false,
   status: 'active', hotScore: 0, stats: EMPTY_SPOT_STATS, createdAt: '2026-10-01T00:00:00.000Z',
-  updatedAt: '2026-10-01T00:00:00.000Z', rankedAt: null, updatedBy: 'staff', ...over,
+  updatedAt: '2026-10-01T00:00:00.000Z', rankedAt: null, updatedBy: 'staff', managedBy: null, access: null, openHours: null, ...over,
 });
 
 const ID = 'ev1_aaaaaaaaaaaaaaaaaaaa';

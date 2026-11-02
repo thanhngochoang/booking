@@ -44,6 +44,23 @@ export interface CreateBookingDraftInput {
   readonly expectedTotal?: number;
   readonly spotScheduleId?: string;
   readonly slotOfferId?: string;
+  /** S30 Decision 15: entry tickets with the booking; the items are priced by the server. */
+  readonly entry?: EntryRequest;
+}
+
+export interface EntryRequest {
+  readonly eventId: string;
+  readonly visitDay: string;
+  readonly items: readonly { readonly ticketTypeId: string; readonly qty: number }[];
+}
+
+/** The shape of `entry` (`invalid_argument` field `entry`); the items themselves are checked by `priceItems`. */
+function parseEntry(raw: unknown): EntryRequest | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw new DomainError('invalid_argument', 'entry');
+  const { eventId, visitDay, items } = raw as Record<string, unknown>;
+  if (!isId(eventId) || !isDateString(visitDay) || !Array.isArray(items)) throw new DomainError('invalid_argument', 'entry');
+  return { eventId, visitDay, items: items as EntryRequest['items'] };
 }
 
 /** A place-shaped value: `name` 3–120 graphemes (trimmed), optional `point {lat, lng}`. */
@@ -102,6 +119,7 @@ export function validateCreateBookingDraftInput(
     expectedTotal,
     spotScheduleId,
     slotOfferId,
+    entry,
   } = raw as Record<string, unknown>;
 
   if (!isId(customerId) || !isId(photographerId) || !isId(serviceId)) {
@@ -201,5 +219,6 @@ export function validateCreateBookingDraftInput(
     expectedTotal: validatedExpectedTotal,
     spotScheduleId: validatedSpotScheduleId,
     slotOfferId: validatedSlotOfferId,
+    entry: parseEntry(entry),
   };
 }

@@ -5,6 +5,7 @@ import {
   acceptedStudioBooking,
   createBookingWorld,
   payDraft,
+  scanned,
   withStudio,
   type BookingWorld,
 } from './support/booking_world.js';
@@ -104,6 +105,7 @@ describe('completion while a milestone is disputed (#142)', () => {
     const { paymentId } = await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
     world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
+    scanned(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'mark_shot', actorId: 'p1' });
     freezeBookingPayment(world.store, draft.id, world.clock.now(), 'shoot');
     const approved = await world.store.getBooking(draft.id);
@@ -153,6 +155,7 @@ describe('studio bookings through transitionBooking (#136)', () => {
     await rejectsWith(transitionBooking(w.deps, { bookingId: b.id, action: 'cancel', actorId: 'm1' }), 'permission_denied');
     await rejectsWith(transitionBooking(w.deps, { bookingId: b.id, action: 'accept', actorId: 'm1' }), 'permission_denied');
     w.clock.setTime(new Date('2026-10-15T09:00:00.000Z')); // after the 16:00 VN end
+    scanned(w, b.id); // the assignee scanned the pass (S30)
     const shot = await transitionBooking(w.deps, { bookingId: b.id, action: 'complete', actorId: 'm1' });
     assert.equal(shot.status, 'shot');
   });

@@ -12,6 +12,8 @@ export const PLATFORM_PAYEE = 'platform';
  */
 export function isPayoutPayable(p: Payment): boolean {
   if (p.payeeId === '' || p.payeeId === PLATFORM_PAYEE) return false;
+  // S30 Decision 6: a paid group payment's money belongs to its lines (each paid out on its own).
+  if (p.subjectType === 'payment_group') return false;
   if (p.milestones) {
     return (p.payableAmount ?? 0) > 0;
   }

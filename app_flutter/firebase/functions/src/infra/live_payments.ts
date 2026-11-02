@@ -3,6 +3,7 @@ import {
   InstantPaymentSettler,
   TicketPaymentSettler,
   VerificationFeeSettler,
+  groupSettler,
   type BookingDeps,
   type EventPaymentDeps,
   type InstantDeps,
@@ -33,6 +34,9 @@ export interface SettlementSubjectDeps {
 export function settlementSubjectsOf(d: SettlementSubjectDeps): SettlementDeps['subjects'] {
   return {
     ...(d.booking !== undefined ? { booking: new BookingPaymentSettler(d.booking) } : {}),
+    // S30 (#223 Decision 6): a booking with tickets is paid through its group payment, over the booking store's
+    // transaction (which reaches events, registrations and entry_days). Task 6 adds the Firestore group tests.
+    ...(d.booking !== undefined ? { payment_group: groupSettler(d.booking) } : {}),
     ...(d.event !== undefined ? { event_registration: new TicketPaymentSettler(d.event) } : {}),
     ...(d.verification !== undefined ? { verification_fee: new VerificationFeeSettler(d.verification) } : {}),
     ...(d.instant !== undefined ? { instant_request: new InstantPaymentSettler(d.instant) } : {}),

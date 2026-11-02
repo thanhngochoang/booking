@@ -10,6 +10,8 @@ import {
 } from 'firebase-admin/firestore';
 import {
   type Spot,
+  type SpotAccess,
+  type SpotOpenHours,
   type SpotSchedule,
   type SlotOffer,
   type SpotDay,
@@ -40,6 +42,29 @@ function toIsoString(v: unknown): string | null {
 function toTimestamp(iso: string | null | undefined): Timestamp | null {
   if (!iso) return null;
   return Timestamp.fromDate(new Date(iso));
+}
+
+/** `spots/{id}.access` (S30, #223); a malformed block reads as null (unknown fees). */
+function accessFromFirestore(v: unknown): SpotAccess | null {
+  if (!v || typeof v !== 'object') return null;
+  const a = v as Record<string, unknown>;
+  if (a.type !== 'open' && a.type !== 'ticket') return null;
+  if (a.source !== 'staff' && a.source !== 'organizer') return null;
+  const updatedAt = toIsoString(a.updatedAt);
+  if (!updatedAt) return null;
+  const fees = Array.isArray(a.fees)
+    ? a.fees.flatMap((f: unknown) => {
+        const x = f && typeof f === 'object' ? (f as Record<string, unknown>) : {};
+        return typeof x.label === 'string' && typeof x.amountVnd === 'number' ? [{ label: x.label, amountVnd: x.amountVnd }] : [];
+      })
+    : [];
+  return { type: a.type, fees, note: typeof a.note === 'string' ? a.note : '', updatedAt, source: a.source };
+}
+
+function openHoursFromFirestore(v: unknown): SpotOpenHours | null {
+  if (!v || typeof v !== 'object') return null;
+  const h = v as Record<string, unknown>;
+  return typeof h.start === 'string' && typeof h.end === 'string' ? { start: h.start, end: h.end } : null;
 }
 
 export function spotFromFirestore(id: string, d: DocumentData | undefined): Spot | null {
@@ -116,6 +141,9 @@ export function spotFromFirestore(id: string, d: DocumentData | undefined): Spot
     updatedAt,
     rankedAt: toIsoString(d.rankedAt),
     updatedBy: typeof d.updatedBy === 'string' ? d.updatedBy : 'system',
+    managedBy: typeof d.managedBy === 'string' && d.managedBy !== '' ? d.managedBy : null,
+    access: accessFromFirestore(d.access),
+    openHours: openHoursFromFirestore(d.openHours),
   };
 }
 
@@ -140,6 +168,17 @@ export function spotToFirestore(s: Spot): DocumentData {
     updatedAt: toTimestamp(s.updatedAt),
     rankedAt: toTimestamp(s.rankedAt),
     updatedBy: s.updatedBy,
+    managedBy: s.managedBy,
+    access: s.access
+      ? {
+          type: s.access.type,
+          fees: s.access.fees.map((f) => ({ label: f.label, amountVnd: f.amountVnd })),
+          note: s.access.note,
+          updatedAt: toTimestamp(s.access.updatedAt),
+          source: s.access.source,
+        }
+      : null,
+    openHours: s.openHours ? { start: s.openHours.start, end: s.openHours.end } : null,
   };
 }
 

@@ -2,6 +2,8 @@
  * Spot domain models and pure helpers (spec S29).
  */
 
+import type { SpotAccess } from './organizer.js';
+
 export const SPOT_STATUSES = ['active', 'archived'] as const;
 export type SpotStatus = (typeof SPOT_STATUSES)[number];
 
@@ -66,6 +68,17 @@ export interface Spot {
   readonly updatedAt: string;
   readonly rankedAt: string | null;
   readonly updatedBy: string;
+  /** S30 (#223): the organizer managing the spot (approved claim), at most one; null = no manager. */
+  readonly managedBy: string | null;
+  /** S30: reference entry fees (staff or the manager); null = unknown. */
+  readonly access: SpotAccess | null;
+  /** S30: opening hours (Vietnam `HH:mm`), display only; null = not given. */
+  readonly openHours: SpotOpenHours | null;
+}
+
+export interface SpotOpenHours {
+  readonly start: string;
+  readonly end: string;
 }
 
 export const EMPTY_SPOT_STATS: SpotStats = Object.freeze({

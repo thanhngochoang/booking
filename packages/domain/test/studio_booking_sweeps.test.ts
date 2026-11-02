@@ -7,7 +7,7 @@ import { bookingNotices } from '../src/booking_notifications.js';
 import type { NotifyDeps } from '../src/notification_ports.js';
 import type { StudioBookingTx } from '../src/booking_ports.js';
 import { studioBookingNotices } from '../src/studio_notifications.js';
-import { acceptedStudioBooking, createBookingWorld, withStudio, type BookingWorld } from './support/booking_world.js';
+import { acceptedStudioBooking, createBookingWorld, scanned, withStudio, type BookingWorld } from './support/booking_world.js';
 import { createNotifyWorld, type NotifyWorld } from './support/notify_world.js';
 import { confirmRefundToPayer, refundAccountDepsOf } from './support/refund_account_world.js';
 
@@ -274,10 +274,12 @@ describe('unassigned studio bookings at their start (#136 ruling)', () => {
     const assigned = await acceptedStudioBooking(w);
     await assignBooking(w.studioDeps, 's1', { bookingId: assigned.id, assigneeId: 'm1' });
     const unassigned = await acceptedStudioBooking(w, { customerId: 'c2' });
-    // Without the start sweep, the auto mark-shot (end + 24 h) must still skip the unassigned booking.
+    // Without the start sweep, the shot sweep (a scanned booking at end + 24 h, S30) must still skip the
+    // unassigned booking.
+    scanned(w, assigned.id);
     w.clock.setTime(new Date(START_MS + 2 * HOUR + 24 * HOUR));
     const r = await runBookingSweeps(w.deps);
-    assert.equal(r.autoShots, 1);
+    assert.equal(r.shootingShots, 1);
     assert.equal((await w.store.getBooking(assigned.id))?.status, 'shot');
     assert.equal((await w.store.getBooking(unassigned.id))?.status, 'accepted');
     assert.deepEqual(

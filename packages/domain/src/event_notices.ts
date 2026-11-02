@@ -39,8 +39,9 @@ export function eventSoonContent(ev: EventRecord, now: Date): Extract<Notificati
   };
 }
 
-const remindable = (ev: EventRecord): boolean =>
-  (ev.status === 'open' || ev.status === 'full' || ev.status === 'closed') && (ev.soonNoticeAt ?? null) === null;
+/** Entry events (S30) span many days and are never "about to start": no `event_soon`. */
+const remindable = (ev: EventRecord): boolean => ev.type !== 'entry'
+  && (ev.status === 'open' || ev.status === 'full' || ev.status === 'closed') && (ev.soonNoticeAt ?? null) === null;
 
 /**
  * Sends `event_soon` to every paid ticket of each event starting within `EVENT_SOON_HOURS`. One bad

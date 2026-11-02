@@ -9,13 +9,14 @@ import { graphemeCount } from './booking_requests.js';
 import {
   HOLD_REASON_REPEATED_FAILURE,
   MAX_CONSECUTIVE_FAILURES,
+  isPayoutPayable,
   type Payout,
   type PayoutItem,
   type PayoutStatus,
 } from './payout.js';
 import { type MilestoneKind, type PaymentMilestone, withMilestones } from './milestones.js';
 import { isAccountActiveAt, type PayoutAccount } from './payout_account.js';
-import { payoutLineOf, taxRateBpOf } from './payout_policy.js';
+import { feeRateBpOf, payoutLineOf, taxRateBpOf, type PayeeKind } from './payout_policy.js';
 import type { PayoutDeps, PayoutTx } from './payout_ports.js';
 
 export interface StaffActor {
@@ -57,7 +58,14 @@ function itemSplit(i: PayoutItem): { fee: number; tax: number; net: number } {
   return typeof i.net === 'number' ? { fee: i.fee, tax: i.tax, net: i.net } : { fee: 0, tax: 0, net: i.amount };
 }
 
-export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId: string): Promise<Payout> {
+/**
+ * One payout per payee kind (S30 Decision 12): what is released and not yet batched for `payeeId`,
+ * grouped by `payment.payeeKind` (absent → the payee's provider type), so someone who is both a
+ * photographer and an organizer gets one batch per kind with its own fee and tax lines (an organizer
+ * batch takes no commission and withholds no tax). Provider batch first. `not_eligible` when nothing
+ * is payable or the account is not active yet.
+ */
+export async function createPayouts(deps: PayoutDeps, actor: StaffActor, payeeId: string): Promise<Payout[]> {
   requireAdmin(actor);
   return deps.store.runTransaction(async (tx) => {
     const clockNow = deps.clock.now();
@@ -68,6 +76,7 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
     const payeeType = await tx.getPayeeType(payeeId);
     const payableItems: { payment: Payment; gross: number; milestone?: MilestoneKind }[] = [];
     for (const p of await tx.listPayablePayments(payeeId)) {
+      if (!isPayoutPayable(p)) continue;
       if (p.milestones) {
         for (const m of p.milestones) {
           if (m.status === 'released' && !m.payoutId) {
@@ -83,61 +92,77 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
     const held = await failedTooOften(tx, account.id);
     if (payableItems.length === 0) throw new DomainError('not_eligible');
 
-    const items: PayoutItem[] = payableItems.map(({ payment, gross, milestone }) => {
-      const line = payoutLineOf(gross, payeeType, deps.policy, payment.feeBp);
-      return {
-        paymentId: payment.id,
-        amount: line.gross,
-        fee: line.fee,
-        tax: line.tax,
-        net: line.net,
-        ...(milestone ? { milestone } : {}),
-      };
-    });
-    const sum = (f: (i: PayoutItem) => number): number => items.reduce((s, i) => s + f(i), 0);
+    const kindOf = (p: Payment): PayeeKind => p.payeeKind ?? payeeType;
+    const kinds = [...new Set(payableItems.map((pi) => kindOf(pi.payment)))]
+      .sort((a, b) => Number(a === 'organizer') - Number(b === 'organizer'));
     const status: PayoutStatus = held ? 'on_hold' : needsApproval(account, cleared) ? 'needs_approval' : 'pending';
-    const payout: Payout = {
-      id: deps.ids.newId(),
-      payeeId,
-      accountId: account.id,
-      amount: sum((i) => i.amount),
-      status,
-      items,
-      platformFee: sum((i) => i.fee),
-      taxWithheld: sum((i) => i.tax),
-      amountNet: sum((i) => i.net),
-      feeRateBp: deps.policy.feeBp[payeeType],
-      taxRateBp: taxRateBpOf(payeeType, deps.policy),
-      firstPayout: !cleared,
-      ...(held ? { holdReason: HOLD_REASON_REPEATED_FAILURE } : {}),
-      createdBy: actor.uid,
-      createdAt: now,
-      updatedAt: now,
-    };
-    tx.putPayout(payout);
+    const payouts: Payout[] = [];
+    for (const kind of kinds) {
+      const batch = payableItems.filter((pi) => kindOf(pi.payment) === kind);
+      const items: PayoutItem[] = batch.map(({ payment, gross, milestone }) => {
+        const line = payoutLineOf(gross, kind, deps.policy, payment.feeBp);
+        return {
+          paymentId: payment.id,
+          amount: line.gross,
+          fee: line.fee,
+          tax: line.tax,
+          net: line.net,
+          ...(milestone ? { milestone } : {}),
+        };
+      });
+      const sum = (f: (i: PayoutItem) => number): number => items.reduce((s, i) => s + f(i), 0);
+      const payout: Payout = {
+        id: deps.ids.newId(),
+        payeeId,
+        accountId: account.id,
+        amount: sum((i) => i.amount),
+        status,
+        items,
+        platformFee: sum((i) => i.fee),
+        taxWithheld: sum((i) => i.tax),
+        amountNet: sum((i) => i.net),
+        feeRateBp: feeRateBpOf(kind, deps.policy),
+        taxRateBp: taxRateBpOf(kind, deps.policy),
+        firstPayout: !cleared,
+        ...(held ? { holdReason: HOLD_REASON_REPEATED_FAILURE } : {}),
+        createdBy: actor.uid,
+        createdAt: now,
+        updatedAt: now,
+      };
+      tx.putPayout(payout);
+      payouts.push(payout);
 
-    // Group payable items by payment to update milestones or payment payoutId
-    const distinctPaymentIds = [...new Set(payableItems.map((pi) => pi.payment.id))];
-    for (const pid of distinctPaymentIds) {
-      const pay = payableItems.find((pi) => pi.payment.id === pid)?.payment;
-      if (!pay) continue;
-      if (pay.milestones) {
-        const kindsToBatch = new Set(
-          payableItems
-            .filter((pi) => pi.payment.id === pid && pi.milestone !== undefined && pi.milestone !== null)
-            .map((pi) => pi.milestone as MilestoneKind),
-        );
-        const updatedMs: PaymentMilestone[] = pay.milestones.map((m) =>
-          kindsToBatch.has(m.kind) ? { ...m, payoutId: payout.id } : m,
-        );
-        const updatedPayment = withMilestones(pay, updatedMs, now);
-        tx.setPayment(updatedPayment);
-      } else {
-        tx.setPayment({ ...pay, payoutId: payout.id, updatedAt: now });
+      // Group payable items by payment to update milestones or payment payoutId
+      for (const pid of [...new Set(batch.map((pi) => pi.payment.id))]) {
+        const pay = batch.find((pi) => pi.payment.id === pid)?.payment;
+        if (!pay) continue;
+        if (pay.milestones) {
+          const kindsToBatch = new Set(
+            batch
+              .filter((pi) => pi.payment.id === pid && pi.milestone !== undefined && pi.milestone !== null)
+              .map((pi) => pi.milestone as MilestoneKind),
+          );
+          const updatedMs: PaymentMilestone[] = pay.milestones.map((m) =>
+            kindsToBatch.has(m.kind) ? { ...m, payoutId: payout.id } : m,
+          );
+          tx.setPayment(withMilestones(pay, updatedMs, now));
+        } else {
+          tx.setPayment({ ...pay, payoutId: payout.id, updatedAt: now });
+        }
       }
     }
-    return payout;
+    return payouts;
   });
+}
+
+/**
+ * `createPayouts` for callers that show one payout (the staff CLI's `create`): every batch is created,
+ * the first (the provider batch when there is one) is answered.
+ */
+export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId: string): Promise<Payout> {
+  const [first] = await createPayouts(deps, actor, payeeId);
+  if (first === undefined) throw new DomainError('not_eligible');
+  return first;
 }
 
 /**
