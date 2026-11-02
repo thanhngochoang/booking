@@ -291,7 +291,7 @@ function tipsOf(raw: unknown): string[] {
 /** A cover the Functions adapter made from the manager's upload (`spots/{spotId}/…`). */
 function coverOf(raw: unknown, spotId: string): SpotCover | null {
   if (raw === null) return null;
-  const c = raw !== null && typeof raw === 'object' ? (raw as Record<string, unknown>) : fail('invalid_argument', 'cover');
+  const c = typeof raw === 'object' ? (raw as Record<string, unknown>) : fail('invalid_argument', 'cover');
   if (typeof c.url !== 'string' || typeof c.cardUrl !== 'string' || typeof c.path !== 'string'
     || !c.path.startsWith(`spots/${spotId}/`) || c.path.split('/').includes('..')) {
     fail('invalid_argument', 'cover');
