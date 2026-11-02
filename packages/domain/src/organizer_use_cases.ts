@@ -274,7 +274,7 @@ const MANAGED_SPOT_FIELDS = new Set(['spotId', 'description', 'tips', 'cover', '
 
 function openHoursOf(raw: unknown): SpotOpenHours | null {
   if (raw === null) return null;
-  const h = raw !== null && typeof raw === 'object' ? (raw as Record<string, unknown>) : fail('invalid_argument', 'openHours');
+  const h = typeof raw === 'object' ? (raw as Record<string, unknown>) : fail('invalid_argument', 'openHours');
   if (!isTimeString(h.start) || !isTimeString(h.end) || h.end <= h.start) fail('invalid_argument', 'openHours');
   return { start: h.start as string, end: h.end as string };
 }
