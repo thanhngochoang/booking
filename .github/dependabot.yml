@@ -32,9 +32,11 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
     ignore:
-      # firebase-tools 15 needs JDK 21 for the emulators; the move is PR #266.
-      # Remove this block once #266 is merged.
-      - dependency-name: firebase-tools
+      # typescript-eslint 8 supports TypeScript <6.1 only; lift once it supports TypeScript 7.
+      - dependency-name: typescript
+        versions: [">=6.1.0"]
+      # @types/node follows the Node runtime (Cloud Functions and CI run Node 24).
+      - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pub

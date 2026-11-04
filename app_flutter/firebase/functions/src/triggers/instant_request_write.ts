@@ -141,7 +141,7 @@ export async function handleInstantRequestWrite(
     }
   }
 
-  let chat = 'none';
+  let chat: string;
   try {
     chat = await syncInstantChat(deps.chat, before, after);
   } catch (e) {

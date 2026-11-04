@@ -213,7 +213,7 @@ describe('spot_admin', () => {
       curr = await setSpotFlag(deps, 'admin4', spot.id, 'hide');
       assert.equal(curr.hidden, true);
 
-      curr = await setSpotFlag(deps, 'admin5', spot.id, 'ununhide' as unknown as 'pin').catch(() => null) ?? curr;
+      await setSpotFlag(deps, 'admin5', spot.id, 'ununhide' as unknown as 'pin').catch(() => null);
       curr = await setSpotFlag(deps, 'admin5', spot.id, 'unhide');
       assert.equal(curr.hidden, false);
 

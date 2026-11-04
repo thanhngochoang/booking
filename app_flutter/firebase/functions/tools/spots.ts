@@ -369,7 +369,7 @@ async function runStaffCommand(argv: readonly string[], deps: SpotCliDeps, io: S
     io.print(`Organizer ${id} suspended: ${cancelledEvents} open event(s) cancelled`);
     if (failed.length > 0) throw new Error(`${failed.length} event(s) not cancelled; run organizers suspend ${id} again`);
   } catch (e) {
-    if (e instanceof DomainError) throw new Error(`${args.command}${args.sub ? ` ${args.sub}` : ''} ${id}: ${e.code}${e.field ? ` (${e.field})` : ''}`);
+    if (e instanceof DomainError) throw new Error(`${args.command}${args.sub ? ` ${args.sub}` : ''} ${id}: ${e.code}${e.field ? ` (${e.field})` : ''}`, { cause: e });
     throw e;
   }
 }

@@ -327,7 +327,6 @@ export class TicketPaymentSettler implements SubjectSettler {
       }
 
       // Live registration: marks paid, seats move, contact snapshot
-      let excessRefund: Refund | null = null;
       let paidPayment: Payment = counted;
       if (applied.excess > 0) {
         const excessRes = transferRefund({
@@ -341,7 +340,7 @@ export class TicketPaymentSettler implements SubjectSettler {
           now,
         });
         paidPayment = excessRes.payment;
-        excessRefund = excessRes.refund;
+        const excessRefund = excessRes.refund;
         tx.putRefund(excessRefund);
         tx.putLedgerEntry(excessRes.ledgerEntry);
         pendingRefunds.push(excessRefund);

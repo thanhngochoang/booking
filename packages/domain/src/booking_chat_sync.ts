@@ -86,8 +86,6 @@ export async function syncBookingChat(
       currentChat = chat;
     }
 
-    let setBookingChatId = false;
-
     if (isRequestedTransition || isDirectAcceptedTransition) {
       currentChat = {
         ...currentChat,
@@ -120,8 +118,7 @@ export async function syncBookingChat(
       }
 
       tx.setChat(currentChat);
-      setBookingChatId = after.chatId !== chatId;
-      return { chatId, setBookingChatId };
+      return { chatId, setBookingChatId: after.chatId !== chatId };
     }
 
     // Status change for current attached booking
