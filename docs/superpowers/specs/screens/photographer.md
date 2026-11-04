@@ -218,3 +218,69 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 - **Thông báo**: `payout_account_needed` và `payout_account_changed` (quan trọng) do #138 định nghĩa; #134 là nơi phát duy nhất (qua `livePayoutNotices`). Email về tài khoản cũ để sau.
 - **Phân tích**: `payout_account_save{change}` (chỉ cho biết có phải đổi tài khoản, không có dữ liệu tài khoản).
 - **Chấp nhận**: số tài khoản không có trong log, thông báo, phân tích, thông điệp lỗi và đầu ra test; chỉ chủ đọc, không ai ghi từ client; không khoản nào chuyển trong 72 giờ chờ; lô `pending` lúc đổi thành `needs_approval`; tra lần thứ 21 trong ngày bị từ chối; mã sai tính vào 5 lần dù lệnh báo lỗi; mã đã dùng hoặc mã của tài khoản khác không lưu được tài khoản thứ hai; thay tài khoản không ảnh hưởng khoản đã chuyển.
+
+## S08.08 · Gói dịch vụ của tôi
+
+> **Mới 2026-11-04** (#316, spec [`../2026-11-04-day-pricing-design.md`](../2026-11-04-day-pricing-design.md)). Mock: `#S08.08`.
+
+- **Thông tin**: `/me/packages` · thợ ảnh, studio · Chưa có.
+- **Mục đích**: xem và quản lý mọi gói cùng giá theo ngày của chúng.
+- **Điểm vào → điểm ra**:
+  - Vào: "Sửa gói" ở hồ sơ thợ (thay `/setup/2`), dòng "Gói và bảng giá" ở S06.01, liên kết ở S08.06.
+  - Ra: chạm thẻ → S08.09; "Ngày đặc biệt" → S08.10.
+- **Bố cục**:
+  - "{n} gói đang bật";
+  - `PackageTile` cho mỗi gói: tay kéo (`order`), tên, "thời lượng · số ảnh chỉnh · giao n ngày", dòng giá theo `priceSummary`, công tắc bật/tắt;
+  - dòng "Ngày đặc biệt · {n} ngày lễ chung, {m} khoảng ngày của bạn";
+  - nút chính "Thêm gói".
+- **Dữ liệu**: `myServicesProvider` (mọi gói của chủ, sắp theo `order` rồi `createdAt`), `specialDaysSummaryProvider`. Ghi thẳng `photographers/{uid}/services/{id}` (rules `validService`). Sắp xếp ghi `order` cho các gói bị dời chỗ trong một batch.
+- **Trạng thái**:
+  - Trống: "Thêm gói đầu tiên để khách đặt được bạn".
+  - Tắt gói cuối cùng đang bật: sheet hỏi lại "Khách sẽ không đặt được bạn cho tới khi bật lại một gói".
+  - Gói tắt thì thẻ mờ kèm chữ "Đang ẩn · khách không thấy".
+- **Chuỗi**: `s0808_title` "Gói dịch vụ", `s0808_activeCount` "{n} gói đang bật", `s0808_hidden` "Đang ẩn · khách không thấy", `s0808_specialDays` "Ngày đặc biệt", `s0808_specialDaysSub` "{n} ngày lễ chung · {m} khoảng ngày của bạn", `s0808_add` "Thêm gói", `s0808_empty` "Thêm gói đầu tiên để khách đặt được bạn", `s0808_lastOff` "Khách sẽ không đặt được bạn cho tới khi bật lại một gói".
+- **Chấp nhận**: dòng giá đúng ba dạng (một giá, hai mức, từng thứ) cộng phần " · Lễ" khi có giá đặc biệt; kéo đổi thứ tự thì S03.01 và S04.01 hiện theo thứ tự mới.
+
+## S08.09 · Thêm/sửa gói
+
+> **Mới 2026-11-04** (#316). Mock: `#S08.09`, `#S08.09-perday`.
+
+- **Thông tin**: `/me/packages/new`, `/me/packages/:id` · thợ ảnh, studio · Chưa có. S08.01 bước 2 mở cùng màn, `?from=setup`.
+- **Mục đích**: nhập thông tin gói và bảng giá theo ngày.
+- **Bố cục** (từ trên xuống):
+  1. Tên, thời lượng (chip 1/2/3/4/6/8 giờ), số ảnh chỉnh, giao sau.
+  2. "Bảng giá": `SegmentedTabs` gồm "Hai mức giá" và "Từng ngày".
+     - Hai mức: hai ô giá.
+     - Từng ngày: 7 hàng, T7 và CN có nhãn "cuối tuần"; giá khác giá thứ Hai tô màu nhấn.
+  3. Công tắc "Giá riêng ngày đặc biệt", ô giá, dòng "Áp cho … · Xem".
+  4. Dải xem trước 7 ngày tới, dòng "Khách đặt {ngày} trả {giá}".
+  5. Nút chính "Lưu gói"; khi sửa có thêm chữ "Ẩn gói".
+- **Dữ liệu**: lưu `price` (= giá thứ Hai), `dayPrices` (luôn đủ 7 khi có giá khác nhau; bỏ trường khi cả 7 bằng nhau), `specialPrice?`, `priceMode`. Xem trước tính bằng `priceForDay` của domain (bản Dart port từ `day_pricing.ts`, cùng bảng test) với `holidaysProvider(year)` và `mySpecialDaysProvider`.
+- **Tương tác**:
+  - Nhập giá ngày thường lần đầu thì ô cuối tuần điền sẵn bằng giá đó.
+  - Hai mức → Từng ngày: điền 7 ô.
+  - Từng ngày → Hai mức khi 7 giá không đúng hai mức: sheet "Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?" (nút chính "Dùng hai mức", chữ "Giữ từng ngày").
+  - Từ S08.01 thì lưu xong quay về bước 2.
+- **Trạng thái**: lỗi dưới ô "Tên 2–60 ký tự", "Giá phải lớn hơn 0", "Giá tối đa 1.000.000.000₫"; đang lưu thì nút ở trạng thái loading.
+- **Chuỗi**: `s0809_titleNew` "Thêm gói", `s0809_titleEdit` "Sửa gói", `s0809_prices` "Bảng giá", `s0809_modeTwo` "Hai mức giá", `s0809_modePerDay` "Từng ngày", `s0809_weekday` "Ngày thường · T2–T6", `s0809_weekend` "Cuối tuần · T7–CN", `s0809_weekendTag` "cuối tuần", `s0809_special` "Giá riêng ngày đặc biệt", `s0809_specialApplies` "Áp cho {n} ngày lễ chung, {m} khoảng ngày của bạn", `s0809_specialOff` "Đang tắt · ngày lễ tính như thứ đó", `s0809_preview` "Khách đặt {day} trả {amount} (chưa gồm dịch vụ đi kèm). Booking đã đặt giữ giá cũ.", `s0809_toTwoLevels` "Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?", `s0809_save` "Lưu gói", `s0809_hide` "Ẩn gói".
+- **Chấp nhận**: lưu ở chế độ hai mức rồi mở lại vẫn ở chế độ hai mức (`priceMode`); xem trước khớp giá server tính khi đặt (test cùng bảng ca với domain).
+
+## S08.10 · Ngày đặc biệt
+
+> **Mới 2026-11-04** (#316). Mock: `#S08.10`, `#S08.10-edit`.
+
+- **Thông tin**: `/me/special-days` · thợ ảnh, studio · Chưa có.
+- **Bố cục**:
+  - "Ngày lễ chung" với chip năm, danh sách chỉ đọc (`holidays/{year}`);
+  - "Ngày riêng của bạn": khoảng ngày có tên, "từ – tới · n ngày";
+  - ghi chú;
+  - nút chính "Thêm khoảng ngày" mở sheet (tên, lịch chọn từ – tới, "Lưu"; khi sửa có thêm chữ đỏ "Xoá khoảng ngày" → sheet xác nhận nút đỏ).
+- **Dữ liệu**: `holidaysProvider(year)` (một tài liệu), `mySpecialDaysProvider` (`photographers/{uid}/special_days`, `to ≥ hôm nay`). Ghi thẳng, rules kiểm tra.
+- **Trạng thái**:
+  - Lỗi: "Khoảng tối đa 60 ngày", "Chỉ chọn trong 365 ngày tới", "Bạn đã có 20 khoảng ngày".
+  - Trống: "Chưa có ngày riêng · Thêm mùa cưới, mùa hoa hay ngày bạn muốn giá cao hơn".
+  - Năm chưa có ngày lễ: "Chưa có lịch ngày lễ năm {year}".
+- **Chuỗi**: `s0810_title` "Ngày đặc biệt", `s0810_public` "Ngày lễ chung", `s0810_mine` "Ngày riêng của bạn", `s0810_range` "{from} – {to} · {n} ngày", `s0810_note` "Gói có giá ngày đặc biệt dùng giá đó cho các ngày này. Gói không có giá đặc biệt tính như ngày thường. Muốn nghỉ hẳn thì đánh dấu nghỉ trong Lịch.", `s0810_add` "Thêm khoảng ngày", `s0810_editTitle` "Sửa khoảng ngày", `s0810_delete` "Xoá khoảng ngày", `s0810_affects` "{n} ngày · {m} gói có giá ngày đặc biệt sẽ dùng giá đó".
+
+### Thay đổi ở S08.01 bước 2 (S08.01-packages)
+- Bỏ form nhập gói trong bước. Danh sách gói rút gọn như S08.08 (chạm → S08.09 sửa), nút viền "Thêm gói" → S08.09 (`?from=setup`). Vẫn cần ≥ 1 gói để "Tiếp tục".

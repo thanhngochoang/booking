@@ -229,3 +229,25 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 - **Trạng thái**: sai định dạng → lỗi dưới ô ("Số cần 10 chữ số, bắt đầu bằng 0"); lưu lỗi → SnackBar, giữ sheet; đóng không lưu → huỷ luồng đặt, trở lại màn trước.
 - **Chuỗi**: `s33_title` "Thêm số điện thoại để đặt lịch", `s33_body` "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.", `s33_phone` "Số điện thoại", `s33_example` "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.", `s33_allowZalo` "Cho phép liên hệ qua Zalo", `s33_allowWhatsApp` "Cho phép liên hệ qua WhatsApp", `s33_privacy` "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.", `s33_save` "Lưu và tiếp tục", `s33_errorFormat` "Số điện thoại chưa đúng. Ví dụ: 903 123 456".
 - **Chấp nhận**: hợp lệ mới bật nút; chấp nhận `0903123456`, `+84 903 123 456`, từ chối `090312345`, `0123456789`; hồ sơ có số thì sheet không hiện nữa; mọi nhánh server vẫn chặn khi thiếu số.
+
+## Giá theo ngày ở luồng đặt lịch (#316)
+
+> **Mới 2026-11-04**, spec [`../2026-11-04-day-pricing-design.md`](../2026-11-04-day-pricing-design.md). Mock: `#S03.01-prices`, `#S04.01-dayprice`, `#S04.02-dayprice`, `#S04.03-dayprice`.
+
+- **S03.01, tab Gói**: dòng giá theo `priceSummary`. Chạm vào mở sheet "Bảng giá · {gói}" chỉ đọc: các mức gộp theo thứ cùng giá, dòng "Ngày lễ, ngày đặc biệt" kèm tối đa 3 ngày gần nhất. Nút chính "Đặt gói này" → S04.02.
+- **S04.01**:
+  - gói có giá theo ngày hiện khoảng "{min}–{max}", dòng phụ "T7–CN {giá}" hoặc "giá theo ngày";
+  - nút "Tiếp tục · từ {min}";
+  - vào với ngày đã chọn thì hiện giá đúng ngày đó.
+- **S04.02**:
+  - dòng "Ngày thường {giá}";
+  - ngày có giá khác ghi giá rút gọn dưới số ngày, ngày đặc biệt ghi "Lễ {giá}";
+  - dòng chọn ngày thêm "cuối tuần" hoặc "ngày lễ: {tên}";
+  - nút "Tiếp tục · {giá ngày + dịch vụ đi kèm}".
+- **S04.03**:
+  - dòng gói "Gói {tên} · {ngày} ({cuối tuần | ngày lễ | tên ngày})";
+  - câu "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.";
+  - `price_changed` dùng thanh hiện có.
+- **Dữ liệu**: app gửi `expectedPrice` = giá của ngày (tính bằng `priceForDay` với `holidaysProvider` và `specialDaysProvider(photographerId)`). Server tính lại trong giao dịch.
+- **Chuỗi**: `s0401_priceRange` "{min}–{max}", `s0401_weekendSub` "T7–CN {amount}", `s0401_perDaySub` "giá theo ngày", `s0401_continueFrom` "Tiếp tục · từ {amount}", `s0402_weekdayPrice` "Ngày thường {amount}", `s0402_holidayPrice` "Lễ {amount}", `s0402_weekendTag` "cuối tuần", `s0402_holidayTag` "ngày lễ: {name}", `s0403_dayReasonWeekend` "(cuối tuần)", `s0403_dayReasonSpecial` "({name})", `s0403_dayPriceNote` "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.", `s0301_priceSheetTitle` "Bảng giá · {name}", `s0301_specialRow` "Ngày lễ, ngày đặc biệt".
+- **Chấp nhận**: giá ở S04.02 và S04.03 bằng giá server ghi vào booking với cùng ngày (test với repository giả và bảng ca của domain); gói một giá không ghi gì dưới ngày.

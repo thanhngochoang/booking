@@ -123,6 +123,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.05 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · khớp mock, có bản studio (#146) | S34 |
 | S08.06 | Dịch vụ đi kèm: "{n}/10 dịch vụ đang bật", danh sách theo loại, công tắc bật/tắt | `/me/addons` | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
 | S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | [#232](https://github.com/thanhngochoang/booking/pull/232) | — |
+| S08.08 | Gói dịch vụ của tôi: danh sách, dòng giá theo ngày, bật/tắt, sắp xếp; lối vào Ngày đặc biệt | `/me/packages` | thợ ảnh · studio | spec 11-04 giá theo ngày | [#316](https://github.com/thanhngochoang/booking/issues/316) | — |
+| S08.09 | Thêm/sửa gói: thông tin gói, bảng giá ngày thường/cuối tuần hoặc từng ngày, giá ngày đặc biệt, xem trước 7 ngày | `/me/packages/new`, `/me/packages/:id` | thợ ảnh · studio | spec 11-04 giá theo ngày | [#316](https://github.com/thanhngochoang/booking/issues/316) | — |
+| S08.10 | Ngày đặc biệt: ngày lễ chung theo năm, khoảng ngày riêng (+ sheet thêm/sửa) | `/me/special-days` | thợ ảnh · studio | spec 11-04 giá theo ngày | [#316](https://github.com/thanhngochoang/booking/issues/316) | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
 | S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio: [#136](https://github.com/thanhngochoang/booking/issues/136) · S30: nhóm "Tổ chức sự kiện" [#223](https://github.com/thanhngochoang/booking/issues/223) | S31 |
@@ -267,6 +270,8 @@ Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Gi�
 Use case S26 (**Studio và thành viên**) đặc tả ở [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md); S05.06, S05.07, S06.07 (bàn giao hai lớp) ở [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đánh giá cà chua/gạch (S05.05) ở [`2026-10-06-tomato-brick-reviews-design.md`](2026-10-06-tomato-brick-reviews-design.md).
 
 Use case S29 (**Điểm chụp đang hot**) đặc tả ở [`2026-10-08-trending-spots-design.md`](2026-10-08-trending-spots-design.md); biến thể ở màn đã có: S02.01, S02.03, S04.02, S10.01, S12.01 (mock `-spots` / `-spot`). Mã S28 để dành cho studio trên web (#161), chưa có màn trong app.
+
+S08.08–S08.10 (**gói và bảng giá theo ngày**) đặc tả ở [`2026-11-04-day-pricing-design.md`](2026-11-04-day-pricing-design.md) (#316); biến thể ở màn đã có (mock đặt trong khu S08): S08.01-packages, S03.01-prices, S04.01-dayprice, S04.02-dayprice, S04.03-dayprice.
 
 Use case S30 (**Chủ sự kiện & vé vào cửa**) đặc tả ở [`2026-10-12-spot-organizer-entry-tickets-design.md`](2026-10-12-spot-organizer-entry-tickets-design.md); biến thể ở màn đã có (mock đặt trong khu S30): S29.02-entry, S04.03-entry, S05.02-pass, S05.02-askshot, S06.01-scan, S11.02-venue-consent, S11.04-entry, S12.01-venue, S12.03-entry. Spec đó thêm trạng thái booking `shooting` (thợ quét mã của khách) giữa `upcoming` và `shot`.
 
