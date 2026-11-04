@@ -40,24 +40,24 @@ dependencies:
   go_router: ^18.1.2
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
-  firebase_core: ^4.15.0
-  firebase_auth: ^6.7.0
-  cloud_firestore: ^6.10.0
+  firebase_core: ^5.1.0
+  firebase_auth: ^7.0.1
+  cloud_firestore: ^7.1.0
   google_sign_in: ^7.2.0
   flutter_facebook_auth: ^7.3.2
   intl: ^0.20.3
   flutter_svg: ^2.3.2
   shared_preferences: ^2.5.6
-  cloud_functions: ^6.5.0
+  cloud_functions: ^7.0.1
   url_launcher: ^6.3.3
   geolocator: ^14.1.2
   cached_network_image: ^4.0.6
-  firebase_storage: ^13.6.0
+  firebase_storage: ^14.0.1
   image_picker: ^1.2.4
   qr_flutter: ^4.1.0
   http: ^1.6.0
   material_symbols_icons: ^4.2960.0
-  firebase_messaging: ^16.7.0
+  firebase_messaging: ^17.0.1
   permission_handler: ^13.0.2
   mobile_scanner: ^7.4.2
   flutter_image_compress: ^2.5.1
