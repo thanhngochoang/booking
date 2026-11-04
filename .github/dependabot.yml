@@ -1,10 +1,14 @@
 # Dependabot version and security updates.
 #
-# One PR per ecosystem for every minor and patch bump: the three npm packages
-# share one entry (`directories`), so a package used in several of them is
-# bumped everywhere in the same PR. Security fixes are grouped the same way
-# (`applies-to: security-updates`). Major bumps stay one PR each, because
-# each needs its own review (API changes, Node or JDK requirements).
+# One PR per ecosystem for every minor and patch bump; security fixes are
+# grouped the same way (`applies-to: security-updates`). Major bumps stay one
+# PR each, because each needs its own review (API changes, Node or JDK
+# requirements).
+#
+# The npm packages (domain, Functions, rules-test) moved to booking-be (#299);
+# its own dependabot.yml updates them. Dependabot's pub PRs run flutter.yml,
+# whose test job reads booking-be through the deploy key: BOOKING_BE_DEPLOY_KEY
+# is a Dependabot secret too, not only an Actions secret.
 #
 # Alerts and security updates themselves are repository settings
 # (Settings → Code security), enabled on 2026-10-18.
@@ -16,28 +20,6 @@ updates:
     groups:
       actions:
         patterns: ["*"]
-
-  - package-ecosystem: npm
-    directories:
-      - /packages/domain
-      - /app_flutter/firebase/functions
-      - /app_flutter/firebase/rules-test
-    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Ho_Chi_Minh }
-    open-pull-requests-limit: 10
-    groups:
-      npm-minor-and-patch:
-        applies-to: version-updates
-        update-types: [minor, patch]
-      npm-security:
-        applies-to: security-updates
-        patterns: ["*"]
-    ignore:
-      # typescript-eslint 8 supports TypeScript <6.1 only; lift once it supports TypeScript 7.
-      - dependency-name: typescript
-        versions: [">=6.1.0"]
-      # @types/node follows the Node runtime (Cloud Functions and CI run Node 24).
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pub
     directory: /app_flutter
