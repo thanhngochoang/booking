@@ -14,7 +14,7 @@ void requireBackendSnapshot() {
   final have = marker.existsSync() ? marker.readAsStringSync().trim() : null;
   if (ref == null || have != ref) {
     fail('booking-be snapshot ${have == null ? 'missing' : 'at $have'}, backend.lock wants $ref: '
-        'run ${script.path} from the repo root '
+        'run ${script.path} from app_flutter/ '
         '(offline: BACKEND_REPO=\$PWD/../booking-be scripts/sync-backend.sh)');
   }
 }

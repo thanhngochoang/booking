@@ -2,6 +2,11 @@
 // `pull_request.paths` filter changes. A test that reads a file outside
 // app_flutter/ would silently not run on a PR touching only that file, so
 // the filter must cover every such read.
+//
+// Except the booking-be snapshot in ../.backend/: it is gitignored, so a PR
+// never changes it. What a PR changes is backend.lock or
+// scripts/sync-backend.sh, which test/support/backend_snapshot.dart reads
+// literally, so this check covers them through the guard.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +33,7 @@ void main() {
     for (final file in tests) {
       for (final read in parseDiskReads(file.readAsStringSync())) {
         if (read.unknown || !read.path.startsWith('../')) continue;
+        if (read.path.startsWith('../.backend/')) continue;
         final target = normalizePath('app_flutter/${read.path}');
         final covered = filters.any(
           (g) => g.matches(target) || g.matches('$target/x'),

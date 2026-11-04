@@ -4,9 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:photobooking/data/earnings/vn_banks.dart';
 
+import '../../support/backend_snapshot.dart';
+
 void main() {
-  test('bank list equals VN_BANKS', () {
-    final ts = File('../packages/domain/src/vn_banks.ts').readAsStringSync();
+  setUpAll(requireBackendSnapshot);
+
+  test('bank list equals VN_BANKS in booking-be packages/domain/src/vn_banks.ts', () {
+    final ts = File(
+      '../.backend/packages/domain/src/vn_banks.ts',
+    ).readAsStringSync();
     final rows = RegExp(
       r"code: '([^']+)', bin: '([^']+)', shortName: '([^']+)', name: '([^']+)'",
     ).allMatches(ts).toList();

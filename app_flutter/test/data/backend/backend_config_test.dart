@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
 
+import '../../support/backend_snapshot.dart';
+
 EmulatorConfig? _resolve({
   bool debug = true,
   bool use = true,
@@ -18,6 +20,8 @@ EmulatorConfig? _resolve({
 );
 
 void main() {
+  setUpAll(requireBackendSnapshot);
+
   test('off unless a debug build asks for it', () {
     expect(_resolve(use: false), isNull);
     expect(_resolve(debug: false), isNull);
@@ -51,9 +55,9 @@ void main() {
     }
   });
 
-  test('ports match firebase/firebase.json', () {
+  test('ports match booking-be firebase/firebase.json', () {
     final config = jsonDecode(
-      File('firebase/firebase.json').readAsStringSync(),
+      File('../.backend/firebase/firebase.json').readAsStringSync(),
     ) as Map<String, dynamic>;
     final emulators = config['emulators'] as Map<String, dynamic>;
     int port(String name) =>
@@ -66,7 +70,9 @@ void main() {
   });
 
   test('the client calls the region the server deploys to', () {
-    final server = File('firebase/functions/src/config.ts').readAsStringSync();
+    final server = File(
+      '../.backend/firebase/functions/src/config.ts',
+    ).readAsStringSync();
     expect(server, contains("REGION = '$functionsRegion'"));
   });
 

@@ -7,7 +7,11 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
+import '../../support/backend_snapshot.dart';
+
 void main() {
+  setUpAll(requireBackendSnapshot);
+
   group('BookingRules', () {
     test('computeDeposit is the whole price', () {
       expect(BookingRules.upfrontPercent, 100);
@@ -320,9 +324,8 @@ void main() {
         expect(endTimeFor('15:30', 120), '17:30');
       });
 
-      test('depositFor matches the shared fixture packages/domain/test/fixtures/booking_policy.json', () {
-        // Read booking_policy.json
-        final file = File('../packages/domain/test/fixtures/booking_policy.json');
+      test('depositFor matches the shared fixture booking-be packages/domain/test/fixtures/booking_policy.json', () {
+        final file = File('../.backend/packages/domain/test/fixtures/booking_policy.json');
         final jsonMap = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
         final upfrontCases = jsonMap['upfrontCases'] as List<dynamic>;
 

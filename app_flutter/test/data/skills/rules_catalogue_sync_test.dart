@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
 
+import '../../support/backend_snapshot.dart';
+
 List<String> _idsOf(String rules, String function) {
   final m = RegExp(
     'function $function\\(\\)\\s*\\{\\s*return\\s*\\[([^\\]]*)\\]',
@@ -15,8 +17,10 @@ List<String> _idsOf(String rules, String function) {
 }
 
 void main() {
-  test('firestore.rules accepts exactly the built-in catalogue ids', () {
-    final rules = File('firebase/firestore.rules').readAsStringSync();
+  setUpAll(requireBackendSnapshot);
+
+  test('booking-be firebase/firestore.rules accepts exactly the built-in catalogue ids', () {
+    final rules = File('../.backend/firebase/firestore.rules').readAsStringSync();
     for (final (function, group) in [
       ('skillSpecialtyIds', SkillGroup.specialty),
       ('skillStyleIds', SkillGroup.style),

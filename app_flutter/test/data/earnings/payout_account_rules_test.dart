@@ -5,11 +5,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:photobooking/data/earnings/payout_account_rules.dart';
 
+import '../../support/backend_snapshot.dart';
+
 void main() {
-  final fixture = jsonDecode(
-    File('../packages/domain/test/fixtures/payout_account.json')
-        .readAsStringSync(),
-  ) as Map<String, dynamic>;
+  setUpAll(requireBackendSnapshot);
+
+  // booking-be packages/domain/test/fixtures/payout_account.json, read after
+  // the guard so a missing snapshot fails with its hint.
+  late final Map<String, dynamic> fixture;
+  setUpAll(() {
+    fixture = jsonDecode(
+      File('../.backend/packages/domain/test/fixtures/payout_account.json')
+          .readAsStringSync(),
+    ) as Map<String, dynamic>;
+  });
 
   test('holder and number cases match the shared fixture', () {
     for (final c in fixture['accountNumbers'] as List) {

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 
+import '../../support/backend_snapshot.dart';
+
 /// The text of the `match /<path> {` block (up to its closing brace).
 String _block(String rules, String path) {
   final start = rules.indexOf('match /$path {');
@@ -24,7 +26,14 @@ int _limit(String block) {
 }
 
 void main() {
-  final rules = File('firebase/storage.rules').readAsStringSync();
+  setUpAll(requireBackendSnapshot);
+
+  // booking-be firebase/storage.rules, read after the guard so a missing
+  // snapshot fails with its hint.
+  late final String rules;
+  setUpAll(() {
+    rules = File('../.backend/firebase/storage.rules').readAsStringSync();
+  });
 
   test('each upload path uses jpegUpTo with its purpose\'s maxBytes', () {
     const table = {
