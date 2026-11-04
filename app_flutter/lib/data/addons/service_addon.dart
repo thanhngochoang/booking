@@ -42,7 +42,8 @@ enum AddonUnit {
   }
 }
 
-/// Limits mirrored from `packages/domain/src/addon.ts` (the server decides).
+/// Limits mirrored from booking-be `packages/domain/src/addon.ts` (the server
+/// decides).
 const addonNameMin = 2;
 const addonNameMax = 60;
 const addonDescriptionMax = 200;

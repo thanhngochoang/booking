@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// Vietnamese bank catalogue for payout accounts. Mirrors `VN_BANKS` in
-/// `packages/domain/src/vn_banks.ts` (a sync test keeps them equal).
+/// booking-be `packages/domain/src/vn_banks.ts` (a sync test keeps them equal).
 @immutable
 class VnBank {
   const VnBank({

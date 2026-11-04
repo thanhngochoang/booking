@@ -1,8 +1,8 @@
 /// What [findContactLeak] found.
 enum ContactLeak { phone, email, link, zalo }
 
-// Port of packages/domain/src/contact_filter.ts (job posts plan Decision 15),
-// kept identical so the client blocks exactly what the server refuses: money
+// Port of booking-be packages/domain/src/contact_filter.ts (job posts plan
+// Decision 15), kept identical so the client blocks exactly what the server refuses: money
 // like "1.000.000.000₫" is removed first so prices never read as phone
 // numbers; digits may be split by spaces, dots, dashes or brackets.
 final _money = RegExp(
