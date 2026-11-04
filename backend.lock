@@ -1,0 +1,7 @@
+# booking-be (Firebase backend, packages/domain, API) at the commit the app is tested against.
+# scripts/sync-backend.sh checks the files the app tests read out into .backend/ (gitignored);
+# CI runs the same script. A unit that changes the backend bumps this in its app PR:
+#   scripts/sync-backend.sh --update      (pins the current tip of `branch`)
+repo=https://github.com/thanhngochoang/booking-be.git
+branch=develop
+ref=d1c9fa4e527df475f02176a1c9a60361a417cecf
