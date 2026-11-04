@@ -2,7 +2,7 @@
 # Makes the local backend reachable at 127.0.0.1 on every connected Android device: AVD, Genymotion,
 # USB or Wi-Fi phone. `adb reverse` forwards the device's own ports to this Mac, so the app uses the
 # same EMULATOR_HOST (127.0.0.1) everywhere and scripts/backend-local.sh needs no --lan.
-# Ports: the emulators in app_flutter/firebase/firebase.json (Auth, Firestore, Functions, Storage).
+# Ports: the emulators in booking-be's firebase/firebase.json (Auth, Firestore, Functions, Storage).
 # Usage: scripts/adb-reverse.sh [serial]   (default: every device in state "device")
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
