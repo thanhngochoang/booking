@@ -10,9 +10,9 @@
     "deploy:storage:prod": "node -e \"if (process.env.BLAZE_ENABLED !== 'true') { console.error('Storage needs the Blaze plan. Set BLAZE_ENABLED=true to deploy (docs/FIREBASE-SETUP.md section 10).'); process.exit(1) }\" && firebase deploy --config ../firebase.json --only storage --project prod"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^4.0.0",
-    "firebase": "^11.0.0",
-    "firebase-tools": "^15.0.0"
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.2.0",
+    "firebase-tools": "^15.34.2"
   },
   "overrides": {
     "uuid@<11.1.1": "^11.1.1",

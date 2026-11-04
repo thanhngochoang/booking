@@ -247,7 +247,7 @@ export class FirestorePayoutStore implements PayoutStore {
     for (const d of docMap.values()) {
       const p = paymentFromFirestore(d.id, d.data());
       if (p === null || !isPayoutPayable(p)) continue;
-      let amt = 0;
+      let amt: number;
       if (p.milestones) {
         amt = p.payableAmount ?? 0;
       } else {

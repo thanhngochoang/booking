@@ -78,7 +78,7 @@ export function spotCoverOf(
     throw new DomainError('invalid_argument', 'coverPath');
   }
   const prefix = prefixes.find((p) => url.startsWith(p));
-  let object = '';
+  let object: string;
   try {
     object = prefix === undefined ? '' : decodeURIComponent(url.slice(prefix.length).split('?')[0] ?? '');
   } catch {

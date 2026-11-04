@@ -11,6 +11,9 @@ PushOpen? _open(RemoteMessage m) {
   return PushOpen(target: target, notificationId: id is String ? id : null);
 }
 
+// firebase_messaging 17 deprecates the FCM-token API in favour of register()/onRegistered, which
+// yield a Firebase Installation ID (FID) instead of a token. The Cloud Functions send to FCM
+// tokens, so this adapter keeps the token API until the backend moves to FID direct-send.
 class FirebasePushMessaging implements PushMessaging {
   FirebasePushMessaging({FirebaseMessaging? messaging}) : _override = messaging;
 
@@ -20,6 +23,7 @@ class FirebasePushMessaging implements PushMessaging {
   @override
   Future<String?> token() async {
     try {
+      // ignore: deprecated_member_use
       return await _fm.getToken();
     } on Object {
       // No Play services, or offline: registration is retried on refresh.
@@ -28,9 +32,11 @@ class FirebasePushMessaging implements PushMessaging {
   }
 
   @override
+  // ignore: deprecated_member_use
   Future<void> deleteToken() => _fm.deleteToken();
 
   @override
+  // ignore: deprecated_member_use
   Stream<String> get tokenRefresh => _fm.onTokenRefresh;
 
   @override

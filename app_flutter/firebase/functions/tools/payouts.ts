@@ -232,7 +232,7 @@ async function main(): Promise<void> {
   const { livePayoutDeps, payoutGateway } = await import('../src/infra/live_payout.js');
   const { payoutFromFirestore, PAYOUTS_COLLECTION } = await import('../src/infra/payout_firestore.js');
   const { readFileSync } = await import('node:fs');
-  let devProject: string | null = null;
+  let devProject: string | null;
   try {
     devProject = devProjectFromFirebaserc(
       readFileSync(fileURLToPath(new URL('../../.firebaserc', import.meta.url)), 'utf8'),
