@@ -4,4 +4,4 @@
 #   scripts/sync-backend.sh --update      (pins the current tip of `branch`)
 repo=https://github.com/thanhngochoang/booking-be.git
 branch=develop
-ref=d1c9fa4e527df475f02176a1c9a60361a417cecf
+ref=674cba2a8156fada5f3195d638c061256a8527f7
