@@ -9,7 +9,7 @@ Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S27`, `S29`, `S30` của s
 | [discovery.md](discovery.md) | S02.01 Trang chủ · S02.02 Chi tiết ảnh · S03.01 Hồ sơ nhiếp ảnh gia · S02.06 Tìm thợ ảnh · S02.03 Khám phá · S02.04 Khám phá đã bật vị trí · S02.05 Chọn khu vực |
 | [booking.md](booking.md) | S04.01–S04.03, S04.06 Đặt lịch · S04.04 Chờ thanh toán · S05.02 Chi tiết booking · S05.03 Huỷ booking · S07.01 Hội thoại · S05.01 Danh sách đặt lịch · S05.04 Liên hệ · S04.05 Thêm số điện thoại |
 | [events.md](events.md) | S11.01 Danh sách sự kiện · S11.02 Chi tiết · S11.03 Đăng ký · S11.04 Vé · S12.01, S12.02 Tạo sự kiện · S12.03 Quản lý sự kiện |
-| [photographer.md](photographer.md) | S06.01 Công việc · S06.04 Lịch · S10.01 Đăng bài · S06.02 Empty Công việc · S06.03 Từ chối · S08.01 Thiết lập hồ sơ · S08.05 Khu vực & liên hệ · S08.02–S08.04 Kỹ năng · S08.06, S08.07 Dịch vụ đi kèm |
+| [photographer.md](photographer.md) | S06.01 Công việc · S06.04 Lịch · S10.01 Đăng bài · S06.02 Empty Công việc · S06.03 Từ chối · S08.01 Thiết lập hồ sơ · S08.05 Khu vực & liên hệ · S08.02–S08.04 Kỹ năng · S08.06, S08.07 Dịch vụ đi kèm · S08.08–S08.10 Gói, bảng giá theo ngày và ngày đặc biệt (spec 11-04) |
 | [portfolio-awards.md](portfolio-awards.md) | Thay đổi ở S02.06, S03.01, S08.01, S09.01, S10.01 · S24.01–S24.05 Portfolio album · S25.01–S25.02 Giải thưởng & hạng NAG (spec 10-05) |
 | [jobs.md](jobs.md) | S15.01–S15.04 Đăng việc · S16.01–S16.03 Nhận việc đăng (spec 10-05) |
 | [instant.md](instant.md) | Chụp ngay phía thợ: S14.01 Live Shutter · S14.02 Lời mời · S13.04 Đã match · S14.03 Việc chụp ngay · S13.08 Huỷ việc · thẻ ở S06.01 (#140); phía khách S13 (chỗ dành cho plan khách) |
