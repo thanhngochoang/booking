@@ -57,14 +57,15 @@ File đổi gồm cả thay đổi đã commit, staged, chưa staged và file m�
 
 ## Trong CI
 
-`.github/workflows/flutter.yml`, job `test` (8 shard; từ 2026-10-23 không còn job `affected` đứng trước):
+`.github/workflows/flutter.yml`, job `test` (8 shard; từ 2026-10-23 không còn job `affected` đứng trước, chỉ có job `changes` vài giây, xem dưới):
 
 - `push` (flutter-rewrite, develop, main): luôn chạy tất cả, không phân tích.
 - `pull_request`: mỗi shard tự chạy bước `Detect affected tests` ngay sau khi cài Flutter (checkout với `fetch-depth: 0`): `dart --packages=<rỗng> tool/affected_test.dart <base.sha> --github-output --verbose`. Công cụ chỉ import thư viện `dart:` nên không cần `pub get`; phân tích mất khoảng 1 giây và cho cùng kết quả ở mọi shard. Công cụ lỗi thì bước này ghi `scope=ALL`.
 - Output `scope` (`ALL`/`AFFECTED`/`NONE`) và `files` được chính shard đó dùng: `ALL` chạy `flutter test --total-shards=8 --shard-index=N`, `AFFECTED` lấy các file ở vị trí `N, N+8, N+16, …` của danh sách, `NONE` bỏ qua `pub get` và test (ghi `::notice`, shard kết thúc sau khoảng 30 giây).
 - Shard không sinh code: `tokens.g.dart`, `*.freezed.dart`, `*.g.dart`, `lib/l10n/*` đã commit; job `analyze` sinh lại và `git diff --exit-code` để bắt file quên commit. Kết quả test ghi bằng `--file-reporter json:` và job `report` đọc thẳng (`dorny/test-reporter`, `flutter-json`), không cần `junitreport`.
 - Biến repo `AFFECTED_ON_NONE=all` (Settings → Variables) đổi hành vi khi không có test bị ảnh hưởng thành chạy tất cả.
-- Bộ lọc `pull_request.paths` của workflow phải chứa mọi file ngoài `app_flutter/` mà test đọc, nếu không thì PR chỉ đổi file đó sẽ không chạy workflow. `test/tool/affected/workflow_paths_test.dart` kiểm tra điều này.
+- Workflow chạy cho mọi PR (không có bộ lọc `paths`), vì `analyze` và `report` là check bắt buộc của `develop`: workflow không chạy thì hai check đó không có và PR không merge được (#324). Job `changes` (một lần gọi API danh sách file của PR, không checkout) trả `app=false` khi không file nào khớp danh sách `APP_PATHS` trong job đó; khi ấy `analyze`, `test` và `report` bị bỏ qua bằng `if:`, và GitHub tính job bị bỏ qua là pass. Push luôn `app=true`; job `changes` lỗi thì output rỗng và các job app vẫn chạy.
+- `APP_PATHS` phải chứa mọi file ngoài `app_flutter/` mà test đọc, nếu không thì PR chỉ đổi file đó sẽ bỏ qua test. `test/tool/affected/workflow_paths_test.dart` kiểm tra điều này.
 
 ## Mở rộng luật
 
