@@ -6,9 +6,7 @@
 # requirements).
 #
 # The npm packages (domain, Functions, rules-test) moved to booking-be (#299);
-# its own dependabot.yml updates them. Dependabot's pub PRs run flutter.yml,
-# whose test job reads booking-be through the deploy key: BOOKING_BE_DEPLOY_KEY
-# is a Dependabot secret too, not only an Actions secret.
+# its own dependabot.yml updates them.
 #
 # Alerts and security updates themselves are repository settings
 # (Settings → Code security), enabled on 2026-10-18.

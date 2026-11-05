@@ -27,8 +27,6 @@
 /app/google-services.json
 .claude/*
 !.claude/skills/
-# booking-be files the app tests read, at the commit in backend.lock (scripts/sync-backend.sh)
-/.backend/
 # Extra checkouts made by scripts/worktree.sh
 /.worktrees
 __pycache__/

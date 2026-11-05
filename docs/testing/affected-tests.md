@@ -32,7 +32,7 @@ File đổi gồm cả thay đổi đã commit, staged, chưa staged và file m�
 
 1. **File đổi**: `git merge-base <base> HEAD`, rồi `git diff --name-only --no-renames` so với cây làm việc, cộng `git ls-files --others --exclude-standard`. `--no-renames` để một file đổi tên có cả đường dẫn cũ và mới. Không tìm được merge-base (clone nông) thì so thẳng hai cây: ra nhiều file hơn, vẫn an toàn.
 2. **Đồ thị phụ thuộc**: đọc mọi file `.dart` trong `lib/` và `test/`, lấy `import`, `export`, `part`, `part of`, kể cả các URI của import có điều kiện (`if (dart.library.io) '…'`). Bộ quét chỉ đọc phần đầu file: Dart bắt buộc mọi directive đứng trước khai báo đầu tiên, nên nó dừng ở đó và không cần hiểu phần còn lại của ngôn ngữ. Không dùng `package:analyzer`: nó nặng, cần `pub get`, mà ở đây không cần gì hơn. `package:photobooking/…` trỏ vào `lib/`; `part` và thư viện của nó nối hai chiều.
-3. **Đọc từ đĩa**: nhiều test đọc file bằng `File('…')`/`Directory('…')` (quy tắc mã nguồn quét `lib/`, test cấu hình đọc `android/`/`ios/`, `../docs/…/remaining-screens.md`, `../.backend/…`). Đường dẫn được tính từ `app_flutter/` rồi so với file đổi ở mọi nơi trong repo. `File('lib/features/$name')` thành tiền tố `lib/features/`. Nếu đối số không phải chuỗi literal thì test đó chạy với mọi thay đổi.
+3. **Đọc từ đĩa**: nhiều test đọc file bằng `File('…')`/`Directory('…')` (quy tắc mã nguồn quét `lib/`, test cấu hình đọc `android/`/`ios/`, `../docs/…/remaining-screens.md`, `test/data/contracts/openapi.yaml`). Đường dẫn được tính từ `app_flutter/` rồi so với file đổi ở mọi nơi trong repo. `File('lib/features/$name')` thành tiền tố `lib/features/`. Nếu đối số không phải chuỗi literal thì test đó chạy với mọi thay đổi.
 4. **Chọn test**: từ các file đổi, đi ngược đồ thị (ai import mình, ai import người đó, …) và giữ các file `*_test.dart`. Test tự thay đổi luôn được chọn; đổi cả mã nguồn lẫn test thì lấy hợp của hai bên. Không ghép tên kiểu `foo.dart → foo_test.dart`.
 
 `lib/core/core.dart` là barrel được phần lớn test import, nên đổi một file trong `core/` chọn khoảng 160 test, hoàn toàn nhờ đồ thị; không cần luật riêng cho thư mục `core/`.
@@ -51,7 +51,6 @@ File đổi gồm cả thay đổi đã commit, staged, chưa staged và file m�
 | `flutter_test_config.dart` | mọi test trong thư mục đó và thư mục con (flutter test tự nạp nó, không ai import) |
 | `android/`, `ios/`, `macos/`, `windows/`, `linux/`, `web/`, `*.md`, `.gitignore`, `.metadata` | chỉ những test đọc chúng từ đĩa (`flutter test` không build native) |
 | file ngoài `app_flutter/` (docs, workflow khác) | chỉ những test đọc chúng từ đĩa |
-| `backend.lock`, `scripts/sync-backend.sh` | các test import `test/support/backend_snapshot.dart` (chúng đọc file của booking-be từ `.backend/`) |
 | file khác trong `app_flutter/` mà không luật nào biết (`lib/x.json`, `Makefile`, `integration_test/…`) | **tất cả** |
 | không đọc được git / không có base / lỗi cú pháp directive / test không có import nào / lỗi bất kỳ trong công cụ | **tất cả** |
 | không test nào bị ảnh hưởng (chỉ đổi docs, …) | **không test** (`--on-none=skip`), báo rõ trong log và summary; `--on-none=all` để chạy tất cả |
@@ -65,7 +64,7 @@ File đổi gồm cả thay đổi đã commit, staged, chưa staged và file m�
 - Output `scope` (`ALL`/`AFFECTED`/`NONE`) và `files` được chính shard đó dùng: `ALL` chạy `flutter test --total-shards=8 --shard-index=N`, `AFFECTED` lấy các file ở vị trí `N, N+8, N+16, …` của danh sách, `NONE` bỏ qua `pub get` và test (ghi `::notice`, shard kết thúc sau khoảng 30 giây).
 - Shard không sinh code: `tokens.g.dart`, `*.freezed.dart`, `*.g.dart`, `lib/l10n/*` đã commit; job `analyze` sinh lại và `git diff --exit-code` để bắt file quên commit. Kết quả test ghi bằng `--file-reporter json:` và job `report` đọc thẳng (`dorny/test-reporter`, `flutter-json`), không cần `junitreport`.
 - Biến repo `AFFECTED_ON_NONE=all` (Settings → Variables) đổi hành vi khi không có test bị ảnh hưởng thành chạy tất cả.
-- Bộ lọc `pull_request.paths` của workflow phải chứa mọi file ngoài `app_flutter/` mà test đọc, nếu không thì PR chỉ đổi file đó sẽ không chạy workflow. `test/tool/affected/workflow_paths_test.dart` kiểm tra điều này. Snapshot `.backend/` được bỏ qua: nó gitignored nên PR không đổi được nó; PR đổi `backend.lock` hoặc `scripts/sync-backend.sh`, hai file guard đọc literal và bộ lọc phải chứa.
+- Bộ lọc `pull_request.paths` của workflow phải chứa mọi file ngoài `app_flutter/` mà test đọc, nếu không thì PR chỉ đổi file đó sẽ không chạy workflow. `test/tool/affected/workflow_paths_test.dart` kiểm tra điều này.
 
 ## Mở rộng luật
 

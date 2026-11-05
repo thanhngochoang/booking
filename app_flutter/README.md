@@ -41,7 +41,6 @@ Meta developer console → Settings → Advanced → Client token). Gradle injec
 ## Tests
 
 ```bash
-../scripts/sync-backend.sh          # booking-be files the tests read, at the commit in ../backend.lock (once per clone and after a bump)
 flutter analyze && flutter test
 dart run tool/affected_test.dart origin/develop --run   # only the tests this branch can affect
 ```

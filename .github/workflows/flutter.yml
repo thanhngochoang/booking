@@ -3,11 +3,10 @@ on:
   push:
     branches: [flutter-rewrite, develop, main]
   pull_request:
-    # Also every file a test reads from outside app_flutter/: the main spec (screen_codes_test)
-    # and the booking-be snapshot in .backend/, pinned by backend.lock and filled by
-    # scripts/sync-backend.sh (test/tool/affected checks it). The Firebase backend, the domain
-    # and the self-hosted API live in booking-be (#299); the API contract is a snapshot inside app_flutter/.
-    paths: ['app_flutter/**', 'design-system/**', 'docs/superpowers/specs/**', 'backend.lock', 'scripts/sync-backend.sh', '.github/workflows/flutter.yml']
+    # Also every file a test reads from outside app_flutter/ (test/tool/affected checks it): the
+    # tests read only app files and the main spec (screen_codes_test). The Firebase backend and
+    # the domain live in booking-be since #299 and are tested there.
+    paths: ['app_flutter/**', 'design-system/**', 'docs/superpowers/specs/**', '.github/workflows/flutter.yml']
 
 permissions:
   contents: read
@@ -102,18 +101,6 @@ jobs:
 
       - run: flutter pub get
         if: steps.detect.outputs.scope != 'NONE'
-      # Private repo: read through the read-only deploy key BOOKING_BE_DEPLOY_KEY (an Actions and a
-      # Dependabot secret, so Dependabot's pub PRs get it too). Fork PRs have no secrets and fail here.
-      - name: booking-be files the tests read (backend.lock)
-        if: steps.detect.outputs.scope != 'NONE'
-        working-directory: .
-        env:
-          DEPLOY_KEY: ${{ secrets.BOOKING_BE_DEPLOY_KEY }}
-        run: |
-          key="$RUNNER_TEMP/booking-be-key"
-          install -m 600 /dev/null "$key" && printf '%s\n' "$DEPLOY_KEY" > "$key"
-          GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
-            BACKEND_REPO=git@github.com:thanhngochoang/booking-be.git scripts/sync-backend.sh
       - name: Stub Firebase options (real file is gitignored)
         if: steps.detect.outputs.scope != 'NONE'
         run: |

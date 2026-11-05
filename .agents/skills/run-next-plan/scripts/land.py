@@ -13,8 +13,7 @@ Gates, in order (each failing gate exits with its own code and a reason):
   5. GitHub reports the PR mergeable and not blocked         (exit 2 if behind/dirty,
                                                               exit 5 if blocked by rules)
   6. app PR only: booking-be has no open PR of this unit
-     (head plan/<issue>-...): it must merge first, and the
-     app PR bumps backend.lock to it                         (exit 7: land that PR first)
+     (head plan/<issue>-...): it must merge first           (exit 7: land that PR first)
 Then: squash-merge (the repository allows nothing else), delete the branch (not a shared
 stack branch), set the project item Done and close the issue.
 
@@ -24,7 +23,7 @@ as above, 3 against booking-be's plan/* branches whose issue (number from the br
 is In Progress / In Review in the project. Then it merges (squash, or a merge commit with
 --merge-commit: booking-be allows both, and a PR that imports history, e.g. a subtree, must
 keep it) and deletes the branch. It does not set the item Done or close the issue: the app
-PR of the unit does, after it bumps backend.lock.
+PR of the unit does, when it lands.
 
 Usage:
   land.py <issue> --pr <n>               run every gate, then merge
@@ -237,13 +236,13 @@ def cmd_land(a):
         print("blocked by branch rules (e.g. a required review): ask the user; never use --admin")
         sys.exit(5)
 
-    # 6. the unit's booking-be PR (if any) has merged: the app PR is tested against it
+    # 6. the unit's booking-be PR (if any) has merged: it lands before the app PR
     if side.app:
         be = open_backend_pr(a.issue)
         if be:
             print(f"the booking-be PR of this unit is not merged yet: {be['url']} ({be['headRefName']}); "
                   f"land it first (land.py {a.issue} --pr {be['number']} --repo {BACKEND_REPO}), "
-                  "bump backend.lock (scripts/sync-backend.sh --update), push, then land again")
+                  "then land this PR again")
             sys.exit(7)
 
     if a.dry_run:
@@ -258,8 +257,8 @@ def cmd_land(a):
         print(f"merge refused: {r.stderr.strip()}")
         sys.exit(5)
     if not side.app:
-        print(f"merged {side.repo} PR {a.pr} ({pr['url']}); #{a.issue} stays open: bump backend.lock "
-              f"(scripts/sync-backend.sh --update) in the app PR and land that one")
+        print(f"merged {side.repo} PR {a.pr} ({pr['url']}); #{a.issue} stays open until the app PR "
+              f"of the unit lands")
         return
     board.cmd_set(argparse.Namespace(issue=a.issue, state="done", pr=a.pr, force=False))
     print(f"merged PR {a.pr} ({pr['url']}); #{a.issue} done")

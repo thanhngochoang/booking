@@ -99,7 +99,7 @@ When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for l
 
 ## 5. Finish: PR into develop
 
-1. Verify on the branch with real output before claiming anything passes (superpowers:verification-before-completion): from `app_flutter/`, `../scripts/sync-backend.sh` once (the tests read booking-be files from `.backend/`), then `flutter analyze && flutter test` (or `dart run tool/affected_test.dart origin/develop --run` for the affected tests first). The domain and the Functions live in the booking-be checkout (on the unit's branch there): `(cd ../../booking-be/packages/domain && npm test)` if the domain changed, `(cd ../../booking-be/firebase/functions && npm test)` if Functions changed (integration tests run outside the sandbox; say so if you could not run them). See "Units that change the backend" below.
+1. Verify on the branch with real output before claiming anything passes (superpowers:verification-before-completion): from `app_flutter/`, `flutter analyze && flutter test` (or `dart run tool/affected_test.dart origin/develop --run` for the affected tests first). The domain and the Functions live in the booking-be checkout (on the unit's branch there): `(cd ../../booking-be/packages/domain && npm test)` if the domain changed, `(cd ../../booking-be/firebase/functions && npm test)` if Functions changed (integration tests run outside the sandbox; say so if you could not run them). See "Units that change the backend" below.
 2. In the branch, update what the plan says to update: the "Trạng thái" cells of `remaining-screens.md` for the screens it built and a handover ledger `docs/superpowers/handover/ledger-<plan>.md` (rulings, deferred items). Progress lives in the project now: don't edit `RUN-ORDER.md` rows.
 3. Rebase onto the latest `origin/develop`, push, and open the PR:
    ```bash
@@ -159,7 +159,7 @@ What each exit code means and what to do:
   If the overlap means the plans themselves collide (both really change the same logic), stop and ask the user.
 - **6, the title doesn't follow the convention**: run `gh pr edit <n> --title "<type>(<scope>): <summary> [#<issue>]"`, then land again.
 - **5, blocked by branch rules or the merge was refused** (e.g. a review is now required): stop. Tell the user the PR link and leave the issue In Review.
-- **7, the booking-be PR of this unit is not merged yet** (the output has its URL): land it first with `land.py <issue> --pr <n> --repo thanhngochoang/booking-be`, then bump `backend.lock` in the app PR (see below), push, and land the app PR again.
+- **7, the booking-be PR of this unit is not merged yet** (the output has its URL): land it first with `land.py <issue> --pr <n> --repo thanhngochoang/booking-be` (see below), then land the app PR again.
 
 ## Units that change the backend
 
@@ -168,10 +168,9 @@ The Firebase backend (Cloud Functions, rules, indexes, seed), `packages/domain` 
 1. Works on a branch with **the same name** in booking-be (`plan/<issue>-<slug>`, from booking-be's `origin/develop`), with that repo's `AGENTS.md` and handoff log. Commits there end with the same TonyH trailer.
 2. Opens the **booking-be PR first**, titled like any unit PR (`<type>(<scope>): <summary> [#<issue>]`). Its body says `thanhngochoang/booking#<issue>`, because `[#<issue>]` does not link across repositories.
 3. Lands it: `BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/land.py <issue> --pr <n> --repo thanhngochoang/booking-be` (add `--merge-commit` when the PR imports history). The issue stays In Progress / In Review.
-4. In the app PR, pins the merged backend: `scripts/sync-backend.sh --update` from the repo root (rewrites `ref=` in `backend.lock` to booking-be's `develop` tip and refreshes `.backend/`), re-runs `flutter test`, commits `backend.lock`, pushes.
-5. Lands the app PR with `land.py <issue> --pr <n>` (gate 6 checks that step 3 happened). That sets the issue Done.
+4. Lands the app PR with `land.py <issue> --pr <n>` (gate 6 checks that step 3 happened). That sets the issue Done.
 
-Local emulators run from the booking-be checkout too: `scripts/backend-local.sh` here is a wrapper (`BOOKING_BE_DIR`, default `../booking-be`) and warns when that checkout does not contain the commit in `backend.lock`.
+Local emulators run from the booking-be checkout too: `scripts/backend-local.sh` here is a wrapper (`BOOKING_BE_DIR`, default `../booking-be`).
 
 ## Continuous mode: keep going until the scope is done
 

@@ -13,8 +13,7 @@ git checkout flutter-rewrite
 scripts/setup.sh                                # 2. Android SDK, Flutter, font; 3. tự ghi biến môi trường vào ~/.zshrc (scripts/machine-env.sh)
 scripts/install-emulator.sh                     # 4. emulator + AVD photobooking_api35 (~2,2 GB, không bắt buộc)
 cp .env.example .env                            # 5. điền key; đặt google-services.json + firebase_options.dart
-git clone https://github.com/thanhngochoang/booking-be.git ../booking-be   # backend (repo private, cần quyền đọc): emulator local, file test đọc
-scripts/sync-backend.sh                         # file booking-be mà test của app đọc, đúng commit trong backend.lock, vào .backend/
+git clone https://github.com/thanhngochoang/booking-be.git ../booking-be   # backend (repo private, cần quyền đọc): emulator local
 cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analyze && ../scripts/bin/flutter test   # 6. kiểm tra
 # 7. VS Code: Cmd+Q rồi mở lại thư mục gốc repo, chọn "Flutter: Android emulator" (hoặc "Flutter: (debug)" cho thiết bị đang chọn), F5
 ```
@@ -131,4 +130,4 @@ scripts/worktree.sh <branch> [tên]     # tạo .worktrees/<tên> (nhánh có s�
 code .worktrees/<tên>                  # mở riêng trong VS Code, F5 như checkout chính
 ```
 
-Toolchain (`.flutter`, `.android-sdk`, `.home`, `.pub-cache`, `.certs`) và cấu hình bí mật (`.env`, `google-services.json`, `firebase_options.dart`) không có trong git, nên script tạo symlink từ checkout chính thay vì tải lại. AVD, cache Gradle và khoá ký debug dùng chung. Xoá: `git worktree remove .worktrees/<tên>`. Trong worktree chạy `scripts/sync-backend.sh` một lần (`.backend/` không dùng chung), và đặt `BOOKING_BE_DIR` (ví dụ `export BOOKING_BE_DIR="$PWD/../booking-be"` từ thư mục gốc của checkout chính) trước khi chạy `scripts/backend-local.sh`, vì `../booking-be` tính từ `.worktrees/<tên>` không có.
+Toolchain (`.flutter`, `.android-sdk`, `.home`, `.pub-cache`, `.certs`) và cấu hình bí mật (`.env`, `google-services.json`, `firebase_options.dart`) không có trong git, nên script tạo symlink từ checkout chính thay vì tải lại. AVD, cache Gradle và khoá ký debug dùng chung. Xoá: `git worktree remove .worktrees/<tên>`. Trong worktree đặt `BOOKING_BE_DIR` (ví dụ `export BOOKING_BE_DIR="$PWD/../booking-be"` từ thư mục gốc của checkout chính) trước khi chạy `scripts/backend-local.sh`, vì `../booking-be` tính từ `.worktrees/<tên>` không có.

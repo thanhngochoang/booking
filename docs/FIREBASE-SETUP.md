@@ -224,7 +224,7 @@ Project id không ghi trong workflow. Mỗi GitHub environment có biến `FIREB
 
 IAM, service account và key đều miễn phí. GitHub Actions miễn phí cho repo public; booking-be là repo private nên dùng quota phút miễn phí mỗi tháng.
 
-Làm 10.1–10.3 cho **dev** sau khi PR #299 của repo app đã merge (để không có hai repo cùng deploy). Làm 10.4 một lần cho repo app. Làm lại 10.1–10.3 cho **production** khi đã có project, với project id và key của production. Mỗi project dùng một service account riêng: key của dev không deploy được lên production, và ngược lại.
+Làm 10.1–10.3 cho **dev** sau khi PR #299 của repo app đã merge (để không có hai repo cùng deploy). Làm lại 10.1–10.3 cho **production** khi đã có project, với project id và key của production. Mỗi project dùng một service account riêng: key của dev không deploy được lên production, và ngược lại.
 
 ### 10.1 Tạo service account (trong từng project)
 
@@ -280,21 +280,6 @@ Lưu ý:
 | `Permission ... denied` hoặc `does not have permission` | Thiếu role (10.1), hoặc key thuộc project khác với `FIREBASE_PROJECT_ID`. |
 | `Failed to get Firebase project ...` | Project id sai, hoặc service account chưa được gán role nào trong project đó. |
 | Storage: `Firebase Storage has not been set up` | Chưa làm bước 9 (bucket chưa tạo hoặc chưa lên Blaze). |
-
-### 10.4 Deploy key để CI của repo app đọc booking-be
-
-Test của app đọc một số file của booking-be (rules, `firebase.json`, fixture của `packages/domain`, ...) ở commit ghi trong `backend.lock`; `scripts/sync-backend.sh` lấy chúng về `.backend/` (gitignored). booking-be là repo private, nên job `test` của `.github/workflows/flutter.yml` đọc nó bằng một deploy key chỉ đọc. Làm một lần, ở máy bạn:
-
-```bash
-ssh-keygen -t ed25519 -N '' -C booking-ci-read -f booking_be_ci   # tạo booking_be_ci (private) và booking_be_ci.pub
-```
-
-1. https://github.com/thanhngochoang/booking-be/settings/keys → **Add deploy key**: dán nội dung `booking_be_ci.pub`, tên `booking-ci-read`, **không** tích **Allow write access**.
-2. https://github.com/thanhngochoang/booking/settings/secrets/actions → **New repository secret** `BOOKING_BE_DEPLOY_KEY`: toàn bộ nội dung file `booking_be_ci` (key private).
-3. Thêm đúng secret đó (cùng tên, cùng nội dung) ở https://github.com/thanhngochoang/booking/settings/secrets/dependabot. PR pub của Dependabot chạy `flutter.yml` mà không thấy secret của Actions; thiếu bước này thì các PR đó lỗi ở bước sync.
-4. Xoá hai file key trên máy. Key bị lộ thì xoá deploy key ở booking-be và làm lại từ đầu.
-
-Thiếu secret (hoặc PR từ fork, không có secret) thì job `test` lỗi ở bước "booking-be files the tests read (backend.lock)".
 
 ## 11. Cloud Functions (deploy qua CI)
 

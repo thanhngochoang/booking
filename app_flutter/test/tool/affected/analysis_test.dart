@@ -185,33 +185,6 @@ void main() {
       expect(selected(['README.md'], snap: snap), ['test/any_test.dart']);
     });
 
-    // The booking-be snapshot guard (test/support/backend_snapshot.dart)
-    // reads these two repo-root files; bumping the lock must select every
-    // test that imports the guard, through the support file.
-    for (final (read, changed) in [
-      ('../backend.lock', 'backend.lock'),
-      ('../scripts/sync-backend.sh', 'scripts/sync-backend.sh'),
-    ]) {
-      test('$changed read by a support file selects the tests importing it',
-          () {
-        final snap = snapshot({
-          'test/support/snap.dart': src(
-            ['dart:io'],
-            body: "void guard() { File('$read'); }",
-          ),
-          'test/snap_test.dart': testSrc(['support/snap.dart']),
-          'test/other_test.dart': testSrc([]),
-        });
-        final r = run([changed], snap: snap);
-        expect(r.scope, Scope.affected, reason: r.reasons.join('; '));
-        expect(r.tests, ['test/snap_test.dart']);
-        expect(r.why['test/snap_test.dart'], [
-          'test/support/snap.dart',
-          'reads $read ($changed changed)',
-        ]);
-      });
-    }
-
     test('a golden selects the tests of the nearest directory with tests', () {
       expect(selected(['app/test/widgets/goldens/x.png']), [
         'test/widgets/golden_test.dart',
