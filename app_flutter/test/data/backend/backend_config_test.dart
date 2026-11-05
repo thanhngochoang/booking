@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -49,25 +48,6 @@ void main() {
     ]) {
       expect(() => _resolve(host: bad), throwsArgumentError, reason: bad);
     }
-  });
-
-  test('ports match firebase/firebase.json', () {
-    final config = jsonDecode(
-      File('firebase/firebase.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
-    final emulators = config['emulators'] as Map<String, dynamic>;
-    int port(String name) =>
-        (emulators[name] as Map<String, dynamic>)['port'] as int;
-    final c = _resolve()!;
-    expect(c.authPort, port('auth'));
-    expect(c.firestorePort, port('firestore'));
-    expect(c.functionsPort, port('functions'));
-    expect(c.storagePort, port('storage'));
-  });
-
-  test('the client calls the region the server deploys to', () {
-    final server = File('firebase/functions/src/config.ts').readAsStringSync();
-    expect(server, contains("REGION = '$functionsRegion'"));
   });
 
   test('no adapter uses the default (us-central1) Functions instance', () {

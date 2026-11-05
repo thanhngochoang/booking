@@ -1,4 +1,4 @@
-/// Input rules for the payout account form (S06.06). Mirrors
+/// Input rules for the payout account form (S06.06). Mirrors booking-be
 /// `packages/domain/src/payout_account.ts`; `payout_account.json` keeps both
 /// equal.
 library;

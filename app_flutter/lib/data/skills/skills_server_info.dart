@@ -1,8 +1,8 @@
 import 'package:photobooking/data/skills/photographer_skills.dart';
 
 /// Step codes of `skills.completenessNext`, written by the Cloud Function
-/// `onPhotographerWrite` (`COMPLETENESS_STEPS` in packages/domain), highest
-/// weight first. The app shows them; it never computes them.
+/// `onPhotographerWrite` (`COMPLETENESS_STEPS` in booking-be packages/domain),
+/// highest weight first. The app shows them; it never computes them.
 enum CompletenessStepCode {
   specialties,
   levels,

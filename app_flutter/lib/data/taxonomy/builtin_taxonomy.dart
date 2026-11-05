@@ -32,7 +32,7 @@ const List<TaxonomyOption> kStyles = [
   TaxonomyOption('documentary', 'Tư liệu'),
 ];
 
-/// Extra skills (spec 3e.2 `extras`). Mirrored in firestore.rules
+/// Extra skills (spec 3e.2 `extras`). Mirrored in booking-be firestore.rules
 /// (`skillExtraIds`); a test keeps the two lists equal.
 const List<TaxonomyOption> kExtras = [
   TaxonomyOption('retouch', 'Hậu kỳ'),

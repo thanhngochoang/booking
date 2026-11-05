@@ -80,7 +80,7 @@ SDD is generic; inside a unit these points of this skill replace its defaults:
 
 ### Dart, Flutter and Firebase skills for implementers
 
-The Dart and Firebase skills are installed in `.agents/skills/` (`skills-lock.json`); those that fit this project are linked into `.claude/skills/`, so subagents can load them with the Skill tool. Name the relevant ones in each implementer and reviewer dispatch:
+The Dart and Firebase skills are installed in `.agents/skills/` (`skills-lock.json`); those that fit this project are linked into `.claude/skills/`, so subagents can load them with the Skill tool. Name the relevant ones in each implementer and reviewer dispatch. The Firebase code itself (Cloud Functions, rules, indexes) lives in booking-be `firebase/` since #299, but the Firebase skills are still read from this repo's `.agents/skills/`: a session working in the booking-be checkout loads them from here.
 
 | Task touches | Skill | Project rule that wins over the skill |
 |---|---|---|
@@ -89,8 +89,8 @@ The Dart and Firebase skills are installed in `.agents/skills/` (`skills-lock.js
 | sealed types, JSON parsing, switch chains | `dart-use-pattern-matching` | — |
 | public API doc comments | `dart-write-documentation` | match the surrounding comment density |
 | `pub get` version conflicts | `dart-resolve-package-conflicts` | change `pubspec.yaml` only as the plan says; `pubspec.lock` is regenerated |
-| Firestore queries, indexes, data adapters | `firebase-firestore` | Firestore code only in `lib/data/**` adapters and `firebase/functions`; never create databases or run `firebase` CLI commands against a real project |
-| `firestore.rules` / `storage.rules` | `firestore-rules-creation`, then `firebase-security-rules-auditor` in the task review | write the rules tests, don't run them (CI does) |
+| Firestore queries, indexes, data adapters | `firebase-firestore` | Firestore code only in `lib/data/**` adapters and booking-be `firebase/functions`; never create databases or run `firebase` CLI commands against a real project |
+| booking-be `firebase/firestore.rules` / `firebase/storage.rules` | `firestore-rules-creation`, then `firebase-security-rules-auditor` in the task review | write the rules tests (booking-be `firebase/rules-test`), don't run them (booking-be CI does) |
 | iOS project files (plan 15 only) | `xcode-project-setup` | iOS work stays in plan 15 |
 
 Never deploy, log in to the Firebase CLI or create projects from a plan; CI deploys on merge. Not linked on purpose: `dart-generate-test-mocks` and `dart-migrate-to-checks-package` (they would rewrite the test style), `firebase-basics` and `firebase-auth-basics` (CLI login, project creation, `deploy --only auth`), `dart-fix-runtime-errors` (needs Dart MCP tools that aren't installed), and the FFI, CLI, Hosting, Data Connect, Crashlytics, Remote Config and AI Logic skills (not used by the app). Link one with `ln -s ../../.agents/skills/<name> .claude/skills/<name>` when a plan needs it.
@@ -99,7 +99,7 @@ When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for l
 
 ## 5. Finish: PR into develop
 
-1. Verify on the branch with real output before claiming anything passes (superpowers:verification-before-completion): from `app_flutter/`, `flutter analyze && flutter test` (or `dart run tool/affected_test.dart origin/develop --run` for the affected tests first); `(cd ../packages/domain && npm test)` if the domain changed; `(cd firebase/functions && npm test)` if Functions changed (integration tests run outside the sandbox; say so if you could not run them).
+1. Verify on the branch with real output before claiming anything passes (superpowers:verification-before-completion): from `app_flutter/`, `flutter analyze && flutter test` (or `dart run tool/affected_test.dart origin/develop --run` for the affected tests first). The domain and the Functions live in the booking-be checkout (on the unit's branch there): `(cd ../../booking-be/packages/domain && npm test)` if the domain changed, `(cd ../../booking-be/firebase/functions && npm test)` if Functions changed (integration tests run outside the sandbox; say so if you could not run them). See "Units that change the backend" below.
 2. In the branch, update what the plan says to update: the "Trạng thái" cells of `remaining-screens.md` for the screens it built and a handover ledger `docs/superpowers/handover/ledger-<plan>.md` (rulings, deferred items). Progress lives in the project now: don't edit `RUN-ORDER.md` rows.
 3. Rebase onto the latest `origin/develop`, push, and open the PR:
    ```bash
@@ -136,9 +136,12 @@ The gates, in order:
 2. the branch contains the latest `origin/develop`;
 3. no file it changes is also changed on another machine's active branch (issues In Progress / In Review). `RUN-ORDER.md`, `app_vi.arb`, generated l10n and `pubspec.lock` are exempt, because they are append-only or regenerated;
 4. every CI check on the PR passed (it waits while they run);
-5. GitHub says it is mergeable and not blocked.
+5. GitHub says it is mergeable and not blocked;
+6. booking-be has no open PR of this unit (head `plan/<issue>-…`): the backend part lands first.
 
 Then it squash-merges (the repository allows only squash merges), deletes the branch (not a stack branch), sets the issue Done and closes it.
+
+With `--repo thanhngochoang/booking-be` it lands the unit's booking-be PR instead: gates 1, 2, 4 and 5 against booking-be and its `develop`, gate 3 against booking-be's `plan/*` branches whose issue (the number in the branch name) is In Progress / In Review. Then it merges and deletes the branch, but leaves the issue open and its Status unchanged: the app PR finishes the unit. booking-be allows squash and merge commits; it squashes by default, and `--merge-commit` merges with a merge commit, which a PR that imports history (a `git subtree add`, as in #299) needs, since squash would flatten it.
 
 What each exit code means and what to do:
 - **2, behind or conflicting with develop**: `git fetch`, `git rebase origin/develop`, then resolve.
@@ -156,6 +159,18 @@ What each exit code means and what to do:
   If the overlap means the plans themselves collide (both really change the same logic), stop and ask the user.
 - **6, the title doesn't follow the convention**: run `gh pr edit <n> --title "<type>(<scope>): <summary> [#<issue>]"`, then land again.
 - **5, blocked by branch rules or the merge was refused** (e.g. a review is now required): stop. Tell the user the PR link and leave the issue In Review.
+- **7, the booking-be PR of this unit is not merged yet** (the output has its URL): land it first with `land.py <issue> --pr <n> --repo thanhngochoang/booking-be` (see below), then land the app PR again.
+
+## Units that change the backend
+
+The Firebase backend (Cloud Functions, rules, indexes, seed), `packages/domain` and the self-hosted API live in **booking-be** (private, `../booking-be` next to this checkout); the issues stay in this repo and in Project 4. A unit that changes the backend (D5 of #299):
+
+1. Works on a branch with **the same name** in booking-be (`plan/<issue>-<slug>`, from booking-be's `origin/develop`), with that repo's `AGENTS.md` and handoff log. Commits there end with the same TonyH trailer.
+2. Opens the **booking-be PR first**, titled like any unit PR (`<type>(<scope>): <summary> [#<issue>]`). Its body says `thanhngochoang/booking#<issue>`, because `[#<issue>]` does not link across repositories.
+3. Lands it: `BOARD_GH=1 python3 .agents/skills/run-next-plan/scripts/land.py <issue> --pr <n> --repo thanhngochoang/booking-be` (add `--merge-commit` when the PR imports history). The issue stays In Progress / In Review.
+4. Lands the app PR with `land.py <issue> --pr <n>` (gate 6 checks that step 3 happened). That sets the issue Done.
+
+Local emulators run from the booking-be checkout too: `scripts/backend-local.sh` here is a wrapper (`BOOKING_BE_DIR`, default `../booking-be`).
 
 ## Continuous mode: keep going until the scope is done
 

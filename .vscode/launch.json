@@ -30,7 +30,8 @@
       "customToolReplacesArgs": 0
     },
     {
-      // Như trên nhưng trỏ vào backend local (chạy ../scripts/backend-local.sh trước).
+      // Như trên nhưng trỏ vào backend local: chạy scripts/backend-local.sh trước, script này bật
+      // emulator của checkout booking-be (BOOKING_BE_DIR, mặc định ../booking-be).
       "name": "Flutter: Android emulator + backend local",
       "type": "dart",
       "request": "launch",
@@ -43,8 +44,9 @@
       "customToolReplacesArgs": 0
     },
     {
-      // Thiết bị đang chọn (điện thoại, AVD, Genymotion) + backend local (chạy ../scripts/backend-local.sh
-      // trước, không cần --lan). preLaunchTask bật adb reverse cho mọi thiết bị, nên 127.0.0.1 đúng ở mọi nơi.
+      // Thiết bị đang chọn (điện thoại, AVD, Genymotion) + backend local: chạy scripts/backend-local.sh
+      // trước (bật emulator của checkout booking-be, BOOKING_BE_DIR, mặc định ../booking-be; không cần
+      // --lan). preLaunchTask bật adb reverse cho mọi thiết bị, nên 127.0.0.1 đúng ở mọi nơi.
       "name": "Flutter: (debug) + backend local",
       "type": "dart",
       "request": "launch",

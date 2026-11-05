@@ -2,7 +2,7 @@
 /// longest side, JPEG quality, size ceiling and cache header of the upload.
 ///
 /// [maxBytes] is also the limit the Storage rules enforce for the paths of that
-/// purpose (`jpegUpTo(...)` in `firebase/storage.rules`).
+/// purpose (`jpegUpTo(...)` in booking-be `firebase/storage.rules`).
 enum ImagePurpose {
   avatar(
     'avatar',

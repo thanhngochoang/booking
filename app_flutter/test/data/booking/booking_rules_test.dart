@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -318,24 +317,6 @@ void main() {
 
       test('endTimeFor 15:30 + 120 → 17:30', () {
         expect(endTimeFor('15:30', 120), '17:30');
-      });
-
-      test('depositFor matches the shared fixture packages/domain/test/fixtures/booking_policy.json', () {
-        // Read booking_policy.json
-        final file = File('../packages/domain/test/fixtures/booking_policy.json');
-        final jsonMap = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-        final upfrontCases = jsonMap['upfrontCases'] as List<dynamic>;
-
-        for (final item in upfrontCases) {
-          final c = item as Map<String, dynamic>;
-          final price = c['price'] as int;
-          final expectedDeposit = c['deposit'] as int;
-          final expectedRemaining = c['remaining'] as int;
-
-          final res = depositFor(price);
-          expect(res.deposit, expectedDeposit, reason: 'Failed deposit for price $price');
-          expect(res.remaining, expectedRemaining, reason: 'Failed remaining for price $price');
-        }
       });
 
       test('bookingErrorOf maps every server code and network errors', () {

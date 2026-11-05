@@ -10,7 +10,8 @@
       "problemMatcher": []
     },
     {
-      // Chuyển cổng backend local (9099, 8080, 5001, 9199) từ mọi thiết bị Android về máy Mac.
+      // Chuyển cổng backend local (9099, 8080, 5001, 9199, theo firebase/firebase.json của booking-be)
+      // từ mọi thiết bị Android về máy Mac.
       "label": "adb-reverse-backend",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/adb-reverse.sh",
