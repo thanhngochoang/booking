@@ -76,6 +76,8 @@ PhotographerSummary photographerSummaryFrom({
     completedCount: _int(stats['completedCount']),
     responseMinutes: _intOrNull(stats['responseMinutes']),
     startingPriceVnd: _intOrNull(photographer['startingPrice']),
+    weekendFromVnd: _intOrNull(photographer['weekendFrom']),
+    hasSpecialPrices: photographer['hasSpecialPrices'] == true,
     // A studio without assignable members has no free day at all.
     nextFreeDate: noCapacity ? null : _str(stats['nextFreeDate']),
     createdAt: created is Timestamp ? created.toDate().toUtc() : null,
