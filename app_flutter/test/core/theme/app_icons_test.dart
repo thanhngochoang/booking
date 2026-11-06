@@ -102,6 +102,9 @@ const _entries = <String, IconData>{
   'inventory': AppIcons.inventory,
   'radioOn': AppIcons.radioOn,
   'radioOff': AppIcons.radioOff,
+  'tune': AppIcons.tune,
+  'moveUp': AppIcons.moveUp,
+  'moveDown': AppIcons.moveDown,
 };
 
 void main() {

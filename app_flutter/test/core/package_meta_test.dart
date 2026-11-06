@@ -13,6 +13,16 @@ void main() {
       packageMeta(l, durationMinutes: 120, editedCount: 40, deliveryDays: 3),
       '2 giờ · 40 ảnh · giao 3 ngày',
     );
+    expect(
+      packageMeta(
+        l,
+        durationMinutes: 120,
+        editedCount: 40,
+        deliveryDays: 3,
+        editedWords: true,
+      ),
+      '2 giờ · 40 ảnh chỉnh · giao 3 ngày',
+    );
     expect(packageMeta(l, durationMinutes: 240), '4 giờ');
     expect(
       packageMeta(l, durationMinutes: 60, deliveryDays: 0),

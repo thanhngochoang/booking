@@ -6,14 +6,18 @@ String durationLabel(int minutes, AppLocalizations l) => minutes % 60 == 0
     : l.durationHours((minutes / 60).toStringAsFixed(1).replaceAll('.', ','));
 
 /// The line under a package name: `2 giờ · 40 ảnh · giao 3 ngày`, with only
-/// the parts that are known.
+/// the parts that are known. [editedWords] says `40 ảnh chỉnh` (S08.08).
 String packageMeta(
   AppLocalizations l, {
   required int durationMinutes,
   int? editedCount,
   int? deliveryDays,
+  bool editedWords = false,
 }) => [
   durationLabel(durationMinutes, l),
-  if (editedCount != null && editedCount > 0) l.packagePhotos(editedCount),
+  if (editedCount != null && editedCount > 0)
+    editedWords
+        ? l.s0808_photosEdited(editedCount)
+        : l.packagePhotos(editedCount),
   if (deliveryDays != null) l.packageDelivery(deliveryDays),
 ].join(' · ');
