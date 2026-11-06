@@ -11,6 +11,7 @@ export 'package:photobooking/core/contact_filter.dart';
 export 'package:photobooking/core/format.dart';
 export 'package:photobooking/core/geo.dart';
 export 'package:photobooking/core/hashtags.dart';
+export 'package:photobooking/core/lunar.dart';
 export 'package:photobooking/core/l10n_ext.dart';
 export 'package:photobooking/core/month_groups.dart';
 export 'package:photobooking/core/package_meta.dart';
