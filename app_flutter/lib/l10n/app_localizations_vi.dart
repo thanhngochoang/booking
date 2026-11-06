@@ -1209,11 +1209,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get skillsRemoveConfirm => 'Bỏ thể loại';
 
   @override
-  String calendarMonthTitle(String month, String year) {
-    return 'Tháng $month, $year';
-  }
-
-  @override
   String calendarMonthShort(String month) {
     return 'Tháng $month';
   }
@@ -1271,11 +1266,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarDayFull => 'Hết chỗ';
-
-  @override
-  String calendarDaySemantics(String day, String month, String state) {
-    return '$day tháng $month, $state';
-  }
 
   @override
   String get calendarHasEvent => 'có sự kiện';

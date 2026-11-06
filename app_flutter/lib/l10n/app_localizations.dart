@@ -2242,12 +2242,6 @@ abstract class AppLocalizations {
   /// **'Bỏ thể loại'**
   String get skillsRemoveConfirm;
 
-  /// No description provided for @calendarMonthTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tháng {month}, {year}'**
-  String calendarMonthTitle(String month, String year);
-
   /// No description provided for @calendarMonthShort.
   ///
   /// In vi, this message translates to:
@@ -2313,12 +2307,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Hết chỗ'**
   String get calendarDayFull;
-
-  /// No description provided for @calendarDaySemantics.
-  ///
-  /// In vi, this message translates to:
-  /// **'{day} tháng {month}, {state}'**
-  String calendarDaySemantics(String day, String month, String state);
 
   /// No description provided for @calendarHasEvent.
   ///

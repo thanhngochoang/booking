@@ -646,17 +646,6 @@
   "skillsRemoveBody": "Ảnh minh chứng đã gắn cho thể loại này cũng sẽ bị gỡ.",
   "skillsRemoveKeep": "Giữ lại",
   "skillsRemoveConfirm": "Bỏ thể loại",
-  "calendarMonthTitle": "Tháng {month}, {year}",
-  "@calendarMonthTitle": {
-    "placeholders": {
-      "month": {
-        "type": "String"
-      },
-      "year": {
-        "type": "String"
-      }
-    }
-  },
   "calendarMonthShort": "Tháng {month}",
   "@calendarMonthShort": {
     "placeholders": {
@@ -702,20 +691,6 @@
   "dayStateBooked": "Đã đặt",
   "dayStateOff": "Nghỉ",
   "calendarDayFull": "Hết chỗ",
-  "calendarDaySemantics": "{day} tháng {month}, {state}",
-  "@calendarDaySemantics": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      },
-      "month": {
-        "type": "String"
-      },
-      "state": {
-        "type": "String"
-      }
-    }
-  },
   "calendarHasEvent": "có sự kiện",
   "calendarToday": "hôm nay",
   "myCalendarTitle": "Lịch của tôi",
