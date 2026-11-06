@@ -51,6 +51,7 @@ class AppCalendar extends StatefulWidget {
     this.range,
     this.onDayTap,
     this.onRangeChanged,
+    this.onRangeCompleted,
     this.disabledDay,
     this.dayBuilder,
     this.markers = const {},
@@ -80,10 +81,25 @@ class AppCalendar extends StatefulWidget {
   /// [selection] mode.
   final ValueChanged<DateTime>? onDayTap;
 
-  /// With `range` selection: a first tap gives a one-day range, a later tap
-  /// on or after it completes the range, a tap before it starts over; a long
-  /// press then a drag across cells reports the range as it grows.
+  /// With `range` selection, live feedback: the first tap gives a one-day
+  /// range (the day the range starts on), the second tap gives the whole
+  /// range, a tap before the start starts over, and a long press then a drag
+  /// reports the range on every cell the finger enters. The caller stores
+  /// the value and passes it back as [range]. A one-day range from here may
+  /// be only a start still waiting for its end: use [onRangeCompleted] to
+  /// know that a range is final.
   final ValueChanged<DateTimeRange>? onRangeChanged;
+
+  /// With `range` selection: the range is final. Fired on the second tap
+  /// (tapping the same day twice gives a one-day range) and when a
+  /// long-press drag is released. It follows the last [onRangeChanged] of
+  /// that gesture with the same value, so a caller that only needs finished
+  /// ranges can ignore [onRangeChanged].
+  ///
+  /// A range never contains a disabled day: when the second tap or the drag
+  /// lies beyond one, the range ends at the day before the first disabled
+  /// day after the start (toward the start when going backwards).
+  final ValueChanged<DateTimeRange>? onRangeCompleted;
 
   /// Days that answer no tap, drawn dimmed. Days outside [first]/[last] are
   /// disabled too.
@@ -148,17 +164,48 @@ class _AppCalendarState extends State<AppCalendar> {
     if (monthOf(old.month) != monthOf(widget.month)) {
       _lunar = _lunarOf(widget.month);
     }
+    // A rebuild with the same range keeps the pending start; a real change of
+    // selection mode or range (other than the one-day range the first tap
+    // itself produced) drops it.
     final p = _pending;
     if (p != null) {
       final r = widget.range;
+      final isStart =
+          r != null && calendarDay(r.start) == p && calendarDay(r.end) == p;
       if (widget.selection != AppCalendarSelection.range ||
-          r == null ||
-          calendarDay(r.start) != p ||
-          calendarDay(r.end) != p) {
+          (!_sameRange(old.range, r) && !isStart)) {
         _pending = null;
       }
     }
   }
+
+  static bool _sameRange(DateTimeRange? a, DateTimeRange? b) =>
+      a == null || b == null
+      ? a == b
+      : calendarDay(a.start) == calendarDay(b.start) &&
+            calendarDay(a.end) == calendarDay(b.end);
+
+  bool _disabled(DateTime d) =>
+      !_inBounds(d) || (widget.disabledDay?.call(d) ?? false);
+
+  /// [to] moved toward [from] until no disabled day lies between them.
+  /// [from] itself is a day the user could pick.
+  DateTime _clip(DateTime from, DateTime to) {
+    final step = to.isBefore(from) ? -1 : 1;
+    var at = from;
+    while (at != to) {
+      final next = DateTime.utc(at.year, at.month, at.day + step);
+      if (_disabled(next)) {
+        break;
+      }
+      at = next;
+    }
+    return at;
+  }
+
+  static DateTimeRange _ordered(DateTime a, DateTime b) => b.isBefore(a)
+      ? DateTimeRange(start: b, end: a)
+      : DateTimeRange(start: a, end: b);
 
   bool _inBounds(DateTime d) =>
       (widget.first == null || !d.isBefore(calendarDay(widget.first!))) &&
@@ -179,7 +226,7 @@ class _AppCalendarState extends State<AppCalendar> {
 
   bool get _rangeMode =>
       widget.selection == AppCalendarSelection.range &&
-      widget.onRangeChanged != null;
+      (widget.onRangeChanged != null || widget.onRangeCompleted != null);
 
   void _tap(DateTime d) {
     widget.onDayTap?.call(d);
@@ -189,10 +236,12 @@ class _AppCalendarState extends State<AppCalendar> {
     final start = _pending;
     if (start == null || d.isBefore(start)) {
       _pending = d;
-      widget.onRangeChanged!(DateTimeRange(start: d, end: d));
+      widget.onRangeChanged?.call(DateTimeRange(start: d, end: d));
     } else {
       _pending = null;
-      widget.onRangeChanged!(DateTimeRange(start: start, end: d));
+      final r = DateTimeRange(start: start, end: _clip(start, d));
+      widget.onRangeChanged?.call(r);
+      widget.onRangeCompleted?.call(r);
     }
   }
 
@@ -214,9 +263,7 @@ class _AppCalendarState extends State<AppCalendar> {
 
   void _dragTo(DateTime d) {
     final a = _dragAnchor!;
-    final r = d.isBefore(a)
-        ? DateTimeRange(start: d, end: a)
-        : DateTimeRange(start: a, end: d);
+    final r = _ordered(a, _clip(a, d));
     if (_drag == r) {
       return;
     }
@@ -245,9 +292,13 @@ class _AppCalendarState extends State<AppCalendar> {
     }
   }
 
-  void _dragEnd() {
+  void _dragEnd({required bool completed}) {
     if (_dragAnchor == null) {
       return;
+    }
+    final r = _drag;
+    if (completed && r != null) {
+      widget.onRangeCompleted?.call(r);
     }
     setState(() {
       _dragAnchor = null;
@@ -283,10 +334,7 @@ class _AppCalendarState extends State<AppCalendar> {
     final now = widget.today == null ? null : calendarDay(widget.today!);
     final change = widget.onMonthChanged;
     final markers = {for (final d in widget.markers) calendarDay(d)};
-    final tappable =
-        widget.onDayTap != null ||
-        widget.selection == AppCalendarSelection.range &&
-            widget.onRangeChanged != null;
+    final tappable = widget.onDayTap != null || _rangeMode;
 
     final weekdays = Row(
       children: [
@@ -340,8 +388,8 @@ class _AppCalendarState extends State<AppCalendar> {
       behavior: HitTestBehavior.translucent,
       onLongPressStart: _rangeMode ? _dragStart : null,
       onLongPressMoveUpdate: _rangeMode ? _dragMove : null,
-      onLongPressEnd: _rangeMode ? (_) => _dragEnd() : null,
-      onLongPressCancel: _rangeMode ? _dragEnd : null,
+      onLongPressEnd: _rangeMode ? (_) => _dragEnd(completed: true) : null,
+      onLongPressCancel: _rangeMode ? () => _dragEnd(completed: false) : null,
       onHorizontalDragEnd: change == null
           ? null
           : (e) {
@@ -602,7 +650,7 @@ class _DayCell extends StatelessWidget {
     return MergeSemantics(
       child: Semantics(
         button: onTap != null,
-        enabled: onTap != null,
+        enabled: enabled,
         selected: selected,
         label: _spoken(l),
         child: InkWell(onTap: onTap, borderRadius: radius, child: cell),
@@ -635,7 +683,7 @@ Future<DateTime?> showAppDatePicker(
 );
 
 /// Like [showAppDatePicker] for a range: tap two days, or press and hold and
-/// drag. "Chọn" is off until a range exists (one tap gives a one-day range).
+/// drag. "Chọn" is off until a range is complete (a first tap alone is not).
 Future<DateTimeRange?> showAppDateRangePicker(
   BuildContext context, {
   DateTimeRange? initial,
@@ -686,6 +734,9 @@ class _PickerSheetState extends State<_PickerSheet> {
       : calendarDay(widget.initial!);
   late DateTimeRange? _range = widget.range;
 
+  /// The range is final (not just a first tap waiting for its end).
+  late bool _rangeDone = widget.range != null;
+
   DateTime _openMonth() {
     final at = widget.initial ?? widget.today ?? widget.first;
     final day = calendarDay(at);
@@ -698,7 +749,9 @@ class _PickerSheetState extends State<_PickerSheet> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final canChoose = widget.rangeMode ? _range != null : _selected != null;
+    final canChoose = widget.rangeMode
+        ? _range != null && _rangeDone
+        : _selected != null;
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -736,7 +789,16 @@ class _PickerSheetState extends State<_PickerSheet> {
                   ? null
                   : (d) => setState(() => _selected = d),
               onRangeChanged: widget.rangeMode
-                  ? (r) => setState(() => _range = r)
+                  ? (r) => setState(() {
+                      _range = r;
+                      _rangeDone = false;
+                    })
+                  : null,
+              onRangeCompleted: widget.rangeMode
+                  ? (r) => setState(() {
+                      _range = r;
+                      _rangeDone = true;
+                    })
                   : null,
               today: widget.today,
               first: widget.first,

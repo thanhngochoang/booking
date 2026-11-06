@@ -1,6 +1,9 @@
 // test/core/widgets/app_calendar_test.dart
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsData;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 
@@ -76,6 +79,44 @@ class _RangeHostState extends State<_RangeHost> {
     },
   );
 }
+
+/// A range calendar whose state lives in notifiers, like a screen's would, so
+/// a test can rebuild it with the same or another range, month or mode.
+class _Ctl {
+  final range = ValueNotifier<DateTimeRange?>(null);
+  final month = ValueNotifier<DateTime>(_nov);
+  final selection = ValueNotifier(AppCalendarSelection.range);
+  final tick = ValueNotifier(0);
+  final changed = <DateTimeRange>[];
+  final completed = <DateTimeRange>[];
+
+  Widget widget({bool Function(DateTime)? disabledDay}) => hostWidget(
+    ListenableBuilder(
+      listenable: Listenable.merge([range, month, selection, tick]),
+      builder: (_, _) => AppCalendar(
+        month: month.value,
+        onMonthChanged: (m) => month.value = m,
+        selection: selection.value,
+        range: range.value,
+        onRangeChanged: (r) {
+          changed.add(r);
+          range.value = r;
+        },
+        onRangeCompleted: completed.add,
+        disabledDay: disabledDay,
+      ),
+    ),
+  );
+}
+
+bool _filled(WidgetTester tester, DateTime d) => tester
+    .widgetList<DecoratedBox>(
+      find.descendant(of: _cell(d), matching: find.byType(DecoratedBox)),
+    )
+    .any((e) {
+      final dec = e.decoration;
+      return dec is BoxDecoration && dec.gradient != null;
+    });
 
 void main() {
   group('lunar day', () {
@@ -381,6 +422,172 @@ void main() {
     });
   });
 
+  group('range completion', () {
+    testWidgets('a first tap alone is not complete', (tester) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(14)));
+      expect(c.changed, [DateTimeRange(start: _d(14), end: _d(14))]);
+      expect(c.completed, isEmpty);
+    });
+
+    testWidgets('the second tap completes; the same day twice is a one-day '
+        'range', (tester) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(14)));
+      await tester.tap(_cell(_d(14)));
+      expect(c.completed, [DateTimeRange(start: _d(14), end: _d(14))]);
+      await tester.tap(_cell(_d(16)));
+      await tester.tap(_cell(_d(20)));
+      expect(c.completed.last, DateTimeRange(start: _d(16), end: _d(20)));
+      expect(c.completed, hasLength(2));
+    });
+
+    testWidgets('a drag completes on release, not before', (tester) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      final g = await tester.startGesture(tester.getCenter(_cell(_d(11))));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await g.moveTo(tester.getCenter(_cell(_d(13))));
+      await tester.pump();
+      expect(c.completed, isEmpty);
+      expect(c.changed.last, DateTimeRange(start: _d(11), end: _d(13)));
+      await g.up();
+      await tester.pump();
+      expect(c.completed, [DateTimeRange(start: _d(11), end: _d(13))]);
+    });
+
+    testWidgets('the pending start survives month navigation', (tester) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(28)));
+      await tester.tap(find.byTooltip('Tháng sau'));
+      await tester.pump();
+      expect(find.text('Tháng 12 / 2026'), findsOneWidget);
+      await tester.tap(_cell(_d(3, 12)));
+      expect(c.completed, [DateTimeRange(start: _d(28), end: _d(3, 12))]);
+    });
+
+    testWidgets('a rebuild with the same range keeps the pending start', (
+      tester,
+    ) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(14)));
+      c.tick.value++;
+      await tester.pump();
+      c.range.value = DateTimeRange(start: _d(14), end: _d(14));
+      await tester.pump();
+      await tester.tap(_cell(_d(20)));
+      expect(c.completed, [DateTimeRange(start: _d(14), end: _d(20))]);
+    });
+
+    testWidgets('the parent resetting the range drops the pending start', (
+      tester,
+    ) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(14)));
+      await tester.pump();
+      c.range.value = null;
+      await tester.pump();
+      await tester.tap(_cell(_d(20)));
+      expect(c.completed, isEmpty);
+      expect(c.changed.last, DateTimeRange(start: _d(20), end: _d(20)));
+    });
+
+    testWidgets('the parent passing another range drops the pending start', (
+      tester,
+    ) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(14)));
+      await tester.pump();
+      c.range.value = DateTimeRange(start: _d(3), end: _d(5));
+      await tester.pump();
+      await tester.tap(_cell(_d(20)));
+      expect(c.completed, isEmpty);
+    });
+
+    testWidgets('leaving range mode drops the pending start', (tester) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget());
+      await tester.tap(_cell(_d(14)));
+      await tester.pump();
+      c.selection.value = AppCalendarSelection.none;
+      await tester.pump();
+      c.selection.value = AppCalendarSelection.range;
+      await tester.pump();
+      await tester.tap(_cell(_d(20)));
+      expect(c.completed, isEmpty);
+    });
+
+    testWidgets('a new selected day moves the single selection', (
+      tester,
+    ) async {
+      Widget single(DateTime d) =>
+          hostWidget(_cal(selection: AppCalendarSelection.single, selected: d));
+      await tester.pumpWidget(single(_d(21)));
+      expect(_filled(tester, _d(21)), isTrue);
+      await tester.pumpWidget(single(_d(22)));
+      expect(_filled(tester, _d(21)), isFalse);
+      expect(_filled(tester, _d(22)), isTrue);
+    });
+
+    testWidgets('a new range value moves the filled days', (tester) async {
+      Widget ranged(int a, int b) => hostWidget(
+        _cal(
+          selection: AppCalendarSelection.range,
+          range: DateTimeRange(start: _d(a), end: _d(b)),
+        ),
+      );
+      await tester.pumpWidget(ranged(3, 5));
+      expect(
+        [
+          for (final n in [2, 3, 4, 5, 6]) _filled(tester, _d(n)),
+        ],
+        [false, true, true, true, false],
+      );
+      await tester.pumpWidget(ranged(10, 11));
+      expect(_filled(tester, _d(4)), isFalse);
+      expect(_filled(tester, _d(10)), isTrue);
+      expect(_filled(tester, _d(11)), isTrue);
+    });
+
+    testWidgets('tap-tap over a disabled day ends the range before it', (
+      tester,
+    ) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget(disabledDay: (d) => d.day == 13));
+      await tester.tap(_cell(_d(11)));
+      await tester.tap(_cell(_d(15)));
+      expect(c.completed, [DateTimeRange(start: _d(11), end: _d(12))]);
+      expect(c.changed.last, DateTimeRange(start: _d(11), end: _d(12)));
+    });
+
+    testWidgets('a fast drag over a disabled day is clipped, forwards and '
+        'backwards', (tester) async {
+      final c = _Ctl();
+      await tester.pumpWidget(c.widget(disabledDay: (d) => d.day == 13));
+      final g = await tester.startGesture(tester.getCenter(_cell(_d(11))));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await g.moveTo(tester.getCenter(_cell(_d(19))));
+      await tester.pump();
+      await g.up();
+      await tester.pump();
+      expect(c.completed.last, DateTimeRange(start: _d(11), end: _d(12)));
+
+      final g2 = await tester.startGesture(tester.getCenter(_cell(_d(17))));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await g2.moveTo(tester.getCenter(_cell(_d(10))));
+      await tester.pump();
+      await g2.up();
+      await tester.pump();
+      expect(c.completed.last, DateTimeRange(start: _d(14), end: _d(17)));
+    });
+  });
+
   group('semantics', () {
     testWidgets('a cell says weekday, date, lunar date and the builder text', (
       tester,
@@ -401,6 +608,34 @@ void main() {
       expect(mon, contains('9 nghìn'));
       final sat = tester.getSemantics(_cell(_d(21))).label;
       expect(sat, contains('Thứ Bảy 21 tháng 11, 13 tháng 10 âm lịch'));
+      h.dispose();
+    });
+
+    testWidgets('a display-only calendar is not announced as disabled', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await tester.pumpWidget(
+        hostWidget(_cal(disabledDay: (d) => d.day == 21)),
+      );
+      SemanticsData data(DateTime d) =>
+          tester.getSemantics(_cell(d)).getSemanticsData();
+      final free = data(_d(9));
+      expect(free.flagsCollection.isEnabled, Tristate.isTrue);
+      expect(free.flagsCollection.isButton, isFalse);
+      // A day that is itself disabled still reads as disabled.
+      expect(data(_d(21)).flagsCollection.isEnabled, Tristate.isFalse);
+      h.dispose();
+    });
+
+    testWidgets('a tappable day is a button and an enabled one', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await tester.pumpWidget(hostWidget(_cal(onDayTap: (_) {})));
+      final data = tester.getSemantics(_cell(_d(9))).getSemanticsData();
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.flagsCollection.isEnabled, Tristate.isTrue);
       h.dispose();
     });
 
@@ -550,6 +785,35 @@ void main() {
       await tester.pumpAndSettle();
       expect(result, 'unset');
       expect(find.text('Chọn'), findsOneWidget);
+    });
+
+    testWidgets('the range picker enables Chọn only after the second tap', (
+      tester,
+    ) async {
+      Object? result = 'unset';
+      await tester.pumpWidget(
+        opener(
+          (r) => result = r,
+          (c) => showAppDateRangePicker(
+            c,
+            first: _d(1, 10),
+            last: _d(31, 12),
+            today: _d(5),
+          ),
+        ),
+      );
+      await tester.tap(find.text('mở'));
+      await tester.pumpAndSettle();
+      await tester.tap(_cell(_d(14)));
+      await tester.pump();
+      await tester.tap(find.text('Chọn'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(result, 'unset');
+      await tester.tap(_cell(_d(14)));
+      await tester.pump();
+      await tester.tap(find.text('Chọn'));
+      await tester.pumpAndSettle();
+      expect(result, DateTimeRange(start: _d(14), end: _d(14)));
     });
 
     testWidgets('the picker fits 320 dp at text scale 1.3', (tester) async {
