@@ -219,68 +219,68 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 - **Phân tích**: `payout_account_save{change}` (chỉ cho biết có phải đổi tài khoản, không có dữ liệu tài khoản).
 - **Chấp nhận**: số tài khoản không có trong log, thông báo, phân tích, thông điệp lỗi và đầu ra test; chỉ chủ đọc, không ai ghi từ client; không khoản nào chuyển trong 72 giờ chờ; lô `pending` lúc đổi thành `needs_approval`; tra lần thứ 21 trong ngày bị từ chối; mã sai tính vào 5 lần dù lệnh báo lỗi; mã đã dùng hoặc mã của tài khoản khác không lưu được tài khoản thứ hai; thay tài khoản không ảnh hưởng khoản đã chuyển.
 
-## S08.08 · Gói dịch vụ của tôi
+## S08.08 · Gói dịch vụ
 
-> **Mới 2026-11-04** (#316, spec [`../2026-11-04-day-pricing-design.md`](../2026-11-04-day-pricing-design.md)). Mock: `#S08.08`.
+> **Mới 2026-11-04, làm lại 2026-11-06** (#316, spec [`../2026-11-06-day-pricing-redesign.md`](../2026-11-06-day-pricing-redesign.md)). Mock: `#S08.08`, `#S08.08-sort`.
 
-- **Thông tin**: `/me/packages` · thợ ảnh, studio · Chưa có.
-- **Mục đích**: xem và quản lý mọi gói cùng giá theo ngày của chúng.
+- **Thông tin**: `/me/packages` · thợ ảnh, studio · Có (PR #326), làm lại.
+- **Mục đích**: nhìn một lần biết mỗi gói lấy bao nhiêu vào ngày thường, cuối tuần và dịp sắp tới; bật/tắt nhanh.
 - **Điểm vào → điểm ra**:
-  - Vào: "Sửa gói" ở hồ sơ thợ (thay `/setup/2`), dòng "Gói và bảng giá" ở S06.01, liên kết ở S08.06.
-  - Ra: chạm thẻ → S08.09; "Ngày đặc biệt" → S08.10.
+  - Vào: "Sửa gói" ở hồ sơ thợ, "Gói và bảng giá" ở S06.01, liên kết ở S08.06.
+  - Ra: chạm thẻ → S08.09; dòng "Giá theo ngày" → S08.10; "Sắp xếp" → chế độ sắp xếp.
 - **Bố cục**:
-  - "{n} gói đang bật";
-  - `PackageTile` cho mỗi gói: tay kéo (`order`), tên, "thời lượng · số ảnh chỉnh · giao n ngày", dòng giá theo `priceSummary`, công tắc bật/tắt;
-  - dòng "Ngày đặc biệt · {n} ngày lễ chung, {m} khoảng ngày của bạn";
+  - thanh tiêu đề có chữ "Sắp xếp" (chỉ khi ≥ 2 gói);
+  - dòng "Giá theo ngày" nền nhấn nhạt, tóm tắt tên các chuỗi của mọi gói và tổng số chuỗi ("Cuối tuần, Mùa cưới, Tết · 6 chuỗi"; chưa có: "Cuối tuần và ngày lễ lấy bằng giá thường · Đặt giá");
+  - "{n} gói đang bật · giá dưới là giá ngày thường";
+  - `PackageTile`: tên, "thời lượng · số ảnh chỉnh · giao n ngày", **giá thường** đậm rồi " · cuối tuần {giá} · {chuỗi gần nhất sắp tới} {giá}" (tối đa hai mục: chuỗi hằng tuần nếu có, rồi chuỗi có ngày tới gần nhất; tính bằng domain), công tắc bật/tắt. Không có tay kéo;
   - nút chính "Thêm gói".
-- **Dữ liệu**: `myServicesProvider` (mọi gói của chủ, sắp theo `order` rồi `createdAt`), `specialDaysSummaryProvider`. Ghi thẳng `photographers/{uid}/services/{id}` (rules `validService`). Sắp xếp ghi `order` cho các gói bị dời chỗ trong một batch.
-- **Trạng thái**:
-  - Trống: "Thêm gói đầu tiên để khách đặt được bạn".
-  - Tắt gói cuối cùng đang bật: sheet hỏi lại "Khách sẽ không đặt được bạn cho tới khi bật lại một gói".
-  - Gói tắt thì thẻ mờ kèm chữ "Đang ẩn · khách không thấy".
-- **Chuỗi**: `s0808_title` "Gói dịch vụ", `s0808_activeCount` "{n} gói đang bật", `s0808_hidden` "Đang ẩn · khách không thấy", `s0808_specialDays` "Ngày đặc biệt", `s0808_specialDaysSub` "{n} ngày lễ chung · {m} khoảng ngày của bạn", `s0808_add` "Thêm gói", `s0808_empty` "Thêm gói đầu tiên để khách đặt được bạn", `s0808_lastOff` "Khách sẽ không đặt được bạn cho tới khi bật lại một gói".
-- **Chấp nhận**: dòng giá đúng ba dạng (một giá, hai mức, từng thứ) cộng phần " · Lễ" khi có giá đặc biệt; kéo đổi thứ tự thì S03.01 và S04.01 hiện theo thứ tự mới.
+- **Chế độ sắp xếp**: tiêu đề "Sắp xếp gói", "Xong"; mỗi thẻ có tay kéo và hai nút "Lên"/"Xuống" (mờ ở đầu/cuối), công tắc ẩn; thẻ vừa chuyển có viền nhấn. "Xong" ghi `order` một batch; lỗi → SnackBar, giữ thứ tự đang xếp.
+- **Dữ liệu**: `myServicesProvider`, `myPriceRulesProvider` (`photographers/{uid}/price_rules`, một truy vấn live cho mọi gói). Ghi thẳng `services/{id}` (rules `validService`).
+- **Trạng thái**: trống "Thêm gói đầu tiên để khách đặt được bạn"; tắt gói cuối cùng đang bật → sheet hỏi lại như cũ; gói tắt: thẻ mờ, chip "Đang ẩn".
+- **Chuỗi**: `s0808_title` "Gói dịch vụ", `s0808_sort` "Sắp xếp", `s0808_sortTitle` "Sắp xếp gói", `s0808_done` "Xong", `s0808_sortHint` "Kéo, hoặc dùng nút Lên / Xuống. Thứ tự này hiện ở hồ sơ và khi khách chọn gói.", `s0808_moveUp` "Chuyển lên", `s0808_moveDown` "Chuyển xuống", `s0808_hiddenChip` "Đang ẩn", `s0808_dayPricing` "Giá theo ngày", `s0808_dayPricingSummary` "{names} · {n} chuỗi", `s0808_dayPricingNone` "Cuối tuần và ngày lễ lấy bằng giá thường · Đặt giá", `s0808_activeHint` "{n} gói đang bật · giá dưới là giá ngày thường", `s0808_ruleLine` "{name} {price}"; giữ `s0808_add`, `s0808_empty`, `s0808_lastOff*`, `s0808_toggle`, `s0808_loadError`, `s0808_saveFailed`, `s0808_workRow`, `s0808_addonsLink`. Bỏ `s0808_activeCount`, `s0808_hidden`, `s0808_specialDays`, `s0808_specialDaysSub`, `s0808_priceTwoLevels`, `s0808_pricePerDay`, `s0808_priceWithSpecial`.
+- **Chấp nhận**: không kéo nhầm được ngoài chế độ sắp xếp; "Lên"/"Xuống" đổi thứ tự đúng như kéo; giá trên thẻ khớp `priceForDay` của domain cho ngày tương ứng.
 
 ## S08.09 · Thêm/sửa gói
 
-> **Mới 2026-11-04** (#316). Mock: `#S08.09`, `#S08.09-perday`.
+> **Mới 2026-11-04, làm lại 2026-11-06** (#316). Mock: `#S08.09`.
 
-- **Thông tin**: `/me/packages/new`, `/me/packages/:id` · thợ ảnh, studio · Chưa có. S08.01 bước 2 mở cùng màn, `?from=setup`.
-- **Mục đích**: nhập thông tin gói và bảng giá theo ngày.
+- **Thông tin**: `/me/packages/new`, `/me/packages/:id` · thợ ảnh, studio · Có (PR #326), làm lại. S08.01 bước 2 mở cùng màn, `?from=setup`.
+- **Mục đích**: nhập một giá thường là xong; giá theo ngày đặt ở S08.10.
 - **Bố cục** (từ trên xuống):
   1. Tên, thời lượng (chip 1/2/3/4/6/8 giờ), số ảnh chỉnh, giao sau.
-  2. "Bảng giá": `SegmentedTabs` gồm "Hai mức giá" và "Từng ngày".
-     - Hai mức: hai ô giá.
-     - Từng ngày: 7 hàng, T7 và CN có nhãn "cuối tuần"; giá khác giá thứ Hai tô màu nhấn.
-  3. Công tắc "Giá riêng ngày đặc biệt", ô giá, dòng "Áp cho … · Xem".
-  4. Dải xem trước 7 ngày tới, dòng "Khách đặt {ngày} trả {giá}".
-  5. Nút chính "Lưu gói"; khi sửa có thêm chữ "Ẩn gói".
-- **Dữ liệu**: lưu `price` (= giá thứ Hai), `dayPrices` (luôn đủ 7 khi có giá khác nhau; bỏ trường khi cả 7 bằng nhau), `specialPrice?`, `priceMode`. Xem trước tính bằng `priceForDay` của domain (bản Dart port từ `day_pricing.ts`, cùng bảng test) với `holidaysProvider(year)` và `mySpecialDaysProvider`.
-- **Tương tác**:
-  - Nhập giá ngày thường lần đầu thì ô cuối tuần điền sẵn bằng giá đó.
-  - Hai mức → Từng ngày: điền 7 ô.
-  - Từng ngày → Hai mức khi 7 giá không đúng hai mức: sheet "Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?" (nút chính "Dùng hai mức", chữ "Giữ từng ngày").
-  - Từ S08.01 thì lưu xong quay về bước 2.
-- **Trạng thái**: lỗi dưới ô "Tên 2–60 ký tự", "Giá phải lớn hơn 0", "Giá tối đa 1.000.000.000₫"; đang lưu thì nút ở trạng thái loading.
-- **Chuỗi**: `s0809_titleNew` "Thêm gói", `s0809_titleEdit` "Sửa gói", `s0809_prices` "Bảng giá", `s0809_modeTwo` "Hai mức giá", `s0809_modePerDay` "Từng ngày", `s0809_weekday` "Ngày thường · T2–T6", `s0809_weekend` "Cuối tuần · T7–CN", `s0809_weekendTag` "cuối tuần", `s0809_special` "Giá riêng ngày đặc biệt", `s0809_specialApplies` "Áp cho {n} ngày lễ chung, {m} khoảng ngày của bạn", `s0809_specialOff` "Đang tắt · ngày lễ tính như thứ đó", `s0809_preview` "Khách đặt {day} trả {amount} (chưa gồm dịch vụ đi kèm). Booking đã đặt giữ giá cũ.", `s0809_toTwoLevels` "Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?", `s0809_save` "Lưu gói", `s0809_hide` "Ẩn gói".
-- **Chấp nhận**: lưu ở chế độ hai mức rồi mở lại vẫn ở chế độ hai mức (`priceMode`); xem trước khớp giá server tính khi đặt (test cùng bảng ca với domain).
+  2. **Một ô "Giá ngày thường"** (bàn phím số).
+  3. Khi sửa và gói có chuỗi: thẻ chỉ đọc, mỗi chuỗi một dòng (biểu tượng lặp hoặc sự kiện, tên, quy tắc "Hằng tuần · T7, CN" / "Hằng năm · 14/11 – 22/11 · 1 ngoại lệ" / "Hằng năm · 23 Chạp – 5 Giêng (âm lịch)", giá); cuối thẻ "Giá theo ngày" → S08.10 với gói này đang chọn. Thêm mới hoặc chưa có chuỗi: một dòng "Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi lưu". Ẩn cả hai khi `?from=setup`.
+  4. Chữ phụ "Booking đã đặt giữ giá cũ."
+  5. Nút chính "Lưu gói"; khi sửa có chữ "Ẩn gói".
+- **Dữ liệu**: lưu `price` và các trường gói khác. `dayPrices`, `specialPrice`, `priceMode`, `occasionPrices` không còn (rules từ chối). Thẻ chuỗi đọc `myPriceRulesProvider` lọc theo gói.
+- **Tương tác**: thoát khi có thay đổi chưa lưu → sheet "Bỏ thay đổi?"; từ S08.01 thì lưu xong quay về bước 2.
+- **Trạng thái**: lỗi dưới ô "Tên 2–60 ký tự", "Giá phải lớn hơn 0", "Giá tối đa 1.000.000.000₫"; đang lưu thì nút loading.
+- **Chuỗi**: `s0809_price` "Giá ngày thường", `s0809_rulesLink` "Giá theo ngày", `s0809_noRules` "Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi lưu", `s0809_keepsOld` "Booking đã đặt giữ giá cũ.", `s0809_discardTitle` "Bỏ thay đổi?"; giữ `s0809_titleNew`, `s0809_titleEdit`, `s0809_edited`, `s0809_save`, `s0809_hide`, `s0809_nameLength`, `s0809_priceRequired`, `s0809_priceTooHigh`, `s0809_saveFailed`, `s0809_loadError`. Bỏ `s0809_prices`, `s0809_mode*`, `s0809_weekday`, `s0809_weekend`, `s0809_weekendTag`, `s0809_day*`, `s0809_special*`, `s0809_see`, `s0809_preview*`, `s0809_perDayNote`, `s0809_toTwoLevels*`, `s0809_setupNote`. Dòng quy tắc chuỗi dùng chung khoá `s0810_rule*`.
+- **Chấp nhận**: lưu chỉ ghi `price`; thẻ chuỗi khớp S08.10 của cùng gói; `?from=setup` không có thẻ chuỗi.
 
-## S08.10 · Ngày đặc biệt
+## S08.10 · Giá theo ngày
 
-> **Mới 2026-11-04** (#316). Mock: `#S08.10`, `#S08.10-edit`.
+> **Mới 2026-11-04, làm lại 2026-11-06** (#316). Mock: `#S08.10`, `#S08.10-new`, `#S08.10-repeat`, `#S08.10-day`, `#S08.10-list`.
 
-- **Thông tin**: `/me/special-days` · thợ ảnh, studio · Chưa có.
-- **Bố cục**:
-  - "Ngày lễ chung" với chip năm, danh sách chỉ đọc (`holidays/{year}`);
-  - "Ngày riêng của bạn": khoảng ngày có tên, "từ – tới · n ngày";
-  - ghi chú;
-  - nút chính "Thêm khoảng ngày" mở sheet (tên, lịch chọn từ – tới, "Lưu"; khi sửa có thêm chữ đỏ "Xoá khoảng ngày" → sheet xác nhận nút đỏ).
-- **Dữ liệu**: `holidaysProvider(year)` (một tài liệu), `mySpecialDaysProvider` (`photographers/{uid}/special_days`, `to ≥ hôm nay`). Ghi thẳng, rules kiểm tra.
-- **Trạng thái**:
-  - Lỗi: "Khoảng tối đa 60 ngày", "Chỉ chọn trong 365 ngày tới", "Bạn đã có 20 khoảng ngày".
-  - Trống: "Chưa có ngày riêng · Thêm mùa cưới, mùa hoa hay ngày bạn muốn giá cao hơn".
-  - Năm chưa có ngày lễ: "Chưa có lịch ngày lễ năm {year}".
-- **Chuỗi**: `s0810_title` "Ngày đặc biệt", `s0810_public` "Ngày lễ chung", `s0810_mine` "Ngày riêng của bạn", `s0810_range` "{from} – {to} · {n} ngày", `s0810_note` "Gói có giá ngày đặc biệt dùng giá đó cho các ngày này. Gói không có giá đặc biệt tính như ngày thường. Muốn nghỉ hẳn thì đánh dấu nghỉ trong Lịch.", `s0810_add` "Thêm khoảng ngày", `s0810_editTitle` "Sửa khoảng ngày", `s0810_delete` "Xoá khoảng ngày", `s0810_affects` "{n} ngày · {m} gói có giá ngày đặc biệt sẽ dùng giá đó".
+- **Thông tin**: `/me/day-pricing?service=:id`, `/me/day-pricing/rules` · thợ ảnh, studio · Có (PR #326), làm lại. Thay `/me/special-days`.
+- **Mục đích**: đặt giá khác giá thường cho từng gói như tạo sự kiện lặp lại trong Google Calendar: một khoảng ngày lẻ, hằng tuần, hoặc hằng năm theo ngày dương hay ngày âm; sửa riêng một ngày mà không phá chuỗi.
+- **Bố cục S08.10**:
+  - thanh tiêu đề "Giá theo ngày", bên phải biểu tượng danh sách → S08.10-list;
+  - chip chọn gói "Chân dung · 1,5M" (gói đang bật trước, gói ẩn sau, mờ);
+  - điều hướng tháng "‹ Tháng 11 / 2026 ›";
+  - `AppCalendar` tháng: ngày dương, **ngày âm là số nhỏ cùng hàng sát chân số dương** (mùng 1 ghi "1/10" màu nhấn), dòng dưới là giá rút gọn. Mờ = giá thường, đậm = thuộc chuỗi, tô nhấn = khoảng đang chọn, viền vàng = ngoại lệ; chú thích một dòng dưới lịch;
+  - thẻ chuỗi của gói: mỗi chuỗi một hàng (biểu tượng `repeat` hoặc `event`, tên, quy tắc, số ngoại lệ, giá), sắp hằng tuần trước rồi theo ngày tới gần nhất; chạm → S08.10-new sửa cả chuỗi;
+  - nút chính "＋ Đặt giá".
+- **Tương tác trên lịch**: chạm ngày thuộc chuỗi → S08.10-day; chạm ngày khác → S08.10-new với từ = tới = ngày đó; kéo từ ngày đầu tới ngày cuối, hoặc chạm hai đầu liên tiếp → chọn khoảng, rồi "Đặt giá" → S08.10-new với khoảng đó.
+- **S08.10-new (sheet "Đặt giá", tạo hoặc sửa cả chuỗi)**: ô "Giá · {gói}"; "Từ", "Tới" (`showAppDatePicker`); switch **"Lặp lại"** tắt mặc định (= khoảng ngày lẻ); tên tuỳ chọn (≤ 40); dropdown **"Áp cho"** ("Chỉ gói {tên}" / "Mọi gói, cùng tỉ lệ", chỉ khi tạo mới; cùng tỉ lệ làm tròn lên 10.000₫); nút "Lưu"; khi sửa có chữ đỏ "Xoá chuỗi" → xác nhận "Booking đã đặt giữ giá cũ". Mở từ "Đặt giá" khi chưa chọn ngày: hàng chip mẫu ở đầu sheet (Tết, Giỗ Tổ, 30/4 – 1/5, 2/9, Noel, Mùa cưới…; mẫu đã dùng cho gói này bị mờ) điền sẵn tên, từ – tới và bật lặp lại.
+- **S08.10-repeat (bật "Lặp lại")**: ngay dưới switch, thụt vào: dropdown **"Chu kỳ"** (Hằng tuần / Hằng năm). Hằng năm: switch **"Theo âm lịch"**; tắt thì dòng phụ "14/11 – 22/11 mỗi năm", bật thì "6/10 – 14/10 âm lịch mỗi năm · năm sau là T4 3/11 – T5 11/11/2027"; khoảng rơi vào tháng nhuận thì thêm "Tháng {M} năm nay nhuận, chuỗi lặp theo tháng {M} chính". Hằng tuần: hàng 7 ô tròn T2 … CN thay cho switch âm lịch (điền sẵn các thứ trong khoảng), từ – tới ẩn. Tắt switch thì phần này thu lại, lựa chọn giữ trong phiên.
+- **S08.10-day (sheet "Sửa một ngày trong chuỗi")**: tiêu đề "{Thứ} {ngày}" và tên gói; dòng chuỗi đang áp; ngày thuộc hai chuỗi thì dòng phụ "{chuỗi thua} {giá} bị {chuỗi thắng} thay". Ô "Giá ngày này" điền sẵn. "Áp dụng cho" ba radio: **Chỉ ngày này** (ghi ngoại lệ) · **Ngày này và các ngày sau trong chuỗi** (chuỗi cũ `until` = hôm trước, chuỗi mới `start` = ngày này) · **Cả chuỗi {tên}**. Nút "Lưu". Chữ đỏ "Bỏ ngày này khỏi chuỗi" / "Kết thúc chuỗi từ ngày này" / "Xoá chuỗi" theo radio đang chọn.
+- **S08.10-list (`/me/day-pricing/rules`)**: thanh tiêu đề "Chuỗi giá", biểu tượng lịch → S08.10. Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng như thẻ ở S08.10; ngoại lệ liệt kê khi ≤ 2 ("CN 15/11: 1,5M"); chuỗi âm lịch ghi thêm "lần tới T7 30/1 – T4 10/2/2027". Chuỗi một lần đã qua tự ẩn. Gói chưa có chuỗi: "Chưa có chuỗi · mọi ngày {giá}". Nút chính "＋ Đặt giá".
+- **Dữ liệu**: `photographers/{uid}/price_rules/{id}` = `{serviceId, price, name?, repeat, lunar?, from?, to?, weekdays?, start?, until?, exceptions?, template?, createdAt, updatedAt}` (mô tả trường, giới hạn và Postgres đích trong spec §4.1, §4.6). Đọc: một truy vấn live theo chủ. Ghi qua `PriceRuleRepository` (`saveRule`, `deleteRule`, `splitRule`, `setException`); "Mọi gói, cùng tỉ lệ" và "Ngày này và các ngày sau" là một giao dịch. Giá từng ô lịch tính bằng domain Dart (`monthPrices`), âm lịch bằng `core/lunar.dart` (Hồ Ngọc Đức, +7), cùng bảng ca với TS.
+- **Trạng thái**: lỗi dưới ô "Giá phải lớn hơn 0", "Giá tối đa 1.000.000.000₫", "Khoảng tối đa 92 ngày", "Chỉ chọn từ hôm nay trở đi", "Chỉ chọn trong 2 năm tới", "Chọn ít nhất một thứ", "Gói này đã có 30 chuỗi"; đang lưu → nút loading; lỗi ghi → SnackBar, giữ dữ liệu; chưa có gói → "Thêm gói trước ở Gói dịch vụ" + nút → S08.09.
+- **Chuỗi**: `s0810_title` "Giá theo ngày", `s0810_listTitle` "Chuỗi giá", `s0810_legendRule` "chuỗi", `s0810_legendException` "ngoại lệ", `s0810_legendBase` "mờ = giá thường", `s0810_add` "Đặt giá", `s0810_sheetTitle` "Đặt giá", `s0810_priceFor` "Giá · {name}", `s0810_from` "Từ", `s0810_to` "Tới", `s0810_repeat` "Lặp lại", `s0810_cycle` "Chu kỳ", `s0810_weekly` "Hằng tuần", `s0810_yearly` "Hằng năm", `s0810_lunar` "Theo âm lịch", `s0810_solarLine` "{from} – {to} mỗi năm", `s0810_lunarLine` "{from} – {to} âm lịch mỗi năm · năm sau là {next}", `s0810_leapNote` "Tháng {m} năm nay nhuận, chuỗi lặp theo tháng {m} chính", `s0810_name` "Tên (tuỳ chọn)", `s0810_applyTo` "Áp cho", `s0810_applyOne` "Chỉ gói {name}", `s0810_applyAll` "Mọi gói, cùng tỉ lệ", `s0810_save` "Lưu", `s0810_delete` "Xoá chuỗi", `s0810_deleteTitle` "Xoá chuỗi này?", `s0810_deleteBody` "Booking đã đặt giữ giá cũ.", `s0810_dayPrice` "Giá ngày này", `s0810_applyScope` "Áp dụng cho", `s0810_scopeDay` "Chỉ ngày này", `s0810_scopeFollowing` "Ngày này và các ngày sau trong chuỗi", `s0810_scopeAll` "Cả chuỗi {name}", `s0810_removeDay` "Bỏ ngày này khỏi chuỗi", `s0810_endFrom` "Kết thúc chuỗi từ ngày này", `s0810_overridden` "{loser} {price} bị {winner} thay", `s0810_ruleWeekly` "Hằng tuần · {days}", `s0810_ruleYearly` "Hằng năm · {from} – {to}", `s0810_ruleYearlyLunar` "Hằng năm · {from} – {to} (âm lịch)", `s0810_ruleOnce` "Một lần · {from} – {to}", `s0810_exceptions` "{n} ngoại lệ", `s0810_nextOccurrence` "lần tới {range}", `s0810_unnamed` "Giá riêng", `s0810_noRules` "Chưa có chuỗi · mọi ngày {price}", `s0810_noneSummary` "Cuối tuần và ngày lễ lấy bằng giá thường", `s0810_noPackages` "Thêm gói trước ở Gói dịch vụ", `s0810_errorPrice` "Giá phải lớn hơn 0", `s0810_errorPriceHigh` "Giá tối đa 1.000.000.000₫", `s0810_errorTooLong` "Khoảng tối đa 92 ngày", `s0810_errorTooFar` "Chỉ chọn trong 2 năm tới", `s0810_errorWeekdays` "Chọn ít nhất một thứ", `s0810_errorLimit` "Gói này đã có 30 chuỗi"; giữ `s0810_errorPast`, `s0810_deleteConfirm`, `s0810_deleteKeep`, `s0810_saved`, `s0810_deleted`, `s0810_loadError`, `s0810_close`. Bỏ `s0810_public`, `s0810_mine`, `s0810_range`, `s0810_note`, `s0810_addTitle`, `s0810_editTitle`, `s0810_affects`, `s0810_affectsNone`, `s0810_emptyMine`, `s0810_noHolidays`, `s0810_year`, `s0810_fieldName`, `s0810_fieldFrom`, `s0810_fieldTo`, `s0810_pickDay`, `s0810_errorName`. Tên mẫu (Tết Nguyên đán, Giỗ Tổ…) là khoá `priceTemplate_{code}`.
+- **Phân tích**: `price_rule_save{repeat, lunar, scope:"new"|"all"|"following", applyAll}`, `price_rule_exception{kind:"price"|"skip"}`, `price_rule_delete`. Không ghi giá.
+- **Chấp nhận**: chuỗi "Tết Nguyên đán" tạo một lần cho đúng ngày dương năm nay và năm sau mà không có dữ liệu theo năm; "Chỉ ngày này" chỉ đổi một ô lịch; "Ngày này và các ngày sau" không đổi giá các ngày trước; "Mọi gói, cùng tỉ lệ" tạo đúng một chuỗi mỗi gói, làm tròn lên 10.000₫; ngày âm trên lịch đúng mùng 1 và rằm tháng 11/2026; sheet không có hàng chip nào ngoài chip mẫu.
 
 ### Thay đổi ở S08.01 bước 2 (S08.01-packages)
-- Bỏ form nhập gói trong bước. Danh sách gói rút gọn như S08.08 (chạm → S08.09 sửa), nút viền "Thêm gói" → S08.09 (`?from=setup`). Vẫn cần ≥ 1 gói để "Tiếp tục".
+- Như PR #326: danh sách gói rút gọn, chỉ giá thường, "Thêm gói" → S08.09 (`?from=setup`). S08.09 ẩn thẻ chuỗi khi `from=setup`.

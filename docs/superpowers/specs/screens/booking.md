@@ -232,22 +232,23 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 
 ## Giá theo ngày ở luồng đặt lịch (#316)
 
-> **Mới 2026-11-04**, spec [`../2026-11-04-day-pricing-design.md`](../2026-11-04-day-pricing-design.md). Mock: `#S03.01-prices`, `#S04.01-dayprice`, `#S04.02-dayprice`, `#S04.03-dayprice`.
+> **Mới 2026-11-04, làm lại 2026-11-06**, spec [`../2026-11-06-day-pricing-redesign.md`](../2026-11-06-day-pricing-redesign.md). Mock: `#S03.01-prices`, `#S04.01-dayprice`, `#S04.02-dayprice`, `#S04.03-dayprice`.
 
-- **S03.01, tab Gói**: dòng giá theo `priceSummary`. Chạm vào mở sheet "Bảng giá · {gói}" chỉ đọc: các mức gộp theo thứ cùng giá, dòng "Ngày lễ, ngày đặc biệt" kèm tối đa 3 ngày gần nhất. Nút chính "Đặt gói này" → S04.02.
+- **S03.01, tab Gói**: gói không có chuỗi hiện một giá; có chuỗi hiện "{min}–{max} · theo ngày" (giá thường và giá các chuỗi, bỏ chuỗi một lần đã qua). Chạm vào mở sheet "Bảng giá · {gói}" chỉ đọc: dòng "Giá thường", rồi mỗi chuỗi một dòng (tên, quy tắc; chuỗi âm lịch ghi thêm lần tới theo ngày dương; giá). Không liệt kê ngoại lệ. Nút chính "Đặt gói này" → S04.02.
 - **S04.01**:
-  - gói có giá theo ngày hiện khoảng "{min}–{max}", dòng phụ "T7–CN {giá}" hoặc "giá theo ngày";
+  - gói có chuỗi hiện khoảng "{min}–{max}" như trên, dòng phụ "cuối tuần {giá}" khi có chuỗi hằng tuần, còn lại "giá theo ngày";
   - nút "Tiếp tục · từ {min}";
   - vào với ngày đã chọn thì hiện giá đúng ngày đó.
 - **S04.02**:
+  - lịch là `AppCalendar` dùng chung, có ngày âm nhỏ cùng hàng sát chân ngày dương;
   - dòng "Ngày thường {giá}";
-  - ngày có giá khác ghi giá rút gọn dưới số ngày, ngày đặc biệt ghi "Lễ {giá}";
-  - dòng chọn ngày thêm "cuối tuần" hoặc "ngày lễ: {tên}";
+  - ngày có giá khác giá thường ghi giá rút gọn dưới số ngày, màu nhấn; ngày đầu của chuỗi có tên ghi tên rút gọn ("Cưới 2M");
+  - dòng chọn ngày "{ngày} · {tên chuỗi} · {giá}";
   - nút "Tiếp tục · {giá ngày + dịch vụ đi kèm}".
 - **S04.03**:
-  - dòng gói "Gói {tên} · {ngày} ({cuối tuần | ngày lễ | tên ngày})";
+  - dòng gói "Gói {tên} · {ngày} ({tên chuỗi})", chuỗi không tên ghi "(giá theo ngày)", giá thường không ghi lý do;
   - câu "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.";
   - `price_changed` dùng thanh hiện có.
-- **Dữ liệu**: app gửi `expectedPrice` = giá của ngày (tính bằng `priceForDay` với `holidaysProvider` và `specialDaysProvider(photographerId)`). Server tính lại trong giao dịch.
-- **Chuỗi**: `s0401_priceRange` "{min}–{max}", `s0401_weekendSub` "T7–CN {amount}", `s0401_perDaySub` "giá theo ngày", `s0401_continueFrom` "Tiếp tục · từ {amount}", `s0402_weekdayPrice` "Ngày thường {amount}", `s0402_holidayPrice` "Lễ {amount}", `s0402_weekendTag` "cuối tuần", `s0402_holidayTag` "ngày lễ: {name}", `s0403_dayReasonWeekend` "(cuối tuần)", `s0403_dayReasonSpecial` "({name})", `s0403_dayPriceNote` "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.", `s0301_priceSheetTitle` "Bảng giá · {name}", `s0301_specialRow` "Ngày lễ, ngày đặc biệt".
-- **Chấp nhận**: giá ở S04.02 và S04.03 bằng giá server ghi vào booking với cùng ngày (test với repository giả và bảng ca của domain); gói một giá không ghi gì dưới ngày.
+- **Dữ liệu**: app đọc gói và `price_rules` của gói (một truy vấn), gửi `expectedPrice` = `priceForDay` của ngày. Server tính lại trong giao dịch và ghi `serviceSnapshot.price`, `priceKind`, `ruleName`. Không còn `holidaysProvider`, `specialDaysProvider`.
+- **Chuỗi**: `s0401_priceRange` "{min}–{max}", `s0401_weekendSub` "cuối tuần {amount}", `s0401_perDaySub` "giá theo ngày", `s0401_continueFrom` "Tiếp tục · từ {amount}", `s0402_weekdayPrice` "Ngày thường {amount}", `s0402_rulePrice` "{name} {amount}", `s0402_dayLine` "{day} · {name} · {amount}", `s0403_dayReasonRule` "({name})", `s0403_dayReasonUnnamed` "(giá theo ngày)", `s0403_dayPriceNote` "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.", `s0301_priceSheetTitle` "Bảng giá · {name}", `s0301_baseRow` "Giá thường", `s0301_byDay` "{range} · theo ngày". Bỏ `s0402_holidayPrice`, `s0402_weekendTag`, `s0402_holidayTag`, `s0403_dayReasonWeekend`, `s0403_dayReasonSpecial`, `s0301_specialRow`.
+- **Chấp nhận**: giá ở S04.02 và S04.03 bằng giá server ghi vào booking với cùng ngày (test với repository giả và bảng ca của domain); gói không có chuỗi không ghi gì dưới ngày; đặt vào Tết năm sau ra giá Tết dù chưa ai nhập gì cho năm đó.
