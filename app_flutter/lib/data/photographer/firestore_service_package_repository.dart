@@ -18,7 +18,9 @@ class FirestoreServicePackageRepository implements ServicePackageRepository {
       .orderBy(FieldPath.documentId)
       .snapshots()
       .map(
-        (s) => [for (final d in s.docs) ?packageFromFirestore(d.id, d.data())],
+        (s) => sortedPackages([
+          for (final d in s.docs) ?packageFromFirestore(d.id, d.data()),
+        ]),
       );
 
   @override
@@ -36,13 +38,29 @@ class FirestoreServicePackageRepository implements ServicePackageRepository {
   @override
   Future<void> update(String uid, String id, ServicePackageInput input) =>
       _col(uid).doc(id).update({
+        // Fields the new input leaves out are removed, not kept stale.
+        for (final f in kPackagePriceFields) f: FieldValue.delete(),
         ...packageToFirestore(input),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
   @override
-  Future<void> hide(String uid, String id) =>
-      _col(uid)
-          .doc(id)
-          .update({'active': false, 'updatedAt': FieldValue.serverTimestamp()});
+  Future<void> hide(String uid, String id) => setActive(uid, id, false);
+
+  @override
+  Future<void> setActive(String uid, String id, bool active) => _col(uid)
+      .doc(id)
+      .update({'active': active, 'updatedAt': FieldValue.serverTimestamp()});
+
+  @override
+  Future<void> reorder(String uid, List<String> idsInOrder) {
+    final batch = _db.batch();
+    for (var i = 0; i < idsInOrder.length; i++) {
+      batch.update(_col(uid).doc(idsInOrder[i]), {
+        'order': i,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    return batch.commit();
+  }
 }

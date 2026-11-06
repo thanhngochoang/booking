@@ -6,6 +6,7 @@ import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
 
 double _double(Object? v) => v is num ? v.toDouble() : 0;
 int _int(Object? v) => v is num ? v.toInt() : 0;
@@ -76,6 +77,8 @@ PhotographerSummary photographerSummaryFrom({
     completedCount: _int(stats['completedCount']),
     responseMinutes: _intOrNull(stats['responseMinutes']),
     startingPriceVnd: _intOrNull(photographer['startingPrice']),
+    weekendFromVnd: _intOrNull(photographer['weekendFrom']),
+    hasSpecialPrices: photographer['hasSpecialPrices'] == true,
     // A studio without assignable members has no free day at all.
     nextFreeDate: noCapacity ? null : _str(stats['nextFreeDate']),
     createdAt: created is Timestamp ? created.toDate().toUtc() : null,
@@ -113,7 +116,14 @@ ServiceSummary? serviceFromFirestore(
     deliveryDays: _intOrNull(deliverables['deliveryDays']),
     coverUrl: _str(d['coverUrl']),
     active: d['active'] != false,
+    dayPrices: dayPricesFromMap(d['dayPrices']),
+    specialPrice: _specialPrice(d['specialPrice']),
   );
+}
+
+int? _specialPrice(Object? raw) {
+  final v = _intOrNull(raw);
+  return v != null && v > 0 ? v : null;
 }
 
 class FirestorePhotographerRepository implements PhotographerRepository {

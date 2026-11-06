@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/widgets/addon_pick_block.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -165,7 +166,7 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
           Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: AppButton.primary(
-              l10n.bookContinuePrice(formatMoney(state.totalVnd ?? 0)),
+              continueLabel(l10n, state),
               onPressed: state.canContinue ? controller.next : null,
             ),
           ),
@@ -200,12 +201,14 @@ class _PackageTile extends StatelessWidget {
       side: BorderSide(color: edge),
     );
 
+    final l10n = context.l10n;
     final details = <String>[
       if (package.durationMinutes > 0) '${package.durationMinutes} phút',
       if (package.photoCount != null) '${package.photoCount} ảnh',
       if (package.editedCount != null) '${package.editedCount} ảnh sửa',
       if (package.deliveryDays != null)
         'trả trong ${package.deliveryDays} ngày',
+      ?packageTileSub(l10n, package),
     ].join(' · ');
 
     return Semantics(
@@ -213,7 +216,7 @@ class _PackageTile extends StatelessWidget {
       checked: selected,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: '${package.name}, ${formatMoney(package.priceVnd)}',
+      label: '${package.name}, ${packageTilePrice(l10n, package)}',
       onTap: onTap,
       child: Material(
         type: MaterialType.transparency,
@@ -271,7 +274,7 @@ class _PackageTile extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpace.s2),
                   Text(
-                    formatMoney(package.priceVnd),
+                    packageTilePrice(l10n, package),
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: selected ? scheme.primary : null,

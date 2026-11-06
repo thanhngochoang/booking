@@ -25,6 +25,8 @@ class PhotographerSummary {
     this.completedCount = 0,
     this.responseMinutes,
     this.startingPriceVnd,
+    this.weekendFromVnd,
+    this.hasSpecialPrices = false,
     this.nextFreeDate,
     this.createdAt,
     this.providerType = ProviderType.individual,
@@ -82,6 +84,14 @@ class PhotographerSummary {
 
   /// Integer VND, the cheapest active service.
   final int? startingPriceVnd;
+
+  /// Integer VND, the cheapest active service's lowest weekend price
+  /// (`weekendFrom`, server-written); null when the server has not set it.
+  final int? weekendFromVnd;
+
+  /// True when an active service has a special-day price (`hasSpecialPrices`,
+  /// server-written).
+  final bool hasSpecialPrices;
 
   /// First free day as `yyyy-MM-dd` (Vietnam calendar day), computed by the
   /// server into `stats.nextFreeDate`.

@@ -1,5 +1,6 @@
 // lib/features/photographer_profile/profile_section.dart
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// The four tabs of S03.01.
@@ -18,12 +19,17 @@ ProfileSection profileSectionFromQuery(String? value) => switch (value) {
 String inquiryPath(String photographerId) => '/u/$photographerId/ask';
 
 /// "Đặt lịch · từ …": the cheapest active package, until the server's
-/// `startingPrice` is there for every photographer.
+/// `startingPrice` is there for every photographer. A package's price is its
+/// lowest weekday price, never its special-day price (P6).
 int? startingPriceOf(Iterable<ServiceSummary> services) {
   int? min;
   for (final s in services) {
-    if (s.active && (min == null || s.priceVnd < min)) {
-      min = s.priceVnd;
+    if (!s.active) {
+      continue;
+    }
+    final lowest = priceRange(s).min;
+    if (min == null || lowest < min) {
+      min = lowest;
     }
   }
   return min;

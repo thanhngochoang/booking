@@ -27,6 +27,10 @@ extension DayStateLabel on DayState {
   };
 }
 
+/// A small line under a day number (S04.02 price of the day). [accent] draws
+/// it in the accent colour (a special day's price).
+typedef CalendarNote = ({String text, bool accent});
+
 /// `mon` … `sun`, the keys of the weekday select messages in the ARB file.
 String weekdayCode(int weekday) =>
     const ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][weekday - 1];
@@ -36,6 +40,11 @@ bool _dark(ThemeData t) => t.brightness == Brightness.dark;
 /// Mock `--ink-3`.
 Color _tertiary(ThemeData t) =>
     _dark(t) ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted;
+
+/// Mock `--ink-2`.
+Color _secondary(ThemeData t) => _dark(t)
+    ? AppColorsDark.foregroundSecondary
+    : AppColors.foregroundSecondary;
 
 /// Mock `--field`.
 Color _field(ThemeData t) =>
@@ -71,6 +80,7 @@ class AvailabilityCalendar extends StatelessWidget {
     this.eventDays = const {},
     this.rangeStart,
     this.showHeader = true,
+    this.notes = const {},
   });
 
   /// Any day of the month to show.
@@ -98,6 +108,9 @@ class AvailabilityCalendar extends StatelessWidget {
   final Set<DateTime> eventDays;
   final DateTime? rangeStart;
   final bool showHeader;
+
+  /// A small line under the number of a day of the shown month.
+  final Map<DateTime, CalendarNote> notes;
 
   static const cellHeight = 44.0;
   static const _gap = 3.0;
@@ -174,6 +187,7 @@ class AvailabilityCalendar extends StatelessWidget {
                             selectedDays.contains(days[w * 7 + c]),
                         today: days[w * 7 + c] == now,
                         hasEvent: eventDays.contains(days[w * 7 + c]),
+                        note: notes[days[w * 7 + c]],
                         rangeStart: days[w * 7 + c] == range,
                         onTap: answer(
                           onSelect,
@@ -260,6 +274,7 @@ class _DayCell extends StatelessWidget {
     required this.selected,
     required this.today,
     required this.hasEvent,
+    required this.note,
     required this.rangeStart,
     required this.onTap,
     required this.onLongPress,
@@ -272,6 +287,7 @@ class _DayCell extends StatelessWidget {
   final bool selected;
   final bool today;
   final bool hasEvent;
+  final CalendarNote? note;
   final bool rangeStart;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -318,15 +334,40 @@ class _DayCell extends StatelessWidget {
             ? Border.all(color: tertiary)
             : null,
       ),
-      child: Text(
-        '${day.day}',
-        style: TextStyle(
-          fontSize: AppText.base,
-          fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-          color: fg,
-          decoration: line,
-          decorationColor: fg,
-          fontFeatures: const [FontFeature.tabularFigures()],
+      // Scaled down rather than overflowing at a large text size.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${day.day}',
+              style: TextStyle(
+                fontSize: AppText.base,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: fg,
+                decoration: line,
+                decorationColor: fg,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            if (inMonth && note != null)
+              // Mock `small` 8.5px.
+              Text(
+                note!.text,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 8.5,
+                  height: 1.1,
+                  color: selected
+                      ? fg
+                      : note!.accent
+                      ? scheme.primary
+                      : _secondary(theme),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -366,6 +407,7 @@ class _DayCell extends StatelessWidget {
     final said = [
       state.label(l).toLowerCase(),
       if (hasEvent) l.calendarHasEvent,
+      if (inMonth && note != null) note!.text,
       if (today) l.calendarToday,
     ].join(', ');
     return Semantics(

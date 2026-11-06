@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
@@ -177,6 +178,18 @@ class _AddonList extends StatelessWidget {
               ),
             ),
           ],
+        const SizedBox(height: AppSpace.s3),
+        // S08.08's entry (#316): the packages these add-ons apply to.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: AppButton.text(
+            l.s0808_addonsLink,
+            key: const Key('addons-packages-link'),
+            size: AppButtonSize.small,
+            icon: const AppIcon(AppIcons.chevron),
+            onPressed: () => context.push('/me/packages'),
+          ),
+        ),
       ],
     );
   }

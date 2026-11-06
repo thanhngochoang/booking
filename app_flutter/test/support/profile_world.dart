@@ -199,6 +199,7 @@ class ProfileWorld {
           '/me/albums',
           '/verify/start',
           '/me/addons',
+          '/me/packages',
           '/recruit',
         ])
           GoRoute(path: p, builder: stub),

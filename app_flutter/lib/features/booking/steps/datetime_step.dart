@@ -7,6 +7,9 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
+import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -170,6 +173,29 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
       startsAsync = starts == null ? const AsyncLoading() : AsyncData(starts);
     }
 
+    // S04.02 prices: the short price under each day that costs more or less
+    // than the weekday price, "Lễ {price}" under a special day. The holidays
+    // of the month's year are read only for a package with a special price.
+    final pricing = state.pricing;
+    final varies = pricing != null && pricesVaryByDay(pricing);
+    final monthSpecial = pricing?.specialPrice == null
+        ? noSpecialDays
+        : ref
+                  .watch(
+                    specialDaysForBookingProvider((
+                      providerId: widget.args.photographerId,
+                      year: _month.year,
+                    )),
+                  )
+                  .value ??
+              noSpecialDays;
+    final priceNotes = pricing == null
+        ? const <DateTime, CalendarNote>{}
+        : dayPriceNotes(l10n, pricing, _month, monthSpecial);
+    final dayTagText = dayTag(l10n, state);
+    final specialsMissing =
+        state.specialsFailed && day != null && state.dayPrice == null;
+
     Widget times(List<String> slots) {
       if (slots.isEmpty) {
         return Text(
@@ -292,6 +318,22 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
               ],
             ),
           ),
+          if (varies)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s4,
+                0,
+                AppSpace.s4,
+                AppSpace.s2,
+              ),
+              child: Text(
+                l10n.s0402_weekdayPrice(formatMoney(pricing.price, short: true)),
+                key: const Key('book-weekday-price'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
@@ -337,6 +379,15 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                         showHeader: false,
                         month: _month,
                         states: dayStates,
+                        notes: {
+                          // Free days from today on: a past or taken day has
+                          // no price to compare.
+                          for (final e in priceNotes.entries)
+                            if (!e.key.isBefore(today) &&
+                                (dayStates[e.key] ?? DayState.free) ==
+                                    DayState.free)
+                              e.key: e.value,
+                        },
                         selected: selectedDate,
                         onSelect: (d) {
                           final s = dayStates[d] ?? DayState.free;
@@ -374,13 +425,32 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     const SizedBox(height: AppSpace.s3),
                     Text(
                       l10n.bookDayLine(
-                        '${l10n.calendarWeekdayLong(weekdayCode(selectedDate.weekday))}, ${formatDayMonth(selectedDate)}',
+                        '${l10n.calendarWeekdayLong(weekdayCode(selectedDate.weekday))}, ${formatDayMonth(selectedDate)}'
+                        '${dayTagText == null ? '' : ' · $dayTagText'}',
                         formatDuration(duration, l10n),
                       ),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (specialsMissing)
+                      Row(
+                        key: const Key('book-specials-failed'),
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.s0402_pricesFailed,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: scheme.error,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: controller.retrySpecials,
+                            child: Text(l10n.retry),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: AppSpace.s2),
                     AsyncView<List<String>>(
                       value: startsAsync,
@@ -428,7 +498,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
           Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: AppButton.primary(
-              l10n.bookContinuePrice(formatMoney(state.totalVnd ?? 0)),
+              continueLabel(l10n, state),
               onPressed: state.canContinue ? controller.next : null,
             ),
           ),

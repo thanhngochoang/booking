@@ -55,9 +55,13 @@ class PhotographerCard extends StatelessWidget {
   /// Callback to toggle the saved state. When non-null, a bookmark overlay is shown.
   final VoidCallback? onToggleSave;
 
+  /// Narrower than this the "T7–CN từ …" part is dropped (it goes first).
+  static const _weekendMinWidth = 340.0;
+
   /// "Chân dung · 1,2 km · 🍅 97% · 112 buổi" (mock S02.06); "Mới · 3 đánh giá"
-  /// under five reviews and no review part without any.
-  List<MetaPart> _meta(BuildContext context) {
+  /// under five reviews and no review part without any. [weekend] adds
+  /// "T7–CN từ 1,8M" when the photographer has a higher weekend price.
+  List<MetaPart> _meta(BuildContext context, {required bool weekend}) {
     final l = context.l10n;
     final review = reviewMetaPart(data, l);
     return [
@@ -67,11 +71,22 @@ class PhotographerCard extends StatelessWidget {
       ?review,
       if (data.completedCount > 0)
         MetaPart.text(l.photographerSessions(data.completedCount)),
+      if (weekend && data.weekendFromVnd != null)
+        MetaPart.text(
+          l.photographerWeekendFrom(
+            formatMoney(data.weekendFromVnd!, short: true),
+          ),
+        ),
     ];
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) =>
+        _card(context, weekend: box.maxWidth >= _weekendMinWidth),
+  );
+
+  Widget _card(BuildContext context, {required bool weekend}) {
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -81,7 +96,7 @@ class PhotographerCard extends StatelessWidget {
         : AppColors.foregroundSecondary;
     final stack = MediaQuery.textScalerOf(context).scale(16) > 18.4;
     final hero = data.heroUrl;
-    final meta = _meta(context);
+    final meta = _meta(context, weekend: weekend && !stack);
     final metaText = metaPartsSemantics(meta, l);
     final priceLabel = priceFromLabel(data.startingPriceVnd, l);
     final price = priceLabel == null

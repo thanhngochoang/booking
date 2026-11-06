@@ -37,6 +37,34 @@ Widget _cal({
 );
 
 void main() {
+  testWidgets('a note sits under the number of its day, in the month only', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(
+          month: _oct,
+          states: _states,
+          today: _d(1),
+          notes: {
+            _d(3): (text: '1,8M', accent: false),
+            _d(17): (text: 'Lễ 2,2M', accent: true),
+            // Not in October: drawn nowhere.
+            DateTime.utc(2026, 11, 1): (text: '9M', accent: false),
+          },
+        ),
+      ),
+    );
+    expect(find.text('1,8M'), findsOneWidget);
+    expect(find.text('Lễ 2,2M'), findsOneWidget);
+    expect(find.text('9M'), findsNothing);
+    // Read aloud with the day.
+    expect(find.bySemanticsLabel('3 tháng 10, rảnh, 1,8M'), findsOneWidget);
+    expect(find.bySemanticsLabel('4 tháng 10, rảnh'), findsOneWidget);
+    h.dispose();
+  });
+
   testWidgets('shows the month, the weekdays and every state in words', (
     tester,
   ) async {

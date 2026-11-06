@@ -9,3 +9,6 @@ https://github.com/thanhngochoang/booking-be (the former `services/api/` of this
   `npm run seed:contract`; `selfhosted_contracts_test.dart` runs against that stack.
 
 When the backend contract changes, copy both files again and make the app follow.
+
+`day_pricing_cases.json` is a copy of `packages/domain/test/fixtures/day_pricing_cases.json` in the same
+repository; `test/data/pricing/day_pricing_test.dart` runs it against the Dart port. Copy it again when it changes.

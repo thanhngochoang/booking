@@ -19,6 +19,7 @@ Widget _card({
   String? bookLabel = 'Đặt T7',
   String name = 'Minh Trí',
   int? price = 1500000,
+  int? weekendFrom,
   double width = 390,
   double textScale = 1,
   Brightness brightness = Brightness.dark,
@@ -39,6 +40,7 @@ Widget _card({
         verified: verified,
         businessVerified: businessVerified,
         startingPrice: price,
+        weekendFrom: weekendFrom,
         providerType: type,
         approvedAwards: awards,
         studioDistrict: district,
@@ -59,6 +61,34 @@ Widget _card({
 );
 
 void main() {
+  testWidgets('shows "· T7–CN từ 1,8M" when weekendFrom is set and wide enough', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card(weekendFrom: 1800000));
+    expect(
+      findMeta('Chân dung · 1,2 km · 97% · 112 buổi · T7–CN từ 1,8M'),
+      findsOneWidget,
+    );
+    expect(find.text('1,5M'), findsOneWidget);
+  });
+
+  testWidgets('drops "T7–CN từ …" first when the card is narrow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card(weekendFrom: 1800000, width: 320));
+    expect(
+      findMeta('Chân dung · 1,2 km · 97% · 112 buổi'),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(_card(weekendFrom: 1800000, textScale: 2));
+    expect(find.textContaining('T7–CN', findRichText: true), findsNothing);
+  });
+
+  testWidgets('without weekendFrom the meta line is unchanged', (tester) async {
+    await tester.pumpWidget(_card());
+    expect(find.textContaining('T7–CN', findRichText: true), findsNothing);
+  });
+
   testWidgets('shows name, meta line, price and availability', (tester) async {
     await tester.pumpWidget(_card());
     expect(find.textContaining('Minh Trí', findRichText: true), findsOneWidget);
