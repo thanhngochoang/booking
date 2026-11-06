@@ -434,13 +434,23 @@ void main() {
       },
     );
 
-    test('a rule listed twice with an equal price keeps the first', () {
+    test('equal tier and price: the smallest id wins, in either order', () {
       final copy = PriceRule.tryParse('copy', weekend.toMap())!;
-      final got = priceForDay(1500000, 's1', [
-        weekend,
-        copy,
-      ], day('2026-11-14'));
-      expect(got.rule?.id, 'w');
+      for (final rules in [
+        [weekend, copy],
+        [copy, weekend],
+      ]) {
+        final got = priceForDay(1500000, 's1', rules, day('2026-11-14'));
+        expect(got.rule?.id, 'copy');
+      }
+      final later = PriceRule.tryParse('x', weekend.toMap())!;
+      for (final rules in [
+        [weekend, later],
+        [later, weekend],
+      ]) {
+        final got = priceForDay(1500000, 's1', rules, day('2026-11-14'));
+        expect(got.rule?.id, 'w');
+      }
     });
 
     test('priceForDay never throws for a rule without weekdays', () {

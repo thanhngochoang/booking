@@ -458,8 +458,9 @@ bool _patternCovers(
 }
 
 /// R3: of the package's rules covering [day], the highest tier (`none` >
-/// `yearly` > `weekly`) wins, then the highest price, then the earlier rule in
-/// [rules]; no rule means [basePrice].
+/// `yearly` > `weekly`) wins, then the highest price, then the smallest `id`
+/// (string comparison, so the order of [rules] never matters); no rule means
+/// [basePrice].
 DayPrice priceForDay(
   int basePrice,
   String serviceId,
@@ -485,7 +486,9 @@ DayPrice priceForDay(
     final tier = rule.repeat.tier;
     if (best == null ||
         tier > bestTier ||
-        (tier == bestTier && price > bestPrice)) {
+        (tier == bestTier &&
+            (price > bestPrice ||
+                (price == bestPrice && rule.id.compareTo(best.id) < 0)))) {
       best = rule;
       bestTier = tier;
       bestPrice = price;

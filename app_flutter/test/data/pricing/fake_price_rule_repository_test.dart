@@ -101,6 +101,72 @@ void main() {
       expect(rule.template, 'weekend');
     });
 
+    test(
+      'editing drops the exceptions the new pattern no longer covers',
+      () async {
+        repo.seed(
+          const PriceRule(
+            id: 'r1',
+            serviceId: 's1',
+            price: 2000000,
+            repeat: PriceRepeat.weekly,
+            weekdays: {Weekday.sat, Weekday.mon},
+            exceptions: {
+              '2026-11-07': null, // sat: still covered
+              '2026-11-09': 2100000, // mon: no longer covered
+              '2026-11-10': 2200000, // tue: never covered
+            },
+          ),
+        );
+
+        await repo.saveRule(_weekend, ruleId: 'r1');
+
+        expect(repo.ownerRules.single.exceptions, {'2026-11-07': null});
+      },
+    );
+
+    test('an edit that covers no exception leaves none', () async {
+      repo.seed(
+        const PriceRule(
+          id: 'r1',
+          serviceId: 's1',
+          price: 2000000,
+          repeat: PriceRepeat.weekly,
+          weekdays: {Weekday.mon},
+          exceptions: {'2026-11-09': 2100000},
+        ),
+      );
+
+      await repo.saveRule(_weekend, ruleId: 'r1');
+
+      expect(repo.ownerRules.single.exceptions, isEmpty);
+    });
+
+    test('the name is trimmed and a blank one is absent', () async {
+      final a = await repo.saveRule(
+        const PriceRuleInput(
+          serviceId: 's1',
+          price: 2500000,
+          repeat: PriceRepeat.weekly,
+          weekdays: {Weekday.sat},
+          name: '  Cuối tuần  ',
+        ),
+      );
+      final b = await repo.saveRule(
+        const PriceRuleInput(
+          serviceId: 's1',
+          price: 2500000,
+          repeat: PriceRepeat.weekly,
+          weekdays: {Weekday.sun},
+          name: '   ',
+        ),
+      );
+
+      final byId = {for (final r in repo.ownerRules) r.id: r};
+      expect(byId[a.single]!.name, 'Cuối tuần');
+      expect(byId[b.single]!.name, isNull);
+    });
+
     test('a rule of another provider is not_found', () async {
       repo.seed(_oneOff('theirs'), providerId: 'other');
 
@@ -195,6 +261,75 @@ void main() {
 
         expect(repo.ownerRules.map((r) => r.id), ['r2']);
         expect(repo.ownerRules.single.price, 5000000);
+      },
+    );
+
+    test(
+      'nothing left before the day: the whole series is replaced or deleted',
+      () async {
+        // today is 2026-10-01: this weekly series ended its run in September.
+        const dead = PriceRule(
+          id: 'w1',
+          serviceId: 's1',
+          price: 2000000,
+          repeat: PriceRepeat.weekly,
+          weekdays: {Weekday.sat},
+          start: '2026-08-01',
+          exceptions: {'2026-10-17': 2100000},
+        );
+        repo.seed(dead);
+        repo.seed(
+          const PriceRule(
+            id: 'w2',
+            serviceId: 's1',
+            price: 2000000,
+            repeat: PriceRepeat.weekly,
+            weekdays: {Weekday.sat},
+            start: '2026-08-01',
+            until: '2026-12-31',
+          ),
+        );
+        // Split on 2026-09-15 with a price: the part before (08-01..09-14) is already over.
+        final ids = await repo.splitRule(
+          'w1',
+          DateTime.utc(2026, 9, 15),
+          price: 3000000,
+        );
+
+        expect(ids, ['w1']);
+        expect(repo.ownerRules.map((r) => r.id), ['w1', 'w2']);
+        final w1 = repo.ownerRules.firstWhere((r) => r.id == 'w1');
+        expect(w1.price, 3000000);
+        expect(w1.until, isNull);
+        expect(w1.start, '2026-08-01');
+
+        expect(await repo.splitRule('w2', DateTime.utc(2026, 9, 15)), isEmpty);
+        expect(repo.ownerRules.map((r) => r.id), ['w1']);
+      },
+    );
+
+    test(
+      'with an occurrence left before the day it still writes two',
+      () async {
+        repo.seed(
+          const PriceRule(
+            id: 'w1',
+            serviceId: 's1',
+            price: 2000000,
+            repeat: PriceRepeat.weekly,
+            weekdays: {Weekday.sat},
+            start: '2026-08-01',
+          ),
+        );
+
+        final ids = await repo.splitRule(
+          'w1',
+          DateTime.utc(2026, 10, 20),
+          price: 3000000,
+        );
+
+        expect(ids, hasLength(2));
+        expect(repo.ownerRules, hasLength(2));
       },
     );
 

@@ -10,7 +10,9 @@ import 'package:photobooking/data/pricing/price_rules.dart'
 /// In-memory [PriceRuleRepository] that does what the four callables do, with
 /// the app's own pure functions (`validatePriceRuleField`, `splitRule`,
 /// `withException`, `scaledRule`): the same rules, limits and error codes, and
-/// a record of every call. Writes are made as [ownerUid]; a rule of another
+/// a record of every call. Like the server, an edit keeps only the exceptions
+/// the new pattern covers, a split of a series with nothing left before the
+/// day replaces (or deletes) the whole series, and a name is trimmed. Writes are made as [ownerUid]; a rule of another
 /// provider is `not_found`.
 class FakePriceRuleRepository implements PriceRuleRepository {
   FakePriceRuleRepository({DateTime Function()? today})
@@ -148,7 +150,7 @@ class FakePriceRuleRepository implements PriceRuleRepository {
       throw _bad(bad);
     }
     final id = existing?.id ?? _newId();
-    final rule = PriceRule(
+    var rule = PriceRule(
       id: id,
       serviceId: input.serviceId,
       price: input.price,
@@ -163,6 +165,26 @@ class FakePriceRuleRepository implements PriceRuleRepository {
       exceptions: existing?.exceptions ?? const {},
       template: input.template ?? existing?.template,
     );
+    if (rule.exceptions.isNotEmpty) {
+      // An exception the new pattern no longer covers would still set (or
+      // drop) a price on its day: it goes, like on the server.
+      final plain = PriceRule(
+        id: rule.id,
+        serviceId: rule.serviceId,
+        price: rule.price,
+        repeat: rule.repeat,
+        lunar: rule.lunar,
+        from: rule.from,
+        to: rule.to,
+        weekdays: rule.weekdays,
+        start: rule.start,
+        until: rule.until,
+      );
+      rule = _withExceptions(rule, {
+        for (final e in rule.exceptions.entries)
+          if (_covers(plain, e.key)) e.key: e.value,
+      });
+    }
     final copies = <PriceRule>[];
     if (existing == null) {
       if (_countOf(rule.serviceId) + 1 > kMaxRulesPerService) {
@@ -218,7 +240,13 @@ class FakePriceRuleRepository implements PriceRuleRepository {
       throw _bad('day');
     }
     final first = start ?? (rule.repeat == PriceRepeat.none ? from : null);
-    if (first != null && key.compareTo(first) <= 0) {
+    // Also the whole series when the part before the day would have no
+    // occurrence left from today (a dead series).
+    final whole =
+        (first != null && key.compareTo(first) <= 0) ||
+        nextOccurrence(series.splitRule(rule, d, null, '').before, _today()) ==
+            null;
+    if (whole) {
       if (price == null) {
         _own.remove(ruleId);
         _changes.add(null);
@@ -256,6 +284,28 @@ class FakePriceRuleRepository implements PriceRuleRepository {
     exceptions: r.exceptions,
     template: r.template,
   );
+
+  PriceRule _withExceptions(PriceRule r, Map<String, Object?> exceptions) =>
+      PriceRule(
+        id: r.id,
+        serviceId: r.serviceId,
+        price: r.price,
+        repeat: r.repeat,
+        name: r.name,
+        lunar: r.lunar,
+        from: r.from,
+        to: r.to,
+        weekdays: r.weekdays,
+        start: r.start,
+        until: r.until,
+        exceptions: exceptions,
+        template: r.template,
+      );
+
+  bool _covers(PriceRule plain, String dayKey) {
+    final day = parseDayKey(dayKey);
+    return day != null && ruleCoversDay(plain, day).covers;
+  }
 
   @override
   Future<void> setException(

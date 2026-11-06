@@ -354,18 +354,25 @@
       "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
     },
     {
-      "why": "same tier, same price: the earlier rule in the list wins",
+      "why": "same tier, same price: the smaller id wins (listed first)",
       "service": {"id": "s1", "price": 1500000},
       "rules": [{"id": "a", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}, {"id": "b", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}],
       "day": "2026-11-14",
       "expected": {"amount": 1800000, "kind": "rule", "ruleId": "a"}
     },
     {
-      "why": "same tier, same price: the order of the list decides",
+      "why": "same tier, same price: the smaller id wins even when listed last",
       "service": {"id": "s1", "price": 1500000},
       "rules": [{"id": "b", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}, {"id": "a", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}],
       "day": "2026-11-14",
-      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "b"}
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "a"}
+    },
+    {
+      "why": "same tier, same price (an exception price): the smaller id wins in either order",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "z", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}, {"id": "m", "serviceId": "s1", "price": 1700000, "repeat": "weekly", "weekdays": ["sat"], "exceptions": {"2026-11-14": 1800000}}, {"id": "q", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "m"}
     },
     {
       "why": "yearly solar without exception",
