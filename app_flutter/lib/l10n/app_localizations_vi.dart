@@ -13469,6 +13469,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_clearException => 'Về giá chuỗi';
 
   @override
+  String s0810_clearExceptionOf(String name) {
+    return 'Về giá chuỗi $name';
+  }
+
+  @override
+  String get s0810_exceptionSpoken => 'ngoại lệ';
+
+  @override
+  String get s0810_dayRemoved => 'Đã bỏ ngày khỏi chuỗi';
+
+  @override
+  String get s0810_seriesEnded => 'Đã kết thúc chuỗi';
+
+  @override
+  String get s0810_errorNameContact =>
+      'Tên không được chứa số điện thoại hay đường link';
+
+  @override
   String get s0810_removeDayTitle => 'Bỏ ngày này khỏi chuỗi?';
 
   @override

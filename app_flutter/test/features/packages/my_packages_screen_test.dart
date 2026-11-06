@@ -149,6 +149,21 @@ void main() {
     );
   });
 
+  testWidgets('"Giá theo ngày" never says "no series" when they failed to '
+      'load', (tester) async {
+    final w = await _world();
+    w.rules.failWatch = true;
+    await _open(tester, w);
+    expect(find.text('Giá theo ngày'), findsOneWidget);
+    expect(_key('packages-day-pricing-sub'), findsNothing);
+    expect(find.textContaining('Đặt giá'), findsNothing);
+    expect(find.textContaining('lấy bằng giá thường'), findsNothing);
+    // The row still opens S08.10.
+    await tester.tap(_key('packages-day-pricing'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /me/day-pricing'), findsOneWidget);
+  });
+
   testWidgets('"Giá theo ngày" opens S08.10', (tester) async {
     final w = await _world();
     await _open(tester, w);

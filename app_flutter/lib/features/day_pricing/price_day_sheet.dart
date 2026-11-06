@@ -18,7 +18,9 @@ typedef BeatenRule = ({PriceRule rule, int price});
 /// S08.10-day (mock `#S08.10-day`; spec §5.5, R4): the sheet for one day of a
 /// series. [rule] is the series whose price the day has, [dayPrice] that
 /// price (an exception's price when the day has one), [beaten] the series
-/// that cover the day but were replaced by [rule]. A save or delete closes
+/// that cover the day but were replaced by [rule]. [exceptionRules] are the
+/// series of the package holding an exception on the day ([rule] among them or
+/// not): each gets its own "Về giá chuỗi". A save or delete closes
 /// the sheet and says so in a SnackBar of the screen below; the answer is
 /// whether something was saved or deleted.
 Future<bool> showPriceDaySheet(
@@ -28,6 +30,7 @@ Future<bool> showPriceDaySheet(
   required PriceRule rule,
   required int dayPrice,
   List<BeatenRule> beaten = const [],
+  List<PriceRule> exceptionRules = const [],
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final message = await showAppSheet<String>(
@@ -38,6 +41,7 @@ Future<bool> showPriceDaySheet(
       rule: rule,
       dayPrice: dayPrice,
       beaten: beaten,
+      exceptionRules: exceptionRules,
     ),
   );
   if (message == null) {
@@ -60,6 +64,7 @@ class PriceDaySheet extends ConsumerStatefulWidget {
     required this.rule,
     required this.dayPrice,
     this.beaten = const [],
+    this.exceptionRules = const [],
   });
 
   final ServicePackage package;
@@ -67,6 +72,7 @@ class PriceDaySheet extends ConsumerStatefulWidget {
   final PriceRule rule;
   final int dayPrice;
   final List<BeatenRule> beaten;
+  final List<PriceRule> exceptionRules;
 
   @override
   ConsumerState<PriceDaySheet> createState() => _PriceDaySheetState();
@@ -88,10 +94,6 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
   }
 
   int? get _priceValue => parseVnd(_price.text);
-
-  /// Whether the day has an exception of [PriceDaySheet.rule] to take back.
-  bool get _hasException =>
-      ruleExceptions(widget.rule).any((e) => e.day == widget.day);
 
   /// The price field follows the radio: the day's price for the day and the
   /// days after, the series' own price for the whole series (unless typed).
@@ -186,9 +188,9 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
     );
   }
 
-  /// "Về giá chuỗi": takes the day's exception back, so the series covers the
-  /// day as usual.
-  Future<void> _clear() {
+  /// "Về giá chuỗi": takes the day's exception of [target] back, so the series
+  /// covers the day as usual.
+  Future<void> _clear(PriceRule target) {
     if (_saving) {
       return Future.value();
     }
@@ -196,11 +198,7 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
     return _finish(
       () => ref
           .read(dayPricingActionsProvider)
-          .setException(
-            widget.rule.id,
-            widget.day,
-            const PriceException.clear(),
-          ),
+          .setException(target.id, widget.day, const PriceException.clear()),
       () => l.s0810_saved,
     );
   }
@@ -237,12 +235,12 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
             widget.day,
             const PriceException.skip(),
           ),
-          () => l.s0810_saved,
+          () => l.s0810_dayRemoved,
         );
       case PriceDayScope.following:
         return _finish(
           () => actions.splitRule(rule.id, widget.day),
-          () => l.s0810_saved,
+          () => l.s0810_seriesEnded,
         );
       case PriceDayScope.all:
         return _finish(
@@ -499,11 +497,17 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
               loading: _saving,
               onPressed: _saving || _priceError != null ? null : _save,
             ),
-            if (_hasException)
+            for (final r in widget.exceptionRules)
               AppButton.text(
-                l.s0810_clearException,
-                key: const Key('price-day-clear'),
-                onPressed: _saving ? null : _clear,
+                r.id == rule.id
+                    ? l.s0810_clearException
+                    : l.s0810_clearExceptionOf(ruleTitle(l, r)),
+                key: Key(
+                  r.id == rule.id
+                      ? 'price-day-clear'
+                      : 'price-day-clear-${r.id}',
+                ),
+                onPressed: _saving ? null : () => _clear(r),
               ),
             AppButton.text(
               removeLabel,

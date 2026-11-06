@@ -6,7 +6,7 @@ import 'package:photobooking/core/core.dart';
 ///
 /// [label] is "13 tháng 10, rảnh": day, month, then the state ("rảnh", "đã
 /// đặt", "chờ nhận", "nghỉ", "hết chỗ"), optionally ", có sự kiện" and a price
-/// note ("rảnh, Cuối 1,8M"). Every cell of an `AppCalendar` reads "Thứ Ba 13
+/// note ("rảnh, Mùa cưới 2M"). Every cell of an `AppCalendar` reads "Thứ Ba 13
 /// tháng 10, 4 tháng 9 âm lịch, rảnh[, hôm nay]" with the note on the next
 /// line, so the weekday, the lunar date and "hôm nay" are matched loosely and
 /// the rest exactly. Needs `tester.ensureSemantics()`.

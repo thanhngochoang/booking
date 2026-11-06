@@ -22911,6 +22911,36 @@ abstract class AppLocalizations {
   /// **'Về giá chuỗi'**
   String get s0810_clearException;
 
+  /// No description provided for @s0810_clearExceptionOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về giá chuỗi {name}'**
+  String s0810_clearExceptionOf(String name);
+
+  /// No description provided for @s0810_exceptionSpoken.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngoại lệ'**
+  String get s0810_exceptionSpoken;
+
+  /// No description provided for @s0810_dayRemoved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ ngày khỏi chuỗi'**
+  String get s0810_dayRemoved;
+
+  /// No description provided for @s0810_seriesEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã kết thúc chuỗi'**
+  String get s0810_seriesEnded;
+
+  /// No description provided for @s0810_errorNameContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên không được chứa số điện thoại hay đường link'**
+  String get s0810_errorNameContact;
+
   /// No description provided for @s0810_removeDayTitle.
   ///
   /// In vi, this message translates to:

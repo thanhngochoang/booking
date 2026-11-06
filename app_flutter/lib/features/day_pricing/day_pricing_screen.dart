@@ -52,15 +52,18 @@ class _DayPricingScreenState extends ConsumerState<DayPricingScreen> {
     setState(() => _range = null);
     final price = priceForDay(package.priceVnd, package.id, rules, day);
     final winner = price.rule;
-    // A day an exception was written for opens that series, so the exception
-    // can be changed or taken back, even when the day is no longer its own
-    // (a dropped day) or another series wins it.
-    bool hasException(PriceRule r) =>
-        r.serviceId == package.id && ruleExceptions(r).any((e) => e.day == day);
-    final PriceRule? excepted = winner != null && hasException(winner)
-        ? winner
-        : rules.where(hasException).firstOrNull;
-    final shown = excepted ?? winner;
+    // The series holding an exception on the day, by id: the sheet offers
+    // "Về giá chuỗi" for each, so an exception is never stranded under a
+    // series that does not set the day's price.
+    final holders = [
+      for (final r in rules)
+        if (r.serviceId == package.id &&
+            ruleExceptions(r).any((e) => e.day == day))
+          r,
+    ]..sort((a, b) => a.id.compareTo(b.id));
+    // The series that sets the day's price is the target of every edit; only
+    // a day no series covers (a removed day) opens on the excepted series.
+    final shown = winner ?? holders.firstOrNull;
     if (shown == null) {
       showPriceRuleSheet(context, serviceId: package.id, from: day, to: day);
       return;
@@ -68,7 +71,7 @@ class _DayPricingScreenState extends ConsumerState<DayPricingScreen> {
     final lunar = solarToLunar(day);
     final beaten = <BeatenRule>[];
     for (final r in rules) {
-      if (shown != winner || r.serviceId != package.id || r.id == winner?.id) {
+      if (r.serviceId != package.id || r.id == winner?.id) {
         continue;
       }
       final c = ruleCoversDay(r, day, lunar: lunar);
@@ -86,6 +89,7 @@ class _DayPricingScreenState extends ConsumerState<DayPricingScreen> {
       package: package,
       day: day,
       rule: shown,
+      exceptionRules: holders,
       dayPrice: price.amount,
       beaten: beaten,
     );
@@ -308,6 +312,10 @@ class _Body extends StatelessWidget {
           emphasized: (d) => prices[d]?.isRule ?? false,
           dayOutline: (d) =>
               exceptionDays.contains(d) ? AppColors.warning : null,
+          // The outline is a colour only: screen readers get the word.
+          dayStyle: (d) => exceptionDays.contains(d)
+              ? AppCalendarDayStyle(spoken: l.s0810_exceptionSpoken)
+              : null,
           dayBuilder: (context, d) {
             final p = prices[d];
             if (p == null) {

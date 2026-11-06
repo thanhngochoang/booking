@@ -23,6 +23,9 @@ enum PriceRuleErrorCode {
 
   /// 50 exceptions of a rule are already saved (`exception_limit`).
   exceptionLimit,
+
+  /// A phone number or a link in the name (`contact_leak`, field `name`).
+  contactLeak,
   permissionDenied,
   notFound,
   network,
@@ -53,6 +56,10 @@ PriceRuleError priceRuleErrorOf(Object error) {
     'rule_limit' => const PriceRuleError(PriceRuleErrorCode.ruleLimit),
     'exception_limit' => const PriceRuleError(
       PriceRuleErrorCode.exceptionLimit,
+    ),
+    'contact_leak' => PriceRuleError(
+      PriceRuleErrorCode.contactLeak,
+      error.field,
     ),
     'permission_denied' || 'permission-denied' => const PriceRuleError(
       PriceRuleErrorCode.permissionDenied,

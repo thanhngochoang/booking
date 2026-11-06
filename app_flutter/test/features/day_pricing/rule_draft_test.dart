@@ -211,6 +211,52 @@ void main() {
   });
 
   group('inline errors', () {
+    test('a kept lunar range is measured by its lunar days, not the solar '
+        'span shown', () {
+      // 20/4 - 10/7 (lunar) is 81 days on the server's 30-day months; its
+      // occurrence in 2025 runs over the leap 6th month: 110 solar days.
+      final shown = yearlyOccurrenceOf(
+        from: '04-20',
+        to: '07-10',
+        lunar: true,
+        year: 2025,
+      )!;
+      expect(shown.to.difference(shown.from).inDays + 1, greaterThan(92));
+      final kept = _values(
+        repeats: true,
+        lunar: true,
+        from: shown.from,
+        to: shown.to,
+        keepFrom: '04-20',
+        keepTo: '07-10',
+      );
+      expect(_error(kept, creating: false), isNull);
+      // Picked again by hand, the same days are written from the picks and
+      // are checked as before.
+      expect(
+        _error(
+          _values(repeats: true, lunar: true, from: shown.from, to: shown.to),
+          creating: false,
+        ),
+        RuleFormError.tooLong,
+      );
+      // A kept range that is really too long is still refused.
+      expect(
+        _error(
+          _values(
+            repeats: true,
+            lunar: true,
+            from: DateTime.utc(2027, 2, 6),
+            to: DateTime.utc(2027, 7, 1),
+            keepFrom: '01-01',
+            keepTo: '06-01',
+          ),
+          creating: false,
+        ),
+        RuleFormError.tooLong,
+      );
+    });
+
     test('a valid form has none', () {
       expect(_error(_values()), isNull);
       expect(_error(_values(repeats: true)), isNull);

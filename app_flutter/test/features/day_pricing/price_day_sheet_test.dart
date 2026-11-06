@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart' show AppButton, AppIcons;
 import 'package:photobooking/data/pricing/price_rule_repository.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 
 import '../../support/day_pricing_world.dart';
 
@@ -206,6 +207,8 @@ void main() {
         ('r-wedding', _nov(17), const PriceException.skip()),
       );
       expect(world.events.single.params, {'kind': 'skip'});
+      expect(find.text('Đã bỏ ngày khỏi chuỗi'), findsOneWidget);
+      expect(find.text('Đã lưu giá'), findsNothing);
       // The day is plain again.
       expect(_priceText(tester, _nov(17)), '1,5M');
     });
@@ -231,6 +234,8 @@ void main() {
       expect(_priceText(tester, _nov(16)), '2M');
       expect(_priceText(tester, _nov(17)), '1,5M');
       expect(world.events.single.name, 'price_rule_delete');
+      expect(find.text('Đã kết thúc chuỗi'), findsOneWidget);
+      expect(find.text('Đã lưu giá'), findsNothing);
     });
 
     testWidgets('"Xoá chuỗi" asks first: Giữ lại keeps it, Xoá deletes it', (
@@ -340,18 +345,125 @@ void main() {
       expect(_priceText(tester, _nov(14)), '1,8M');
     });
 
-    testWidgets('a series that does not win the day still opens', (
-      tester,
-    ) async {
+    testWidgets('a series that does not win the day: the sheet is for the '
+        'winner, "Về giá chuỗi" names the other', (tester) async {
       await world.init();
       world.seed(weekendRule().withExceptions({'2026-11-14': null}));
       world.seed(weddingRule());
       await world.open(tester);
 
       await tapDay(tester, _nov(14));
-      expect(find.text('Cuối tuần · 1.800.000₫'), findsOneWidget);
+      // The wedding series sets the day: it is shown and edited.
+      expect(find.text('Mùa cưới · 2.000.000₫'), findsOneWidget);
+      expect(find.text('Cuối tuần · 1.800.000₫'), findsNothing);
+      expect(find.text('Cả chuỗi Mùa cưới'), findsOneWidget);
+      // The weekend series dropped the day, so it is not "beaten".
       expect(find.textContaining('bị'), findsNothing);
-      expect(keyed('price-day-clear'), findsOneWidget);
+      expect(keyed('price-day-clear'), findsNothing);
+      expect(find.text('Về giá chuỗi Cuối tuần'), findsOneWidget);
+
+      await tapKey(tester, 'price-day-clear-r-weekend');
+      final e = world.rules.exceptions.single;
+      expect(
+        (e.ruleId, e.day, e.value),
+        ('r-weekend', _nov(14), const PriceException.clear()),
+      );
+    });
+
+    testWidgets('a one-off over a weekly day with its own price: Lưu writes to '
+        'the one-off, "Về giá chuỗi Cuối tuần" clears the weekly one', (
+      tester,
+    ) async {
+      final saturday = DateTime.utc(2026, 12, 19);
+      Future<void> open() async {
+        await world.init();
+        world.seed(weekendRule().withExceptions({'2026-12-19': 1600000}));
+        world.seed(
+          const PriceRule(
+            id: 'r-once',
+            serviceId: 'p1',
+            price: 3000000,
+            repeat: PriceRepeat.none,
+            name: 'Noel sớm',
+            from: '2026-12-18',
+            to: '2026-12-20',
+          ),
+        );
+        await world.open(tester);
+        await tester.tap(find.byTooltip('Tháng sau'));
+        await tester.pumpAndSettle();
+        await tapDay(tester, saturday);
+      }
+
+      await open();
+      expect(find.text('Thứ 7 19/12'), findsOneWidget);
+      expect(find.text('Noel sớm · 3.000.000₫'), findsOneWidget);
+      expect(find.text('3.000.000'), findsOneWidget);
+      expect(find.text('Cuối tuần 1,6M bị Noel sớm thay'), findsOneWidget);
+      expect(find.text('Cả chuỗi Noel sớm'), findsOneWidget);
+      expect(keyed('price-day-clear'), findsNothing);
+
+      await typePrice(tester, 'price-day-price', '2800000');
+      await tapKey(tester, 'price-day-save');
+      final e = world.rules.exceptions.single;
+      expect(
+        (e.ruleId, e.day, e.value),
+        ('r-once', saturday, const PriceException.custom(2800000)),
+      );
+      expect(find.text('Đã lưu giá'), findsOneWidget);
+    });
+
+    testWidgets('the same day: "Về giá chuỗi Cuối tuần" clears the weekly '
+        'exception, not the one-off', (tester) async {
+      final saturday = DateTime.utc(2026, 12, 19);
+      await world.init();
+      world.seed(weekendRule().withExceptions({'2026-12-19': 1600000}));
+      world.seed(
+        const PriceRule(
+          id: 'r-once',
+          serviceId: 'p1',
+          price: 3000000,
+          repeat: PriceRepeat.none,
+          name: 'Noel sớm',
+          from: '2026-12-18',
+          to: '2026-12-20',
+        ),
+      );
+      await world.open(tester);
+      await tester.tap(find.byTooltip('Tháng sau'));
+      await tester.pumpAndSettle();
+      await tapDay(tester, saturday);
+
+      expect(find.text('Về giá chuỗi Cuối tuần'), findsOneWidget);
+      await tapKey(tester, 'price-day-clear-r-weekend');
+      final e = world.rules.exceptions.single;
+      expect(
+        (e.ruleId, e.day, e.value),
+        ('r-weekend', saturday, const PriceException.clear()),
+      );
+      expect(
+        world.rules.ownerRules
+            .firstWhere((r) => r.id == 'r-weekend')
+            .exceptions,
+        isEmpty,
+      );
+    });
+
+    testWidgets('two series hold an exception on the day: one action each', (
+      tester,
+    ) async {
+      await world.init();
+      world.seed(weekendRule().withExceptions({'2026-11-14': 1600000}));
+      world.seed(weddingRule(exceptions: {'2026-11-14': 1700000}));
+      await world.open(tester);
+
+      await tapDay(tester, _nov(14));
+      // The wedding series wins (yearly beats weekly); its own action keeps
+      // the plain label, the weekend one is named.
+      expect(find.text('Mùa cưới · 2.000.000₫'), findsOneWidget);
+      expect(find.text('1.700.000'), findsOneWidget);
+      expect(find.text('Về giá chuỗi'), findsOneWidget);
+      expect(find.text('Về giá chuỗi Cuối tuần'), findsOneWidget);
     });
 
     testWidgets('a day without an exception has no such action', (

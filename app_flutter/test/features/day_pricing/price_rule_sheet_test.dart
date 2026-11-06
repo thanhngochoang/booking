@@ -527,6 +527,36 @@ void main() {
       expect(find.text('Giá phải lớn hơn 0'), findsOneWidget);
     });
 
+    testWidgets('contact_leak on the name says so under the name field', (
+      tester,
+    ) async {
+      await world.init();
+      await world.open(tester);
+      await tapDay(tester, _nov(10));
+      await typePrice(tester, 'price-rule-price', '2000000');
+      await tester.enterText(keyed('price-rule-name'), 'Gọi 0912345678');
+      await tester.pump();
+
+      world.rules.nextErrorCode = 'contact_leak';
+      world.rules.nextErrorField = 'name';
+      await tapKey(tester, 'price-rule-save');
+      expect(
+        find.text('Tên không được chứa số điện thoại hay đường link'),
+        findsOneWidget,
+      );
+      expect(find.text('Chưa lưu được, thử lại nhé'), findsNothing);
+      expect(keyed('price-rule-save'), findsOneWidget);
+      expect(find.text('Gọi 0912345678'), findsOneWidget, reason: 'kept');
+
+      // Typing again takes the line away.
+      await tester.enterText(keyed('price-rule-name'), 'Gọi');
+      await tester.pump();
+      expect(
+        find.text('Tên không được chứa số điện thoại hay đường link'),
+        findsNothing,
+      );
+    });
+
     testWidgets('while saving the button loads and the sheet stays', (
       tester,
     ) async {

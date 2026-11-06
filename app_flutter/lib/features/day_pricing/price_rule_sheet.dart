@@ -350,6 +350,7 @@ class _PriceRuleSheetState extends ConsumerState<PriceRuleSheet> {
     RuleFormError.tooFar => l.s0810_errorTooFar,
     RuleFormError.limit => l.s0810_errorLimit,
     RuleFormError.exceptionLimit => l.s0810_errorExceptionLimit,
+    RuleFormError.nameContact => l.s0810_errorNameContact,
   };
 
   @override
@@ -576,6 +577,8 @@ class _PriceRuleSheetState extends ConsumerState<PriceRuleSheet> {
               decoration: InputDecoration(
                 labelText: l.s0810_name,
                 counterText: '',
+                errorText: at(RuleFormErrorSpot.name),
+                errorMaxLines: 2,
               ),
               onChanged: (_) => _edit(() {}),
             ),

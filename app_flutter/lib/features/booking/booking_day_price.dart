@@ -81,41 +81,51 @@ String ruleCellName(AppLocalizations l, PriceRule rule, String price) {
 }
 
 /// The calendar notes of [month] on S04.02: the short price, in accent, under
-/// every day whose price differs from [base]; the first day of a series also
-/// carries its abbreviated name ("Tết 2,5M"). A day the series dropped, or
-/// priced like the base, has none.
+/// every shown day whose price differs from [base]; the first shown day of a
+/// run of one series also carries its abbreviated name ("Tết 2,5M"). A weekly
+/// series is never named: "1,8M" under every Saturday says enough. A day the
+/// series dropped, or priced like the base, has none.
+///
+/// [isShown] says which days the calendar shows a price under (free days from
+/// today on); the name goes to the first of those in a run, so a series that
+/// starts on a past or a booked day is still named. Every day by default.
 Map<DateTime, CalendarNote> dayPriceNotes(
   AppLocalizations l, {
   required int base,
   required String serviceId,
   required List<PriceRule> rules,
   required DateTime month,
+  bool Function(DateTime day)? isShown,
 }) {
   if (!rules.any((r) => r.serviceId == serviceId)) {
     return const {};
   }
+  bool shown(DateTime d) => isShown == null || isShown(d);
   final notes = <DateTime, CalendarNote>{};
   final last = DateTime.utc(month.year, month.month + 1, 0).day;
-  // The day before the 1st (DateTime.utc rolls day 0 back one month).
-  var before = priceForDay(
-    base,
-    serviceId,
-    rules,
-    DateTime.utc(month.year, month.month, 0),
-  ).rule;
+  // The day before the 1st (DateTime.utc rolls day 0 back one month): a run
+  // that comes from there was named on its first shown day, if it had one.
+  final dayBefore = DateTime.utc(month.year, month.month, 0);
+  var before = priceForDay(base, serviceId, rules, dayBefore).rule;
+  var runNamed = before != null && shown(dayBefore);
   for (var d = 1; d <= last; d++) {
     final day = DateTime.utc(month.year, month.month, d);
     final priced = priceForDay(base, serviceId, rules, day);
     final rule = priced.rule;
-    if (priced.amount != base) {
+    if (rule?.id != before?.id) {
+      runNamed = false;
+    }
+    if (priced.amount != base && shown(day)) {
       final price = _short(priced.amount);
-      final named = rule != null && rule.id != before?.id;
+      final named =
+          rule != null && rule.repeat != PriceRepeat.weekly && !runNamed;
       notes[day] = (
         text: named
             ? l.s0402_rulePrice(ruleCellName(l, rule, price), price)
             : price,
         accent: true,
       );
+      runNamed = true;
     }
     before = rule;
   }

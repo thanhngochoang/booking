@@ -90,6 +90,24 @@ void main() {
       expect(_outlined(tester, _nov(10)), isFalse);
     });
 
+    testWidgets('a day with an exception says "ngoại lệ" to a screen reader', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await world.init();
+      world.seed(
+        weddingRule(exceptions: {'2026-11-15': 1500000, '2026-11-16': null}),
+      );
+      await world.open(tester);
+
+      String label(DateTime d) => tester.getSemantics(dayCell(d)).label;
+      expect(label(_nov(15)), contains('ngoại lệ'));
+      expect(label(_nov(16)), contains('ngoại lệ'));
+      expect(label(_nov(14)), isNot(contains('ngoại lệ')));
+      expect(label(_nov(10)), isNot(contains('ngoại lệ')));
+      h.dispose();
+    });
+
     testWidgets('shows the lunar day and moves between months', (tester) async {
       await world.init();
       await world.open(tester);

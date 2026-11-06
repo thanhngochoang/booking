@@ -179,18 +179,6 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     final base = state.priceVnd;
     final rules = state.rules;
     final varies = state.pricesVary;
-    final priceNotes = state.dayPriced &&
-            serviceId != null &&
-            base != null &&
-            rules != null
-        ? dayPriceNotes(
-            l10n,
-            base: base,
-            serviceId: serviceId,
-            rules: rules,
-            month: _month,
-          )
-        : const <DateTime, CalendarNote>{};
     final ruleLine = ruleDayLine(l10n, state);
     final rulesMissing = state.rulesFailed && day != null;
 
@@ -373,19 +361,32 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                         }
                       }
 
+                      // Free days from today on: a past or taken day has no
+                      // price to compare, and the series name goes to the
+                      // first day that does show one.
+                      final priceNotes =
+                          state.dayPriced &&
+                              serviceId != null &&
+                              base != null &&
+                              rules != null
+                          ? dayPriceNotes(
+                              l10n,
+                              base: base,
+                              serviceId: serviceId,
+                              rules: rules,
+                              month: _month,
+                              isShown: (d) =>
+                                  !d.isBefore(today) &&
+                                  (dayStates[d] ?? DayState.free) ==
+                                      DayState.free,
+                            )
+                          : const <DateTime, CalendarNote>{};
+
                       return AvailabilityCalendar(
                         showHeader: false,
                         month: _month,
                         states: dayStates,
-                        notes: {
-                          // Free days from today on: a past or taken day has
-                          // no price to compare.
-                          for (final e in priceNotes.entries)
-                            if (!e.key.isBefore(today) &&
-                                (dayStates[e.key] ?? DayState.free) ==
-                                    DayState.free)
-                              e.key: e.value,
-                        },
+                        notes: priceNotes,
                         selected: selectedDate,
                         onSelect: (d) {
                           final s = dayStates[d] ?? DayState.free;

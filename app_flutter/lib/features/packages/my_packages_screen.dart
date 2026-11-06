@@ -156,10 +156,13 @@ class _MyPackagesScreenState extends ConsumerState<MyPackagesScreen> {
       }
     });
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
-    final rules = uid == null
-        ? const <PriceRule>[]
-        : ref.watch(providerPriceRulesProvider(uid)).value ??
-              const <PriceRule>[];
+    final rulesAsync = uid == null
+        ? null
+        : ref.watch(providerPriceRulesProvider(uid));
+    final rules = rulesAsync?.value ?? const <PriceRule>[];
+    // False while the series load or when they failed to: the row must not
+    // claim there are none.
+    final rulesKnown = rulesAsync == null || rulesAsync.hasValue;
     final today = ref.watch(calendarTodayProvider);
     final stored = packages.value;
     final sorting = _sorting && stored != null;
@@ -225,7 +228,11 @@ class _MyPackagesScreenState extends ConsumerState<MyPackagesScreen> {
                             height: 240,
                             child: EmptyState(title: l.s0808_empty),
                           ),
-                          _DayPricingRow(rules: rules, today: today),
+                          _DayPricingRow(
+                            rules: rules,
+                            known: rulesKnown,
+                            today: today,
+                          ),
                         ],
                       ),
                       data: (context, list) {
@@ -240,6 +247,7 @@ class _MyPackagesScreenState extends ConsumerState<MyPackagesScreen> {
                         return _PackageList(
                           packages: shown,
                           rules: rules,
+                          rulesKnown: rulesKnown,
                           today: today,
                           onToggle: (p, on) => _toggle(p, on, shown),
                         );
@@ -273,12 +281,14 @@ class _PackageList extends StatelessWidget {
   const _PackageList({
     required this.packages,
     required this.rules,
+    required this.rulesKnown,
     required this.today,
     required this.onToggle,
   });
 
   final List<ServicePackage> packages;
   final List<PriceRule> rules;
+  final bool rulesKnown;
   final DateTime today;
   final void Function(ServicePackage p, bool on) onToggle;
 
@@ -291,7 +301,7 @@ class _PackageList extends StatelessWidget {
       key: const Key('packages-list'),
       padding: const EdgeInsets.all(AppSpace.s4),
       children: [
-        _DayPricingRow(rules: rules, today: today),
+        _DayPricingRow(rules: rules, known: rulesKnown, today: today),
         const SizedBox(height: AppSpace.s2),
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpace.s2),
@@ -615,11 +625,17 @@ class _SortTile extends StatelessWidget {
 
 /// "Giá theo ngày" with the names of the live series of every package and
 /// their number ("Cuối tuần, Mùa cưới, Tết · 6 chuỗi"), or the empty text and
-/// "Đặt giá" → S08.10.
+/// "Đặt giá" → S08.10. While the series are not known (loading, or failed to
+/// load) it shows the title only, never "no series".
 class _DayPricingRow extends StatelessWidget {
-  const _DayPricingRow({required this.rules, required this.today});
+  const _DayPricingRow({
+    required this.rules,
+    required this.known,
+    required this.today,
+  });
 
   final List<PriceRule> rules;
+  final bool known;
   final DateTime today;
 
   @override
@@ -637,7 +653,9 @@ class _DayPricingRow extends StatelessWidget {
       }
     }
     final metaStyle = theme.textTheme.bodySmall?.copyWith(color: muted);
-    final Widget sub = live.isEmpty
+    final Widget sub = !known
+        ? const SizedBox.shrink()
+        : live.isEmpty
         ? Text.rich(
             TextSpan(
               style: metaStyle,

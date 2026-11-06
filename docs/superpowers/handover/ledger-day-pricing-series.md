@@ -49,18 +49,21 @@ Plan: `docs/superpowers/plans/2026-11-06-s08-day-pricing-series.md`. Spec: `docs
 - `AppCalendar` cao ô ≥ 44 dp (vùng chạm); chiều rộng theo màn (7 × 44 + lề 32 dp không vừa 320 dp).
 - `AppCalendar.onRangeCompleted` (chạm thứ hai, chạm đôi cùng ngày, hoặc kết thúc kéo); `onRangeChanged` giữ cho phản hồi tức thì. Picker khoảng chỉ bật "Chọn" sau khi hoàn thành. Chạm đầu phát khoảng `d..d`.
 - Một khoảng không chứa ngày bị `disabledDay`: ngày cuối bị cắt về ngày trước ngày tắt đầu tiên sau ngày bắt đầu.
-- Cách kéo: **cả hai** đều có, giữ rồi kéo (long-press) và chạm hai ngày.
+- Cách kéo: `AppCalendar` có **cả hai**, giữ rồi kéo (long-press) và chạm hai ngày (picker dùng chạm hai ngày). Riêng S08.10 chạm một ngày mở sheet nên chọn khoảng chỉ bằng giữ rồi kéo.
 - Tiêu đề tháng mọi lịch là "Tháng {m} / {y}" (spec §5.3), thay "Tháng {m}, {y}" của các màn dùng `AvailabilityCalendar`. Khoá `calendarMonthTitle`, `calendarDaySemantics` đã xoá.
 - `showAppDatePicker` có `disabledDay`, và không bao giờ trả `initial` bị tắt hoặc ngoài first..last: "Chọn" tắt đến khi chọn ngày dùng được (có test).
-- Rút gọn tên chuỗi ở ô S04.02: cả tên nếu vừa, không thì từ đầu tiên.
+- Rút gọn tên chuỗi ở ô S04.02: cả tên nếu vừa, không thì từ đầu tiên. Chuỗi hằng tuần không hiện tên dưới ngày (chỉ giá rút gọn, "1,8M" dưới mọi T7). Chuỗi khác: tên ghi ở **ngày đầu tiên còn hiện giá** của mỗi đoạn liền (sau khi bỏ ngày đã qua, đã đặt, không rảnh), nên đoạn bắt đầu từ ngày đã qua vẫn có tên.
 
 **S08.08–S08.10**
+- Dòng "Giá theo ngày" của S08.08 khi chưa tải được hoặc tải lỗi chỉ hiện tiêu đề, không ghi "Chưa có chuỗi" (không khẳng định điều chưa biết).
+- S08.10: ô có ngoại lệ đọc thêm "ngoại lệ" (qua `dayStyle.spoken`), vì viền màu chỉ là màu. Sau "Bỏ ngày này khỏi chuỗi" SnackBar nói "Đã bỏ ngày khỏi chuỗi", sau "Kết thúc chuỗi từ ngày này" nói "Đã kết thúc chuỗi" (không phải "Đã lưu giá").
+- Kiểm khoảng cục bộ của chuỗi hằng năm âm lịch giữ nguyên `from`/`to` đã lưu (sửa, mẫu) không đo theo số ngày dương đang hiện (khoảng chạy qua tháng nhuận dài hơn): bỏ kiểm đó, `validatePriceRuleField` đo bằng ngày âm đã lưu (tháng 30 ngày) như `validatePriceRule` của server.
 - S08.08 ở chế độ sắp xếp không có công tắc (spec "công tắc ẩn" là ẩn công tắc, như mock; plan hiểu nhầm là có).
 - Hàng chuỗi trong thẻ S08.10: hằng tuần trước, rồi theo lần tới gần nhất. Chuỗi không còn lần tới hiện ở nhóm "Đã kết thúc" (thu gọn, mờ; mở sheet sửa kèm "Xoá chuỗi"); chúng vẫn tính vào giới hạn 30 phía server (reader đọc tối đa 30 tài liệu).
-- Ngày có ngoại lệ của một chuỗi nào đó mở S08.10-day của chuỗi ấy kèm hành động "Về giá chuỗi" (`setException(clear)`), để thợ huỷ "bỏ ngày" hoặc giá riêng.
+- Chạm một ngày ở S08.10 mở sheet của **chuỗi thắng ngày đó**: điền sẵn, "Lưu" cả ba radio và chữ đỏ (bỏ ngày / kết thúc / xoá) đều ghi vào chuỗi thắng, kèm dòng "{khác} … bị {thắng} thay" như cũ. Chỉ khi không chuỗi nào thắng (ngày đã bị bỏ khỏi chuỗi) sheet mới mở trên chuỗi giữ ngoại lệ (id nhỏ nhất nếu có nhiều). Ngoại lệ không bị kẹt dưới chuỗi không đặt giá: mỗi chuỗi của gói giữ ngoại lệ ở ngày đó có một hành động "Về giá chuỗi" (`setException(clear)`); của chuỗi đang mở giữ nhãn "Về giá chuỗi", của chuỗi khác ghi tên ("Về giá chuỗi Cuối tuần"). Nhiều chuỗi cùng giữ ngoại lệ thì hiện đủ từng cái, xếp theo id.
 - S08.10-day điền sẵn giá theo radio: giá ngày cho "Chỉ ngày này" và "và các ngày sau", giá chuỗi cho "Cả chuỗi". "Chỉ ngày này" với đúng giá hiện tại thì không ghi gì (tránh ghi đè chuỗi bằng một ngoại lệ).
 - "Bỏ ngày này khỏi chuỗi" và "Kết thúc chuỗi từ ngày này" qua sheet xác nhận đỏ như "Xoá chuỗi".
-- Lỗi lưu của sheet "Đặt giá" hiện ngay trên nút "Lưu" (SnackBar nằm sau sheet).
+- Lỗi lưu của sheet "Đặt giá" và sheet một ngày hiện ngay trên nút "Lưu" (SnackBar nằm sau sheet). `contact_leak` ở `name` hiện dòng "Tên không được chứa số điện thoại hay đường link" dưới ô tên.
 - "Áp cho" ẩn khi thợ chỉ có một gói; nút "Đặt giá" ở danh sách mở sheet cho gói đang bật đầu tiên.
 - S08.10 ẩn khỏi thẻ chuỗi mọi chuỗi không còn lần tới (không chỉ chuỗi `none` đã qua); chúng chỉ hiện ở nhóm "Đã kết thúc" của danh sách.
 
@@ -89,8 +92,8 @@ Plan: `docs/superpowers/plans/2026-11-06-s08-day-pricing-series.md`. Spec: `docs
 - B4: công cụ dọn hỏng cả batch nếu một tài liệu biến mất (chạy lại được); thêm một lần đọc cho blind put.
 - B5: thiếu test rules cho đường lưu chính xác của app với `updateDoc` + `deleteField`; context `dp6` không có tài liệu user (vô hại).
 - A2: thứ tự lỗi của fake (`not_found` trước kiểm giá); fake chỉ kiểm input; thiếu test hai khoá service dùng chung một listener; `invalid_response` sau ghi thành công hiện là `unknown`.
-- A4: lỗi field `to`/`from` của server map sang dòng cố định; mã `template` còn sau khi sửa ngày tay; lệch mock (số âm "(âm lịch)" ở hàng danh sách, nhãn trên dropdown, icon thêm ở cuối, dòng giá 8px cứng, hậu tố ₫ cứng); chuỗi không thắng có ngoại lệ vẫn là đích ghi của ngày; `firstOrNull` khi nhiều chuỗi không thắng có ngoại lệ.
+- A4: lỗi field `to`/`from` của server map sang dòng cố định; mã `template` còn sau khi sửa ngày tay; lệch mock (số âm "(âm lịch)" ở hàng danh sách, nhãn trên dropdown, icon thêm ở cuối, dòng giá 8px cứng, hậu tố ₫ cứng).
 - A5: chỉ hiện chuỗi hằng tuần đầu tiên; tên chuỗi hằng tuần hạ chữ đầu; tải chuỗi lỗi thì lặng lẽ bỏ phần phụ; `update` ghi lại `deliverables` (sẵn có).
-- A6: tên chuỗi hằng tuần lặp ở mọi T7 của S04.02 ("Cuối 1,8M"); stream lỗi sau khi có giá trị giữ danh sách cũ; S04.03 không có nút thử lại sau khi đọc lại lỗi; sheet S03.01 chỉ hiện "Giá thường" khi đang tải hoặc lỗi; `snapshotPriceReason` chưa dùng.
+- A6: stream lỗi sau khi có giá trị giữ danh sách cũ; S04.03 không có nút thử lại sau khi đọc lại lỗi; sheet S03.01 chỉ hiện "Giá thường" khi đang tải hoặc lỗi; `snapshotPriceReason` chưa dùng.
 - A7: test "hết chỗ" mất phần khớp semantics đầy đủ; chấm sự kiện đổi cỡ.
 - A8: `quote_sheet` dự phòng dùng `calendarDay(clock())` thay `vnToday`; `job_post_sheets` chưa có dấu hôm nay; chưa có test mới cho các nơi gọi đã đổi.

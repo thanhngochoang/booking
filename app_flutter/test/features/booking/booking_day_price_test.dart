@@ -168,9 +168,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Ngày thường 1,5M'), findsOneWidget);
-        // The weekend series: its first day carries the name ("Cuối tuần 1,8M"
-        // does not fit a cell, so the first word), the next day the price.
-        expect(dayByLabel('7 tháng 11, rảnh, Cuối 1,8M'), findsOneWidget);
+        // A weekly series is never named, only the price.
+        expect(dayByLabel('7 tháng 11, rảnh, 1,8M'), findsOneWidget);
         expect(dayByLabel('8 tháng 11, rảnh, 1,8M'), findsOneWidget);
         // 14/11 starts the season (it beats the weekend series).
         expect(dayByLabel('14 tháng 11, rảnh, Mùa cưới 2M'), findsOneWidget);
@@ -194,6 +193,25 @@ void main() {
         h.dispose();
       },
     );
+
+    testWidgets('a series that began on a past day names the first shown day', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      // Mon 16/11: the 14th and 15th of the season are past.
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        packages: [dayPricePortrait],
+        priceRules: dayPriceRules(),
+        now: DateTime.utc(2026, 11, 16),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dayByLabel('16 tháng 11, rảnh, Mùa cưới 2M'), findsOneWidget);
+      expect(dayByLabel('17 tháng 11, rảnh, 2M'), findsOneWidget);
+      h.dispose();
+    });
 
     testWidgets('a package without series has no price line', (tester) async {
       await pumpBookingRoute(
@@ -224,7 +242,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · từ 1.500.000₫'), findsOneWidget);
 
-      await tester.tap(dayByLabel('7 tháng 11, rảnh, Cuối 1,8M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, 1,8M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
       expect(
@@ -262,7 +280,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(dayByLabel('7 tháng 11, rảnh, Cuối 1,7M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, 1,7M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.700.000₫'), findsOneWidget);
       h.dispose();
@@ -280,7 +298,7 @@ void main() {
         now: now,
       );
       await tester.pumpAndSettle();
-      await tester.tap(dayByLabel('7 tháng 11, rảnh, Cuối 1,8M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, 1,8M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
 
@@ -441,10 +459,44 @@ void main() {
         expect(feb[DateTime.utc(2027, 2, 10)], '2,5M');
         // The day after is a plain weekday again.
         expect(feb.containsKey(DateTime.utc(2027, 2, 11)), isFalse);
-        // Sat 13/2 is a weekend day again (the weekly series restarts).
-        expect(feb[DateTime.utc(2027, 2, 13)], 'Cuối 1,8M');
+        // Sat 13/2 is a weekend day again: the weekly series has no name.
+        expect(feb[DateTime.utc(2027, 2, 13)], '1,8M');
       },
     );
+
+    test('a weekly series shows the short price only, never a name', () {
+      final nov = notes(2026, 11);
+      expect(nov[DateTime.utc(2026, 11, 7)], '1,8M');
+      expect(nov[DateTime.utc(2026, 11, 8)], '1,8M');
+      expect(nov[DateTime.utc(2026, 11, 28)], '1,8M');
+    });
+
+    test('the name goes to the first shown day of a run', () {
+      // The season of 14/11 - 22/11: the 14th is past or taken, the 15th
+      // costs the base price (exception), so the 16th is the first shown one.
+      final shown = dayPriceNotes(
+        l,
+        base: 1500000,
+        serviceId: 's1',
+        rules: series,
+        month: DateTime.utc(2026, 11),
+        isShown: (d) => d.day != 14,
+      );
+      expect(shown.containsKey(DateTime.utc(2026, 11, 14)), isFalse);
+      expect(shown[DateTime.utc(2026, 11, 16)]?.text, 'Mùa cưới 2M');
+      expect(shown[DateTime.utc(2026, 11, 17)]?.text, '2M');
+      // Another run is named by its own first shown day.
+      final late = dayPriceNotes(
+        l,
+        base: 1500000,
+        serviceId: 's1',
+        rules: series,
+        month: DateTime.utc(2026, 11),
+        isShown: (d) => d.day >= 18,
+      );
+      expect(late[DateTime.utc(2026, 11, 18)]?.text, 'Mùa cưới 2M');
+      expect(late[DateTime.utc(2026, 11, 19)]?.text, '2M');
+    });
 
     test('a package without series has no notes', () {
       expect(

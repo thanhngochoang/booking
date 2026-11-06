@@ -118,13 +118,16 @@ enum RuleFormError {
   limit(RuleFormErrorSpot.form),
 
   /// The rule has 50 exceptions already (`exception_limit`).
-  exceptionLimit(RuleFormErrorSpot.form);
+  exceptionLimit(RuleFormErrorSpot.form),
+
+  /// The server found a phone number or a link in the name (`contact_leak`).
+  nameContact(RuleFormErrorSpot.name);
 
   const RuleFormError(this.spot);
   final RuleFormErrorSpot spot;
 }
 
-enum RuleFormErrorSpot { price, dates, repeat, weekdays, form }
+enum RuleFormErrorSpot { price, dates, repeat, weekdays, name, form }
 
 /// What the photographer has filled in on the "Đặt giá" sheet.
 class RuleFormValues {
@@ -258,7 +261,12 @@ RuleFormError? ruleFormError(
       if (!v.lunar && (_isFeb29(v.from) || _isFeb29(v.to))) {
         return RuleFormError.leapDay;
       }
-      if (v.to.difference(v.from).inDays + 1 > kMaxSpanDays) {
+      // The shown dates are only the next occurrence: a lunar range that was
+      // kept as stored is measured by its stored lunar days below (30-day
+      // months, the way the server does), never by the solar days shown,
+      // which count a leap month in between.
+      final kept = v.lunar && v.keepFrom != null && v.keepTo != null;
+      if (!kept && v.to.difference(v.from).inDays + 1 > kMaxSpanDays) {
         return RuleFormError.tooLong;
       }
   }
@@ -300,6 +308,8 @@ RuleFormError? ruleFormErrorOfServer(PriceRuleError error) {
       return RuleFormError.limit;
     case PriceRuleErrorCode.exceptionLimit:
       return RuleFormError.exceptionLimit;
+    case PriceRuleErrorCode.contactLeak:
+      return error.field == 'name' ? RuleFormError.nameContact : null;
     case PriceRuleErrorCode.invalidArgument:
       return switch (error.field) {
         'price' => RuleFormError.price,

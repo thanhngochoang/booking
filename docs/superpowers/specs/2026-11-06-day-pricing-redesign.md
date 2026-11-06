@@ -199,7 +199,7 @@ Lưu chỉ ghi `price` (và các trường gói khác). Lỗi dưới ô như c�
 5. Thẻ "Chuỗi của gói": mỗi chuỗi một hàng (biểu tượng lặp hoặc sự kiện, tên, quy tắc "Hằng tuần · T7, CN" / "Hằng năm · 14/11 – 22/11 · 1 ngoại lệ" / "Hằng năm · 23/12 – 5/1 âm lịch", giá). Chạm → S08.10-new ở chế độ sửa cả chuỗi.
 6. Nút chính "＋ Đặt giá" → S08.10-new với từ–tới = khoảng đang chọn (hoặc hôm nay).
 
-Tương tác trên lịch: chạm một ngày → S08.10-day nếu ngày thuộc chuỗi, ngược lại S08.10-new với từ = tới = ngày đó. Kéo từ ngày đầu tới ngày cuối (hoặc chạm hai ngày liên tiếp) → chọn khoảng, rồi "Đặt giá".
+Tương tác trên lịch: chạm một ngày **luôn mở một sheet**: S08.10-day nếu ngày thuộc chuỗi (hoặc đã bị bỏ khỏi một chuỗi), ngược lại S08.10-new với từ = tới = ngày đó. Chọn khoảng chỉ bằng **giữ rồi kéo** từ ngày đầu tới ngày cuối, rồi "Đặt giá" (chạm hai ngày liên tiếp để chọn khoảng chỉ dùng ở các picker, vì ở S08.10 một chạm đã mở sheet).
 
 ### 5.4 S08.10-new · Sheet "Đặt giá" (tạo / sửa cả chuỗi)
 
@@ -223,11 +223,11 @@ Lỗi: "Giá phải lớn hơn 0", "Giá tối đa 1.000.000.000₫", "Khoảng 
 
 ### 5.5 S08.10-day · Sheet "Sửa một ngày trong chuỗi"
 
-Tiêu đề "{Thứ} {ngày}" và tên gói. Dòng chuỗi đang áp ("Mùa cưới · 2.000.000₫ · Hằng năm · 14/11 – 22/11"); nếu ngày thuộc hai chuỗi: dòng phụ "Cuối tuần 1,8M bị Mùa cưới thay". Ô "Giá ngày này" điền sẵn giá hiện tại. Mục "Áp dụng cho" ba radio: **Chỉ ngày này** · **Ngày này và các ngày sau trong chuỗi** · **Cả chuỗi {tên}** (R4). Nút "Lưu". Chữ đỏ "Bỏ ngày này khỏi chuỗi" (với radio "cả chuỗi" thành "Xoá chuỗi"; với "và các ngày sau" thành "Kết thúc chuỗi từ ngày này"); cả ba đi qua sheet xác nhận đỏ. Giá điền sẵn theo radio (giá ngày cho hai radio đầu, giá chuỗi cho "Cả chuỗi"); "Chỉ ngày này" với đúng giá hiện tại không ghi gì. Ngày đã có ngoại lệ thêm hành động **"Về giá chuỗi"** (xoá ngoại lệ), để huỷ "bỏ ngày" hoặc giá riêng.
+Tiêu đề "{Thứ} {ngày}" và tên gói. Dòng chuỗi đang áp ("Mùa cưới · 2.000.000₫ · Hằng năm · 14/11 – 22/11"); nếu ngày thuộc hai chuỗi: dòng phụ "Cuối tuần 1,8M bị Mùa cưới thay". Ô "Giá ngày này" điền sẵn giá hiện tại. Mục "Áp dụng cho" ba radio: **Chỉ ngày này** · **Ngày này và các ngày sau trong chuỗi** · **Cả chuỗi {tên}** (R4). Nút "Lưu". Chữ đỏ "Bỏ ngày này khỏi chuỗi" (với radio "cả chuỗi" thành "Xoá chuỗi"; với "và các ngày sau" thành "Kết thúc chuỗi từ ngày này"); cả ba đi qua sheet xác nhận đỏ. Giá điền sẵn theo radio (giá ngày cho hai radio đầu, giá chuỗi cho "Cả chuỗi"); "Chỉ ngày này" với đúng giá hiện tại không ghi gì. Sheet luôn nói về **chuỗi thắng ngày đó**: điền sẵn, "Lưu" ở cả ba radio và chữ đỏ đều sửa chuỗi thắng. Chỉ khi không chuỗi nào thắng (ngày đã bị bỏ khỏi chuỗi) sheet mở trên chuỗi giữ ngoại lệ. Chuỗi nào của gói giữ ngoại lệ ở ngày đó cũng có hành động **"Về giá chuỗi"** (xoá ngoại lệ), để huỷ "bỏ ngày" hoặc giá riêng: ở chuỗi đang mở nhãn là "Về giá chuỗi", ở chuỗi khác ghi tên ("Về giá chuỗi Cuối tuần"). "Về giá chuỗi" nhắm chuỗi giữ ngoại lệ; mọi sửa khác nhắm chuỗi thắng.
 
 ### 5.6 S08.10-list · Chuỗi giá (`/me/day-pricing/rules`)
 
-Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng như §5.3 mục 5, ngoại lệ liệt kê khi ≤ 2 ("CN 15/11: 1,5M"). Chuỗi không còn lần tới (kể cả `none` đã qua) không hiện ở nhóm gói mà vào nhóm **"Đã kết thúc"** cuối danh sách: thu gọn, mờ, chạm mở sheet sửa kèm "Xoá chuỗi" (chúng vẫn tính vào giới hạn 30). Chạm → S08.10-new sửa. Biểu tượng lịch → về S08.10. Nút chính "＋ Đặt giá".
+Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng như §5.3 mục 5, ngoại lệ liệt kê khi ≤ 2 ("CN 15/11: 1,5M"). Chuỗi không còn lần tới (kể cả `none` đã qua) không hiện ở nhóm gói mà vào một nhóm **"Đã kết thúc"** cho mỗi gói (nằm dưới các chuỗi của gói đó): thu gọn, mờ, chạm mở sheet sửa kèm "Xoá chuỗi" (chúng vẫn tính vào giới hạn 30). Chạm → S08.10-new sửa. Biểu tượng lịch → về S08.10. Nút chính "＋ Đặt giá".
 
 ### 5.7 `AppCalendar` dùng chung (`core/widgets/app_calendar.dart`, `core/lunar.dart`)
 
@@ -283,7 +283,7 @@ Giá theo giờ trong ngày; lọc và sắp xếp S02.06 theo đúng giá của
 
 
 Builder đã chốt khi làm (2026-11-06; chi tiết và lý do ở `handover/ledger-day-pricing-series.md`):
-- Cách kéo chọn khoảng trên `AppCalendar`: **có cả hai**, giữ rồi kéo và chạm hai ngày. Khoảng không chứa ngày bị `disabledDay` (ngày cuối bị cắt về trước ngày tắt đầu tiên).
+- Cách chọn khoảng trên `AppCalendar`: **có cả hai**, giữ rồi kéo và chạm hai ngày; riêng S08.10 chỉ giữ rồi kéo (chạm mở sheet, §5.3). Khoảng không chứa ngày bị `disabledDay` (ngày cuối bị cắt về trước ngày tắt đầu tiên).
 - Bộ chọn ngày–tháng âm: **không có bộ chọn riêng**; `from`/`to` của chuỗi âm lịch lấy từ ngày dương đã chọn.
 - Rút gọn tên chuỗi trong ô S04.02: cả tên nếu vừa ô, không thì **từ đầu tiên**.
 - Thứ tự chuỗi trong thẻ ở S08.10: `weekly` trước, rồi theo lần tới gần nhất; chuỗi hết lần tới vào nhóm "Đã kết thúc" (§5.6).
