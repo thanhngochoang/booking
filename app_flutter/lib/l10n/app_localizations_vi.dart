@@ -713,30 +713,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get setupPackagesLoadError => 'Không tải được danh sách gói.';
 
   @override
-  String get packageEditHeading => 'Sửa gói';
-
-  @override
   String get packageNameLabel => 'Tên gói';
 
   @override
   String get packageNameHint => 'Ví dụ: Chân dung 2 giờ';
 
   @override
-  String get packagePriceLabel => 'Giá (₫)';
-
-  @override
   String get packageDurationLabel => 'Thời lượng';
-
-  @override
-  String get packageDurationHint => 'Chọn';
 
   @override
   String durationHours(String hours) {
     return '$hours giờ';
   }
-
-  @override
-  String get packageEditedLabel => 'Số ảnh hậu kỳ';
 
   @override
   String get packageDeliveryLabel => 'Giao sau';
@@ -761,20 +749,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get packageAdd => 'Thêm gói này';
-
-  @override
-  String get packageSave => 'Lưu gói';
-
-  @override
-  String get packageCancelEdit => 'Huỷ sửa';
-
-  @override
-  String packageHideTooltip(String name) {
-    return 'Ẩn gói $name';
-  }
-
-  @override
   String get packageHideTitle => 'Ẩn gói này?';
 
   @override
@@ -795,15 +769,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get packageHidden => 'Đã ẩn gói.';
-
-  @override
-  String get packageNameLength => 'Nhập tên gói từ 2 đến 60 ký tự';
-
-  @override
-  String get packagePriceRequired => 'Nhập giá lớn hơn 0';
-
-  @override
-  String get packagePriceTooHigh => 'Giá tối đa 1.000.000.000₫';
 
   @override
   String get packageDurationRequired => 'Chọn thời lượng';
@@ -13315,4 +13280,130 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get s0810_loadError => 'Không tải được ngày đặc biệt';
+
+  @override
+  String get s0809_titleNew => 'Thêm gói';
+
+  @override
+  String get s0809_titleEdit => 'Sửa gói';
+
+  @override
+  String get s0809_edited => 'Số ảnh chỉnh';
+
+  @override
+  String get s0809_prices => 'Bảng giá';
+
+  @override
+  String get s0809_modeTwo => 'Hai mức giá';
+
+  @override
+  String get s0809_modePerDay => 'Từng ngày';
+
+  @override
+  String get s0809_modeLabel => 'Cách nhập giá';
+
+  @override
+  String get s0809_weekday => 'Ngày thường · T2–T6';
+
+  @override
+  String get s0809_weekend => 'Cuối tuần · T7–CN';
+
+  @override
+  String get s0809_weekendTag => 'cuối tuần';
+
+  @override
+  String get s0809_dayMon => 'Thứ 2';
+
+  @override
+  String get s0809_dayTue => 'Thứ 3';
+
+  @override
+  String get s0809_dayWed => 'Thứ 4';
+
+  @override
+  String get s0809_dayThu => 'Thứ 5';
+
+  @override
+  String get s0809_dayFri => 'Thứ 6';
+
+  @override
+  String get s0809_daySat => 'Thứ 7';
+
+  @override
+  String get s0809_daySun => 'Chủ nhật';
+
+  @override
+  String get s0809_special => 'Giá riêng ngày đặc biệt';
+
+  @override
+  String get s0809_specialField => 'Ngày đặc biệt';
+
+  @override
+  String s0809_specialApplies(int n, int m) {
+    return 'Áp cho $n ngày lễ chung, $m khoảng ngày của bạn';
+  }
+
+  @override
+  String get s0809_see => 'Xem';
+
+  @override
+  String get s0809_specialOff => 'Đang tắt · ngày lễ tính như thứ đó';
+
+  @override
+  String get s0809_previewLabel => 'Giá 7 ngày tới';
+
+  @override
+  String s0809_previewSpecial(String day, String price) {
+    return 'Lễ $day · $price';
+  }
+
+  @override
+  String s0809_previewDay(String day, String price) {
+    return '$day · $price';
+  }
+
+  @override
+  String s0809_preview(String day, String amount) {
+    return 'Khách đặt $day trả $amount (chưa gồm dịch vụ đi kèm). Booking đã đặt giữ giá cũ.';
+  }
+
+  @override
+  String s0809_perDayNote(String range) {
+    return 'Khách thấy \"$range\" ở hồ sơ và giá đúng của ngày khi chọn lịch.';
+  }
+
+  @override
+  String get s0809_toTwoLevels =>
+      'Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?';
+
+  @override
+  String get s0809_toTwoLevelsConfirm => 'Dùng hai mức';
+
+  @override
+  String get s0809_toTwoLevelsKeep => 'Giữ từng ngày';
+
+  @override
+  String get s0809_save => 'Lưu gói';
+
+  @override
+  String get s0809_hide => 'Ẩn gói';
+
+  @override
+  String get s0809_nameLength => 'Tên 2–60 ký tự';
+
+  @override
+  String get s0809_priceRequired => 'Giá phải lớn hơn 0';
+
+  @override
+  String get s0809_priceTooHigh => 'Giá tối đa 1.000.000.000₫';
+
+  @override
+  String get s0809_saveFailed => 'Chưa lưu được gói, thử lại nhé';
+
+  @override
+  String get s0809_loadError => 'Không tải được gói';
+
+  @override
+  String get s0809_setupNote =>
+      'Đặt giá cuối tuần, giá từng ngày hoặc giá ngày lễ trong từng gói.';
 }

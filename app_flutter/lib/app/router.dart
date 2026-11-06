@@ -13,6 +13,7 @@ import 'package:photobooking/features/account/privacy_screen.dart';
 import 'package:photobooking/features/account/restore_account_screen.dart';
 import 'package:photobooking/features/addons/addons_screen.dart';
 import 'package:photobooking/features/packages/my_packages_screen.dart';
+import 'package:photobooking/features/packages/package_edit_screen.dart';
 import 'package:photobooking/features/packages/special_days_screen.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
@@ -659,12 +660,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const AddonsScreen(),
       ),
-      // S08.08 and S08.10 (#316). S08.09 (`/me/packages/new`, `:id`) is
-      // added by the package editor.
+      // S08.08, S08.09 and S08.10 (#316); `new` before `:id`. `?from=setup`
+      // is S08.01 step 2, saving returns to it.
       GoRoute(
         path: '/me/packages',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const MyPackagesScreen(),
+      ),
+      GoRoute(
+        path: '/me/packages/new',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => PackageEditScreen(
+          fromSetup: state.uri.queryParameters['from'] == 'setup',
+        ),
+      ),
+      GoRoute(
+        path: '/me/packages/:id',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => PackageEditScreen(
+          packageId: state.pathParameters['id'],
+          fromSetup: state.uri.queryParameters['from'] == 'setup',
+        ),
       ),
       GoRoute(
         path: '/me/special-days',

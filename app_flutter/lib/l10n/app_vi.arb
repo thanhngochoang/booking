@@ -333,12 +333,9 @@
   "setupNoPackages": "Chưa có gói nào. Thêm gói đầu tiên bên dưới.",
   "setupNeedPackage": "Thêm ít nhất một gói để tiếp tục.",
   "setupPackagesLoadError": "Không tải được danh sách gói.",
-  "packageEditHeading": "Sửa gói",
   "packageNameLabel": "Tên gói",
   "packageNameHint": "Ví dụ: Chân dung 2 giờ",
-  "packagePriceLabel": "Giá (₫)",
   "packageDurationLabel": "Thời lượng",
-  "packageDurationHint": "Chọn",
   "durationHours": "{hours} giờ",
   "@durationHours": {
     "placeholders": {
@@ -347,7 +344,6 @@
       }
     }
   },
-  "packageEditedLabel": "Số ảnh hậu kỳ",
   "packageDeliveryLabel": "Giao sau",
   "packageDeliverySuffix": "ngày",
   "packagePhotos": "{count} ảnh",
@@ -366,17 +362,6 @@
       }
     }
   },
-  "packageAdd": "Thêm gói này",
-  "packageSave": "Lưu gói",
-  "packageCancelEdit": "Huỷ sửa",
-  "packageHideTooltip": "Ẩn gói {name}",
-  "@packageHideTooltip": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "packageHideTitle": "Ẩn gói này?",
   "packageHideBody": "Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.",
   "packageHideConfirm": "Ẩn gói",
@@ -384,9 +369,6 @@
   "packageAdded": "Đã thêm gói.",
   "packageSaved": "Đã lưu gói.",
   "packageHidden": "Đã ẩn gói.",
-  "packageNameLength": "Nhập tên gói từ 2 đến 60 ký tự",
-  "packagePriceRequired": "Nhập giá lớn hơn 0",
-  "packagePriceTooHigh": "Giá tối đa 1.000.000.000₫",
   "packageDurationRequired": "Chọn thời lượng",
   "packageCountInvalid": "Nhập số từ 0 đến 2000",
   "packageDaysInvalid": "Nhập số ngày từ 0 đến 90",
@@ -8788,5 +8770,48 @@
   "s0810_deleteKeep": "Giữ lại",
   "s0810_saved": "Đã lưu khoảng ngày",
   "s0810_deleted": "Đã xoá khoảng ngày",
-  "s0810_loadError": "Không tải được ngày đặc biệt"
+  "s0810_loadError": "Không tải được ngày đặc biệt",
+  "s0809_titleNew": "Thêm gói",
+  "s0809_titleEdit": "Sửa gói",
+  "s0809_edited": "Số ảnh chỉnh",
+  "s0809_prices": "Bảng giá",
+  "s0809_modeTwo": "Hai mức giá",
+  "s0809_modePerDay": "Từng ngày",
+  "s0809_modeLabel": "Cách nhập giá",
+  "s0809_weekday": "Ngày thường · T2–T6",
+  "s0809_weekend": "Cuối tuần · T7–CN",
+  "s0809_weekendTag": "cuối tuần",
+  "s0809_dayMon": "Thứ 2",
+  "s0809_dayTue": "Thứ 3",
+  "s0809_dayWed": "Thứ 4",
+  "s0809_dayThu": "Thứ 5",
+  "s0809_dayFri": "Thứ 6",
+  "s0809_daySat": "Thứ 7",
+  "s0809_daySun": "Chủ nhật",
+  "s0809_special": "Giá riêng ngày đặc biệt",
+  "s0809_specialField": "Ngày đặc biệt",
+  "s0809_specialApplies": "Áp cho {n} ngày lễ chung, {m} khoảng ngày của bạn",
+  "@s0809_specialApplies": {"placeholders": {"n": {"type": "int"}, "m": {"type": "int"}}},
+  "s0809_see": "Xem",
+  "s0809_specialOff": "Đang tắt · ngày lễ tính như thứ đó",
+  "s0809_previewLabel": "Giá 7 ngày tới",
+  "s0809_previewSpecial": "Lễ {day} · {price}",
+  "@s0809_previewSpecial": {"placeholders": {"day": {"type": "String"}, "price": {"type": "String"}}},
+  "s0809_previewDay": "{day} · {price}",
+  "@s0809_previewDay": {"placeholders": {"day": {"type": "String"}, "price": {"type": "String"}}},
+  "s0809_preview": "Khách đặt {day} trả {amount} (chưa gồm dịch vụ đi kèm). Booking đã đặt giữ giá cũ.",
+  "@s0809_preview": {"placeholders": {"day": {"type": "String"}, "amount": {"type": "String"}}},
+  "s0809_perDayNote": "Khách thấy \"{range}\" ở hồ sơ và giá đúng của ngày khi chọn lịch.",
+  "@s0809_perDayNote": {"placeholders": {"range": {"type": "String"}}},
+  "s0809_toTwoLevels": "Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?",
+  "s0809_toTwoLevelsConfirm": "Dùng hai mức",
+  "s0809_toTwoLevelsKeep": "Giữ từng ngày",
+  "s0809_save": "Lưu gói",
+  "s0809_hide": "Ẩn gói",
+  "s0809_nameLength": "Tên 2–60 ký tự",
+  "s0809_priceRequired": "Giá phải lớn hơn 0",
+  "s0809_priceTooHigh": "Giá tối đa 1.000.000.000₫",
+  "s0809_saveFailed": "Chưa lưu được gói, thử lại nhé",
+  "s0809_loadError": "Không tải được gói",
+  "s0809_setupNote": "Đặt giá cuối tuần, giá từng ngày hoặc giá ngày lễ trong từng gói."
 }

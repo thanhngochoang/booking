@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 
@@ -11,6 +12,8 @@ final _routes = <RouteBase>[
   GoRoute(path: '/setup/1', builder: (_, _) => const Text('step 1')),
   GoRoute(path: '/setup/2', builder: (_, _) => const SetupPackagesScreen()),
   GoRoute(path: '/me/addons', builder: (_, _) => const Text('stub addons')),
+  GoRoute(path: '/me/packages/new', builder: (_, s) => Text('stub ${s.uri}')),
+  GoRoute(path: '/me/packages/:id', builder: (_, s) => Text('stub ${s.uri}')),
 ];
 
 const _portrait = ServicePackage(
@@ -20,6 +23,32 @@ const _portrait = ServicePackage(
   durationMinutes: 120,
   editedCount: 40,
   deliveryDays: 3,
+  dayPrices: {
+    Weekday.mon: 1500000,
+    Weekday.tue: 1500000,
+    Weekday.wed: 1500000,
+    Weekday.thu: 1500000,
+    Weekday.fri: 1500000,
+    Weekday.sat: 1800000,
+    Weekday.sun: 1800000,
+  },
+);
+
+const _couple = ServicePackage(
+  id: 'b',
+  name: 'Cặp đôi nửa ngày',
+  priceVnd: 3200000,
+  durationMinutes: 240,
+  editedCount: 80,
+  deliveryDays: 5,
+);
+
+const _hidden = ServicePackage(
+  id: 'c',
+  name: 'Sản phẩm 10 món',
+  priceVnd: 900000,
+  durationMinutes: 120,
+  active: false,
 );
 
 Future<PhotographerWorld> _world({List<ServicePackage> seed = const []}) async {
@@ -41,21 +70,6 @@ bool _enabled(WidgetTester tester, String key) =>
         .onPressed !=
     null;
 
-Future<void> _fill(
-  WidgetTester tester, {
-  String name = 'Cặp đôi nửa ngày',
-  String price = '3200000',
-  int minutes = 240,
-}) async {
-  await tester.enterText(_key('package-name'), name);
-  await tester.enterText(_key('package-price'), price);
-  await tester.ensureVisible(_key('package-duration'));
-  await tester.tap(_key('package-duration'));
-  await tester.pumpAndSettle();
-  await tester.tap(_key('duration-$minutes'));
-  await tester.pumpAndSettle();
-}
-
 void main() {
   testWidgets('without a package, "Tiếp tục" waits and says why', (
     tester,
@@ -70,117 +84,82 @@ void main() {
     );
     expect(find.text('Thêm ít nhất một gói để tiếp tục.'), findsOneWidget);
     expect(_enabled(tester, 'setup-next'), isFalse);
+    expect(_key('setup-add-package'), findsOneWidget);
+    expect(find.text('Thêm gói'), findsOneWidget);
   });
 
-  testWidgets('adds a package that shows at once and unlocks the next step', (
-    tester,
-  ) async {
+  testWidgets('has no inline form any more', (tester) async {
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
-    await _fill(tester);
-    expect(
-      find.text('3.200.000'),
-      findsOneWidget,
-      reason: 'the price field groups thousands',
-    );
-    await tester.enterText(_key('package-edited'), '80');
-    await tester.enterText(_key('package-delivery'), '5');
-    await tester.ensureVisible(_key('package-submit'));
-    await tester.tap(_key('package-submit'));
+    expect(_key('package-name'), findsNothing);
+    expect(_key('package-price'), findsNothing);
+    expect(_key('package-submit'), findsNothing);
+  });
+
+  testWidgets('lists the active packages with their price line and meta', (
+    tester,
+  ) async {
+    final w = await _world(seed: const [_portrait, _couple, _hidden]);
+    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
-    expect(find.text('Đã thêm gói.'), findsOneWidget);
+    expect(find.text('Chân dung 2 giờ'), findsOneWidget);
+    expect(find.text('2 giờ · 40 ảnh · giao 3 ngày'), findsOneWidget);
+    expect(find.text('T2–T6 1,5M · T7–CN 1,8M'), findsOneWidget);
+    expect(find.text('Cặp đôi nửa ngày'), findsOneWidget);
+    expect(find.text('3.200.000₫'), findsOneWidget);
+    expect(find.text('Sản phẩm 10 món'), findsNothing, reason: 'hidden');
     expect(
-      w.packages.stored(w.uid).single.input,
-      const ServicePackageInput(
-        name: 'Cặp đôi nửa ngày',
-        priceVnd: 3200000,
-        durationMinutes: 240,
-        editedCount: 80,
-        deliveryDays: 5,
+      find.text(
+        'Đặt giá cuối tuần, giá từng ngày hoặc giá ngày lễ trong từng gói.',
       ),
-    );
-    expect(find.text('4 giờ · 80 ảnh · giao 5 ngày'), findsOneWidget);
-    expect(find.text('3,2M'), findsOneWidget);
-    expect(
-      tester.widget<TextField>(_key('package-name')).controller!.text,
-      isEmpty,
-      reason: 'the form is ready for the next one',
+      findsOneWidget,
     );
     expect(_enabled(tester, 'setup-next'), isTrue);
   });
 
-  testWidgets('says what is wrong and stores nothing', (tester) async {
+  testWidgets('"Thêm gói" opens S08.09 for a new package from setup', (
+    tester,
+  ) async {
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(_key('package-submit'));
-    await tester.tap(_key('package-submit'));
+    await tester.tap(_key('setup-add-package'));
     await tester.pumpAndSettle();
-    expect(find.text('Nhập tên gói từ 2 đến 60 ký tự'), findsOneWidget);
-    expect(find.text('Nhập giá lớn hơn 0'), findsOneWidget);
-    expect(find.text('Chọn thời lượng'), findsOneWidget);
-    expect(w.packages.writes, 0);
+    expect(find.text('stub /me/packages/new?from=setup'), findsOneWidget);
   });
 
-  testWidgets('edits a package from the list', (tester) async {
+  testWidgets('tapping a package opens S08.09 to edit it from setup', (
+    tester,
+  ) async {
     final w = await _world(seed: const [_portrait]);
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
     await tester.tap(_key('package-a'));
-    await tester.pump();
-    expect(
-      tester.widget<TextField>(_key('package-name')).controller!.text,
-      'Chân dung 2 giờ',
-    );
-    await tester.enterText(_key('package-price'), '1800000');
-    await tester.ensureVisible(_key('package-submit'));
-    expect(find.text('Lưu gói'), findsOneWidget);
-    await tester.tap(_key('package-submit'));
     await tester.pumpAndSettle();
-    expect(w.packages.stored(w.uid).single.priceVnd, 1800000);
-    expect(find.text('Đã lưu gói.'), findsOneWidget);
+    expect(find.text('stub /me/packages/a?from=setup'), findsOneWidget);
   });
 
-  testWidgets('the delivery field reads "Giao sau" with the unit "ngày"', (
-    tester,
-  ) async {
+  testWidgets('a package added meanwhile shows at once and unlocks "Tiếp '
+      'tục"', (tester) async {
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
-    final field = tester.widget<TextField>(_key('package-delivery'));
-    expect(field.decoration!.labelText, 'Giao sau');
-    expect(field.decoration!.suffixText, 'ngày');
+    expect(_enabled(tester, 'setup-next'), isFalse);
+    await w.packages.add(w.uid, _couple.input);
+    await tester.pumpAndSettle();
+    expect(find.text('Cặp đôi nửa ngày'), findsOneWidget);
+    expect(_enabled(tester, 'setup-next'), isTrue);
+    expect(find.text('Thêm ít nhất một gói để tiếp tục.'), findsNothing);
   });
 
-  testWidgets('each package row has a hide button "Ẩn gói {name}"', (
-    tester,
-  ) async {
-    final w = await _world(seed: const [_portrait]);
+  testWidgets('hiding the only package locks "Tiếp tục" again', (tester) async {
+    final w = await _world(seed: const [_couple]);
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Ẩn gói Chân dung 2 giờ'), findsOneWidget);
-    expect(_key('package-hide-a'), findsOneWidget);
-  });
-
-  testWidgets('hiding asks first; "Giữ lại" keeps the package', (tester) async {
-    final w = await _world(seed: const [_portrait]);
-    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
+    await w.packages.hide(w.uid, 'b');
     await tester.pumpAndSettle();
-    await tester.tap(_key('package-hide-a'));
-    await tester.pumpAndSettle();
-    expect(find.text('Ẩn gói này?'), findsOneWidget);
-    await tester.tap(find.text('Giữ lại'));
-    await tester.pumpAndSettle();
-    expect(w.packages.stored(w.uid).single.active, isTrue);
-
-    await tester.tap(_key('package-hide-a'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ẩn gói'));
-    await tester.pumpAndSettle();
-    expect(w.packages.stored(w.uid).single.active, isFalse);
-    expect(_key('package-a'), findsNothing);
-    expect(find.text('Đã ẩn gói.'), findsOneWidget);
+    expect(find.text('Cặp đôi nửa ngày'), findsNothing);
     expect(_enabled(tester, 'setup-next'), isFalse);
   });
 
@@ -220,43 +199,6 @@ void main() {
     expect(_enabled(tester, 'setup-next'), isTrue);
   });
 
-  testWidgets('a half-filled form comes back after leaving', (tester) async {
-    final w = await _world();
-    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
-    await tester.pumpAndSettle();
-    await _fill(tester, name: 'Gia đình', price: '2000000', minutes: 180);
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<TextField>(_key('package-name')).controller!.text,
-      'Gia đình',
-    );
-    expect(
-      tester.widget<TextField>(_key('package-price')).controller!.text,
-      '2.000.000',
-    );
-  });
-
-  testWidgets('a failed save keeps the form and says so', (tester) async {
-    final w = await _world();
-    w.packages.failWrites = true;
-    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
-    await tester.pumpAndSettle();
-    await _fill(tester);
-    await tester.ensureVisible(_key('package-submit'));
-    await tester.tap(_key('package-submit'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'),
-      findsOneWidget,
-    );
-    expect(
-      tester.widget<TextField>(_key('package-name')).controller!.text,
-      'Cặp đôi nửa ngày',
-    );
-  });
-
   for (final b in Brightness.values) {
     testWidgets('fits 320dp at 1.3x text (${b.name})', (tester) async {
       usePhone(tester, width: 320, height: 640);
@@ -264,12 +206,13 @@ void main() {
         seed: const [
           _portrait,
           ServicePackage(
-            id: 'b',
+            id: 'x',
             name: 'Cưới cả ngày, hai thợ, album in cao cấp',
             priceVnd: 18000000,
             durationMinutes: 480,
             editedCount: 300,
             deliveryDays: 30,
+            specialPrice: 25000000,
           ),
         ],
       );

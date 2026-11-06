@@ -6,7 +6,9 @@ import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/data/pricing/special_days.dart';
 import 'package:photobooking/features/packages/my_packages_screen.dart';
+import 'package:photobooking/features/packages/package_edit_screen.dart';
 import 'package:photobooking/features/packages/special_days_screen.dart';
+import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 
 import 'photographer_world.dart';
 import 'screen_host.dart';
@@ -105,10 +107,13 @@ class PackagesWorld {
     specialDayRepositoryProvider.overrideWithValue(specialDays),
   ];
 
+  /// [editor]: `/me/packages/new` and `/me/packages/:id` are the real
+  /// S08.09, and `/setup/2` is S08.01 step 2; else they show their path.
   Widget app({
     String location = '/me/packages',
     Brightness brightness = Brightness.dark,
     double textScale = 1.0,
+    bool editor = false,
   }) {
     router = GoRouter(
       initialLocation: location,
@@ -119,12 +124,28 @@ class PackagesWorld {
         ),
         GoRoute(
           path: '/me/packages/new',
-          builder: (_, s) => Text('stub ${s.uri}'),
+          builder: (_, s) => editor
+              ? PackageEditScreen(
+                  fromSetup: s.uri.queryParameters['from'] == 'setup',
+                )
+              : Text('stub ${s.uri}'),
         ),
         GoRoute(
           path: '/me/packages/:id',
-          builder: (_, s) => Text('stub ${s.uri}'),
+          builder: (_, s) => editor
+              ? PackageEditScreen(
+                  packageId: s.pathParameters['id'],
+                  fromSetup: s.uri.queryParameters['from'] == 'setup',
+                )
+              : Text('stub ${s.uri}'),
         ),
+        GoRoute(
+          path: '/setup/2',
+          builder: (_, _) => const SetupPackagesScreen(),
+        ),
+        GoRoute(path: '/setup/1', builder: (_, s) => Text('stub ${s.uri}')),
+        GoRoute(path: '/setup/3', builder: (_, s) => Text('stub ${s.uri}')),
+        GoRoute(path: '/me/addons', builder: (_, s) => Text('stub ${s.uri}')),
         GoRoute(
           path: '/me/special-days',
           builder: (_, _) => const SpecialDaysScreen(),
