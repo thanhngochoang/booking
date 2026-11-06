@@ -189,6 +189,16 @@ void main() {
     ) async {
       await _openWeddingDay(tester, world);
       await tapKey(tester, 'price-day-remove');
+      expect(find.text('Bỏ ngày này khỏi chuỗi?'), findsOneWidget);
+      expect(find.text('Booking đã đặt giữ giá cũ.'), findsOneWidget);
+      await tester.tap(find.text('Giữ lại'));
+      await tester.pumpAndSettle();
+      expect(world.rules.exceptions, isEmpty, reason: 'Giữ lại writes nothing');
+      expect(keyed('price-day-save'), findsOneWidget);
+
+      await tapKey(tester, 'price-day-remove');
+      await tester.tap(find.text('Bỏ ngày'));
+      await tester.pumpAndSettle();
 
       final e = world.rules.exceptions.single;
       expect(
@@ -206,6 +216,15 @@ void main() {
       await _openWeddingDay(tester, world);
       await tapKey(tester, 'price-day-scope-following');
       await tapKey(tester, 'price-day-remove');
+      expect(find.text('Kết thúc chuỗi từ ngày này?'), findsOneWidget);
+      expect(find.text('Booking đã đặt giữ giá cũ.'), findsOneWidget);
+      await tester.tap(find.text('Giữ lại'));
+      await tester.pumpAndSettle();
+      expect(world.rules.splits, isEmpty, reason: 'Giữ lại writes nothing');
+
+      await tapKey(tester, 'price-day-remove');
+      await tester.tap(find.text('Kết thúc'));
+      await tester.pumpAndSettle();
 
       final s = world.rules.splits.single;
       expect((s.ruleId, s.day, s.price), ('r-wedding', _nov(17), null));
@@ -234,6 +253,112 @@ void main() {
       expect(world.rules.deletes, ['r-wedding']);
       expect(find.text('Đã xoá chuỗi'), findsOneWidget);
       expect(world.rules.ownerRules, isEmpty);
+    });
+  });
+
+  group('the price field follows the radio', () {
+    testWidgets('whole series: the series price, not the day\'s', (
+      tester,
+    ) async {
+      await _openWeddingDay(
+        tester,
+        world,
+        day: 15,
+        exceptions: {'2026-11-15': 1500000},
+      );
+      expect(find.text('1.500.000'), findsOneWidget);
+
+      await tapKey(tester, 'price-day-scope-all');
+      expect(find.text('2.000.000'), findsOneWidget);
+      await tapKey(tester, 'price-day-scope-following');
+      expect(find.text('1.500.000'), findsOneWidget);
+      await tapKey(tester, 'price-day-scope-all');
+      // Lưu with the series price rewrites it as it was.
+      await tapKey(tester, 'price-day-save');
+      expect(world.rules.saves.single.input.price, 2000000);
+    });
+
+    testWidgets('a price that was typed stays when the radio changes', (
+      tester,
+    ) async {
+      await _openWeddingDay(tester, world, day: 15);
+      await typePrice(tester, 'price-day-price', '1700000');
+      await tapKey(tester, 'price-day-scope-all');
+      expect(find.text('1.700.000'), findsOneWidget);
+    });
+
+    testWidgets('"Chỉ ngày này" with the day\'s price writes nothing', (
+      tester,
+    ) async {
+      await _openWeddingDay(tester, world);
+      await tapKey(tester, 'price-day-save');
+
+      expect(keyed('price-day-save'), findsNothing, reason: 'sheet closed');
+      expect(world.rules.exceptions, isEmpty);
+      expect(world.rules.saves, isEmpty);
+      expect(world.rules.splits, isEmpty);
+      expect(world.events, isEmpty);
+    });
+  });
+
+  group('taking an exception back', () {
+    testWidgets('a skipped day opens the sheet; "Về giá chuỗi" clears it', (
+      tester,
+    ) async {
+      await world.init();
+      world.seed(weekendRule().withExceptions({'2026-11-14': null}));
+      await world.open(tester);
+      expect(_priceText(tester, _nov(14)), '1,5M');
+
+      await tapDay(tester, _nov(14));
+      expect(find.text('Thứ 7 14/11'), findsOneWidget);
+      expect(find.text('Cuối tuần · 1.800.000₫'), findsOneWidget);
+      await tapKey(tester, 'price-day-clear');
+
+      final e = world.rules.exceptions.single;
+      expect(
+        (e.ruleId, e.day, e.value),
+        ('r-weekend', _nov(14), const PriceException.clear()),
+      );
+      expect(_priceText(tester, _nov(14)), '1,8M');
+      expect(world.events.single.params, {'kind': 'clear'});
+    });
+
+    testWidgets('a day with its own price opens the sheet; same action', (
+      tester,
+    ) async {
+      await world.init();
+      world.seed(weekendRule().withExceptions({'2026-11-14': 1600000}));
+      await world.open(tester);
+      expect(_priceText(tester, _nov(14)), '1,6M');
+
+      await tapDay(tester, _nov(14));
+      expect(find.text('1.600.000'), findsOneWidget);
+      await tapKey(tester, 'price-day-clear');
+
+      expect(world.rules.exceptions.single.value, const PriceException.clear());
+      expect(_priceText(tester, _nov(14)), '1,8M');
+    });
+
+    testWidgets('a series that does not win the day still opens', (
+      tester,
+    ) async {
+      await world.init();
+      world.seed(weekendRule().withExceptions({'2026-11-14': null}));
+      world.seed(weddingRule());
+      await world.open(tester);
+
+      await tapDay(tester, _nov(14));
+      expect(find.text('Cuối tuần · 1.800.000₫'), findsOneWidget);
+      expect(find.textContaining('bị'), findsNothing);
+      expect(keyed('price-day-clear'), findsOneWidget);
+    });
+
+    testWidgets('a day without an exception has no such action', (
+      tester,
+    ) async {
+      await _openWeddingDay(tester, world);
+      expect(keyed('price-day-clear'), findsNothing);
     });
   });
 

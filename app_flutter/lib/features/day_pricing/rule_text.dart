@@ -201,3 +201,20 @@ List<PriceRule> listedRules(Iterable<PriceRule> rules, DateTime today) {
   });
   return [for (final e in withNext) e.$1];
 }
+
+/// The series of a package with no next occurrence from [today] (a `none`
+/// series that ended, a series past its `until`): what [listedRules] leaves
+/// out, the one that ended last first. They still count toward the limit of
+/// 30 and can be deleted.
+List<PriceRule> endedRules(Iterable<PriceRule> rules, DateTime today) {
+  final ended = [
+    for (final r in rules)
+      if (nextOccurrence(r, today) == null) r,
+  ];
+  String lastDay(PriceRule r) => r.until ?? r.to ?? '';
+  ended.sort((a, b) {
+    final byDay = lastDay(b).compareTo(lastDay(a));
+    return byDay != 0 ? byDay : a.id.compareTo(b.id);
+  });
+  return ended;
+}

@@ -23037,6 +23037,42 @@ abstract class AppLocalizations {
   /// **'Không tải được giá theo ngày'**
   String get s0810_loadError;
 
+  /// No description provided for @s0810_clearException.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về giá chuỗi'**
+  String get s0810_clearException;
+
+  /// No description provided for @s0810_removeDayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ngày này khỏi chuỗi?'**
+  String get s0810_removeDayTitle;
+
+  /// No description provided for @s0810_removeDayConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ngày'**
+  String get s0810_removeDayConfirm;
+
+  /// No description provided for @s0810_endFromTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc chuỗi từ ngày này?'**
+  String get s0810_endFromTitle;
+
+  /// No description provided for @s0810_endFromConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get s0810_endFromConfirm;
+
+  /// No description provided for @s0810_endedCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã kết thúc · {n}'**
+  String s0810_endedCount(int n);
+
   /// No description provided for @s0809_titleNew.
   ///
   /// In vi, this message translates to:

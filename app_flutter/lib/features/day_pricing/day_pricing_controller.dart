@@ -137,7 +137,11 @@ class DayPricingActions {
     final result = await _run(() => _repo.setException(ruleId, day, value));
     if (result.ok) {
       _log('price_rule_exception', {
-        'kind': value is SkipDay ? 'skip' : 'price',
+        'kind': switch (value) {
+          SkipDay() => 'skip',
+          ClearDayException() => 'clear',
+          CustomDayPrice() => 'price',
+        },
       });
     }
     return result;

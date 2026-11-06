@@ -13549,6 +13549,26 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_loadError => 'Không tải được giá theo ngày';
 
   @override
+  String get s0810_clearException => 'Về giá chuỗi';
+
+  @override
+  String get s0810_removeDayTitle => 'Bỏ ngày này khỏi chuỗi?';
+
+  @override
+  String get s0810_removeDayConfirm => 'Bỏ ngày';
+
+  @override
+  String get s0810_endFromTitle => 'Kết thúc chuỗi từ ngày này?';
+
+  @override
+  String get s0810_endFromConfirm => 'Kết thúc';
+
+  @override
+  String s0810_endedCount(int n) {
+    return 'Đã kết thúc · $n';
+  }
+
+  @override
   String get s0809_titleNew => 'Thêm gói';
 
   @override

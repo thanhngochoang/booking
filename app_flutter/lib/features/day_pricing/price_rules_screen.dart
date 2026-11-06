@@ -80,20 +80,24 @@ class PriceRulesScreen extends ConsumerWidget {
                       actionLabel: l.s0810_noPackagesAction,
                       onAction: () => context.push('/me/packages/new'),
                     ),
-                    data: (context, v) => ListView(
-                      padding: const EdgeInsets.all(AppSpace.s4),
-                      children: [
-                        for (final p in ordered)
-                          _Group(
-                            package: p,
-                            rules: listedRules([
-                              for (final r in v.rules)
-                                if (r.serviceId == p.id) r,
-                            ], today),
-                            today: today,
-                          ),
-                      ],
-                    ),
+                    data: (context, v) {
+                      List<PriceRule> own(ServicePackage p) => [
+                        for (final r in v.rules)
+                          if (r.serviceId == p.id) r,
+                      ];
+                      return ListView(
+                        padding: const EdgeInsets.all(AppSpace.s4),
+                        children: [
+                          for (final p in ordered)
+                            _Group(
+                              package: p,
+                              rules: listedRules(own(p), today),
+                              ended: endedRules(own(p), today),
+                              today: today,
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 if (ordered.isNotEmpty)
@@ -121,17 +125,27 @@ class PriceRulesScreen extends ConsumerWidget {
 }
 
 /// One package: its heading with the base price, then its series or the
-/// "Chưa có chuỗi" line.
-class _Group extends StatelessWidget {
+/// "Chưa có chuỗi" line, then the ended ones in a collapsed "Đã kết thúc"
+/// group (dimmed; they are still there to open and delete).
+class _Group extends StatefulWidget {
   const _Group({
     required this.package,
     required this.rules,
+    required this.ended,
     required this.today,
   });
 
   final ServicePackage package;
   final List<PriceRule> rules;
+  final List<PriceRule> ended;
   final DateTime today;
+
+  @override
+  State<_Group> createState() => _GroupState();
+}
+
+class _GroupState extends State<_Group> {
+  bool _showEnded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +154,15 @@ class _Group extends StatelessWidget {
     final muted = theme.brightness == Brightness.dark
         ? AppColorsDark.foregroundMuted
         : AppColors.foregroundMuted;
+    final package = widget.package;
     final base = formatMoney(package.priceVnd, short: true);
+    Widget tile(PriceRule r) => PriceRuleTile(
+      rule: r,
+      today: widget.today,
+      detail: true,
+      withNext: true,
+      onTap: () => showPriceRuleSheet(context, serviceId: package.id, rule: r),
+    );
     return Opacity(
       key: Key('price-rules-group-${package.id}'),
       opacity: package.active ? 1 : 0.6,
@@ -163,29 +185,48 @@ class _Group extends StatelessWidget {
                 ),
               ),
             ),
-            if (rules.isEmpty)
+            if (widget.rules.isEmpty)
               Text(
                 l.s0810_noRules(base),
                 key: Key('price-rules-empty-${package.id}'),
                 style: theme.textTheme.bodySmall?.copyWith(color: muted),
               )
             else
-              PriceRuleCard(
-                children: [
-                  for (final r in rules)
-                    PriceRuleTile(
-                      rule: r,
-                      today: today,
-                      detail: true,
-                      withNext: true,
-                      onTap: () => showPriceRuleSheet(
-                        context,
-                        serviceId: package.id,
-                        rule: r,
+              PriceRuleCard(children: [for (final r in widget.rules) tile(r)]),
+            if (widget.ended.isNotEmpty) ...[
+              InkWell(
+                key: Key('price-rules-ended-${package.id}'),
+                onTap: () => setState(() => _showEnded = !_showEnded),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l.s0810_endedCount(widget.ended.length),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: muted,
+                          ),
+                        ),
                       ),
-                    ),
-                ],
+                      AnimatedRotation(
+                        turns: _showEnded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 150),
+                        child: AppIcon(AppIcons.expandMore, color: muted),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              if (_showEnded)
+                Opacity(
+                  key: Key('price-rules-ended-list-${package.id}'),
+                  opacity: 0.6,
+                  child: PriceRuleCard(
+                    children: [for (final r in widget.ended) tile(r)],
+                  ),
+                ),
+            ],
           ],
         ),
       ),

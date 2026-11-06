@@ -99,6 +99,88 @@ void main() {
     expect(find.text('Một lần · T6 20/11 – T7 21/11/2026'), findsOneWidget);
   });
 
+  testWidgets('an ended series is under "Đã kết thúc" and can be deleted', (
+    tester,
+  ) async {
+    await world.init();
+    world.seed(weekendRule());
+    world.seed(
+      const PriceRule(
+        id: 'old',
+        serviceId: 'p1',
+        price: 3000000,
+        repeat: PriceRepeat.none,
+        name: 'Kỷ yếu cũ',
+        from: '2026-10-01',
+        to: '2026-10-03',
+      ),
+    );
+    await world.open(tester, location: _rulesLocation);
+
+    // Collapsed: only the header, with the count; the live row is above it.
+    expect(find.text('Đã kết thúc · 1'), findsOneWidget);
+    expect(keyed('price-rule-old'), findsNothing);
+    expect(keyed('price-rule-r-weekend'), findsOneWidget);
+
+    await tapKey(tester, 'price-rules-ended-p1');
+    expect(keyed('price-rule-old'), findsOneWidget);
+    expect(find.text('Kỷ yếu cũ'), findsOneWidget);
+    expect(
+      tester.widget<Opacity>(keyed('price-rules-ended-list-p1')).opacity,
+      0.6,
+    );
+    expect(
+      _top(tester, 'price-rule-old'),
+      greaterThan(_top(tester, 'price-rule-r-weekend')),
+    );
+
+    await tapKey(tester, 'price-rule-old');
+    expect(find.text('3.000.000'), findsOneWidget);
+    await tapKey(tester, 'price-rule-delete');
+    await tester.tap(find.text('Xoá'));
+    await tester.pumpAndSettle();
+    expect(world.rules.deletes, ['old']);
+    expect(find.text('Đã kết thúc · 1'), findsNothing);
+  });
+
+  testWidgets('a package with only ended series still says "Chưa có chuỗi"', (
+    tester,
+  ) async {
+    await world.init();
+    world.seed(
+      const PriceRule(
+        id: 'old',
+        serviceId: 'p1',
+        price: 3000000,
+        repeat: PriceRepeat.none,
+        from: '2026-10-01',
+        to: '2026-10-03',
+      ),
+    );
+    await world.open(tester, location: _rulesLocation);
+    expect(find.text('Chưa có chuỗi · mọi ngày 1,5M'), findsOneWidget);
+    expect(find.text('Đã kết thúc · 1'), findsOneWidget);
+  });
+
+  testWidgets('the calendar screen keeps ended series out of its card', (
+    tester,
+  ) async {
+    await world.init();
+    world.seed(
+      const PriceRule(
+        id: 'old',
+        serviceId: 'p1',
+        price: 3000000,
+        repeat: PriceRepeat.none,
+        from: '2026-10-01',
+        to: '2026-10-03',
+      ),
+    );
+    await world.open(tester);
+    expect(keyed('price-rule-old'), findsNothing);
+    expect(find.textContaining('Đã kết thúc'), findsNothing);
+  });
+
   testWidgets('the hidden package comes last and is dimmed', (tester) async {
     await world.init(packages: const [product, portrait, couple]);
     await world.open(tester, location: _rulesLocation);

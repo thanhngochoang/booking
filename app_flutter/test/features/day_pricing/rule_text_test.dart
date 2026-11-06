@@ -201,4 +201,32 @@ void main() {
       expect(list.map((r) => r.id), ['running']);
     });
   });
+
+  group('endedRules', () {
+    test('the series listedRules leaves out, the last to end first', () {
+      final rules = [
+        _once('ended-a', from: '2026-09-01', to: '2026-09-03'),
+        _once('ended-b', from: '2026-10-01', to: '2026-10-05'),
+        _once('running', from: '2026-11-05', to: '2026-11-08'),
+        weekendRule(),
+        const PriceRule(
+          id: 'over',
+          serviceId: 'p1',
+          price: 1,
+          repeat: PriceRepeat.weekly,
+          weekdays: {Weekday.sat},
+          until: '2026-10-31',
+        ),
+      ];
+      expect(endedRules(rules, _today).map((r) => r.id), [
+        'over',
+        'ended-b',
+        'ended-a',
+      ]);
+      expect(listedRules(rules, _today).map((r) => r.id), [
+        'r-weekend',
+        'running',
+      ]);
+    });
+  });
 }

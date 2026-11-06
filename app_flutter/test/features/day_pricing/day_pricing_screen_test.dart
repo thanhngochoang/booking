@@ -235,7 +235,7 @@ void main() {
       expect(keyed('price-rule-templates'), findsNothing);
     });
 
-    testWidgets('a day the series dropped is a plain day again', (
+    testWidgets('a day the series dropped opens it, to take that back', (
       tester,
     ) async {
       await world.init();
@@ -243,8 +243,9 @@ void main() {
       await world.open(tester);
 
       await tapDay(tester, _nov(16));
-      expect(keyed('price-rule-save'), findsOneWidget);
-      expect(keyed('price-day-title'), findsNothing);
+      expect(keyed('price-day-title'), findsOneWidget);
+      expect(keyed('price-day-clear'), findsOneWidget);
+      expect(keyed('price-rule-save'), findsNothing);
     });
   });
 

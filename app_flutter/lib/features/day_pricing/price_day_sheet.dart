@@ -75,6 +75,9 @@ class PriceDaySheet extends ConsumerStatefulWidget {
 class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
   late final _price = TextEditingController(text: groupVnd(widget.dayPrice));
   PriceDayScope _scope = PriceDayScope.day;
+
+  /// The price was typed: changing the radio no longer replaces it.
+  bool _edited = false;
   bool _saving = false;
   PriceRuleError? _error;
 
@@ -85,6 +88,24 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
   }
 
   int? get _priceValue => parseVnd(_price.text);
+
+  /// Whether the day has an exception of [PriceDaySheet.rule] to take back.
+  bool get _hasException =>
+      ruleExceptions(widget.rule).any((e) => e.day == widget.day);
+
+  /// The price field follows the radio: the day's price for the day and the
+  /// days after, the series' own price for the whole series (unless typed).
+  void _pickScope(PriceDayScope scope) {
+    setState(() {
+      _scope = scope;
+      if (!_edited) {
+        final price = scope == PriceDayScope.all
+            ? widget.rule.price
+            : widget.dayPrice;
+        _price.text = groupVnd(price);
+      }
+    });
+  }
 
   RuleFormError? get _priceError {
     final p = _priceValue;
@@ -139,6 +160,11 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
     if (_saving || price == null || _priceError != null) {
       return Future.value();
     }
+    if (_scope == PriceDayScope.day && price == widget.dayPrice) {
+      // Nothing to write: the day already has this price.
+      Navigator.of(context).pop();
+      return Future.value();
+    }
     return _finish(
       () => switch (_scope) {
         PriceDayScope.day => actions.setException(
@@ -160,8 +186,27 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
     );
   }
 
-  /// The red action under "Lưu": drops the day, ends the series from the day,
-  /// or (after a confirmation) deletes it, by the radio picked.
+  /// "Về giá chuỗi": takes the day's exception back, so the series covers the
+  /// day as usual.
+  Future<void> _clear() {
+    if (_saving) {
+      return Future.value();
+    }
+    final l = context.l10n;
+    return _finish(
+      () => ref
+          .read(dayPricingActionsProvider)
+          .setException(
+            widget.rule.id,
+            widget.day,
+            const PriceException.clear(),
+          ),
+      () => l.s0810_saved,
+    );
+  }
+
+  /// The red action under "Lưu": drops the day, ends the series from the day
+  /// or deletes it, by the radio picked, each after a red confirmation.
   Future<void> _remove() async {
     if (_saving) {
       return;
@@ -169,6 +214,21 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
     final l = context.l10n;
     final actions = ref.read(dayPricingActionsProvider);
     final rule = widget.rule;
+    final (title, confirm) = switch (_scope) {
+      PriceDayScope.day => (l.s0810_removeDayTitle, l.s0810_removeDayConfirm),
+      PriceDayScope.following => (l.s0810_endFromTitle, l.s0810_endFromConfirm),
+      PriceDayScope.all => (l.s0810_deleteTitle, l.s0810_deleteConfirm),
+    };
+    final confirmed = await showConfirmSheet(
+      context,
+      title: title,
+      body: l.s0810_deleteBody,
+      confirmLabel: confirm,
+      keepLabel: l.s0810_deleteKeep,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
     switch (_scope) {
       case PriceDayScope.day:
         return _finish(
@@ -185,16 +245,6 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
           () => l.s0810_saved,
         );
       case PriceDayScope.all:
-        final confirmed = await showConfirmSheet(
-          context,
-          title: l.s0810_deleteTitle,
-          body: l.s0810_deleteBody,
-          confirmLabel: l.s0810_deleteConfirm,
-          keepLabel: l.s0810_deleteKeep,
-        );
-        if (!confirmed || !mounted) {
-          return;
-        }
         return _finish(
           () => actions.deleteRule(rule.id),
           () => l.s0810_deleted,
@@ -248,10 +298,10 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
         checked: on,
         label: label,
         excludeSemantics: true,
-        onTap: _saving ? null : () => setState(() => _scope = scope),
+        onTap: _saving ? null : () => _pickScope(scope),
         child: InkWell(
           key: Key('price-day-scope-${scope.name}'),
-          onTap: _saving ? null : () => setState(() => _scope = scope),
+          onTap: _saving ? null : () => _pickScope(scope),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 48),
             child: Row(
@@ -394,7 +444,10 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
                 suffixText: '₫',
                 errorText: priceError,
               ),
-              onChanged: (_) => setState(() => _error = null),
+              onChanged: (_) => setState(() {
+                _edited = true;
+                _error = null;
+              }),
             ),
             const SizedBox(height: AppSpace.s3),
             Semantics(
@@ -446,6 +499,12 @@ class _PriceDaySheetState extends ConsumerState<PriceDaySheet> {
               loading: _saving,
               onPressed: _saving || _priceError != null ? null : _save,
             ),
+            if (_hasException)
+              AppButton.text(
+                l.s0810_clearException,
+                key: const Key('price-day-clear'),
+                onPressed: _saving ? null : _clear,
+              ),
             AppButton.text(
               removeLabel,
               key: const Key('price-day-remove'),

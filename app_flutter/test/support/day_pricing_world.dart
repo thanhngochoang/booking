@@ -52,6 +52,24 @@ PriceRule weekendRule({String id = 'r-weekend', String serviceId = 'p1'}) =>
       weekdays: const {Weekday.sat, Weekday.sun},
     );
 
+extension WithExceptions on PriceRule {
+  PriceRule withExceptions(Map<String, Object?> exceptions) => PriceRule(
+    id: id,
+    serviceId: serviceId,
+    price: price,
+    repeat: repeat,
+    name: name,
+    lunar: lunar,
+    from: from,
+    to: to,
+    weekdays: weekdays,
+    start: start,
+    until: until,
+    exceptions: exceptions,
+    template: template,
+  );
+}
+
 /// "Mùa cưới" 2M every 14/11 - 22/11.
 PriceRule weddingRule({
   String id = 'r-wedding',

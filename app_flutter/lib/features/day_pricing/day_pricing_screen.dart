@@ -52,14 +52,23 @@ class _DayPricingScreenState extends ConsumerState<DayPricingScreen> {
     setState(() => _range = null);
     final price = priceForDay(package.priceVnd, package.id, rules, day);
     final winner = price.rule;
-    if (winner == null) {
+    // A day an exception was written for opens that series, so the exception
+    // can be changed or taken back, even when the day is no longer its own
+    // (a dropped day) or another series wins it.
+    bool hasException(PriceRule r) =>
+        r.serviceId == package.id && ruleExceptions(r).any((e) => e.day == day);
+    final PriceRule? excepted = winner != null && hasException(winner)
+        ? winner
+        : rules.where(hasException).firstOrNull;
+    final shown = excepted ?? winner;
+    if (shown == null) {
       showPriceRuleSheet(context, serviceId: package.id, from: day, to: day);
       return;
     }
     final lunar = solarToLunar(day);
     final beaten = <BeatenRule>[];
     for (final r in rules) {
-      if (r.serviceId != package.id || r.id == winner.id) {
+      if (shown != winner || r.serviceId != package.id || r.id == winner?.id) {
         continue;
       }
       final c = ruleCoversDay(r, day, lunar: lunar);
@@ -76,7 +85,7 @@ class _DayPricingScreenState extends ConsumerState<DayPricingScreen> {
       context,
       package: package,
       day: day,
-      rule: winner,
+      rule: shown,
       dayPrice: price.amount,
       beaten: beaten,
     );
