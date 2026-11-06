@@ -34,7 +34,7 @@ Qua bốn vòng mock, chủ dự án chốt (2026-11-06):
 | R7 | Sheet Đặt giá: switch **"Lặp lại"** tắt mặc định; bật mới hiện phần chuỗi thụt vào (như Microsoft Teams): dropdown **Chu kỳ** (Hằng tuần / Hằng năm) và switch **Theo âm lịch** (chỉ khi Hằng năm; Hằng tuần thay bằng hàng 7 ô tròn T2…CN). "Áp cho" là dropdown. Không có hàng chip, trừ chip mẫu khi sheet mở trống. | chủ dự án 2026-11-06 |
 | R8 | "Áp cho: Mọi gói, cùng tỉ lệ" tạo một chuỗi giống hệt cho mỗi gói khác với giá = `price` của gói đó × (giá nhập ÷ `price` gói đang chọn), **làm tròn lên 10.000₫**. Sau đó các chuỗi độc lập nhau. | thiết kế |
 | R9 | Booking chụp `serviceSnapshot.price`, thêm `priceKind` (`base` \| `rule`) và `ruleName?` do server ghi. Đổi lịch giữ giá. "Từ {giá}", bộ lọc, `SpotSchedule.priceFrom` lấy **min(`price`, giá mọi chuỗi còn lần tới)** của gói đang bật (bỏ chuỗi `none` đã qua và chuỗi đã hết `until`), cùng con số với cận dưới khoảng giá ở S03.01 và S04.01. | giữ P4–P6, sửa P6; builder check 2026-11-06 |
-| R10 | Rules không kiểm được giá trị trong map có khoá tuỳ ý: `exceptions` chỉ kiểm là map ≤ 50 khoá; giá trị không hợp lệ (không phải int 1–10^9 và không phải null) bị domain **bỏ qua** (coi như không có ngoại lệ). App kiểm `validatePriceRule` trước khi ghi. | thiết kế |
+| R10 | **Chỉ server ghi `price_rules`, qua callable** (§4.5). Callable chạy `validatePriceRule` đầy đủ, kể cả từng giá trị trong `exceptions`, giới hạn 30 chuỗi mỗi gói và `serviceId` thuộc chủ. Domain vẫn bỏ qua giá trị ngoại lệ không hợp lệ khi đọc, để phòng dữ liệu nhập tay. | chủ dự án 2026-11-06 ("callable") |
 | R11 | Mẫu dịp (Tết, Giỗ Tổ, 30/4 – 1/5, 2/9, Tết Dương lịch, Valentine, 8/3, Trung thu, 20/10, Noel, Mùa cưới) là **hằng số trong mã**, chỉ điền sẵn `name`, `repeat`, `from`, `to`; thợ sửa tự do. | thiết kế |
 | R12 | Luật tiền, giữ tiền, hoàn huỷ, chỉ nhà cung cấp đã duyệt mới nhận đơn: giữ nguyên. | CLAUDE.md |
 | R13 | **Không có bảng giá theo ngày tính sẵn.** Giá một ngày luôn tính bằng `priceForDay` lúc đọc, từ gói và các chuỗi của gói; không có trigger ghi `day_prices` hay map giá theo ngày lên tài liệu thợ. Bộ lọc ngân sách và sắp xếp "Giá" ở S02.06 vẫn dùng `startingPrice` ghi sẵn (R9); lọc đúng giá của ngày đã chọn ngoài phạm vi (§8). | chủ dự án 2026-11-06 ("tra luôn") |
@@ -42,7 +42,7 @@ Qua bốn vòng mock, chủ dự án chốt (2026-11-06):
 
 ## 4. Dữ liệu
 
-### 4.1 Chuỗi giá · `photographers/{uid}/price_rules/{id}` (chủ ghi, người đăng nhập đọc)
+### 4.1 Chuỗi giá · `photographers/{uid}/price_rules/{id}` (server ghi qua callable, người đăng nhập đọc)
 
 | Trường | Kiểu | Ghi chú |
 |---|---|---|
@@ -58,7 +58,7 @@ Qua bốn vòng mock, chủ dự án chốt (2026-11-06):
 | `template?` | string | Mã mẫu đã dùng, để danh sách mẫu đánh dấu. |
 | `createdAt`, `updatedAt` | timestamp | |
 
-Ràng buộc (rules kiểm kiểu, độ dài, dạng chuỗi ngày; app và domain kiểm phần còn lại): `none`/`yearly` dài ≤ 92 ngày; `none`: `to ≥ from`, `to ≥ hôm nay` khi tạo, ≤ 730 ngày tới; `until ≥ start`; ≤ 30 chuỗi mỗi gói (app đếm); `serviceId` phải là gói của chủ.
+Ràng buộc (`validatePriceRule` kiểm ở callable; app kiểm trước để báo lỗi dưới ô): `none`/`yearly` dài ≤ 92 ngày; `none`: `to ≥ from`, `to ≥ hôm nay` khi tạo, ≤ 730 ngày tới; `until ≥ start`; ≤ 30 chuỗi mỗi gói (app đếm); `serviceId` phải là gói của chủ.
 
 ### 4.2 Gói · `photographers/{uid}/services/{id}`
 
@@ -110,7 +110,13 @@ Bảng ca chung (`test/data/contracts/day_pricing_cases.json`): Tết (mùng 1) 
 
 - `createBooking` đọc gói và `price_rules` có `serviceId` = gói (≤ 30 tài liệu) **trước giao dịch**, như cách đọc gói và `special_days` hiện nay (`SpecialDayReader` thành `PriceRuleReader`), tính `priceForDay`, so `expectedPrice` (khác → `price_changed` như cũ), rồi ghi `serviceSnapshot.price`, `priceKind`, `ruleName?` trong giao dịch. Thợ sửa chuỗi đúng lúc đó thì booking lấy giá khách vừa thấy; không đổi cấu trúc giao dịch.
 - Trigger gói và trigger `price_rules` (mới, cùng hàm) tính `priceSummary` của thợ: `startingPrice` (R9), `hasDayPricing` (có chuỗi nào không); bỏ `weekendFrom`. Chuỗi `none` hết hạn làm `startingPrice` đổi mà không có lần ghi nào: job hằng ngày sẵn có (hoặc một job mới lúc 00:05) chạy lại `refreshPriceSummary` cho thợ có chuỗi vừa hết hạn. `SpotSchedule.priceFrom` dùng `startingPrice`.
-- Rules: xoá `match /holidays` và `special_days`; thêm `price_rules` (chủ ghi, `signedIn()` đọc; kiểm `serviceId` string, `price` int 1–10^9, `repeat` trong 3 giá trị, `lunar` bool chỉ khi `yearly`, `from`/`to`/`start`/`until` đúng dạng theo `repeat`, `weekdays` list ≤ 7, `exceptions` map ≤ 50 khoá, `name` ≤ 40); `validService` chỉ nhận `price`.
+- Callable (vùng `asia-southeast1`, chỉ chủ gói; mỗi lệnh một giao dịch, xong thì gọi `refreshPriceSummary`):
+  - `savePriceRule({ruleId?, serviceId, price, name?, repeat, lunar?, from?, to?, weekdays?, applyToAll?})`: tạo hoặc sửa cả chuỗi. `applyToAll` (chỉ khi tạo) tạo thêm một chuỗi cho mỗi gói khác bằng `scaledRule` (R8). Trả các id đã ghi.
+  - `splitPriceRule({ruleId, day, price?})`: "Ngày này và các ngày sau". Chuỗi cũ `until` = hôm trước; có `price` thì tạo chuỗi mới cùng quy tắc với `start` = `day`; không có `price` là "Kết thúc chuỗi từ ngày này".
+  - `setPriceRuleException({ruleId, day, price})`: "Chỉ ngày này". `price` int = giá riêng, `null` = bỏ ngày khỏi chuỗi, `"clear"` = xoá ngoại lệ.
+  - `deletePriceRule({ruleId})`.
+  - Lỗi `DomainError('invalid_argument', field)` hoặc `failed_precondition` (`rule_limit`, `exception_limit`) để app hiện đúng dòng lỗi dưới ô.
+- Rules: xoá `match /holidays` và `special_days`; thêm `price_rules` (`signedIn()` đọc, **mọi ghi từ client bị từ chối**); `validService` chỉ nhận `price`.
 - Functions: xoá `tools/holidays.ts`, script `holidays`, test; seed: bỏ `SEED_HOLIDAYS` và `special_days`, thêm cho thợ An ba chuỗi của gói chân dung: Cuối tuần (`weekly`, T7–CN, 1,8M), Mùa cưới (`yearly` 11-14 → 11-22, 2M, ngoại lệ 2026-11-15 = 1,5M), Tết (`yearly` + `lunar` 12-23 → 01-05, 2,5M).
 
 ### 4.6 Không phụ thuộc Firestore (để Phase 2 chuyển sang API Node.js + PostgreSQL)
@@ -120,7 +126,7 @@ Nguyên tắc: Firestore chỉ là **nơi lưu**, mọi phép tính nằm trong 
 1. **Port thay adapter.** `SpecialDayReader` trong `booking_ports.ts` đổi thành `PriceRuleReader { rulesForService(providerId, serviceId): Promise<PriceRule[]> }`. Adapter Firestore ở `firebase/functions/src/infra`; Phase 2 viết adapter Kysely. `createBooking`, `startingPrice`, `monthPrices` chỉ nhận `ServiceRecord` và `PriceRule[]`, không biết nguồn dữ liệu.
 2. **Kiểu dữ liệu chung cho cả hai nơi.** Ngày là chuỗi `yyyy-MM-dd` (không dùng `Timestamp`, tránh lệch múi giờ; PostgreSQL là `date`). Tiền là số nguyên VND (`bigint`). Id là chuỗi (`text`, như `services.id`). Ngày–tháng hằng năm là `MM-dd`. Âm lịch **tính bằng code, không lưu**, nên không có bảng âm lịch nào phải di trú.
 3. **Không có dữ liệu suy ra phải đồng bộ** (R13). Thứ duy nhất ghi sẵn là `startingPrice`; nó được tính bằng một use case domain `refreshPriceSummary(providerId)`. Phase 1: trigger Firestore gọi use case này. Phase 2: gọi trong cùng giao dịch SQL khi lưu chuỗi, ghi vào cột `photographers.starting_price` đã có.
-4. **Ghi qua use case, không ghi thẳng từ app** (đề xuất, xem §9). App gọi `PriceRuleRepository` với các lệnh `saveRule`, `deleteRule`, `splitRule` (ngày này và về sau), `setException`. Phase 1 adapter là callable; Phase 2 là HTTP tới Fastify. Kiểm tra nằm một chỗ (`validatePriceRule`), "ngày này và về sau" (sửa chuỗi cũ + tạo chuỗi mới) là một giao dịch ở cả hai nơi. Đọc vẫn có thể là truy vấn live Firestore ở Phase 1.
+4. **Ghi qua use case, không ghi thẳng từ app** (R10). App gọi `PriceRuleRepository` với các lệnh `saveRule`, `deleteRule`, `splitRule` (ngày này và về sau), `setException`. Phase 1 adapter gọi bốn callable ở §4.5; Phase 2 là HTTP tới Fastify, cùng tên lệnh, cùng use case domain. Kiểm tra nằm một chỗ (`validatePriceRule`), "ngày này và về sau" (sửa chuỗi cũ + tạo chuỗi mới) là một giao dịch ở cả hai nơi. Đọc vẫn có thể là truy vấn live Firestore ở Phase 1.
 5. **Bảng đích PostgreSQL** (chỉ là đích ghi trong spec; #316 **không** thêm migration, OpenAPI hay `relational-schema.md`; Phase 2 làm khi chuyển dữ liệu; không sửa migration cũ):
 
 ```sql
@@ -156,7 +162,7 @@ alter table bookings add column price_kind text not null default 'base' check (p
                      add column rule_name text;
 ```
 
-Map `exceptions` của Firestore thành bảng con; `weekdays` list thành bitmask. Script di trú đọc từng tài liệu `price_rules` và ghi một dòng cha cộng các dòng ngoại lệ; giá trị ngoại lệ không hợp lệ (R10) bị bỏ khi di trú.
+Map `exceptions` của Firestore thành bảng con; `weekdays` list thành bitmask. Script di trú đọc từng tài liệu `price_rules` và ghi một dòng cha cộng các dòng ngoại lệ; giá trị ngoại lệ không hợp lệ bị bỏ khi di trú.
 6. **Test hợp đồng dùng lại.** `day_pricing_cases.json` chạy cho TS, Dart ở #316, và về sau cho một test của adapter Kysely ở Phase 2 (ghi ca vào PostgreSQL thật, đọc lại qua `PriceRuleReader`, so kết quả `priceForDay`).
 
 ## 5. Màn hình
@@ -243,13 +249,13 @@ Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng
 ## 6. Test
 
 - **Domain** (TS và Dart, cùng bảng ca §4.4): âm ↔ dương, tháng nhuận, `ruleRanges` qua năm, `ruleCoversDay` với `start`/`until`/ngoại lệ, bậc ưu tiên, cùng bậc cao nhất, `splitRule`, `withException`, `scaledRule` làm tròn, `startingPrice`, `validatePriceRule` (93 ngày, quá khứ, > 2 năm, `weekdays` rỗng, `serviceId` lạ, 31 chuỗi).
-- **Functions**: đặt vào Tết năm sau không có dữ liệu năm đó vẫn ra giá Tết; `ruleName` trong snapshot; booking cũ giữ giá khi sửa/xoá chuỗi; trigger `startingPrice` với chuỗi `weekly` rẻ hơn; đặt vào ngày bị bỏ khỏi chuỗi rơi về cuối tuần.
-- **Rules**: `price_rules` chủ ghi, khách đọc; `yearly` thiếu `from` bị từ chối; `lunar: true` với `weekly` bị từ chối; `weekly` có `from` bị từ chối; `exceptions` 51 khoá bị từ chối; gói có `dayPrices` hoặc `specialPrice` bị từ chối; `holidays`, `special_days` đọc bị từ chối.
+- **Functions**: bốn callable ghi đúng như §4.5 và từ chối người không phải chủ, `serviceId` của người khác, chuỗi thứ 31, ngoại lệ thứ 51; `applyToAll` tạo đúng một chuỗi mỗi gói trong một giao dịch; `splitPriceRule` không đổi giá các ngày trước `day`; đặt vào Tết năm sau không có dữ liệu năm đó vẫn ra giá Tết; `ruleName` trong snapshot; booking cũ giữ giá khi sửa/xoá chuỗi; trigger `startingPrice` với chuỗi `weekly` rẻ hơn; đặt vào ngày bị bỏ khỏi chuỗi rơi về cuối tuần.
+- **Rules**: `price_rules` người đăng nhập đọc, chủ và người khác ghi đều bị từ chối; gói có `dayPrices` hoặc `specialPrice` bị từ chối; `holidays`, `special_days` đọc bị từ chối.
 - **Flutter**: `AppCalendar` (ngày âm đúng mùng 1/15 tháng 11/2026, chọn khoảng bằng chạm và kéo, 320 dp, chữ 1,3×, tối/sáng); S08.10 (giá từng ngày khớp domain, ngoại lệ viền, chạm ngày thuộc chuỗi mở S08.10-day); S08.10-new (dropdown lặp lại ghi đúng ngày âm/dương của khoảng, "Mọi gói" tạo đúng số chuỗi và làm tròn); S08.10-day (ba lựa chọn ghi đúng ngoại lệ / cắt chuỗi / đổi chuỗi); S08.10-list; S08.08 dòng giá tính sẵn; S08.09 chỉ một ô giá; S04.02 tên chuỗi dưới ngày; mọi màn ở §5.7 vẫn chọn được ngày và hiện ngày âm.
 
 ## 7. Chi phí Google và hiệu năng
 
-Đặt lịch: thay 1 đọc `holidays` + truy vấn `special_days` bằng một truy vấn `price_rules` (≤ 30 tài liệu). S04.02 và S08.10: một truy vấn live. Trigger `price_rules` chạy mỗi lần thợ sửa chuỗi (ít). Không tăng so với spec cũ.
+Đặt lịch: thay 1 đọc `holidays` + truy vấn `special_days` bằng một truy vấn `price_rules` (≤ 30 tài liệu). S04.02 và S08.10: một truy vấn live. Trigger `price_rules` chạy mỗi lần thợ sửa chuỗi (ít). Mỗi lần thợ lưu thêm một lượt gọi callable (vài lần một tháng mỗi thợ). Không tăng đáng kể so với spec cũ.
 
 Tính toán (R13, không tính sẵn), đo bằng Python 2026-11-06 làm cận trên với 30 chuỗi một gói trong đó 10 chuỗi âm lịch; TS và Dart nhanh hơn 10–30 lần:
 
@@ -274,7 +280,6 @@ Giá theo giờ trong ngày; lọc và sắp xếp S02.06 theo đúng giá của
 - `AppCalendar`: mọi màn ở §5.7 nằm trong #316 (chủ dự án: "luôn hiển thị ngày âm trên tất cả các màn hình"). Được tách nhiều PR: control + S08.10 + S04.02 trước, các màn còn lại sau.
 - Sheet sửa chuỗi hằng năm: "Từ/Tới" hiện lần tới (lần đang diễn ra nếu hôm nay nằm trong khoảng). Lỗi "Chỉ chọn từ hôm nay trở đi" và "Chỉ chọn trong 2 năm tới" chỉ áp cho `repeat: none`.
 
-Chờ chủ dự án chốt: §4.6 mục 4, ghi chuỗi qua callable (rules cấm app ghi thẳng `price_rules`, kiểm một chỗ, chia chuỗi trong một giao dịch) hay app ghi thẳng Firestore như §4.5 (nhanh hơn ở Phase 1, nhưng kiểm hai nơi và phải viết lại đường ghi khi lên Phase 2). Spec đề xuất callable.
 
 - Cách kéo chọn khoảng trên `AppCalendar` (long-press rồi kéo, hay chạm hai đầu); cả hai đều phải có.
 - Bộ chọn ngày–tháng âm khi sửa `from`/`to` của chuỗi hằng năm theo âm lịch (wheel hay lịch âm không năm).
