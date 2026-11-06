@@ -772,6 +772,7 @@ class _DashedOutline extends CustomPainter {
 /// Bottom sheet with an [AppCalendar] and the primary "Chọn" button; returns
 /// the chosen day, or null when dismissed. [initial] is shown selected and
 /// its month opens first. [today] marks today when the caller has a clock.
+/// [disabledDay] dims days inside first..last that cannot be picked.
 Future<DateTime?> showAppDatePicker(
   BuildContext context, {
   required DateTime initial,
@@ -779,6 +780,7 @@ Future<DateTime?> showAppDatePicker(
   required DateTime last,
   String? title,
   DateTime? today,
+  bool Function(DateTime day)? disabledDay,
 }) => showAppSheet<DateTime>(
   context,
   builder: (_) => _PickerSheet(
@@ -789,6 +791,7 @@ Future<DateTime?> showAppDatePicker(
     initial: initial,
     range: null,
     rangeMode: false,
+    disabledDay: disabledDay,
   ),
 );
 
@@ -823,6 +826,7 @@ class _PickerSheet extends StatefulWidget {
     required this.initial,
     required this.range,
     required this.rangeMode,
+    this.disabledDay,
   });
 
   final String? title;
@@ -832,6 +836,7 @@ class _PickerSheet extends StatefulWidget {
   final DateTime? initial;
   final DateTimeRange? range;
   final bool rangeMode;
+  final bool Function(DateTime day)? disabledDay;
 
   @override
   State<_PickerSheet> createState() => _PickerSheetState();
@@ -913,6 +918,7 @@ class _PickerSheetState extends State<_PickerSheet> {
               today: widget.today,
               first: widget.first,
               last: widget.last,
+              disabledDay: widget.disabledDay,
             ),
             const SizedBox(height: AppSpace.s3),
             AppButton.primary(

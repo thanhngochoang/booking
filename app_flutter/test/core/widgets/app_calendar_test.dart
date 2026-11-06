@@ -858,6 +858,31 @@ void main() {
       expect(result, _d(5, 12));
     });
 
+    testWidgets('disabledDay days in the picker do not move the choice', (
+      tester,
+    ) async {
+      Object? result = 'unset';
+      await tester.pumpWidget(
+        opener(
+          (r) => result = r,
+          (c) => showAppDatePicker(
+            c,
+            initial: _d(10),
+            first: _d(1, 10),
+            last: _d(31, 12),
+            disabledDay: (d) => d.day == 21,
+          ),
+        ),
+      );
+      await tester.tap(find.text('mở'));
+      await tester.pumpAndSettle();
+      await tester.tap(_cell(_d(21)));
+      await tester.pump();
+      await tester.tap(find.text('Chọn'));
+      await tester.pumpAndSettle();
+      expect(result, _d(10));
+    });
+
     testWidgets('dismissing the picker returns null', (tester) async {
       Object? result = 'unset';
       await tester.pumpWidget(
