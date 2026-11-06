@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart' show GlassCard;
 import 'package:photobooking/features/addons/addons_controller.dart';
 import 'package:photobooking/features/addons/addons_screen.dart';
@@ -188,6 +189,27 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Sửa dịch vụ đi kèm'), findsOneWidget);
     expect(find.text('Xoá dịch vụ'), findsOneWidget);
+  });
+
+  testWidgets('the "Gói dịch vụ" link opens /me/packages', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world(seed: _seedFour);
+    await tester.pumpWidget(
+      w.app(
+        extraRoutes: [
+          GoRoute(
+            path: '/me/packages',
+            builder: (_, _) => const Text('stub packages'),
+          ),
+        ],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.ensureVisible(_key('addons-packages-link'));
+    await tester.tap(_key('addons-packages-link'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub packages'), findsOneWidget);
   });
 
   testWidgets('"Thêm dịch vụ" opens S08.07 empty', (tester) async {

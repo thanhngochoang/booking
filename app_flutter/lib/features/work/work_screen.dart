@@ -589,8 +589,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ],
           ),
         ),
-        // S29.03's entry (spec §8: one line under the numbers, no frame).
+        // S08.08's entry (#316), then S29.03's (spec §8: one line under the
+        // numbers, no frame).
         const SizedBox(height: AppSpace.s2),
+        const _PackagesEntry(),
         const _SpotSchedulesEntry(),
         if (widget.showEvents) ...[
           const SizedBox(height: AppSpace.s2),
@@ -735,6 +737,48 @@ class _InstantEntry extends ConsumerWidget {
         AppSpace.s2,
       ),
       child: LiveShutterCard(),
+    );
+  }
+}
+
+/// "Gói và bảng giá": opens S08.08 (`/me/packages`).
+class _PackagesEntry extends StatelessWidget {
+  const _PackagesEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final secondary = theme.brightness == Brightness.dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: const Key('open-packages'),
+          onTap: () => context.push('/me/packages'),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s3),
+            child: Row(
+              children: [
+                AppIcon(AppIcons.tag, size: 20, color: secondary),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(
+                  child: Text(
+                    context.l10n.s0808_workRow,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                AppIcon(AppIcons.chevron, size: 18, color: secondary),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

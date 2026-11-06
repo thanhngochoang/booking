@@ -45,10 +45,12 @@ class FirestoreServicePackageRepository implements ServicePackageRepository {
       });
 
   @override
-  Future<void> hide(String uid, String id) =>
-      _col(uid)
-          .doc(id)
-          .update({'active': false, 'updatedAt': FieldValue.serverTimestamp()});
+  Future<void> hide(String uid, String id) => setActive(uid, id, false);
+
+  @override
+  Future<void> setActive(String uid, String id, bool active) => _col(uid)
+      .doc(id)
+      .update({'active': active, 'updatedAt': FieldValue.serverTimestamp()});
 
   @override
   Future<void> reorder(String uid, List<String> idsInOrder) {

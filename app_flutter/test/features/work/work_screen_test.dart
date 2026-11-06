@@ -731,6 +731,21 @@ void main() {
     expect(h.location, '/me/spot-schedules');
   });
 
+  testWidgets('the "Gói và bảng giá" row opens /me/packages for a provider', (
+    tester,
+  ) async {
+    final h = await _pump(
+      tester,
+      _repo(_busy()),
+      viewSize: const Size(390, 2400),
+    );
+    await _settle(tester);
+    expect(find.text('Gói và bảng giá'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('open-packages')));
+    await _settle(tester);
+    expect(h.location, '/me/packages');
+  });
+
   testWidgets('the entry reads "Lịch tại điểm · 2 đang mở" with open '
       'schedules', (tester) async {
     SpotSchedule schedule(String id, List<String> days) => SpotSchedule(

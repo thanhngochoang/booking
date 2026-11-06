@@ -118,6 +118,15 @@ void main() {
     expect(repo.stored('p2'), isEmpty);
   });
 
+  test('the fake shows a hidden package again with setActive', () async {
+    final repo = FakeServicePackageRepository();
+    final a = await repo.add('p1', _input);
+    await repo.hide('p1', a.id);
+    expect(repo.stored('p1').single.active, isFalse);
+    await repo.setActive('p1', a.id, true);
+    expect(repo.stored('p1').single.active, isTrue);
+  });
+
   test('failing writes throw and change nothing', () async {
     final repo = FakeServicePackageRepository(failWrites: true);
     await expectLater(repo.add('p1', _input), throwsStateError);

@@ -13137,4 +13137,182 @@ class AppLocalizationsVi extends AppLocalizations {
   String earningsMilestoneRefundedSuffix(int n) {
     return ' · mốc $n đã hoàn cho khách';
   }
+
+  @override
+  String get s0808_title => 'Gói dịch vụ';
+
+  @override
+  String s0808_activeCount(int n) {
+    return '$n gói đang bật';
+  }
+
+  @override
+  String get s0808_hidden => 'Đang ẩn · khách không thấy';
+
+  @override
+  String get s0808_specialDays => 'Ngày đặc biệt';
+
+  @override
+  String s0808_specialDaysSub(int n, int m) {
+    return '$n ngày lễ chung · $m khoảng ngày của bạn';
+  }
+
+  @override
+  String get s0808_add => 'Thêm gói';
+
+  @override
+  String get s0808_empty => 'Thêm gói đầu tiên để khách đặt được bạn';
+
+  @override
+  String get s0808_lastOff =>
+      'Khách sẽ không đặt được bạn cho tới khi bật lại một gói';
+
+  @override
+  String get s0808_lastOffTitle => 'Tắt gói cuối cùng?';
+
+  @override
+  String get s0808_lastOffConfirm => 'Tắt gói';
+
+  @override
+  String get s0808_lastOffKeep => 'Giữ bật';
+
+  @override
+  String s0808_toggle(String name) {
+    return 'Bật gói $name';
+  }
+
+  @override
+  String get s0808_loadError => 'Không tải được gói dịch vụ';
+
+  @override
+  String get s0808_saveFailed => 'Chưa lưu được, thử lại nhé';
+
+  @override
+  String s0808_priceTwoLevels(String weekday, String weekend) {
+    return 'T2–T6 $weekday · T7–CN $weekend';
+  }
+
+  @override
+  String s0808_pricePerDay(String min, String max) {
+    return '$min–$max · theo ngày';
+  }
+
+  @override
+  String s0808_priceWithSpecial(String line, String price) {
+    return '$line · Lễ $price';
+  }
+
+  @override
+  String get s0808_workRow => 'Gói và bảng giá';
+
+  @override
+  String get s0808_addonsLink => 'Gói dịch vụ';
+
+  @override
+  String get s0810_title => 'Ngày đặc biệt';
+
+  @override
+  String get s0810_public => 'Ngày lễ chung';
+
+  @override
+  String get s0810_mine => 'Ngày riêng của bạn';
+
+  @override
+  String s0810_range(String from, String to, int n) {
+    return '$from – $to · $n ngày';
+  }
+
+  @override
+  String get s0810_note =>
+      'Gói có giá ngày đặc biệt dùng giá đó cho các ngày này. Gói không có giá đặc biệt tính như ngày thường. Muốn nghỉ hẳn thì đánh dấu nghỉ trong Lịch.';
+
+  @override
+  String get s0810_add => 'Thêm khoảng ngày';
+
+  @override
+  String get s0810_addTitle => 'Thêm khoảng ngày';
+
+  @override
+  String get s0810_editTitle => 'Sửa khoảng ngày';
+
+  @override
+  String get s0810_delete => 'Xoá khoảng ngày';
+
+  @override
+  String s0810_affects(int n, int m) {
+    return '$n ngày · $m gói có giá ngày đặc biệt sẽ dùng giá đó';
+  }
+
+  @override
+  String s0810_affectsNone(int n) {
+    return '$n ngày · Chưa gói nào có giá ngày đặc biệt · Thêm ở Gói dịch vụ';
+  }
+
+  @override
+  String get s0810_emptyMine =>
+      'Chưa có ngày riêng · Thêm mùa cưới, mùa hoa hay ngày bạn muốn giá cao hơn';
+
+  @override
+  String s0810_noHolidays(int year) {
+    return 'Chưa có lịch ngày lễ năm $year';
+  }
+
+  @override
+  String s0810_year(int year) {
+    return 'Năm $year';
+  }
+
+  @override
+  String get s0810_fieldName => 'Tên';
+
+  @override
+  String get s0810_fieldFrom => 'Từ ngày';
+
+  @override
+  String get s0810_fieldTo => 'Tới ngày';
+
+  @override
+  String get s0810_pickDay => 'Chọn ngày';
+
+  @override
+  String get s0810_save => 'Lưu';
+
+  @override
+  String get s0810_close => 'Đóng';
+
+  @override
+  String get s0810_errorName => 'Tên 2–40 ký tự';
+
+  @override
+  String get s0810_errorTooLong => 'Khoảng tối đa 60 ngày';
+
+  @override
+  String get s0810_errorTooFar => 'Chỉ chọn trong 365 ngày tới';
+
+  @override
+  String get s0810_errorLimit => 'Bạn đã có 20 khoảng ngày';
+
+  @override
+  String get s0810_errorPast => 'Chỉ chọn từ hôm nay trở đi';
+
+  @override
+  String get s0810_deleteTitle => 'Xoá khoảng ngày này?';
+
+  @override
+  String get s0810_deleteBody => 'Booking đã đặt giữ giá cũ.';
+
+  @override
+  String get s0810_deleteConfirm => 'Xoá';
+
+  @override
+  String get s0810_deleteKeep => 'Giữ lại';
+
+  @override
+  String get s0810_saved => 'Đã lưu khoảng ngày';
+
+  @override
+  String get s0810_deleted => 'Đã xoá khoảng ngày';
+
+  @override
+  String get s0810_loadError => 'Không tải được ngày đặc biệt';
 }

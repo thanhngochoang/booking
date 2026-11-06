@@ -409,7 +409,7 @@ class ServicesSliver extends ConsumerWidget {
         itemBuilder: (context, i) => _ServiceTile(
           service: value[i],
           onTap: owner
-              ? () => context.push('/setup/2')
+              ? () => context.push('/me/packages')
               : !acceptingOrders
               ? null
               : () => startBooking(

@@ -22370,6 +22370,312 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **' · mốc {n} đã hoàn cho khách'**
   String earningsMilestoneRefundedSuffix(int n);
+
+  /// No description provided for @s0808_title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói dịch vụ'**
+  String get s0808_title;
+
+  /// No description provided for @s0808_activeCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} gói đang bật'**
+  String s0808_activeCount(int n);
+
+  /// No description provided for @s0808_hidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang ẩn · khách không thấy'**
+  String get s0808_hidden;
+
+  /// No description provided for @s0808_specialDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày đặc biệt'**
+  String get s0808_specialDays;
+
+  /// No description provided for @s0808_specialDaysSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày lễ chung · {m} khoảng ngày của bạn'**
+  String s0808_specialDaysSub(int n, int m);
+
+  /// No description provided for @s0808_add.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói'**
+  String get s0808_add;
+
+  /// No description provided for @s0808_empty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói đầu tiên để khách đặt được bạn'**
+  String get s0808_empty;
+
+  /// No description provided for @s0808_lastOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ không đặt được bạn cho tới khi bật lại một gói'**
+  String get s0808_lastOff;
+
+  /// No description provided for @s0808_lastOffTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt gói cuối cùng?'**
+  String get s0808_lastOffTitle;
+
+  /// No description provided for @s0808_lastOffConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt gói'**
+  String get s0808_lastOffConfirm;
+
+  /// No description provided for @s0808_lastOffKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ bật'**
+  String get s0808_lastOffKeep;
+
+  /// No description provided for @s0808_toggle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật gói {name}'**
+  String s0808_toggle(String name);
+
+  /// No description provided for @s0808_loadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được gói dịch vụ'**
+  String get s0808_loadError;
+
+  /// No description provided for @s0808_saveFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được, thử lại nhé'**
+  String get s0808_saveFailed;
+
+  /// No description provided for @s0808_priceTwoLevels.
+  ///
+  /// In vi, this message translates to:
+  /// **'T2–T6 {weekday} · T7–CN {weekend}'**
+  String s0808_priceTwoLevels(String weekday, String weekend);
+
+  /// No description provided for @s0808_pricePerDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{min}–{max} · theo ngày'**
+  String s0808_pricePerDay(String min, String max);
+
+  /// No description provided for @s0808_priceWithSpecial.
+  ///
+  /// In vi, this message translates to:
+  /// **'{line} · Lễ {price}'**
+  String s0808_priceWithSpecial(String line, String price);
+
+  /// No description provided for @s0808_workRow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói và bảng giá'**
+  String get s0808_workRow;
+
+  /// No description provided for @s0808_addonsLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói dịch vụ'**
+  String get s0808_addonsLink;
+
+  /// No description provided for @s0810_title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày đặc biệt'**
+  String get s0810_title;
+
+  /// No description provided for @s0810_public.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày lễ chung'**
+  String get s0810_public;
+
+  /// No description provided for @s0810_mine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày riêng của bạn'**
+  String get s0810_mine;
+
+  /// No description provided for @s0810_range.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from} – {to} · {n} ngày'**
+  String s0810_range(String from, String to, int n);
+
+  /// No description provided for @s0810_note.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói có giá ngày đặc biệt dùng giá đó cho các ngày này. Gói không có giá đặc biệt tính như ngày thường. Muốn nghỉ hẳn thì đánh dấu nghỉ trong Lịch.'**
+  String get s0810_note;
+
+  /// No description provided for @s0810_add.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm khoảng ngày'**
+  String get s0810_add;
+
+  /// No description provided for @s0810_addTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm khoảng ngày'**
+  String get s0810_addTitle;
+
+  /// No description provided for @s0810_editTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa khoảng ngày'**
+  String get s0810_editTitle;
+
+  /// No description provided for @s0810_delete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá khoảng ngày'**
+  String get s0810_delete;
+
+  /// No description provided for @s0810_affects.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày · {m} gói có giá ngày đặc biệt sẽ dùng giá đó'**
+  String s0810_affects(int n, int m);
+
+  /// No description provided for @s0810_affectsNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày · Chưa gói nào có giá ngày đặc biệt · Thêm ở Gói dịch vụ'**
+  String s0810_affectsNone(int n);
+
+  /// No description provided for @s0810_emptyMine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ngày riêng · Thêm mùa cưới, mùa hoa hay ngày bạn muốn giá cao hơn'**
+  String get s0810_emptyMine;
+
+  /// No description provided for @s0810_noHolidays.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lịch ngày lễ năm {year}'**
+  String s0810_noHolidays(int year);
+
+  /// No description provided for @s0810_year.
+  ///
+  /// In vi, this message translates to:
+  /// **'Năm {year}'**
+  String s0810_year(int year);
+
+  /// No description provided for @s0810_fieldName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên'**
+  String get s0810_fieldName;
+
+  /// No description provided for @s0810_fieldFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ ngày'**
+  String get s0810_fieldFrom;
+
+  /// No description provided for @s0810_fieldTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tới ngày'**
+  String get s0810_fieldTo;
+
+  /// No description provided for @s0810_pickDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get s0810_pickDay;
+
+  /// No description provided for @s0810_save.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get s0810_save;
+
+  /// No description provided for @s0810_close.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get s0810_close;
+
+  /// No description provided for @s0810_errorName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên 2–40 ký tự'**
+  String get s0810_errorName;
+
+  /// No description provided for @s0810_errorTooLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoảng tối đa 60 ngày'**
+  String get s0810_errorTooLong;
+
+  /// No description provided for @s0810_errorTooFar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chọn trong 365 ngày tới'**
+  String get s0810_errorTooFar;
+
+  /// No description provided for @s0810_errorLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có 20 khoảng ngày'**
+  String get s0810_errorLimit;
+
+  /// No description provided for @s0810_errorPast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chọn từ hôm nay trở đi'**
+  String get s0810_errorPast;
+
+  /// No description provided for @s0810_deleteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá khoảng ngày này?'**
+  String get s0810_deleteTitle;
+
+  /// No description provided for @s0810_deleteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Booking đã đặt giữ giá cũ.'**
+  String get s0810_deleteBody;
+
+  /// No description provided for @s0810_deleteConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get s0810_deleteConfirm;
+
+  /// No description provided for @s0810_deleteKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get s0810_deleteKeep;
+
+  /// No description provided for @s0810_saved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu khoảng ngày'**
+  String get s0810_saved;
+
+  /// No description provided for @s0810_deleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xoá khoảng ngày'**
+  String get s0810_deleted;
+
+  /// No description provided for @s0810_loadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ngày đặc biệt'**
+  String get s0810_loadError;
 }
 
 class _AppLocalizationsDelegate

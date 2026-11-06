@@ -257,6 +257,9 @@ abstract class ServicePackageRepository {
   /// Sets `active: false`; packages are never deleted from the client.
   Future<void> hide(String uid, String id);
 
+  /// Shows or hides a package; [hide] is `setActive(uid, id, false)`.
+  Future<void> setActive(String uid, String id, bool active);
+
   /// Sets `order` 0..n-1 on [idsInOrder], in one batch.
   Future<void> reorder(String uid, List<String> idsInOrder);
 }
@@ -358,6 +361,12 @@ class FakeServicePackageRepository implements ServicePackageRepository {
   Future<void> hide(String uid, String id) async {
     _check();
     _replace(uid, id, (old) => old.copyWith(active: false));
+  }
+
+  @override
+  Future<void> setActive(String uid, String id, bool active) async {
+    _check();
+    _replace(uid, id, (old) => old.copyWith(active: active));
   }
 
   @override
