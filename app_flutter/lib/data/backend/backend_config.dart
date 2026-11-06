@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 
 /// Region of every callable Cloud Function: Singapore, the closest region to
-/// Vietnam. Same value as `REGION` in firebase/functions/src/config.ts.
+/// Vietnam. Same value as `REGION` in booking-be
+/// firebase/functions/src/config.ts.
 const functionsRegion = 'asia-southeast1';
 
-/// Where the local Firebase Emulator Suite listens (ports of
+/// Where the local Firebase Emulator Suite listens (ports of booking-be
 /// firebase/firebase.json).
 class EmulatorConfig {
   const EmulatorConfig(this.host);

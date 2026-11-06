@@ -27,9 +27,6 @@
 /app/google-services.json
 .claude/*
 !.claude/skills/
-packages/*
-!packages/domain
-!packages/domain/**
 # Extra checkouts made by scripts/worktree.sh
 /.worktrees
 __pycache__/

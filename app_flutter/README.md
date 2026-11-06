@@ -43,14 +43,18 @@ Meta developer console → Settings → Advanced → Client token). Gradle injec
 ```bash
 flutter analyze && flutter test
 dart run tool/affected_test.dart origin/develop --run   # only the tests this branch can affect
-cd firebase/rules-test && npm install && npm test   # Firestore rules on the emulator (needs JDK 21+)
 ```
+
+The Firestore rules tests live in booking-be (`firebase/rules-test`, #299); run them in that checkout.
 
 On pull requests CI runs only the affected tests and falls back to all of them when unsure: [docs/testing/affected-tests.md](../docs/testing/affected-tests.md).
 
 ## Local backend (Firebase Emulator Suite)
 
-One command from the repo root (Node 24+, JDK 21 via `scripts/env.sh`):
+The Firebase backend (Functions, rules, seed, emulator config) lives in booking-be (#299). One command from
+the repo root (Node 24+, JDK 21 via `scripts/env.sh`) runs booking-be's `scripts/backend-local.sh` from its
+checkout (`$BOOKING_BE_DIR`, default the sibling `../booking-be`:
+`git clone https://github.com/thanhngochoang/booking-be.git ../booking-be`):
 
 ```bash
 scripts/backend-local.sh            # start; reuses saved data, seeds on the first run
@@ -62,12 +66,12 @@ scripts/backend-local.sh --lan      # listen on 0.0.0.0 (Genymotion, real device
 | Service | Port | Notes |
 |---|---|---|
 | Emulator UI | 4000 | http://127.0.0.1:4000 |
-| Auth | 9099 | seed accounts: `firebase/functions/seed/README.md` (password `seed-password-1`) |
-| Firestore | 8080 | rules from `firebase/firestore.rules` |
+| Auth | 9099 | seed accounts: booking-be `firebase/functions/seed/README.md` (password `seed-password-1`) |
+| Firestore | 8080 | rules from booking-be `firebase/firestore.rules` |
 | Functions | 5001 | `asia-southeast1`, rebuilt by `node build.mjs --watch` |
-| Storage | 9199 | rules from `firebase/storage.rules` (deny all for now) |
+| Storage | 9199 | rules from booking-be `firebase/storage.rules` (deny all for now) |
 
-Data is saved to `firebase/.emulator-data/` (gitignored) on Ctrl-C. The emulator project id is the
+Data is saved to booking-be `firebase/.emulator-data/` (gitignored) on Ctrl-C. The emulator project id is the
 app's own (`android/app/google-services.json`), because Android initialises Firebase natively with it;
 override with `FIREBASE_PROJECT=…`.
 
@@ -87,11 +91,11 @@ When switching an installed app between the cloud and the emulators, clear its d
 enforced locally. Inside the Claude Code sandbox the Functions emulator cannot open its Unix socket;
 run the script and the emulator tests outside it.
 
-Backend tests:
+Backend tests run in the booking-be checkout (from `app_flutter/`):
 
 ```bash
-(cd ../packages/domain && npm test)                                         # pure rules, no emulator
-(cd firebase/functions && npm test && npm run test:integration)              # unit + emulator integration
+(cd ../../booking-be/packages/domain && npm test)                                  # pure rules, no emulator
+(cd ../../booking-be/firebase/functions && npm test && npm run test:integration)   # unit + emulator integration
 ```
 
 ## Layout
@@ -103,7 +107,6 @@ Backend tests:
 | `lib/data` | models (freezed) and repositories: Firebase implementation + Fake for tests |
 | `lib/features` | one folder per screen or flow: auth, onboarding, shell |
 | `lib/l10n` | `app_vi.arb`, every user-visible string |
-| `firebase` | Firestore rules, emulator config, rules tests |
 | `tool` | code generators (`gen_tokens.dart`) |
 
 ## Rules

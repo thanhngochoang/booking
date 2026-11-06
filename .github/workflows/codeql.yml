@@ -1,5 +1,5 @@
-# CodeQL static analysis for the TypeScript (domain, Cloud Functions) and
-# Python (scripts) code. Dart has no CodeQL support; the legacy Android app is
+# CodeQL for the Python scripts. The TypeScript (domain, Cloud Functions) moved
+# to booking-be (#299). Dart has no CodeQL support; the legacy Android app is
 # not built (old toolchain), so Java is left out.
 name: codeql
 
@@ -26,8 +26,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - language: javascript-typescript
-            build-mode: none
           - language: python
             build-mode: none
     steps:

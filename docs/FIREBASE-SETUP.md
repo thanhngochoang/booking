@@ -2,12 +2,14 @@
 
 Tài liệu này hướng dẫn nối app `app_flutter/` với một Firebase project để chạy được đăng nhập bằng email, Google và Facebook, cùng Firestore. Bạn làm các bước 1–7 một lần cho mỗi project. Bước 8 làm lại trên mỗi máy dev. Bước 9 (Storage) và bước 10 (deploy tự động bằng GitHub Actions) làm khi cần.
 
+Từ #299, backend Firebase (Cloud Functions, Firestore/Storage rules, indexes, `rules-test`, seed, `firebase.json`, `.firebaserc`) và `packages/domain` nằm trong repo riêng (private) https://github.com/thanhngochoang/booking-be, ở `firebase/` và `packages/domain/`. Tài liệu này vẫn ở repo app. Các lệnh bên dưới chạy từ thư mục gốc của repo app và cần bản clone booking-be cạnh nó (`../booking-be`): `git clone https://github.com/thanhngochoang/booking-be.git ../booking-be`.
+
 ## Thông số của repo
 
 | Mục | Giá trị |
 |-----|---------|
 | Android package (applicationId) | `com.thanhbk.photobooking` |
-| Firebase project dev | `booking-c1922` (alias `dev` trong `app_flutter/firebase/.firebaserc`) |
+| Firebase project dev | `booking-c1922` (alias `dev` trong `firebase/.firebaserc` của booking-be) |
 | Firebase project production | Chưa tạo. Khi có, thêm alias `prod` (bước 6) và biến cho environment `production` (bước 10) |
 | Facebook App ID | `546233675712070` |
 | SHA‑1 debug (máy này, `.home/.android/debug.keystore`) | `D2:BC:10:FD:7C:AF:07:A5:29:9B:03:FF:F8:F2:B6:7E:AF:DB:0D:14` |
@@ -88,7 +90,7 @@ Không ghi token vào `strings.xml` hay bất kỳ file nào được commit. `.
    - Database ID: giữ `(default)`. App gọi `FirebaseFirestore.instance`, tức chỉ dùng database mặc định. Đặt id khác thì app không thấy database.
    - Location: `asia-southeast1 (Singapore)`, gần Việt Nam nhất → **Next**. Location không đổi được sau khi tạo.
    - Security rules: **Production mode** (rules của repo sẽ ghi đè ngay ở bước kế) → **Create**.
-2. Deploy rules và indexes từ repo. Firebase CLI đã có sẵn trong `rules-test/node_modules`, không cần cài global. Project được chọn qua alias trong `app_flutter/firebase/.firebaserc`:
+2. Deploy rules và indexes từ repo. Firebase CLI đã có sẵn trong `rules-test/node_modules`, không cần cài global. Project được chọn qua alias trong `firebase/.firebaserc` của booking-be:
 
    | Alias | Project |
    |-------|---------|
@@ -99,7 +101,7 @@ Không ghi token vào `strings.xml` hay bất kỳ file nào được commit. `.
 
 ```bash
 source scripts/env.sh
-cd app_flutter/firebase/rules-test
+cd ../booking-be/firebase/rules-test
 npm install                 # lần đầu
 npx firebase login          # mở trình duyệt, chỉ cần một lần
 npm test                    # chạy test rules trên emulator trước khi deploy
@@ -109,7 +111,7 @@ npm run deploy:rules:prod   # lên production, chỉ chạy được sau khi đ�
 
 Lệnh deploy đẩy đúng nội dung file trên đĩa, kể cả phần chưa commit. Nên commit và chạy `npm test` trước.
 
-Khi đã có project production, thêm alias `prod` vào `.firebaserc` rồi commit:
+Khi đã có project production, thêm alias `prod` vào `firebase/.firebaserc` của booking-be rồi commit (trong repo booking-be):
 
 ```json
 {
@@ -122,7 +124,7 @@ Khi đã có project production, thêm alias `prod` vào `.firebaserc` rồi com
 
 Production nên deploy qua GitHub Actions (bước 10) để có bước duyệt. `deploy:rules:prod` từ máy chỉ dùng khi cần gấp.
 
-Trong Claude Code, chạy lệnh `firebase login` bằng tiền tố `!` vì nó cần tương tác. Sau khi deploy, vào **Databases & Storage → Firestore → Rules** để kiểm tra nội dung giống `app_flutter/firebase/firestore.rules`.
+Trong Claude Code, chạy lệnh `firebase login` bằng tiền tố `!` vì nó cần tương tác. Sau khi deploy, vào **Databases & Storage → Firestore → Rules** để kiểm tra nội dung giống `firebase/firestore.rules` của booking-be.
 
 Vì sao không dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `booking`, `albums`, `chat_room` mà không tuân theo rules mới (ví dụ có `mail_address`, `is_photographer`). Deploy rules mới sẽ chặn app cũ ghi tiếp. Vì vậy app Flutter dùng project riêng (`booking-c1922` cho dev), dữ liệu cũ sẽ migrate sau.
 
@@ -187,7 +189,7 @@ Kiểm tra lần lượt:
 
 ## 9. Storage rules (khi app bắt đầu upload ảnh)
 
-Rules nằm ở `app_flutter/firebase/storage.rules`. Bản hiện tại:
+Rules nằm ở `firebase/storage.rules` của booking-be. Bản hiện tại:
 
 - Chỉ mở `users/{uid}/**`: người đã đăng nhập được đọc; chỉ chủ (`uid`) được ghi, và chỉ ghi ảnh (`image/*`) dưới 15 MB.
 - Mọi đường dẫn khác bị chặn.
@@ -199,7 +201,7 @@ Dữ liệu chỉ lưu khoá lưu trữ (`storage_key`), không lưu URL tải c
 3. Deploy:
 
 ```bash
-cd app_flutter/firebase/rules-test
+cd ../booking-be/firebase/rules-test
 npm run deploy:storage:dev    # hoặc deploy:storage:prod
 ```
 
@@ -207,22 +209,22 @@ Kiểm tra ở **Storage → Rules**: nội dung phải giống `storage.rules`.
 
 ## 10. Deploy tự động bằng GitHub Actions
 
-Workflow `.github/workflows/firebase-deploy.yml` có 4 job: `test` chạy test rules trên emulator, `deploy` (rules và indexes) chỉ chạy khi `test` pass; `functions-test` chạy test của `packages/domain` và Cloud Functions (cả test emulator), `deploy-functions` chỉ chạy khi `test` và `functions-test` pass (điều kiện riêng ở mục 11). Hai job deploy độc lập: functions lỗi không chặn deploy rules.
+Từ #299, workflow deploy và các GitHub environment của nó nằm ở **booking-be**: `.github/workflows/firebase-deploy.yml` của https://github.com/thanhngochoang/booking-be. Repo app không còn workflow deploy; environment `dev`/`production` và secret `FIREBASE_SERVICE_ACCOUNT` cũ của repo app không còn được dùng (xoá được). Workflow có 4 job: `test` chạy test rules trên emulator, `deploy` (rules và indexes) chỉ chạy khi `test` pass; `functions-test` chạy test của `packages/domain` và Cloud Functions (cả test emulator), `deploy-functions` chỉ chạy khi `test` và `functions-test` pass (điều kiện riêng ở mục 11). Hai job deploy độc lập: functions lỗi không chặn deploy rules.
 
-| Khi nào | Environment | Deploy |
+| Khi nào (repo booking-be) | Environment | Deploy |
 |---------|-------------|--------|
-| Push vào `flutter-rewrite` hoặc `develop` có thay đổi trong `app_flutter/firebase/**` | `dev` | Firestore rules và indexes |
+| Push vào `develop` có thay đổi trong `firebase/**` hoặc `packages/domain/**` (hoặc chính workflow) | `dev` | Firestore rules và indexes |
 | Push vào `main` có thay đổi tương tự | `production` | Firestore rules và indexes |
-| Chạy tay (**Actions → firebase-deploy → Run workflow**) | chọn `dev` hoặc `production` | Như trên. Tích **Also deploy Storage rules** để deploy thêm Storage. |
-| Push hoặc chạy tay như trên, khi có thay đổi trong `app_flutter/firebase/**` hoặc `packages/**` | như trên | Cloud Functions, job `deploy-functions`; **chỉ khi `BLAZE_ENABLED` = `true`** |
+| Chạy tay (**Actions → firebase-deploy → Run workflow**) | chọn `dev` hoặc `production` (ô **target**) | Như trên. Tích **Also deploy Storage rules** (ô **storage**) để deploy thêm Storage. |
+| Push hoặc chạy tay như trên | như trên | Cloud Functions, job `deploy-functions`; **chỉ khi `BLAZE_ENABLED` = `true`** |
 
 Project id không ghi trong workflow. Mỗi GitHub environment có biến `FIREBASE_PROJECT_ID` và secret `FIREBASE_SERVICE_ACCOUNT` riêng. Environment chưa có `FIREBASE_PROJECT_ID` thì job `deploy` chỉ in cảnh báo và không deploy gì. Nhờ vậy `production` an toàn khi chưa có project.
 
-**Công tắc Blaze (`BLAZE_ENABLED`).** Mọi thứ cần gói Blaze (trả theo dùng) chỉ deploy khi environment có biến `BLAZE_ENABLED` bằng đúng `true`: Cloud Functions (kèm job lập lịch và secret) và Storage rules. Không đặt biến, hoặc giá trị khác, là **tắt**: chỉ Firestore rules và indexes được deploy (chạy trên gói Spark miễn phí), các bước cần Blaze in cảnh báo và bỏ qua. Script chạy tay `npm run deploy:storage:dev|prod` (trong `rules-test/`) cũng từ chối khi chưa có `BLAZE_ENABLED=true`. Chủ dự án để công tắc **tắt** cho tới khi cần Blaze (2026-10-09); app và dashboard chạy trên emulator (`scripts/backend-local.sh`).
+**Công tắc Blaze (`BLAZE_ENABLED`).** Mọi thứ cần gói Blaze (trả theo dùng) chỉ deploy khi environment có biến `BLAZE_ENABLED` bằng đúng `true`: Cloud Functions (kèm job lập lịch và secret) và Storage rules. Không đặt biến, hoặc giá trị khác, là **tắt**: chỉ Firestore rules và indexes được deploy (chạy trên gói Spark miễn phí), các bước cần Blaze in cảnh báo và bỏ qua. Script chạy tay `npm run deploy:storage:dev|prod` (trong `rules-test/`) cũng từ chối khi chưa có `BLAZE_ENABLED=true`. Chủ dự án để công tắc **tắt** cho tới khi cần Blaze (2026-10-09); app và dashboard chạy trên emulator (`scripts/backend-local.sh`, chạy emulator của bản clone booking-be).
 
-IAM, service account và key đều miễn phí. GitHub Actions miễn phí cho repo public, repo private có quota phút miễn phí mỗi tháng.
+IAM, service account và key đều miễn phí. GitHub Actions miễn phí cho repo public; booking-be là repo private nên dùng quota phút miễn phí mỗi tháng.
 
-Làm 10.1–10.3 cho **dev** ngay bây giờ. Làm lại cho **production** khi đã có project, với project id và key của production. Mỗi project dùng một service account riêng: key của dev không deploy được lên production, và ngược lại.
+Làm 10.1–10.3 cho **dev** sau khi PR #299 của repo app đã merge (để không có hai repo cùng deploy). Làm lại 10.1–10.3 cho **production** khi đã có project, với project id và key của production. Mỗi project dùng một service account riêng: key của dev không deploy được lên production, và ngược lại.
 
 ### 10.1 Tạo service account (trong từng project)
 
@@ -239,13 +241,15 @@ Làm 10.1–10.3 cho **dev** ngay bây giờ. Làm lại cho **production** khi 
    Bấm **Continue** → **Done**.
 3. Bấm vào service account vừa tạo → tab **Keys** → **Add key → Create new key** → **JSON** → **Create**. Trình duyệt tải về một file `.json`.
 
+Project dev đã có service account `github-firebase-deploy` từ trước #299 (khi repo app còn deploy). Dùng lại nó, không cần tạo mới: chỉ tạo key mới (bước 3) cho booking-be, rồi xoá key cũ khi đã xoá secret `FIREBASE_SERVICE_ACCOUNT` ở repo app.
+
 Nếu deploy báo thiếu quyền (`The caller does not have permission`, `...permission denied`), log sẽ ghi tên permission còn thiếu. Thêm role chứa permission đó ở trang **IAM** của project (`https://console.cloud.google.com/iam-admin/iam?project=<project-id>`). Cách nhanh nhưng rộng quyền hơn: gán role **Firebase Admin**.
 
 Nếu không tạo được key vì policy của organization (`iam.disableServiceAccountKeyCreation`), dùng Workload Identity Federation thay cho key và sửa bước `google-github-actions/auth` trong workflow.
 
 ### 10.2 Tạo environment và lưu cấu hình
 
-Mở https://github.com/thanhngochoang/booking/settings/environments → **New environment**.
+Mở https://github.com/thanhngochoang/booking-be/settings/environments → **New environment**. Environment có secret trong repo private cần gói GitHub hỗ trợ (GitHub Free không có); chưa có thì kiểm tra gói trước.
 
 | | `dev` | `production` |
 |--|-------|--------------|
@@ -254,17 +258,17 @@ Mở https://github.com/thanhngochoang/booking/settings/environments → **New e
 | **Environment variables** → `BLAZE_ENABLED` | không đặt (đang ở Spark) | `true` khi project đã lên Blaze |
 | **Environment secrets** → `FIREBASE_SERVICE_ACCOUNT` | toàn bộ nội dung file JSON của dev | toàn bộ nội dung file JSON của production |
 | **Required reviewers** | không cần | bật, thêm chính bạn |
-| **Deployment branches and tags** | `flutter-rewrite`, `develop` | chỉ `main` |
+| **Deployment branches and tags** | `develop` | chỉ `main` |
 
 Lưu ý:
 
 - Secret phải đặt trong **environment**, không đặt ở **Repository secrets**. Đặt ở repository thì cả hai environment dùng chung một key.
 - Sau khi lưu secret, xoá file JSON trên máy. Không commit file này. Key bị lộ thì vào tab **Keys** của service account, xoá key cũ và tạo key mới.
-- Khi bật Required reviewers cho `production`, mỗi lần push vào `main` có đụng `app_flutter/firebase/**`, GitHub sẽ chờ bạn bấm **Approve**, kể cả lúc chưa có project id.
+- Khi bật Required reviewers cho `production`, mỗi lần push vào `main` của booking-be có đụng `firebase/**` hoặc `packages/domain/**`, GitHub sẽ chờ bạn bấm **Approve**, kể cả lúc chưa có project id.
 
 ### 10.3 Chạy thử
 
-1. Mở https://github.com/thanhngochoang/booking/actions/workflows/firebase-deploy.yml → **Run workflow** → branch `flutter-rewrite`, target `dev` → **Run workflow**. Nút này chỉ hiện khi workflow đã có trên branch mặc định của repo.
+1. Mở https://github.com/thanhngochoang/booking-be/actions/workflows/firebase-deploy.yml → **Run workflow** → branch `develop`, target `dev` → **Run workflow**. Nút này chỉ hiện khi workflow đã có trên branch mặc định của repo.
 2. Kiểm tra: cả hai job xanh, và trang **Firestore → Rules** của project dev có thời điểm publish mới.
 3. Với production: sau khi điền 10.2, chạy lại với branch `main`, target `production`, rồi duyệt.
 
@@ -279,7 +283,7 @@ Lưu ý:
 
 ## 11. Cloud Functions (deploy qua CI)
 
-Job `deploy-functions` deploy codebase `app_flutter/firebase/functions` (region `asia-southeast1`: `getContactLink`, `onPhotographerWrite`) bằng `firebase deploy --only functions`. Không deploy từ máy. Làm các bước dưới đây một lần cho mỗi project: **dev** ngay, **production** khi đã có project.
+Job `deploy-functions` (workflow của booking-be, mục 10) deploy codebase `firebase/functions` của booking-be (region `asia-southeast1`: `getContactLink`, `onPhotographerWrite`) bằng `firebase deploy --only functions`. Không deploy từ máy. Làm các bước dưới đây một lần cho mỗi project: **dev** ngay, **production** khi đã có project.
 
 1. **Gói Blaze.** Firebase Console → ⚙ → **Usage and billing** → **Details & settings** → **Modify plan** → **Blaze**. Cloud Functions không chạy trên gói Spark. Nên đặt budget alert (ví dụ 5 USD) trong Google Cloud Billing. Sau đó đặt biến `BLAZE_ENABLED` = `true` cho environment (10.2); chưa đặt thì job `deploy-functions` chỉ in cảnh báo.
 2. **Bật API** tại `https://console.cloud.google.com/apis/library?project=<project-id>`: Cloud Functions API, Cloud Build API, Artifact Registry API, Eventarc API, Cloud Run Admin API. Service account của CI không có quyền bật API, nên bật trước bằng tay.
@@ -330,7 +334,7 @@ gcloud secrets add-iam-policy-binding PAYOUT_ACCOUNT_KEY \
 Lưu ý:
 
 - Không bao giờ đổi hoặc xóa khóa khi đã có tài khoản được lưu: dữ liệu cũ sẽ không giải mã được. Chuỗi mã hóa có tiền tố phiên bản (`v1:`) để sau này xoay khóa.
-- Emulator dùng khóa thử trong `app_flutter/firebase/functions/.secret.local` (giá trị test, không phải bí mật). Công cụ nhân viên `npm run payouts` đọc khóa từ biến môi trường `PAYOUT_ACCOUNT_KEY`, hoặc từ file này khi chạy với emulator.
+- Emulator dùng khóa thử trong `firebase/functions/.secret.local` của booking-be (giá trị test, không phải bí mật). Công cụ nhân viên `npm run payouts` đọc khóa từ biến môi trường `PAYOUT_ACCOUNT_KEY`, hoặc từ file này khi chạy với emulator.
 - Chuyển tiền thật chưa tồn tại: `npm run payouts -- execute` chỉ chạy với cổng giả: với emulator, hoặc khi đặt `PAYOUTS_MODE=fake` và `GCLOUD_PROJECT` đúng bằng project dev trong `.firebaserc` (alias `dev`, công cụ tự đọc, không ghi cứng). Với mọi project khác (kể cả production) lệnh `execute` bị từ chối.
 
 ## Sự cố thường gặp
@@ -352,7 +356,7 @@ Emulator chạy hoàn toàn local, không đụng project thật:
 
 ```bash
 source scripts/env.sh
-cd app_flutter/firebase/rules-test && npm install && npm test
+cd ../booking-be/firebase/rules-test && npm install && npm test
 ```
 
-CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR, cùng job `domain` (test của `packages/domain`). Cloud Functions (lint, typecheck, unit và test trên emulator) **không** chạy lúc PR: job `functions-test` của `.github/workflows/firebase-deploy.yml` build và test chúng sau khi code được merge vào `develop` (hoặc `flutter-rewrite`, `main`). Test emulator chỉ chạy trên CI.
+CI của booking-be (`.github/workflows/ci.yml`) chạy bước này cho mọi PR (job `firestore-rules`), cùng job `domain` (test của `packages/domain`) và `functions` (lint, typecheck, unit của Cloud Functions). Test Cloud Functions trên emulator **không** chạy lúc PR: job `functions-test` của `firebase-deploy.yml` (booking-be) chạy chúng sau khi code được merge vào `develop` hoặc `main`. Test emulator chỉ chạy trên CI. CI của repo app không còn chạy test backend.

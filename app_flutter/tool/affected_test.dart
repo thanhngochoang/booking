@@ -15,9 +15,11 @@ const config = AffectedConfig(
     '.github/workflows/flutter.yml', // how the tests are run
     'design-system/**', // tokens.json → lib/core/theme/tokens.g.dart in CI
   ],
+  // The Firebase backend and packages/domain live in booking-be (#299) and
+  // are tested there; this repo keeps no copy of them and no test reads
+  // them, so no rule is needed for backend files.
   passiveFiles: [
     ...AffectedConfig.defaultPassiveFiles,
-    'firebase/**', // rules and functions: only tests reading them see them
     '.claude/**',
   ],
 );

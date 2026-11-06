@@ -2,18 +2,58 @@ name: flutter
 on:
   push:
     branches: [flutter-rewrite, develop, main]
+  # Every pull request, with no paths filter: analyze and report are required checks of develop,
+  # and a workflow that never starts leaves them missing, so a PR that changes only other files
+  # (a plan, a script) could never merge. The changes job decides instead; a job skipped by its
+  # `if:` counts as passed (#324).
   pull_request:
-    # Also every file a test reads from outside app_flutter/ (the main spec
-    # for screen_codes_test, domain fixtures): test/tool/affected checks it.
-    # The self-hosted API contract is a snapshot inside app_flutter/ (repo booking-be).
-    paths: ['app_flutter/**', 'design-system/**', 'packages/**', 'docs/superpowers/specs/**', '.github/workflows/flutter.yml']
 
 permissions:
   contents: read
   checks: write          # needed by test-reporter to post annotations
+  pull-requests: read    # the changes job lists the PR's files
 
 jobs:
+  # ── 0. Does this PR touch the app? (one API call, no checkout, a few seconds) ──
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.files.outputs.app }}
+    steps:
+      - id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Also every file a test reads from outside app_flutter/ (test/tool/affected checks it):
+          # the tests read only app files and the main spec (screen_codes_test). The Firebase
+          # backend and the domain live in booking-be since #299 and are tested there.
+          APP_PATHS=('app_flutter/**' 'design-system/**' 'docs/superpowers/specs/**' '.github/workflows/flutter.yml')
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # New and old names, so a file moved out of app_flutter/ still counts.
+          if ! files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" -q '.[] | .filename, (.previous_filename // empty)'); then
+            echo "::warning title=Changed files::cannot list the PR files; running the app jobs"
+            echo "app=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          app=false
+          while IFS= read -r f; do
+            # Unquoted pattern on purpose: in [[ == ]] * also matches /, so dir/** covers every depth.
+            for p in "${APP_PATHS[@]}"; do
+              if [[ $f == $p ]]; then app=true; break 2; fi
+            done
+          done <<< "$files"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          [ "$app" = true ] || echo "::notice title=Changed files::no app file changed; analyze, test and report are skipped (skipped counts as passed)"
+
+  # The app jobs run unless the changes job answered false: if it failed, its output is empty
+  # and they still run, so a broken changes job can never turn a required check green.
   analyze:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.app != 'false' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,12 +89,14 @@ jobs:
 
   # ── 2. Unit / widget tests — 8 shards in parallel ────────────────
   # Each shard detects the affected tests itself (import graph + git diff,
-  # ~1 s: app_flutter/tool/affected_test.dart, docs/testing/affected-tests.md),
-  # so no job sits in front of the shards. Push events run everything; when
-  # the tool is unsure it answers ALL. The shards compile the committed
-  # generated code (the analyze job checks it is fresh) and write the raw
-  # flutter JSON report, which the report job reads directly.
+  # ~1 s: app_flutter/tool/affected_test.dart, docs/testing/affected-tests.md);
+  # only the few-second changes job sits in front of the shards. Push events
+  # run everything; when the tool is unsure it answers ALL. The shards compile
+  # the committed generated code (the analyze job checks it is fresh) and write
+  # the raw flutter JSON report, which the report job reads directly.
   test:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.app != 'false' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -161,24 +203,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # ── 3. Firestore rules tests (parallel with everything) ───────────
-  firestore-rules:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with: { distribution: temurin, java-version: '21' }
-      - uses: actions/setup-node@v7
-        with: { node-version: '24' }
-      - name: Firestore rules tests (emulator)
-        working-directory: app_flutter/firebase/rules-test
-        run: npm ci && npm test
-
-  # ── 4. Publish test report ────────────────────────────────────────
+  # ── 3. Publish test report ────────────────────────────────────────
   report:
     runs-on: ubuntu-latest
-    needs: test
-    if: always()
+    needs: [changes, test]
+    if: ${{ !cancelled() && needs.changes.outputs.app != 'false' }}
     steps:
       - uses: actions/checkout@v7
       - name: Download all shard results
@@ -198,27 +227,3 @@ jobs:
           fail-on-empty: false
           fail-on-error: true
 
-  # ── 5. Domain package (fully independent) ─────────────────────────
-  domain:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with: { node-version: '24' }
-      - name: Domain package (pure TypeScript)
-        working-directory: packages/domain
-        run: npm ci && npm run typecheck && npm run lint && npm test
-
-  # ── 6. Cloud Functions: lint, typecheck, unit tests ───────────────
-  # Fast checks only, so a PR cannot merge code that turns the post-merge
-  # firebase-deploy.yml job red (it also runs the emulator integration
-  # tests, which stay post-merge).
-  functions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with: { node-version: '24' }
-      - name: Cloud Functions (lint, typecheck, unit)
-        working-directory: app_flutter/firebase/functions
-        run: npm ci && npm run lint && npm run typecheck && npm test

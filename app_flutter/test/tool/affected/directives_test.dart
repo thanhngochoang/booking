@@ -97,13 +97,13 @@ final b = Directory(
   'lib/features',
 );
 final c = File('lib/core/widgets/$name');
-final d = File(r'../packages/notes/spec.md');
+final d = File(r'../docs/superpowers/specs/notes.md');
 ''');
       expect(reads.map((r) => r.toString()), [
         'android/app/AndroidManifest.xml',
         'lib/features',
         'lib/core/widgets/*',
-        '../packages/notes/spec.md',
+        '../docs/superpowers/specs/notes.md',
       ]);
     });
 

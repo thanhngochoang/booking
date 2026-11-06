@@ -46,7 +46,7 @@ final world = snapshot({
     body: '''
 void main() {
   File('android/app/src/main/AndroidManifest.xml');
-  File('../packages/notes/spec.md');
+  File('../docs/superpowers/specs/notes.md');
   File('lib/features/\$name');
 }''',
   ),
@@ -167,7 +167,9 @@ void main() {
     });
 
     test('a file outside the package read with ../', () {
-      expect(selected(['packages/notes/spec.md']), ['test/disk_test.dart']);
+      expect(selected(['docs/superpowers/specs/notes.md']), [
+        'test/disk_test.dart',
+      ]);
     });
 
     test('an interpolated path is a prefix', () {

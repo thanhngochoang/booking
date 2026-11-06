@@ -3,7 +3,8 @@
 /// is "Nội dung này không còn".
 ///
 /// The accepted set mirrors `CLIENT_TARGET_PATTERNS` in
-/// packages/domain/test/client_targets.ts (S17 Decision 8): keep both in step.
+/// booking-be packages/domain/test/client_targets.ts (S17 Decision 8): keep
+/// both in step.
 /// Only `/u/:uid?tab=reviews`, `/bookings?tab=events`,
 /// `/studio/recruit?post=<id>` and `/collab?offer=<id>` may carry a query,
 /// exactly that one key once.

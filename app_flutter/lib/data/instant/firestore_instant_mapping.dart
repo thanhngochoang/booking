@@ -1,7 +1,8 @@
 // lib/data/instant/firestore_instant_mapping.dart
 //
 // Firestore documents and callable answers → Chụp ngay models. Mirrors the
-// server mappers (`firebase/functions/src/infra/instant_firestore.ts`): a
+// server mappers (booking-be
+// `firebase/functions/src/infra/instant_firestore.ts`): a
 // request whose status or genre is unknown reads as absent, an offer row
 // with an unknown outcome reads as expired, Timestamps become UTC.
 import 'package:cloud_firestore/cloud_firestore.dart';
