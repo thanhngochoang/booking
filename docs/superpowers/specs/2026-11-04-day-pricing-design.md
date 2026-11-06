@@ -1,6 +1,8 @@
 # Bảng giá theo ngày và thiết kế lại phần nhập gói (S08.08–S08.10)
 
-Ngày: 2026-11-04 · Trạng thái: bản nháp chờ chủ dự án duyệt · Issue: #316 (gộp #317 ngày lễ, #318 từng thứ) · Dựa trên: spec chính `2026-10-01-remaining-screens.md` (S04, S08), `2026-10-05-provider-types-portfolio-jobs-design.md` (gói, `BookingTerms`), `2026-10-08-booking-addons-design.md` (tổng tiền booking), `2026-10-08-trending-spots-design.md` (`SpotSchedule.priceFrom`), `data-model/domain-model.md` (`Service`).
+> **Đã thay thế 2026-11-06** bởi `2026-11-06-day-pricing-redesign.md` (#316 mở lại: UX và ngày lễ fix cứng). Giữ lại để đối chiếu với PR #326.
+
+Ngày: 2026-11-04 · Trạng thái: đã làm (PR #326), đã bị thay thế · Issue: #316 (gộp #317 ngày lễ, #318 từng thứ) · Dựa trên: spec chính `2026-10-01-remaining-screens.md` (S04, S08), `2026-10-05-provider-types-portfolio-jobs-design.md` (gói, `BookingTerms`), `2026-10-08-booking-addons-design.md` (tổng tiền booking), `2026-10-08-trending-spots-design.md` (`SpotSchedule.priceFrom`), `data-model/domain-model.md` (`Service`).
 
 ## 1. Mục tiêu
 
