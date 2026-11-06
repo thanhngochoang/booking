@@ -95,6 +95,13 @@ const _entries = <String, IconData>{
   'personSearch': AppIcons.personSearch,
   'hourglass': AppIcons.hourglass,
   'flag': AppIcons.flag,
+  'repeat': AppIcons.repeat,
+  'event': AppIcons.event,
+  'calendarMonth': AppIcons.calendarMonth,
+  'unfoldMore': AppIcons.unfoldMore,
+  'inventory': AppIcons.inventory,
+  'radioOn': AppIcons.radioOn,
+  'radioOff': AppIcons.radioOff,
 };
 
 void main() {

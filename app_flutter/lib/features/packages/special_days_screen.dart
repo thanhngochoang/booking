@@ -58,11 +58,11 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
     );
 
     return ScreenCode(
-      ScreenCodes.specialDays,
+      ScreenCodes.dayPricing,
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(title: Text(l.s0810_title)),
+          appBar: AppBar(title: Text(l.s0810Old_title)),
           body: SafeArea(
             top: false,
             bottom: false,
@@ -96,7 +96,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                           child: AppSkeleton.card(height: 120),
                         ),
                         error: (context, _, _) => ErrorState(
-                          message: l.s0810_loadError,
+                          message: l.s0810Old_loadError,
                           onRetry: () => ref.invalidate(holidaysProvider(year)),
                         ),
                         isEmpty: (list) => list.isEmpty,
@@ -116,7 +116,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                       heading(l.s0810_mine),
                       if (mine.hasError && !mine.hasValue)
                         ErrorState(
-                          message: l.s0810_loadError,
+                          message: l.s0810Old_loadError,
                           onRetry: () =>
                               ref.invalidate(specialDaysProvider(uid ?? '')),
                         )
@@ -148,7 +148,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                 ),
                 AppFooterBar(
                   child: AppButton.primary(
-                    l.s0810_add,
+                    l.s0810Old_add,
                     key: const Key('special-days-add'),
                     onPressed: () => showSpecialDaySheet(
                       context,

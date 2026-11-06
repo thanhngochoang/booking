@@ -88,9 +88,9 @@ class _SpecialDaySheetState extends ConsumerState<SpecialDaySheet> {
     // Shown under the name field, and only once a name was typed.
     SpecialDayError.name => null,
     SpecialDayError.past => l.s0810_errorPast,
-    SpecialDayError.tooLong => l.s0810_errorTooLong,
-    SpecialDayError.tooFar => l.s0810_errorTooFar,
-    SpecialDayError.limit => l.s0810_errorLimit,
+    SpecialDayError.tooLong => l.s0810Old_errorTooLong,
+    SpecialDayError.tooFar => l.s0810Old_errorTooFar,
+    SpecialDayError.limit => l.s0810Old_errorLimit,
   };
 
   Future<void> _save() async {
@@ -117,7 +117,7 @@ class _SpecialDaySheetState extends ConsumerState<SpecialDaySheet> {
       return;
     }
     if (ok) {
-      Navigator.of(context).pop(l.s0810_saved);
+      Navigator.of(context).pop(l.s0810Old_saved);
     } else {
       setState(() {
         _saving = false;
@@ -131,7 +131,7 @@ class _SpecialDaySheetState extends ConsumerState<SpecialDaySheet> {
     final id = widget.range!.id;
     final confirmed = await showConfirmSheet(
       context,
-      title: l.s0810_deleteTitle,
+      title: l.s0810Old_deleteTitle,
       body: l.s0810_deleteBody,
       confirmLabel: l.s0810_deleteConfirm,
       keepLabel: l.s0810_deleteKeep,
@@ -144,7 +144,7 @@ class _SpecialDaySheetState extends ConsumerState<SpecialDaySheet> {
       return;
     }
     if (ok) {
-      Navigator.of(context).pop(l.s0810_deleted);
+      Navigator.of(context).pop(l.s0810Old_deleted);
     } else {
       setState(() => _failed = true);
     }
@@ -292,7 +292,7 @@ class _SpecialDaySheetState extends ConsumerState<SpecialDaySheet> {
             ),
             if (_editing)
               AppButton.text(
-                l.s0810_delete,
+                l.s0810Old_delete,
                 key: const Key('special-day-delete'),
                 style: TextButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,

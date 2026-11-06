@@ -13174,7 +13174,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0808_addonsLink => 'Gói dịch vụ';
 
   @override
-  String get s0810_title => 'Ngày đặc biệt';
+  String get s0810Old_title => 'Ngày đặc biệt';
 
   @override
   String get s0810_public => 'Ngày lễ chung';
@@ -13192,7 +13192,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gói có giá ngày đặc biệt dùng giá đó cho các ngày này. Gói không có giá đặc biệt tính như ngày thường. Muốn nghỉ hẳn thì đánh dấu nghỉ trong Lịch.';
 
   @override
-  String get s0810_add => 'Thêm khoảng ngày';
+  String get s0810Old_add => 'Thêm khoảng ngày';
 
   @override
   String get s0810_addTitle => 'Thêm khoảng ngày';
@@ -13201,7 +13201,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_editTitle => 'Sửa khoảng ngày';
 
   @override
-  String get s0810_delete => 'Xoá khoảng ngày';
+  String get s0810Old_delete => 'Xoá khoảng ngày';
 
   @override
   String s0810_affects(int n, int m) {
@@ -13249,19 +13249,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_errorName => 'Tên 2–40 ký tự';
 
   @override
-  String get s0810_errorTooLong => 'Khoảng tối đa 60 ngày';
+  String get s0810Old_errorTooLong => 'Khoảng tối đa 60 ngày';
 
   @override
-  String get s0810_errorTooFar => 'Chỉ chọn trong 365 ngày tới';
+  String get s0810Old_errorTooFar => 'Chỉ chọn trong 365 ngày tới';
 
   @override
-  String get s0810_errorLimit => 'Bạn đã có 20 khoảng ngày';
+  String get s0810Old_errorLimit => 'Bạn đã có 20 khoảng ngày';
 
   @override
   String get s0810_errorPast => 'Chỉ chọn từ hôm nay trở đi';
 
   @override
-  String get s0810_deleteTitle => 'Xoá khoảng ngày này?';
+  String get s0810Old_deleteTitle => 'Xoá khoảng ngày này?';
 
   @override
   String get s0810_deleteBody => 'Booking đã đặt giữ giá cũ.';
@@ -13273,13 +13273,280 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_deleteKeep => 'Giữ lại';
 
   @override
-  String get s0810_saved => 'Đã lưu khoảng ngày';
+  String get s0810Old_saved => 'Đã lưu khoảng ngày';
 
   @override
-  String get s0810_deleted => 'Đã xoá khoảng ngày';
+  String get s0810Old_deleted => 'Đã xoá khoảng ngày';
 
   @override
-  String get s0810_loadError => 'Không tải được ngày đặc biệt';
+  String get s0810Old_loadError => 'Không tải được ngày đặc biệt';
+
+  @override
+  String get s0810_title => 'Giá theo ngày';
+
+  @override
+  String get s0810_listTitle => 'Chuỗi giá';
+
+  @override
+  String get s0810_listTooltip => 'Danh sách chuỗi';
+
+  @override
+  String get s0810_calendarTooltip => 'Lịch';
+
+  @override
+  String s0810_packageChip(String name, String price) {
+    return '$name · $price';
+  }
+
+  @override
+  String get s0810_seriesCard => 'Chuỗi của gói';
+
+  @override
+  String get s0810_legendRule => 'chuỗi';
+
+  @override
+  String get s0810_legendException => 'ngoại lệ';
+
+  @override
+  String get s0810_legendBase => 'mờ = giá thường';
+
+  @override
+  String get s0810_add => 'Đặt giá';
+
+  @override
+  String get s0810_sheetTitle => 'Đặt giá';
+
+  @override
+  String get s0810_templates => 'Mẫu nhanh';
+
+  @override
+  String s0810_priceFor(String name) {
+    return 'Giá · $name';
+  }
+
+  @override
+  String get s0810_from => 'Từ';
+
+  @override
+  String get s0810_to => 'Tới';
+
+  @override
+  String get s0810_repeat => 'Lặp lại';
+
+  @override
+  String get s0810_cycle => 'Chu kỳ';
+
+  @override
+  String get s0810_weekly => 'Hằng tuần';
+
+  @override
+  String get s0810_yearly => 'Hằng năm';
+
+  @override
+  String get s0810_lunar => 'Theo âm lịch';
+
+  @override
+  String s0810_solarLine(String from, String to) {
+    return '$from – $to mỗi năm';
+  }
+
+  @override
+  String s0810_solarLineOne(String day) {
+    return '$day mỗi năm';
+  }
+
+  @override
+  String s0810_lunarLine(String from, String to, String next) {
+    return '$from – $to âm lịch mỗi năm · năm sau là $next';
+  }
+
+  @override
+  String s0810_lunarLineOne(String day, String next) {
+    return '$day âm lịch mỗi năm · năm sau là $next';
+  }
+
+  @override
+  String s0810_leapNote(String m) {
+    return 'Tháng $m năm nay nhuận, chuỗi lặp theo tháng $m chính';
+  }
+
+  @override
+  String get s0810_name => 'Tên (tuỳ chọn)';
+
+  @override
+  String get s0810_applyTo => 'Áp cho';
+
+  @override
+  String s0810_applyOne(String name) {
+    return 'Chỉ gói $name';
+  }
+
+  @override
+  String get s0810_applyAll => 'Mọi gói, cùng tỉ lệ';
+
+  @override
+  String get s0810_delete => 'Xoá chuỗi';
+
+  @override
+  String get s0810_deleteTitle => 'Xoá chuỗi này?';
+
+  @override
+  String s0810_dayTitle(String weekday, String day, String month) {
+    return '$weekday $day/$month';
+  }
+
+  @override
+  String get s0810_dayPrice => 'Giá ngày này';
+
+  @override
+  String get s0810_applyScope => 'Áp dụng cho';
+
+  @override
+  String get s0810_scopeDay => 'Chỉ ngày này';
+
+  @override
+  String get s0810_scopeFollowing => 'Ngày này và các ngày sau trong chuỗi';
+
+  @override
+  String s0810_scopeAll(String name) {
+    return 'Cả chuỗi $name';
+  }
+
+  @override
+  String get s0810_removeDay => 'Bỏ ngày này khỏi chuỗi';
+
+  @override
+  String get s0810_endFrom => 'Kết thúc chuỗi từ ngày này';
+
+  @override
+  String s0810_overridden(String loser, String price, String winner) {
+    return '$loser $price bị $winner thay';
+  }
+
+  @override
+  String s0810_ruleWeekly(String days) {
+    return 'Hằng tuần · $days';
+  }
+
+  @override
+  String s0810_ruleYearly(String from, String to) {
+    return 'Hằng năm · $from – $to';
+  }
+
+  @override
+  String s0810_ruleYearlyDay(String day) {
+    return 'Hằng năm · $day';
+  }
+
+  @override
+  String s0810_ruleYearlyLunar(String from, String to) {
+    return 'Hằng năm · $from – $to (âm lịch)';
+  }
+
+  @override
+  String s0810_ruleYearlyLunarDay(String day) {
+    return 'Hằng năm · $day (âm lịch)';
+  }
+
+  @override
+  String s0810_ruleOnce(String from, String to) {
+    return 'Một lần · $from – $to';
+  }
+
+  @override
+  String s0810_ruleOnceDay(String day) {
+    return 'Một lần · $day';
+  }
+
+  @override
+  String s0810_lunarMonthTwelve(String day) {
+    return '$day Chạp';
+  }
+
+  @override
+  String s0810_lunarMonthOne(String day) {
+    return '$day Giêng';
+  }
+
+  @override
+  String s0810_exceptions(int n) {
+    return '$n ngoại lệ';
+  }
+
+  @override
+  String s0810_exceptionsDetail(int n, String detail) {
+    return '$n ngoại lệ ($detail)';
+  }
+
+  @override
+  String s0810_exceptionPrice(String day, String price) {
+    return '$day: $price';
+  }
+
+  @override
+  String s0810_exceptionSkip(String day) {
+    return '$day: bỏ';
+  }
+
+  @override
+  String s0810_nextOccurrence(String range) {
+    return 'lần tới $range';
+  }
+
+  @override
+  String get s0810_unnamed => 'Giá riêng';
+
+  @override
+  String s0810_groupTitle(String name, String price) {
+    return '$name · giá thường $price';
+  }
+
+  @override
+  String s0810_noRules(String price) {
+    return 'Chưa có chuỗi · mọi ngày $price';
+  }
+
+  @override
+  String get s0810_noneSummary => 'Cuối tuần và ngày lễ lấy bằng giá thường';
+
+  @override
+  String get s0810_noPackages => 'Thêm gói trước ở Gói dịch vụ';
+
+  @override
+  String get s0810_noPackagesAction => 'Thêm gói';
+
+  @override
+  String get s0810_errorPrice => 'Giá phải lớn hơn 0';
+
+  @override
+  String get s0810_errorPriceHigh => 'Giá tối đa 1.000.000.000₫';
+
+  @override
+  String get s0810_errorTooLong => 'Khoảng tối đa 92 ngày';
+
+  @override
+  String get s0810_errorTooFar => 'Chỉ chọn trong 2 năm tới';
+
+  @override
+  String get s0810_errorWeekdays => 'Chọn ít nhất một thứ';
+
+  @override
+  String get s0810_errorLimit => 'Gói này đã có 30 chuỗi';
+
+  @override
+  String get s0810_errorExceptionLimit => 'Chuỗi này đã có 50 ngoại lệ';
+
+  @override
+  String get s0810_errorLeapDay => 'Ngày 29/2 không lặp hằng năm được';
+
+  @override
+  String get s0810_saved => 'Đã lưu giá';
+
+  @override
+  String get s0810_deleted => 'Đã xoá chuỗi';
+
+  @override
+  String get s0810_loadError => 'Không tải được giá theo ngày';
 
   @override
   String get s0809_titleNew => 'Thêm gói';
