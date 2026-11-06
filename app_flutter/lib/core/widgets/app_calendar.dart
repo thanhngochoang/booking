@@ -47,8 +47,8 @@ class AppCalendarDayStyle {
   /// Background of the cell (not drawn on a selected day).
   final Color? fill;
 
-  /// Colour of the solar number and of the lunar number when it is not the
-  /// accent "1/M" (not used on a selected day, which is white).
+  /// Colour of the solar number (not used on a selected day, which is white).
+  /// The lunar number keeps its own colour: only "1/M" is accent.
   final Color? foreground;
 
   /// Strikes the solar number through.
@@ -615,7 +615,7 @@ class _DayCell extends StatelessWidget {
     final firstOfMonth = lunar.day == 1;
     final lunarColor = selected
         ? (firstOfMonth ? Colors.white : Colors.white.withValues(alpha: 0.8))
-        : (firstOfMonth ? scheme.primary : (style?.foreground ?? tertiary));
+        : (firstOfMonth ? scheme.primary : tertiary);
     final bold = today || selected || emphasized;
 
     final numbers = ExcludeSemantics(

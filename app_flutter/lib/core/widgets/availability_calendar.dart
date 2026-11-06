@@ -132,6 +132,10 @@ class AvailabilityCalendar extends StatelessWidget {
     DayState stateAt(DateTime d) => stateOf[d] ?? DayState.free;
     // A day that answers no tap: not free in booking mode.
     bool locked(DateTime d) => !editable && stateAt(d) != DayState.free;
+    final lo = minDate == null ? null : calendarDay(minDate!);
+    final hi = maxDate == null ? null : calendarDay(maxDate!);
+    bool inBounds(DateTime d) =>
+        (lo == null || !d.isBefore(lo)) && (hi == null || !d.isAfter(hi));
 
     return AppCalendar(
       month: month,
@@ -161,8 +165,9 @@ class AvailabilityCalendar extends StatelessWidget {
               ? theme.colorScheme.primary
               : null,
           selected: picked.contains(d),
-          // A booked day is not "off": only days out of bounds are dimmed.
-          dim: locked(d) ? false : null,
+          // A booked day inside the bounds is not "off": not dimmed. Days out
+          // of the bounds are dimmed whatever their state.
+          dim: locked(d) && inBounds(d) ? false : null,
           spoken: said,
         );
       },

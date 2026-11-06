@@ -230,6 +230,39 @@ void main() {
     );
   });
 
+  testWidgets('read-only: a booked day is dimmed before minDate only', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(
+          month: _oct,
+          states: {_d(3): DayState.booked, _d(10): DayState.booked},
+          minDate: _d(5),
+          onSelect: (_) {},
+        ),
+      ),
+    );
+    bool dimmed(DateTime d) => find
+        .ancestor(of: _solar(d), matching: find.byType(Opacity))
+        .evaluate()
+        .isNotEmpty;
+    expect(dimmed(_d(3)), isTrue, reason: 'past booked day');
+    expect(dimmed(_d(10)), isFalse, reason: 'future booked day');
+    expect(dimmed(_d(4)), isTrue, reason: 'past free day');
+  });
+
+  testWidgets('a pending day keeps its lunar number out of the accent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(hostWidget(_cal(onSelect: (_) {})));
+    final accent = Theme.of(tester.element(_cell(_d(11)))).colorScheme.primary;
+    // 11 Oct is lunar day 2: the solar number is accent, the lunar one not.
+    expect(tester.widget<Text>(_solar(_d(11))).style?.color, accent);
+    expect(tester.widget<Text>(_lunar(_d(11))).data, '2');
+    expect(tester.widget<Text>(_lunar(_d(11))).style?.color, isNot(accent));
+  });
+
   testWidgets('editable mode reports every day and long presses', (
     tester,
   ) async {
