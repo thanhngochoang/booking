@@ -1,0 +1,759 @@
+import 'package:flutter/material.dart';
+
+import 'package:photobooking/core/calendar_days.dart';
+import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/lunar.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/vn_time.dart';
+import 'package:photobooking/core/widgets/app_bottom_sheet.dart';
+import 'package:photobooking/core/widgets/app_button.dart';
+import 'package:photobooking/core/widgets/cta_surface.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
+
+/// What a tap on a day of an [AppCalendar] selects.
+///
+/// `none`: nothing is drawn as selected; the screen reacts to `onDayTap`
+/// (S08.10 opens a day sheet). `single`: the screen passes `selected`.
+/// `range`: the screen passes `range`; a range comes from two taps or from a
+/// long press followed by a drag.
+enum AppCalendarSelection { none, single, range }
+
+const _weekdayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+bool _isDark(ThemeData t) => t.brightness == Brightness.dark;
+
+/// Mock `--ink-3`.
+Color _tertiary(ThemeData t) =>
+    _isDark(t) ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted;
+
+/// Mock `.cal` grid with the lunar day on every cell (spec §5.7, R6).
+///
+/// Seven columns, Monday first, cells at least 44 dp. Each cell shows the
+/// solar number with the lunar number small on the same row, right next to
+/// its foot; the first of a lunar month reads "1/M" in the accent colour.
+/// [dayBuilder] adds a line under the numbers (a price, a busy dot, "Lễ").
+/// The lunar day is always shown: there is no flag to turn it off.
+///
+/// Days are calendar days: UTC midnight (see `calendar_days.dart`); time of
+/// day is ignored. The widget is controlled: the screen owns `month`,
+/// `selected` and `range` and answers the callbacks.
+///
+/// [dayBuilder] must return a widget of intrinsic size (a `Text`, a dot): the
+/// cell scales its content down rather than overflowing at large text sizes.
+class AppCalendar extends StatefulWidget {
+  const AppCalendar({
+    super.key,
+    required this.month,
+    this.onMonthChanged,
+    this.selection = AppCalendarSelection.none,
+    this.selected,
+    this.range,
+    this.onDayTap,
+    this.onRangeChanged,
+    this.disabledDay,
+    this.dayBuilder,
+    this.markers = const {},
+    this.dayOutline,
+    this.emphasized,
+    this.today,
+    this.showHeader = true,
+    this.first,
+    this.last,
+  });
+
+  /// Any day of the month to show.
+  final DateTime month;
+
+  /// The header's ‹ › and a horizontal swipe ask for another month (always
+  /// the 1st). Without it the month cannot be changed.
+  final ValueChanged<DateTime>? onMonthChanged;
+  final AppCalendarSelection selection;
+
+  /// The chosen day when [selection] is `single`.
+  final DateTime? selected;
+
+  /// The chosen days when [selection] is `range`, both ends included.
+  final DateTimeRange? range;
+
+  /// A tap on a day of the shown month that is not disabled, in every
+  /// [selection] mode.
+  final ValueChanged<DateTime>? onDayTap;
+
+  /// With `range` selection: a first tap gives a one-day range, a later tap
+  /// on or after it completes the range, a tap before it starts over; a long
+  /// press then a drag across cells reports the range as it grows.
+  final ValueChanged<DateTimeRange>? onRangeChanged;
+
+  /// Days that answer no tap, drawn dimmed. Days outside [first]/[last] are
+  /// disabled too.
+  final bool Function(DateTime day)? disabledDay;
+
+  /// A widget under the numbers of a day of the shown month. Its text is
+  /// read by screen readers after the date.
+  final Widget? Function(BuildContext context, DateTime day)? dayBuilder;
+
+  /// Days with a small dot at the foot of the cell.
+  final Set<DateTime> markers;
+
+  /// A colour for an outline round the cell (S08.10: a day with an
+  /// exception), or null for none.
+  final Color? Function(DateTime day)? dayOutline;
+
+  /// Days whose solar number is drawn bold.
+  final bool Function(DateTime day)? emphasized;
+
+  /// Today, given by the screen (the app clock); drawn with a thin border.
+  final DateTime? today;
+  final bool showHeader;
+
+  /// The earliest and latest day that can be picked; month buttons stop at
+  /// their months.
+  final DateTime? first;
+  final DateTime? last;
+
+  static const cellHeight = 44.0;
+  static const _gap = 3.0;
+
+  @override
+  State<AppCalendar> createState() => _AppCalendarState();
+}
+
+class _AppCalendarState extends State<AppCalendar> {
+  final _gridKey = GlobalKey();
+
+  /// Lunar dates of the shown month, converted once per month.
+  late Map<DateTime, LunarDate> _lunar = _lunarOf(widget.month);
+
+  /// First tap of a range that waits for its end.
+  DateTime? _pending;
+
+  /// The range while a long-press drag is in progress.
+  DateTime? _dragAnchor;
+  DateTimeRange? _drag;
+
+  static Map<DateTime, LunarDate> _lunarOf(DateTime month) {
+    final m = monthOf(month);
+    return {
+      for (var d = 1; d <= lastDayOfMonth(m).day; d++)
+        DateTime.utc(m.year, m.month, d): solarToLunar(
+          DateTime.utc(m.year, m.month, d),
+        ),
+    };
+  }
+
+  @override
+  void didUpdateWidget(AppCalendar old) {
+    super.didUpdateWidget(old);
+    if (monthOf(old.month) != monthOf(widget.month)) {
+      _lunar = _lunarOf(widget.month);
+    }
+    final p = _pending;
+    if (p != null) {
+      final r = widget.range;
+      if (widget.selection != AppCalendarSelection.range ||
+          r == null ||
+          calendarDay(r.start) != p ||
+          calendarDay(r.end) != p) {
+        _pending = null;
+      }
+    }
+  }
+
+  bool _inBounds(DateTime d) =>
+      (widget.first == null || !d.isBefore(calendarDay(widget.first!))) &&
+      (widget.last == null || !d.isAfter(calendarDay(widget.last!)));
+
+  bool _canPick(DateTime d, DateTime m) =>
+      d.year == m.year &&
+      d.month == m.month &&
+      _inBounds(d) &&
+      !(widget.disabledDay?.call(d) ?? false);
+
+  bool _canPrev(DateTime m) =>
+      widget.first == null ||
+      !addMonths(m, -1).isBefore(monthOf(widget.first!));
+
+  bool _canNext(DateTime m) =>
+      widget.last == null || !addMonths(m, 1).isAfter(monthOf(widget.last!));
+
+  bool get _rangeMode =>
+      widget.selection == AppCalendarSelection.range &&
+      widget.onRangeChanged != null;
+
+  void _tap(DateTime d) {
+    widget.onDayTap?.call(d);
+    if (!_rangeMode) {
+      return;
+    }
+    final start = _pending;
+    if (start == null || d.isBefore(start)) {
+      _pending = d;
+      widget.onRangeChanged!(DateTimeRange(start: d, end: d));
+    } else {
+      _pending = null;
+      widget.onRangeChanged!(DateTimeRange(start: start, end: d));
+    }
+  }
+
+  /// The pickable day under [local] (a point of the grid), or null.
+  DateTime? _dayAt(Offset local) {
+    final box = _gridKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) {
+      return null;
+    }
+    final m = monthOf(widget.month);
+    final days = monthGrid(m);
+    final col = (local.dx / (box.size.width / 7)).floor().clamp(0, 6);
+    final row = (local.dy / (AppCalendar.cellHeight + AppCalendar._gap))
+        .floor()
+        .clamp(0, 5);
+    final d = days[row * 7 + col];
+    return _canPick(d, m) ? d : null;
+  }
+
+  void _dragTo(DateTime d) {
+    final a = _dragAnchor!;
+    final r = d.isBefore(a)
+        ? DateTimeRange(start: d, end: a)
+        : DateTimeRange(start: a, end: d);
+    if (_drag == r) {
+      return;
+    }
+    setState(() => _drag = r);
+    widget.onRangeChanged?.call(r);
+  }
+
+  void _dragStart(LongPressStartDetails e) {
+    final d = _dayAt(e.localPosition);
+    if (d == null) {
+      return;
+    }
+    _pending = null;
+    _dragAnchor = d;
+    _drag = null;
+    _dragTo(d);
+  }
+
+  void _dragMove(LongPressMoveUpdateDetails e) {
+    if (_dragAnchor == null) {
+      return;
+    }
+    final d = _dayAt(e.localPosition);
+    if (d != null) {
+      _dragTo(d);
+    }
+  }
+
+  void _dragEnd() {
+    if (_dragAnchor == null) {
+      return;
+    }
+    setState(() {
+      _dragAnchor = null;
+      _drag = null;
+    });
+  }
+
+  bool _isSelected(DateTime d) {
+    switch (widget.selection) {
+      case AppCalendarSelection.none:
+        return false;
+      case AppCalendarSelection.single:
+        return widget.selected != null && calendarDay(widget.selected!) == d;
+      case AppCalendarSelection.range:
+        final r =
+            _drag ??
+            (widget.range == null
+                ? null
+                : DateTimeRange(
+                    start: calendarDay(widget.range!.start),
+                    end: calendarDay(widget.range!.end),
+                  ));
+        return r != null && !d.isBefore(r.start) && !d.isAfter(r.end);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final m = monthOf(widget.month);
+    final days = monthGrid(m);
+    final now = widget.today == null ? null : calendarDay(widget.today!);
+    final change = widget.onMonthChanged;
+    final markers = {for (final d in widget.markers) calendarDay(d)};
+    final tappable =
+        widget.onDayTap != null ||
+        widget.selection == AppCalendarSelection.range &&
+            widget.onRangeChanged != null;
+
+    final weekdays = Row(
+      children: [
+        for (final key in _weekdayKeys)
+          Expanded(
+            child: Center(
+              child: Text(
+                l.calendarWeekdayShort(key),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: AppText.xs,
+                  color: _tertiary(theme),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    Widget grid = Column(
+      key: _gridKey,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var w = 0; w < 6; w++)
+          Padding(
+            padding: EdgeInsets.only(top: w == 0 ? 0 : AppCalendar._gap),
+            child: Row(
+              children: [
+                for (var c = 0; c < 7; c++)
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: c == 0 ? 0 : AppCalendar._gap / 2,
+                        right: c == 6 ? 0 : AppCalendar._gap / 2,
+                      ),
+                      child: _buildCell(
+                        context,
+                        days[w * 7 + c],
+                        m,
+                        now,
+                        markers,
+                        tappable,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+    grid = GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onLongPressStart: _rangeMode ? _dragStart : null,
+      onLongPressMoveUpdate: _rangeMode ? _dragMove : null,
+      onLongPressEnd: _rangeMode ? (_) => _dragEnd() : null,
+      onLongPressCancel: _rangeMode ? _dragEnd : null,
+      onHorizontalDragEnd: change == null
+          ? null
+          : (e) {
+              final v = e.primaryVelocity ?? 0;
+              if (v < -150 && _canNext(m)) {
+                change(addMonths(m, 1));
+              } else if (v > 150 && _canPrev(m)) {
+                change(addMonths(m, -1));
+              }
+            },
+      child: grid,
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.showHeader)
+          Row(
+            children: [
+              IconButton(
+                tooltip: l.calendarPrevMonth,
+                icon: const AppIcon(AppIcons.chevronLeft),
+                onPressed: change != null && _canPrev(m)
+                    ? () => change(addMonths(m, -1))
+                    : null,
+              ),
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    l.appCalendar_monthTitle('${m.month}', '${m.year}'),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontFamily: AppFonts.display,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: l.calendarNextMonth,
+                icon: const AppIcon(AppIcons.chevron),
+                onPressed: change != null && _canNext(m)
+                    ? () => change(addMonths(m, 1))
+                    : null,
+              ),
+            ],
+          ),
+        weekdays,
+        const SizedBox(height: AppSpace.s1),
+        grid,
+      ],
+    );
+  }
+
+  Widget _buildCell(
+    BuildContext context,
+    DateTime day,
+    DateTime month,
+    DateTime? now,
+    Set<DateTime> markers,
+    bool tappable,
+  ) {
+    final key = vnDateKey(day);
+    if (day.month != month.month) {
+      return ExcludeSemantics(
+        child: Opacity(
+          opacity: 0.3,
+          child: SizedBox(
+            key: ValueKey('app-calendar-day-$key'),
+            height: AppCalendar.cellHeight,
+            child: Center(
+              child: Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: AppText.base,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final enabled = _canPick(day, month);
+    final extra = widget.dayBuilder?.call(context, day);
+    return _DayCell(
+      key: ValueKey('app-calendar-day-$key'),
+      dayKey: key,
+      day: day,
+      lunar: _lunar[day]!,
+      enabled: enabled,
+      selected: _isSelected(day),
+      today: day == now,
+      emphasized: widget.emphasized?.call(day) ?? false,
+      marker: markers.contains(day),
+      outline: widget.dayOutline?.call(day),
+      extra: extra,
+      onTap: enabled && tappable ? () => _tap(day) : null,
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    super.key,
+    required this.dayKey,
+    required this.day,
+    required this.lunar,
+    required this.enabled,
+    required this.selected,
+    required this.today,
+    required this.emphasized,
+    required this.marker,
+    required this.outline,
+    required this.extra,
+    required this.onTap,
+  });
+
+  final String dayKey;
+  final DateTime day;
+  final LunarDate lunar;
+  final bool enabled;
+  final bool selected;
+  final bool today;
+  final bool emphasized;
+  final bool marker;
+  final Color? outline;
+  final Widget? extra;
+  final VoidCallback? onTap;
+
+  String _spoken(AppLocalizations l) {
+    final lunarDay = lunar.day <= 10
+        ? l.appCalendar_lunarEarly('${lunar.day}')
+        : '${lunar.day}';
+    final lunarMonth = lunar.leap
+        ? l.appCalendar_lunarLeapMonth('${lunar.month}')
+        : '${lunar.month}';
+    return [
+      l.appCalendar_dayLabel(
+        _weekdayKeys[day.weekday - 1],
+        '${day.day}',
+        '${day.month}',
+      ),
+      l.appCalendar_lunarDay(lunarDay, lunarMonth),
+      if (today) l.calendarToday,
+    ].join(', ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tertiary = _tertiary(theme);
+    // Mock: border-radius 10px; AppRadius.lg (12) is the closest token.
+    final radius = BorderRadius.circular(AppRadius.lg);
+    final fg = selected ? Colors.white : scheme.onSurface;
+    final firstOfMonth = lunar.day == 1;
+    final lunarColor = selected
+        ? (firstOfMonth ? Colors.white : Colors.white.withValues(alpha: 0.8))
+        : (firstOfMonth ? scheme.primary : tertiary);
+    final bold = today || selected || emphasized;
+
+    final numbers = ExcludeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(
+            '${day.day}',
+            key: ValueKey('app-calendar-solar-$dayKey'),
+            style: TextStyle(
+              fontSize: AppText.base,
+              height: 1.1,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: fg,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(width: 1),
+          // Mock `small` 6.5px, rounded up to stay legible.
+          Text(
+            firstOfMonth ? '1/${lunar.month}' : '${lunar.day}',
+            key: ValueKey('app-calendar-lunar-$dayKey'),
+            style: TextStyle(
+              fontSize: 7,
+              height: 1.1,
+              fontWeight: firstOfMonth ? FontWeight.w600 : FontWeight.w400,
+              color: lunarColor,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final face = Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: selected ? ctaGradientFor(theme.brightness) : null,
+        borderRadius: radius,
+        border: outline != null
+            ? Border.all(color: outline!, width: 2)
+            : today && !selected
+            ? Border.all(color: tertiary)
+            : null,
+      ),
+      // Scaled down rather than overflowing at a large text size.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(
+            fontSize: 8.5,
+            height: 1.1,
+            color: selected ? Colors.white : scheme.onSurfaceVariant,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              numbers,
+              if (extra != null)
+                Padding(padding: const EdgeInsets.only(top: 1), child: extra),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    Widget cell = SizedBox(
+      height: AppCalendar.cellHeight,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(child: face),
+          if (marker)
+            Positioned(
+              bottom: 2,
+              child: ExcludeSemantics(
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: selected ? Colors.white : scheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+    if (!enabled) {
+      cell = Opacity(opacity: 0.45, child: cell);
+    }
+    return MergeSemantics(
+      child: Semantics(
+        button: onTap != null,
+        enabled: onTap != null,
+        selected: selected,
+        label: _spoken(l),
+        child: InkWell(onTap: onTap, borderRadius: radius, child: cell),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet with an [AppCalendar] and the primary "Chọn" button; returns
+/// the chosen day, or null when dismissed. [initial] is shown selected and
+/// its month opens first. [today] marks today when the caller has a clock.
+Future<DateTime?> showAppDatePicker(
+  BuildContext context, {
+  required DateTime initial,
+  required DateTime first,
+  required DateTime last,
+  String? title,
+  DateTime? today,
+}) => showAppSheet<DateTime>(
+  context,
+  builder: (_) => _PickerSheet(
+    title: title,
+    first: first,
+    last: last,
+    today: today,
+    initial: initial,
+    range: null,
+    rangeMode: false,
+  ),
+);
+
+/// Like [showAppDatePicker] for a range: tap two days, or press and hold and
+/// drag. "Chọn" is off until a range exists (one tap gives a one-day range).
+Future<DateTimeRange?> showAppDateRangePicker(
+  BuildContext context, {
+  DateTimeRange? initial,
+  required DateTime first,
+  required DateTime last,
+  String? title,
+  DateTime? today,
+}) => showAppSheet<DateTimeRange>(
+  context,
+  builder: (_) => _PickerSheet(
+    title: title,
+    first: first,
+    last: last,
+    today: today,
+    initial: initial?.start,
+    range: initial,
+    rangeMode: true,
+  ),
+);
+
+class _PickerSheet extends StatefulWidget {
+  const _PickerSheet({
+    required this.title,
+    required this.first,
+    required this.last,
+    required this.today,
+    required this.initial,
+    required this.range,
+    required this.rangeMode,
+  });
+
+  final String? title;
+  final DateTime first;
+  final DateTime last;
+  final DateTime? today;
+  final DateTime? initial;
+  final DateTimeRange? range;
+  final bool rangeMode;
+
+  @override
+  State<_PickerSheet> createState() => _PickerSheetState();
+}
+
+class _PickerSheetState extends State<_PickerSheet> {
+  late DateTime _month = _openMonth();
+  late DateTime? _selected = widget.initial == null
+      ? null
+      : calendarDay(widget.initial!);
+  late DateTimeRange? _range = widget.range;
+
+  DateTime _openMonth() {
+    final at = widget.initial ?? widget.today ?? widget.first;
+    final day = calendarDay(at);
+    final lo = calendarDay(widget.first);
+    final hi = calendarDay(widget.last);
+    return monthOf(day.isBefore(lo) ? lo : (day.isAfter(hi) ? hi : day));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final canChoose = widget.rangeMode ? _range != null : _selected != null;
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s4,
+          0,
+          AppSpace.s4,
+          AppSpace.s4,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.title != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s2),
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    widget.title!,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            AppCalendar(
+              month: _month,
+              onMonthChanged: (m) => setState(() => _month = m),
+              selection: widget.rangeMode
+                  ? AppCalendarSelection.range
+                  : AppCalendarSelection.single,
+              selected: _selected,
+              range: _range,
+              onDayTap: widget.rangeMode
+                  ? null
+                  : (d) => setState(() => _selected = d),
+              onRangeChanged: widget.rangeMode
+                  ? (r) => setState(() => _range = r)
+                  : null,
+              today: widget.today,
+              first: widget.first,
+              last: widget.last,
+            ),
+            const SizedBox(height: AppSpace.s3),
+            AppButton.primary(
+              l.appCalendar_choose,
+              onPressed: canChoose
+                  ? () =>
+                        Navigator.of(context)
+                            .pop(widget.rangeMode ? _range : _selected)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

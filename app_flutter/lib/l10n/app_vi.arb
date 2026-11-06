@@ -8840,5 +8840,16 @@
   "s0301_specialRow": "Ngày lễ, ngày đặc biệt",
   "s0301_priceSheetNote": "Giá đúng của ngày bạn chọn hiện ở bước chọn lịch. Chưa gồm dịch vụ đi kèm.",
   "photographerWeekendFrom": "T7–CN từ {price}",
-  "@photographerWeekendFrom": {"placeholders": {"price": {"type": "String"}}}
+  "@photographerWeekendFrom": {"placeholders": {"price": {"type": "String"}}},
+  "appCalendar_monthTitle": "Tháng {month} / {year}",
+  "@appCalendar_monthTitle": {"placeholders": {"month": {"type": "String"}, "year": {"type": "String"}}},
+  "appCalendar_dayLabel": "{weekday, select, mon{Thứ Hai} tue{Thứ Ba} wed{Thứ Tư} thu{Thứ Năm} fri{Thứ Sáu} sat{Thứ Bảy} other{Chủ Nhật}} {day} tháng {month}",
+  "@appCalendar_dayLabel": {"placeholders": {"weekday": {"type": "String"}, "day": {"type": "String"}, "month": {"type": "String"}}},
+  "appCalendar_lunarDay": "{day} tháng {month} âm lịch",
+  "@appCalendar_lunarDay": {"description": "Spoken lunar date of a calendar cell; day is 'mùng 1' for 1 to 10, else the number.", "placeholders": {"day": {"type": "String"}, "month": {"type": "String"}}},
+  "appCalendar_lunarEarly": "mùng {day}",
+  "@appCalendar_lunarEarly": {"placeholders": {"day": {"type": "String"}}},
+  "appCalendar_lunarLeapMonth": "{month} nhuận",
+  "@appCalendar_lunarLeapMonth": {"placeholders": {"month": {"type": "String"}}},
+  "appCalendar_choose": "Chọn"
 }

@@ -22940,6 +22940,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'T7–CN từ {price}'**
   String photographerWeekendFrom(String price);
+
+  /// No description provided for @appCalendar_monthTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month} / {year}'**
+  String appCalendar_monthTitle(String month, String year);
+
+  /// No description provided for @appCalendar_dayLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, mon{Thứ Hai} tue{Thứ Ba} wed{Thứ Tư} thu{Thứ Năm} fri{Thứ Sáu} sat{Thứ Bảy} other{Chủ Nhật}} {day} tháng {month}'**
+  String appCalendar_dayLabel(String weekday, String day, String month);
+
+  /// Spoken lunar date of a calendar cell; day is 'mùng 1' for 1 to 10, else the number.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} tháng {month} âm lịch'**
+  String appCalendar_lunarDay(String day, String month);
+
+  /// No description provided for @appCalendar_lunarEarly.
+  ///
+  /// In vi, this message translates to:
+  /// **'mùng {day}'**
+  String appCalendar_lunarEarly(String day);
+
+  /// No description provided for @appCalendar_lunarLeapMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'{month} nhuận'**
+  String appCalendar_lunarLeapMonth(String month);
+
+  /// No description provided for @appCalendar_choose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn'**
+  String get appCalendar_choose;
 }
 
 class _AppLocalizationsDelegate

@@ -13480,4 +13480,41 @@ class AppLocalizationsVi extends AppLocalizations {
   String photographerWeekendFrom(String price) {
     return 'T7–CN từ $price';
   }
+
+  @override
+  String appCalendar_monthTitle(String month, String year) {
+    return 'Tháng $month / $year';
+  }
+
+  @override
+  String appCalendar_dayLabel(String weekday, String day, String month) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      'mon': 'Thứ Hai',
+      'tue': 'Thứ Ba',
+      'wed': 'Thứ Tư',
+      'thu': 'Thứ Năm',
+      'fri': 'Thứ Sáu',
+      'sat': 'Thứ Bảy',
+      'other': 'Chủ Nhật',
+    });
+    return '$_temp0 $day tháng $month';
+  }
+
+  @override
+  String appCalendar_lunarDay(String day, String month) {
+    return '$day tháng $month âm lịch';
+  }
+
+  @override
+  String appCalendar_lunarEarly(String day) {
+    return 'mùng $day';
+  }
+
+  @override
+  String appCalendar_lunarLeapMonth(String month) {
+    return '$month nhuận';
+  }
+
+  @override
+  String get appCalendar_choose => 'Chọn';
 }
