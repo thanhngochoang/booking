@@ -16,7 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$BookingServiceSnapshot {
 
- String get name; int get price; int get durationMinutes;
+ String get name;/// The price of the booking day.
+ int get price; int get durationMinutes;/// `rule` when a price rule set [price]; old bookings are `base`.
+@JsonKey(unknownEnumValue: PriceKind.base) PriceKind get priceKind;/// The name of the rule that set [price], when it has one.
+ String? get ruleName;
 /// Create a copy of BookingServiceSnapshot
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +33,20 @@ $BookingServiceSnapshotCopyWith<BookingServiceSnapshot> get copyWith => _$Bookin
 @override
 bool operator ==(Object other) {
   final _this = this as BookingServiceSnapshot;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingServiceSnapshot&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.durationMinutes, _this.durationMinutes) || other.durationMinutes == _this.durationMinutes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingServiceSnapshot&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.durationMinutes, _this.durationMinutes) || other.durationMinutes == _this.durationMinutes)&&(identical(other.priceKind, _this.priceKind) || other.priceKind == _this.priceKind)&&(identical(other.ruleName, _this.ruleName) || other.ruleName == _this.ruleName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as BookingServiceSnapshot;
-  return Object.hash(runtimeType,_this.name,_this.price,_this.durationMinutes);
+  return Object.hash(runtimeType,_this.name,_this.price,_this.durationMinutes,_this.priceKind,_this.ruleName);
 }
 
 @override
 String toString() {
   final _this = this as BookingServiceSnapshot;
-  return 'BookingServiceSnapshot(name: ${_this.name}, price: ${_this.price}, durationMinutes: ${_this.durationMinutes})';
+  return 'BookingServiceSnapshot(name: ${_this.name}, price: ${_this.price}, durationMinutes: ${_this.durationMinutes}, priceKind: ${_this.priceKind}, ruleName: ${_this.ruleName})';
 }
 
 
@@ -54,7 +57,7 @@ abstract mixin class $BookingServiceSnapshotCopyWith<$Res>  {
   factory $BookingServiceSnapshotCopyWith(BookingServiceSnapshot value, $Res Function(BookingServiceSnapshot) _then) = _$BookingServiceSnapshotCopyWithImpl;
 @useResult
 $Res call({
- String name, int price, int durationMinutes
+ String name, int price, int durationMinutes,@JsonKey(unknownEnumValue: PriceKind.base) PriceKind priceKind, String? ruleName
 });
 
 
@@ -71,12 +74,14 @@ class _$BookingServiceSnapshotCopyWithImpl<$Res>
 
 /// Create a copy of BookingServiceSnapshot
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? price = null,Object? durationMinutes = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? price = null,Object? durationMinutes = null,Object? priceKind = null,Object? ruleName = freezed,}) {
   return _then(BookingServiceSnapshot(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
 as int,durationMinutes: null == durationMinutes ? _self.durationMinutes : durationMinutes // ignore: cast_nullable_to_non_nullable
-as int,
+as int,priceKind: null == priceKind ? _self.priceKind : priceKind // ignore: cast_nullable_to_non_nullable
+as PriceKind,ruleName: freezed == ruleName ? _self.ruleName : ruleName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -161,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  int price,  int durationMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  int price,  int durationMinutes, @JsonKey(unknownEnumValue: PriceKind.base)  PriceKind priceKind,  String? ruleName)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BookingServiceSnapshot() when $default != null:
-return $default(_that.name,_that.price,_that.durationMinutes);case _:
+return $default(_that.name,_that.price,_that.durationMinutes,_that.priceKind,_that.ruleName);case _:
   return orElse();
 
 }
@@ -182,10 +187,10 @@ return $default(_that.name,_that.price,_that.durationMinutes);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  int price,  int durationMinutes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  int price,  int durationMinutes, @JsonKey(unknownEnumValue: PriceKind.base)  PriceKind priceKind,  String? ruleName)  $default,) {final _that = this;
 switch (_that) {
 case _BookingServiceSnapshot():
-return $default(_that.name,_that.price,_that.durationMinutes);case _:
+return $default(_that.name,_that.price,_that.durationMinutes,_that.priceKind,_that.ruleName);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +207,10 @@ return $default(_that.name,_that.price,_that.durationMinutes);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  int price,  int durationMinutes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  int price,  int durationMinutes, @JsonKey(unknownEnumValue: PriceKind.base)  PriceKind priceKind,  String? ruleName)?  $default,) {final _that = this;
 switch (_that) {
 case _BookingServiceSnapshot() when $default != null:
-return $default(_that.name,_that.price,_that.durationMinutes);case _:
+return $default(_that.name,_that.price,_that.durationMinutes,_that.priceKind,_that.ruleName);case _:
   return null;
 
 }
@@ -217,12 +222,17 @@ return $default(_that.name,_that.price,_that.durationMinutes);case _:
 @JsonSerializable()
 
 class _BookingServiceSnapshot implements BookingServiceSnapshot {
-  const _BookingServiceSnapshot({required this.name, required this.price, required this.durationMinutes});
+  const _BookingServiceSnapshot({required this.name, required this.price, required this.durationMinutes, @JsonKey(unknownEnumValue: PriceKind.base) this.priceKind = PriceKind.base, this.ruleName});
   factory _BookingServiceSnapshot.fromJson(Map<String, dynamic> json) => _$BookingServiceSnapshotFromJson(json);
 
 @override final  String name;
+/// The price of the booking day.
 @override final  int price;
 @override final  int durationMinutes;
+/// `rule` when a price rule set [price]; old bookings are `base`.
+@override@JsonKey(unknownEnumValue: PriceKind.base) final  PriceKind priceKind;
+/// The name of the rule that set [price], when it has one.
+@override final  String? ruleName;
 
 /// Create a copy of BookingServiceSnapshot
 /// with the given fields replaced by the non-null parameter values.
@@ -237,18 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingServiceSnapshot&&(identical(other.name, name) || other.name == name)&&(identical(other.price, price) || other.price == price)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingServiceSnapshot&&(identical(other.name, name) || other.name == name)&&(identical(other.price, price) || other.price == price)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.priceKind, priceKind) || other.priceKind == priceKind)&&(identical(other.ruleName, ruleName) || other.ruleName == ruleName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,price,durationMinutes);
+    return Object.hash(runtimeType,name,price,durationMinutes,priceKind,ruleName);
 }
 
 @override
 String toString() {
-    return 'BookingServiceSnapshot(name: $name, price: $price, durationMinutes: $durationMinutes)';
+    return 'BookingServiceSnapshot(name: $name, price: $price, durationMinutes: $durationMinutes, priceKind: $priceKind, ruleName: $ruleName)';
 }
 
 
@@ -259,7 +269,7 @@ abstract mixin class _$BookingServiceSnapshotCopyWith<$Res> implements $BookingS
   factory _$BookingServiceSnapshotCopyWith(_BookingServiceSnapshot value, $Res Function(_BookingServiceSnapshot) _then) = __$BookingServiceSnapshotCopyWithImpl;
 @override @useResult
 $Res call({
- String name, int price, int durationMinutes
+ String name, int price, int durationMinutes,@JsonKey(unknownEnumValue: PriceKind.base) PriceKind priceKind, String? ruleName
 });
 
 
@@ -276,12 +286,14 @@ class __$BookingServiceSnapshotCopyWithImpl<$Res>
 
 /// Create a copy of BookingServiceSnapshot
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? price = null,Object? durationMinutes = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? price = null,Object? durationMinutes = null,Object? priceKind = null,Object? ruleName = freezed,}) {
   return _then(_BookingServiceSnapshot(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
 as int,durationMinutes: null == durationMinutes ? _self.durationMinutes : durationMinutes // ignore: cast_nullable_to_non_nullable
-as int,
+as int,priceKind: null == priceKind ? _self.priceKind : priceKind // ignore: cast_nullable_to_non_nullable
+as PriceKind,ruleName: freezed == ruleName ? _self.ruleName : ruleName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -235,6 +235,14 @@ void main() {
       },
     );
 
+    test('hasDayPricing is the server flag, false when absent', () {
+      PhotographerSummary of(Map<String, dynamic> doc) =>
+          photographerSummaryFrom(id: 'p', photographer: doc);
+      expect(of({'hasDayPricing': true}).hasDayPricing, isTrue);
+      expect(of({'hasDayPricing': 'yes'}).hasDayPricing, isFalse);
+      expect(of({}).hasDayPricing, isFalse);
+    });
+
     test('hasTomatoPct needs 5 reviews', () {
       PhotographerSummary of(int tomato, int brick) => photographerSummaryFrom(
         id: 'p',

@@ -27,6 +27,7 @@ class PhotographerSummary {
     this.startingPriceVnd,
     this.weekendFromVnd,
     this.hasSpecialPrices = false,
+    this.hasDayPricing = false,
     this.nextFreeDate,
     this.createdAt,
     this.providerType = ProviderType.individual,
@@ -92,6 +93,11 @@ class PhotographerSummary {
   /// True when an active service has a special-day price (`hasSpecialPrices`,
   /// server-written).
   final bool hasSpecialPrices;
+
+  /// True when an active package has a price rule with a next occurrence
+  /// (`hasDayPricing`, server-written; #316): the card shows a "giá theo
+  /// ngày" tag. [startingPriceVnd] already counts those rules.
+  final bool hasDayPricing;
 
   /// First free day as `yyyy-MM-dd` (Vietnam calendar day), computed by the
   /// server into `stats.nextFreeDate`.
