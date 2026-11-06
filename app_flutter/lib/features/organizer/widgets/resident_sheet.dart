@@ -91,11 +91,12 @@ class _ResidentSheetState extends ConsumerState<ResidentSheet> {
   Future<void> _pickUntil() async {
     final today = parseDayKey(_today())!;
     final current = _validUntil == null ? null : parseDayKey(_validUntil!);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current ?? today.add(const Duration(days: 30)),
-      firstDate: today,
-      lastDate: today.add(const Duration(days: 3 * 366)),
+    final picked = await showAppDatePicker(
+      context,
+      initial: current ?? today.add(const Duration(days: 30)),
+      first: today,
+      last: today.add(const Duration(days: 3 * 366)),
+      today: today,
     );
     if (picked != null && mounted) {
       setState(() => _validUntil = dayKeyOf(picked));

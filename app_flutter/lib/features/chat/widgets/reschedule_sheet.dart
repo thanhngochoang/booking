@@ -49,8 +49,7 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _month = monthOf(now);
+    _month = monthOf(vnToday(ref.read(clockProvider)()));
     _start = widget.booking.start;
   }
 
@@ -58,7 +57,7 @@ class _RescheduleSheetState extends ConsumerState<RescheduleSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final now = ref.watch(clockProvider)();
-    final today = calendarDay(now);
+    final today = vnToday(now);
 
     final availabilityAsync = ref.watch(
       availabilityMonthProvider((

@@ -3,32 +3,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/addon_providers.dart';
+import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
-import 'package:photobooking/data/pricing/pricing_providers.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
-import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
-import 'package:photobooking/data/addons/addon_providers.dart';
+import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
+import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 import '../../support/booking_world.dart';
 import '../../support/day_price_packages.dart';
+import '../../support/day_pricing_world.dart' show WithExceptions, weekendRule;
 import '../../support/fake_addon_repository.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/fake_price_rule_repository.dart';
+import '../../support/calendar_finders.dart';
 
-/// 2026-11-14 is a Saturday, 2026-11-17 a Tuesday that is a special day.
+/// Today is Fri 2026-11-06. An's series of `s1` (Chân dung, 1,5M): Cuối tuần
+/// 1,8M on Sat and Sun, Mùa cưới 2M on 14/11 – 22/11 with 15/11 at 1,5M,
+/// Tết Nguyên đán 2,5M from 23 Chạp to 5 Giêng (lunar).
 void main() {
   final now = DateTime.utc(2026, 11, 6, 10);
-  const saturday = '2026-11-14';
-  const specialTuesday = '2026-11-17';
+  const saturday = '2026-11-07';
+  const weddingSaturday = '2026-11-14';
+  const exceptionDay = '2026-11-15';
+  const weekday = '2026-11-12';
+  const removedSaturday = '2026-11-28';
+
+  // The Tết of 2027 (Sat 6/2 is 1 Giêng): 8/2 is the 3rd, a Monday.
+  const tetDay = '2027-02-08';
+
+  /// A weekend series at [price], replacing An's `r-weekend`.
+  PriceRule weekendAt(int price) => PriceRule(
+    id: 'r-weekend',
+    serviceId: 's1',
+    price: price,
+    repeat: PriceRepeat.weekly,
+    name: 'Cuối tuần',
+    weekdays: weekendRule().weekdays,
+  );
 
   /// S04.02: a start time, then S04.04's place, then S04.03.
   Future<void> pickStartAndGoToReview(
@@ -52,32 +75,59 @@ void main() {
 
   group('S04.01', () {
     testWidgets(
-      'shows 1,5M–1,8M and "T7–CN 1,8M" and the button "Tiếp tục · từ 1.500.000₫"',
+      'shows the range from the series and the button "Tiếp tục · từ 1.500.000₫"',
       (tester) async {
         await pumpBookingRoute(
           tester,
           packages: [dayPricePortrait, dayPriceCouple, dayPriceClass],
+          priceRules: dayPriceRules(),
           now: now,
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('1,5M–1,8M'), findsOneWidget);
-        expect(find.textContaining('T7–CN 1,8M'), findsOneWidget);
-        expect(find.text('3,2M–4M'), findsOneWidget);
+        // 1,5M base, 1,8M weekend, 2M season, 2,5M Tết.
+        expect(find.text('1,5M–2,5M'), findsOneWidget);
+        expect(find.textContaining('cuối tuần 1,8M'), findsOneWidget);
+        // Only a season: "giá theo ngày".
+        expect(find.text('3,2M–5M'), findsOneWidget);
         expect(find.textContaining('giá theo ngày'), findsOneWidget);
-        // One price: in full, no sub-line.
+        // No series: the price in full, no sub-line.
         expect(find.text('6.000.000₫'), findsOneWidget);
 
         await tester.tap(find.text('Chân dung 2 giờ'));
         await tester.pumpAndSettle();
         expect(find.text('Tiếp tục · từ 1.500.000₫'), findsOneWidget);
 
-        // The special price never lowers or raises "từ".
         await tester.tap(find.text('Kỷ yếu cả lớp'));
         await tester.pumpAndSettle();
         expect(find.text('Tiếp tục · 6.000.000₫'), findsOneWidget);
       },
     );
+
+    testWidgets('a one-off series that has passed is not in the range', (
+      tester,
+    ) async {
+      await pumpBookingRoute(
+        tester,
+        packages: [dayPricePortrait],
+        priceRules: [
+          const PriceRule(
+            id: 'r-old',
+            serviceId: 's1',
+            price: 4000000,
+            repeat: PriceRepeat.none,
+            name: 'Đã qua',
+            from: '2026-10-01',
+            to: '2026-10-05',
+          ),
+        ],
+        now: now,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('1.500.000₫'), findsOneWidget);
+      expect(find.textContaining('4M'), findsNothing);
+    });
 
     testWidgets('entering with a chosen Saturday shows 1.800.000₫', (
       tester,
@@ -86,6 +136,7 @@ void main() {
         tester,
         path: '/u/p1/book?serviceId=s1&day=$saturday',
         packages: [dayPricePortrait, dayPriceCouple],
+        priceRules: dayPriceRules(),
         addons: [addonMakeup],
         now: now,
       );
@@ -94,127 +145,272 @@ void main() {
       // Opens on S04.01 because an add-on applies (Decision 11).
       expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
       expect(find.textContaining('từ 1.800.000'), findsNothing);
+      // Each package shows the price of that day, not its range.
+      expect(find.text('1.800.000₫'), findsOneWidget);
+      expect(find.text('3.200.000₫'), findsOneWidget);
+      expect(find.textContaining('–'), findsNothing);
     });
   });
 
   group('S04.02', () {
     testWidgets(
-      'shows 1,8M under weekend days and "Lễ 2,2M" under 17/11, nothing for a single-price package',
+      'shows the short price under the days that differ and the name on the '
+      'first day of a series',
       (tester) async {
+        final h = tester.ensureSemantics();
         await pumpBookingRoute(
           tester,
           path: '/u/p1/book?serviceId=s1',
           packages: [dayPricePortrait],
-          specialRanges: [dayPriceSpecialRange],
+          priceRules: dayPriceRules(),
           now: now,
         );
         await tester.pumpAndSettle();
 
         expect(find.text('Ngày thường 1,5M'), findsOneWidget);
-        // Weekends of November 2026 from the 7th (today is the 6th): 7, 8,
-        // 14, 15, 21, 22, 28, 29. Past days carry no price.
-        expect(find.text('1,8M'), findsNWidgets(8));
-        expect(find.text('Lễ 2,2M'), findsOneWidget);
+        // A weekly series is never named, only the price.
+        expect(dayByLabel('7 tháng 11, rảnh, 1,8M'), findsOneWidget);
+        expect(dayByLabel('8 tháng 11, rảnh, 1,8M'), findsOneWidget);
+        // 14/11 starts the season (it beats the weekend series).
+        expect(dayByLabel('14 tháng 11, rảnh, Mùa cưới 2M'), findsOneWidget);
+        expect(dayByLabel('16 tháng 11, rảnh, 2M'), findsOneWidget);
+        // 15/11 costs the base price (exception): no note. 21/11 is a Saturday
+        // inside the season: the season wins.
+        expect(dayByLabel('15 tháng 11, rảnh'), findsOneWidget);
+        expect(dayByLabel('21 tháng 11, rảnh, 2M'), findsOneWidget);
+        // A plain weekday.
+        expect(dayByLabel('12 tháng 11, rảnh'), findsOneWidget);
 
-        await pumpBookingRoute(
-          tester,
-          path: '/u/p1/book?serviceId=s3',
-          packages: [dayPriceClass],
-          now: now,
-        );
+        // Tết 2027 starts on 23 Chạp = Sat 30/1: "Tết Nguyên đán" is too long
+        // for a cell, so its first word.
+        await tester.tap(find.byTooltip('Tháng sau'));
         await tester.pumpAndSettle();
-        expect(find.textContaining('Ngày thường'), findsNothing);
-        // No small price line under any day.
-        expect(
-          find.byWidgetPredicate((w) => w is Text && w.style?.fontSize == 8.5),
-          findsNothing,
-        );
-        expect(find.textContaining('Lễ'), findsNothing);
+        await tester.tap(find.byTooltip('Tháng sau'));
+        await tester.pumpAndSettle();
+        expect(find.text('Tháng 1'), findsOneWidget);
+        expect(dayByLabel('30 tháng 1, rảnh, Tết 2,5M'), findsOneWidget);
+        expect(dayByLabel('31 tháng 1, rảnh, 2,5M'), findsOneWidget);
+        h.dispose();
       },
     );
 
-    testWidgets('button follows the selected day', (tester) async {
+    testWidgets('a series that began on a past day names the first shown day', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      // Mon 16/11: the 14th and 15th of the season are past.
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        packages: [dayPricePortrait],
+        priceRules: dayPriceRules(),
+        now: DateTime.utc(2026, 11, 16),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dayByLabel('16 tháng 11, rảnh, Mùa cưới 2M'), findsOneWidget);
+      expect(dayByLabel('17 tháng 11, rảnh, 2M'), findsOneWidget);
+      h.dispose();
+    });
+
+    testWidgets('a package without series has no price line', (tester) async {
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s3',
+        packages: [dayPriceClass],
+        priceRules: dayPriceRules(),
+        now: now,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Ngày thường'), findsNothing);
+      expect(
+        find.byWidgetPredicate((w) => w is Text && w.style?.fontSize == 8.5),
+        findsNothing,
+      );
+    });
+
+    testWidgets('button and day line follow the chosen day', (tester) async {
       final h = tester.ensureSemantics();
       await pumpBookingRoute(
         tester,
         path: '/u/p1/book?serviceId=s1',
         packages: [dayPricePortrait],
-        specialRanges: [dayPriceSpecialRange],
+        priceRules: dayPriceRules(),
         now: now,
       );
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · từ 1.500.000₫'), findsOneWidget);
 
-      await tester.tap(find.bySemanticsLabel('14 tháng 11, rảnh, 1,8M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, 1,8M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
-      expect(find.textContaining('cuối tuần'), findsOneWidget);
+      expect(
+        find.textContaining('T7 7/11 · Cuối tuần · 1.800.000₫'),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.bySemanticsLabel('12 tháng 11, rảnh'));
+      // A base-price day: the plain day line, no series name.
+      await tester.tap(dayByLabel('12 tháng 11, rảnh'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.500.000₫'), findsOneWidget);
+      expect(find.textContaining('Cuối tuần ·'), findsNothing);
+      expect(find.textContaining('Mùa cưới ·'), findsNothing);
 
-      await tester.tap(find.bySemanticsLabel('17 tháng 11, rảnh, Lễ 2,2M'));
+      await tester.tap(dayByLabel('14 tháng 11, rảnh, Mùa cưới 2M'));
       await tester.pumpAndSettle();
-      expect(find.text('Tiếp tục · 2.200.000₫'), findsOneWidget);
-      expect(find.textContaining('ngày lễ: Mùa cưới'), findsOneWidget);
+      expect(find.text('Tiếp tục · 2.000.000₫'), findsOneWidget);
+      expect(
+        find.textContaining('T7 14/11 · Mùa cưới · 2.000.000₫'),
+        findsOneWidget,
+      );
       h.dispose();
     });
 
-    testWidgets('a holiday of the public list is priced as a special day', (
-      tester,
-    ) async {
+    testWidgets('a day with an exception is priced by it', (tester) async {
       final h = tester.ensureSemantics();
       await pumpBookingRoute(
         tester,
         path: '/u/p1/book?serviceId=s1',
         packages: [dayPricePortrait],
-        holidays: {
-          2026: [const Holiday(day: '2026-11-18', name: 'Ngày Nhà giáo')],
-        },
+        priceRules: [
+          weekendRule(serviceId: 's1').withExceptions({'2026-11-07': 1700000}),
+        ],
         now: now,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsLabel('18 tháng 11, rảnh, Lễ 2,2M'));
+
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, 1,7M'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiếp tục · 1.700.000₫'), findsOneWidget);
+      h.dispose();
+    });
+
+    testWidgets('a series changing under the customer updates the price', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      final world = await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        packages: [dayPricePortrait],
+        priceRules: [weekendRule(serviceId: 's1')],
+        now: now,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, 1,8M'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
+
+      world.priceRules.seed(weekendAt(2200000));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 2.200.000₫'), findsOneWidget);
-      expect(find.textContaining('ngày lễ: Ngày Nhà giáo'), findsOneWidget);
+      h.dispose();
+    });
+
+    testWidgets('a failed read blocks the day until a retry works', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      final failing = FakePriceRuleRepository(today: () => now)
+        ..failWatch = true;
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        packages: [dayPricePortrait],
+        priceRuleRepository: failing,
+        now: now,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(dayByLabel('7 tháng 11, rảnh'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('book-rules-failed')), findsOneWidget);
+      final blocked = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Tiếp tục · 1.500.000₫'),
+      );
+      expect(blocked.onPressed, isNull);
+
+      failing
+        ..failWatch = false
+        ..seed(weekendRule(serviceId: 's1'));
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('book-rules-failed')), findsNothing);
+      expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
       h.dispose();
     });
   });
 
   group('S04.03', () {
-    testWidgets('line reads "Gói Chân dung 2 giờ · T7 14/11 (cuối tuần)"', (
+    testWidgets('line reads "Gói Chân dung 2 giờ · T7 14/11 (Mùa cưới)"', (
       tester,
     ) async {
       await pumpBookingRoute(
         tester,
-        path: '/u/p1/book?serviceId=s1&day=$saturday',
+        path: '/u/p1/book?serviceId=s1&day=$weddingSaturday',
         packages: [dayPricePortrait],
+        priceRules: dayPriceRules(),
         now: now,
       );
       await tester.pumpAndSettle();
-      await pickStartAndGoToReview(tester, '15:30', 'Tiếp tục · 1.800.000₫');
+      await pickStartAndGoToReview(tester, '15:30', 'Tiếp tục · 2.000.000₫');
 
       expect(find.byType(ReviewStep), findsOneWidget);
       expect(
-        find.text('Gói Chân dung 2 giờ · T7 14/11 (cuối tuần)'),
+        find.text('Gói Chân dung 2 giờ · T7 14/11 (Mùa cưới)'),
         findsOneWidget,
       );
-      expect(find.text('1.800.000₫'), findsWidgets);
+      expect(find.text('2.000.000₫'), findsWidgets);
       expect(
         find.textContaining('Giá theo ngày chụp bạn chọn.'),
         findsOneWidget,
       );
     });
 
-    testWidgets('a single-price package keeps "Gói {name}" and no day note', (
+    testWidgets('a series without a name reads "(giá theo ngày)"', (
+      tester,
+    ) async {
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1&day=2026-11-18',
+        packages: [dayPricePortrait],
+        priceRules: [unnamedRule()],
+        now: now,
+      );
+      await tester.pumpAndSettle();
+      await pickStartAndGoToReview(tester, '15:30', 'Tiếp tục · 2.000.000₫');
+
+      expect(
+        find.text('Gói Chân dung 2 giờ · T4 18/11 (giá theo ngày)'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a base-price day of a package with series has no reason', (
+      tester,
+    ) async {
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1&day=$weekday',
+        packages: [dayPricePortrait],
+        priceRules: dayPriceRules(),
+        now: now,
+      );
+      await tester.pumpAndSettle();
+      await pickStartAndGoToReview(tester, '15:30', 'Tiếp tục · 1.500.000₫');
+
+      expect(find.text('Gói Chân dung 2 giờ · T5 12/11'), findsOneWidget);
+    });
+
+    testWidgets('a package without series keeps "Gói {name}" and no day note', (
       tester,
     ) async {
       await pumpBookingRoute(
         tester,
         path: '/u/p1/book?serviceId=s3&day=$saturday',
         packages: [dayPriceClass],
+        priceRules: dayPriceRules(),
         now: now,
       );
       await tester.pumpAndSettle();
@@ -225,16 +421,164 @@ void main() {
     });
   });
 
+  group('calendar notes', () {
+    final l = AppLocalizationsVi();
+    final series = anSeries();
+
+    Map<DateTime, String> notes(int year, int month) => {
+      for (final e in dayPriceNotes(
+        l,
+        base: 1500000,
+        serviceId: 's1',
+        rules: series,
+        month: DateTime.utc(year, month),
+      ).entries)
+        e.key: e.value.text,
+    };
+
+    test('every note is in accent', () {
+      final all = dayPriceNotes(
+        l,
+        base: 1500000,
+        serviceId: 's1',
+        rules: series,
+        month: DateTime.utc(2026, 11),
+      );
+      expect(all.values.every((n) => n.accent), isTrue);
+    });
+
+    test(
+      'a series that goes on into the next month names its first day only',
+      () {
+        // Tết 2027 runs Sat 30/1 to Wed 10/2.
+        final jan = notes(2027, 1);
+        final feb = notes(2027, 2);
+        expect(jan[DateTime.utc(2027, 1, 30)], 'Tết 2,5M');
+        expect(jan[DateTime.utc(2027, 1, 31)], '2,5M');
+        expect(feb[DateTime.utc(2027, 2, 1)], '2,5M');
+        expect(feb[DateTime.utc(2027, 2, 10)], '2,5M');
+        // The day after is a plain weekday again.
+        expect(feb.containsKey(DateTime.utc(2027, 2, 11)), isFalse);
+        // Sat 13/2 is a weekend day again: the weekly series has no name.
+        expect(feb[DateTime.utc(2027, 2, 13)], '1,8M');
+      },
+    );
+
+    test('a weekly series shows the short price only, never a name', () {
+      final nov = notes(2026, 11);
+      expect(nov[DateTime.utc(2026, 11, 7)], '1,8M');
+      expect(nov[DateTime.utc(2026, 11, 8)], '1,8M');
+      expect(nov[DateTime.utc(2026, 11, 28)], '1,8M');
+    });
+
+    test('the name goes to the first shown day of a run', () {
+      // The season of 14/11 - 22/11: the 14th is past or taken, the 15th
+      // costs the base price (exception), so the 16th is the first shown one.
+      final shown = dayPriceNotes(
+        l,
+        base: 1500000,
+        serviceId: 's1',
+        rules: series,
+        month: DateTime.utc(2026, 11),
+        isShown: (d) => d.day != 14,
+      );
+      expect(shown.containsKey(DateTime.utc(2026, 11, 14)), isFalse);
+      expect(shown[DateTime.utc(2026, 11, 16)]?.text, 'Mùa cưới 2M');
+      expect(shown[DateTime.utc(2026, 11, 17)]?.text, '2M');
+      // Another run is named by its own first shown day.
+      final late = dayPriceNotes(
+        l,
+        base: 1500000,
+        serviceId: 's1',
+        rules: series,
+        month: DateTime.utc(2026, 11),
+        isShown: (d) => d.day >= 18,
+      );
+      expect(late[DateTime.utc(2026, 11, 18)]?.text, 'Mùa cưới 2M');
+      expect(late[DateTime.utc(2026, 11, 19)]?.text, '2M');
+    });
+
+    test('a package without series has no notes', () {
+      expect(
+        dayPriceNotes(
+          l,
+          base: 6000000,
+          serviceId: 's3',
+          rules: series,
+          month: DateTime.utc(2026, 11),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('the name stays whole when it fits the cell, else its first word', () {
+      PriceRule named(String? name) => PriceRule(
+        id: 'r',
+        serviceId: 's1',
+        price: 2000000,
+        repeat: PriceRepeat.none,
+        name: name,
+        from: '2026-11-18',
+        to: '2026-11-18',
+      );
+      expect(ruleCellName(l, named('Tết'), '2,5M'), 'Tết');
+      expect(ruleCellName(l, named('Mùa cưới'), '2M'), 'Mùa cưới');
+      expect(ruleCellName(l, named('Tết Nguyên đán'), '2,5M'), 'Tết');
+      expect(ruleCellName(l, named('Cuối tuần'), '1,8M'), 'Cuối');
+      // No name: "Giá riêng" like everywhere else, shortened the same way.
+      expect(ruleCellName(l, named(null), '2M'), 'Giá riêng');
+      expect(ruleCellName(l, named(null), '2,5M'), 'Giá');
+    });
+  });
+
+  group('the price on a booking', () {
+    final l = AppLocalizationsVi();
+
+    BookingServiceSnapshot snapshot({
+      PriceKind kind = PriceKind.base,
+      String? name,
+    }) => BookingServiceSnapshot(
+      name: 'Chân dung 2 giờ',
+      price: 2500000,
+      durationMinutes: 120,
+      priceKind: kind,
+      ruleName: name,
+    );
+
+    test('names the series the server wrote: "(Tết)"', () {
+      expect(
+        snapshotPriceReason(l, snapshot(kind: PriceKind.rule, name: 'Tết')),
+        '(Tết)',
+      );
+    });
+
+    test('a series without a name: "(giá theo ngày)"', () {
+      expect(
+        snapshotPriceReason(l, snapshot(kind: PriceKind.rule)),
+        '(giá theo ngày)',
+      );
+      expect(
+        snapshotPriceReason(l, snapshot(kind: PriceKind.rule, name: '  ')),
+        '(giá theo ngày)',
+      );
+    });
+
+    test('the base price says nothing, even with an old name', () {
+      expect(snapshotPriceReason(l, snapshot()), isNull);
+      expect(snapshotPriceReason(l, snapshot(name: 'Tết')), isNull);
+    });
+  });
+
   group('the flow prices the day like the server', () {
     late FakeBookingRepository bookings;
-    late FakeHolidayRepository holidays;
-    late FakeSpecialDayRepository ranges;
-    HolidayRepository? holidayOverride;
+    late FakePriceRuleRepository rulesRepo;
 
-    ProviderContainer makeContainer() {
+    ProviderContainer makeContainer({List<PriceRule>? rules}) {
       bookings = FakeBookingRepository();
-      holidays = FakeHolidayRepository();
-      ranges = FakeSpecialDayRepository()..seed('p1', dayPriceSpecialRange);
+      rulesRepo = FakePriceRuleRepository(today: () => now);
+      for (final r in rules ?? anSeries()) {
+        rulesRepo.seed(r);
+      }
       final addonRepo = FakeAddonRepository()..seed(addonMakeup);
       final container = ProviderContainer(
         overrides: [
@@ -251,10 +595,7 @@ void main() {
             FakePhotographerRepository(),
           ),
           addonRepositoryProvider.overrideWithValue(addonRepo),
-          holidayRepositoryProvider.overrideWithValue(
-            holidayOverride ?? holidays,
-          ),
-          specialDayRepositoryProvider.overrideWithValue(ranges),
+          priceRuleRepositoryProvider.overrideWithValue(rulesRepo),
         ],
       );
       addTearDown(container.dispose);
@@ -295,22 +636,73 @@ void main() {
       ctrl.next();
     }
 
-    test('createBooking receives expectedPrice 1_800_000 for 14/11', () async {
+    // Review Focus 1: the app sends what the server charges for the same day.
+    final cases =
+        <({String name, String day, int price, List<PriceRule>? rules})>[
+          (name: 'a Tết day', day: tetDay, price: 2500000, rules: null),
+          (
+            name: 'a Saturday of the weekend series',
+            day: saturday,
+            price: 1800000,
+            rules: null,
+          ),
+          (
+            name: 'a Saturday inside the season',
+            day: weddingSaturday,
+            price: 2000000,
+            rules: null,
+          ),
+          (
+            name: '15/11, the exception inside the season',
+            day: exceptionDay,
+            price: 1500000,
+            rules: null,
+          ),
+          (name: 'a weekday', day: weekday, price: 1500000, rules: null),
+          (
+            name: 'a Saturday removed from the weekend series by an exception',
+            day: removedSaturday,
+            price: 1500000,
+            rules: [
+              weekendRule(serviceId: 's1')
+                  .withExceptions({removedSaturday: null}),
+              ...anSeries().skip(1),
+            ],
+          ),
+        ];
+    for (final c in cases) {
+      test(
+        'createBooking receives expectedPrice ${c.price} for ${c.name}',
+        () async {
+          final container = makeContainer(rules: c.rules);
+          final ctrl = await open(container);
+          await toReview(ctrl, c.day);
+          await ctrl.submit();
+
+          final call = bookings.createCalls.single;
+          expect(call.day, c.day);
+          expect(call.expectedPrice, c.price);
+          // The same function and data the server runs.
+          expect(
+            call.expectedPrice,
+            priceForDay(
+              1500000,
+              's1',
+              c.rules ?? anSeries(),
+              parseDayKey(c.day)!,
+            ).amount,
+          );
+          expect(call.expectedTotal, isNull);
+        },
+      );
+    }
+
+    test('a Tết day of a year nobody entered anything for is priced', () async {
       final c = makeContainer();
       final ctrl = await open(c);
-      await toReview(ctrl, saturday);
-      expect(read(c).dayPrice?.kind, DayPriceKind.weekend);
-      await ctrl.submit();
-
-      final call = bookings.createCalls.single;
-      expect(call.day, saturday);
-      expect(call.expectedPrice, 1800000);
-      // The same rule and data the server runs.
-      expect(
-        call.expectedPrice,
-        priceForDayKey(dayPricePortrait, saturday, noSpecialDays).amount,
-      );
-      expect(call.expectedTotal, isNull);
+      await toReview(ctrl, '2030-02-05');
+      expect(read(c).dayPrice?.amount, 2500000);
+      expect(read(c).dayPrice?.rule?.name, 'Tết Nguyên đán');
     });
 
     test(
@@ -318,33 +710,20 @@ void main() {
       () async {
         final c = makeContainer();
         final ctrl = await open(c);
-        await toReview(ctrl, specialTuesday, addonQty: 1);
-        expect(read(c).dayPrice, (
-          amount: 2200000,
-          kind: DayPriceKind.special,
-          specialName: 'Mùa cưới',
-        ));
-        expect(read(c).totalVnd, 2200000 + 800000);
+        await toReview(ctrl, tetDay, addonQty: 1);
+        expect(read(c).totalVnd, 2500000 + 800000);
         await ctrl.submit();
 
         final call = bookings.createCalls.single;
-        expect(call.expectedPrice, 2200000);
-        expect(call.expectedTotal, 3000000);
+        expect(call.expectedPrice, 2500000);
+        expect(call.expectedTotal, 3300000);
       },
     );
-
-    test('a weekday costs the weekday price', () async {
-      final c = makeContainer();
-      final ctrl = await open(c);
-      await toReview(ctrl, '2026-11-12');
-      await ctrl.submit();
-      expect(bookings.createCalls.single.expectedPrice, 1500000);
-    });
 
     test(
       'the day price is recomputed when the package or the day changes',
       () async {
-        final c = makeContainer();
+        final c = makeContainer(rules: [...anSeries(), coupleSeason()]);
         final ctrl = await open(c);
         ctrl.selectService(dayPricePortrait);
         expect(read(c).dayPrice, isNull);
@@ -354,73 +733,91 @@ void main() {
         ctrl.selectDay(saturday);
         await settle();
         expect(read(c).dayPrice?.amount, 1800000);
+        expect(read(c).priceIsFrom, isFalse);
         ctrl.selectService(dayPriceCouple);
-        expect(read(c).dayPrice?.amount, 4000000);
-        ctrl.selectDay(specialTuesday);
-        // No special price on this package: Tuesday is an ordinary weekday.
-        expect(read(c).dayPrice, (
-          amount: 3200000,
-          kind: DayPriceKind.weekday,
-          specialName: null,
-        ));
+        // The couple package has no weekend series: its base price.
+        expect(read(c).dayPrice?.amount, 3200000);
+        ctrl.selectDay(weddingSaturday);
+        expect(read(c).dayPrice?.amount, 5000000);
+        expect(read(c).dayPrice?.rule?.id, 'r-couple');
       },
     );
 
-    test(
-      'a package with a special price has no price until the holidays load',
-      () async {
-        final c = makeContainer();
-        final ctrl = await open(c);
-        ctrl.selectService(dayPricePortrait);
-        ctrl.next();
-        ctrl.selectDay(saturday);
-        // Before the read answers the day is not priced and cannot go on.
-        expect(read(c).dayPrice, isNull);
-        expect(read(c).dayPriceReady, isFalse);
-        ctrl.selectStart('15:30');
-        expect(read(c).canContinue, isFalse);
-        await settle();
-        expect(read(c).dayPrice?.amount, 1800000);
-        expect(read(c).canContinue, isTrue);
-      },
-    );
-
-    test('a failed holiday read blocks the day until a retry works', () async {
-      holidayOverride = _FlakyHolidays();
-      addTearDown(() => holidayOverride = null);
+    test('a day has no price until the series are read', () async {
       final c = makeContainer();
-      final flaky = holidayOverride! as _FlakyHolidays;
+      final sub = c.listen(bookingFlowControllerProvider(args), (_, _) {});
+      addTearDown(sub.close);
+      final ctrl = c.read(bookingFlowControllerProvider(args).notifier);
+      ctrl.selectService(dayPricePortrait);
+      ctrl.next();
+      ctrl.selectDay(saturday);
+      ctrl.selectStart('15:30');
+      // Not read yet: the day cannot be priced, so it cannot go on.
+      expect(read(c).dayPrice, isNull);
+      expect(read(c).dayPriceReady, isFalse);
+      expect(read(c).canContinue, isFalse);
+      await settle();
+      expect(read(c).dayPrice?.amount, 1800000);
+      expect(read(c).canContinue, isTrue);
+    });
+
+    test('a failed read blocks the day until a retry works', () async {
+      final c = makeContainer();
+      rulesRepo.failWatch = true;
       final ctrl = await open(c);
       ctrl.selectService(dayPricePortrait);
       ctrl.next();
       ctrl.selectDay(saturday);
       await settle();
-      expect(read(c).specialsFailed, isTrue);
+      expect(read(c).rulesFailed, isTrue);
       expect(read(c).dayPrice, isNull);
       ctrl.selectStart('15:30');
       expect(read(c).canContinue, isFalse);
 
-      flaky.failing = false;
-      ctrl.retrySpecials();
+      rulesRepo.failWatch = false;
+      ctrl.retryRules();
       await settle();
-      expect(read(c).specialsFailed, isFalse);
+      expect(read(c).rulesFailed, isFalse);
       expect(read(c).dayPrice?.amount, 1800000);
+      expect(read(c).canContinue, isTrue);
     });
 
-    test('a price_changed answer reads the special days again', () async {
+    test('a series edited under the customer changes the price and raises the banner', () async {
+      final c = makeContainer();
+      final ctrl = await open(c);
+      ctrl.selectService(dayPricePortrait);
+      ctrl.selectDay(saturday);
+      await settle();
+      expect(read(c).packageVnd, 1800000);
+      expect(read(c).priceChanged, isFalse);
+
+      rulesRepo.seed(weekendAt(2200000));
+      await settle();
+      expect(read(c).packageVnd, 2200000);
+      expect(read(c).priceChanged, isTrue);
+    });
+
+    test('a price_changed answer reads the series again', () async {
       final c = makeContainer();
       final ctrl = await open(c);
       await toReview(ctrl, saturday);
-      holidays.seed(2026, [const Holiday(day: saturday, name: 'Lễ mới')]);
+      expect(read(c).dayPrice?.amount, 1800000);
+
+      // The photographer moved the weekend price while the customer paid.
+      rulesRepo.seed(weekendAt(2200000));
       bookings.nextError = BookingErrorCode.priceChanged;
       await ctrl.submit();
-      await settle();
-
       expect(read(c).error, BookingErrorCode.priceChanged);
       expect(read(c).step, BookingStep.service);
-      // The day is now a special day for this package.
+      await settle();
+
       expect(read(c).dayPrice?.amount, 2200000);
-      expect(read(c).dayPrice?.specialName, 'Lễ mới');
+      // The retry sends the new price.
+      ctrl.next();
+      ctrl.next();
+      ctrl.next();
+      await ctrl.submit();
+      expect(bookings.createCalls.last.expectedPrice, 2200000);
     });
 
     test('a slot offer keeps its own price (P7)', () {
@@ -435,14 +832,4 @@ void main() {
       expect(state.dayPriceReady, isTrue);
     });
   });
-}
-
-class _FlakyHolidays implements HolidayRepository {
-  bool failing = true;
-
-  @override
-  Future<List<Holiday>> forYear(int year) async {
-    if (failing) throw StateError('offline');
-    return const [];
-  }
 }

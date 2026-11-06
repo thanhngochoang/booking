@@ -55,11 +55,12 @@ class _PaidSheetState extends ConsumerState<_PaidSheet> {
 
   Future<void> _pickOther() async {
     final today = _today();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _other ?? today,
-      firstDate: today.subtract(const Duration(days: 365)),
-      lastDate: today,
+    final picked = await showAppDatePicker(
+      context,
+      initial: _other ?? today,
+      first: today.subtract(const Duration(days: 365)),
+      last: today,
+      today: today,
     );
     if (picked == null || !mounted) return;
     setState(() {

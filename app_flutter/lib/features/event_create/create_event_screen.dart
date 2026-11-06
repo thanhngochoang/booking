@@ -464,13 +464,14 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
 
   Future<void> _pickDay(DateTime? current) async {
     final today = _today;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current != null && !current.isBefore(today)
-          ? DateTime(current.year, current.month, current.day)
-          : DateTime(today.year, today.month, today.day + 1),
-      firstDate: DateTime(today.year, today.month, today.day),
-      lastDate: DateTime(today.year + 1, today.month, today.day),
+    final picked = await showAppDatePicker(
+      context,
+      initial: current != null && !current.isBefore(today)
+          ? calendarDay(current)
+          : DateTime.utc(today.year, today.month, today.day + 1),
+      first: calendarDay(today),
+      last: DateTime.utc(today.year + 1, today.month, today.day),
+      today: today,
     );
     if (picked != null && mounted) {
       _ctl.setDay(picked);
@@ -494,18 +495,18 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
     final today = _today;
     final last =
         form.day ?? DateTime.utc(today.year + 1, today.month, today.day);
-    final first = DateTime(today.year, today.month, today.day);
+    final first = calendarDay(today);
     var initial = form.deadlineDay ?? form.day ?? today;
     if (initial.isBefore(first)) {
       initial = first;
     }
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(initial.year, initial.month, initial.day),
-      firstDate: first,
-      lastDate: DateTime(last.year, last.month, last.day).isBefore(first)
-          ? first
-          : DateTime(last.year, last.month, last.day),
+    final lastDay = calendarDay(last);
+    final picked = await showAppDatePicker(
+      context,
+      initial: calendarDay(initial),
+      first: first,
+      last: lastDay.isBefore(first) ? first : lastDay,
+      today: today,
     );
     if (picked != null && mounted) {
       _ctl.setDeadline(picked);

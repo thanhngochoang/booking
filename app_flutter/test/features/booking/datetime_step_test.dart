@@ -1,5 +1,6 @@
 // test/features/booking/datetime_step_test.dart
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,8 @@ import '../../support/booking_world.dart';
 import '../../support/spot_booking_fixtures.dart';
 
 import 'package:photobooking/data/spots/spot.dart';
+
+import '../../support/calendar_finders.dart';
 
 void main() {
   final now = DateTime.utc(2026, 10, 5);
@@ -48,26 +51,32 @@ void main() {
 
     expect(find.byType(ScreenCode), findsWidgets);
     expect(find.text('Tháng 10'), findsOneWidget);
+    // Every day shows its lunar day (R6): 10 Oct 2026 is 1/9.
+    expect(tester.widget<Text>(calendarLunar(bookedDay)).data, '1/9');
 
     // Past day (Oct 3) cannot be selected
-    await tester.tap(find.bySemanticsLabel('3 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('3 tháng 10, rảnh'));
     await tester.pumpAndSettle();
     expect(find.textContaining('khung 2 giờ'), findsNothing);
 
     // Booked day (Oct 10) cannot be selected
-    await tester.tap(find.bySemanticsLabel('10 tháng 10, đã đặt'));
+    await tester.tap(dayByLabel('10 tháng 10, đã đặt'));
     await tester.pumpAndSettle();
     expect(find.textContaining('khung 2 giờ'), findsNothing);
 
     // Off day (Oct 12) cannot be selected
-    await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));
+    await tester.tap(dayByLabel('12 tháng 10, nghỉ'));
     await tester.pumpAndSettle();
     expect(find.textContaining('khung 2 giờ'), findsNothing);
 
     // Free day (Oct 15) is selectable
-    await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('15 tháng 10, rảnh'));
     await tester.pumpAndSettle();
     expect(find.textContaining('khung 2 giờ'), findsOneWidget);
+    expect(
+      tester.getSemantics(calendarCell(freeDay)).flagsCollection.isSelected,
+      Tristate.isTrue,
+    );
 
     h.dispose();
   });
@@ -84,7 +93,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.bySemanticsLabel('11 tháng 10, chờ nhận'));
+    await tester.tap(dayByLabel('11 tháng 10, chờ nhận'));
     await tester.pumpAndSettle();
 
     // Not selected
@@ -107,7 +116,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('15 tháng 10, rảnh'));
     await tester.pumpAndSettle();
 
     // 120 minutes -> slots from 06:00 to 18:00 (25 slots)
@@ -135,7 +144,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('15 tháng 10, rảnh'));
     await tester.pumpAndSettle();
 
     expect(find.text('06:00'), findsOneWidget);
@@ -160,7 +169,7 @@ void main() {
     final buttonFinder = find.byType(AppButton);
     expect(tester.widget<AppButton>(buttonFinder).onPressed, isNull);
 
-    await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('15 tháng 10, rảnh'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<AppButton>(buttonFinder).onPressed, isNull);
@@ -224,7 +233,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select Oct 15
-      await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+      await tester.tap(dayByLabel('15 tháng 10, rảnh'));
       await tester.pumpAndSettle();
 
       // Select 15:30
@@ -276,7 +285,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Oct 15 is now DayState.booked in calendar states -> semantics label has "đã đặt"
-    expect(find.bySemanticsLabel('15 tháng 10, đã đặt'), findsOneWidget);
+    expect(dayByLabel('15 tháng 10, đã đặt'), findsOneWidget);
 
     h.dispose();
   });
@@ -398,11 +407,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.bySemanticsLabel('13 tháng 10, hết chỗ'));
+      await tester.tap(dayByLabel('13 tháng 10, hết chỗ'));
       await tester.pumpAndSettle();
       expect(find.textContaining('khung 2 giờ'), findsNothing);
 
-      await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+      await tester.tap(dayByLabel('15 tháng 10, rảnh'));
       await tester.pumpAndSettle();
       expect(find.textContaining('khung 2 giờ'), findsOneWidget);
       h.dispose();
@@ -421,8 +430,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.bySemanticsLabel('15 tháng 10, rảnh'), findsNothing);
-      await tester.tap(find.bySemanticsLabel('15 tháng 10, hết chỗ'));
+      expect(dayByLabel('15 tháng 10, rảnh'), findsNothing);
+      await tester.tap(dayByLabel('15 tháng 10, hết chỗ'));
       await tester.pumpAndSettle();
       expect(find.textContaining('khung 2 giờ'), findsNothing);
       h.dispose();
@@ -493,14 +502,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // now = 05/10: the 3rd is past, today and later are full.
-      expect(find.bySemanticsLabel('3 tháng 10, hết chỗ'), findsNothing);
-      expect(find.bySemanticsLabel('3 tháng 10, rảnh'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel(RegExp(r'^5 tháng 10.*hết chỗ')),
-        findsOneWidget,
-      );
-      expect(find.bySemanticsLabel('6 tháng 10, hết chỗ'), findsOneWidget);
-      expect(find.bySemanticsLabel('31 tháng 10, hết chỗ'), findsOneWidget);
+      expect(dayByLabel('3 tháng 10, hết chỗ'), findsNothing);
+      expect(dayByLabel('3 tháng 10, rảnh'), findsOneWidget);
+      expect(dayByLabel('5 tháng 10, hết chỗ'), findsOneWidget);
+      expect(dayByLabel('6 tháng 10, hết chỗ'), findsOneWidget);
+      expect(dayByLabel('31 tháng 10, hết chỗ'), findsOneWidget);
       h.dispose();
     });
   });
@@ -538,12 +544,12 @@ void main() {
     );
 
     // A day outside the schedule cannot be chosen.
-    await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));
+    await tester.tap(dayByLabel('12 tháng 10, nghỉ'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Thứ 7, 10/10'), findsOneWidget);
 
     // The other schedule day reads its own times.
-    await tester.tap(find.bySemanticsLabel('11 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('11 tháng 10, rảnh'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Chủ nhật, 11/10'), findsOneWidget);
     expect(find.widgetWithText(AppChip, '06:00'), findsOneWidget);

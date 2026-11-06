@@ -140,6 +140,20 @@ abstract final class AppIcons {
   static const IconData privacy = Symbols.privacy_tip_rounded;
   static const IconData download = Symbols.download_rounded;
   static const IconData restore = Symbols.restore_rounded;
+
+  // Price series (S08.10, #316).
+  static const IconData repeat = Symbols.repeat_rounded;
+  static const IconData event = Symbols.event_rounded;
+  static const IconData calendarMonth = Symbols.calendar_month_rounded;
+  static const IconData unfoldMore = Symbols.unfold_more_rounded;
+  static const IconData inventory = Symbols.inventory_2_rounded;
+  static const IconData radioOn = Symbols.radio_button_checked_rounded;
+  static const IconData radioOff = Symbols.radio_button_unchecked_rounded;
+
+  // Packages (S08.08, #316).
+  static const IconData tune = Symbols.tune_rounded;
+  static const IconData moveUp = Symbols.keyboard_arrow_up_rounded;
+  static const IconData moveDown = Symbols.keyboard_arrow_down_rounded;
 }
 
 /// Icon sizes (logical pixels).

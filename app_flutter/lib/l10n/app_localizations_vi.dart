@@ -1209,11 +1209,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get skillsRemoveConfirm => 'Bỏ thể loại';
 
   @override
-  String calendarMonthTitle(String month, String year) {
-    return 'Tháng $month, $year';
-  }
-
-  @override
   String calendarMonthShort(String month) {
     return 'Tháng $month';
   }
@@ -1271,11 +1266,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarDayFull => 'Hết chỗ';
-
-  @override
-  String calendarDaySemantics(String day, String month, String state) {
-    return '$day tháng $month, $state';
-  }
 
   @override
   String get calendarHasEvent => 'có sự kiện';
@@ -13107,22 +13097,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0808_title => 'Gói dịch vụ';
 
   @override
-  String s0808_activeCount(int n) {
-    return '$n gói đang bật';
-  }
-
-  @override
-  String get s0808_hidden => 'Đang ẩn · khách không thấy';
-
-  @override
-  String get s0808_specialDays => 'Ngày đặc biệt';
-
-  @override
-  String s0808_specialDaysSub(int n, int m) {
-    return '$n ngày lễ chung · $m khoảng ngày của bạn';
-  }
-
-  @override
   String get s0808_add => 'Thêm gói';
 
   @override
@@ -13153,91 +13127,58 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0808_saveFailed => 'Chưa lưu được, thử lại nhé';
 
   @override
-  String s0808_priceTwoLevels(String weekday, String weekend) {
-    return 'T2–T6 $weekday · T7–CN $weekend';
-  }
-
-  @override
-  String s0808_pricePerDay(String min, String max) {
-    return '$min–$max · theo ngày';
-  }
-
-  @override
-  String s0808_priceWithSpecial(String line, String price) {
-    return '$line · Lễ $price';
-  }
-
-  @override
   String get s0808_workRow => 'Gói và bảng giá';
 
   @override
   String get s0808_addonsLink => 'Gói dịch vụ';
 
   @override
-  String get s0810_title => 'Ngày đặc biệt';
+  String get s0808_sort => 'Sắp xếp';
 
   @override
-  String get s0810_public => 'Ngày lễ chung';
+  String get s0808_sortTitle => 'Sắp xếp gói';
 
   @override
-  String get s0810_mine => 'Ngày riêng của bạn';
+  String get s0808_done => 'Xong';
 
   @override
-  String s0810_range(String from, String to, int n) {
-    return '$from – $to · $n ngày';
+  String get s0808_sortHint =>
+      'Kéo, hoặc dùng nút Lên / Xuống. Thứ tự này hiện ở hồ sơ và khi khách chọn gói.';
+
+  @override
+  String get s0808_dragHandle => 'Kéo để sắp xếp';
+
+  @override
+  String get s0808_moveUp => 'Chuyển lên';
+
+  @override
+  String get s0808_moveDown => 'Chuyển xuống';
+
+  @override
+  String get s0808_hiddenChip => 'Đang ẩn';
+
+  @override
+  String s0808_photosEdited(int count) {
+    return '$count ảnh chỉnh';
   }
 
   @override
-  String get s0810_note =>
-      'Gói có giá ngày đặc biệt dùng giá đó cho các ngày này. Gói không có giá đặc biệt tính như ngày thường. Muốn nghỉ hẳn thì đánh dấu nghỉ trong Lịch.';
+  String get s0808_dayPricing => 'Giá theo ngày';
 
   @override
-  String get s0810_add => 'Thêm khoảng ngày';
-
-  @override
-  String get s0810_addTitle => 'Thêm khoảng ngày';
-
-  @override
-  String get s0810_editTitle => 'Sửa khoảng ngày';
-
-  @override
-  String get s0810_delete => 'Xoá khoảng ngày';
-
-  @override
-  String s0810_affects(int n, int m) {
-    return '$n ngày · $m gói có giá ngày đặc biệt sẽ dùng giá đó';
+  String s0808_dayPricingSummary(String names, int n) {
+    return '$names · $n chuỗi';
   }
 
   @override
-  String s0810_affectsNone(int n) {
-    return '$n ngày · Chưa gói nào có giá ngày đặc biệt · Thêm ở Gói dịch vụ';
+  String s0808_activeHint(int n) {
+    return '$n gói đang bật · giá dưới là giá ngày thường';
   }
 
   @override
-  String get s0810_emptyMine =>
-      'Chưa có ngày riêng · Thêm mùa cưới, mùa hoa hay ngày bạn muốn giá cao hơn';
-
-  @override
-  String s0810_noHolidays(int year) {
-    return 'Chưa có lịch ngày lễ năm $year';
+  String s0808_ruleLine(String name, String price) {
+    return '$name $price';
   }
-
-  @override
-  String s0810_year(int year) {
-    return 'Năm $year';
-  }
-
-  @override
-  String get s0810_fieldName => 'Tên';
-
-  @override
-  String get s0810_fieldFrom => 'Từ ngày';
-
-  @override
-  String get s0810_fieldTo => 'Tới ngày';
-
-  @override
-  String get s0810_pickDay => 'Chọn ngày';
 
   @override
   String get s0810_save => 'Lưu';
@@ -13246,22 +13187,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_close => 'Đóng';
 
   @override
-  String get s0810_errorName => 'Tên 2–40 ký tự';
-
-  @override
-  String get s0810_errorTooLong => 'Khoảng tối đa 60 ngày';
-
-  @override
-  String get s0810_errorTooFar => 'Chỉ chọn trong 365 ngày tới';
-
-  @override
-  String get s0810_errorLimit => 'Bạn đã có 20 khoảng ngày';
-
-  @override
   String get s0810_errorPast => 'Chỉ chọn từ hôm nay trở đi';
-
-  @override
-  String get s0810_deleteTitle => 'Xoá khoảng ngày này?';
 
   @override
   String get s0810_deleteBody => 'Booking đã đặt giữ giá cũ.';
@@ -13273,13 +13199,309 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0810_deleteKeep => 'Giữ lại';
 
   @override
-  String get s0810_saved => 'Đã lưu khoảng ngày';
+  String get s0810_title => 'Giá theo ngày';
 
   @override
-  String get s0810_deleted => 'Đã xoá khoảng ngày';
+  String get s0810_listTitle => 'Chuỗi giá';
 
   @override
-  String get s0810_loadError => 'Không tải được ngày đặc biệt';
+  String get s0810_listTooltip => 'Danh sách chuỗi';
+
+  @override
+  String get s0810_calendarTooltip => 'Lịch';
+
+  @override
+  String s0810_packageChip(String name, String price) {
+    return '$name · $price';
+  }
+
+  @override
+  String get s0810_seriesCard => 'Chuỗi của gói';
+
+  @override
+  String get s0810_legendRule => 'chuỗi';
+
+  @override
+  String get s0810_legendException => 'ngoại lệ';
+
+  @override
+  String get s0810_legendBase => 'mờ = giá thường';
+
+  @override
+  String get s0810_add => 'Đặt giá';
+
+  @override
+  String get s0810_sheetTitle => 'Đặt giá';
+
+  @override
+  String get s0810_templates => 'Mẫu nhanh';
+
+  @override
+  String s0810_priceFor(String name) {
+    return 'Giá · $name';
+  }
+
+  @override
+  String get s0810_from => 'Từ';
+
+  @override
+  String get s0810_to => 'Tới';
+
+  @override
+  String get s0810_repeat => 'Lặp lại';
+
+  @override
+  String get s0810_cycle => 'Chu kỳ';
+
+  @override
+  String get s0810_weekly => 'Hằng tuần';
+
+  @override
+  String get s0810_yearly => 'Hằng năm';
+
+  @override
+  String get s0810_lunar => 'Theo âm lịch';
+
+  @override
+  String s0810_solarLine(String from, String to) {
+    return '$from – $to mỗi năm';
+  }
+
+  @override
+  String s0810_solarLineOne(String day) {
+    return '$day mỗi năm';
+  }
+
+  @override
+  String s0810_lunarLine(String from, String to, String next) {
+    return '$from – $to âm lịch mỗi năm · năm sau là $next';
+  }
+
+  @override
+  String s0810_lunarLineOne(String day, String next) {
+    return '$day âm lịch mỗi năm · năm sau là $next';
+  }
+
+  @override
+  String s0810_leapNote(String m) {
+    return 'Tháng $m năm nay nhuận, chuỗi lặp theo tháng $m chính';
+  }
+
+  @override
+  String get s0810_name => 'Tên (tuỳ chọn)';
+
+  @override
+  String get s0810_applyTo => 'Áp cho';
+
+  @override
+  String s0810_applyOne(String name) {
+    return 'Chỉ gói $name';
+  }
+
+  @override
+  String get s0810_applyAll => 'Mọi gói, cùng tỉ lệ';
+
+  @override
+  String get s0810_delete => 'Xoá chuỗi';
+
+  @override
+  String get s0810_deleteTitle => 'Xoá chuỗi này?';
+
+  @override
+  String s0810_dayTitle(String weekday, String day, String month) {
+    return '$weekday $day/$month';
+  }
+
+  @override
+  String get s0810_dayPrice => 'Giá ngày này';
+
+  @override
+  String get s0810_applyScope => 'Áp dụng cho';
+
+  @override
+  String get s0810_scopeDay => 'Chỉ ngày này';
+
+  @override
+  String get s0810_scopeFollowing => 'Ngày này và các ngày sau trong chuỗi';
+
+  @override
+  String s0810_scopeAll(String name) {
+    return 'Cả chuỗi $name';
+  }
+
+  @override
+  String get s0810_removeDay => 'Bỏ ngày này khỏi chuỗi';
+
+  @override
+  String get s0810_endFrom => 'Kết thúc chuỗi từ ngày này';
+
+  @override
+  String s0810_overridden(String loser, String price, String winner) {
+    return '$loser $price bị $winner thay';
+  }
+
+  @override
+  String s0810_ruleWeekly(String days) {
+    return 'Hằng tuần · $days';
+  }
+
+  @override
+  String s0810_ruleYearly(String from, String to) {
+    return 'Hằng năm · $from – $to';
+  }
+
+  @override
+  String s0810_ruleYearlyDay(String day) {
+    return 'Hằng năm · $day';
+  }
+
+  @override
+  String s0810_ruleYearlyLunar(String from, String to) {
+    return 'Hằng năm · $from – $to (âm lịch)';
+  }
+
+  @override
+  String s0810_ruleYearlyLunarDay(String day) {
+    return 'Hằng năm · $day (âm lịch)';
+  }
+
+  @override
+  String s0810_ruleOnce(String from, String to) {
+    return 'Một lần · $from – $to';
+  }
+
+  @override
+  String s0810_ruleOnceDay(String day) {
+    return 'Một lần · $day';
+  }
+
+  @override
+  String s0810_lunarMonthTwelve(String day) {
+    return '$day Chạp';
+  }
+
+  @override
+  String s0810_lunarMonthOne(String day) {
+    return '$day Giêng';
+  }
+
+  @override
+  String s0810_exceptions(int n) {
+    return '$n ngoại lệ';
+  }
+
+  @override
+  String s0810_exceptionsDetail(int n, String detail) {
+    return '$n ngoại lệ ($detail)';
+  }
+
+  @override
+  String s0810_exceptionPrice(String day, String price) {
+    return '$day: $price';
+  }
+
+  @override
+  String s0810_exceptionSkip(String day) {
+    return '$day: bỏ';
+  }
+
+  @override
+  String s0810_nextOccurrence(String range) {
+    return 'lần tới $range';
+  }
+
+  @override
+  String get s0810_unnamed => 'Giá riêng';
+
+  @override
+  String s0810_groupTitle(String name, String price) {
+    return '$name · giá thường $price';
+  }
+
+  @override
+  String s0810_noRules(String price) {
+    return 'Chưa có chuỗi · mọi ngày $price';
+  }
+
+  @override
+  String get s0810_noneSummary => 'Cuối tuần và ngày lễ lấy bằng giá thường';
+
+  @override
+  String get s0810_noPackages => 'Thêm gói trước ở Gói dịch vụ';
+
+  @override
+  String get s0810_noPackagesAction => 'Thêm gói';
+
+  @override
+  String get s0810_errorPrice => 'Giá phải lớn hơn 0';
+
+  @override
+  String get s0810_errorPriceHigh => 'Giá tối đa 1.000.000.000₫';
+
+  @override
+  String get s0810_errorTooLong => 'Khoảng tối đa 92 ngày';
+
+  @override
+  String get s0810_errorTooFar => 'Chỉ chọn trong 2 năm tới';
+
+  @override
+  String get s0810_errorWeekdays => 'Chọn ít nhất một thứ';
+
+  @override
+  String get s0810_errorLimit => 'Gói này đã có 30 chuỗi';
+
+  @override
+  String get s0810_errorExceptionLimit => 'Chuỗi này đã có 50 ngoại lệ';
+
+  @override
+  String get s0810_errorLeapDay => 'Ngày 29/2 không lặp hằng năm được';
+
+  @override
+  String get s0810_saved => 'Đã lưu giá';
+
+  @override
+  String get s0810_deleted => 'Đã xoá chuỗi';
+
+  @override
+  String get s0810_loadError => 'Không tải được giá theo ngày';
+
+  @override
+  String get s0810_clearException => 'Về giá chuỗi';
+
+  @override
+  String s0810_clearExceptionOf(String name) {
+    return 'Về giá chuỗi $name';
+  }
+
+  @override
+  String get s0810_exceptionSpoken => 'ngoại lệ';
+
+  @override
+  String get s0810_dayRemoved => 'Đã bỏ ngày khỏi chuỗi';
+
+  @override
+  String get s0810_seriesEnded => 'Đã kết thúc chuỗi';
+
+  @override
+  String get s0810_errorNameContact =>
+      'Tên không được chứa số điện thoại hay đường link';
+
+  @override
+  String get s0810_removeDayTitle => 'Bỏ ngày này khỏi chuỗi?';
+
+  @override
+  String get s0810_removeDayConfirm => 'Bỏ ngày';
+
+  @override
+  String get s0810_endFromTitle => 'Kết thúc chuỗi từ ngày này?';
+
+  @override
+  String get s0810_endFromConfirm => 'Kết thúc';
+
+  @override
+  String s0810_endedCount(int n) {
+    return 'Đã kết thúc · $n';
+  }
 
   @override
   String get s0809_titleNew => 'Thêm gói';
@@ -13291,102 +13513,39 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0809_edited => 'Số ảnh chỉnh';
 
   @override
-  String get s0809_prices => 'Bảng giá';
-
-  @override
-  String get s0809_modeTwo => 'Hai mức giá';
-
-  @override
-  String get s0809_modePerDay => 'Từng ngày';
-
-  @override
-  String get s0809_modeLabel => 'Cách nhập giá';
-
-  @override
-  String get s0809_weekday => 'Ngày thường · T2–T6';
-
-  @override
-  String get s0809_weekend => 'Cuối tuần · T7–CN';
-
-  @override
-  String get s0809_weekendTag => 'cuối tuần';
-
-  @override
-  String get s0809_dayMon => 'Thứ 2';
-
-  @override
-  String get s0809_dayTue => 'Thứ 3';
-
-  @override
-  String get s0809_dayWed => 'Thứ 4';
-
-  @override
-  String get s0809_dayThu => 'Thứ 5';
-
-  @override
-  String get s0809_dayFri => 'Thứ 6';
-
-  @override
-  String get s0809_daySat => 'Thứ 7';
-
-  @override
-  String get s0809_daySun => 'Chủ nhật';
-
-  @override
-  String get s0809_special => 'Giá riêng ngày đặc biệt';
-
-  @override
-  String get s0809_specialField => 'Ngày đặc biệt';
-
-  @override
-  String s0809_specialApplies(int n, int m) {
-    return 'Áp cho $n ngày lễ chung, $m khoảng ngày của bạn';
-  }
-
-  @override
-  String get s0809_see => 'Xem';
-
-  @override
-  String get s0809_specialOff => 'Đang tắt · ngày lễ tính như thứ đó';
-
-  @override
-  String get s0809_previewLabel => 'Giá 7 ngày tới';
-
-  @override
-  String s0809_previewSpecial(String day, String price) {
-    return 'Lễ $day · $price';
-  }
-
-  @override
-  String s0809_previewDay(String day, String price) {
-    return '$day · $price';
-  }
-
-  @override
-  String s0809_preview(String day, String amount) {
-    return 'Khách đặt $day trả $amount (chưa gồm dịch vụ đi kèm). Booking đã đặt giữ giá cũ.';
-  }
-
-  @override
-  String s0809_perDayNote(String range) {
-    return 'Khách thấy \"$range\" ở hồ sơ và giá đúng của ngày khi chọn lịch.';
-  }
-
-  @override
-  String get s0809_toTwoLevels =>
-      'Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?';
-
-  @override
-  String get s0809_toTwoLevelsConfirm => 'Dùng hai mức';
-
-  @override
-  String get s0809_toTwoLevelsKeep => 'Giữ từng ngày';
-
-  @override
   String get s0809_save => 'Lưu gói';
 
   @override
   String get s0809_hide => 'Ẩn gói';
+
+  @override
+  String get s0809_price => 'Giá ngày thường';
+
+  @override
+  String get s0809_rulesLink => 'Giá theo ngày';
+
+  @override
+  String get s0809_noRules =>
+      'Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi lưu';
+
+  @override
+  String get s0809_keepsOld => 'Booking đã đặt giữ giá cũ.';
+
+  @override
+  String get s0809_discardTitle => 'Bỏ thay đổi?';
+
+  @override
+  String get s0809_discardBody => 'Những gì bạn vừa nhập sẽ mất.';
+
+  @override
+  String get s0809_discardConfirm => 'Bỏ';
+
+  @override
+  String get s0809_discardKeep => 'Tiếp tục sửa';
+
+  @override
+  String get setupPriceNote =>
+      'Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi xong hồ sơ.';
 
   @override
   String get s0809_nameLength => 'Tên 2–60 ký tự';
@@ -13404,17 +13563,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0809_loadError => 'Không tải được gói';
 
   @override
-  String get s0809_setupNote =>
-      'Đặt giá cuối tuần, giá từng ngày hoặc giá ngày lễ trong từng gói.';
-
-  @override
   String s0401_priceRange(String min, String max) {
     return '$min–$max';
   }
 
   @override
   String s0401_weekendSub(String amount) {
-    return 'T7–CN $amount';
+    return 'cuối tuần $amount';
   }
 
   @override
@@ -13431,21 +13586,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String s0402_holidayPrice(String amount) {
-    return 'Lễ $amount';
-  }
-
-  @override
-  String get s0402_weekendTag => 'cuối tuần';
-
-  @override
-  String s0402_holidayTag(String name) {
-    return 'ngày lễ: $name';
-  }
-
-  @override
   String get s0402_pricesFailed =>
-      'Chưa tải được ngày lễ để tính giá ngày này.';
+      'Chưa tải được giá theo ngày để tính giá ngày này.';
 
   @override
   String s0403_packageDay(String name, String day) {
@@ -13453,16 +13595,34 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get s0403_dayReasonWeekend => '(cuối tuần)';
+  String get s0403_dayPriceNote =>
+      'Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.';
 
   @override
-  String s0403_dayReasonSpecial(String name) {
+  String s0402_rulePrice(String name, String amount) {
+    return '$name $amount';
+  }
+
+  @override
+  String s0402_dayLine(String day, String name, String amount) {
+    return '$day · $name · $amount';
+  }
+
+  @override
+  String s0403_dayReasonRule(String name) {
     return '($name)';
   }
 
   @override
-  String get s0403_dayPriceNote =>
-      'Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.';
+  String get s0403_dayReasonUnnamed => '(giá theo ngày)';
+
+  @override
+  String get s0301_baseRow => 'Giá thường';
+
+  @override
+  String s0301_byDay(String range) {
+    return '$range · theo ngày';
+  }
 
   @override
   String s0301_priceSheetTitle(String name) {
@@ -13470,14 +13630,43 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get s0301_specialRow => 'Ngày lễ, ngày đặc biệt';
-
-  @override
   String get s0301_priceSheetNote =>
       'Giá đúng của ngày bạn chọn hiện ở bước chọn lịch. Chưa gồm dịch vụ đi kèm.';
 
   @override
-  String photographerWeekendFrom(String price) {
-    return 'T7–CN từ $price';
+  String appCalendar_monthTitle(String month, String year) {
+    return 'Tháng $month / $year';
   }
+
+  @override
+  String appCalendar_dayLabel(String weekday, String day, String month) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      'mon': 'Thứ Hai',
+      'tue': 'Thứ Ba',
+      'wed': 'Thứ Tư',
+      'thu': 'Thứ Năm',
+      'fri': 'Thứ Sáu',
+      'sat': 'Thứ Bảy',
+      'other': 'Chủ Nhật',
+    });
+    return '$_temp0 $day tháng $month';
+  }
+
+  @override
+  String appCalendar_lunarDay(String day, String month) {
+    return '$day tháng $month âm lịch';
+  }
+
+  @override
+  String appCalendar_lunarEarly(String day) {
+    return 'mùng $day';
+  }
+
+  @override
+  String appCalendar_lunarLeapMonth(String month) {
+    return '$month nhuận';
+  }
+
+  @override
+  String get appCalendar_choose => 'Chọn';
 }

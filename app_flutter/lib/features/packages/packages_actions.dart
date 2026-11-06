@@ -2,10 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
-import 'package:photobooking/data/pricing/pricing_providers.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
 
-/// The writes of S08.08 and S08.10. Each answers whether it went through;
+/// The writes of S08.08. Each answers whether it went through;
 /// the screen says what to tell the user.
 class PackagesActions {
   PackagesActions(this._ref);
@@ -36,12 +34,6 @@ class PackagesActions {
     (uid) =>
         _ref.read(servicePackageRepositoryProvider).reorder(uid, idsInOrder),
   );
-
-  Future<bool> saveRange(SpecialDayRange range) =>
-      _run((uid) => _ref.read(specialDayRepositoryProvider).save(uid, range));
-
-  Future<bool> deleteRange(String id) =>
-      _run((uid) => _ref.read(specialDayRepositoryProvider).delete(uid, id));
 }
 
 final packagesActionsProvider = Provider<PackagesActions>(PackagesActions.new);

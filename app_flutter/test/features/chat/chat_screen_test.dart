@@ -431,9 +431,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AvailabilityCalendar), findsOneWidget);
+      // The sheet is an AppCalendar: every day also shows its lunar day.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('app-calendar-lunar-2026-10-10')),
+            )
+            .data,
+        '1/9',
+      );
+      AppButton confirm() =>
+          tester.widget(find.byKey(const Key('reschedule-confirm-btn')));
+      expect(confirm().onPressed, isNull);
 
-      await tester.tap(find.text('15').first);
+      // Found by key: the lunar numbers repeat the solar ones as text.
+      final day = find.byKey(const ValueKey('app-calendar-day-2026-10-15'));
+      await tester.ensureVisible(day);
+      await tester.tap(day);
       await tester.pumpAndSettle();
+      expect(confirm().onPressed, isNotNull);
 
       await tester.tap(find.byKey(const Key('reschedule-confirm-btn')));
       await tester.pumpAndSettle();

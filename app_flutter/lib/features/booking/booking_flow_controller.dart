@@ -19,9 +19,8 @@ import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/data/pricing/pricing_providers.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
@@ -242,6 +241,13 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       },
     );
 
+    // The photographer's price series: one live query for every package (the
+    // package's day price and S04.01's ranges read the same list). Listened,
+    // not watched: a rebuild would reset the flow.
+    final rulesProvider = providerPriceRulesProvider(args.photographerId);
+    ref.listen(rulesProvider, (prev, next) => _applyRules(next));
+    final initialRules = ref.read(rulesProvider);
+
     final packages =
         ref.read(profilePackagesProvider(args.photographerId)).value ??
         const <ServiceSummary>[];
@@ -259,7 +265,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     BookingStep initialStep = BookingStep.service;
     String? serviceId;
     int? priceVnd;
-    PricedService? pricing;
+    var dayPriced = false;
     int? durationMinutes;
     String? serviceName;
 
@@ -271,7 +277,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       );
       serviceId = matching.id;
       priceVnd = matching.priceVnd;
-      pricing = matching;
+      dayPriced = true;
       durationMinutes = matching.durationMinutes;
       serviceName = matching.name;
     } else if (packages.length == 1) {
@@ -279,7 +285,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       initialStep = BookingStep.service;
       serviceId = s.id;
       priceVnd = s.priceVnd;
-      pricing = s;
+      dayPriced = true;
       durationMinutes = s.durationMinutes;
       serviceName = s.name;
     }
@@ -288,15 +294,16 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       step: initialStep,
       serviceId: serviceId,
       priceVnd: priceVnd,
-      pricing: pricing,
+      dayPriced: dayPriced,
+      rules: initialRules.value,
+      rulesFailed: initialRules.hasError && !initialRules.hasValue,
+      today: today,
       durationMinutes: durationMinutes,
       serviceName: serviceName,
       day: initialDay,
       phone: initialPhone,
       addons: addons ?? const [],
     );
-    // After build: the state does not exist yet, and it writes the state.
-    Future.microtask(_ensureSpecials);
     return readyContext == null ? initial : _withSpot(initial, readyContext);
   }
 
@@ -338,7 +345,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       next = next.copyWith(
         serviceId: offer.id,
         priceVnd: offer.price,
-        clearPricing: true, // a slot has one fixed price (P7)
+        dayPriced: false, // a slot has one fixed price (P7)
         durationMinutes: offer.slotMinutes,
         serviceName: offer.name,
         start: first && day != null ? args.start : null,
@@ -355,10 +362,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     }
     if (day case final d?) {
       // After the current build or state change: it writes the state.
-      Future.microtask(() {
-        _ensureSpecials();
-        return _loadSpotDay(d);
-      });
+      Future.microtask(() => _loadSpotDay(d));
     }
     return next;
   }
@@ -390,7 +394,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       return s.copyWith(
         serviceId: p.id,
         priceVnd: p.priceVnd,
-        pricing: p,
+        dayPriced: true,
         durationMinutes: p.durationMinutes,
         serviceName: p.name,
         clearStart: p.durationMinutes != s.durationMinutes,
@@ -504,7 +508,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     state = state.copyWith(
       serviceId: s.id,
       priceVnd: s.priceVnd,
-      pricing: s,
+      dayPriced: true,
       durationMinutes: s.durationMinutes,
       serviceName: s.name,
       clearStart: clearStart,
@@ -514,7 +518,6 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       pickupName: _hasTransport(fit.picks, state.addons) ? null : '',
       clearBookingId: true, // Decision 12
     );
-    _ensureSpecials();
   }
 
   /// A fresh add-on list (first load, or reload after `addon_changed`).
@@ -582,11 +585,10 @@ class BookingFlowController extends Notifier<BookingFlowState> {
               step: _entryStep(BookingStep.datetime, s.id, state.addons),
               serviceId: s.id,
               priceVnd: s.priceVnd,
-              pricing: s,
+              dayPriced: true,
               durationMinutes: s.durationMinutes,
               serviceName: s.name,
             );
-            _ensureSpecials();
             return;
           }
         }
@@ -596,28 +598,22 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         state = state.copyWith(
           serviceId: s.id,
           priceVnd: s.priceVnd,
-          pricing: s,
+          dayPriced: true,
           durationMinutes: s.durationMinutes,
           serviceName: s.name,
         );
-        _ensureSpecials();
       }
     } else {
       for (final s in list) {
         if (s.id == state.serviceId) {
-          final old = state.pricing;
-          final priceChanged = old == null
-              ? s.priceVnd != state.priceVnd
-              : !_samePricing(old, s);
-          if (priceChanged) {
+          if (s.priceVnd != state.priceVnd) {
             state = state.copyWith(
               priceVnd: s.priceVnd,
-              pricing: s,
+              dayPriced: true,
               priceChanged: true,
               durationMinutes: s.durationMinutes,
               serviceName: s.name,
             );
-            _ensureSpecials();
           }
           return;
         }
@@ -625,65 +621,34 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     }
   }
 
-  /// The holiday year being read, so one day change reads it once.
-  int? _specialsYear;
-
-  /// Loads the holidays of the chosen day's year and the provider's ranges
-  /// when the package has a special price and they are not in the state yet.
-  /// A failed read leaves them out: that day then has no price and cannot be
-  /// continued with (selecting the day again retries) rather than being
-  /// priced as an ordinary day, which the server would refuse.
-  void _ensureSpecials() {
-    final s = state;
-    final day = s.day;
-    if (s.pricing?.specialPrice == null || day == null) return;
-    final year = int.parse(day.substring(0, 4));
-    if (s.specials?.year == year || _specialsYear == year) return;
-    _specialsYear = year;
-    if (s.specialsFailed) state = s.copyWith(specialsFailed: false);
-    unawaited(_loadSpecials(year));
-  }
-
-  /// "Thử lại" after the holidays failed to load.
-  void retrySpecials() => _ensureSpecials();
-
-  Future<void> _loadSpecials(int year) async {
-    SpecialDayInfo? info;
-    // Auto-dispose providers: held while this load waits for them.
-    final holidaysProv = holidaysProvider(year);
-    final rangesProv = specialDaysProvider(args.photographerId);
-    final holds = [
-      ref.listen(holidaysProv, (_, _) {}),
-      ref.listen(rangesProv, (_, _) {}),
-    ];
-    try {
-      final (holidays, ranges) = await (
-        ref.read(holidaysProv.future),
-        ref.read(rangesProv.future),
-      ).wait;
-      info = SpecialDayInfo(year: year, holidays: holidays, ranges: ranges);
-    } catch (_) {
-      info = null;
-    } finally {
-      for (final h in holds) {
-        h.close();
-      }
-    }
-    if (!ref.mounted) return;
-    _specialsYear = null;
-    if (info == null) {
-      state = state.copyWith(specialsFailed: true);
+  /// A fresh read of the price series: the day's price follows it. A change of
+  /// the chosen package's price (the provider edited a series while the
+  /// customer is choosing) raises the same banner as a changed package.
+  void _applyRules(AsyncValue<List<PriceRule>> next) {
+    // A failed read (Riverpod retries it, so it may also read as loading).
+    if (next.hasError && !next.hasValue) {
+      state = state.copyWith(rulesFailed: true);
       return;
     }
-    state = state.copyWith(specials: info);
-    // The day may have moved to another year while this was loading.
-    _ensureSpecials();
+    // A refresh still shows the old list: the day stays unpriced until the
+    // new read answers.
+    if (next.isLoading) return;
+    final list = next.value;
+    if (list == null) return;
+    final before = state;
+    var after = before.copyWith(rules: list, rulesFailed: false);
+    final was = before.rules == null ? null : before.packageVnd;
+    if (was != null && after.packageVnd != was && after.serviceId != null) {
+      after = after.copyWith(priceChanged: true);
+    }
+    state = after;
   }
 
-  static bool _samePricing(PricedService a, PricedService b) =>
-      a.price == b.price &&
-      a.specialPrice == b.specialPrice &&
-      mapEquals(a.dayPrices, b.dayPrices);
+  /// "Thử lại" after the price series failed to load.
+  void retryRules() {
+    state = state.copyWith(rulesFailed: false);
+    ref.invalidate(providerPriceRulesProvider(args.photographerId));
+  }
 
   void selectDay(String day) {
     _userActed = true;
@@ -692,7 +657,6 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       day: day,
       clearStart: clearStart,
     );
-    _ensureSpecials();
     final ctx = state.spot;
     if (ctx != null && !ctx.takenByDay.containsKey(day)) {
       _loadSpotDay(day);
@@ -935,15 +899,13 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         state = state.copyWith(
           step: BookingStep.service,
           clearBookingId: true,
-          // The holidays or the provider's ranges may be what changed.
-          clearSpecials: true,
+          // A series may be what changed: price no day until it is read again.
+          clearRules: true,
           phase: SubmitPhase.idle,
           error: BookingErrorCode.priceChanged,
         );
         ref.invalidate(profilePackagesProvider(args.photographerId));
-        ref.invalidate(holidaysProvider);
-        ref.invalidate(specialDaysProvider(args.photographerId));
-        _ensureSpecials();
+        ref.invalidate(providerPriceRulesProvider(args.photographerId));
       case BookingErrorCode.deadlinePassed:
       case BookingErrorCode.notFound:
       case BookingErrorCode.notAcceptingOrders:

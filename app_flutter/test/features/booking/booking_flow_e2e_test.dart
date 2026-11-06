@@ -31,6 +31,7 @@ import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
 import '../../support/fake_booking_repository.dart';
 import '../../support/spot_booking_fixtures.dart';
+import '../../support/calendar_finders.dart';
 
 /// Records the write calls of the booking port in the order they happen.
 class _OrderedBookingRepository extends FakeBookingRepository {
@@ -134,7 +135,7 @@ void main() {
 
       // S04.02: a free day, then 15:30.
       expect(find.byType(DateTimeStep), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+      await tester.tap(dayByLabel('12 tháng 10, rảnh'));
       await tester.pumpAndSettle();
       final slot = find.widgetWithText(AppChip, '15:30');
       await tester.ensureVisible(slot);
@@ -296,7 +297,7 @@ void main() {
 
       // S04.02.
       expect(find.byType(DateTimeStep), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+      await tester.tap(dayByLabel('12 tháng 10, rảnh'));
       await tester.pumpAndSettle();
       final slot = find.widgetWithText(AppChip, '15:30');
       await tester.ensureVisible(slot);
