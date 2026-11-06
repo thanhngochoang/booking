@@ -3,112 +3,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/data/pricing/pricing_providers.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
-import 'package:photobooking/l10n/app_localizations.dart';
+import 'package:photobooking/features/day_pricing/price_rule_tile.dart';
+import 'package:photobooking/features/day_pricing/rule_text.dart';
 
-/// One line of the read-only price table: [label] names the weekdays that
-/// share [price].
-typedef PriceTableRow = ({String label, int price});
-
-/// The weekday prices of [p], consecutive days with one price on one row:
-/// "Thứ 2 – Thứ 6", "Thứ 7, Chủ nhật", "Thứ 3".
-List<PriceTableRow> priceTableRows(AppLocalizations l, PricedService p) {
-  final prices = weekPrices(p);
-  final rows = <PriceTableRow>[];
-  var i = 0;
-  while (i < Weekday.values.length) {
-    var j = i;
-    while (j + 1 < Weekday.values.length &&
-        prices[Weekday.values[j + 1]] == prices[Weekday.values[i]]) {
-      j++;
-    }
-    String name(Weekday w) => l.calendarWeekdayLong(w.name);
-    final first = name(Weekday.values[i]);
-    final last = name(Weekday.values[j]);
-    rows.add((
-      label: switch (j - i) {
-        0 => first,
-        1 => '$first, $last',
-        _ => '$first – $last',
-      },
-      price: prices[Weekday.values[i]]!,
-    ));
-    i = j + 1;
-  }
-  return rows;
-}
-
-String _dm(DateTime d) => '${d.day}/${d.month}';
-
-/// The next special days from [today] (`yyyy-MM-dd`), at most [limit], by
-/// start date: "Tết 17/2 · Mùa cưới 14–22/11". Holidays on consecutive days
-/// with one name read as one range. Null when there is none.
-String? upcomingSpecialDays(
-  String today,
-  List<Holiday> holidays,
-  List<SpecialDayRange> ranges, {
-  int limit = 3,
-}) {
-  final spans = <({String from, String to, String name})>[];
-  final sorted = [...holidays]..sort((a, b) => a.day.compareTo(b.day));
-  for (final h in sorted) {
-    final last = spans.isEmpty ? null : spans.last;
-    final prev = last == null ? null : parseDayKey(last.to);
-    final cur = parseDayKey(h.day);
-    if (last != null &&
-        last.name == h.name &&
-        prev != null &&
-        cur != null &&
-        cur.difference(prev).inDays == 1) {
-      spans[spans.length - 1] = (from: last.from, to: h.day, name: last.name);
-    } else {
-      spans.add((from: h.day, to: h.day, name: h.name));
-    }
-  }
-  for (final r in ranges) {
-    spans.add((from: r.from, to: r.to, name: r.name));
-  }
-  spans.sort((a, b) => a.from.compareTo(b.from));
-  final parts = <String>[];
-  for (final s in spans) {
-    if (s.to.compareTo(today) < 0) {
-      continue;
-    }
-    final from = parseDayKey(s.from);
-    final to = parseDayKey(s.to);
-    if (from == null || to == null) {
-      continue;
-    }
-    final when = s.from == s.to
-        ? _dm(from)
-        : from.month == to.month
-        ? '${from.day}–${_dm(to)}'
-        : '${_dm(from)}–${_dm(to)}';
-    parts.add('${s.name} $when');
-    if (parts.length == limit) {
-      break;
-    }
-  }
-  return parts.isEmpty ? null : parts.join(' · ');
-}
-
-/// S03.01 "Bảng giá · {gói}" (mock `#S03.01-prices`): the price of each
-/// weekday group and of special days, read-only. "Đặt gói này" is the one
-/// primary action; [onBook] is null when the photographer takes no orders.
+/// S03.01 "Bảng giá · {gói}" (mock `#S03.01-prices`): "Giá thường", then one
+/// row per series of the package (name, rule, price), read-only. Series that
+/// ended and exceptions are not listed. "Đặt gói này" is the one primary
+/// action; [onBook] is null when the photographer takes no orders.
 Future<void> showPriceTableSheet(
   BuildContext context, {
   required String photographerId,
+  required String serviceId,
   required String name,
-  required PricedService pricing,
+  required int basePrice,
   VoidCallback? onBook,
 }) => showAppSheet<void>(
   context,
   builder: (_) => PriceTableSheet(
     photographerId: photographerId,
+    serviceId: serviceId,
     name: name,
-    pricing: pricing,
+    basePrice: basePrice,
     onBook: onBook,
   ),
 );
@@ -117,14 +34,16 @@ class PriceTableSheet extends ConsumerWidget {
   const PriceTableSheet({
     super.key,
     required this.photographerId,
+    required this.serviceId,
     required this.name,
-    required this.pricing,
+    required this.basePrice,
     this.onBook,
   });
 
   final String photographerId;
+  final String serviceId;
   final String name;
-  final PricedService pricing;
+  final int basePrice;
   final VoidCallback? onBook;
 
   @override
@@ -132,35 +51,11 @@ class PriceTableSheet extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    const figures = [FontFeature.tabularFigures()];
-    final special = pricing.specialPrice;
-
-    String? upcoming;
-    if (special != null) {
-      final today = ref.watch(calendarTodayProvider);
-      final holidays = [
-        for (final y in [today.year, today.year + 1])
-          ...?ref.watch(holidaysProvider(y)).value,
-      ];
-      final ranges =
-          ref.watch(specialDaysProvider(photographerId)).value ?? const [];
-      upcoming = upcomingSpecialDays(dayKeyOf(today), holidays, ranges);
-    }
-
-    Widget row(Widget label, int price, {Key? key}) => Padding(
-      key: key,
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.s2h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: label),
-          const SizedBox(width: AppSpace.s3),
-          Text(
-            formatMoney(price),
-            style: theme.textTheme.bodyMedium?.copyWith(fontFeatures: figures),
-          ),
-        ],
-      ),
+    final today = ref.watch(calendarTodayProvider);
+    final rules = listedRules(
+      ref.watch(servicePriceRulesProvider((photographerId, serviceId))).value ??
+          const <PriceRule>[],
+      today,
     );
 
     return SingleChildScrollView(
@@ -193,38 +88,25 @@ class PriceTableSheet extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpace.s2),
-          for (final r in priceTableRows(l, pricing))
-            row(
-              Text(
-                r.label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+          PriceRuleCard(
+            children: [
+              _PriceRow(
+                key: const Key('price-sheet-base'),
+                title: l.s0301_baseRow,
+                price: basePrice,
+              ),
+              for (final r in rules)
+                _PriceRow(
+                  key: Key('price-sheet-rule-${r.id}'),
+                  title: ruleTitle(l, r),
+                  subtitle: [
+                    rulePattern(l, r),
+                    ?ruleNextText(l, r, today),
+                  ].join(' · '),
+                  price: r.price,
                 ),
-              ),
-              r.price,
-            ),
-          if (special != null)
-            row(
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l.s0301_specialRow,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (upcoming != null)
-                    Text(
-                      upcoming,
-                      key: const Key('price-sheet-upcoming'),
-                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                    ),
-                ],
-              ),
-              special,
-              key: const Key('price-sheet-special'),
-            ),
+            ],
+          ),
           const SizedBox(height: AppSpace.s2),
           Text(
             l.s0301_priceSheetNote,
@@ -240,6 +122,60 @@ class PriceTableSheet extends ConsumerWidget {
                     Navigator.of(context).pop();
                     onBook!();
                   },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One line of the table: the name over its rule, the full price at the end.
+class _PriceRow extends StatelessWidget {
+  const _PriceRow({
+    super.key,
+    required this.title,
+    this.subtitle,
+    required this.price,
+  });
+
+  final String title;
+  final String? subtitle;
+  final int price;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.s2h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpace.s3),
+          Text(
+            formatMoney(price),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),

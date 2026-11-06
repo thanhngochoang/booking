@@ -8,7 +8,6 @@ import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/features/addons/addon_format.dart';
 import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
@@ -277,11 +276,9 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                         const SizedBox(height: AppSpace.s2),
                         Text(
                           // A package priced by day says so before the policy.
-                          switch (state.pricing) {
-                            final p? when pricesVaryByDay(p) =>
-                              '${l10n.s0403_dayPriceNote} ${l10n.bookPolicy}',
-                            _ => l10n.bookPolicy,
-                          },
+                          state.pricesVary || state.dayPrice?.rule != null
+                              ? '${l10n.s0403_dayPriceNote} ${l10n.bookPolicy}'
+                              : l10n.bookPolicy,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             height: 1.4,

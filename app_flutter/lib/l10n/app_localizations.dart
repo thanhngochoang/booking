@@ -22365,24 +22365,6 @@ abstract class AppLocalizations {
   /// **'Chưa lưu được, thử lại nhé'**
   String get s0808_saveFailed;
 
-  /// No description provided for @s0808_priceTwoLevels.
-  ///
-  /// In vi, this message translates to:
-  /// **'T2–T6 {weekday} · T7–CN {weekend}'**
-  String s0808_priceTwoLevels(String weekday, String weekend);
-
-  /// No description provided for @s0808_pricePerDay.
-  ///
-  /// In vi, this message translates to:
-  /// **'{min}–{max} · theo ngày'**
-  String s0808_pricePerDay(String min, String max);
-
-  /// No description provided for @s0808_priceWithSpecial.
-  ///
-  /// In vi, this message translates to:
-  /// **'{line} · Lễ {price}'**
-  String s0808_priceWithSpecial(String line, String price);
-
   /// No description provided for @s0808_workRow.
   ///
   /// In vi, this message translates to:
@@ -23094,7 +23076,7 @@ abstract class AppLocalizations {
   /// No description provided for @s0401_weekendSub.
   ///
   /// In vi, this message translates to:
-  /// **'T7–CN {amount}'**
+  /// **'cuối tuần {amount}'**
   String s0401_weekendSub(String amount);
 
   /// No description provided for @s0401_perDaySub.
@@ -23115,28 +23097,10 @@ abstract class AppLocalizations {
   /// **'Ngày thường {amount}'**
   String s0402_weekdayPrice(String amount);
 
-  /// No description provided for @s0402_holidayPrice.
-  ///
-  /// In vi, this message translates to:
-  /// **'Lễ {amount}'**
-  String s0402_holidayPrice(String amount);
-
-  /// No description provided for @s0402_weekendTag.
-  ///
-  /// In vi, this message translates to:
-  /// **'cuối tuần'**
-  String get s0402_weekendTag;
-
-  /// No description provided for @s0402_holidayTag.
-  ///
-  /// In vi, this message translates to:
-  /// **'ngày lễ: {name}'**
-  String s0402_holidayTag(String name);
-
   /// No description provided for @s0402_pricesFailed.
   ///
   /// In vi, this message translates to:
-  /// **'Chưa tải được ngày lễ để tính giá ngày này.'**
+  /// **'Chưa tải được giá theo ngày để tính giá ngày này.'**
   String get s0402_pricesFailed;
 
   /// No description provided for @s0403_packageDay.
@@ -23145,23 +23109,47 @@ abstract class AppLocalizations {
   /// **'Gói {name} · {day}'**
   String s0403_packageDay(String name, String day);
 
-  /// No description provided for @s0403_dayReasonWeekend.
-  ///
-  /// In vi, this message translates to:
-  /// **'(cuối tuần)'**
-  String get s0403_dayReasonWeekend;
-
-  /// No description provided for @s0403_dayReasonSpecial.
-  ///
-  /// In vi, this message translates to:
-  /// **'({name})'**
-  String s0403_dayReasonSpecial(String name);
-
   /// No description provided for @s0403_dayPriceNote.
   ///
   /// In vi, this message translates to:
   /// **'Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.'**
   String get s0403_dayPriceNote;
+
+  /// No description provided for @s0402_rulePrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} {amount}'**
+  String s0402_rulePrice(String name, String amount);
+
+  /// No description provided for @s0402_dayLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · {name} · {amount}'**
+  String s0402_dayLine(String day, String name, String amount);
+
+  /// No description provided for @s0403_dayReasonRule.
+  ///
+  /// In vi, this message translates to:
+  /// **'({name})'**
+  String s0403_dayReasonRule(String name);
+
+  /// No description provided for @s0403_dayReasonUnnamed.
+  ///
+  /// In vi, this message translates to:
+  /// **'(giá theo ngày)'**
+  String get s0403_dayReasonUnnamed;
+
+  /// No description provided for @s0301_baseRow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá thường'**
+  String get s0301_baseRow;
+
+  /// No description provided for @s0301_byDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{range} · theo ngày'**
+  String s0301_byDay(String range);
 
   /// No description provided for @s0301_priceSheetTitle.
   ///
@@ -23169,23 +23157,11 @@ abstract class AppLocalizations {
   /// **'Bảng giá · {name}'**
   String s0301_priceSheetTitle(String name);
 
-  /// No description provided for @s0301_specialRow.
-  ///
-  /// In vi, this message translates to:
-  /// **'Ngày lễ, ngày đặc biệt'**
-  String get s0301_specialRow;
-
   /// No description provided for @s0301_priceSheetNote.
   ///
   /// In vi, this message translates to:
   /// **'Giá đúng của ngày bạn chọn hiện ở bước chọn lịch. Chưa gồm dịch vụ đi kèm.'**
   String get s0301_priceSheetNote;
-
-  /// No description provided for @photographerWeekendFrom.
-  ///
-  /// In vi, this message translates to:
-  /// **'T7–CN từ {price}'**
-  String photographerWeekendFrom(String price);
 
   /// No description provided for @appCalendar_monthTitle.
   ///

@@ -13137,21 +13137,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get s0808_saveFailed => 'Chưa lưu được, thử lại nhé';
 
   @override
-  String s0808_priceTwoLevels(String weekday, String weekend) {
-    return 'T2–T6 $weekday · T7–CN $weekend';
-  }
-
-  @override
-  String s0808_pricePerDay(String min, String max) {
-    return '$min–$max · theo ngày';
-  }
-
-  @override
-  String s0808_priceWithSpecial(String line, String price) {
-    return '$line · Lễ $price';
-  }
-
-  @override
   String get s0808_workRow => 'Gói và bảng giá';
 
   @override
@@ -13576,7 +13561,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String s0401_weekendSub(String amount) {
-    return 'T7–CN $amount';
+    return 'cuối tuần $amount';
   }
 
   @override
@@ -13593,21 +13578,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String s0402_holidayPrice(String amount) {
-    return 'Lễ $amount';
-  }
-
-  @override
-  String get s0402_weekendTag => 'cuối tuần';
-
-  @override
-  String s0402_holidayTag(String name) {
-    return 'ngày lễ: $name';
-  }
-
-  @override
   String get s0402_pricesFailed =>
-      'Chưa tải được ngày lễ để tính giá ngày này.';
+      'Chưa tải được giá theo ngày để tính giá ngày này.';
 
   @override
   String s0403_packageDay(String name, String day) {
@@ -13615,16 +13587,34 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get s0403_dayReasonWeekend => '(cuối tuần)';
+  String get s0403_dayPriceNote =>
+      'Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.';
 
   @override
-  String s0403_dayReasonSpecial(String name) {
+  String s0402_rulePrice(String name, String amount) {
+    return '$name $amount';
+  }
+
+  @override
+  String s0402_dayLine(String day, String name, String amount) {
+    return '$day · $name · $amount';
+  }
+
+  @override
+  String s0403_dayReasonRule(String name) {
     return '($name)';
   }
 
   @override
-  String get s0403_dayPriceNote =>
-      'Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.';
+  String get s0403_dayReasonUnnamed => '(giá theo ngày)';
+
+  @override
+  String get s0301_baseRow => 'Giá thường';
+
+  @override
+  String s0301_byDay(String range) {
+    return '$range · theo ngày';
+  }
 
   @override
   String s0301_priceSheetTitle(String name) {
@@ -13632,16 +13622,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get s0301_specialRow => 'Ngày lễ, ngày đặc biệt';
-
-  @override
   String get s0301_priceSheetNote =>
       'Giá đúng của ngày bạn chọn hiện ở bước chọn lịch. Chưa gồm dịch vụ đi kèm.';
-
-  @override
-  String photographerWeekendFrom(String price) {
-    return 'T7–CN từ $price';
-  }
 
   @override
   String appCalendar_monthTitle(String month, String year) {

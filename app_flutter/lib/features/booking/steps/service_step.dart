@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/photographer/availability_providers.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/widgets/addon_pick_block.dart';
@@ -56,6 +58,7 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
     );
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final today = ref.watch(calendarTodayProvider);
 
     return ScreenCode(
       ScreenCodes.bookService,
@@ -147,6 +150,11 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
                       for (final pkg in packages) ...[
                         _PackageTile(
                           package: pkg,
+                          rules: state.rules,
+                          today: today,
+                          day: state.day == null
+                              ? null
+                              : parseDayKey(state.day!),
                           selected: state.serviceId == pkg.id,
                           onTap: () => controller.selectService(pkg),
                         ),
@@ -179,11 +187,22 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
 class _PackageTile extends StatelessWidget {
   const _PackageTile({
     required this.package,
+    required this.rules,
+    required this.today,
+    required this.day,
     required this.selected,
     required this.onTap,
   });
 
   final ServiceSummary package;
+
+  /// The photographer's series, null until read: the tile shows the base price.
+  final List<PriceRule>? rules;
+  final DateTime today;
+
+  /// A day chosen before the flow (profile calendar, spot): the tile shows the
+  /// price of that day instead of the range (mock `#S04.01-dayprice`).
+  final DateTime? day;
   final bool selected;
   final VoidCallback onTap;
 
@@ -202,13 +221,20 @@ class _PackageTile extends StatelessWidget {
     );
 
     final l10n = context.l10n;
+    final list = rules;
+    final dayAmount = day == null || list == null
+        ? null
+        : priceForDay(package.priceVnd, package.id, list, day!).amount;
+    final price = dayAmount != null
+        ? formatMoney(dayAmount)
+        : packageTilePrice(l10n, packageBounds(package, rules, today));
     final details = <String>[
       if (package.durationMinutes > 0) '${package.durationMinutes} phút',
       if (package.photoCount != null) '${package.photoCount} ảnh',
       if (package.editedCount != null) '${package.editedCount} ảnh sửa',
       if (package.deliveryDays != null)
         'trả trong ${package.deliveryDays} ngày',
-      ?packageTileSub(l10n, package),
+      if (dayAmount == null) ?packageTileSub(l10n, package, rules, today),
     ].join(' · ');
 
     return Semantics(
@@ -216,7 +242,7 @@ class _PackageTile extends StatelessWidget {
       checked: selected,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: '${package.name}, ${packageTilePrice(l10n, package)}',
+      label: '${package.name}, $price',
       onTap: onTap,
       child: Material(
         type: MaterialType.transparency,
@@ -274,7 +300,7 @@ class _PackageTile extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpace.s2),
                   Text(
-                    packageTilePrice(l10n, package),
+                    price,
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: selected ? scheme.primary : null,

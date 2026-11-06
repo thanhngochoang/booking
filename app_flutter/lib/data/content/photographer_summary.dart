@@ -25,8 +25,6 @@ class PhotographerSummary {
     this.completedCount = 0,
     this.responseMinutes,
     this.startingPriceVnd,
-    this.weekendFromVnd,
-    this.hasSpecialPrices = false,
     this.hasDayPricing = false,
     this.nextFreeDate,
     this.createdAt,
@@ -83,16 +81,10 @@ class PhotographerSummary {
   /// Median reply time in minutes, when known.
   final int? responseMinutes;
 
-  /// Integer VND, the cheapest active service.
+  /// Integer VND, the lowest price of the cheapest active package or of one of
+  /// its price series that still has a next occurrence (`startingPrice`,
+  /// server-written; R9).
   final int? startingPriceVnd;
-
-  /// Integer VND, the cheapest active service's lowest weekend price
-  /// (`weekendFrom`, server-written); null when the server has not set it.
-  final int? weekendFromVnd;
-
-  /// True when an active service has a special-day price (`hasSpecialPrices`,
-  /// server-written).
-  final bool hasSpecialPrices;
 
   /// True when an active package has a price rule with a next occurrence
   /// (`hasDayPricing`, server-written; #316): the card shows a "giá theo
