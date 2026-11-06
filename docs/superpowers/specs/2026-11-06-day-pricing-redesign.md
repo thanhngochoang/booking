@@ -104,7 +104,7 @@ validatePriceRule(rule, today, serviceIds): void                      // DomainE
 PRICE_RULE_TEMPLATES
 ```
 
-Bảng ca chung (`test/data/contracts/day_pricing_cases.json`): Tết (mùng 1) 2024-02-10, 2025-01-29, 2026-02-17, 2027-02-06, 2028-01-26, 2029-02-13, 2030-02-03, 2031-01-23, 2032-02-11, 2033-01-31; Giỗ Tổ 2025-04-07, 2026-04-26; 23 tháng Chạp trước Tết 2026 = 2026-02-10, mùng 5 = 2026-02-21; năm nhuận (2025 nhuận tháng 6) lấy tháng chính; dịp âm qua năm ra hai khoảng dương; `weekly` T7–CN; ngoại lệ bỏ ngày (rơi về chuỗi `weekly` nếu có) và ngoại lệ giá riêng; `start`/`until`; bậc `none` > `yearly` > `weekly`; cùng bậc lấy cao nhất; giá trị ngoại lệ không hợp lệ bị bỏ qua; `startingPrice` với chuỗi `weekly` rẻ hơn giá thường.
+Bảng ca chung (`test/data/contracts/day_pricing_cases.json`): Tết (mùng 1) 2024-02-10, 2025-01-29, 2026-02-17, 2027-02-06, 2028-01-26, 2029-02-13, 2030-02-02, 2031-01-23, 2032-02-11, 2033-01-31; Giỗ Tổ 2025-04-07, 2026-04-26; 23 tháng Chạp trước Tết 2026 = 2026-02-10, mùng 5 = 2026-02-21; năm nhuận (2025 nhuận tháng 6) lấy tháng chính; dịp âm qua năm ra hai khoảng dương; `weekly` T7–CN; ngoại lệ bỏ ngày (rơi về chuỗi `weekly` nếu có) và ngoại lệ giá riêng; `start`/`until`; bậc `none` > `yearly` > `weekly`; cùng bậc lấy cao nhất; giá trị ngoại lệ không hợp lệ bị bỏ qua; `startingPrice` với chuỗi `weekly` rẻ hơn giá thường.
 
 ### 4.5 Đặt lịch và tóm tắt công khai
 
