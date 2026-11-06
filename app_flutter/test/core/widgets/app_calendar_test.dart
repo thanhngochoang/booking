@@ -659,6 +659,141 @@ void main() {
     });
   });
 
+  group('day style and long press', () {
+    Widget styled({
+      AppCalendarDayStyle? Function(DateTime)? dayStyle,
+      bool Function(DateTime)? disabledDay,
+      ValueChanged<DateTime>? onDayTap,
+      ValueChanged<DateTime>? onDayLongPress,
+    }) => hostWidget(
+      AppCalendar(
+        month: _nov,
+        selection: AppCalendarSelection.single,
+        dayStyle: dayStyle,
+        disabledDay: disabledDay,
+        onDayTap: onDayTap,
+        onDayLongPress: onDayLongPress,
+      ),
+    );
+
+    testWidgets('strike, foreground and spoken words reach the cell', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await tester.pumpWidget(
+        styled(
+          onDayTap: (_) {},
+          dayStyle: (d) => d.day == 10
+              ? const AppCalendarDayStyle(
+                  strike: true,
+                  foreground: Color(0xFF123456),
+                  spoken: 'đã đặt',
+                )
+              : null,
+        ),
+      );
+      final style = tester.widget<Text>(_solar(_d(10))).style!;
+      expect(style.decoration, TextDecoration.lineThrough);
+      expect(style.color, const Color(0xFF123456));
+      expect(tester.widget<Text>(_lunar(_d(10))).style?.color, isNotNull);
+      expect(tester.getSemantics(_cell(_d(10))).label, contains('đã đặt'));
+      expect(
+        tester.widget<Text>(_solar(_d(11))).style?.decoration,
+        isNot(TextDecoration.lineThrough),
+      );
+      h.dispose();
+    });
+
+    testWidgets('selected: true fills a day that is not the selected one', (
+      tester,
+    ) async {
+      final h = tester.ensureSemantics();
+      await tester.pumpWidget(
+        styled(dayStyle: (d) => AppCalendarDayStyle(selected: d.day == 12)),
+      );
+      expect(
+        tester.getSemantics(_cell(_d(12))).flagsCollection.isSelected,
+        Tristate.isTrue,
+      );
+      expect(
+        tester.getSemantics(_cell(_d(13))).flagsCollection.isSelected,
+        Tristate.isFalse,
+      );
+      expect(tester.widget<Text>(_solar(_d(12))).style?.color, Colors.white);
+      h.dispose();
+    });
+
+    testWidgets('a disabled day is dimmed unless its style says dim: false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        styled(
+          disabledDay: (d) => d.day == 10 || d.day == 11,
+          dayStyle: (d) =>
+              d.day == 11 ? const AppCalendarDayStyle(dim: false) : null,
+        ),
+      );
+      bool dimmed(DateTime d) => find
+          .ancestor(of: _solar(d), matching: find.byType(Opacity))
+          .evaluate()
+          .isNotEmpty;
+      expect(dimmed(_d(10)), isTrue);
+      expect(dimmed(_d(11)), isFalse);
+      expect(dimmed(_d(12)), isFalse);
+    });
+
+    testWidgets(
+      'a dashed outline and a fill are drawn, not on a selected day',
+      (tester) async {
+        await tester.pumpWidget(
+          styled(
+            dayStyle: (d) => d.day == 14
+                ? const AppCalendarDayStyle(
+                    dashedOutline: Color(0xFF00AA00),
+                    fill: Color(0xFFEEEEEE),
+                  )
+                : null,
+          ),
+        );
+        expect(
+          find.descendant(
+            of: _cell(_d(14)),
+            matching: find.byWidgetPredicate(
+              (w) => w is CustomPaint && w.foregroundPainter != null,
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _cell(_d(15)),
+            matching: find.byWidgetPredicate(
+              (w) => w is CustomPaint && w.foregroundPainter != null,
+            ),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('onDayLongPress fires for an enabled day only', (tester) async {
+      final held = <DateTime>[];
+      final tapped = <DateTime>[];
+      await tester.pumpWidget(
+        styled(
+          disabledDay: (d) => d.day == 21,
+          onDayTap: tapped.add,
+          onDayLongPress: held.add,
+        ),
+      );
+      await tester.longPress(_cell(_d(20)));
+      await tester.longPress(_cell(_d(21)));
+      await tester.tap(_cell(_d(22)));
+      expect(held, [_d(20)]);
+      expect(tapped, [_d(22)]);
+    });
+  });
+
   group('pickers', () {
     Widget opener(
       void Function(Object?) onResult,

@@ -1,3 +1,5 @@
+import 'dart:ui' show PathMetric;
+
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/calendar_days.dart';
@@ -27,6 +29,46 @@ bool _isDark(ThemeData t) => t.brightness == Brightness.dark;
 Color _tertiary(ThemeData t) =>
     _isDark(t) ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted;
 
+/// How one day of an [AppCalendar] differs from a plain day, for screens that
+/// show a state per day (`AvailabilityCalendar`: free, pending, booked, off).
+/// Every field is optional; a null style is a plain day.
+@immutable
+class AppCalendarDayStyle {
+  const AppCalendarDayStyle({
+    this.fill,
+    this.foreground,
+    this.strike = false,
+    this.dashedOutline,
+    this.selected = false,
+    this.dim,
+    this.spoken,
+  });
+
+  /// Background of the cell (not drawn on a selected day).
+  final Color? fill;
+
+  /// Colour of the solar number and of the lunar number when it is not the
+  /// accent "1/M" (not used on a selected day, which is white).
+  final Color? foreground;
+
+  /// Strikes the solar number through.
+  final bool strike;
+
+  /// A 1 px dashed outline in this colour (not drawn on a selected day).
+  final Color? dashedOutline;
+
+  /// Draws the day like the `selected` day, for screens that mark several
+  /// days (the calendar's own `selected` stays a single day).
+  final bool selected;
+
+  /// Whether a disabled day is dimmed: null dims it (the default), false keeps
+  /// it at full strength (a booked day cannot be picked but is not "off").
+  final bool? dim;
+
+  /// Words read by screen readers after the date ("đã đặt").
+  final String? spoken;
+}
+
 /// Mock `.cal` grid with the lunar day on every cell (spec §5.7, R6).
 ///
 /// Seven columns, Monday first, cells at least 44 dp. Each cell shows the
@@ -50,10 +92,12 @@ class AppCalendar extends StatefulWidget {
     this.selected,
     this.range,
     this.onDayTap,
+    this.onDayLongPress,
     this.onRangeChanged,
     this.onRangeCompleted,
     this.disabledDay,
     this.dayBuilder,
+    this.dayStyle,
     this.markers = const {},
     this.dayOutline,
     this.emphasized,
@@ -80,6 +124,10 @@ class AppCalendar extends StatefulWidget {
   /// A tap on a day of the shown month that is not disabled, in every
   /// [selection] mode.
   final ValueChanged<DateTime>? onDayTap;
+
+  /// A long press on a day of the shown month that is not disabled. Ignored
+  /// in `range` mode, where a long press starts a drag.
+  final ValueChanged<DateTime>? onDayLongPress;
 
   /// With `range` selection, live feedback: the first tap gives a one-day
   /// range (the day the range starts on), the second tap gives the whole
@@ -108,6 +156,10 @@ class AppCalendar extends StatefulWidget {
   /// A widget under the numbers of a day of the shown month. Its text is
   /// read by screen readers after the date.
   final Widget? Function(BuildContext context, DateTime day)? dayBuilder;
+
+  /// A per-day look (state colours, strike-through, dashed outline, extra
+  /// selected days), or null for a plain day.
+  final AppCalendarDayStyle? Function(DateTime day)? dayStyle;
 
   /// Days with a small dot at the foot of the cell.
   final Set<DateTime> markers;
@@ -476,19 +528,24 @@ class _AppCalendarState extends State<AppCalendar> {
     }
     final enabled = _canPick(day, month);
     final extra = widget.dayBuilder?.call(context, day);
+    final style = widget.dayStyle?.call(day);
     return _DayCell(
       key: ValueKey('app-calendar-day-$key'),
       dayKey: key,
       day: day,
       lunar: _lunar[day]!,
       enabled: enabled,
-      selected: _isSelected(day),
+      selected: _isSelected(day) || (style?.selected ?? false),
+      style: style,
       today: day == now,
       emphasized: widget.emphasized?.call(day) ?? false,
       marker: markers.contains(day),
       outline: widget.dayOutline?.call(day),
       extra: extra,
       onTap: enabled && tappable ? () => _tap(day) : null,
+      onLongPress: enabled && !_rangeMode && widget.onDayLongPress != null
+          ? () => widget.onDayLongPress!(day)
+          : null,
     );
   }
 }
@@ -506,7 +563,9 @@ class _DayCell extends StatelessWidget {
     required this.marker,
     required this.outline,
     required this.extra,
+    required this.style,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final String dayKey;
@@ -519,7 +578,9 @@ class _DayCell extends StatelessWidget {
   final bool marker;
   final Color? outline;
   final Widget? extra;
+  final AppCalendarDayStyle? style;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   String _spoken(AppLocalizations l) {
     final lunarDay = lunar.day <= 10
@@ -535,6 +596,7 @@ class _DayCell extends StatelessWidget {
         '${day.month}',
       ),
       l.appCalendar_lunarDay(lunarDay, lunarMonth),
+      ?style?.spoken,
       if (today) l.calendarToday,
     ].join(', ');
   }
@@ -547,11 +609,13 @@ class _DayCell extends StatelessWidget {
     final tertiary = _tertiary(theme);
     // Mock: border-radius 10px; AppRadius.lg (12) is the closest token.
     final radius = BorderRadius.circular(AppRadius.lg);
-    final fg = selected ? Colors.white : scheme.onSurface;
+    final fg = selected
+        ? Colors.white
+        : (style?.foreground ?? scheme.onSurface);
     final firstOfMonth = lunar.day == 1;
     final lunarColor = selected
         ? (firstOfMonth ? Colors.white : Colors.white.withValues(alpha: 0.8))
-        : (firstOfMonth ? scheme.primary : tertiary);
+        : (firstOfMonth ? scheme.primary : (style?.foreground ?? tertiary));
     final bold = today || selected || emphasized;
 
     final numbers = ExcludeSemantics(
@@ -568,6 +632,10 @@ class _DayCell extends StatelessWidget {
               height: 1.1,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
               color: fg,
+              decoration: style?.strike ?? false
+                  ? TextDecoration.lineThrough
+                  : null,
+              decorationColor: fg,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -588,9 +656,11 @@ class _DayCell extends StatelessWidget {
       ),
     );
 
-    final face = Container(
+    final dashed = selected ? null : style?.dashedOutline;
+    Widget face = Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
+        color: selected ? null : style?.fill,
         gradient: selected ? ctaGradientFor(theme.brightness) : null,
         borderRadius: radius,
         border: outline != null
@@ -621,6 +691,13 @@ class _DayCell extends StatelessWidget {
       ),
     );
 
+    if (dashed != null) {
+      face = CustomPaint(
+        foregroundPainter: _DashedOutline(dashed, radius),
+        child: face,
+      );
+    }
+
     Widget cell = SizedBox(
       height: AppCalendar.cellHeight,
       child: Stack(
@@ -644,7 +721,7 @@ class _DayCell extends StatelessWidget {
         ],
       ),
     );
-    if (!enabled) {
+    if (!enabled && (style?.dim ?? true)) {
       cell = Opacity(opacity: 0.45, child: cell);
     }
     return MergeSemantics(
@@ -653,10 +730,43 @@ class _DayCell extends StatelessWidget {
         enabled: enabled,
         selected: selected,
         label: _spoken(l),
-        child: InkWell(onTap: onTap, borderRadius: radius, child: cell),
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: radius,
+          child: cell,
+        ),
       ),
     );
   }
+}
+
+/// 1px dashed outline drawn inside the rounded rect (mock `outline-offset:-1px`).
+class _DashedOutline extends CustomPainter {
+  const _DashedOutline(this.color, this.radius);
+  final Color color;
+  final BorderRadius radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(radius.toRRect((Offset.zero & size).deflate(0.5)));
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (final PathMetric metric in path.computeMetrics()) {
+      var at = 0.0;
+      while (at < metric.length) {
+        canvas.drawPath(metric.extractPath(at, at + 3), paint);
+        at += 6;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedOutline old) =>
+      old.color != color || old.radius != radius;
 }
 
 /// Bottom sheet with an [AppCalendar] and the primary "Chọn" button; returns

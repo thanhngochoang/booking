@@ -27,6 +27,7 @@ import '../../support/day_pricing_world.dart' show WithExceptions, weekendRule;
 import '../../support/fake_addon_repository.dart';
 import '../../support/fake_booking_repository.dart';
 import '../../support/fake_price_rule_repository.dart';
+import '../../support/calendar_finders.dart';
 
 /// Today is Fri 2026-11-06. An's series of `s1` (Chân dung, 1,5M): Cuối tuần
 /// 1,8M on Sat and Sun, Mùa cưới 2M on 14/11 – 22/11 with 15/11 at 1,5M,
@@ -169,23 +170,17 @@ void main() {
         expect(find.text('Ngày thường 1,5M'), findsOneWidget);
         // The weekend series: its first day carries the name ("Cuối tuần 1,8M"
         // does not fit a cell, so the first word), the next day the price.
-        expect(
-          find.bySemanticsLabel('7 tháng 11, rảnh, Cuối 1,8M'),
-          findsOneWidget,
-        );
-        expect(find.bySemanticsLabel('8 tháng 11, rảnh, 1,8M'), findsOneWidget);
+        expect(dayByLabel('7 tháng 11, rảnh, Cuối 1,8M'), findsOneWidget);
+        expect(dayByLabel('8 tháng 11, rảnh, 1,8M'), findsOneWidget);
         // 14/11 starts the season (it beats the weekend series).
-        expect(
-          find.bySemanticsLabel('14 tháng 11, rảnh, Mùa cưới 2M'),
-          findsOneWidget,
-        );
-        expect(find.bySemanticsLabel('16 tháng 11, rảnh, 2M'), findsOneWidget);
+        expect(dayByLabel('14 tháng 11, rảnh, Mùa cưới 2M'), findsOneWidget);
+        expect(dayByLabel('16 tháng 11, rảnh, 2M'), findsOneWidget);
         // 15/11 costs the base price (exception): no note. 21/11 is a Saturday
         // inside the season: the season wins.
-        expect(find.bySemanticsLabel('15 tháng 11, rảnh'), findsOneWidget);
-        expect(find.bySemanticsLabel('21 tháng 11, rảnh, 2M'), findsOneWidget);
+        expect(dayByLabel('15 tháng 11, rảnh'), findsOneWidget);
+        expect(dayByLabel('21 tháng 11, rảnh, 2M'), findsOneWidget);
         // A plain weekday.
-        expect(find.bySemanticsLabel('12 tháng 11, rảnh'), findsOneWidget);
+        expect(dayByLabel('12 tháng 11, rảnh'), findsOneWidget);
 
         // Tết 2027 starts on 23 Chạp = Sat 30/1: "Tết Nguyên đán" is too long
         // for a cell, so its first word.
@@ -194,11 +189,8 @@ void main() {
         await tester.tap(find.byTooltip('Tháng sau'));
         await tester.pumpAndSettle();
         expect(find.text('Tháng 1'), findsOneWidget);
-        expect(
-          find.bySemanticsLabel('30 tháng 1, rảnh, Tết 2,5M'),
-          findsOneWidget,
-        );
-        expect(find.bySemanticsLabel('31 tháng 1, rảnh, 2,5M'), findsOneWidget);
+        expect(dayByLabel('30 tháng 1, rảnh, Tết 2,5M'), findsOneWidget);
+        expect(dayByLabel('31 tháng 1, rảnh, 2,5M'), findsOneWidget);
         h.dispose();
       },
     );
@@ -232,7 +224,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · từ 1.500.000₫'), findsOneWidget);
 
-      await tester.tap(find.bySemanticsLabel('7 tháng 11, rảnh, Cuối 1,8M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, Cuối 1,8M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
       expect(
@@ -241,13 +233,13 @@ void main() {
       );
 
       // A base-price day: the plain day line, no series name.
-      await tester.tap(find.bySemanticsLabel('12 tháng 11, rảnh'));
+      await tester.tap(dayByLabel('12 tháng 11, rảnh'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.500.000₫'), findsOneWidget);
       expect(find.textContaining('Cuối tuần ·'), findsNothing);
       expect(find.textContaining('Mùa cưới ·'), findsNothing);
 
-      await tester.tap(find.bySemanticsLabel('14 tháng 11, rảnh, Mùa cưới 2M'));
+      await tester.tap(dayByLabel('14 tháng 11, rảnh, Mùa cưới 2M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 2.000.000₫'), findsOneWidget);
       expect(
@@ -270,7 +262,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.bySemanticsLabel('7 tháng 11, rảnh, Cuối 1,7M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, Cuối 1,7M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.700.000₫'), findsOneWidget);
       h.dispose();
@@ -288,7 +280,7 @@ void main() {
         now: now,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsLabel('7 tháng 11, rảnh, Cuối 1,8M'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh, Cuối 1,8M'));
       await tester.pumpAndSettle();
       expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
 
@@ -312,7 +304,7 @@ void main() {
         now: now,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsLabel('7 tháng 11, rảnh'));
+      await tester.tap(dayByLabel('7 tháng 11, rảnh'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('book-rules-failed')), findsOneWidget);

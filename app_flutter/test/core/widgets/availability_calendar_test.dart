@@ -15,6 +15,17 @@ final _states = {
   _d(12): DayState.off,
 };
 
+Finder _cell(DateTime d) =>
+    find.byKey(ValueKey('app-calendar-day-${vnDateKey(d)}'));
+Finder _solar(DateTime d) =>
+    find.byKey(ValueKey('app-calendar-solar-${vnDateKey(d)}'));
+Finder _lunar(DateTime d) =>
+    find.byKey(ValueKey('app-calendar-lunar-${vnDateKey(d)}'));
+
+/// What a screen reader says for the cell of [d].
+String _said(WidgetTester tester, DateTime d) =>
+    tester.getSemantics(_cell(d)).label;
+
 Widget _cal({
   bool editable = false,
   ValueChanged<DateTime>? onSelect,
@@ -37,6 +48,20 @@ Widget _cal({
 );
 
 void main() {
+  testWidgets('every day shows its lunar day (R6): 1/10 on 9 Nov 2026', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(month: DateTime.utc(2026, 11), states: const {}),
+      ),
+    );
+    expect(tester.widget<Text>(_lunar(DateTime.utc(2026, 11, 9))).data, '1/10');
+    expect(tester.widget<Text>(_lunar(DateTime.utc(2026, 11, 23))).data, '15');
+    // The solar number is still there.
+    expect(tester.widget<Text>(_solar(DateTime.utc(2026, 11, 9))).data, '9');
+  });
+
   testWidgets('a note sits under the number of its day, in the month only', (
     tester,
   ) async {
@@ -60,8 +85,9 @@ void main() {
     expect(find.text('Lễ 2,2M'), findsOneWidget);
     expect(find.text('9M'), findsNothing);
     // Read aloud with the day.
-    expect(find.bySemanticsLabel('3 tháng 10, rảnh, 1,8M'), findsOneWidget);
-    expect(find.bySemanticsLabel('4 tháng 10, rảnh'), findsOneWidget);
+    expect(_said(tester, _d(3)), contains('rảnh'));
+    expect(_said(tester, _d(3)), endsWith('1,8M'));
+    expect(_said(tester, _d(4)), isNot(contains('M')));
     h.dispose();
   });
 
@@ -70,17 +96,18 @@ void main() {
   ) async {
     final h = tester.ensureSemantics();
     await tester.pumpWidget(hostWidget(_cal()));
-    expect(find.text('Tháng 10, 2026'), findsOneWidget);
+    expect(find.text('Tháng 10 / 2026'), findsOneWidget);
     for (final w in ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']) {
       expect(find.text(w), findsOneWidget);
     }
-    expect(find.bySemanticsLabel('10 tháng 10, đã đặt'), findsOneWidget);
-    expect(find.bySemanticsLabel('11 tháng 10, chờ nhận'), findsOneWidget);
-    expect(find.bySemanticsLabel('12 tháng 10, nghỉ'), findsOneWidget);
-    expect(find.bySemanticsLabel('13 tháng 10, rảnh'), findsOneWidget);
-    expect(find.bySemanticsLabel('1 tháng 10, rảnh, hôm nay'), findsOneWidget);
+    expect(_said(tester, _d(10)), contains('10 tháng 10'));
+    expect(_said(tester, _d(10)), contains('đã đặt'));
+    expect(_said(tester, _d(11)), contains('chờ nhận'));
+    expect(_said(tester, _d(12)), contains('nghỉ'));
+    expect(_said(tester, _d(13)), contains('rảnh'));
+    expect(_said(tester, _d(1)), contains('rảnh, hôm nay'));
     expect(
-      find.bySemanticsLabel('28 tháng 9, rảnh'),
+      find.bySemanticsLabel(RegExp('28 tháng 9')),
       findsNothing,
       reason: 'days of other months are decoration',
     );
@@ -88,14 +115,33 @@ void main() {
   });
 
   testWidgets('booking mode selects free days only', (tester) async {
-    final h = tester.ensureSemantics();
     final picked = <DateTime>[];
     await tester.pumpWidget(hostWidget(_cal(onSelect: picked.add)));
-    await tester.tap(find.bySemanticsLabel('13 tháng 10, rảnh'));
-    await tester.tap(find.bySemanticsLabel('10 tháng 10, đã đặt'));
-    await tester.tap(find.bySemanticsLabel('11 tháng 10, chờ nhận'));
-    await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));
+    await tester.tap(_cell(_d(13)));
+    await tester.tap(_cell(_d(10)));
+    await tester.tap(_cell(_d(11)));
+    await tester.tap(_cell(_d(12)));
     expect(picked, [_d(13)]);
+  });
+
+  testWidgets('the selected day is filled and read as selected', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(
+          month: _oct,
+          states: _states,
+          selected: _d(15),
+          onSelect: (_) {},
+        ),
+      ),
+    );
+    Tristate selected(DateTime d) =>
+        tester.getSemantics(_cell(d)).flagsCollection.isSelected;
+    expect(selected(_d(15)), Tristate.isTrue);
+    expect(selected(_d(16)), Tristate.isFalse);
     h.dispose();
   });
 
@@ -113,15 +159,12 @@ void main() {
         ),
       ),
     );
-    bool selected(String label) =>
-        tester
-            .getSemantics(find.bySemanticsLabel(label))
-            .flagsCollection
-            .isSelected ==
+    bool selected(DateTime d) =>
+        tester.getSemantics(_cell(d)).flagsCollection.isSelected ==
         Tristate.isTrue;
-    expect(selected('17 tháng 10, rảnh'), isTrue);
-    expect(selected('18 tháng 10, rảnh'), isTrue);
-    expect(selected('19 tháng 10, rảnh'), isFalse);
+    expect(selected(_d(17)), isTrue);
+    expect(selected(_d(18)), isTrue);
+    expect(selected(_d(19)), isFalse);
     h.dispose();
   });
 
@@ -138,31 +181,58 @@ void main() {
         ),
       ),
     );
-    final full = find.bySemanticsLabel('14 tháng 10, hết chỗ');
-    expect(full, findsOneWidget);
-    expect(
-      tester.getSemantics(full),
-      matchesSemantics(
-        label: '14 tháng 10, hết chỗ',
-        hasEnabledState: true,
-        isEnabled: false,
-        hasSelectedState: true,
-      ),
-    );
-    await tester.tap(full);
+    expect(_said(tester, _d(14)), endsWith('hết chỗ'));
+    final data = tester.getSemantics(_cell(_d(14))).getSemanticsData();
+    expect(data.flagsCollection.isEnabled, Tristate.isFalse);
+    await tester.tap(_cell(_d(14)));
     expect(picked, isEmpty);
-    // Drawn like a booked day: struck through.
-    final text = tester.widget<Text>(
-      find.descendant(of: full, matching: find.text('14')),
-    );
+    // Drawn like a booked day: struck through, and not dimmed like a day
+    // outside the bounds.
+    final text = tester.widget<Text>(_solar(_d(14)));
     expect(text.style?.decoration, TextDecoration.lineThrough);
+    expect(
+      find.ancestor(of: _solar(_d(14)), matching: find.byType(Opacity)),
+      findsNothing,
+    );
     h.dispose();
+  });
+
+  testWidgets('pending is accent text on a dashed outline, off is filled', (
+    tester,
+  ) async {
+    await tester.pumpWidget(hostWidget(_cal(onSelect: (_) {})));
+    final accent = Theme.of(tester.element(_cell(_d(11)))).colorScheme.primary;
+    expect(tester.widget<Text>(_solar(_d(11))).style?.color, accent);
+    expect(
+      find.descendant(
+        of: _cell(_d(11)),
+        matching: find.byWidgetPredicate(
+          (w) => w is CustomPaint && w.foregroundPainter != null,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Text>(_solar(_d(10))).style?.decoration,
+      TextDecoration.lineThrough,
+    );
+    expect(
+      find.descendant(
+        of: _cell(_d(12)),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.decoration is BoxDecoration &&
+              (w.decoration! as BoxDecoration).color != null,
+        ),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('editable mode reports every day and long presses', (
     tester,
   ) async {
-    final h = tester.ensureSemantics();
     final picked = <DateTime>[];
     final held = <DateTime>[];
     await tester.pumpWidget(
@@ -170,24 +240,49 @@ void main() {
         _cal(editable: true, onSelect: picked.add, onLongPress: held.add),
       ),
     );
-    await tester.tap(find.bySemanticsLabel('12 tháng 10, nghỉ'));
-    await tester.tap(find.bySemanticsLabel('10 tháng 10, đã đặt'));
-    await tester.longPress(find.bySemanticsLabel('20 tháng 10, rảnh'));
+    await tester.tap(_cell(_d(12)));
+    await tester.tap(_cell(_d(10)));
+    await tester.longPress(_cell(_d(20)));
     expect(picked, [_d(12), _d(10)]);
     expect(held, [_d(20)]);
-    h.dispose();
+  });
+
+  testWidgets('rangeStart outlines its day', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        AvailabilityCalendar(
+          month: _oct,
+          states: const {},
+          editable: true,
+          rangeStart: _d(20),
+          onSelect: (_) {},
+        ),
+      ),
+    );
+    bool outlined(DateTime d) => find
+        .descendant(
+          of: _cell(d),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).border != null,
+          ),
+        )
+        .evaluate()
+        .isNotEmpty;
+    expect(outlined(_d(20)), isTrue);
+    expect(outlined(_d(21)), isFalse);
   });
 
   testWidgets('days before minDate cannot be picked', (tester) async {
-    final h = tester.ensureSemantics();
     final picked = <DateTime>[];
     await tester.pumpWidget(
       hostWidget(_cal(editable: true, onSelect: picked.add, minDate: _d(5))),
     );
-    await tester.tap(find.bySemanticsLabel('3 tháng 10, rảnh'));
-    await tester.tap(find.bySemanticsLabel('5 tháng 10, rảnh'));
+    await tester.tap(_cell(_d(3)));
+    await tester.tap(_cell(_d(5)));
     expect(picked, [_d(5)]);
-    h.dispose();
   });
 
   testWidgets('swipe and arrows change the month inside the bounds', (
@@ -230,10 +325,8 @@ void main() {
   testWidgets('event days are marked and said', (tester) async {
     final h = tester.ensureSemantics();
     await tester.pumpWidget(hostWidget(_cal(eventDays: {_d(15)})));
-    expect(
-      find.bySemanticsLabel('15 tháng 10, rảnh, có sự kiện'),
-      findsOneWidget,
-    );
+    expect(_said(tester, _d(15)), contains('rảnh, có sự kiện'));
+    expect(_said(tester, _d(16)), isNot(contains('có sự kiện')));
     h.dispose();
   });
 
@@ -248,7 +341,6 @@ void main() {
     testWidgets('fits 320dp at 1.3x text, cells stay 44dp tall (${b.name})', (
       tester,
     ) async {
-      final h = tester.ensureSemantics();
       await tester.pumpWidget(
         hostWidget(
           Column(
@@ -263,11 +355,7 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
-      expect(
-        tester.getSize(find.bySemanticsLabel('13 tháng 10, rảnh')).height,
-        greaterThanOrEqualTo(44),
-      );
-      h.dispose();
+      expect(tester.getSize(_cell(_d(13))).height, greaterThanOrEqualTo(44));
     });
   }
 }

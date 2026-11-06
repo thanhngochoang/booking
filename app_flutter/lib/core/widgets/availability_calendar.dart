@@ -1,13 +1,10 @@
-import 'dart:ui' show PathMetric;
-
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/calendar_days.dart';
 import 'package:photobooking/core/l10n_ext.dart';
-import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_calendar.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
-import 'package:photobooking/core/widgets/cta_surface.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// State of one day on a photographer's calendar. A day with no stored
@@ -54,6 +51,10 @@ Color _field(ThemeData t) =>
 /// outline and accent text, booked struck through in tertiary, off on the
 /// field fill, selected on the CTA gradient. The pending outline uses the
 /// accent (`primary`) colour, the closest token to the mock's `--pending`.
+///
+/// Drawn by [AppCalendar], so every cell also shows the lunar day (spec §5.7,
+/// R6); this widget only maps its day states, notes and selection onto
+/// `dayStyle`, `dayBuilder`, `markers` and `dayOutline`.
 ///
 /// Used read-only on S03.01, for picking a day on S04.02 (`editable: false`: only
 /// free days answer), and for marking days off on S06.04 (`editable: true`:
@@ -112,346 +113,90 @@ class AvailabilityCalendar extends StatelessWidget {
   /// A small line under the number of a day of the shown month.
   final Map<DateTime, CalendarNote> notes;
 
-  static const cellHeight = 44.0;
+  static const cellHeight = AppCalendar.cellHeight;
   static const _gap = 3.0;
 
-  bool _inBounds(DateTime d) =>
-      (minDate == null || !d.isBefore(calendarDay(minDate!))) &&
-      (maxDate == null || !d.isAfter(calendarDay(maxDate!)));
-
-  bool _canPrev(DateTime m) =>
-      minDate == null || !addMonths(m, -1).isBefore(monthOf(minDate!));
-
-  bool _canNext(DateTime m) =>
-      maxDate == null || !addMonths(m, 1).isAfter(monthOf(maxDate!));
-
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final m = monthOf(month);
-    final days = monthGrid(m);
-    final sel = selected == null ? null : calendarDay(selected!);
-    final now = today == null ? null : calendarDay(today!);
     final range = rangeStart == null ? null : calendarDay(rangeStart!);
+    final events = {for (final d in eventDays) calendarDay(d)};
+    final picked = {for (final d in selectedDays) calendarDay(d)};
+    final noteDays = {
+      for (final e in notes.entries) calendarDay(e.key): e.value,
+    };
+    final stateOf = {
+      for (final e in states.entries) calendarDay(e.key): e.value,
+    };
+    DayState stateAt(DateTime d) => stateOf[d] ?? DayState.free;
+    // A day that answers no tap: not free in booking mode.
+    bool locked(DateTime d) => !editable && stateAt(d) != DayState.free;
 
-    VoidCallback? answer(ValueChanged<DateTime>? cb, DateTime d, DayState s) {
-      if (cb == null || d.month != m.month || !_inBounds(d)) {
-        return null;
-      }
-      if (!editable && s != DayState.free) {
-        return null;
-      }
-      return () => cb(d);
-    }
-
-    final weekdays = Row(
-      children: [
-        for (var i = DateTime.monday; i <= DateTime.sunday; i++)
-          Expanded(
-            child: Center(
-              child: Text(
-                l.calendarWeekdayShort(weekdayCode(i)),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: AppText.xs,
-                  color: _tertiary(theme),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-
-    Widget grid = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var w = 0; w < 6; w++)
-          Padding(
-            padding: EdgeInsets.only(top: w == 0 ? 0 : _gap),
-            child: Row(
-              children: [
-                for (var c = 0; c < 7; c++)
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: c == 0 ? 0 : _gap / 2,
-                        right: c == 6 ? 0 : _gap / 2,
-                      ),
-                      child: _DayCell(
-                        day: days[w * 7 + c],
-                        state: states[days[w * 7 + c]] ?? DayState.free,
-                        inMonth: days[w * 7 + c].month == m.month,
-                        inBounds: _inBounds(days[w * 7 + c]),
-                        selected:
-                            days[w * 7 + c] == sel ||
-                            selectedDays.contains(days[w * 7 + c]),
-                        today: days[w * 7 + c] == now,
-                        hasEvent: eventDays.contains(days[w * 7 + c]),
-                        note: notes[days[w * 7 + c]],
-                        rangeStart: days[w * 7 + c] == range,
-                        onTap: answer(
-                          onSelect,
-                          days[w * 7 + c],
-                          states[days[w * 7 + c]] ?? DayState.free,
-                        ),
-                        onLongPress: answer(
-                          onLongPress,
-                          days[w * 7 + c],
-                          states[days[w * 7 + c]] ?? DayState.free,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-    final change = onMonthChanged;
-    if (change != null) {
-      grid = GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onHorizontalDragEnd: (e) {
-          final v = e.primaryVelocity ?? 0;
-          if (v < -150 && _canNext(m)) {
-            change(addMonths(m, 1));
-          } else if (v > 150 && _canPrev(m)) {
-            change(addMonths(m, -1));
-          }
-        },
-        child: grid,
-      );
-    }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (showHeader)
-          Row(
-            children: [
-              IconButton(
-                tooltip: l.calendarPrevMonth,
-                icon: const AppIcon(AppIcons.chevronLeft),
-                onPressed: change != null && _canPrev(m)
-                    ? () => change(addMonths(m, -1))
-                    : null,
-              ),
-              Expanded(
-                child: Semantics(
-                  header: true,
-                  child: Text(
-                    l.calendarMonthTitle('${m.month}', '${m.year}'),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontFamily: AppFonts.display,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: l.calendarNextMonth,
-                icon: const AppIcon(AppIcons.chevron),
-                onPressed: change != null && _canNext(m)
-                    ? () => change(addMonths(m, 1))
-                    : null,
-              ),
-            ],
-          ),
-        weekdays,
-        const SizedBox(height: AppSpace.s1),
-        grid,
-      ],
-    );
-  }
-}
-
-class _DayCell extends StatelessWidget {
-  const _DayCell({
-    required this.day,
-    required this.state,
-    required this.inMonth,
-    required this.inBounds,
-    required this.selected,
-    required this.today,
-    required this.hasEvent,
-    required this.note,
-    required this.rangeStart,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  final DateTime day;
-  final DayState state;
-  final bool inMonth;
-  final bool inBounds;
-  final bool selected;
-  final bool today;
-  final bool hasEvent;
-  final CalendarNote? note;
-  final bool rangeStart;
-  final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tertiary = _tertiary(theme);
-    // Mock: border-radius 10px; AppRadius.lg (12) is the closest token.
-    final radius = BorderRadius.circular(AppRadius.lg);
-    var fg = scheme.onSurface;
-    Color? fillColor;
-    Gradient? gradient;
-    TextDecoration? line;
-    switch (state) {
-      case DayState.free:
-        break;
-      case DayState.pending:
-        fg = scheme.primary;
-      case DayState.off:
-        fillColor = _field(theme);
-        fg = tertiary;
-      case DayState.booked || DayState.full:
-        line = TextDecoration.lineThrough;
-        fg = tertiary;
-    }
-    if (selected) {
-      fillColor = null;
-      gradient = ctaGradientFor(theme.brightness);
-      fg = Colors.white;
-    }
-    final bold = today || selected;
-    Widget face = Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: fillColor,
-        gradient: gradient,
-        borderRadius: radius,
-        border: rangeStart
-            ? Border.all(color: scheme.primary, width: 2)
-            : today && !selected
-            ? Border.all(color: tertiary)
-            : null,
-      ),
-      // Scaled down rather than overflowing at a large text size.
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: AppText.base,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: fg,
-                decoration: line,
-                decorationColor: fg,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            if (inMonth && note != null)
-              // Mock `small` 8.5px.
-              Text(
-                note!.text,
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 8.5,
-                  height: 1.1,
-                  color: selected
-                      ? fg
-                      : note!.accent
-                      ? scheme.primary
-                      : _secondary(theme),
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (state == DayState.pending && !selected) {
-      face = CustomPaint(
-        foregroundPainter: _DashedOutline(scheme.primary, radius),
-        child: face,
-      );
-    }
-    Widget cell = SizedBox(
-      height: AvailabilityCalendar.cellHeight,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(child: face),
-          if (hasEvent)
-            Positioned(
-              bottom: 4,
-              child: Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white : scheme.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-    if (!inMonth) {
-      return ExcludeSemantics(child: Opacity(opacity: 0.3, child: cell));
-    }
-    if (!inBounds) {
-      cell = Opacity(opacity: 0.45, child: cell);
-    }
-    final said = [
-      state.label(l).toLowerCase(),
-      if (hasEvent) l.calendarHasEvent,
-      if (inMonth && note != null) note!.text,
-      if (today) l.calendarToday,
-    ].join(', ');
-    return Semantics(
-      button: onTap != null,
-      enabled: onTap != null,
+    return AppCalendar(
+      month: month,
+      onMonthChanged: onMonthChanged,
+      selection: AppCalendarSelection.single,
       selected: selected,
-      label: l.calendarDaySemantics('${day.day}', '${day.month}', said),
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: radius,
-        child: cell,
-      ),
+      onDayTap: onSelect,
+      onDayLongPress: onLongPress,
+      disabledDay: locked,
+      dayStyle: (d) {
+        final state = stateAt(d);
+        final said = [
+          state.label(l).toLowerCase(),
+          if (events.contains(d)) l.calendarHasEvent,
+        ].join(', ');
+        return AppCalendarDayStyle(
+          fill: state == DayState.off ? _field(theme) : null,
+          foreground: switch (state) {
+            DayState.free => null,
+            DayState.pending => theme.colorScheme.primary,
+            DayState.off ||
+            DayState.booked ||
+            DayState.full => _tertiary(theme),
+          },
+          strike: state == DayState.booked || state == DayState.full,
+          dashedOutline: state == DayState.pending
+              ? theme.colorScheme.primary
+              : null,
+          selected: picked.contains(d),
+          // A booked day is not "off": only days out of bounds are dimmed.
+          dim: locked(d) ? false : null,
+          spoken: said,
+        );
+      },
+      dayBuilder: (context, d) {
+        final note = noteDays[d];
+        if (note == null) {
+          return null;
+        }
+        final isSelected =
+            picked.contains(d) ||
+            (selected != null && calendarDay(selected!) == d);
+        return Text(
+          note.text,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 8.5,
+            height: 1.1,
+            color: isSelected
+                ? Colors.white
+                : note.accent
+                ? theme.colorScheme.primary
+                : _secondary(theme),
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        );
+      },
+      markers: eventDays,
+      dayOutline: (d) => d == range ? theme.colorScheme.primary : null,
+      today: today,
+      showHeader: showHeader,
+      first: minDate,
+      last: maxDate,
     );
   }
-}
-
-/// 1px dashed outline drawn inside the rounded rect (mock `outline-offset:-1px`).
-class _DashedOutline extends CustomPainter {
-  const _DashedOutline(this.color, this.radius);
-  final Color color;
-  final BorderRadius radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = Path()
-      ..addRRect(radius.toRRect((Offset.zero & size).deflate(0.5)));
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    for (final PathMetric metric in path.computeMetrics()) {
-      var at = 0.0;
-      while (at < metric.length) {
-        canvas.drawPath(metric.extractPath(at, at + 3), paint);
-        at += 6;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedOutline old) =>
-      old.color != color || old.radius != radius;
 }
 
 /// The four day states named in one wrapping row, each styled like its state

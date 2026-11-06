@@ -26,6 +26,7 @@ import '../../support/fake_safety_repository.dart';
 import '../../support/day_pricing_world.dart' show tetRule, weekendRule;
 import '../../support/profile_world.dart';
 import '../../support/recruit_world.dart';
+import '../../support/calendar_finders.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
 
@@ -300,8 +301,13 @@ void main() {
 
       await tester.pumpWidget(w.app('/u/p1?tab=calendar'));
       await tester.pumpAndSettle();
-      expect(find.text('Tháng 10, 2026'), findsOneWidget);
-      expect(find.bySemanticsLabel('10 tháng 10, đã đặt'), findsOneWidget);
+      expect(find.text('Tháng 10 / 2026'), findsOneWidget);
+      expect(dayByLabel('10 tháng 10, đã đặt'), findsOneWidget);
+      // Read-only, and every day shows its lunar day (R6).
+      expect(
+        tester.widget<Text>(calendarLunar(DateTime.utc(2026, 10, 10))).data,
+        '1/9',
+      );
       expect(w.availability.watchers, 1);
 
       await tester.tap(find.text('Đánh giá'));
