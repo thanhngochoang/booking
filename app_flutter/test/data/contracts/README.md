@@ -11,4 +11,8 @@ https://github.com/thanhngochoang/booking-be (the former `services/api/` of this
 When the backend contract changes, copy both files again and make the app follow.
 
 `day_pricing_cases.json` is a copy of `packages/domain/test/fixtures/day_pricing_cases.json` in the same
-repository; `test/data/pricing/day_pricing_test.dart` runs it against the Dart port. Copy it again when it changes.
+repository; `test/data/pricing/price_rules_test.dart` runs every section of it against the Dart port
+(`lib/core/lunar.dart`, `lib/data/pricing/price_rules.dart`). Copy it again when it changes.
+
+`day_pricing_v1_cases.json` is the table of the old weekday/special-day pricing; `test/data/pricing/day_pricing_test.dart`
+still runs it. Both go away with the old pricing code.

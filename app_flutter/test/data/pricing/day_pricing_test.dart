@@ -33,7 +33,7 @@ PricedService _two(int weekday, int weekend) => PricedService(
 void main() {
   group('shared case table', () {
     final cases = jsonDecode(
-      File('test/data/contracts/day_pricing_cases.json').readAsStringSync(),
+      File('test/data/contracts/day_pricing_v1_cases.json').readAsStringSync(),
     ) as List;
 
     test('is not empty', () => expect(cases, isNotEmpty));

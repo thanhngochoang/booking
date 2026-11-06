@@ -1,605 +1,1876 @@
-[
-  {
-    "name": "single price on Monday",
-    "service": {
-      "price": 1000000
+{
+  "lunar": [
+    {
+      "why": "Tết 2024: mùng 1 tháng Giêng",
+      "solar": "2024-02-10",
+      "lunar": {"day": 1, "month": 1, "year": 2024, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết 2025: mùng 1 tháng Giêng",
+      "solar": "2025-01-29",
+      "lunar": {"day": 1, "month": 1, "year": 2025, "leap": false}
     },
-    "day": "2026-11-09",
-    "amount": 1000000,
-    "kind": "weekday"
-  },
-  {
-    "name": "single price on Sunday",
-    "service": {
-      "price": 1000000
+    {
+      "why": "Tết 2026: mùng 1 tháng Giêng",
+      "solar": "2026-02-17",
+      "lunar": {"day": 1, "month": 1, "year": 2026, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết 2027: mùng 1 tháng Giêng",
+      "solar": "2027-02-06",
+      "lunar": {"day": 1, "month": 1, "year": 2027, "leap": false}
     },
-    "day": "2026-11-15",
-    "amount": 1000000,
-    "kind": "weekend"
-  },
-  {
-    "name": "two levels Friday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "Tết 2028: mùng 1 tháng Giêng",
+      "solar": "2028-01-26",
+      "lunar": {"day": 1, "month": 1, "year": 2028, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết 2029: mùng 1 tháng Giêng",
+      "solar": "2029-02-13",
+      "lunar": {"day": 1, "month": 1, "year": 2029, "leap": false}
     },
-    "day": "2026-11-13",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "two levels Saturday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "Tết 2030: mùng 1 tháng Giêng",
+      "solar": "2030-02-02",
+      "lunar": {"day": 1, "month": 1, "year": 2030, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết 2031: mùng 1 tháng Giêng",
+      "solar": "2031-01-23",
+      "lunar": {"day": 1, "month": 1, "year": 2031, "leap": false}
     },
-    "day": "2026-11-14",
-    "amount": 1800000,
-    "kind": "weekend"
-  },
-  {
-    "name": "two levels Sunday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "Tết 2032: mùng 1 tháng Giêng",
+      "solar": "2032-02-11",
+      "lunar": {"day": 1, "month": 1, "year": 2032, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết 2033: mùng 1 tháng Giêng",
+      "solar": "2033-01-31",
+      "lunar": {"day": 1, "month": 1, "year": 2033, "leap": false}
     },
-    "day": "2026-11-15",
-    "amount": 1800000,
-    "kind": "weekend"
-  },
-  {
-    "name": "per day Friday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1600000,
-        "wed": 1700000,
-        "thu": 1800000,
-        "fri": 3500000,
-        "sat": 2500000,
-        "sun": 2000000
-      }
+    {
+      "why": "Giỗ Tổ 2025 (10/3)",
+      "solar": "2025-04-07",
+      "lunar": {"day": 10, "month": 3, "year": 2025, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Giỗ Tổ 2026 (10/3)",
+      "solar": "2026-04-26",
+      "lunar": {"day": 10, "month": 3, "year": 2026, "leap": false}
     },
-    "day": "2026-11-13",
-    "amount": 3500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "per day Saturday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1600000,
-        "wed": 1700000,
-        "thu": 1800000,
-        "fri": 3500000,
-        "sat": 2500000,
-        "sun": 2000000
-      }
+    {
+      "why": "23 tháng Chạp trước Tết 2026",
+      "solar": "2026-02-10",
+      "lunar": {"day": 23, "month": 12, "year": 2025, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "29/12 is the last day of a 29-day month",
+      "solar": "2026-02-16",
+      "lunar": {"day": 29, "month": 12, "year": 2025, "leap": false}
     },
-    "day": "2026-11-14",
-    "amount": 2500000,
-    "kind": "weekend"
-  },
-  {
-    "name": "holiday with specialPrice",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "mùng 5 Tết 2026",
+      "solar": "2026-02-21",
+      "lunar": {"day": 5, "month": 1, "year": 2026, "leap": false}
     },
-    "special": {
-      "holidays": [
-        "2026-09-02",
-        "2026-12-31",
-        "2027-01-01"
-      ],
-      "ranges": []
+    {
+      "why": "30/12 of a 30-day month the day before Tết 2024",
+      "solar": "2024-02-09",
+      "lunar": {"day": 30, "month": 12, "year": 2023, "leap": false}
     },
-    "day": "2026-09-02",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "holiday without specialPrice uses the weekday price (Wednesday)",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "30/6 is the last day of the main month 6 of 2025 (30 days)",
+      "solar": "2025-07-24",
+      "lunar": {"day": 30, "month": 6, "year": 2025, "leap": false}
     },
-    "special": {
-      "holidays": [
-        "2026-09-02",
-        "2026-12-31",
-        "2027-01-01"
-      ],
-      "ranges": []
+    {
+      "why": "leap month 6 of 2025 starts: 1/6 nhuận",
+      "solar": "2025-07-25",
+      "lunar": {"day": 1, "month": 6, "year": 2025, "leap": true}
     },
-    "day": "2026-09-02",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "special price is not used on an ordinary day",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "last day of leap month 6 of 2025",
+      "solar": "2025-08-22",
+      "lunar": {"day": 29, "month": 6, "year": 2025, "leap": true}
     },
-    "special": {
-      "holidays": [
-        "2026-09-02",
-        "2026-12-31",
-        "2027-01-01"
-      ],
-      "ranges": []
+    {
+      "why": "month 7 of 2025 follows the leap month",
+      "solar": "2025-08-23",
+      "lunar": {"day": 1, "month": 7, "year": 2025, "leap": false}
     },
-    "day": "2026-09-03",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "range first day",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "leap month 5 of 2028 starts",
+      "solar": "2028-06-23",
+      "lunar": {"day": 1, "month": 5, "year": 2028, "leap": true}
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-11-14",
-          "to": "2026-11-22"
-        }
-      ]
+    {
+      "why": "leap month 3 of 2031 starts",
+      "solar": "2031-04-21",
+      "lunar": {"day": 1, "month": 3, "year": 2031, "leap": true}
     },
-    "day": "2026-11-14",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "range last day",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "lunar label 1/10 in the calendar mock",
+      "solar": "2026-11-09",
+      "lunar": {"day": 1, "month": 10, "year": 2026, "leap": false}
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-11-14",
-          "to": "2026-11-22"
-        }
-      ]
+    {
+      "why": "a plain day in the middle of the month",
+      "solar": "2026-11-23",
+      "lunar": {"day": 15, "month": 10, "year": 2026, "leap": false}
+    }
+  ],
+  "ranges": [
+    {
+      "why": "Tết 23/12 → 5/1 for 2026 is one range; the next one starts 2027-01-30, outside 2026",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "year": 2026,
+      "expected": [{"from": "2026-02-10", "to": "2026-02-21"}]
     },
-    "day": "2026-11-22",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "range day after",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "Tết for 2027: 30/1 → 10/2, the lunar range crosses the lunar new year",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "year": 2027,
+      "expected": [{"from": "2027-01-30", "to": "2027-02-10"}]
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-11-14",
-          "to": "2026-11-22"
-        }
-      ]
+    {
+      "why": "Tết for 2025: the range that began in lunar year 2024 falls in January/February 2025",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "year": 2025,
+      "expected": [{"from": "2025-01-22", "to": "2025-02-02"}]
     },
-    "day": "2026-11-23",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "range day before",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "Tết for 2024",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "year": 2024,
+      "expected": [{"from": "2024-02-02", "to": "2024-02-14"}]
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-11-14",
-          "to": "2026-11-22"
-        }
-      ]
+    {
+      "why": "Giỗ Tổ 10/3 is a single-day lunar range",
+      "year": 2026,
+      "rule": {"id": "hung", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "03-10", "to": "03-10"},
+      "expected": [{"from": "2026-04-26", "to": "2026-04-26"}]
     },
-    "day": "2026-11-13",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "range without specialPrice keeps the weekend price",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "Trung thu 15/8 2026",
+      "year": 2026,
+      "rule": {"id": "mid", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "08-15", "to": "08-15"},
+      "expected": [{"from": "2026-09-25", "to": "2026-09-25"}]
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-11-14",
-          "to": "2026-11-22"
-        }
-      ]
+    {
+      "why": "solar yearly range crossing 31/12 gives two ranges in the same year",
+      "rule": {"id": "noel", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "from": "12-24", "to": "01-02"},
+      "year": 2026,
+      "expected": [{"from": "2026-01-01", "to": "2026-01-02"}, {"from": "2026-12-24", "to": "2026-12-31"}]
     },
-    "day": "2026-11-14",
-    "amount": 1800000,
-    "kind": "weekend"
-  },
-  {
-    "name": "31/12/2026 Thursday holiday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "solar yearly range inside one year",
+      "year": 2026,
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20"},
+      "expected": [{"from": "2026-11-10", "to": "2026-11-20"}]
     },
-    "special": {
-      "holidays": [
-        "2026-09-02",
-        "2026-12-31",
-        "2027-01-01"
-      ],
-      "ranges": []
+    {
+      "why": "lunar range over the leap month 6 of 2025 is cut around the leap days (25/7 → 22/8)",
+      "rule": {"id": "leapish", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"},
+      "year": 2025,
+      "expected": [{"from": "2025-06-15", "to": "2025-07-24"}, {"from": "2025-08-23", "to": "2025-09-01"}]
     },
-    "day": "2026-12-31",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "31/12/2026 Thursday ordinary",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "lunar range inside the leap month only: nothing is left in 2025, the main month 6 is before it",
+      "rule": {"id": "june", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-30"},
+      "year": 2025,
+      "expected": [{"from": "2025-06-25", "to": "2025-07-24"}]
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "lunar day 30 in a 29-day month (12/2025) uses the last day of the month",
+      "rule": {"id": "l30", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "12-28", "to": "12-30"},
+      "year": 2026,
+      "expected": [{"from": "2026-02-15", "to": "2026-02-16"}]
     },
-    "day": "2026-12-31",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "1/1/2027 Friday holiday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "lunar from-day 30 in a 29-day month also clamps, and the range wraps into the new lunar year",
+      "rule": {"id": "l30b", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "12-30", "to": "01-02"},
+      "year": 2026,
+      "expected": [{"from": "2026-02-16", "to": "2026-02-18"}]
     },
-    "special": {
-      "holidays": [
-        "2026-09-02",
-        "2026-12-31",
-        "2027-01-01"
-      ],
-      "ranges": []
+    {
+      "why": "none range is returned whole when it touches the year (crosses into 2027)",
+      "year": 2026,
+      "rule": {"id": "one", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-12-20", "to": "2027-01-10"},
+      "expected": [{"from": "2026-12-20", "to": "2027-01-10"}]
     },
-    "day": "2027-01-01",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "1/1/2027 Friday ordinary",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "the same none range for 2027",
+      "year": 2027,
+      "rule": {"id": "one", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-12-20", "to": "2027-01-10"},
+      "expected": [{"from": "2026-12-20", "to": "2027-01-10"}]
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "none range does not touch 2028",
+      "year": 2028,
+      "rule": {"id": "one", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-12-20", "to": "2027-01-10"},
+      "expected": []
     },
-    "day": "2027-01-01",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "range crossing the year, 31/12",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "weekly rules are not range based",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "year": 2026,
+      "expected": []
+    }
+  ],
+  "priceForDay": [
+    {
+      "why": "no rules: the package price",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [],
+      "day": "2026-11-09",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-12-28",
-          "to": "2027-01-03"
-        }
-      ]
+    {
+      "why": "weekly T7–CN: Saturday",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
     },
-    "day": "2026-12-31",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "range crossing the year, 1/1",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "weekly T7–CN: Sunday",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-15",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-12-28",
-          "to": "2027-01-03"
-        }
-      ]
+    {
+      "why": "weekly T7–CN: Monday is outside the series",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-09",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
     },
-    "day": "2027-01-01",
-    "amount": 2200000,
-    "kind": "special"
-  },
-  {
-    "name": "range crossing the year, day after",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      },
-      "specialPrice": 2200000
+    {
+      "why": "rule of another package is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s2", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
     },
-    "special": {
-      "holidays": [],
-      "ranges": [
-        {
-          "from": "2026-12-28",
-          "to": "2027-01-03"
-        }
-      ]
+    {
+      "why": "Tết (lunar yearly): mùng 1",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-17",
+      "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
     },
-    "day": "2027-01-04",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "29/02/2028 Tuesday",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1500000,
-        "wed": 1500000,
-        "thu": 1500000,
-        "fri": 1500000,
-        "sat": 1800000,
-        "sun": 1800000
-      }
+    {
+      "why": "Tết: first day 23/12",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-10",
+      "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết: last day mùng 5",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-21",
+      "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
     },
-    "day": "2028-02-29",
-    "amount": 1500000,
-    "kind": "weekday"
-  },
-  {
-    "name": "29/02/2028 Tuesday per day",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1600000,
-        "wed": 1700000,
-        "thu": 1800000,
-        "fri": 3500000,
-        "sat": 2500000,
-        "sun": 2000000
-      }
+    {
+      "why": "Tết: the day after mùng 5",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-22",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết: the day before 23/12",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-09",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
     },
-    "day": "2028-02-29",
-    "amount": 1600000,
-    "kind": "weekday"
-  },
-  {
-    "name": "01/03/2028 Wednesday per day",
-    "service": {
-      "price": 1500000,
-      "dayPrices": {
-        "mon": 1500000,
-        "tue": 1600000,
-        "wed": 1700000,
-        "thu": 1800000,
-        "fri": 3500000,
-        "sat": 2500000,
-        "sun": 2000000
-      }
+    {
+      "why": "Tết 2027 starts 2027-01-30 (23/12 of lunar year 2026)",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2027-01-30",
+      "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
     },
-    "special": {
-      "holidays": [],
-      "ranges": []
+    {
+      "why": "Tết 2027: 2027-01-29 is 22/12",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2027-01-29",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
     },
-    "day": "2028-03-01",
-    "amount": 1700000,
-    "kind": "weekday"
-  }
-]
+    {
+      "why": "Tết 2027: mùng 5 is 2027-02-10",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2027-02-10",
+      "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
+    },
+    {
+      "why": "Tết 2027: mùng 6 is not in the series",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2027-02-11",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "tier: a cheaper yearly rule beats the pricier weekly one on Saturday 2026-02-14",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}, {"id": "tet", "serviceId": "s1", "price": 1600000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-14",
+      "expected": {"amount": 1600000, "kind": "rule", "ruleId": "tet"}
+    },
+    {
+      "why": "tier: none beats yearly even when cheaper",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}, {"id": "oneoff", "serviceId": "s1", "price": 2200000, "repeat": "none", "from": "2026-02-17", "to": "2026-02-18"}],
+      "day": "2026-02-17",
+      "expected": {"amount": 2200000, "kind": "rule", "ruleId": "oneoff"}
+    },
+    {
+      "why": "tier: none rule listed before yearly gives the same result",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "oneoff", "serviceId": "s1", "price": 2200000, "repeat": "none", "from": "2026-02-17", "to": "2026-02-18"}, {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "day": "2026-02-18",
+      "expected": {"amount": 2200000, "kind": "rule", "ruleId": "oneoff"}
+    },
+    {
+      "why": "same tier: highest price wins (weekly)",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}, {"id": "sat_only", "serviceId": "s1", "price": 2100000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 2100000, "kind": "rule", "ruleId": "sat_only"}
+    },
+    {
+      "why": "same tier: highest price wins (yearly, the cheaper one is listed last)",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}, {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "12-23", "to": "01-05"}],
+      "day": "2026-02-17",
+      "expected": {"amount": 3000000, "kind": "rule", "ruleId": "tet"}
+    },
+    {
+      "why": "same tier, same price: the earlier rule in the list wins",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "a", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}, {"id": "b", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "a"}
+    },
+    {
+      "why": "same tier, same price: the order of the list decides",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "b", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}, {"id": "a", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "b"}
+    },
+    {
+      "why": "yearly solar without exception",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20"}, {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "wedding"}
+    },
+    {
+      "why": "exception null on a Saturday inside a yearly rule falls back to the weekly rule",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "exceptions": {"2026-11-14": null}}, {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "exception null with no other rule falls back to the package price",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "exceptions": {"2026-11-14": null}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "exception null affects only its own day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "exceptions": {"2026-11-14": null}}],
+      "day": "2026-11-13",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "wedding"}
+    },
+    {
+      "why": "exception price replaces the price of that day (weekly)",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 2100000}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 2100000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "exception price leaves the other weekend day alone",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 2100000}}],
+      "day": "2026-11-15",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "exception price on a day outside the series makes the day belong to it",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-09": 1200000}}],
+      "day": "2026-11-09",
+      "expected": {"amount": 1200000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "exception price keeps the rule tier: a yearly exception 1M still beats weekly 1.8M",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "exceptions": {"2026-11-14": 1000000}}, {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1000000, "kind": "rule", "ruleId": "wedding"}
+    },
+    {
+      "why": "invalid exception (text) is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": "free"}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "invalid exception (0) is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 0}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "invalid exception (1.5) is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 1.5}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "invalid exception (1e9 + 1) is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 1000000001}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "invalid exception (numeric text) is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": "2000000"}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "invalid exception (boolean) is ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": false}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "invalid exception on a day outside the series does not add the day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-09": 0}}],
+      "day": "2026-11-09",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "start: the day before start is not covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-15"}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "start: the start day is covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-15"}],
+      "day": "2026-11-15",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "until: the until day is covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-14"}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1800000, "kind": "rule", "ruleId": "weekend"}
+    },
+    {
+      "why": "until: the day after until is not covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-14"}],
+      "day": "2026-11-15",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "start and until on one day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-14", "until": "2026-11-14"}],
+      "day": "2026-11-15",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "start/until also cut an exception price",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-10", "exceptions": {"2026-11-14": 2100000}}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "start/until cut a yearly rule: after until the package price is back",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet", "until": "2026-02-12"}],
+      "day": "2026-02-13",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "none rule inside its range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "one", "serviceId": "s1", "price": 5000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"}],
+      "day": "2026-11-21",
+      "expected": {"amount": 5000000, "kind": "rule", "ruleId": "one"}
+    },
+    {
+      "why": "none rule: the day after its range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "one", "serviceId": "s1", "price": 5000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"}],
+      "day": "2026-11-23",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "solar yearly crossing 31/12: before the range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "noel", "serviceId": "s1", "price": 2500000, "repeat": "yearly", "from": "12-24", "to": "01-02"}],
+      "day": "2026-12-23",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "solar yearly crossing 31/12: first day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "noel", "serviceId": "s1", "price": 2500000, "repeat": "yearly", "from": "12-24", "to": "01-02"}],
+      "day": "2026-12-24",
+      "expected": {"amount": 2500000, "kind": "rule", "ruleId": "noel"}
+    },
+    {
+      "why": "solar yearly crossing 31/12: the new year part",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "noel", "serviceId": "s1", "price": 2500000, "repeat": "yearly", "from": "12-24", "to": "01-02"}],
+      "day": "2027-01-01",
+      "expected": {"amount": 2500000, "kind": "rule", "ruleId": "noel"}
+    },
+    {
+      "why": "solar yearly crossing 31/12: last day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "noel", "serviceId": "s1", "price": 2500000, "repeat": "yearly", "from": "12-24", "to": "01-02"}],
+      "day": "2027-01-02",
+      "expected": {"amount": 2500000, "kind": "rule", "ruleId": "noel"}
+    },
+    {
+      "why": "solar yearly crossing 31/12: after the range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "noel", "serviceId": "s1", "price": 2500000, "repeat": "yearly", "from": "12-24", "to": "01-02"}],
+      "day": "2027-01-03",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "single-day solar yearly (Valentine)",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "val", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "from": "02-14", "to": "02-14"}],
+      "day": "2027-02-14",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "val"}
+    },
+    {
+      "why": "Giỗ Tổ 10/3 2026",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "hung", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "03-10", "to": "03-10"}],
+      "day": "2026-04-26",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "hung"}
+    },
+    {
+      "why": "Giỗ Tổ: the day before",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "hung", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "03-10", "to": "03-10"}],
+      "day": "2026-04-25",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "Giỗ Tổ: the day after",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "hung", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "03-10", "to": "03-10"}],
+      "day": "2026-04-27",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: 1/6 main month is covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "june", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-03", "name": "đầu tháng 6"}],
+      "day": "2025-06-25",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "june"}
+    },
+    {
+      "why": "leap month 2025: 3/6 main month is covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "june", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-03", "name": "đầu tháng 6"}],
+      "day": "2025-06-27",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "june"}
+    },
+    {
+      "why": "leap month 2025: 4/6 is not",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "june", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-03", "name": "đầu tháng 6"}],
+      "day": "2025-06-28",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: 1/6 nhuận (2025-07-25) never belongs to a lunar rule",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "june", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-03", "name": "đầu tháng 6"}],
+      "day": "2025-07-25",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: 3/6 nhuận (2025-07-27) never belongs to a lunar rule",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "june", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-03", "name": "đầu tháng 6"}],
+      "day": "2025-07-27",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, before the range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-06-14",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, first day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-06-15",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "leapish"}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, 30/6 main month",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-07-24",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "leapish"}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, first leap day is out",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-07-25",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, last leap day is out",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-08-22",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, 1/7 is back in",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-08-23",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "leapish"}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, last day 10/7",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-09-01",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "leapish"}
+    },
+    {
+      "why": "leap month 2025: range 5/20 → 7/10, after the range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "leapish", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "05-20", "to": "07-10"}],
+      "day": "2025-09-02",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "a leap-month day with a price exception is covered (the exception names the day)",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "june", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "06-01", "to": "06-03", "name": "đầu tháng 6", "exceptions": {"2025-07-25": 2500000}}],
+      "day": "2025-07-25",
+      "expected": {"amount": 2500000, "kind": "rule", "ruleId": "june"}
+    },
+    {
+      "why": "lunar 12-28 → 12-30 in a 29-day month: 29/12 is the last day and is covered",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "l30", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "12-28", "to": "12-30"}],
+      "day": "2026-02-16",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "l30"}
+    },
+    {
+      "why": "lunar 12-28 → 12-30: mùng 1 is not",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "l30", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "12-28", "to": "12-30"}],
+      "day": "2026-02-17",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "lunar from 12-30 in a 29-day month: 29/12 counts as the from day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "l30b", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "12-30", "to": "01-02"}],
+      "day": "2026-02-16",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "l30b"}
+    },
+    {
+      "why": "lunar from 12-30 → 01-02: 28/12 is before the range",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "l30b", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "12-30", "to": "01-02"}],
+      "day": "2026-02-15",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "lunar from 12-30 → 01-02: 2/1 is the last day",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "l30b", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "12-30", "to": "01-02"}],
+      "day": "2026-02-18",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "l30b"}
+    },
+    {
+      "why": "lunar from 12-30 → 01-02: 3/1 is out",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "l30b", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "lunar": true, "from": "12-30", "to": "01-02"}],
+      "day": "2026-02-19",
+      "expected": {"amount": 1500000, "kind": "base", "ruleId": null}
+    },
+    {
+      "why": "lunar flag false is a solar rule",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "lunar": false}],
+      "day": "2026-11-12",
+      "expected": {"amount": 2000000, "kind": "rule", "ruleId": "wedding"}
+    },
+    {
+      "why": "three tiers at once: none wins",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}, {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20"}, {"id": "one", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-14", "to": "2026-11-14"}],
+      "day": "2026-11-14",
+      "expected": {"amount": 1000000, "kind": "rule", "ruleId": "one"}
+    }
+  ],
+  "priceBounds": [
+    {
+      "why": "no rules: one price",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [],
+      "today": "2026-11-06",
+      "expected": {"min": 1500000, "max": 1500000}
+    },
+    {
+      "why": "a pricier weekly rule raises the top",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "today": "2026-11-06",
+      "expected": {"min": 1500000, "max": 1800000}
+    },
+    {
+      "why": "a cheaper weekly rule and a pricier yearly one",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "mon_thu", "serviceId": "s1", "price": 1200000, "repeat": "weekly", "weekdays": ["mon", "tue", "wed", "thu"]}, {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "today": "2026-11-06",
+      "expected": {"min": 1200000, "max": 3000000}
+    },
+    {
+      "why": "a passed none rule is dropped",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "old", "serviceId": "s1", "price": 5000000, "repeat": "none", "from": "2026-10-01", "to": "2026-10-03"}],
+      "today": "2026-11-06",
+      "expected": {"min": 1500000, "max": 1500000}
+    },
+    {
+      "why": "an exception price still ahead counts both ways",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-12-01": 4000000, "2026-12-08": 1000000}}],
+      "today": "2026-11-06",
+      "expected": {"min": 1000000, "max": 4000000}
+    },
+    {
+      "why": "rules of another package are ignored",
+      "service": {"id": "s1", "price": 1500000},
+      "rules": [{"id": "weekend", "serviceId": "s2", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "today": "2026-11-06",
+      "expected": {"min": 1500000, "max": 1500000}
+    }
+  ],
+  "startingPrice": [
+    {
+      "why": "no rules: the package price",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "a weekly rule cheaper than the package price lowers it",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "mon_thu", "serviceId": "s1", "price": 1200000, "repeat": "weekly", "weekdays": ["mon", "tue", "wed", "thu"]}],
+      "today": "2026-11-06",
+      "expected": 1200000
+    },
+    {
+      "why": "a pricier rule changes nothing",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "a passed none rule is dropped",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "old", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-10-01", "to": "2026-10-03"}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "a none rule that ended yesterday is dropped",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "old", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-01", "to": "2026-11-05"}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "a none rule running now counts",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "now", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-01", "to": "2026-11-10"}],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "a none rule ending today still counts",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "now", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-06", "to": "2026-11-06"}],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "a rule whose until passed is dropped",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "mon_thu", "serviceId": "s1", "price": 1200000, "repeat": "weekly", "weekdays": ["mon", "tue", "wed", "thu"], "until": "2026-11-05"}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "until today on a Friday rule still has an occurrence",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "fri", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["fri"], "until": "2026-11-06"}],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "until today on a Monday rule has no occurrence left",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "mon", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["mon"], "until": "2026-11-06"}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "a weekly rule that starts later counts",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "mon_thu", "serviceId": "s1", "price": 1200000, "repeat": "weekly", "weekdays": ["mon", "tue", "wed", "thu"], "start": "2026-12-01"}],
+      "today": "2026-11-06",
+      "expected": 1200000
+    },
+    {
+      "why": "a yearly rule counts through its next occurrence (Tết 2027)",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "a yearly rule with a passed until is dropped",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "tet", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet", "until": "2026-06-30"}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "an exception price still ahead counts",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-12-01": 900000}}],
+      "today": "2026-11-06",
+      "expected": 900000
+    },
+    {
+      "why": "an exception price today counts",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-06": 700000}}],
+      "today": "2026-11-06",
+      "expected": 700000
+    },
+    {
+      "why": "an exception price that passed is ignored",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-10-01": 800000}}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "an invalid exception value is ignored",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-12-01": 0}}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "an exception null is ignored",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-12-01": null}}],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "an exception after until is ignored",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-30", "exceptions": {"2026-12-05": 500000}}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "an exception before start is ignored",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "weekend", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-12-10", "exceptions": {"2026-12-05": 500000}}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    },
+    {
+      "why": "an inactive package is ignored with its rules",
+      "services": [{"id": "s1", "price": 1000000, "active": false}, {"id": "s2", "price": 2000000}],
+      "rules": [{"id": "cheap", "serviceId": "s1", "price": 500000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "today": "2026-11-06",
+      "expected": 2000000
+    },
+    {
+      "why": "an explicit active package counts",
+      "services": [{"id": "s1", "price": 1000000, "active": true}],
+      "rules": [],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "every package inactive: null",
+      "services": [{"id": "s1", "price": 1000000, "active": false}],
+      "rules": [],
+      "today": "2026-11-06",
+      "expected": null
+    },
+    {
+      "why": "no packages: null",
+      "services": [],
+      "rules": [],
+      "today": "2026-11-06",
+      "expected": null
+    },
+    {
+      "why": "the minimum over several packages",
+      "services": [{"id": "s1", "price": 1500000}, {"id": "s2", "price": 1100000}],
+      "rules": [],
+      "today": "2026-11-06",
+      "expected": 1100000
+    },
+    {
+      "why": "a rule can make another package the cheapest",
+      "services": [{"id": "s1", "price": 1500000}, {"id": "s2", "price": 1100000}],
+      "rules": [{"id": "cheap", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "today": "2026-11-06",
+      "expected": 1000000
+    },
+    {
+      "why": "a rule of an unknown package is ignored",
+      "services": [{"id": "s1", "price": 1500000}],
+      "rules": [{"id": "x", "serviceId": "nope", "price": 100000, "repeat": "weekly", "weekdays": ["sat"]}],
+      "today": "2026-11-06",
+      "expected": 1500000
+    }
+  ],
+  "nextOccurrence": [
+    {
+      "why": "none: running range is returned whole",
+      "today": "2026-11-21",
+      "rule": {"id": "one", "serviceId": "s1", "price": 1, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"},
+      "expected": {"from": "2026-11-20", "to": "2026-11-22"}
+    },
+    {
+      "why": "none: not started yet",
+      "today": "2026-11-06",
+      "rule": {"id": "one", "serviceId": "s1", "price": 1, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"},
+      "expected": {"from": "2026-11-20", "to": "2026-11-22"}
+    },
+    {
+      "why": "none: last day still counts",
+      "today": "2026-11-22",
+      "rule": {"id": "one", "serviceId": "s1", "price": 1, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"},
+      "expected": {"from": "2026-11-20", "to": "2026-11-22"}
+    },
+    {
+      "why": "none: ended",
+      "today": "2026-11-23",
+      "rule": {"id": "one", "serviceId": "s1", "price": 1, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"},
+      "expected": null
+    },
+    {
+      "why": "none: until before from means it never applies",
+      "today": "2026-11-06",
+      "rule": {"id": "one", "serviceId": "s1", "price": 1, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22", "until": "2026-11-19"},
+      "expected": null
+    },
+    {
+      "why": "none: start after to means it never applies",
+      "today": "2026-11-06",
+      "rule": {"id": "one", "serviceId": "s1", "price": 1, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22", "start": "2026-11-23"},
+      "expected": null
+    },
+    {
+      "why": "yearly lunar: Tết running on 2026-02-12",
+      "today": "2026-02-12",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "expected": {"from": "2026-02-10", "to": "2026-02-21"}
+    },
+    {
+      "why": "yearly lunar: after Tết 2026 the next one is 2027-01-30",
+      "today": "2026-02-22",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "expected": {"from": "2027-01-30", "to": "2027-02-10"}
+    },
+    {
+      "why": "yearly lunar: the last day of Tết still counts",
+      "today": "2026-02-21",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "expected": {"from": "2026-02-10", "to": "2026-02-21"}
+    },
+    {
+      "why": "yearly solar crossing the year: end of December runs the first part",
+      "today": "2026-12-30",
+      "rule": {"id": "noel", "serviceId": "s1", "price": 1, "repeat": "yearly", "from": "12-24", "to": "01-02"},
+      "expected": {"from": "2026-12-24", "to": "2026-12-31"}
+    },
+    {
+      "why": "yearly solar crossing the year: in January the early part runs",
+      "today": "2027-01-01",
+      "rule": {"id": "noel", "serviceId": "s1", "price": 1, "repeat": "yearly", "from": "12-24", "to": "01-02"},
+      "expected": {"from": "2027-01-01", "to": "2027-01-02"}
+    },
+    {
+      "why": "yearly: until in the past ends it",
+      "today": "2026-11-06",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "until": "2026-06-30"},
+      "expected": null
+    },
+    {
+      "why": "yearly: until after the next range still has it",
+      "today": "2026-11-06",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "until": "2026-11-12"},
+      "expected": {"from": "2026-11-10", "to": "2026-11-20"}
+    },
+    {
+      "why": "yearly: until before the next occurrence ends it",
+      "today": "2026-11-21",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "until": "2027-06-30"},
+      "expected": null
+    },
+    {
+      "why": "yearly: until after the next occurrence keeps it",
+      "today": "2026-11-21",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "until": "2027-12-31"},
+      "expected": {"from": "2027-11-10", "to": "2027-11-20"}
+    },
+    {
+      "why": "yearly: start in a later year moves the first occurrence there",
+      "today": "2026-11-06",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "start": "2027-11-12"},
+      "expected": {"from": "2027-11-10", "to": "2027-11-20"}
+    },
+    {
+      "why": "weekly: the next matching day, today included",
+      "today": "2026-11-14",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "expected": {"from": "2026-11-14", "to": "2026-11-14"}
+    },
+    {
+      "why": "weekly: the next matching day from a Friday",
+      "today": "2026-11-06",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "expected": {"from": "2026-11-07", "to": "2026-11-07"}
+    },
+    {
+      "why": "weekly: start in the future moves the first day",
+      "today": "2026-11-06",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-12-01"},
+      "expected": {"from": "2026-12-05", "to": "2026-12-05"}
+    },
+    {
+      "why": "weekly: until passed",
+      "today": "2026-11-06",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-05"},
+      "expected": null
+    },
+    {
+      "why": "weekly: until before the first matching day",
+      "today": "2026-11-06",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-06"},
+      "expected": null
+    }
+  ],
+  "split": [
+    {
+      "why": "this and the days after: the old series ends the day before, exceptions move with their day",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-01-01", "until": "2027-12-31", "exceptions": {"2026-11-14": null, "2026-11-21": 2100000, "2026-12-05": 2300000}},
+      "day": "2026-11-20",
+      "newPrice": 2000000,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-01-01", "until": "2026-11-19", "exceptions": {"2026-11-14": null}}, "after": {"id": "w2", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-20", "until": "2027-12-31", "exceptions": {"2026-11-21": 2100000, "2026-12-05": 2300000}}}
+    },
+    {
+      "why": "an exception on the split day itself goes to the new series",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-01-01", "until": "2027-12-31", "exceptions": {"2026-11-14": null, "2026-11-21": 2100000, "2026-12-05": 2300000}},
+      "day": "2026-11-21",
+      "newPrice": 2000000,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-01-01", "until": "2026-11-20", "exceptions": {"2026-11-14": null}}, "after": {"id": "w2", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-21", "until": "2027-12-31", "exceptions": {"2026-11-21": 2100000, "2026-12-05": 2300000}}}
+    },
+    {
+      "why": "newPrice null ends the series from the day: no new series",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-01-01", "until": "2027-12-31", "exceptions": {"2026-11-14": null, "2026-11-21": 2100000, "2026-12-05": 2300000}},
+      "day": "2026-11-20",
+      "newPrice": null,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-01-01", "until": "2026-11-19", "exceptions": {"2026-11-14": null}}, "after": null}
+    },
+    {
+      "why": "a rule without start, until or exceptions: before gets until, after gets start only",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "day": "2026-11-20",
+      "newPrice": 2000000,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-19"}, "after": {"id": "w2", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-20"}}
+    },
+    {
+      "why": "all exceptions before the day: the after series has none, the field is dropped",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 2100000}},
+      "day": "2026-11-20",
+      "newPrice": 2000000,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-19", "exceptions": {"2026-11-14": 2100000}}, "after": {"id": "w2", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-20"}}
+    },
+    {
+      "why": "all exceptions on or after the day: the before series has none, the field is dropped",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-12-05": 2300000}},
+      "day": "2026-11-20",
+      "newPrice": 2000000,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-19"}, "after": {"id": "w2", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-11-20", "exceptions": {"2026-12-05": 2300000}}}
+    },
+    {
+      "why": "a day beyond until never widens the old series",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-10"},
+      "day": "2026-11-20",
+      "newPrice": null,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "until": "2026-11-10"}, "after": null}
+    },
+    {
+      "why": "a day before start: before is empty (the use case deletes it), after keeps the start",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-12-01"},
+      "day": "2026-11-20",
+      "newPrice": 2000000,
+      "newId": "w2",
+      "expected": {"before": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-12-01", "until": "2026-11-19"}, "after": {"id": "w2", "serviceId": "s1", "price": 2000000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "start": "2026-12-01"}}
+    },
+    {
+      "why": "a lunar yearly rule keeps its lunar fields and template",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "day": "2027-01-01",
+      "newPrice": 3500000,
+      "newId": "t2",
+      "expected": {"before": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet", "until": "2026-12-31"}, "after": {"id": "t2", "serviceId": "s1", "price": 3500000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet", "start": "2027-01-01"}}
+    },
+    {
+      "why": "a none rule splits the same way",
+      "rule": {"id": "one", "serviceId": "s1", "price": 5000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-30"},
+      "day": "2026-11-25",
+      "newPrice": 6000000,
+      "newId": "o2",
+      "expected": {"before": {"id": "one", "serviceId": "s1", "price": 5000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-30", "until": "2026-11-24"}, "after": {"id": "o2", "serviceId": "s1", "price": 6000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-30", "start": "2026-11-25"}}
+    }
+  ],
+  "withException": [
+    {
+      "why": "a price on a day",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "day": "2026-11-14",
+      "value": 2100000,
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 2100000}}
+    },
+    {
+      "why": "null removes the day from the series",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "day": "2026-11-14",
+      "value": null,
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null}}
+    },
+    {
+      "why": "a second day keeps the first",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null}},
+      "day": "2026-11-21",
+      "value": 2000000,
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null, "2026-11-21": 2000000}}
+    },
+    {
+      "why": "a new value replaces the old one",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null}},
+      "day": "2026-11-14",
+      "value": 2000000,
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 2000000}}
+    },
+    {
+      "why": "clear removes one key and keeps the rest",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null, "2026-11-21": 2000000}},
+      "day": "2026-11-14",
+      "value": "clear",
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-21": 2000000}}
+    },
+    {
+      "why": "clear of the last key drops the field",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null}},
+      "day": "2026-11-14",
+      "value": "clear",
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}
+    },
+    {
+      "why": "clear of a missing key changes nothing",
+      "rule": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "day": "2026-11-14",
+      "value": "clear",
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}
+    }
+  ],
+  "scaled": [
+    {
+      "why": "exact multiple: 1.8M of 1.5M applied to a 3.2M package",
+      "input": 1800000,
+      "fromPrice": 1500000,
+      "toPrice": 3200000,
+      "expected": 3840000
+    },
+    {
+      "why": "rounds up to the next 10.000: 2.266.667 becomes 2.270.000",
+      "input": 1700000,
+      "fromPrice": 1500000,
+      "toPrice": 2000000,
+      "expected": 2270000
+    },
+    {
+      "why": "the same package price keeps the input",
+      "input": 1800000,
+      "fromPrice": 1500000,
+      "toPrice": 1500000,
+      "expected": 1800000
+    },
+    {
+      "why": "a cheaper package: 600.000 is already a multiple",
+      "input": 900000,
+      "fromPrice": 1500000,
+      "toPrice": 1000000,
+      "expected": 600000
+    },
+    {
+      "why": "rounds 333.333 up to 340.000",
+      "input": 1000000,
+      "fromPrice": 3000000,
+      "toPrice": 1000000,
+      "expected": 340000
+    },
+    {
+      "why": "a tiny result still rounds up to 10.000",
+      "input": 10000,
+      "fromPrice": 1500000,
+      "toPrice": 1000000,
+      "expected": 10000
+    },
+    {
+      "why": "capped at 1.000.000.000",
+      "input": 1000000000,
+      "fromPrice": 1,
+      "toPrice": 1000000000,
+      "expected": 1000000000
+    },
+    {
+      "why": "big numbers stay exact: the product is above 2^53 and the result is an exact multiple",
+      "input": 990000000,
+      "fromPrice": 999999999,
+      "toPrice": 999999999,
+      "expected": 990000000
+    }
+  ],
+  "scaledRules": [
+    {
+      "why": "a copy for another package: new id and serviceId, scaled price, exceptions are not copied",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "template": "wedding_season", "start": "2026-01-01", "until": "2027-12-31", "exceptions": {"2026-11-14": null, "2026-11-15": 2100000}},
+      "from": {"id": "s1", "price": 1500000},
+      "to": {"id": "s2", "price": 3200000},
+      "newId": "copy1",
+      "expected": {"id": "copy1", "serviceId": "s2", "price": 4270000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "template": "wedding_season", "start": "2026-01-01", "until": "2027-12-31"}
+    }
+  ],
+  "parse": [
+    {
+      "why": "a clean weekly rule reads back as is",
+      "id": "weekend",
+      "raw": {"serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]},
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "name": "Cuối tuần", "weekdays": ["sat", "sun"]}
+    },
+    {
+      "why": "a clean lunar yearly rule reads back as is",
+      "id": "tet",
+      "raw": {"serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "expected": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"}
+    },
+    {
+      "why": "server fields, unknown fields and the dropped dayPrices are not part of the rule",
+      "id": "weekend",
+      "raw": {"serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "endsOn": "2026-12-31", "createdAt": {"seconds": 1}, "updatedAt": {"seconds": 2}, "dayPrices": {"mon": 1}},
+      "expected": {"id": "weekend", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"]}
+    },
+    {
+      "why": "unknown and repeated weekdays are dropped",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat", "xyz", "sat", 5]},
+      "expected": {"id": "w", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"]}
+    },
+    {
+      "why": "weekly without any usable weekday is unusable",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["xyz"]},
+      "expected": null
+    },
+    {
+      "why": "weekly without weekdays is unusable",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly"},
+      "expected": null
+    },
+    {
+      "why": "from/to and lunar on a weekly rule are dropped",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"], "lunar": true, "from": "11-01", "to": "11-02"},
+      "expected": {"id": "w", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"]}
+    },
+    {
+      "why": "lunar false is not kept",
+      "id": "y",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": false, "from": "11-10", "to": "11-20"},
+      "expected": {"id": "y", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "from": "11-10", "to": "11-20"}
+    },
+    {
+      "why": "an unusable start or until is dropped, the rest stays",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"], "start": "soon", "until": "2026-13-01"},
+      "expected": {"id": "w", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"]}
+    },
+    {
+      "why": "exceptions are kept as written, even invalid values (the domain ignores them when pricing)",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"], "exceptions": {"2026-11-14": "free"}},
+      "expected": {"id": "w", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"], "exceptions": {"2026-11-14": "free"}}
+    },
+    {
+      "why": "a non-string name is dropped",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"], "name": 5},
+      "expected": {"id": "w", "serviceId": "s1", "price": 1000000, "repeat": "weekly", "weekdays": ["sat"]}
+    },
+    {
+      "why": "price 0 is unusable",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 0, "repeat": "weekly", "weekdays": ["sat"]},
+      "expected": null
+    },
+    {
+      "why": "price above 1e9 is unusable",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000001, "repeat": "weekly", "weekdays": ["sat"]},
+      "expected": null
+    },
+    {
+      "why": "price as text is unusable",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": "1000000", "repeat": "weekly", "weekdays": ["sat"]},
+      "expected": null
+    },
+    {
+      "why": "unknown repeat is unusable",
+      "id": "w",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "monthly", "weekdays": ["sat"]},
+      "expected": null
+    },
+    {
+      "why": "missing serviceId is unusable",
+      "id": "w",
+      "raw": {"price": 1000000, "repeat": "weekly", "weekdays": ["sat"]},
+      "expected": null
+    },
+    {
+      "why": "none without to is unusable",
+      "id": "n",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-20"},
+      "expected": null
+    },
+    {
+      "why": "none with an impossible date is unusable",
+      "id": "n",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-02-30", "to": "2026-03-01"},
+      "expected": null
+    },
+    {
+      "why": "none with to before from is unusable",
+      "id": "n",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-22", "to": "2026-11-20"},
+      "expected": null
+    },
+    {
+      "why": "yearly with a bad month-day is unusable",
+      "id": "y",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "yearly", "from": "13-40", "to": "12-01"},
+      "expected": null
+    },
+    {
+      "why": "yearly with a full date is unusable",
+      "id": "y",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "yearly", "from": "2026-11-10", "to": "2026-11-20"},
+      "expected": null
+    },
+    {
+      "why": "yearly solar 29/2 is unusable",
+      "id": "y",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "yearly", "from": "02-29", "to": "03-02"},
+      "expected": null
+    },
+    {
+      "why": "yearly lunar accepts day 30 and 29/2",
+      "id": "y",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "02-29", "to": "12-30"},
+      "expected": {"id": "y", "serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "02-29", "to": "12-30"}
+    },
+    {
+      "why": "yearly lunar rejects day 31",
+      "id": "y",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "yearly", "lunar": true, "from": "01-31", "to": "02-02"},
+      "expected": null
+    },
+    {
+      "why": "weekdays on a none rule are dropped",
+      "id": "n",
+      "raw": {"serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22", "weekdays": ["sat"]},
+      "expected": {"id": "n", "serviceId": "s1", "price": 1000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"}
+    },
+    {
+      "why": "not an object",
+      "id": "x",
+      "raw": "weekend",
+      "expected": null
+    },
+    {
+      "why": "null",
+      "id": "x",
+      "raw": null,
+      "expected": null
+    },
+    {
+      "why": "an array",
+      "id": "x",
+      "raw": [1, 2],
+      "expected": null
+    }
+  ],
+  "invalid": [
+    {
+      "why": "a valid none rule",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a valid weekly rule",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "the Tết template is valid",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-05", "template": "tet"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a valid yearly solar rule",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a none rule of 92 days is allowed",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-12-01", "to": "2027-03-02"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a none rule of 93 days is refused",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-12-01", "to": "2027-03-03"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "a yearly solar rule of 92 days is allowed",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "10-01", "to": "12-31"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a yearly solar rule of 93 days is refused",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "09-30", "to": "12-31"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "a yearly lunar rule of three months is allowed",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "01-01", "to": "03-30", "template": "tet"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a yearly lunar rule of four months is refused",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "01-01", "to": "04-30", "template": "tet"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "a yearly rule that wraps almost the whole year is refused",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "01-02", "to": "01-01"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "a yearly solar rule crossing the year is allowed",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "12-24", "to": "01-02"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "none in the past on create is refused",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-10-01", "to": "2026-10-03"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "none in the past is fine when editing",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-10-01", "to": "2026-10-03"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": false},
+      "field": null
+    },
+    {
+      "why": "none ending today is allowed on create",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-06", "to": "2026-11-06"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "none with to before from is refused",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-22", "to": "2026-11-20"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "none starting 731 days from today is refused",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2028-11-06", "to": "2028-11-07"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "none starting 730 days from today is allowed",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2028-11-05", "to": "2028-11-07"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "none without from",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "to": "2026-11-22"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "none without to",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-20"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "none with an impossible date",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-20", "to": "2026-02-30"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "none with a month-day instead of a date",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "11-20", "to": "2026-11-22"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "weekly with an empty weekdays list",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": []},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "weekdays"
+    },
+    {
+      "why": "weekly without weekdays",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "weekdays"
+    },
+    {
+      "why": "weekly with a repeated weekday",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sat"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "weekdays"
+    },
+    {
+      "why": "weekly with an unknown weekday",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "xyz"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "weekdays"
+    },
+    {
+      "why": "weekly with all seven days is allowed",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "weekdays on a yearly rule",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "weekdays": ["sat"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "weekdays"
+    },
+    {
+      "why": "weekdays on a none rule",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22", "weekdays": ["sat"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "weekdays"
+    },
+    {
+      "why": "weekly with from",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "from": "11-01"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "weekly with to",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "to": "11-02"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "an unknown serviceId",
+      "rule": {"id": "r2", "serviceId": "nope", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "serviceId"
+    },
+    {
+      "why": "lunar on a weekly rule",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "lunar": true},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "lunar"
+    },
+    {
+      "why": "lunar on a none rule",
+      "rule": {"id": "r1", "serviceId": "s1", "price": 2000000, "repeat": "none", "from": "2026-11-20", "to": "2026-11-22", "lunar": true},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "lunar"
+    },
+    {
+      "why": "lunar as text",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "lunar": "yes"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "lunar"
+    },
+    {
+      "why": "until before start",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "start": "2026-12-01", "until": "2026-11-30"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "until"
+    },
+    {
+      "why": "until equal to start",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "start": "2026-12-01", "until": "2026-12-01"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "a start that is not a date",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "start": "soon"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "start"
+    },
+    {
+      "why": "an until that is not a date",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "until": "2026-13-01"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "until"
+    },
+    {
+      "why": "price 0",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 0, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "price"
+    },
+    {
+      "why": "price 1.5",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1.5, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "price"
+    },
+    {
+      "why": "price 1e9 + 1",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1000000001, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "price"
+    },
+    {
+      "why": "price 1e9 is allowed",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1000000000, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "price 1 is allowed",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1, "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "price as text",
+      "rule": {"id": "r2", "serviceId": "s1", "price": "1800000", "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "price"
+    },
+    {
+      "why": "missing price",
+      "rule": {"id": "r2", "serviceId": "s1", "repeat": "weekly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "price"
+    },
+    {
+      "why": "unknown repeat",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "monthly", "weekdays": ["sat", "sun"]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "repeat"
+    },
+    {
+      "why": "a name of 41 characters",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "name"
+    },
+    {
+      "why": "a name of 40 characters is allowed",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "exceptions with a price and a null are allowed",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": null, "2026-11-21": 2000000}},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "an exception value of text",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": "free"}},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "exceptions"
+    },
+    {
+      "why": "an exception value of 0",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 0}},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "exceptions"
+    },
+    {
+      "why": "an exception value of 1e9 + 1",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "exceptions": {"2026-11-14": 1000000001}},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "exceptions"
+    },
+    {
+      "why": "an exception key that is not a date",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "exceptions": {"14 Nov": 2000000}},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "exceptions"
+    },
+    {
+      "why": "exceptions as a list",
+      "rule": {"id": "r2", "serviceId": "s1", "price": 1800000, "repeat": "weekly", "weekdays": ["sat", "sun"], "exceptions": [1]},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "exceptions"
+    },
+    {
+      "why": "yearly with a month out of range",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "13-01", "to": "11-20"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "yearly solar 30/2",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "02-30", "to": "03-01"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "yearly solar 29/2",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "02-29", "to": "03-01"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "yearly with a one-digit month-day",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "1-5", "to": "11-20"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "from"
+    },
+    {
+      "why": "yearly with a full date",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "2026-11-20"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "yearly lunar day 31",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-23", "to": "01-31", "template": "tet"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "yearly lunar day 30 is allowed",
+      "rule": {"id": "tet", "serviceId": "s1", "price": 3000000, "repeat": "yearly", "name": "Tết Nguyên đán", "lunar": true, "from": "12-30", "to": "01-05", "template": "tet"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": null
+    },
+    {
+      "why": "yearly without to",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10"},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "to"
+    },
+    {
+      "why": "a template that is not text",
+      "rule": {"id": "wedding", "serviceId": "s1", "price": 2000000, "repeat": "yearly", "name": "Mùa cưới", "from": "11-10", "to": "11-20", "template": 5},
+      "ctx": {"today": "2026-11-06", "serviceIds": ["s1", "s2"], "creating": true},
+      "field": "template"
+    }
+  ]
+}
