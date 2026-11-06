@@ -6,6 +6,8 @@ import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/special_days.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 
@@ -130,6 +132,9 @@ class BookingFlowState {
     required this.step,
     this.serviceId,
     this.priceVnd,
+    this.pricing,
+    this.specials,
+    this.specialsFailed = false,
     this.durationMinutes,
     this.serviceName,
     this.day,
@@ -156,6 +161,18 @@ class BookingFlowState {
   final BookingStep step;
   final String? serviceId;
   final int? priceVnd;
+
+  /// What the chosen package's price depends on (its day prices and special
+  /// price); null for a slot offer, which has one fixed price (P7).
+  final PricedService? pricing;
+
+  /// The holidays of one year and the provider's special ranges, loaded once
+  /// the chosen day needs them (only a package with a `specialPrice` does).
+  final SpecialDayInfo? specials;
+
+  /// The last read of [specials] failed: a package with a special price has
+  /// no price for the chosen day until a retry works.
+  final bool specialsFailed;
   final int? durationMinutes;
   final String? serviceName;
   final String? day;
@@ -226,8 +243,52 @@ class BookingFlowState {
     return sum;
   }
 
+  /// The package's price on the chosen day, why, and the holiday or range
+  /// name under a special day. Null until a day is chosen, and, for a package
+  /// with a special price, until that day's year of holidays has loaded: the
+  /// flow never prices a day it cannot classify. A slot offer has none.
+  ({int amount, DayPriceKind kind, String? specialName})? get dayPrice {
+    final p = pricing;
+    final d = day;
+    if (p == null || d == null) return null;
+    var special = noSpecialDays;
+    final info = specials;
+    if (p.specialPrice != null) {
+      if (info == null || info.year != _yearOf(d)) return null;
+      special = info.days;
+    }
+    final priced = priceForDayKey(p, d, special);
+    return (
+      amount: priced.amount,
+      kind: priced.kind,
+      specialName: priced.kind == DayPriceKind.special
+          ? (info?.nameOf(d) ?? d)
+          : null,
+    );
+  }
+
+  static int _yearOf(String day) => int.parse(day.substring(0, 4));
+
+  /// The price day-dependent packages cannot yet give: no day chosen, or its
+  /// special days still loading.
+  bool get dayPriceReady => pricing == null || day == null || dayPrice != null;
+
+  /// The package's part of the total: the chosen day's price, else the lowest
+  /// weekday price (S04.01 reads "từ {min}"); a slot's own price.
+  int? get packageVnd {
+    final p = pricing;
+    if (p == null) return priceVnd;
+    return dayPrice?.amount ?? priceRange(p).min;
+  }
+
+  /// [packageVnd] is a lower bound: the price still depends on a day.
+  bool get priceIsFrom {
+    final p = pricing;
+    return p != null && dayPrice == null && pricesVaryByDay(p);
+  }
+
   /// Package + add-ons; null until a package is chosen.
-  int? get totalVnd => priceVnd != null ? priceVnd! + addonsVnd : null;
+  int? get totalVnd => packageVnd != null ? packageVnd! + addonsVnd : null;
 
   /// The picked transport add-on, if any: it makes S04.06 ask for a pickup.
   ServiceAddon? get transportAddon {
@@ -271,7 +332,7 @@ class BookingFlowState {
       case BookingStep.service:
         return serviceId != null;
       case BookingStep.datetime:
-        return day != null && start != null;
+        return day != null && start != null && dayPriceReady;
       case BookingStep.place:
         return placeName.characters.length >= kPlaceMinLength &&
             (!needsPickup ||
@@ -280,6 +341,7 @@ class BookingFlowState {
         final p = phone;
         if (p == null || busy) return false;
         if (serviceId == null || day == null || start == null) return false;
+        if (!dayPriceReady) return false;
         return normalizePhone(p, international: true) != null ||
             phoneFromField(p) != null;
     }
@@ -290,6 +352,11 @@ class BookingFlowState {
     String? serviceId,
     bool clearServiceId = false,
     int? priceVnd,
+    PricedService? pricing,
+    bool clearPricing = false,
+    SpecialDayInfo? specials,
+    bool clearSpecials = false,
+    bool? specialsFailed,
     int? durationMinutes,
     String? serviceName,
     String? day,
@@ -321,6 +388,9 @@ class BookingFlowState {
       step: step ?? this.step,
       serviceId: clearServiceId ? null : (serviceId ?? this.serviceId),
       priceVnd: clearServiceId ? null : (priceVnd ?? this.priceVnd),
+      pricing: clearServiceId || clearPricing ? null : (pricing ?? this.pricing),
+      specials: clearSpecials ? null : (specials ?? this.specials),
+      specialsFailed: specialsFailed ?? this.specialsFailed,
       durationMinutes:
           clearServiceId ? null : (durationMinutes ?? this.durationMinutes),
       serviceName: clearServiceId ? null : (serviceName ?? this.serviceName),

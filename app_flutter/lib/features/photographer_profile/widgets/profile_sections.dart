@@ -11,10 +11,13 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/packages/widgets/package_price_line.dart';
+import 'package:photobooking/features/packages/widgets/price_table_sheet.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/review/review_labels.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -406,19 +409,33 @@ class ServicesSliver extends ConsumerWidget {
       AsyncData(:final value) => SliverList.separated(
         itemCount: value.length,
         separatorBuilder: (_, _) => const SizedBox(height: AppSpace.s2),
-        itemBuilder: (context, i) => _ServiceTile(
-          service: value[i],
-          onTap: owner
-              ? () => context.push('/me/packages')
-              : !acceptingOrders
-              ? null
-              : () => startBooking(
-                  context,
-                  ref,
-                  photographerId: photographerId,
-                  serviceId: value[i].id,
-                ),
-        ),
+        itemBuilder: (context, i) {
+          final service = value[i];
+          void book() => startBooking(
+            context,
+            ref,
+            photographerId: photographerId,
+            serviceId: service.id,
+          );
+          return _ServiceTile(
+            service: service,
+            onTap: owner
+                ? () => context.push('/me/packages')
+                // A package priced by day opens its read-only price table,
+                // whose "Đặt gói này" books it (mock #S03.01-prices).
+                : pricesVaryByDay(service)
+                ? () => showPriceTableSheet(
+                    context,
+                    photographerId: photographerId,
+                    name: service.name,
+                    pricing: service,
+                    onBook: acceptingOrders ? book : null,
+                  )
+                : !acceptingOrders
+                ? null
+                : book,
+          );
+        },
       ),
       AsyncError() => SliverToBoxAdapter(
         child: ErrorState(
@@ -447,6 +464,7 @@ class _ServiceTile extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final s = service;
+    final varies = pricesVaryByDay(s);
     return Material(
       color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
       borderRadius: _radius,
@@ -472,16 +490,29 @@ class _ServiceTile extends StatelessWidget {
                       ),
                       style: theme.textTheme.bodySmall,
                     ),
+                    // Mock #S03.01-prices: the price line under the meta.
+                    if (varies)
+                      Text(
+                        packagePriceText(l, s),
+                        key: Key('service-price-${s.id}'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpace.s3),
-              Text(
-                formatMoney(s.priceVnd),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              if (!varies) ...[
+                const SizedBox(width: AppSpace.s3),
+                Text(
+                  formatMoney(s.priceVnd),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

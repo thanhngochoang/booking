@@ -8,7 +8,9 @@ import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/features/addons/addon_format.dart';
+import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/entry/entry_rules.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -74,7 +76,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
     final profileAsync = ref.watch(photographerProfileProvider(widget.args.photographerId));
     final packagesAsync = ref.watch(profilePackagesProvider(widget.args.photographerId));
 
-    final price = state.priceVnd ?? 0;
+    final price = state.packageVnd ?? 0;
     // S04.03-entry: the tickets of a ticketed spot ride on the same payment.
     final spotId = state.spot?.schedule.spotId;
     final entryInfo = spotId == null || state.day == null
@@ -245,7 +247,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                         MoneyBreakdown(
                           lines: [
                             MoneyLine(
-                              label: l10n.bookPackageLine(state.serviceName ?? ''),
+                              label: packageLine(l10n, state),
                               vnd: price,
                             ),
                             ...addonLines,
@@ -274,7 +276,12 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                         ],
                         const SizedBox(height: AppSpace.s2),
                         Text(
-                          l10n.bookPolicy,
+                          // A package priced by day says so before the policy.
+                          switch (state.pricing) {
+                            final p? when pricesVaryByDay(p) =>
+                              '${l10n.s0403_dayPriceNote} ${l10n.bookPolicy}',
+                            _ => l10n.bookPolicy,
+                          },
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             height: 1.4,

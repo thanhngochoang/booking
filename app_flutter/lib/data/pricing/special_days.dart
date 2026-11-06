@@ -64,6 +64,39 @@ SpecialDays specialDaysOf(
   ranges: [for (final r in ranges) (from: r.from, to: r.to)],
 );
 
+/// The holidays of one [year] and the provider's own ranges, as loaded for a
+/// booking day: the dates to price with and the name to show under a special
+/// day.
+@immutable
+class SpecialDayInfo {
+  const SpecialDayInfo({
+    required this.year,
+    required this.holidays,
+    required this.ranges,
+  });
+
+  final int year;
+  final List<Holiday> holidays;
+  final List<SpecialDayRange> ranges;
+
+  SpecialDays get days => specialDaysOf(holidays, ranges);
+
+  /// Name of the holiday on [day], else of the provider's range holding it.
+  String? nameOf(String day) {
+    for (final h in holidays) {
+      if (h.day == day) {
+        return h.name;
+      }
+    }
+    for (final r in ranges) {
+      if (r.from.compareTo(day) <= 0 && day.compareTo(r.to) <= 0) {
+        return r.name;
+      }
+    }
+    return null;
+  }
+}
+
 /// Public holidays; read-only for clients.
 abstract class HolidayRepository {
   /// The year's holidays; empty when the server has none for it.

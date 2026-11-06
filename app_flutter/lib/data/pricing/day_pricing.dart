@@ -148,6 +148,10 @@ class PerDayPrice extends PriceSummary {
   const PerDayPrice({required super.min, required super.max, super.special});
 }
 
+/// The price depends on the day: weekdays differ, or there is a special price.
+bool pricesVaryByDay(PricedService s) =>
+    priceSummary(s) is! SinglePrice || s.specialPrice != null;
+
 PriceSummary priceSummary(PricedService s) {
   final w = weekPrices(s);
   final (:min, :max) = priceRange(s);

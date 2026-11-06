@@ -13406,4 +13406,78 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get s0809_setupNote =>
       'Đặt giá cuối tuần, giá từng ngày hoặc giá ngày lễ trong từng gói.';
+
+  @override
+  String s0401_priceRange(String min, String max) {
+    return '$min–$max';
+  }
+
+  @override
+  String s0401_weekendSub(String amount) {
+    return 'T7–CN $amount';
+  }
+
+  @override
+  String get s0401_perDaySub => 'giá theo ngày';
+
+  @override
+  String s0401_continueFrom(String amount) {
+    return 'Tiếp tục · từ $amount';
+  }
+
+  @override
+  String s0402_weekdayPrice(String amount) {
+    return 'Ngày thường $amount';
+  }
+
+  @override
+  String s0402_holidayPrice(String amount) {
+    return 'Lễ $amount';
+  }
+
+  @override
+  String get s0402_weekendTag => 'cuối tuần';
+
+  @override
+  String s0402_holidayTag(String name) {
+    return 'ngày lễ: $name';
+  }
+
+  @override
+  String get s0402_pricesFailed =>
+      'Chưa tải được ngày lễ để tính giá ngày này.';
+
+  @override
+  String s0403_packageDay(String name, String day) {
+    return 'Gói $name · $day';
+  }
+
+  @override
+  String get s0403_dayReasonWeekend => '(cuối tuần)';
+
+  @override
+  String s0403_dayReasonSpecial(String name) {
+    return '($name)';
+  }
+
+  @override
+  String get s0403_dayPriceNote =>
+      'Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.';
+
+  @override
+  String s0301_priceSheetTitle(String name) {
+    return 'Bảng giá · $name';
+  }
+
+  @override
+  String get s0301_specialRow => 'Ngày lễ, ngày đặc biệt';
+
+  @override
+  String get s0301_priceSheetNote =>
+      'Giá đúng của ngày bạn chọn hiện ở bước chọn lịch. Chưa gồm dịch vụ đi kèm.';
+
+  @override
+  String photographerWeekendFrom(String price) {
+    return 'T7–CN từ $price';
+  }
 }

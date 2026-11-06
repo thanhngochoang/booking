@@ -9,6 +9,10 @@ import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
+import 'package:photobooking/data/pricing/special_days.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
@@ -310,6 +314,64 @@ void main() {
         reason: 'leaving the calendar tab closes its listener',
       );
       h.dispose();
+    },
+  );
+
+  testWidgets(
+    'a package priced by day shows its price line; a tap opens the price table and "Đặt gói này" books it',
+    (tester) async {
+      final w = await _world(tester);
+      w.discovery.services.add(
+        const ServiceSummary(
+          id: 's9',
+          photographerId: 'p1',
+          name: 'Chân dung giá ngày',
+          priceVnd: 1500000,
+          durationMinutes: 120,
+          dayPrices: {
+            Weekday.mon: 1500000,
+            Weekday.tue: 1500000,
+            Weekday.wed: 1500000,
+            Weekday.thu: 1500000,
+            Weekday.fri: 1500000,
+            Weekday.sat: 1800000,
+            Weekday.sun: 1800000,
+          },
+          specialPrice: 2200000,
+        ),
+      );
+      await tester.pumpWidget(
+        w.app(
+          '/u/p1?tab=services',
+          extraOverrides: [
+            holidayRepositoryProvider.overrideWithValue(
+              FakeHolidayRepository(),
+            ),
+            specialDayRepositoryProvider.overrideWithValue(
+              FakeSpecialDayRepository(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('T2–T6 1,5M · T7–CN 1,8M · Lễ 2,2M'),
+        findsOneWidget,
+      );
+      // One price: still the full amount on the right, a tap books at once.
+      expect(find.text('3.200.000₫'), findsOneWidget);
+
+      await tester.ensureVisible(_key('service-s9'));
+      await tester.tap(_key('service-s9'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bảng giá · Chân dung giá ngày'), findsOneWidget);
+      expect(find.text('Thứ 2 – Thứ 6'), findsOneWidget);
+      expect(find.text('stub /u/p1/book?serviceId=s9'), findsNothing);
+
+      await tester.tap(_key('price-sheet-book'));
+      await tester.pumpAndSettle();
+      expect(find.text('stub /u/p1/book?serviceId=s9'), findsOneWidget);
     },
   );
 

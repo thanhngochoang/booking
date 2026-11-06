@@ -37,6 +37,8 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
+import 'package:photobooking/data/pricing/special_days.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/skills/skills_server_info.dart';
@@ -243,6 +245,11 @@ Future<BookingWorldHandles> pumpBookingRoute(
 
   /// More pages, e.g. a stand-in for S29.02 that opens S29.06.
   List<RouteBase> extraRoutes = const [],
+
+  /// Public holidays by year, and the ranges `p1` set as special days
+  /// (#316); none by default.
+  Map<int, List<Holiday>> holidays = const {},
+  List<SpecialDayRange> specialRanges = const [],
 }) async {
   final effectiveNow = now ?? worldBookingToday;
   final effectiveBookings = bookings ?? FakeBookingRepository();
@@ -275,6 +282,11 @@ Future<BookingWorldHandles> pumpBookingRoute(
   final addonRepo = FakeAddonRepository();
   for (final a in addons) {
     addonRepo.seed(a);
+  }
+  final holidayRepo = FakeHolidayRepository(holidays);
+  final specialDayRepo = FakeSpecialDayRepository();
+  for (final r in specialRanges) {
+    specialDayRepo.seed('p1', r);
   }
 
   tester.view.physicalSize = viewSize;
@@ -446,6 +458,8 @@ Future<BookingWorldHandles> pumpBookingRoute(
     realPaymentsProvider.overrideWithValue(realPayments),
     paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
     addonRepositoryProvider.overrideWithValue(addonRepo),
+    holidayRepositoryProvider.overrideWithValue(holidayRepo),
+    specialDayRepositoryProvider.overrideWithValue(specialDayRepo),
     ...extraOverrides,
   ];
 
