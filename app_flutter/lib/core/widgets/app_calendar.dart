@@ -770,8 +770,9 @@ class _DashedOutline extends CustomPainter {
 }
 
 /// Bottom sheet with an [AppCalendar] and the primary "Chọn" button; returns
-/// the chosen day, or null when dismissed. [initial] is shown selected and
-/// its month opens first. [today] marks today when the caller has a clock.
+/// the chosen day, or null when dismissed. [initial] is shown selected when
+/// it is enabled and inside first..last; its month opens first either way.
+/// [today] marks today when the caller has a clock.
 /// [disabledDay] dims days inside first..last that cannot be picked.
 Future<DateTime?> showAppDatePicker(
   BuildContext context, {
@@ -844,13 +845,24 @@ class _PickerSheet extends StatefulWidget {
 
 class _PickerSheetState extends State<_PickerSheet> {
   late DateTime _month = _openMonth();
-  late DateTime? _selected = widget.initial == null
-      ? null
-      : calendarDay(widget.initial!);
+  late DateTime? _selected = _pickableInitial();
   late DateTimeRange? _range = widget.range;
 
   /// The range is final (not just a first tap waiting for its end).
   late bool _rangeDone = widget.range != null;
+
+  /// [initial] is only preselected when it can be picked: inside first..last
+  /// and not disabled. Otherwise "Chọn" stays off until the user taps a day.
+  DateTime? _pickableInitial() {
+    if (widget.initial == null) {
+      return null;
+    }
+    final day = calendarDay(widget.initial!);
+    final outside =
+        day.isBefore(calendarDay(widget.first)) ||
+        day.isAfter(calendarDay(widget.last));
+    return outside || (widget.disabledDay?.call(day) ?? false) ? null : day;
+  }
 
   DateTime _openMonth() {
     final at = widget.initial ?? widget.today ?? widget.first;

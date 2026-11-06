@@ -883,6 +883,57 @@ void main() {
       expect(result, _d(10));
     });
 
+    testWidgets('a disabled initial day is not preselected: Chọn stays off '
+        'until an enabled day is tapped', (tester) async {
+      Object? result = 'unset';
+      await tester.pumpWidget(
+        opener(
+          (r) => result = r,
+          (c) => showAppDatePicker(
+            c,
+            initial: _d(10),
+            first: _d(1, 10),
+            last: _d(31, 12),
+            disabledDay: (d) => d.day == 10,
+          ),
+        ),
+      );
+      await tester.tap(find.text('mở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chọn'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('Chọn'), findsOneWidget);
+      expect(result, 'unset');
+      await tester.tap(_cell(_d(12)));
+      await tester.pump();
+      await tester.tap(find.text('Chọn'));
+      await tester.pumpAndSettle();
+      expect(result, _d(12));
+    });
+
+    testWidgets('an initial day outside first..last is not preselected', (
+      tester,
+    ) async {
+      Object? result = 'unset';
+      await tester.pumpWidget(
+        opener(
+          (r) => result = r,
+          (c) => showAppDatePicker(
+            c,
+            initial: _d(5, 10),
+            first: _d(1, 11),
+            last: _d(31, 12),
+          ),
+        ),
+      );
+      await tester.tap(find.text('mở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chọn'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('Chọn'), findsOneWidget);
+      expect(result, 'unset');
+    });
+
     testWidgets('dismissing the picker returns null', (tester) async {
       Object? result = 'unset';
       await tester.pumpWidget(
