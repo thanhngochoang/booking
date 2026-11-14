@@ -142,10 +142,12 @@ class _DeliveryReviewScreenState extends ConsumerState<DeliveryReviewScreen> {
     final rounds = roundsAsync.value ?? const [];
     final currentRound = rounds.isNotEmpty ? rounds.last : null;
 
+    // `reviewed` is a legacy status after approved (reviewing now only sets reviewedAt): the link stays (booking-be#31).
     final isApproved = booking.status == BookingStatus.approved ||
-        booking.status == BookingStatus.completed;
+        booking.status == BookingStatus.completed ||
+        booking.status == BookingStatus.reviewed;
 
-    // Delivery Link: watchLink ONLY when approved/completed per Task 8 spec
+    // Delivery Link: watchLink ONLY once approved (approved/completed/reviewed) per Task 8 spec
     final DeliveryLink? link = isApproved
         ? ref.watch(deliveryLinkProvider(widget.bookingId)).value
         : null;
