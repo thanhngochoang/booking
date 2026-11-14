@@ -415,8 +415,6 @@ create table refunds (
   updated_at      timestamptz not null default now()
 );
 create index ix_refunds_pending on refunds (status, last_attempt_at) where status = 'pending';
-create index ix_staff_approvals_status_requester on staff_approvals (status, requested_by);
-create index ix_staff_approvals_status_kind on staff_approvals (status, kind);
 create index ix_refunds_awaiting on refunds (status, confirm_by) where status = 'awaiting_account';
 
 -- #141 S22.01 lịch sử thanh toán của khách. Firestore giữ hình chiếu do trigger ghi (`users/{uid}/payments/{paymentId}`,
@@ -895,6 +893,8 @@ create table staff_approvals (
 );
 -- Mỗi thực thể một yêu cầu đang chờ (thay cho tài liệu khoá staff_approval_locks của Firestore).
 create unique index ux_staff_approvals_pending on staff_approvals (entity_type, entity_id) where status = 'pending';
+create index ix_staff_approvals_status_requester on staff_approvals (status, requested_by);
+create index ix_staff_approvals_status_kind on staff_approvals (status, kind);
 create table app_config (key text primary key, value jsonb not null, version int not null default 1, updated_at timestamptz not null default now());
 ```
 

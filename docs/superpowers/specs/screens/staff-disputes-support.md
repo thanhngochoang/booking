@@ -94,10 +94,13 @@ Booking `shot` có `now > shotAt + deliveryDays` và chưa `delivered`: chip đ�
 | Action | admin | finance | support | sales |
 |---|---|---|---|---|
 | `dispute.view` (đầy đủ) | ✓ | — | ✓ | — |
+| `dispute.evidence.view` (tệp minh chứng) | ✓ | — | ✓ | — |
 | `dispute.view_summary` (số tiền, trạng thái, kết quả) | ✓ | ✓ | ✓ | — |
 | `dispute.resolve`, `dispute.chat_view` | ✓ | — | ✓ | — |
 | `support.view_help`, `support.reply`, `support.assign`, `support.close`, `support.note` | ✓ | — | ✓ | ✓ |
 | `support.view_dispute` | ✓ | — | ✓ | — |
+
+`dispute.view` chỉ mở danh sách và chi tiết khiếu nại; tệp minh chứng được cổng bằng `dispute.evidence.view`, không phải `dispute.view` (ruling 7), để một quyền xem khiếu nại thêm sau cho finance không mở tệp.
 
 `APPROVAL_KINDS` thêm `dispute_resolve` (đề xuất và duyệt đều cần `dispute.resolve`; cần hai người khi `refundAmount ≥ twoPersonThreshold`).
 
@@ -105,7 +108,7 @@ Booking `shot` có `now > shotAt + deliveryDays` và chưa `delivered`: chip đ�
 - `resolveDispute`: `assertStaff(request, 'dispute.resolve')` thay cho `staffRole == 'admin'`; ghi `audit_log` (`dispute.resolve`, `diff` có outcome); đi qua `staff_approvals` khi đủ ngưỡng.
 - `support_threads`: thêm `assigneeId: string | null` (server-only, rules không trả cho người dùng: tách sang `support_threads_staff/{threadId}` nếu rules không lọc được trường; plan quyết), subcollection `staff_notes`.
 - Tin staff: `senderId: null` (K4). CLI `npm run support -- reply` đổi theo.
-- `getSensitiveFileUrl` `kind: dispute_evidence`: đường dẫn thật của plan S18 là `disputeEvidence/{uid}/{disputeId}/{fileId}`; callable nhận `{entityId: disputeId, file}` và chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` (sửa bảng `kind` ở spec dashboard §5.2).
+- `getSensitiveFileUrl` `kind: dispute_evidence`: đường dẫn thật của plan S18 là `disputeEvidence/{uid}/{disputeId}/{fileId}`; callable nhận `{entityId: '<uid>/<disputeId>', file}` và chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` (sửa bảng `kind` ở spec dashboard §5.2).
 - Mới: `getBookingChatForDispute({disputeId, before?})` → 50 tin nhắn chat booking trước mốc `before` (chỉ khi khiếu nại `open` hoặc mới có kết quả trong 7 ngày), ghi `audit_log` `dispute.chat_view`.
 
 **Đọc (lớp đọc BFF):** `disputes` theo `(status, createdAt)`; `support_threads` theo `(status, awaitingStaff, lastMessageAt)` và `(assigneeId, lastMessageAt)`; tin nhắn theo `(createdAt)`. Index thêm vào `firestore.indexes.json`. DTO cho finance bỏ `description`, `evidencePaths`, `threadId`.

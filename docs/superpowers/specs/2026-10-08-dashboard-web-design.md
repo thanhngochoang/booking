@@ -246,11 +246,13 @@ audit_log/{ulid}
 
 `kind` của `getSensitiveFileUrl` (ticket sau thêm vào bảng khi cần):
 
-| `kind` | Đường dẫn | Quyền |
-|---|---|---|
-| `award_proof` | `awardProofs/{uid}/{awardId}/{file}` | `award.review` |
-| `business_doc` | `businessDocs/{uid}/{file}` (S21) | `verification.review` |
-| `dispute_evidence` | `disputeEvidence/{uid}/{disputeId}/{fileId}` (S18); chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` | `dispute.view` |
+| `kind` | `entityId` | Đường dẫn | Quyền |
+|---|---|---|---|
+| `award_proof` | `<uid>/<awardId>` | `awardProofs/{uid}/{awardId}/{file}`; chỉ ký khi đường dẫn nằm trong `awardProofs/{awardId}.files[].storagePath` (ruling 8), không thì `not_found` | `award.review` |
+| `business_doc` | `<uid>` | `businessDocs/{uid}/{file}` (S21) | `verification.review` |
+| `dispute_evidence` | `<uid>/<disputeId>` | `disputeEvidence/{uid}/{disputeId}/{fileId}` (S18); chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` | `dispute.evidence.view` (ruling 7) |
+
+`entityId` và `file` mỗi đoạn (tách bằng `/`) chỉ gồm `A-Za-z0-9_.-`, không có `..`; sai số đoạn hay ký tự thì `invalid_argument`. Dòng audit `file.view` có `entityType` = `kind` và `entityId` = đường dẫn đầy đủ.
 
 Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | reset-mfa <uid>` (Admin SDK, chạy với service account) để tạo admin đầu tiên và chữa cháy.
 

@@ -31,7 +31,7 @@ Plan: `docs/superpowers/plans/2026-11-14-162-dashboard-foundation.md`. Spec: `do
 4. Bỏ vai trò được phép khi dòng `staff_members` còn dù user Auth đã mất (bỏ qua bước Auth); `countAdmins` phải đọc admin trong giao dịch, không dùng `count()`; đổi vai trò giữ `grantedBy`/`grantedAt`; `findUserForStaff` lấy `staffRole` từ `staff_members`.
 5. Id khoá duyệt là `${entityType}:${entityId}` (`:` không có trong hai bảng chữ cái; `approvalLockId` ném lỗi nếu có); chỉ xoá khoá khi nó còn trỏ đúng yêu cầu đang đóng.
 6. `MFA_DEV_BYPASS` chỉ có hiệu lực khi `FUNCTIONS_EMULATOR=true`; test chặn việc đặt nó (hay `FUNCTIONS_EMULATOR`) trong mọi `firebase/functions/.env*` đã commit (chỉ `.env.local`, bị gitignore, được đặt).
-7. Hành động xem minh chứng khiếu nại tên **`dispute.evidence.view`** (admin, support), không phải `dispute.view`: `dispute.view` để dành cho danh sách/chi tiết của #142 (có finance), nên "finance không bao giờ thấy minh chứng" là cấu trúc. **Spec `screens/staff-disputes-support.md` còn dùng `dispute.view` cho xem đầy đủ: cần đối chiếu khi làm #165.**
+7. Hành động xem minh chứng khiếu nại tên **`dispute.evidence.view`** (admin, support), không phải `dispute.view`: `dispute.view` để dành cho danh sách/chi tiết của #142 (có finance), nên "finance không bao giờ thấy minh chứng" là cấu trúc. Spec `screens/staff-disputes-support.md` đã có thêm dòng `dispute.evidence.view` cho tệp minh chứng.
 8. Minh chứng giải thưởng chỉ ký những đường dẫn có trong `awardProofs/{awardId}.files[].storagePath`; ký trước, ghi audit `file.view`, rồi trả URL; cổng staff chạy trước khi kiểm `kind`.
 9. Tường import là danh sách cho phép: ngoài `src/server` chỉ `firebase/app` và `firebase/auth` trong họ firebase; `import()` động cũng bị kiểm (ESLint + `test/purity.test.ts`); mọi file `src/server/**` import `server-only`.
 10. `DecisionDialog` bắt lỗi từ chối, mở khoá và hiện lỗi trong dòng `role="alert"`; thứ tự sắp xếp nằm ở `QueueLayout` để `j`/`k` đi theo hàng đang hiện.
@@ -40,6 +40,7 @@ Plan: `docs/superpowers/plans/2026-11-14-162-dashboard-foundation.md`. Spec: `do
 13. `/staff/approvals` và mục menu chỉ cho `canApproveAny(role) || canRequestAny(role)`; vai trò khác nhận 403. Spec dashboard dòng S23.15 đã sửa theo.
 14. Hai chỉ mục tổ hợp của `staff_approvals` khai báo trong `firestore.indexes.json`, test kiểm có chỉ mục khớp như audit.
 15. Server action ghi gọi `requireStaff('<action>')` trước (phiên đăng nhập trong 12 giờ); `runCallable` đổi mọi lỗi không phải `CallableError` thành `{ok:false, code:'internal'}`, chỉ log mã.
+16. **Triển khai App Hosting**: deploy từ gốc repo qua `firebase.apphosting.json`, file này chỉ có khối `apphosting` cộng danh sách `ignore`; khối `apphosting` đã bỏ khỏi `firebase/firebase.json`; `apps/dashboard/test/apphosting-archive.test.ts` kiểm nội dung gói nén (có `apps/dashboard` và `packages/domain`, không có phần còn lại của repo); backend phải tạo không nối GitHub vì `prepare.js` hỏi tương tác. Rulings 1–16 đều là quyết định cuối.
 
 **Quy ước và quyết định kèm theo (từ plan)**
 
@@ -63,9 +64,16 @@ Mỗi ticket sửa `packages/domain/src/staff_permissions.ts` (thêm vào `STAFF
 
 Khi một ticket thêm `kind` vào `APPROVAL_KINDS`, các hàm `approvableKinds`/`requestableKinds` làm mục "Chờ duyệt" và thẻ đếm tự đúng: viết `ApprovalKindSpec` đủ `requestAction`, `approveAction`, `stillValid` (chỉ đọc) và `run` (tự ghi audit của thao tác gốc, actor là người duyệt, `diff` nêu cả hai uid). Danh sách bên trên là bản tại 2026-11-14; nguồn sự thật là spec của từng ticket.
 
-## Lưu ý triển khai App Hosting (chưa quyết, trước khi bật Blaze)
+## Triển khai App Hosting (ruling 16; chưa thử trên lần deploy thật, trước khi bật Blaze)
 
-Đường deploy `deploy-dashboard` chưa chạy được như cấu hình: firebase-tools 15.34.2 nén `options.projectRoot` = thư mục chứa file `--config`, tức `firebase/`, rồi App Hosting tìm `rootDir` (`apps/dashboard`) trong gói đó. `apps/dashboard` và `packages/domain` (import qua đường dẫn tsconfig, ngoài thư mục app) không nằm trong gói. Cần một trong hai: `firebase.json` ở gốc repo cho lần deploy này (gói là cả repo, `rootDir` `apps/dashboard`, có domain), hoặc backend App Hosting nối thẳng GitHub và bỏ job. Giữ giá trị như plan; vô hại khi Blaze còn tắt. Thêm: `apphosting.yaml` mới có `runConfig`, biến môi trường ghi dạng chú thích (giá trị ở console; `NEXT_PUBLIC_*` cũng phải có lúc build); một push chỉ đụng `apps/dashboard/**` chạy lại cả workflow `firebase-deploy` vì danh sách `paths` dùng chung.
+firebase-tools 15.34.2 nén thư mục chứa file `--config` rồi App Hosting tìm `rootDir` trong gói đó, nên cấu hình nằm ở gốc repo: `firebase.apphosting.json` có đúng một khối `apphosting` (`backendId` `dashboard`, `rootDir` `apps/dashboard`) và danh sách `ignore` (cú pháp gitignore) giữ `apps/dashboard` và `packages/domain` (import qua đường dẫn tsconfig, ngoài thư mục app), loại phần còn lại của repo. Khối `apphosting` đã gỡ khỏi `firebase/firebase.json`. `apps/dashboard/test/apphosting-archive.test.ts` mô phỏng bước nén (`readdirRecursive`) và kiểm nội dung gói. Backend phải tạo không nối GitHub, vì `prepare.js` hỏi tương tác. Cách này chưa được thử trên một lần deploy thật; vô hại khi Blaze còn tắt. Thêm: `apphosting.yaml` mới có `runConfig`, biến môi trường ghi dạng chú thích (giá trị ở console; `NEXT_PUBLIC_*` cũng phải có lúc build); một push chỉ đụng `apps/dashboard/**` chạy lại cả workflow `firebase-deploy` vì danh sách `paths` dùng chung. Test `apps/dashboard/test/env-files.test.ts` cấm `MFA_DEV_BYPASS` khác rỗng trong mọi `.env*` đã commit và mọi biến báo hiệu emulator trong `apphosting*.yaml` và `firebase.apphosting.json`.
+
+## Follow-ups
+
+- Các callable admin cũ (`resolveDispute`, `reviewAward`, `reviewSpotClaim`, `event.ts` phần admin/sales) chỉ kiểm claim, không có TOTP và không kiểm thu hồi phiên. Chúng chuyển sang `gate()` trong #163–#166 và phải xong trước khi bật Blaze hoặc có staff thật.
+- App Check cho lời gọi BFF → callable, khi bật `enforceAppCheck`.
+- Bộ lọc audit không lọc được dòng `file.view` theo thực thể, vì regex id loại ký tự '/'.
+- `deploy-dashboard` không chờ các kiểm tra dashboard xong.
 
 ## Còn mở (hoãn đến review cuối hoặc ticket sau)
 
@@ -73,7 +81,7 @@ Khi một ticket thêm `kind` vào `APPROVAL_KINDS`, các hàm `approvableKinds`
 - Hai lần render mỗi lần ghi (`revalidatePath` + `router.refresh()`).
 - S23.11: bộ lọc chip so với ô chọn trong mock; S23.15: phụ đề so với mock; S23.10: avatar ở các hàng.
 - Kiểm chỉ mục `in` + `__name__` của truy vấn duyệt trên emulator thật (CI hoặc review cuối).
-- Test: tên test cũ "non-admin" ở `payout_use_cases.test.ts`; CLI chi trả chưa có ca finance; `guardEnv` thiếu ca (credentials với host emulator, host Auth không local, thiếu `GCLOUD_PROJECT`); `staff list` chỉ đọc `staff_members` nên lệch chỉ ở claim không thấy được; chưa có `scripts/staff-local.sh`; test thu hồi phiên phụ thuộc thứ tự; khoá duyệt "ý định sau thắng" nếu một giao dịch đặt pending mới rồi expired cũ trên cùng thực thể (chưa có chỗ dùng).
+- Test: `guardEnv` thiếu ca (credentials với host emulator, host Auth không local, thiếu `GCLOUD_PROJECT`); `staff list` chỉ đọc `staff_members` nên lệch chỉ ở claim không thấy được; chưa có `scripts/staff-local.sh`; test thu hồi phiên phụ thuộc thứ tự; khoá duyệt "ý định sau thắng" nếu một giao dịch đặt pending mới rồi expired cũ trên cùng thực thể (chưa có chỗ dùng).
 - Tăng cường truy cập: roving tabindex cho `DataTable`; `ScreenCode` chỉ nghe `popstate`; ngăn kéo studio chỉ ẩn bằng CSS (chưa test).
 - Playwright: spec `mfa.spec` bỏ qua khi `MFA_DEV_BYPASS=1` (CI luôn bật bypass), nên đường "gọi callable không có TOTP" chỉ kiểm tay; e2e chưa chạy trên runner GitHub.
 - Sau khi cấp vai trò mới, phiên cũ của người được cấp bị thu hồi và họ phải đăng nhập lại: hành vi có chủ đích.
