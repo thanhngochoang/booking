@@ -292,7 +292,7 @@ staff_approvals/{ulid}
   | S23.09 | Tổng quan staff: các hàng đợi, số việc, việc quá hạn | `/staff` | mọi staff |
   | S23.10 | Staff: cấp, đổi, bỏ vai trò; đặt lại xác thực hai lớp | `/staff/team` | admin |
   | S23.11 | Nhật ký kiểm toán | `/staff/audit` | admin |
-  | S23.15 | Chờ duyệt lần hai (§5.4; mã cấp ở spec #163) | `/staff/approvals` | ai có quyền duyệt ít nhất một `kind` |
+  | S23.15 | Chờ duyệt lần hai (§5.4; mã cấp ở spec #163) | `/staff/approvals` | ai có quyền duyệt hoặc đề xuất ít nhất một `kind` (`canApproveAny \|\| canRequestAny`) |
 
   S23.01–S23.07 có route web khi spec ticket của chúng chốt (ví dụ `/staff/payouts`). Mã mới cho màn staff còn lại lấy tiếp từ S23.12 theo thứ tự viết spec ticket.
 - Studio: use case mới **S28 · Studio trên web**; mã S28.yy do spec #167 và #169 cấp.

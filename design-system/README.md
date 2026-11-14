@@ -313,7 +313,13 @@ Các file cũ (`colors.xml`, `dimens.xml`, `styles.xml`) vẫn giữ nguyên đ�
 </style>
 ```
 
-## 7. Quy ước
+## 7. Dashboard web
+
+CSS của dashboard web (booking-be `apps/dashboard/src/styles/tokens.css`) **không** sửa tay và không đọc file này trực tiếp: nó do `apps/dashboard/tool/gen_tokens_css.mjs` sinh từ một bản chụp cố định của `design-system/tokens.json` (`apps/dashboard/design-tokens/tokens.json`), commit được ghim ở `apps/dashboard/design-tokens/tokens.lock` (`ref=<sha>`). `npm run tokens:check` trong CI báo lỗi khi CSS lệch bản chụp.
+
+Đổi token ở đây thì dashboard chưa đổi theo: cần một PR ở booking-be đổi `tokens.lock` sang commit mới, chạy `npm run tokens:sync` rồi `npm run tokens:css`, và commit cả hai file sinh ra. Component và CSS của dashboard chỉ dùng token (test `no-raw-hex` cấm mã màu thô).
+
+## 8. Quy ước
 
 - Tên token Android: `snake_case`, tiền tố theo lớp: primitive không tiền tố (`brand_500`, `space_4`), semantic `color_*` / `spacing_*` / `text_*`, component `<widget>_<property>`.
 - `android:letterSpacing` trong style chỉ có tác dụng từ API 21; trên API 15‑20 bị bỏ qua, không lỗi.

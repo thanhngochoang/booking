@@ -432,6 +432,33 @@ Tag chỉ báo thời điểm vào mùa của điểm chụp. `SeasonTag({String
 #### SlotGrid · Mới
 Lưới suất chụp theo giờ bắt đầu (mock `.pkg`, S29.06). `SlotGrid({required List<({String start, String end, bool free})> slots, String? selected, required ValueChanged<String> onPick, String? semanticsLabel})`. Bốn cột (ba cột khi rộng dưới 300dp), ô bo 14dp nền kính viền mảnh: giờ bắt đầu đậm 13,5 và "–{giờ kết thúc}" 11 bên dưới; ô đang chọn viền màu nhấn, nền nhấn nhạt; suất kín mờ 50% kèm chữ "Đã kín", không chạm được. Mỗi ô là một radio (`inMutuallyExclusiveGroup`, `checked`), đọc "06:00–06:30" hoặc "06:40, Đã kín". Danh sách suất do `freeSlots(window, offer, taken)` của `spot_rules.dart` dựng; skeleton là các ô `AppSkeleton.box` cùng cỡ do màn tự vẽ.
 
+## Web (dashboard) · Đã có (#162)
+
+Component của dashboard web (staff và chủ studio) **không** nằm trong app Flutter: chúng ở booking-be `apps/dashboard/src/components` (Next.js 16, React), dùng token CSS sinh từ `design-system/tokens.json` (xem `design-system/README.md`). Màn dựng từ spec `2026-10-08-dashboard-web-design.md`; mock là `docs/design/dashboard-mock.html`. Tên dưới đây khớp mã trong booking-be.
+
+**Quy ước `.client.tsx`:** file có `'use client'` bắt buộc tên `*.client.tsx` (module chỉ chạy ở trình duyệt mà không có JSX: `*.client.ts`). ESLint và `test/purity.test.ts` kiểm cả hai chiều; file `.client` không được import `src/server`, và mọi file trong `src/server` import `server-only`. Component không có trạng thái hay sự kiện là server component, không có hậu tố.
+
+| Component | File | Việc |
+|---|---|---|
+| `Icon`, `Button`, `StatusChip`, `MoneyText`, `DateTimeText` | `*.tsx` | Nguyên tử: icon Material Symbols Rounded; nút `primary` / `secondary` / `danger` có `loading`; chip theo `tone`; tiền VND nguyên; thời điểm UTC → giờ Việt Nam |
+| `Skeleton`, `DotRingLoader`, `EmptyState` | `*.tsx` | Ba trạng thái chờ và rỗng (vòng chấm như `DotRingLoader` của app) |
+| `ErrorState`, `AsyncView` | `*.client.tsx` | Lỗi có nút thử lại; `AsyncView` bọc mọi lần tải (`status`, `isEmpty`, `skeleton`, `onRetry`) như `AsyncView` của app |
+| `StaffShell`, `StudioShell` | `*.tsx` | Khung hai loại tài khoản; `StaffShell` chỉ hiện mục menu mà `staffMay(role, action)` cho phép, mục "Chờ duyệt" hiện khi `canApprove` (= `canApproveAny \|\| canRequestAny`). Menu ở `nav.ts` (`STAFF_NAV`, `STUDIO_NAV`), mỗi ticket thêm mục của mình |
+| `ShellFrame` | `.client.tsx` | Phần tương tác của hai khung: thanh bên, ô "Tìm theo mã" (`resolveId`), menu người dùng, ngăn kéo studio |
+| `PageHeader`, `DetailPane`, `DetailEmpty` | `*.tsx` | Đầu trang; ngăn chi tiết bên phải (`title`, `subtitle`, `footer`) |
+| `DataTable`, `QueueLayout` | `.client.tsx` | Bảng sắp xếp được; bố cục hàng đợi: danh sách + ngăn chi tiết, `j`/`k` đi theo thứ tự đang hiện, làm mới 30 giây (`QUEUE_REFRESH_MS`) |
+| `AutoRefresh` | `.client.tsx` | `router.refresh()` theo chu kỳ khi tab đang hiện; S23.09 dùng `OVERVIEW_REFRESH_MS` (60 giây) |
+| `DecisionDialog` | `.client.tsx` | Hộp quyết định: lý do 5–500 ký tự (`reasonMode` `required` \| `none`), `danger`, `confirmDisabled`, `initialFocus`; `onConfirm` bị từ chối thì hiện lỗi `role="alert"` và mở khoá |
+| `SecureFileViewer` | `.client.tsx` | Xem tệp nhạy cảm qua callable `getSensitiveFileUrl` (URL ký 5 phút, mỗi lần xem một dòng audit `file.view`); hình mờ gồm email người xem và giờ xem |
+| `ScreenCode` | `.client.tsx` | Nhãn mã màn (`S23.xx`) khi bật `?debug=1` ở môi trường dev |
+| `Toast` (`ToastProvider`, `useToast`) | `.client.tsx` | Thông báo ngắn |
+| `IdleTimeout`, `SessionSync` | `.client.tsx` | Tự đăng xuất sau 30 phút không thao tác (hỏi trước 60 giây); đồng bộ phiên Firebase với cookie `__session` |
+| `OtpInput` | `.client.tsx` | Sáu ô nhập mã TOTP |
+
+Id resolver của ô "Tìm theo mã" nằm ở `src/lib/id-resolvers.ts` (`registerIdResolver`, `resolveId`), không phải component.
+
+---
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
