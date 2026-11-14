@@ -20,12 +20,14 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'content_fixtures.dart';
+import 'fake_price_rule_repository.dart';
 import 'screen_host.dart';
 
 /// Thursday 1 Oct 2026 on the Vietnamese calendar.
@@ -43,6 +45,9 @@ class PhotographerWorld {
   final Map<String, Object> prefsValues;
   final intro = FakePhotographerIntroRepository();
   final packages = FakeServicePackageRepository();
+  late final FakePriceRuleRepository priceRules = FakePriceRuleRepository(
+    today: () => today,
+  );
   final availability = FakeAvailabilityRepository();
   final users = FakeUserRepository();
   final auth = FakeAuthRepository();
@@ -63,6 +68,7 @@ class PhotographerWorld {
     await users.ensureProfile(u);
     await users.setRole(u.uid, role);
     uid = u.uid;
+    priceRules.ownerUid = uid;
   }
 
   /// The stored public profile of the signed-in photographer.
@@ -89,6 +95,7 @@ class PhotographerWorld {
     userRepositoryProvider.overrideWithValue(users),
     photographerIntroRepositoryProvider.overrideWithValue(intro),
     servicePackageRepositoryProvider.overrideWithValue(packages),
+    priceRuleRepositoryProvider.overrideWithValue(priceRules),
     availabilityRepositoryProvider.overrideWithValue(availability),
     calendarTodayProvider.overrideWithValue(today),
     imagePickerProvider.overrideWithValue(picker),

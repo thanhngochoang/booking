@@ -194,7 +194,7 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
                         ),
                         const SizedBox(height: AppSpace.s2),
                         Text(
-                          l.s0809_setupNote,
+                          l.setupPriceNote,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: muted,
                           ),

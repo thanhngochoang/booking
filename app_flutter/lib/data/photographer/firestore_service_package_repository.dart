@@ -3,6 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
 
+/// `FieldValue.delete()` for every field of [kLegacyPackagePriceFields]: the
+/// rules' `validService` checks the whole document after an update, so a
+/// package that still holds one of them is refused unless the write removes it.
+final _dropLegacyPriceFields = {
+  for (final f in kLegacyPackagePriceFields) f: FieldValue.delete(),
+};
+
 class FirestoreServicePackageRepository implements ServicePackageRepository {
   FirestoreServicePackageRepository({FirebaseFirestore? db}) : _override = db;
 
@@ -38,8 +45,7 @@ class FirestoreServicePackageRepository implements ServicePackageRepository {
   @override
   Future<void> update(String uid, String id, ServicePackageInput input) =>
       _col(uid).doc(id).update({
-        // Fields the new input leaves out are removed, not kept stale.
-        for (final f in kPackagePriceFields) f: FieldValue.delete(),
+        ..._dropLegacyPriceFields,
         ...packageToFirestore(input),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -50,13 +56,18 @@ class FirestoreServicePackageRepository implements ServicePackageRepository {
   @override
   Future<void> setActive(String uid, String id, bool active) => _col(uid)
       .doc(id)
-      .update({'active': active, 'updatedAt': FieldValue.serverTimestamp()});
+      .update({
+        ..._dropLegacyPriceFields,
+        'active': active,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
   @override
   Future<void> reorder(String uid, List<String> idsInOrder) {
     final batch = _db.batch();
     for (var i = 0; i < idsInOrder.length; i++) {
       batch.update(_col(uid).doc(idsInOrder[i]), {
+        ..._dropLegacyPriceFields,
         'order': i,
         'updatedAt': FieldValue.serverTimestamp(),
       });

@@ -269,6 +269,59 @@ void main() {
     expect(find.byKey(const Key('chip-day-pick')), findsOneWidget);
   });
 
+  testWidgets('Chọn ngày opens the app date picker with the lunar day and '
+      'selects the picked day', (tester) async {
+    final world = await _makeWorld();
+    final fakeSpots = FakeSpotRepository();
+    fakeSpots.seedSpot(_spot());
+    fakeSpots.seedSchedule(_schedule(days: const ['2026-10-18']));
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/spots/:spotId',
+          builder: (_, state) =>
+              SpotScreen(spotId: state.pathParameters['spotId']!),
+        ),
+      ],
+      initialLocation: '/spots/spot1',
+    );
+    tester.view.physicalSize = const Size(390, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: router,
+        overrides: [
+          ...world.overrides,
+          spotRepositoryProvider.overrideWithValue(fakeSpots),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('chip-day-pick')));
+    await tester.pumpAndSettle();
+    // 1/9 lunar fell on 10 Oct 2026.
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('app-calendar-lunar-2026-10-10')),
+          )
+          .data,
+      '1/9',
+    );
+    await tester.tap(find.byKey(const ValueKey('app-calendar-day-2026-10-20')));
+    await tester.pump();
+    await tester.tap(find.text('Chọn'));
+    await tester.pumpAndSettle();
+    // The picked day has no schedule: its empty state shows for that day.
+    expect(find.byKey(const Key('chip-day-today')), findsOneWidget);
+    expect(
+      tester.widget<AppChip>(find.byKey(const Key('chip-day-today'))).selected,
+      isFalse,
+    );
+  });
+
   testWidgets('a provider card shows "Có mặt CN 18/10 · 06:00–11:00", the price from and the tomato %', (tester) async {
     final world = await _makeWorld();
     final fakeSpots = FakeSpotRepository();

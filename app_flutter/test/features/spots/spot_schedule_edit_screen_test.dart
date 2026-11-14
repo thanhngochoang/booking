@@ -22,6 +22,7 @@ import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/studio/studio_repository.dart';
 import 'package:photobooking/features/spots/spot_schedule_edit_screen.dart';
 
+import '../../support/calendar_finders.dart';
 import '../../support/fake_spot_repository.dart';
 import '../../support/organizer_world.dart' show makeSpot;
 import '../../support/screen_host.dart';
@@ -176,13 +177,19 @@ Future<({GoRouter router, FakeSpotRepository spots})> _pump(
   return (router: router, spots: repo);
 }
 
-/// Picks [day] of the month the date picker opens on, then OK.
+/// Picks [day] (a `yyyy-MM-dd` key) in the app date picker the field opens,
+/// paging to its month first, then "Chọn".
 Future<void> _pickDate(WidgetTester tester, Key field, String day) async {
   await tester.tap(find.byKey(field));
   await _settle(tester);
-  await tester.tap(find.text(day).last);
+  final cell = calendarCell(parseDayKey(day)!);
+  for (var i = 0; i < 4 && cell.evaluate().isEmpty; i++) {
+    await tester.tap(find.byTooltip('Tháng sau'));
+    await tester.pump();
+  }
+  await tester.tap(cell);
   await tester.pump();
-  await tester.tap(find.text('OK'));
+  await tester.tap(find.text('Chọn'));
   await _settle(tester);
 }
 
@@ -228,8 +235,8 @@ void main() {
     await _pump(tester, path: '/me/spot-schedules/new?spotId=spot_cd');
     expect(find.text('Thêm lịch tại điểm'), findsOneWidget);
     expect(find.text('0 / 8'), findsOneWidget);
-    await _pickDate(tester, const Key('spot-schedule-from'), '10');
-    await _pickDate(tester, const Key('spot-schedule-to'), '15');
+    await _pickDate(tester, const Key('spot-schedule-from'), '2026-10-10');
+    await _pickDate(tester, const Key('spot-schedule-to'), '2026-11-15');
     expect(find.text('T7 10/10'), findsOneWidget);
     expect(find.text('CN 15/11'), findsOneWidget);
     expect(find.text('12 ngày · 06:00–11:00'), findsOneWidget);
@@ -354,6 +361,45 @@ void main() {
     await _settle(tester);
     expect(spots.saveScheduleCalls.single.scheduleId, 'sch1');
     expect(find.text('Đã lưu lịch tại điểm'), findsOneWidget);
+  });
+
+  testWidgets('the date picker shows the lunar day and returns the day', (
+    tester,
+  ) async {
+    await _pump(tester, path: '/me/spot-schedules/new?spotId=spot_cd');
+    await tester.tap(find.byKey(const Key('spot-schedule-from')));
+    await _settle(tester);
+    expect(
+      tester.widget<Text>(calendarLunar(DateTime.utc(2026, 10, 10))).data,
+      '1/9',
+    );
+    await tester.tap(calendarCell(DateTime.utc(2026, 10, 12)));
+    await tester.pump();
+    await tester.tap(find.text('Chọn'));
+    await _settle(tester);
+    expect(find.text('T2 12/10'), findsOneWidget);
+  });
+
+  testWidgets('"Chọn ngày": the calendar shows the lunar day and a tap picks '
+      'the day', (tester) async {
+    await _pump(tester, path: '/me/spot-schedules/new?spotId=spot_cd');
+    await tester.tap(find.text('Chọn ngày'));
+    await _settle(tester);
+    expect(
+      tester.widget<Text>(calendarLunar(DateTime.utc(2026, 10, 10))).data,
+      '1/9',
+    );
+    final day = calendarCell(DateTime.utc(2026, 10, 17));
+    await tester.ensureVisible(day);
+    await tester.tap(day);
+    await _settle(tester);
+    expect(
+      find.byKey(const Key('spot-preview-day-2026-10-17')),
+      findsOneWidget,
+    );
+    await tester.tap(day);
+    await _settle(tester);
+    expect(find.byKey(const Key('spot-preview-day-2026-10-17')), findsNothing);
   });
 
   testWidgets('exactly one AppButton.primary', (tester) async {
