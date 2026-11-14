@@ -12,9 +12,10 @@ import 'package:photobooking/features/account/delete_account_screen.dart';
 import 'package:photobooking/features/account/privacy_screen.dart';
 import 'package:photobooking/features/account/restore_account_screen.dart';
 import 'package:photobooking/features/addons/addons_screen.dart';
+import 'package:photobooking/features/day_pricing/day_pricing_screen.dart';
+import 'package:photobooking/features/day_pricing/price_rules_screen.dart';
 import 'package:photobooking/features/packages/my_packages_screen.dart';
 import 'package:photobooking/features/packages/package_edit_screen.dart';
-import 'package:photobooking/features/packages/special_days_screen.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
 import 'package:photobooking/features/awards/my_awards_screen.dart';
@@ -682,10 +683,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           fromSetup: state.uri.queryParameters['from'] == 'setup',
         ),
       ),
+      // S08.10 and its list (#316). The old special days route lands on the
+      // calendar.
+      GoRoute(
+        path: '/me/day-pricing',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => DayPricingScreen(
+          serviceId: state.uri.queryParameters['service'],
+        ),
+      ),
+      GoRoute(
+        path: '/me/day-pricing/rules',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, state) => PriceRulesScreen(
+          fromCalendar: state.uri.queryParameters['from'] == 'calendar',
+        ),
+      ),
       GoRoute(
         path: '/me/special-days',
-        redirect: (_, _) => photographersOnly(),
-        builder: (_, _) => const SpecialDaysScreen(),
+        redirect: (_, _) => photographersOnly() ?? '/me/day-pricing',
       ),
       // S29.03 and S29.04 (#194); `new` before `:scheduleId`.
       GoRoute(

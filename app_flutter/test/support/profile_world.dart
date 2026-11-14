@@ -23,6 +23,7 @@ import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
@@ -38,6 +39,7 @@ import 'package:photobooking/features/photographer_profile/profile_section.dart'
 
 import 'badges_world.dart';
 import 'discovery_world.dart';
+import 'fake_price_rule_repository.dart';
 import 'fake_review_repository.dart';
 import 'screen_host.dart';
 
@@ -78,6 +80,12 @@ class ProfileWorld {
   final skills = FakeSkillsRepository();
   final contacts = FakePhotographerContactRepository();
   final reviews = FakeReviewRepository();
+
+  /// The price series of any photographer (S03.01 "Gói"); none unless a test
+  /// seeds some, with `providerId` of the photographer.
+  final priceRules = FakePriceRuleRepository(
+    today: () => DateTime.utc(2026, 10, 1),
+  );
 
   /// Badge catalogue of the app; nobody holds a badge unless a test earns one.
   final badges = FakeBadgeRepository(catalog: badgeCatalogue());
@@ -153,6 +161,7 @@ class ProfileWorld {
     verificationRepositoryProvider.overrideWithValue(verifications),
     photographerIntroRepositoryProvider.overrideWithValue(intros),
     recruitRepositoryProvider.overrideWithValue(recruits),
+    priceRuleRepositoryProvider.overrideWithValue(priceRules),
   ];
 
   Widget app(

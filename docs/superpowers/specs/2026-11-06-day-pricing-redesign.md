@@ -27,8 +27,8 @@ Qua bốn vòng mock, chủ dự án chốt (2026-11-06):
 |---|---|---|
 | R1 | Gói chỉ còn `price` (giá thường). **Bỏ** `dayPrices`, `specialPrice`, `priceMode`, `holidays/{year}`, `special_days`, CLI `holidays`, seed ngày lễ. Thay thẳng, không có đường tương thích: PR #326 chỉ ở `develop`, chưa lên `main`, chưa có release. | chủ dự án; kiểm tra git 2026-11-06 |
 | R2 | Mọi giá khác giá thường là một **chuỗi giá** `photographers/{uid}/price_rules/{id}` thuộc một gói, với `repeat` ∈ {`none`, `weekly`, `yearly`}, cờ `lunar` cho hằng năm theo âm lịch, ngoại lệ và mốc kết thúc như §4.1. | chủ dự án ("giống Google Calendar") |
-| R3 | Giá một ngày: lấy các chuỗi của gói **chứa ngày đó** (sau khi áp ngoại lệ), xếp theo bậc **`none` > `yearly` > `weekly`**; bậc cao nhất thắng; cùng bậc lấy **giá cao nhất**; không có chuỗi nào → `price`. Ngoại lệ có giá riêng dùng giá đó ở bậc của chuỗi; ngoại lệ "bỏ ngày" làm chuỗi không chứa ngày đó. | thiết kế |
-| R4 | Sửa một ngày đang thuộc chuỗi có ba lựa chọn: **Chỉ ngày này** (ghi ngoại lệ), **Ngày này và các ngày sau** (chuỗi cũ `until` = hôm trước, chuỗi mới `start` = ngày này, cùng quy tắc, giá mới), **Cả chuỗi** (đổi giá chuỗi). Xoá cũng ba lựa chọn tương ứng (bỏ ngày khỏi chuỗi / cắt chuỗi / xoá chuỗi). | chủ dự án |
+| R3 | Giá một ngày: lấy các chuỗi của gói **chứa ngày đó** (sau khi áp ngoại lệ), xếp theo bậc **`none` > `yearly` > `weekly`**; bậc cao nhất thắng; cùng bậc lấy **giá cao nhất**, cùng giá thì chuỗi có **id nhỏ nhất** (từ điển) thắng, để tên chuỗi hiện ở S04.02 luôn bằng `ruleName` của booking; không có chuỗi nào → `price`. Ngoại lệ có giá riêng dùng giá đó ở bậc của chuỗi; ngoại lệ "bỏ ngày" làm chuỗi không chứa ngày đó. | thiết kế |
+| R4 | Sửa một ngày đang thuộc chuỗi có ba lựa chọn: **Chỉ ngày này** (ghi ngoại lệ), **Ngày này và các ngày sau** (chuỗi cũ `until` = hôm trước, chuỗi mới `start` = ngày này, cùng quy tắc, giá mới), **Cả chuỗi** (đổi giá chuỗi). Xoá cũng ba lựa chọn tương ứng (bỏ ngày khỏi chuỗi / cắt chuỗi / xoá chuỗi). "Ngày này và các ngày sau" ở ngày mà phần chuỗi cũ (trước ngày đó) không còn lần nào từ hôm nay thì thay hoặc xoá cả chuỗi, không để lại chuỗi chết. Sửa **cả chuỗi** bỏ các ngoại lệ mà quy tắc mới không còn phủ tới. | chủ dự án; final review 2026-11-06 |
 | R5 | Âm lịch tính bằng thuật toán **Hồ Ngọc Đức** (múi giờ +7) ở cả TS và Dart, chung bảng ca. Ngày–tháng âm trong năm có tháng nhuận lấy **tháng chính**. Dịp âm qua năm (23/12 → 5/1) được phép. | thiết kế; đã kiểm tra Tết 2024–2033 |
 | R6 | Lịch dùng chung `AppCalendar` luôn hiện ngày âm: **số nhỏ cùng hàng, sát chân số ngày dương** (mùng 1 ghi "1/M" màu nhấn). Có `showAppDatePicker` và `showAppDateRangePicker` thay `showDatePicker`/`showDateRangePicker` của Flutter. Mọi màn có lịch chuyển sang control này (§5.6). | chủ dự án |
 | R7 | Sheet Đặt giá: switch **"Lặp lại"** tắt mặc định; bật mới hiện phần chuỗi thụt vào (như Microsoft Teams): dropdown **Chu kỳ** (Hằng tuần / Hằng năm) và switch **Theo âm lịch** (chỉ khi Hằng năm; Hằng tuần thay bằng hàng 7 ô tròn T2…CN). "Áp cho" là dropdown. Không có hàng chip, trừ chip mẫu khi sheet mở trống. | chủ dự án 2026-11-06 |
@@ -57,6 +57,7 @@ Qua bốn vòng mock, chủ dự án chốt (2026-11-06):
 | `exceptions?` | map `yyyy-MM-dd` → int \| null | ≤ 50 khoá. null = ngày bị bỏ khỏi chuỗi; int = giá riêng ngày đó. |
 | `template?` | string | Mã mẫu đã dùng, để danh sách mẫu đánh dấu. |
 | `createdAt`, `updatedAt` | timestamp | |
+| `endsOn?` | `yyyy-MM-dd` | **Chỉ server**: ngày cuối chuỗi còn áp (`to` với `none`, `until` nếu có, lấy ngày nhỏ hơn). Store ghi ở mọi lần ghi; chỉ job hằng ngày đọc (§4.5). Không thuộc `PriceRule` của domain, không có trong bảng Postgres (job SQL tự tính). |
 
 Ràng buộc (`validatePriceRule` kiểm ở callable; app kiểm trước để báo lỗi dưới ô): `none`/`yearly` dài ≤ 92 ngày; `none`: `to ≥ from`, `to ≥ hôm nay` khi tạo, ≤ 730 ngày tới; `until ≥ start`; ≤ 30 chuỗi mỗi gói (app đếm); `serviceId` phải là gói của chủ.
 
@@ -80,7 +81,7 @@ Chỉ còn `price` cho giá. `validService` **từ chối** `dayPrices`, `specia
 | `christmas` | Noel | `yearly` | 12-24 → 12-25 | Dịp khác |
 | `wedding_season` | Mùa cưới | `yearly` | 10-15 → 12-31 | Dịp khác |
 
-### 4.4 Domain (`packages/domain/src/day_pricing.ts` và `lunar.ts`; Dart `core/lunar.dart`, `data/pricing/day_pricing.dart`)
+### 4.4 Domain (`packages/domain/src/day_pricing.ts` và `lunar.ts`; Dart `core/lunar.dart`, `data/pricing/price_rules.dart`; `day_pricing.dart` chỉ còn `Weekday`, `weekdayOf`, `kMaxPriceVnd`)
 
 ```ts
 // lunar.ts
@@ -104,18 +105,18 @@ validatePriceRule(rule, today, serviceIds): void                      // DomainE
 PRICE_RULE_TEMPLATES
 ```
 
-Bảng ca chung (`test/data/contracts/day_pricing_cases.json`): Tết (mùng 1) 2024-02-10, 2025-01-29, 2026-02-17, 2027-02-06, 2028-01-26, 2029-02-13, 2030-02-03, 2031-01-23, 2032-02-11, 2033-01-31; Giỗ Tổ 2025-04-07, 2026-04-26; 23 tháng Chạp trước Tết 2026 = 2026-02-10, mùng 5 = 2026-02-21; năm nhuận (2025 nhuận tháng 6) lấy tháng chính; dịp âm qua năm ra hai khoảng dương; `weekly` T7–CN; ngoại lệ bỏ ngày (rơi về chuỗi `weekly` nếu có) và ngoại lệ giá riêng; `start`/`until`; bậc `none` > `yearly` > `weekly`; cùng bậc lấy cao nhất; giá trị ngoại lệ không hợp lệ bị bỏ qua; `startingPrice` với chuỗi `weekly` rẻ hơn giá thường.
+Bảng ca chung (`test/data/contracts/day_pricing_cases.json`): Tết (mùng 1) 2024-02-10, 2025-01-29, 2026-02-17, 2027-02-06, 2028-01-26, 2029-02-13, 2030-02-02, 2031-01-23, 2032-02-11, 2033-01-31; Giỗ Tổ 2025-04-07, 2026-04-26; 23 tháng Chạp trước Tết 2026 = 2026-02-10, mùng 5 = 2026-02-21; năm nhuận (2025 nhuận tháng 6) lấy tháng chính; dịp âm qua năm ra hai khoảng dương; `weekly` T7–CN; ngoại lệ bỏ ngày (rơi về chuỗi `weekly` nếu có) và ngoại lệ giá riêng; `start`/`until`; bậc `none` > `yearly` > `weekly`; cùng bậc lấy cao nhất; giá trị ngoại lệ không hợp lệ bị bỏ qua; `startingPrice` với chuỗi `weekly` rẻ hơn giá thường.
 
 ### 4.5 Đặt lịch và tóm tắt công khai
 
 - `createBooking` đọc gói và `price_rules` có `serviceId` = gói (≤ 30 tài liệu) **trước giao dịch**, như cách đọc gói và `special_days` hiện nay (`SpecialDayReader` thành `PriceRuleReader`), tính `priceForDay`, so `expectedPrice` (khác → `price_changed` như cũ), rồi ghi `serviceSnapshot.price`, `priceKind`, `ruleName?` trong giao dịch. Thợ sửa chuỗi đúng lúc đó thì booking lấy giá khách vừa thấy; không đổi cấu trúc giao dịch.
-- Trigger gói và trigger `price_rules` (mới, cùng hàm) tính `priceSummary` của thợ: `startingPrice` (R9), `hasDayPricing` (có chuỗi nào không); bỏ `weekendFrom`. Chuỗi `none` hết hạn làm `startingPrice` đổi mà không có lần ghi nào: job hằng ngày sẵn có (hoặc một job mới lúc 00:05) chạy lại `refreshPriceSummary` cho thợ có chuỗi vừa hết hạn. `SpotSchedule.priceFrom` dùng `startingPrice`.
+- Trigger gói và trigger `price_rules` (mới, cùng hàm) tính `priceSummary` của thợ: `startingPrice` (R9), `hasDayPricing` (có chuỗi nào không); bỏ `weekendFrom`. Chuỗi `none` hết hạn làm `startingPrice` đổi mà không có lần ghi nào: job hằng ngày `expirePriceRules` hỏi `endsOn` trong [hôm nay − 7, hôm qua] và chạy lại `refreshPriceSummary` cho thợ đó (idempotent, nên bỏ lỡ vài lượt vẫn bắt kịp). `SpotSchedule.priceFrom` dùng `startingPrice`.
 - Callable (vùng `asia-southeast1`, chỉ chủ gói; mỗi lệnh một giao dịch, xong thì gọi `refreshPriceSummary`):
   - `savePriceRule({ruleId?, serviceId, price, name?, repeat, lunar?, from?, to?, weekdays?, applyToAll?})`: tạo hoặc sửa cả chuỗi. `applyToAll` (chỉ khi tạo) tạo thêm một chuỗi cho mỗi gói khác bằng `scaledRule` (R8). Trả các id đã ghi.
   - `splitPriceRule({ruleId, day, price?})`: "Ngày này và các ngày sau". Chuỗi cũ `until` = hôm trước; có `price` thì tạo chuỗi mới cùng quy tắc với `start` = `day`; không có `price` là "Kết thúc chuỗi từ ngày này".
   - `setPriceRuleException({ruleId, day, price})`: "Chỉ ngày này". `price` int = giá riêng, `null` = bỏ ngày khỏi chuỗi, `"clear"` = xoá ngoại lệ.
   - `deletePriceRule({ruleId})`.
-  - Lỗi `DomainError('invalid_argument', field)` hoặc `failed_precondition` (`rule_limit`, `exception_limit`) để app hiện đúng dòng lỗi dưới ô.
+  - Lỗi `DomainError('invalid_argument', field)`, hoặc mã riêng `rule_limit`, `exception_limit` (thêm vào `ERROR_CODES` như `addon_limit`; callable trả `failed-precondition` với `details.code` = mã đó) để app hiện đúng dòng lỗi dưới ô.
 - Rules: xoá `match /holidays` và `special_days`; thêm `price_rules` (`signedIn()` đọc, **mọi ghi từ client bị từ chối**); `validService` chỉ nhận `price`.
 - Functions: xoá `tools/holidays.ts`, script `holidays`, test; seed: bỏ `SEED_HOLIDAYS` và `special_days`, thêm cho thợ An ba chuỗi của gói chân dung: Cuối tuần (`weekly`, T7–CN, 1,8M), Mùa cưới (`yearly` 11-14 → 11-22, 2M, ngoại lệ 2026-11-15 = 1,5M), Tết (`yearly` + `lunar` 12-23 → 01-05, 2,5M).
 
@@ -177,7 +178,7 @@ Mã màn giữ S08.08, S08.09, S08.10. Mock: `docs/design/ui-mock.html` `#S08.08
 4. Thẻ gói (chạm → S08.09): tên; "2 giờ · 40 ảnh chỉnh · giao 3 ngày"; giá thường đậm, rồi " · cuối tuần 1,8M · Tết 2,5M" (chuỗi `weekly` nếu có và chuỗi gần nhất sắp tới, tính bằng domain); công tắc bật/tắt. Không tay kéo. Gói tắt: mờ, chip "Đang ẩn".
 5. Nút chính "Thêm gói" → S08.09.
 
-Chế độ Sắp xếp (S08.08-sort): tiêu đề "Sắp xếp gói", "Xong"; mỗi thẻ có tay kéo và nút "Lên"/"Xuống" (mờ ở đầu/cuối), công tắc ẩn; "Xong" ghi `order` một batch. Trống và "tắt gói cuối cùng" như PR #326.
+Chế độ Sắp xếp (S08.08-sort): tiêu đề "Sắp xếp gói", "Xong"; mỗi thẻ có tay kéo và nút "Lên"/"Xuống" (mờ ở đầu/cuối), **không hiện công tắc bật/tắt**; "Xong" ghi `order` một batch. Trống và "tắt gói cuối cùng" như PR #326.
 
 ### 5.2 S08.09 · Thêm/sửa gói (`/me/packages/new`, `/me/packages/:id`, `?from=setup`)
 
@@ -198,7 +199,7 @@ Lưu chỉ ghi `price` (và các trường gói khác). Lỗi dưới ô như c�
 5. Thẻ "Chuỗi của gói": mỗi chuỗi một hàng (biểu tượng lặp hoặc sự kiện, tên, quy tắc "Hằng tuần · T7, CN" / "Hằng năm · 14/11 – 22/11 · 1 ngoại lệ" / "Hằng năm · 23/12 – 5/1 âm lịch", giá). Chạm → S08.10-new ở chế độ sửa cả chuỗi.
 6. Nút chính "＋ Đặt giá" → S08.10-new với từ–tới = khoảng đang chọn (hoặc hôm nay).
 
-Tương tác trên lịch: chạm một ngày → S08.10-day nếu ngày thuộc chuỗi, ngược lại S08.10-new với từ = tới = ngày đó. Kéo từ ngày đầu tới ngày cuối (hoặc chạm hai ngày liên tiếp) → chọn khoảng, rồi "Đặt giá".
+Tương tác trên lịch: chạm một ngày **luôn mở một sheet**: S08.10-day nếu ngày thuộc chuỗi (hoặc đã bị bỏ khỏi một chuỗi), ngược lại S08.10-new với từ = tới = ngày đó. Chọn khoảng chỉ bằng **giữ rồi kéo** từ ngày đầu tới ngày cuối, rồi "Đặt giá" (chạm hai ngày liên tiếp để chọn khoảng chỉ dùng ở các picker, vì ở S08.10 một chạm đã mở sheet).
 
 ### 5.4 S08.10-new · Sheet "Đặt giá" (tạo / sửa cả chuỗi)
 
@@ -222,11 +223,11 @@ Lỗi: "Giá phải lớn hơn 0", "Giá tối đa 1.000.000.000₫", "Khoảng 
 
 ### 5.5 S08.10-day · Sheet "Sửa một ngày trong chuỗi"
 
-Tiêu đề "{Thứ} {ngày}" và tên gói. Dòng chuỗi đang áp ("Mùa cưới · 2.000.000₫ · Hằng năm · 14/11 – 22/11"); nếu ngày thuộc hai chuỗi: dòng phụ "Cuối tuần 1,8M bị Mùa cưới thay". Ô "Giá ngày này" điền sẵn giá hiện tại. Mục "Áp dụng cho" ba radio: **Chỉ ngày này** · **Ngày này và các ngày sau trong chuỗi** · **Cả chuỗi {tên}** (R4). Nút "Lưu". Chữ đỏ "Bỏ ngày này khỏi chuỗi" (với radio "cả chuỗi" thành "Xoá chuỗi"; với "và các ngày sau" thành "Kết thúc chuỗi từ ngày này").
+Tiêu đề "{Thứ} {ngày}" và tên gói. Dòng chuỗi đang áp ("Mùa cưới · 2.000.000₫ · Hằng năm · 14/11 – 22/11"); nếu ngày thuộc hai chuỗi: dòng phụ "Cuối tuần 1,8M bị Mùa cưới thay". Ô "Giá ngày này" điền sẵn giá hiện tại. Mục "Áp dụng cho" ba radio: **Chỉ ngày này** · **Ngày này và các ngày sau trong chuỗi** · **Cả chuỗi {tên}** (R4). Nút "Lưu". Chữ đỏ "Bỏ ngày này khỏi chuỗi" (với radio "cả chuỗi" thành "Xoá chuỗi"; với "và các ngày sau" thành "Kết thúc chuỗi từ ngày này"); cả ba đi qua sheet xác nhận đỏ. Giá điền sẵn theo radio (giá ngày cho hai radio đầu, giá chuỗi cho "Cả chuỗi"); "Chỉ ngày này" với đúng giá hiện tại không ghi gì. Sheet luôn nói về **chuỗi thắng ngày đó**: điền sẵn, "Lưu" ở cả ba radio và chữ đỏ đều sửa chuỗi thắng. Chỉ khi không chuỗi nào thắng (ngày đã bị bỏ khỏi chuỗi) sheet mở trên chuỗi giữ ngoại lệ. Chuỗi nào của gói giữ ngoại lệ ở ngày đó cũng có hành động **"Về giá chuỗi"** (xoá ngoại lệ), để huỷ "bỏ ngày" hoặc giá riêng: ở chuỗi đang mở nhãn là "Về giá chuỗi", ở chuỗi khác ghi tên ("Về giá chuỗi Cuối tuần"). "Về giá chuỗi" nhắm chuỗi giữ ngoại lệ; mọi sửa khác nhắm chuỗi thắng.
 
 ### 5.6 S08.10-list · Chuỗi giá (`/me/day-pricing/rules`)
 
-Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng như §5.3 mục 5, ngoại lệ liệt kê khi ≤ 2 ("CN 15/11: 1,5M"). Chuỗi `none` đã qua tự ẩn. Chạm → S08.10-new sửa. Biểu tượng lịch → về S08.10. Nút chính "＋ Đặt giá".
+Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng như §5.3 mục 5, ngoại lệ liệt kê khi ≤ 2 ("CN 15/11: 1,5M"). Chuỗi không còn lần tới (kể cả `none` đã qua) không hiện ở nhóm gói mà vào một nhóm **"Đã kết thúc"** cho mỗi gói (nằm dưới các chuỗi của gói đó): thu gọn, mờ, chạm mở sheet sửa kèm "Xoá chuỗi" (chúng vẫn tính vào giới hạn 30). Chạm → S08.10-new sửa. Biểu tượng lịch → về S08.10. Nút chính "＋ Đặt giá".
 
 ### 5.7 `AppCalendar` dùng chung (`core/widgets/app_calendar.dart`, `core/lunar.dart`)
 
@@ -243,7 +244,7 @@ Nhóm theo gói ("Chân dung · giá thường 1,5M"), mỗi chuỗi một hàng
 | S03.01 sheet bảng giá | Dòng "Giá thường {giá}", rồi mỗi chuỗi của gói một dòng "{tên} · {quy tắc} — {giá}". |
 | S04.01 | Khoảng giá "1,5M–2,5M" = min/max của giá thường và các chuỗi của gói (không tính `none` đã qua). |
 | S04.02 | `AppCalendar` (có ngày âm) với giá dưới ngày và tên chuỗi rút gọn ("Tết 2,5M") màu nhấn. Tiêu đề khi chọn ngày: "T3 17/2 · Tết · 2.500.000₫". Đọc `price_rules` của gói (một truy vấn). |
-| S04.03, S09 | "(Tết)" từ `serviceSnapshot.ruleName`; "(giá theo ngày)" khi `priceKind = rule` không tên. |
+| S04.03, chi tiết booking | "(Tết)" từ `serviceSnapshot.ruleName`; "(giá theo ngày)" khi `priceKind = rule` không tên. S05.02 hiện chưa có dòng giá nên chưa đổi; chữ này hiện ở mọi chỗ hiện giá của snapshot. |
 | `PhotographerCard`, bộ lọc | "từ {startingPrice}" theo R9; bỏ "T7–CN từ …". |
 
 ## 6. Test
@@ -277,11 +278,13 @@ Giá theo giờ trong ngày; lọc và sắp xếp S02.06 theo đúng giá của
 
 Đã chốt sau builder check 2026-11-06 (quyết định của người viết spec, chủ dự án xem khi duyệt PR):
 - Dữ liệu cũ: PR #326 chưa lên `main`. App khi lưu gói ghi `FieldValue.delete()` cho `dayPrices`, `specialPrice`, `priceMode`, `occasionPrices` nên gói cũ vẫn sửa được dưới rules mới; seed emulator làm lại; một script dọn một lần (`tools/cleanup_day_pricing_v1.ts`, chạy tay) xoá `holidays`, `special_days` và `weekendFrom` trên project staging.
-- `AppCalendar`: mọi màn ở §5.7 nằm trong #316 (chủ dự án: "luôn hiển thị ngày âm trên tất cả các màn hình"). Được tách nhiều PR: control + S08.10 + S04.02 trước, các màn còn lại sau.
+- `AppCalendar`: mọi màn ở §5.7 nằm trong #316 (chủ dự án: "luôn hiển thị ngày âm trên tất cả các màn hình"). Làm hết trong một PR (app), cùng PR booking-be #5 cho phần server.
 - Sheet sửa chuỗi hằng năm: "Từ/Tới" hiện lần tới (lần đang diễn ra nếu hôm nay nằm trong khoảng). Lỗi "Chỉ chọn từ hôm nay trở đi" và "Chỉ chọn trong 2 năm tới" chỉ áp cho `repeat: none`.
 
 
-- Cách kéo chọn khoảng trên `AppCalendar` (long-press rồi kéo, hay chạm hai đầu); cả hai đều phải có.
-- Bộ chọn ngày–tháng âm khi sửa `from`/`to` của chuỗi hằng năm theo âm lịch (wheel hay lịch âm không năm).
-- Rút gọn tên chuỗi trong ô lịch S04.02 (cắt chữ hay từ đầu).
-- Thứ tự chuỗi trong thẻ ở S08.10 (gợi ý: `weekly` trước, rồi theo ngày tới gần nhất).
+Builder đã chốt khi làm (2026-11-06; chi tiết và lý do ở `handover/ledger-day-pricing-series.md`):
+- Cách chọn khoảng trên `AppCalendar`: **có cả hai**, giữ rồi kéo và chạm hai ngày; riêng S08.10 chỉ giữ rồi kéo (chạm mở sheet, §5.3). Khoảng không chứa ngày bị `disabledDay` (ngày cuối bị cắt về trước ngày tắt đầu tiên).
+- Bộ chọn ngày–tháng âm: **không có bộ chọn riêng**; `from`/`to` của chuỗi âm lịch lấy từ ngày dương đã chọn.
+- Rút gọn tên chuỗi trong ô S04.02: cả tên nếu vừa ô, không thì **từ đầu tiên**.
+- Thứ tự chuỗi trong thẻ ở S08.10: `weekly` trước, rồi theo lần tới gần nhất; chuỗi hết lần tới vào nhóm "Đã kết thúc" (§5.6).
+- Tiêu đề tháng mọi lịch là "Tháng {m} / {y}"; ô `AppCalendar` cao ≥ 44 dp, rộng theo màn.

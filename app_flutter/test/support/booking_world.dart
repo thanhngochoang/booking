@@ -38,7 +38,7 @@ import 'package:photobooking/data/photographer/photographer_setup_providers.dart
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/data/pricing/pricing_providers.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/skills/skills_server_info.dart';
@@ -70,6 +70,7 @@ import 'fake_push.dart';
 import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
 import 'fake_chat_repository.dart';
+import 'fake_price_rule_repository.dart';
 import 'fake_review_repository.dart';
 import 'fake_spot_repository.dart';
 import 'screen_host.dart';
@@ -196,11 +197,15 @@ class BookingWorldHandles {
     required this.contactRepo,
     required this.externalLauncher,
     required this.addonRepo,
+    required this.priceRules,
     this.reviewRepo,
   });
 
   final GoRouter router;
   final FakeAddonRepository addonRepo;
+
+  /// The price series of `p1`: seed or change them while the flow is open.
+  final FakePriceRuleRepository priceRules;
   final FakeBookingRepository bookings;
   final FakeAvailabilityRepository availRepo;
   final FakeUserContactRepository contactRepo;
@@ -246,10 +251,11 @@ Future<BookingWorldHandles> pumpBookingRoute(
   /// More pages, e.g. a stand-in for S29.02 that opens S29.06.
   List<RouteBase> extraRoutes = const [],
 
-  /// Public holidays by year, and the ranges `p1` set as special days
-  /// (#316); none by default.
-  Map<int, List<Holiday>> holidays = const {},
-  List<SpecialDayRange> specialRanges = const [],
+  /// The price series of `p1` (#316); none by default.
+  List<PriceRule> priceRules = const [],
+
+  /// Replaces the in-memory price repository (e.g. one that fails).
+  FakePriceRuleRepository? priceRuleRepository,
 }) async {
   final effectiveNow = now ?? worldBookingToday;
   final effectiveBookings = bookings ?? FakeBookingRepository();
@@ -283,10 +289,10 @@ Future<BookingWorldHandles> pumpBookingRoute(
   for (final a in addons) {
     addonRepo.seed(a);
   }
-  final holidayRepo = FakeHolidayRepository(holidays);
-  final specialDayRepo = FakeSpecialDayRepository();
-  for (final r in specialRanges) {
-    specialDayRepo.seed('p1', r);
+  final priceRuleRepo =
+      priceRuleRepository ?? FakePriceRuleRepository(today: () => effectiveNow);
+  for (final r in priceRules) {
+    priceRuleRepo.seed(r);
   }
 
   tester.view.physicalSize = viewSize;
@@ -458,8 +464,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     realPaymentsProvider.overrideWithValue(realPayments),
     paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
     addonRepositoryProvider.overrideWithValue(addonRepo),
-    holidayRepositoryProvider.overrideWithValue(holidayRepo),
-    specialDayRepositoryProvider.overrideWithValue(specialDayRepo),
+    priceRuleRepositoryProvider.overrideWithValue(priceRuleRepo),
     ...extraOverrides,
   ];
 
@@ -488,6 +493,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     contactRepo: contactRepo,
     externalLauncher: externalLauncher,
     addonRepo: addonRepo,
+    priceRules: priceRuleRepo,
     reviewRepo: effectiveReviews,
   );
 }

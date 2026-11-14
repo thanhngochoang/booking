@@ -20,12 +20,31 @@ enum EscrowStatus {
   partiallyRefunded,
 }
 
+/// Where a booking's day price came from (server-written).
+enum PriceKind {
+  /// The package price.
+  base,
+
+  /// A price rule of the package (its name is `ruleName`).
+  rule,
+}
+
 @freezed
 abstract class BookingServiceSnapshot with _$BookingServiceSnapshot {
   const factory BookingServiceSnapshot({
     required String name,
+
+    /// The price of the booking day.
     required int price,
     required int durationMinutes,
+
+    /// `rule` when a price rule set [price]; old bookings are `base`.
+    @Default(PriceKind.base)
+    @JsonKey(unknownEnumValue: PriceKind.base)
+    PriceKind priceKind,
+
+    /// The name of the rule that set [price], when it has one.
+    String? ruleName,
   }) = _BookingServiceSnapshot;
 
   factory BookingServiceSnapshot.fromJson(Map<String, dynamic> json) =>
@@ -429,6 +448,10 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
         name: serviceRaw['name'] as String? ?? '',
         price: servicePrice,
         durationMinutes: (serviceRaw['durationMinutes'] as num?)?.toInt() ?? 60,
+        priceKind: serviceRaw['priceKind'] == 'rule'
+            ? PriceKind.rule
+            : PriceKind.base,
+        ruleName: serviceRaw['ruleName'] as String?,
       ),
       day: data['day'] as String? ?? data['date'] as String? ?? '',
       start: data['start'] as String? ?? '',

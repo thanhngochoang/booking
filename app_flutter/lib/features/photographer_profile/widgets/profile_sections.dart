@@ -11,12 +11,12 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
-import 'package:photobooking/features/packages/widgets/package_price_line.dart';
 import 'package:photobooking/features/packages/widgets/price_table_sheet.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/review/review_labels.dart';
@@ -402,6 +402,10 @@ class ServicesSliver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final packages = ref.watch(profilePackagesProvider(photographerId));
+    // The photographer's price series, one live query shared with the booking
+    // flow; until it answers (or if it fails) a package shows its base price.
+    final rules = ref.watch(providerPriceRulesProvider(photographerId)).value;
+    final today = ref.watch(calendarTodayProvider);
     return switch (packages) {
       AsyncData(:final value) when value.isEmpty => SliverToBoxAdapter(
         child: _Quiet(l.profileNoServices),
@@ -417,18 +421,21 @@ class ServicesSliver extends ConsumerWidget {
             photographerId: photographerId,
             serviceId: service.id,
           );
+          final bounds = packageBounds(service, rules, today);
           return _ServiceTile(
             service: service,
+            bounds: bounds,
             onTap: owner
                 ? () => context.push('/me/packages')
                 // A package priced by day opens its read-only price table,
                 // whose "Đặt gói này" books it (mock #S03.01-prices).
-                : pricesVaryByDay(service)
+                : bounds.min != bounds.max
                 ? () => showPriceTableSheet(
                     context,
                     photographerId: photographerId,
+                    serviceId: service.id,
                     name: service.name,
-                    pricing: service,
+                    basePrice: service.priceVnd,
                     onBook: acceptingOrders ? book : null,
                   )
                 : !acceptingOrders
@@ -450,8 +457,15 @@ class ServicesSliver extends ConsumerWidget {
 }
 
 class _ServiceTile extends StatelessWidget {
-  const _ServiceTile({required this.service, required this.onTap});
+  const _ServiceTile({
+    required this.service,
+    required this.bounds,
+    required this.onTap,
+  });
   final ServiceSummary service;
+
+  /// The lowest and highest price from today on; equal for one price.
+  final ({int min, int max}) bounds;
 
   /// Null: shown, not tappable.
   final VoidCallback? onTap;
@@ -464,7 +478,7 @@ class _ServiceTile extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final s = service;
-    final varies = pricesVaryByDay(s);
+    final varies = bounds.min != bounds.max;
     return Material(
       color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
       borderRadius: _radius,
@@ -493,7 +507,12 @@ class _ServiceTile extends StatelessWidget {
                     // Mock #S03.01-prices: the price line under the meta.
                     if (varies)
                       Text(
-                        packagePriceText(l, s),
+                        l.s0301_byDay(
+                          l.s0401_priceRange(
+                            formatMoney(bounds.min, short: true),
+                            formatMoney(bounds.max, short: true),
+                          ),
+                        ),
                         key: Key('service-price-${s.id}'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,

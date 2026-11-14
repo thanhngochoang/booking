@@ -86,15 +86,16 @@ class _EntryDaysTabState extends ConsumerState<EntryDaysTab> {
     final first = parseDayKey(e.startDay)!;
     final last = parseDayKey(e.endDay)!;
     final current = parseDayKey(_day ?? today)!;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current.isBefore(first)
+    final picked = await showAppDatePicker(
+      context,
+      initial: current.isBefore(first)
           ? first
           : current.isAfter(last)
           ? last
           : current,
-      firstDate: first,
-      lastDate: last,
+      first: first,
+      last: last,
+      today: parseDayKey(today),
     );
     if (picked != null && mounted) setState(() => _day = dayKeyOf(picked));
   }

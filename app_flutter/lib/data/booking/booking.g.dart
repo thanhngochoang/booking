@@ -12,6 +12,14 @@ _BookingServiceSnapshot _$BookingServiceSnapshotFromJson(
   name: json['name'] as String,
   price: (json['price'] as num).toInt(),
   durationMinutes: (json['durationMinutes'] as num).toInt(),
+  priceKind:
+      $enumDecodeNullable(
+        _$PriceKindEnumMap,
+        json['priceKind'],
+        unknownValue: PriceKind.base,
+      ) ??
+      PriceKind.base,
+  ruleName: json['ruleName'] as String?,
 );
 
 Map<String, dynamic> _$BookingServiceSnapshotToJson(
@@ -20,7 +28,11 @@ Map<String, dynamic> _$BookingServiceSnapshotToJson(
   'name': instance.name,
   'price': instance.price,
   'durationMinutes': instance.durationMinutes,
+  'priceKind': _$PriceKindEnumMap[instance.priceKind]!,
+  'ruleName': instance.ruleName,
 };
+
+const _$PriceKindEnumMap = {PriceKind.base: 'base', PriceKind.rule: 'rule'};
 
 _BookingPlace _$BookingPlaceFromJson(Map<String, dynamic> json) =>
     _BookingPlace(

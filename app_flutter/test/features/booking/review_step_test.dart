@@ -17,6 +17,7 @@ import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
 
 import '../../support/booking_world.dart';
+import '../../support/calendar_finders.dart';
 import '../../support/spot_booking_fixtures.dart';
 
 void main() {
@@ -63,11 +64,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // On DateTimeStep: select day 15 and first slot
-    // Found by widget, not by the semantics tree: on a short screen the day
-    // can sit below the scroll fold, where its semantics node is dropped.
-    final day15 = find.byWidgetPredicate(
-      (w) => w is Semantics && w.properties.label == '15 tháng 10, rảnh',
-    );
+    // Found by key, not by the semantics tree: on a short screen the day can
+    // sit below the scroll fold, where its semantics node is dropped.
+    final day15 = calendarCell(DateTime.utc(2026, 10, 15));
     await tester.ensureVisible(day15);
     await tester.pumpAndSettle();
     await tester.tap(day15);
@@ -121,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Navigate to Place then Review
-      await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+      await tester.tap(calendarCell(DateTime.utc(2026, 10, 15)));
       await tester.pumpAndSettle();
 
       final slotChip = find.widgetWithText(AppChip, '06:00');
@@ -450,9 +449,7 @@ void main() {
       }
 
       await next();
-      final day15 = find.byWidgetPredicate(
-        (w) => w is Semantics && w.properties.label == '15 tháng 10, rảnh',
-      );
+      final day15 = calendarCell(DateTime.utc(2026, 10, 15));
       await tester.ensureVisible(day15);
       await tester.tap(day15);
       await tester.pumpAndSettle();

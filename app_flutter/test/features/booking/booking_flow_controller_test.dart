@@ -1,6 +1,7 @@
 // test/features/booking/booking_flow_controller_test.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
@@ -20,6 +21,7 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 
 import '../../support/fake_addon_repository.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/fake_price_rule_repository.dart';
 
 void main() {
   const photographerId = 'p1';
@@ -55,6 +57,7 @@ void main() {
       overrides: [
         clockProvider.overrideWithValue(() => effectiveNow),
         calendarTodayProvider.overrideWithValue(effectiveNow),
+        priceRuleRepositoryProvider.overrideWithValue(FakePriceRuleRepository()),
         profilePackagesProvider(photographerId).overrideWithValue(
           AsyncData(packages ?? [package1, package2]),
         ),
@@ -200,7 +203,12 @@ void main() {
     addTearDown(container.dispose);
 
     const args = BookingFlowArgs(photographerId: photographerId);
+    addTearDown(
+      container.listen(bookingFlowControllerProvider(args), (_, _) {}).close,
+    );
     final ctrl = container.read(bookingFlowControllerProvider(args).notifier);
+    // The photographer's price series load before a day can be priced.
+    await pumpEventQueue();
 
     ctrl.selectService(package1);
     ctrl.selectDay('2026-10-05');
@@ -236,7 +244,12 @@ void main() {
     addTearDown(container.dispose);
 
     const args = BookingFlowArgs(photographerId: photographerId);
+    addTearDown(
+      container.listen(bookingFlowControllerProvider(args), (_, _) {}).close,
+    );
     final ctrl = container.read(bookingFlowControllerProvider(args).notifier);
+    // The photographer's price series load before a day can be priced.
+    await pumpEventQueue();
 
     ctrl.selectService(package1);
     ctrl.next();
@@ -312,7 +325,12 @@ void main() {
     addTearDown(container.dispose);
 
     const args = BookingFlowArgs(photographerId: photographerId);
+    addTearDown(
+      container.listen(bookingFlowControllerProvider(args), (_, _) {}).close,
+    );
     final ctrl = container.read(bookingFlowControllerProvider(args).notifier);
+    // The photographer's price series load before a day can be priced.
+    await pumpEventQueue();
 
     ctrl.selectService(package1);
     ctrl.next();
@@ -343,7 +361,11 @@ void main() {
     final sub = container.listen(bookingFlowControllerProvider(args), (_, _) {});
     addTearDown(sub.close);
 
+    addTearDown(
+      container.listen(bookingFlowControllerProvider(args), (_, _) {}).close,
+    );
     final ctrl = container.read(bookingFlowControllerProvider(args).notifier);
+    await pumpEventQueue();
     ctrl.selectService(package1);
     ctrl.next();
     ctrl.selectDay('2026-10-08');
@@ -363,14 +385,16 @@ void main() {
   group('payment', () {
     const args = BookingFlowArgs(photographerId: photographerId);
 
-    BookingFlowController readyToPay(
+    Future<BookingFlowController> readyToPay(
       ProviderContainer container,
       List<SubmitOutcome> outcomes,
-    ) {
+    ) async {
       final sub = container.listen(bookingFlowControllerProvider(args), (_, _) {});
       addTearDown(sub.close);
       final ctrl = container.read(bookingFlowControllerProvider(args).notifier);
       ctrl.outcomes.listen(outcomes.add);
+      // The photographer's price series load before a day can be priced.
+      await pumpEventQueue();
       ctrl.selectService(package1);
       ctrl.next();
       ctrl.selectDay('2026-10-05');
@@ -409,7 +433,7 @@ void main() {
       final container = makeContainer(bookings: repo);
       addTearDown(container.dispose);
       final outcomes = <SubmitOutcome>[];
-      final ctrl = readyToPay(container, outcomes);
+      final ctrl = await readyToPay(container, outcomes);
 
       ctrl.setMethod(PayMethod.momo);
       await ctrl.submit();
@@ -423,7 +447,7 @@ void main() {
       final container = makeContainer(bookings: repo);
       addTearDown(container.dispose);
       final outcomes = <SubmitOutcome>[];
-      final ctrl = readyToPay(container, outcomes);
+      final ctrl = await readyToPay(container, outcomes);
 
       await ctrl.submit();
       await Future<void>.delayed(Duration.zero);
@@ -443,7 +467,7 @@ void main() {
       final container = makeContainer(bookings: repo);
       addTearDown(container.dispose);
       final outcomes = <SubmitOutcome>[];
-      final ctrl = readyToPay(container, outcomes);
+      final ctrl = await readyToPay(container, outcomes);
 
       await ctrl.submit();
       await Future<void>.delayed(Duration.zero);
@@ -464,6 +488,7 @@ void main() {
         overrides: [
           clockProvider.overrideWithValue(() => today),
           calendarTodayProvider.overrideWithValue(today),
+          priceRuleRepositoryProvider.overrideWithValue(FakePriceRuleRepository()),
           profilePackagesProvider(photographerId).overrideWithValue(
             const AsyncData([package1, package2]),
           ),
@@ -486,7 +511,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       final readsBefore = profileReads;
       final outcomes = <SubmitOutcome>[];
-      final ctrl = readyToPay(container, outcomes);
+      final ctrl = await readyToPay(container, outcomes);
 
       await ctrl.submit();
       await Future<void>.delayed(Duration.zero);
@@ -507,7 +532,7 @@ void main() {
       final container = makeContainer(bookings: repo, poolCache: pool);
       addTearDown(container.dispose);
       final outcomes = <SubmitOutcome>[];
-      final ctrl = readyToPay(container, outcomes);
+      final ctrl = await readyToPay(container, outcomes);
 
       expect(pool.invalidateCalls, 0);
       await ctrl.submit();

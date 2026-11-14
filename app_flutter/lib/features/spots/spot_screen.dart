@@ -79,11 +79,16 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
   }
 
   Future<void> _pickDate(DateTime initialDate, DateTime now) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: now.subtract(const Duration(days: 1)),
-      lastDate: now.add(const Duration(days: 60)),
+    final today = vnToday(now);
+    final first = today.subtract(const Duration(days: 1));
+    final last = today.add(const Duration(days: 60));
+    final at = calendarDay(initialDate);
+    final picked = await showAppDatePicker(
+      context,
+      initial: at.isBefore(first) ? first : (at.isAfter(last) ? last : at),
+      first: first,
+      last: last,
+      today: today,
     );
     if (picked != null && mounted) {
       setState(() {
@@ -803,7 +808,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                 selected: false,
                 leading: const AppIcon(AppIcons.calendar, size: 14),
                 onChanged: (_) => _pickDate(
-                  parseDayKey(effectiveDay) ?? now,
+                  parseDayKey(effectiveDay) ?? vnToday(now),
                   now,
                 ),
               ),

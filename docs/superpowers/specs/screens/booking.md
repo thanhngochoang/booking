@@ -242,13 +242,14 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 - **S04.02**:
   - lịch là `AppCalendar` dùng chung, có ngày âm nhỏ cùng hàng sát chân ngày dương;
   - dòng "Ngày thường {giá}";
-  - ngày có giá khác giá thường ghi giá rút gọn dưới số ngày, màu nhấn; ngày đầu của chuỗi có tên ghi tên rút gọn ("Cưới 2M");
+  - ngày có giá khác giá thường ghi giá rút gọn dưới số ngày, màu nhấn; ngày đầu của chuỗi có tên ghi tên rút gọn (cả tên nếu vừa ô, không thì từ đầu tiên: "Cưới 2M");
   - dòng chọn ngày "{ngày} · {tên chuỗi} · {giá}";
   - nút "Tiếp tục · {giá ngày + dịch vụ đi kèm}".
 - **S04.03**:
   - dòng gói "Gói {tên} · {ngày} ({tên chuỗi})", chuỗi không tên ghi "(giá theo ngày)", giá thường không ghi lý do;
   - câu "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.";
   - `price_changed` dùng thanh hiện có.
+- **S05.02**: chưa có dòng giá nên chưa đổi; "({tên chuỗi})" như S04.03 sẽ hiện ở mọi chỗ hiện `serviceSnapshot.price` (`priceKind`, `ruleName`).
 - **Dữ liệu**: app đọc gói và `price_rules` của gói (một truy vấn), gửi `expectedPrice` = `priceForDay` của ngày. Server tính lại trong giao dịch và ghi `serviceSnapshot.price`, `priceKind`, `ruleName`. Không còn `holidaysProvider`, `specialDaysProvider`.
 - **Chuỗi**: `s0401_priceRange` "{min}–{max}", `s0401_weekendSub` "cuối tuần {amount}", `s0401_perDaySub` "giá theo ngày", `s0401_continueFrom` "Tiếp tục · từ {amount}", `s0402_weekdayPrice` "Ngày thường {amount}", `s0402_rulePrice` "{name} {amount}", `s0402_dayLine` "{day} · {name} · {amount}", `s0403_dayReasonRule` "({name})", `s0403_dayReasonUnnamed` "(giá theo ngày)", `s0403_dayPriceNote` "Giá theo ngày chụp bạn chọn. Đổi lịch sau này vẫn giữ giá đã trả.", `s0301_priceSheetTitle` "Bảng giá · {name}", `s0301_baseRow` "Giá thường", `s0301_byDay` "{range} · theo ngày". Bỏ `s0402_holidayPrice`, `s0402_weekendTag`, `s0402_holidayTag`, `s0403_dayReasonWeekend`, `s0403_dayReasonSpecial`, `s0301_specialRow`.
 - **Chấp nhận**: giá ở S04.02 và S04.03 bằng giá server ghi vào booking với cùng ngày (test với repository giả và bảng ca của domain); gói không có chuỗi không ghi gì dưới ngày; đặt vào Tết năm sau ra giá Tết dù chưa ai nhập gì cho năm đó.

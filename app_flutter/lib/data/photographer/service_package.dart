@@ -2,23 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:photobooking/data/pricing/day_pricing.dart';
-
 /// Durations a package can have (spec S08.01: 1, 2, 3, 4, 6 or 8 hours).
 const kPackageDurationsMinutes = [60, 120, 180, 240, 360, 480];
-
-/// How the editor shows the 7 day prices: weekday and weekend, or one each.
-/// Stored as `priceMode` (`two_levels` | `per_day`).
-enum PriceMode {
-  twoLevels('two_levels'),
-  perDay('per_day');
-
-  const PriceMode(this.code);
-  final String code;
-
-  static PriceMode fromCode(Object? code) =>
-      code == perDay.code ? perDay : twoLevels;
-}
 
 /// What the photographer types for a package. Money is whole VND.
 @immutable
@@ -29,27 +14,17 @@ class ServicePackageInput {
     required this.durationMinutes,
     this.editedCount,
     this.deliveryDays,
-    this.dayPrices,
-    this.specialPrice,
-    this.priceMode = PriceMode.twoLevels,
     this.order,
   });
 
   final String name;
 
-  /// The weekday price (Monday), and the price of all 7 days without
-  /// [dayPrices]. Saving [dayPrices] writes Monday's price here.
+  /// The one price of the package ("Giá ngày thường"). Prices that differ by
+  /// day are price series (`price_rules`), not part of the package.
   final int priceVnd;
   final int durationMinutes;
   final int? editedCount;
   final int? deliveryDays;
-
-  /// Price per weekday; null for one price on all days.
-  final Map<Weekday, int>? dayPrices;
-
-  /// Price on special days (holidays and the provider's own ranges).
-  final int? specialPrice;
-  final PriceMode priceMode;
 
   /// Position in the owner's list, 0-999; null until first reordered.
   final int? order;
@@ -62,9 +37,6 @@ class ServicePackageInput {
       other.durationMinutes == durationMinutes &&
       other.editedCount == editedCount &&
       other.deliveryDays == deliveryDays &&
-      mapEquals(other.dayPrices, dayPrices) &&
-      other.specialPrice == specialPrice &&
-      other.priceMode == priceMode &&
       other.order == order;
 
   @override
@@ -74,11 +46,6 @@ class ServicePackageInput {
     durationMinutes,
     editedCount,
     deliveryDays,
-    dayPrices == null
-        ? null
-        : Object.hashAll(dayPrices!.entries.map((e) => (e.key, e.value))),
-    specialPrice,
-    priceMode,
     order,
   );
 }
@@ -87,7 +54,7 @@ class ServicePackageInput {
 /// as the owner edits it. Customers read the same documents through plan
 /// 3b1's `ServiceSummary`.
 @immutable
-class ServicePackage implements PricedService {
+class ServicePackage {
   const ServicePackage({
     required this.id,
     required this.name,
@@ -95,28 +62,19 @@ class ServicePackage implements PricedService {
     required this.durationMinutes,
     this.editedCount,
     this.deliveryDays,
-    this.dayPrices,
-    this.specialPrice,
-    this.priceMode = PriceMode.twoLevels,
     this.order,
     this.active = true,
   });
 
   final String id;
   final String name;
+
+  /// The price of an ordinary day; series change it for other days.
   final int priceVnd;
   final int durationMinutes;
   final int? editedCount;
   final int? deliveryDays;
-  @override
-  final Map<Weekday, int>? dayPrices;
-  @override
-  final int? specialPrice;
-  final PriceMode priceMode;
   final int? order;
-
-  @override
-  int get price => priceVnd;
 
   /// Hidden packages stay in Firestore so posts and bookings keep a valid
   /// `serviceId`; customers never see them.
@@ -128,9 +86,6 @@ class ServicePackage implements PricedService {
     durationMinutes: durationMinutes,
     editedCount: editedCount,
     deliveryDays: deliveryDays,
-    dayPrices: dayPrices,
-    specialPrice: specialPrice,
-    priceMode: priceMode,
     order: order,
   );
 
@@ -141,9 +96,6 @@ class ServicePackage implements PricedService {
     durationMinutes: durationMinutes,
     editedCount: editedCount,
     deliveryDays: deliveryDays,
-    dayPrices: dayPrices,
-    specialPrice: specialPrice,
-    priceMode: priceMode,
     order: order ?? this.order,
     active: active ?? this.active,
   );
@@ -159,9 +111,6 @@ class ServicePackage implements PricedService {
     durationMinutes: i.durationMinutes,
     editedCount: i.editedCount,
     deliveryDays: i.deliveryDays,
-    dayPrices: i.dayPrices,
-    specialPrice: i.specialPrice,
-    priceMode: i.priceMode,
     order: i.order,
     active: active,
   );
@@ -178,33 +127,27 @@ class ServicePackage implements PricedService {
 }
 
 /// `photographers/{uid}/services/{id}` fields written by the client.
-///
-/// `price` is Monday's price; `dayPrices` is left out when all 7 days cost the
-/// same (one price), and then so is `priceMode`.
-Map<String, dynamic> packageToFirestore(ServicePackageInput p) {
-  final prices = p.dayPrices == null
-      ? (price: p.priceVnd, dayPrices: null)
-      : normalizeDayPrices(p.dayPrices!);
-  return {
-    'name': p.name,
-    'price': prices.price,
-    if (prices.dayPrices != null) ...{
-      'dayPrices': dayPricesToMap(prices.dayPrices!),
-      'priceMode': p.priceMode.code,
-    },
-    'specialPrice': ?p.specialPrice,
-    'order': ?p.order,
-    'durationMinutes': p.durationMinutes,
-    'deliverables': {
-      'editedCount': ?p.editedCount,
-      'deliveryDays': ?p.deliveryDays,
-    },
-  };
-}
+Map<String, dynamic> packageToFirestore(ServicePackageInput p) => {
+  'name': p.name,
+  'price': p.priceVnd,
+  'order': ?p.order,
+  'durationMinutes': p.durationMinutes,
+  'deliverables': {
+    'editedCount': ?p.editedCount,
+    'deliveryDays': ?p.deliveryDays,
+  },
+};
 
-/// The optional price fields [packageToFirestore] left out; an update must
-/// delete them from the document (`order` is kept: only `reorder` sets it).
-const kPackagePriceFields = ['dayPrices', 'specialPrice', 'priceMode'];
+/// Price fields of the first version of day pricing (#326). The new rules'
+/// `validService` accepts only `price`, so every update of a package the app
+/// makes (edit, show or hide, reorder) also deletes these: a package written
+/// back then would otherwise be refused.
+const kLegacyPackagePriceFields = [
+  'dayPrices',
+  'specialPrice',
+  'priceMode',
+  'occasionPrices',
+];
 
 ServicePackage? packageFromFirestore(String id, Map<String, dynamic> d) {
   final name = d['name'];
@@ -217,7 +160,6 @@ ServicePackage? packageFromFirestore(String id, Map<String, dynamic> d) {
   final del = raw is Map ? raw : const {};
   final edited = del['editedCount'];
   final days = del['deliveryDays'];
-  final special = d['specialPrice'];
   final order = d['order'];
   return ServicePackage(
     id: id,
@@ -226,9 +168,6 @@ ServicePackage? packageFromFirestore(String id, Map<String, dynamic> d) {
     durationMinutes: duration is int ? duration : 60,
     editedCount: edited is int ? edited : null,
     deliveryDays: days is int ? days : null,
-    dayPrices: dayPricesFromMap(d['dayPrices']),
-    specialPrice: special is int && special > 0 ? special : null,
-    priceMode: PriceMode.fromCode(d['priceMode']),
     order: order is int ? order : null,
     active: d['active'] != false,
   );
@@ -346,9 +285,6 @@ class FakeServicePackageRepository implements ServicePackageRepository {
                 durationMinutes: input.durationMinutes,
                 editedCount: input.editedCount,
                 deliveryDays: input.deliveryDays,
-                dayPrices: input.dayPrices,
-                specialPrice: input.specialPrice,
-                priceMode: input.priceMode,
                 order: old.order,
               )
             : input,

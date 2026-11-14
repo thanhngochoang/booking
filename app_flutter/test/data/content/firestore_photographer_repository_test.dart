@@ -6,7 +6,6 @@ import 'package:photobooking/data/content/firestore_photographer_repository.dart
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
 
 import '../../support/content_fixtures.dart';
 import 'content_contracts.dart';
@@ -235,6 +234,14 @@ void main() {
       },
     );
 
+    test('hasDayPricing is the server flag, false when absent', () {
+      PhotographerSummary of(Map<String, dynamic> doc) =>
+          photographerSummaryFrom(id: 'p', photographer: doc);
+      expect(of({'hasDayPricing': true}).hasDayPricing, isTrue);
+      expect(of({'hasDayPricing': 'yes'}).hasDayPricing, isFalse);
+      expect(of({}).hasDayPricing, isFalse);
+    });
+
     test('hasTomatoPct needs 5 reviews', () {
       PhotographerSummary of(int tomato, int brick) => photographerSummaryFrom(
         id: 'p',
@@ -307,7 +314,7 @@ void main() {
       expect(s.photographerId, 'p1');
     });
 
-    test('maps the day prices and the special price (#316)', () {
+    test('a package carries only its base price: legacy day prices are ignored (#316)', () {
       final s = serviceFromFirestore('s1', 'p1', {
         'name': 'Chân dung',
         'price': 1500000,
@@ -322,35 +329,9 @@ void main() {
           'sun': 1800000,
         },
         'specialPrice': 2200000,
+        'priceMode': 'perDay',
       })!;
-      expect(s.dayPrices?[Weekday.sat], 1800000);
-      expect(s.specialPrice, 2200000);
-      expect(s.price, 1500000);
-      expect(
-        priceForDayKey(s, '2026-11-14', noSpecialDays).amount,
-        1800000,
-      );
-    });
-
-    test('a package without day prices has one price on every day', () {
-      final s = serviceFromFirestore('s1', 'p1', {
-        'name': 'Chân dung',
-        'price': 1500000,
-      })!;
-      expect(s.dayPrices, isNull);
-      expect(s.specialPrice, isNull);
-      expect(priceForDayKey(s, '2026-11-14', noSpecialDays).amount, 1500000);
-    });
-
-    test('a malformed dayPrices map or a zero special price is ignored', () {
-      final s = serviceFromFirestore('s1', 'p1', {
-        'name': 'Chân dung',
-        'price': 1500000,
-        'dayPrices': {'mon': 1},
-        'specialPrice': 0,
-      })!;
-      expect(s.dayPrices, isNull);
-      expect(s.specialPrice, isNull);
+      expect(s.priceVnd, 1500000);
     });
 
     test('rejects a service without a name or with a non-positive price', () {
