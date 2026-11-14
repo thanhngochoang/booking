@@ -96,6 +96,10 @@ Chỉ mục: `ix_studio_listings_geohash` trên `geohash text_pattern_ops` với
 
 `id`, `listing_id`, `reporter_user_id` (rỗng khi staff ghi hộ yêu cầu gửi qua email, L17), `reason` (`wrong_info` \| `closed` \| `not_studio` \| `duplicate` \| `removal_request`), `note` (≤ 300 ký tự), `status` (`open` \| `resolved`), `created_at`.
 
+### 4.5 `studio_listing_suspects`
+
+Cặp điểm "nghi trùng" chờ staff xem (§5.3): `listing_id`, `other_listing_id` (id nhỏ đứng trước), `reason` (`phone` \| `website_host` \| `name_near` \| `multiple_match`), `status` (`open` \| `dismissed`), `created_at`. Cặp staff đã bỏ qua không được mở lại ở lần gộp sau.
+
 ## 5. Quy trình
 
 ```
