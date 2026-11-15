@@ -384,8 +384,9 @@ create index ix_payments_release on payments (escrow_status, release_after) wher
 
 create table refunds (
   id              text primary key,                    -- khoá chống trùng gửi sang cổng
-  payment_id      text not null references payments(id),
-  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request','verification_fee')),
+  payment_id      text references payments(id),        -- null cho khoản hoàn của chuyển khoản chưa khớp (#342 D7); trong Firestore là '' và ánh xạ sang NULL khi nạp vào SQL
+  transfer_record_id text,                             -- #342: FK payment_notifications(id) (thêm sau khi tạo bảng đó); bản ghi chuyển khoản mà khoản hoàn gửi trả (reason = 'unmatched_transfer')
+  subject_type    text check (subject_type in ('booking','event_registration','instant_request','verification_fee')),  -- null cho khoản hoàn của chuyển khoản chưa khớp (không có chủ thể)
   amount          bigint not null check (amount > 0),
   percent         smallint check (percent between 0 and 100),
   status          text not null check (status in ('awaiting_account','pending','done','failed')),  -- #201: awaiting_account
@@ -409,13 +410,21 @@ create table refunds (
   failure_reason  text,                                -- #201: mã hoặc lý do lỗi từ cổng/ngân hàng
   manual          boolean not null default false,
   from_escrow     boolean not null default true,       -- false: tiền trả lại ngay khi nhận (thừa, chuyển lần hai, trễ), chưa từng vào ký quỹ
-  reason          text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer, duplicate_verification_fee, stale_verification_fee
-  provider_ref    text,                                -- giao dịch của cổng mà tiền được hoàn từ đó
+  reason          text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer, unmatched_transfer, duplicate_verification_fee, stale_verification_fee
+  provider_ref    text,                                -- giao dịch của cổng mà tiền được hoàn từ đó; với hoàn thủ công là mã giao dịch ngân hàng
+  manual_by       text,                                -- #342 D9: uid staff ghi nhận hoàn thủ công
+  manual_paid_at  date,                                -- #342 D9: ngày chuyển tay (giờ Việt Nam)
+  manual_note     text,                                -- #342 D9: lý do staff nhập
   created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
+  updated_at      timestamptz not null default now(),
+  -- #342: đúng một trong hai: khoản hoàn của một payment, hoặc của một chuyển khoản chưa khớp
+  check ((payment_id is not null and transfer_record_id is null) or (payment_id is null and transfer_record_id is not null))
 );
 create index ix_refunds_pending on refunds (status, last_attempt_at) where status = 'pending';
 create index ix_refunds_awaiting on refunds (status, confirm_by) where status = 'awaiting_account';
+-- #342 (S23.03). Firestore: `(status, createdAt)` cho tab Thất bại và Chờ khách chọn tài khoản; `(status, lastAttemptAt)` đã có cho Chờ quá lâu và thẻ "Hoàn tiền thất bại"; `(status, manual, updatedAt DESC)` cho Đã hoàn thủ công.
+create index ix_refunds_status_created on refunds (status, created_at);
+create index ix_refunds_manual_done on refunds (status, manual, updated_at desc);
 
 -- #141 S22.01 lịch sử thanh toán của khách. Firestore giữ hình chiếu do trigger ghi (`users/{uid}/payments/{paymentId}`,
 -- `users/{uid}/private/paymentTotals`); máy chủ riêng đọc view này. Mã trạng thái theo `payerRowOf` (Decision 3 kế hoạch S22),
@@ -458,8 +467,22 @@ create table payment_notifications (              -- 🔒 chỉ máy chủ; kho�
   received_at timestamptz not null,               -- giờ nhận tiền (UTC) do bên cổng báo
   outcome     text not null check (outcome in ('paid','paid_with_refund','partial','refunded','needs_review')),
   payment_id  text references payments(id),       -- null khi needs_review (không khớp khoản nào)
+  amount      bigint check (amount is null or amount > 0),   -- #342: số tiền nhận (null ở bản ghi cũ)
+  content     text,                               -- #342: nội dung chuyển khoản nguyên văn
+  payer_bank_name text,                           -- #342: người chuyển (không bao giờ số tài khoản đầy đủ)
+  payer_account_last4 char(4),
+  payer_name  text,
+  review_status text check (review_status in ('open','resolved')),   -- #342: quyết định của staff với needs_review
+  review_resolution text check (review_resolution in ('assigned','refunded','dismissed')),
+  review_refund_id text references refunds(id),
+  review_decided_by text, review_decided_at timestamptz, review_note text,
   unique (provider, txn_id)
 );
+-- #342 (S23.12). Firestore: `payment_notifications (review.status, receivedAt)` và `(review.status, review.decidedAt DESC)`; `payments (amount, createdAt)` cho gợi ý khoản thanh toán.
+alter table refunds add constraint fk_refunds_transfer_record foreign key (transfer_record_id) references payment_notifications(id);
+create index ix_payment_notifications_review_received on payment_notifications (review_status, received_at);
+create index ix_payment_notifications_review_decided on payment_notifications (review_status, review_decided_at desc);
+create index ix_payments_amount_created on payments (amount, created_at);
 
 create table payout_accounts (                    -- 🔒
   id                 text primary key,
@@ -906,6 +929,7 @@ create index ix_staff_approvals_status_kind on staff_approvals (status, kind);
 create index ix_staff_approvals_status_kind_expires on staff_approvals (status, kind, expires_at);   -- #163: đếm chờ duyệt theo kind và quá hạn; Firestore: `(status, kind, expiresAt)`
 create index ix_staff_approvals_status_kind_requester_expires on staff_approvals (status, kind, requested_by, expires_at);   -- #163: trừ yêu cầu của chính người xem khỏi số quá hạn; Firestore: `(status, kind, requestedBy, expiresAt)`
 -- #163: `platform_config/money` (Firestore) là một dòng của app_config: key = 'money', value = {"twoPersonThreshold": 10000000}.
+-- #342: năm kind mới của APPROVAL_KINDS là mã trong code, không có bảng: transfer_assign, transfer_refund, transfer_dismiss, refund_manual, instant_staff_cancel.
 -- #163: 16 hành động tiền (`payout.*`, `transfer.*`, `refund.*`, `instant.staff_cancel`, `tax.*`, `money_approval.decide`) thay `payout.manage`; hành động là mã trong code, không có bảng.
 create table app_config (key text primary key, value jsonb not null, version int not null default 1, updated_at timestamptz not null default now());
 ```
@@ -965,6 +989,7 @@ create table dispatch.instant_requests (
   version         integer not null default 0
 );
 create index instant_requests_status_city on dispatch.instant_requests (status, city_id);
+create index instant_requests_status_search_deadline on dispatch.instant_requests (status, search_deadline_at);   -- #342: tab "Giữ lâu" của S23.03 (no_match quá 7 ngày); Firestore: `(status, searchDeadlineAt)`
 create index instant_requests_meet_point on dispatch.instant_requests using gist (meet_point);
 -- One open job per photographer.
 create unique index instant_requests_one_open_job on dispatch.instant_requests (photographer_id)
@@ -2021,11 +2046,11 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `bookings/{id}/milestones/{kind}`, `bookings/{id}/deliveries/{round}` | `booking_milestones`, `booking_deliveries` + `booking_delivery_previews` | Đề xuất (spec 10-05) |
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received`; (đề xuất) tài khoản nền tảng của Firestore (`platform_escrow`, `platform_revenue` ở `accountOwnerId`) thành `account_owner_id` null, phân biệt bằng `type` (`fee_charged` là doanh thu) |
-| `refunds/{id}` | `refunds` | `destination.*` → `destination_*`; `candidate.*` → `candidate_*` (#141); `accountLookups.{day,count}` → `account_lookups_day`, `account_lookups_count` (#141); `confirmBy` → `confirm_by` |
+| `refunds/{id}` | `refunds` | #342: `transferRecordId` → `transfer_record_id`, `manualBy`/`manualPaidAt`/`manualNote` → `manual_by`/`manual_paid_at`/`manual_note`; `paymentId` `''` → cột `payment_id` giữ `''` (khoản hoàn chuyển khoản chưa khớp); `destination.*` → `destination_*`; `candidate.*` → `candidate_*` (#141); `accountLookups.{day,count}` → `account_lookups_day`, `account_lookups_count` (#141); `confirmBy` → `confirm_by` |
 | `users/{uid}/payments/{paymentId}` | view `payer_payment_rows` | #141. Hình chiếu S22.01 do `onPaymentWritten`, `onRefundWritten` và `onBookingWrite` ghi; không nhập (dựng lại từ `payments`/`refunds`); `refunds[]` → các dòng `refunds` của khoản; phần tiêu đề join từ chủ thể |
 | `users/{uid}/private/paymentTotals` | (không có bảng) | #141. `{held, refunding}` = tổng trên `payer_payment_rows` còn mở của người trả |
 | `bookings/{id}.refundAccountNeeded` | (không có cột) | #141. Bản sao cho app (thẻ S05.02): có lệnh hoàn `awaiting_account` của một khoản của booking (`refunds` join `payments` theo `subject_id`) |
-| `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
+| `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook; #342: `payer.{bankName,accountLast4,name}` → `payer_*`, `review.{status,resolution,refundId,decidedBy,decidedAt,note}` → `review_*` (`review.paymentId` dùng cột `payment_id`); bản ghi cũ để null |
 | `studio_members/{studioId}_{memberId}_{createdAtMs}` | `studio_members` | Id ghép không thành cột: khoá `(studio_id, member_id, created_at)`; `createdAt` là phần mili giây của id |
 | `studio_quota/{uid}` | `studio_quotas` | `dayKey`→`day`; `studioActions`, `memberActions`→`studio_actions`, `member_actions` |
 | `studio_day_load/{id}` | `studio_day_load_bookings` | Chỉ server; id = studio + ngày; `unassignedIds[]`/`assignedIds[]`→ một dòng mỗi booking, `assigned` phân biệt hai mảng |
