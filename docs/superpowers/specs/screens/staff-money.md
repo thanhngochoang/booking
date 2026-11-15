@@ -65,9 +65,9 @@ Hôm nay chuyển khoản không khớp được khoản nào chỉ được lư
 **Thay đổi dữ liệu:** `TransferRecord` thêm
 - `review?: {status: 'open' | 'resolved', resolution?: 'assigned' | 'refunded' | 'dismissed', paymentId?, refundId?, decidedBy?, decidedAt?, note?}`. `handleTransferNotification` ghi `review.status = 'open'` khi `outcome = needs_review`.
 - `payer?: {bankName?, accountLast4?, name?}`: tách từ `raw` ở server lúc ghi (che sẵn). V2 thêm bản mã hoá đầy đủ (`StoredBankAccount`); khi chưa có V2 thì hoàn cho người chuyển dựa vào thông tin cổng trả lại (`transferRefund` như các đường hoàn tự động hiện có).
-- `Refund.paymentId` thành tuỳ chọn và thêm `transferRecordId?`: khoản hoàn của chuyển khoản không thuộc payment nào (lý do `unmatched_transfer`, `fromEscrow: false`). Cập nhật `domain-model.md` và `relational-schema.md`.
+- `Refund.paymentId` thành tuỳ chọn và thêm `transferRecordId?`: khoản hoàn của chuyển khoản không thuộc payment nào (lý do `unmatched_transfer`, `fromEscrow: false`). Cập nhật `domain-model.md` và `relational-schema.md`. **Đã làm khác (D7, #342):** `paymentId` vẫn là chuỗi bắt buộc, đặt `''` kèm `transferRecordId` thay vì thành tuỳ chọn (tránh sửa khoảng 37 chỗ gọi); chỉ `isUnmatchedTransferRefund(r)` được dùng để nhận ra.
 
-- **Thông tin:** `/staff/transfers` · admin, finance · chưa có. Không phụ thuộc issue Phase 1 nào ngoài #129 (đã merge).
+- **Thông tin:** `/staff/transfers` · admin, finance · ✅ đã làm (#342). Không phụ thuộc issue Phase 1 nào ngoài #129 (đã merge).
 - **Mục đích:** đưa mỗi khoản tiền vào đúng chỗ, hoặc trả lại người chuyển.
 - **Bố cục:** tab **Cần xử lý** · **Đã xử lý** (30 ngày). Bảng: nhận lúc, số tiền, nội dung chuyển khoản (nguyên văn, chữ đều), người chuyển (ngân hàng, tên, •••• 4 số), tuổi. `DetailPane`:
   - Thông tin chuyển khoản như trên + mã giao dịch của cổng.
@@ -81,12 +81,18 @@ Hôm nay chuyển khoản không khớp được khoản nào chỉ được lư
 - **Quá hạn:** quá 24 giờ.
 - **Index:** `payment_notifications (review.status, receivedAt)`; `payments (amount, createdAt)` cho gợi ý.
 - **Chấp nhận:** một bản ghi chỉ được xử lý một lần; gán vào payment đã `paid` bị từ chối (`already_paid`); các trường hợp của bảng §3.3 có test.
+- **✅ đã làm (#342), ghi chú:**
+  - D7: khoản hoàn của chuyển khoản chưa khớp có `paymentId: ''`, `method: gateway`, `providerRef = txnId`, không có `destination`, không ghi bút toán (tiền chưa từng vào sổ); gửi lại qua bộ xử lý `unmatched_transfer`.
+  - D8: gán chuyển khoản dùng lại bộ khớp của chủ thể: `TransferNotification.assignment?: {decidedBy, note, at}`; mọi `SubjectSettler.settle` coi bản ghi đã có là `duplicate` trừ khi `reopensReview(seen, transfer)` (có `assignment` và bản ghi đang `needs_review` mở). Gán vì thế chạy đúng luật §3.3 tự động, ghi đè bản ghi bằng kết quả và `review.resolution = 'assigned'`, nguyên tử trong giao dịch của chủ thể; khoản đã hết hạn thì hoàn toàn bộ (luật chuyển muộn).
+  - Ruling 3: kind duyệt gắn với giá trị người đề xuất đã xem: `transfer_assign` `{recordId, paymentId, amount}`, `transfer_refund` và `transfer_dismiss` `{recordId, amount}`; màn gửi số tiền đã thấy, lệch là `conflict` (stale). Ruling 6: `error.already_paid` = 'Khoản này đã được trả. Chọn khoản khác hoặc hoàn cho người chuyển.'
+  - Gợi ý khoản thanh toán hiện mã, người trả, loại chủ thể và mã ngắn, không hiện tiêu đề booking như mock (tránh đọc thêm theo từng gợi ý, ngân sách §9: tối đa 2 truy vấn mỗi lần mở chi tiết). Tên ngân hàng của người chuyển lấy `shortName` của `vn_banks` (vd `MBBank`).
+  - Playwright: xem `ledger-163-money-b.md`.
 
 ## 5. S23.03 · Hoàn tiền
 
 Hôm nay lỗi cổng khi hoàn biến khoản hoàn thành `failed` + `manual: true` và không gửi lại (Ruling 7); trạng thái `awaiting_account` và gửi lại tự động là V2 (bảng đối chiếu S04, chưa có issue).
 
-- **Thông tin:** `/staff/refunds` · admin, finance · chưa có. Cần #141 (S22) cho tab "Chờ khách chọn tài khoản".
+- **Thông tin:** `/staff/refunds` · admin, finance · ✅ đã làm (#342). Cần #141 (S22) cho tab "Chờ khách chọn tài khoản".
 - **Mục đích:** không để khoản hoàn nào nằm lại.
 - **Bố cục:** tab **Thất bại** (`failed`) · **Chờ quá lâu** (`pending` quá 2 giờ) · **Chờ khách chọn tài khoản** (`awaiting_account` quá 24 giờ, chỉ xem; có khi V2 xong) · **Giữ lâu** (§5.1) · **Đã hoàn thủ công** (30 ngày). Bảng: khách, số tiền, phần trăm, lý do hoàn (nhãn từ `PAYMENT_REFUND_REASONS`), chủ thể (booking / vé / Chụp ngay / chuyển khoản chưa khớp), phương thức gốc, tuổi, lỗi cổng. `DetailPane`: payment gốc (số đã trả, đã hoàn), booking hoặc vé, lịch sử các lần gửi, người chuyển (che).
 - **Tương tác:**
@@ -94,10 +100,18 @@ Hôm nay lỗi cổng khi hoàn biến khoản hoàn thành `failed` + `manual: 
   - Phụ "Đã hoàn thủ công…" → `DecisionDialog`: mã giao dịch ngân hàng, ngày chuyển, lý do → `markRefundManual({refundId, bankRef, paidAt, reason})`: `status = done`, `manual = true`, `providerRef = bankRef`. Theo M2. Plan kiểm bút toán `refund_issued` đã ghi lúc tạo khoản hoàn hay chưa; nếu chưa thì ghi lúc này.
 - **Quá hạn:** Thất bại quá 24 giờ.
 - **Chấp nhận:** "Gửi lại" hai lần liền chỉ tạo một lần chuyển ở cổng giả; khoản đã `done` không đổi được nữa.
+- **✅ đã làm (#342), ghi chú:**
+  - Năm tab là URL `?tab=failed|stale|awaiting_account|long_hold|manual` (D12); `?id=` mở khoản hoàn đó (liên kết từ S23.15), với `?tab=long_hold` thì `id` là yêu cầu Chụp ngay. Huy hiệu số có ở bốn tab đầu (mỗi tab một `count()`); thẻ S23.09 `refunds_failed` quá hạn sau 24 giờ kể từ lần gửi cuối; mục menu `refunds` (icon `currency_exchange`, `refund.view`).
+  - D9: ghi nhận hoàn thủ công giữ `manual: true` khi chuyển `failed` → `done` (`mergeRefundOutcome` lấy `next.manual` khi `done`) và ghi `manualBy`, `manualPaidAt`, `manualNote`, `providerRef = bankRef`; không ghi thêm bút toán `refund_issued` (đã ghi lúc tạo lệnh hoàn).
+  - Ruling 3: `markRefundManual({refundId, amount, bankRef, paidAt, reason})` nhận `amount` mà hộp đã hiện (khác số tiền hiện tại của lệnh hoàn là `conflict`); `paidAt` là ngày giờ Việt Nam, không ở tương lai và không trước ngày tạo lệnh hoàn; `bankRef` 3–64 ký tự, không có khoảng trắng. Nhãn xác nhận đổi thành 'Gửi duyệt lần hai' từ ngưỡng (`>=`).
+  - "Gửi lại" (`retryRefund({refundId, reason})`) có ở tab Thất bại và Chờ quá lâu, hỏi lý do trong hộp xác nhận; 'Đã hoàn thủ công…' chỉ ở Thất bại. Chờ khách chọn tài khoản và Đã hoàn thủ công chỉ xem.
+  - Khách của một hàng là người trả của payment gốc (đọc theo từng payment của trang); khoản hoàn của chuyển khoản chưa khớp không có khách.
 
-### 5.1 Tiền giữ lâu (sau #140)
+### 5.1 Tiền giữ lâu (sau #140) · ✅ đã làm (#342)
 
-Yêu cầu Chụp ngay ở `no_match` giữ tiền tới khi khách huỷ (#140 câu hỏi 5). Tab "Giữ lâu" liệt kê yêu cầu `no_match` quá 7 ngày; "Hoàn cho khách…" gọi `staffCancelInstantRequest({requestId, reason})`, chạy đúng luật huỷ của khách (hoàn 100%) với actor là staff. Chỉ làm khi #140 đã merge; trước đó tab không hiện.
+Yêu cầu Chụp ngay ở `no_match` giữ tiền tới khi khách huỷ (#140 câu hỏi 5). Tab "Giữ lâu" liệt kê yêu cầu `no_match` quá 7 ngày; "Hoàn cho khách…" gọi `staffCancelInstantRequest({requestId, refundVnd, reason})`, chạy đúng luật huỷ của khách (hoàn 100%) với actor là staff. Chỉ làm khi #140 đã merge; trước đó tab không hiện.
+
+**Đã làm (#342):** tab liệt kê yêu cầu `no_match` **đã trả tiền** quá 7 ngày (`INSTANT_LONG_HOLD_DAYS`, truy vấn `status == no_match` và `searchDeadlineAt <= now − 7 ngày`; yêu cầu chưa trả không hiện). `refundVnd` là số hoàn theo `quoteInstantCancel` (100% của khoản đã trả) mà hộp đã hiện và gửi lại (ruling 3: khác là `conflict`); từ ngưỡng thì 'Gửi duyệt lần hai' (kind `instant_staff_cancel`). Yêu cầu huỷ ghi `cancelledBy`/trạng thái như đường huỷ của khách (`cancelled_by_customer`); actor staff nằm ở dòng audit `instant.staff_cancel`, vì mô hình không có giá trị `staff`.
 
 ## 6. S23.14 · Đối soát sao kê ngày (chỉ thiết kế)
 
