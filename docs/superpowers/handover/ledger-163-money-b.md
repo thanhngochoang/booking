@@ -19,7 +19,7 @@ Phần B (#342) cùng tên nhánh `plan/342-transfers-refunds` ở hai repo, d�
   - S23.03 `/staff/refunds?tab=failed|stale|awaiting_account|long_hold|manual&id=…`: reader `server/read/refunds.ts` và `firestore/refunds.ts` (`RefundsReader.page/counts/detail`), DTO `RefundRowDto`, `RefundDetailDto`, `InstantHoldRowDto`, `RefundsPageDto` (`kind: 'refund' | 'hold'`) ở `lib/dto.ts`, `lib/refund-tabs.ts`, thư mục `app/(staff)/staff/refunds/` (page, `RefundsScreen.client`, actions `retryRefundAction`, `markRefundManualAction`, `staffCancelInstantAction`, `loadRefundsPage`, `loadRefundDetail`); mục menu `refunds` ("Hoàn tiền", icon `currency_exchange`, `refund.view`), thẻ `refunds_failed` (quá hạn sau 24 giờ kể từ lần gửi cuối), ánh xạ trong `NAV_ID_OF_CARD`.
   - `entityHref('refund', id)` → `/staff/refunds?id=<id>`; `entityHref('instant_request', id)` → `/staff/refunds?tab=long_hold&id=<id>`; nhãn `approval.kind.refund_manual` 'Ghi nhận hoàn thủ công', `approval.kind.instant_staff_cancel` 'Hoàn tiền Chụp ngay'.
   - `DecisionDialog` có `minLength` (đóng chuyển khoản cần 20 ký tự); hộp "Đã hoàn thủ công…" thêm hai trường qua `children`.
-- **Playwright**: chưa chạy. `apps/dashboard/e2e/refunds.spec.ts` (serial, không retry; dùng hết dữ liệu seed, chạy lại cần seed lại emulator): finance đề xuất hoàn thủ công 12.000.000₫ → admin duyệt ở `/staff/approvals`, khoản hoàn `done`, audit có `approval.request`, `approval.decide`, `refund.mark_manual` → finance gán chuyển khoản vào `PB 7K2MQ8` → finance hoàn tiền Chụp ngay giữ lâu. `roles.spec.ts` cập nhật menu (finance và admin có thêm Chưa khớp, Hoàn tiền; B5 quên bước này).
+- **Playwright**: đã chạy trên emulator 2026-11-15, 20 passed, 1 skipped (mfa.spec). `apps/dashboard/e2e/refunds.spec.ts` (serial, không retry; dùng hết dữ liệu seed, chạy lại cần seed lại emulator): finance đề xuất hoàn thủ công 12.000.000₫ → admin duyệt ở `/staff/approvals`, khoản hoàn `done`, audit có `approval.request`, `approval.decide`, `refund.mark_manual` → finance gán chuyển khoản vào `PB 7K2MQ8` → finance hoàn tiền Chụp ngay giữ lâu. `roles.spec.ts` cập nhật menu (finance và admin có thêm Chưa khớp, Hoàn tiền; B5 quên bước này).
 
 ## Rulings (mỗi dòng một quyết định)
 
@@ -50,9 +50,18 @@ Quyết định của B6 (báo cáo B6):
 17. **Ruling (B6, khách của một hàng)** lấy từ người trả của payment gốc (một lần đọc `payments/{id}` mỗi payment của trang, tối đa 50, cộng một lần tra tên Auth); khoản hoàn của chuyển khoản chưa khớp không có khách.
 18. **Ruling (B6, số hoàn của Giữ lâu)** tính bằng `quoteInstantCancel` của domain trên `{status, amountVnd, paidAt}` đọc được, không dựng đủ `InstantRequest`; hộp gửi lại đúng `refundVnd` đã hiện (ruling 3).
 
+Quyết định của review cuối (fix wave, 2026-11-15):
+
+19. **Ruling (review cuối 1, đánh dấu thủ công và gửi lại):** `mergeRefundOutcome` chỉ nhận `done` do tay (`manual: true`) khi khoản hoàn đang `failed` tại lúc ghi; nếu một người khác vừa bấm "Gửi lại" (`pending`, cuộc gọi cổng có thể đang chạy) thì đánh dấu bị từ chối (`conflict`) để khoản trả qua cổng không bị che; tránh trả hai lần mà chỉ ghi một lần.
+20. **Ruling (review cuối 2, người duyệt thứ hai):** DTO của S23.15 có `details` theo từng kind, dựng ở server từ `params` đã lưu cộng các lần đọc theo id (xoá trùng, tối đa vài lần mỗi hàng); `params` thô không bao giờ ra ngoài, số chỉ hiện tối đa 4 số cuối (M5); lỗi đọc làm hỏng trang thay vì để người duyệt duyệt mù.
+21. **Ruling (review cuối 3, gán vào `bank_qr` hết hạn):** `notificationOfRecord` mang `maskedPayer` (dạng đã che) để bản ghi ghi lại vẫn hiện người chuyển ở tab Đã xử lý, không dựng lại số đầy đủ. Hoàn muộn khi gán vẫn theo luật chuyển muộn: về tài khoản của người trả khoản đó hoặc chờ khách chọn tài khoản; trả đúng người chuyển cần tài khoản mã hoá của V2 nên ngoài phạm vi, và chữ `s23_12.expired_note` nói đúng điều này (nhân viên muốn trả đúng người chuyển dùng "Hoàn cho người chuyển…").
+22. **Ruling (review cuối 4, "Gửi lại"):** `retryRefund` trả thêm `failureReason` khi lần gửi lại kết thúc `failed`; màn hiện toast lỗi 'Cổng vẫn từ chối khoản hoàn ({reason})' (mã qua bảng nhãn nhỏ, rơi về mã thô) và chỉ báo thành công khi trạng thái là `done` hoặc `pending`. Fix direction chỉ nói `refund` nên thêm `failureReason` ở domain là phần mở rộng nhỏ nhất để có lý do.
+23. **Ruling (review cuối 5, huỷ Chụp ngay):** `performStaffCancel` gọi `onPostCommitError` khi gửi hoàn lỗi sau commit (như B2/B3); Functions nối vào `logMoneyError('instant.refund_send')`.
+24. **Ruling (review cuối 6, ngày hoàn thủ công):** ô ngày có `min` là ngày tạo khoản hoàn và `max` là hôm nay theo giờ Việt Nam (`formatVnDate`), nên chú thích trong e2e đúng; DTO `RefundRowDto` thêm `createdAt`.
+
 ## Phần C cần biết
 
-- **Nhóm tiền trên menu** đã có Chi trả, Chưa khớp, Hoàn tiền; Thuế (`tax`, `tax.view`) thêm vào `STAFF_NAV` (`components/nav.ts`) và `roles.spec.ts` (menu finance và admin). Mục "Chờ duyệt" vẫn là mục duyệt duy nhất (D11).
+- **Nhóm tiền trên menu** đã có Chi trả, Chưa khớp, Hoàn tiền; **Phần C thêm** Thuế (`tax`, `tax.view`) vào `STAFF_NAV` (`components/nav.ts`) và `roles.spec.ts` (menu finance và admin); Thuế chưa có trong `STAFF_NAV` hiện nay. Mục "Chờ duyệt" vẫn là mục duyệt duy nhất (D11).
 - **Thẻ S23.09**: `QUEUE_CARDS` nay có `payouts_waiting`, `transfers_open`, `refunds_failed`, `money_approvals`; spec không có thẻ cho thuế. Mẫu thẻ mới: `count()` kèm `orderBy` trên trường khoảng để có chỉ mục ghép (xem `refundsFailed` ở `server/read/firestore/overview.ts`).
 - **Mẫu màn có tab và trang tải thêm**: `refunds/RefundsScreen.client.tsx` (hook `usePaged`, hai `QueueLayout`) và `server/read/firestore/refunds.ts` (hàm `scan` quét tối đa 5 lô); `entityHref` còn thiếu `tax` nếu cần.
 - **Mã nhãn audit**: `audit.action.*` mới có cho nhóm `staff.*` và `approval.*`; dòng `refund.*`, `transfer.*`, `instant.staff_cancel`, `payout.*` hiện mã thô ở S23.11 (hàm `actionLabel` rơi về mã). Phần C có thể thêm nhãn cùng đợt thêm `tax.export`.
@@ -70,7 +79,7 @@ Từ review của B3:
 
 - `staffCancelInstantRequest` có kiểm `r === null` hai lần (để thu hẹp kiểu).
 - Yêu cầu `no_match` chưa trả tiền vẫn huỷ được bằng staff với `refundVnd` 0 (không có tiền đi; audit vẫn ghi).
-- `sendInstantRefunds` nuốt lỗi sau commit mà không gọi `onPostCommitError`.
+- (đã sửa ở review cuối, ruling 23) `sendInstantRefunds` nuốt lỗi sau commit mà không gọi `onPostCommitError`.
 
 Từ review của B4:
 
@@ -91,6 +100,14 @@ Từ B6:
 - `shortId` và cách dựng ` · ` ở `RefundsScreen` lặp với màn chuyển khoản; gom về một hàm dùng chung khi có màn thứ ba.
 - Trang `?id=` của khoản hoàn ở tab `long_hold` bỏ qua (id lúc đó là yêu cầu Chụp ngay); yêu cầu ngoài trang đầu không tự mở được.
 - Chi phí đọc tab hoàn tiền: tối đa 50 lần đọc `payments/{id}` mỗi trang (một lần mỗi payment).
+
+Từ review cuối (hoãn, không sửa):
+
+- Bản ghi `needs_review` cũ viết trước #342 thiếu `review`/`amount`/`content` nên không bao giờ hiện ở S23.12 (không backfill; vô hại khi Blaze còn tắt).
+- Việc tiếp theo: thêm giá trị `staff` cho `InstantRequest.cancelledBy` hoặc một thông báo cho khách (hiện staff huỷ ghi `cancelled_by_customer`, ruling 11).
+- Cửa sổ gợi ý `limit(100)` của S23.12 đếm cả các khoản đã trả (lọc trạng thái xảy ra sau khi đọc), nên có thể bỏ sót ứng viên hợp lệ khi có nhiều khoản cùng số tiền.
+- Chữ lệch mock: `detail_sub` bỏ "(không tồn tại)"; nhãn phương thức hiện "qua cổng/chuyển khoản" thay vì "VietQR/MoMo"; `failureReason` hiện mã thô ở danh sách và chi tiết (chỉ toast "Gửi lại" có bảng nhãn).
+- Chữ mới của S23.15 (`s23_15.details`, `s23_15.d.*`, `s23_15.payment_status.*`) và của toast "Gửi lại" (`s23_03.retry_failed`, `s23_03.failure.*`) ở bảng bên dưới.
 
 ## Chữ tiếng Việt mới không có chữ trong mock (chủ sản phẩm xem lại)
 
@@ -122,3 +139,11 @@ Từ B6 (khoá `s23_03.*`, ngoài những chữ có trong mock hoặc brief):
 | Giữ lâu | Hoàn cho khách… và Hoàn cho khách · Hoàn {amount} cho khách? · Huỷ yêu cầu Chụp ngay của {customer} và hoàn toàn bộ số tiền đã giữ, đúng luật huỷ của khách. · Chụp ngay · {amount} · yêu cầu {id} · Không tìm được nhiếp ảnh gia từ · {n} ngày · Hoàn khi huỷ |
 | Thông báo | Đã gửi lại khoản hoàn · Đã ghi nhận hoàn thủ công · Đã hoàn cho khách · Đã gửi duyệt lần hai |
 | Thẻ | Hoàn tiền thất bại (`queue.refunds_failed`) |
+
+Từ review cuối (khoá `s23_15.*`, `s23_03.*`, `s23_12.expired_note`):
+
+| Nhóm | Chữ |
+|---|---|
+| Chi tiết duyệt S23.15 | Nội dung sẽ chạy · Số tiền chuyển · Nội dung chuyển khoản · Người chuyển · Mã chuyển khoản của khoản thanh toán · Trạng thái khoản thanh toán · Người trả khoản thanh toán · Số tiền hoàn · Mã giao dịch ngân hàng · Ngày chuyển · Thuộc về · Khách · Tài khoản nhận · Chủ tài khoản · Đang chờ thanh toán · Đã hết hạn |
+| Toast "Gửi lại" | Cổng vẫn từ chối khoản hoàn ({reason}) · chưa có tài khoản nhận · cổng không phản hồi · cổng từ chối |
+| Ghi chú gán vào khoản hết hạn (thay chữ cũ) | Khoản này đã hết hạn: gán sẽ hoàn toàn bộ theo luật chuyển muộn, về tài khoản của người trả khoản này hoặc chờ khách chọn tài khoản. Muốn trả lại đúng người chuyển, dùng "Hoàn cho người chuyển…". |

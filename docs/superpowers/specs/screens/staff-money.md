@@ -141,14 +141,15 @@ Làm khi đã chọn tổ chức trung gian (spec thanh toán §10), vì định
 | `holdPayout` | `{payoutId, reason}` | — | `holdPayout` (có) |
 | `resumePayout` | `{payoutId, reason}` | — | `resumePayout` (có) |
 | `executePayout` | `{payoutId, reason}` | — | `executePayout` (có) |
-| `assignUnmatchedTransfer` | `{recordId, paymentId, reason}` | từ 10 triệu | mới, dùng `applyTransfer` |
-| `refundUnmatchedTransfer` | `{recordId, reason}` | từ 10 triệu | mới |
-| `dismissUnmatchedTransfer` | `{recordId, reason}` | từ 10 triệu | mới |
+| `assignUnmatchedTransfer` | `{recordId, paymentId, amount, reason}` | từ 10 triệu | mới, dùng `applyTransfer` |
+| `refundUnmatchedTransfer` | `{recordId, amount, reason}` | từ 10 triệu | mới |
+| `dismissUnmatchedTransfer` | `{recordId, amount, reason}` | từ 10 triệu | mới |
 | `retryRefund` | `{refundId, reason}` | — | `dispatchRefund` / `sendRefundOnce` (V2) |
-| `markRefundManual` | `{refundId, bankRef, paidAt, reason}` | từ 10 triệu | mới |
-| `staffCancelInstantRequest` | `{requestId, reason}` | từ 10 triệu | luật huỷ của #140 |
+| `markRefundManual` | `{refundId, amount, bankRef, paidAt, reason}` | từ 10 triệu | mới |
+| `staffCancelInstantRequest` | `{requestId, refundVnd, reason}` | từ 10 triệu | luật huỷ của #140 |
 | `exportTaxReport` | `{period, reason}` | — | mới (`buildTaxReport` thuần) |
 
+- Các đầu vào gắn với giá trị người đề xuất đã xem: `amount` (số tiền chuyển hoặc số tiền hoàn) cho gán, hoàn, đóng chuyển khoản và `markRefundManual`; `refundVnd` cho `staffCancelInstantRequest`; `paymentId` cho gán. Lệch so với trạng thái hiện tại là `conflict`, và yêu cầu hai người lưu đúng các giá trị này để người duyệt thứ hai duyệt đúng thứ đã xem.
 - Mọi callable: `assertStaff(request, action)` (spec dashboard §4.3), `idempotencyKey` (ULID tạo khi mở hộp), trả `{status: 'done'}` hoặc `{status: 'awaiting_second_approval', approvalId}`.
 - CLI `npm run payouts` giữ nguyên, đi qua cùng use case, nên cũng chịu M2 (CLI không có người thứ hai: thao tác từ 10 triệu bằng CLI tạo yêu cầu S23.15).
 - `getSensitiveFileUrl` thêm `kind` `tax_export` (đường dẫn `exports/tax/…`, quyền `tax.export`).

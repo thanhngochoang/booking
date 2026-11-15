@@ -384,9 +384,9 @@ create index ix_payments_release on payments (escrow_status, release_after) wher
 
 create table refunds (
   id              text primary key,                    -- khoá chống trùng gửi sang cổng
-  payment_id      text not null,                       -- FK payments(id); '' (chuỗi rỗng, không FK) cho khoản hoàn của chuyển khoản chưa khớp (#342 D7)
+  payment_id      text references payments(id),        -- null cho khoản hoàn của chuyển khoản chưa khớp (#342 D7); trong Firestore là '' và ánh xạ sang NULL khi nạp vào SQL
   transfer_record_id text,                             -- #342: FK payment_notifications(id) (thêm sau khi tạo bảng đó); bản ghi chuyển khoản mà khoản hoàn gửi trả (reason = 'unmatched_transfer')
-  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request','verification_fee')),
+  subject_type    text check (subject_type in ('booking','event_registration','instant_request','verification_fee')),  -- null cho khoản hoàn của chuyển khoản chưa khớp (không có chủ thể)
   amount          bigint not null check (amount > 0),
   percent         smallint check (percent between 0 and 100),
   status          text not null check (status in ('awaiting_account','pending','done','failed')),  -- #201: awaiting_account
@@ -416,7 +416,9 @@ create table refunds (
   manual_paid_at  date,                                -- #342 D9: ngày chuyển tay (giờ Việt Nam)
   manual_note     text,                                -- #342 D9: lý do staff nhập
   created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
+  updated_at      timestamptz not null default now(),
+  -- #342: đúng một trong hai: khoản hoàn của một payment, hoặc của một chuyển khoản chưa khớp
+  check ((payment_id is not null and transfer_record_id is null) or (payment_id is null and transfer_record_id is not null))
 );
 create index ix_refunds_pending on refunds (status, last_attempt_at) where status = 'pending';
 create index ix_refunds_awaiting on refunds (status, confirm_by) where status = 'awaiting_account';
