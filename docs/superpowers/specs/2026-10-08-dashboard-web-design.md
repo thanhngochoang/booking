@@ -279,9 +279,20 @@ staff_approvals/{ulid}
 - Bảng `APPROVAL_KINDS` trong `packages/domain/src/staff_approvals.ts`: với mỗi `kind`, `StaffAction` để đề xuất, `StaffAction` để duyệt, và hàm chạy thao tác gốc. Ticket nào thêm thao tác cần hai người thì thêm một dòng vào bảng này.
 - Callable của thao tác gốc tạo yêu cầu `pending` khi luật của thao tác đòi hai người, trả `{status: 'awaiting_second_approval', approvalId}`. Mỗi đối tượng có tối đa một yêu cầu `pending` (`approval_pending`).
 - `decideStaffApproval({approvalId, decision: 'approve' | 'reject', note})`: người duyệt có quyền duyệt của `kind` và khác người đề xuất (`same_person`). `approve` chạy thao tác gốc với `params` đã lưu trong cùng transaction, kiểm lại trạng thái đối tượng; đối tượng đã đổi thì yêu cầu thành `rejected` với ghi chú hệ thống (`stale`). Quá `expiresAt` thì `expired`.
+- **Đường `execute` (#163, D2).** `run(tx, …)` ở trên hợp với thao tác mà kho của nó dùng chung được một giao dịch Firestore. Thao tác tiền đi qua kho riêng của đối tượng (booking, vé, xác minh, chụp ngay, hoàn tiền), mỗi kho tự mở giao dịch, nên `ApprovalKindSpec` có thêm `execute(approver, params, ref)` tuỳ chọn; mỗi `kind` có đúng một trong `run` hoặc `execute`. `approve` một `kind` `execute` đi ba bước:
+  1. **Nhận việc.** Một giao dịch duyệt kiểm đủ như trên (quyền duyệt, `same_person`, `pending`, hạn, `stillValid`), rồi ghi `claimedBy`/`claimedAt` và để dòng `pending`. Dấu nhận việc dưới `APPROVAL_CLAIM_SECONDS = 120` giây khiến duyệt lần hai hoặc `cancelStaffApproval` trả `conflict`; quá 120 giây thì người khác nhận lại được.
+  2. **Chạy.** `execute` chạy thao tác với người duyệt là actor. Mỗi thao tác chỉ chạy được ở một trạng thái của đối tượng nên chạy hai lần là `conflict`, không có lần chi thứ hai. Lỗi `DomainError` có mã trong `STALE_CODES` (`conflict`, `not_found`, `not_eligible`, `already_paid`) nghĩa là đối tượng đã đổi (`stale`). Lỗi khác nhả dấu nhận việc trong giao dịch riêng và ném lại; dòng vẫn `pending`, duyệt lại được.
+  3. **Đóng.** Giao dịch duyệt thứ hai đóng dòng `approved`, hoặc `rejected` với ghi chú `stale`, ghi `approval.decide` và xoá dấu nhận việc. Dòng không còn do người gọi nhận thì trả `conflict`.
+  Trạng thái tiền luôn là sự thật: trường hợp xấu nhất là dòng còn `pending` mà thao tác đã chạy; lần duyệt kế tiếp ra `stale` và đóng dòng đó.
+  **Hợp đồng cho mọi `kind` `execute` (final review #163):**
+  - (a) `APPROVAL_CLAIM_SECONDS` (120) phải lớn hơn timeout của callable duyệt (`PAYMENT_CALLABLE_OPTIONS.timeoutSeconds`, 30), để một lần `execute` còn sống không bao giờ sống lâu hơn dấu nhận việc; test của Functions kiểm điều này.
+  - (b) Mép tiếp quản ở bước đóng: thao tác đã commit nhưng bước đóng thấy dòng đã bị người khác tiếp quản hoặc đã đóng thì người duyệt nhận `conflict`, và dòng có thể hiện `rejected`/`stale` (lần duyệt kia chạy lại bước kiểm trạng thái và thấy đối tượng đã đổi).
+  - (c) `reject` một dòng `execute` còn dấu nhận việc cũ (một lần `execute` bị sập có thể đã chạy) thì chạy `stillValid`; sai thì đóng `rejected` với ghi chú `stale` thay vì từ chối thường.
+  - (d) Mã trong `STALE_CODES` chỉ được đến từ bước kiểm trạng thái đối tượng trước khi ghi gì; adapter (cổng chi, kho) không bao giờ ném chúng, nếu không lỗi adapter bị đọc thành "đối tượng đã đổi".
+  - `params` của `payout_approve` là `{payoutId, accountId, amountNet}`: người duyệt thứ hai duyệt đúng tài khoản và số tiền người đầu đã xem; `stillValid` và `execute` từ chối (stale) khi lô đã đổi tài khoản hoặc số tiền, và dòng thiếu hai trường này coi là stale.
 - `cancelStaffApproval({approvalId})`: chỉ người đề xuất, khi còn `pending`.
 - `audit_log`: một dòng cho đề xuất (`approval.request`), một cho quyết định (`approval.decide`), một cho thao tác gốc (actor là người duyệt, `diff` ghi cả hai uid).
-- Rules: client không đọc, không ghi. Index `(status, requestedAt)`, `(entityType, entityId, status)`.
+- Rules: client không đọc, không ghi. Index `(status, requestedAt)`, `(entityType, entityId, status)`, và cho thẻ chờ duyệt (#163) `(status, kind, expiresAt)`, `(status, kind, requestedBy, expiresAt)`: yêu cầu của chính người xem không tính vào số chờ duyệt.
 - CLI không có người thứ hai: thao tác cần hai người chạy bằng CLI cũng chỉ tạo yêu cầu.
 
 ## 6. Mã màn
