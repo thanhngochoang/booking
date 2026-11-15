@@ -124,12 +124,20 @@ Làm khi đã chọn tổ chức trung gian (spec thanh toán §10), vì định
 
 ## 7. S23.13 · Báo cáo thuế
 
-- **Thông tin:** `/staff/tax` · admin, finance · chưa có. Cần #134 (`taxWithheld`, `taxRateBp` trên khoản chi).
+- **Thông tin:** `/staff/tax` · admin, finance · ✅ đã làm (#343). Cần #134 (`taxWithheld`, `taxRateBp` trên khoản chi).
 - **Mục đích:** đưa kế toán số thuế đã khấu trừ của từng người theo tháng.
 - **Bố cục:** chọn tháng (mặc định tháng trước). Bốn ô: tổng đã chi gộp, thuế GTGT, thuế TNCN, số người. Bảng theo người nhận: tên đã xác minh, loại, giấy tờ •••• 4 số, số lần chi, gộp, GTGT, TNCN, thực nhận. Nút chính "Xuất tệp CSV". Dòng chú thích: "Tỉ lệ 5% GTGT + 2% TNCN cho cá nhân, 0% cho studio, chờ kế toán xác nhận".
 - **Dữ liệu:** `payouts` `status = paid` có `paidAt` trong tháng (giờ Việt Nam), gom theo `payeeId`. Thuế lấy theo khoản chi (đã chụp tỉ lệ), không tính lại.
 - **Xuất tệp:** `exportTaxReport({period: 'YYYY-MM', reason})` → server dựng CSV (UTF-8 có BOM để Excel đọc đúng dấu) gồm các cột trên **cộng số định danh đầy đủ** (giải mã ở server), ghi vào Storage `exports/tax/{period}/{ulid}.csv`, trả URL ký 5 phút; `audit_log` `tax.export`. Tệp tự xoá sau 7 ngày (bước của job hằng ngày). Không cần hai người (không chuyển tiền).
 - **Chấp nhận:** tổng trên màn bằng tổng trong tệp; tháng không có khoản chi nào cho ra tệp chỉ có dòng tiêu đề; mỗi lần xuất một dòng audit.
+- **Đã làm (#343):** khác với chữ của spec ở các điểm sau (D10 và ruling của phần C):
+  - URL tệp CSV do chính callable `exportTaxReport` trả về; `getSensitiveFileUrl` không có `kind` `tax_export` (không màn nào tải lại tệp). Callable trả `not_eligible` ở nơi kho khoá dev không được phép (số định danh đầy đủ chỉ giải mã được bằng kho dev).
+  - GTGT và TNCN tách từ `taxWithheld` đã chụp của khoản chi theo tỉ lệ 500:200 (`DEFAULT_PAYOUT_POLICY.individualTaxBp`); TNCN nhận phần dư làm tròn nên GTGT + TNCN luôn bằng `taxWithheld`.
+  - Lỗi ghi audit thì không có URL: audit được ghi trước khi ký link.
+  - Cột số định danh: ô chỉ gồm chữ số được ghi dạng `="079012344821"` (trong CSV: `"=""079012344821"""`) để Excel giữ số 0 đầu của CCCD và mã số thuế; ô khác vẫn theo quy tắc dưới đây.
+  - Ô CSV bắt đầu bằng `=`, `+`, `-`, `@` được thêm tiền tố `'` để Excel không chạy thành công thức.
+  - Studio và tổ chức chưa có mã số thuế đã duyệt (`verifications/{uid}.business`) hiện "—" ở cột giấy tờ và để trống trong tệp; cá nhân hiện `•••• {4 số}` từ `idLast4`, studio và tổ chức hiện `MST •••• {4 số}`.
+  - Bố cục theo mock: một chip tháng (`calendar_month`, 12 tháng gần nhất) và tỉ lệ nằm ở dòng phụ đề, không có dòng chú thích dưới bảng.
 
 ## 8. Bảng quyền và callable
 
@@ -150,9 +158,9 @@ Làm khi đã chọn tổ chức trung gian (spec thanh toán §10), vì định
 | `exportTaxReport` | `{period, reason}` | — | mới (`buildTaxReport` thuần) |
 
 - Các đầu vào gắn với giá trị người đề xuất đã xem: `amount` (số tiền chuyển hoặc số tiền hoàn) cho gán, hoàn, đóng chuyển khoản và `markRefundManual`; `refundVnd` cho `staffCancelInstantRequest`; `paymentId` cho gán. Lệch so với trạng thái hiện tại là `conflict`, và yêu cầu hai người lưu đúng các giá trị này để người duyệt thứ hai duyệt đúng thứ đã xem.
-- Mọi callable: `assertStaff(request, action)` (spec dashboard §4.3), `idempotencyKey` (ULID tạo khi mở hộp), trả `{status: 'done'}` hoặc `{status: 'awaiting_second_approval', approvalId}`.
+- Mọi callable: `assertStaff(request, action)` (spec dashboard §4.3), `idempotencyKey` (ULID tạo khi mở hộp), trả `{status: 'done'}` hoặc `{status: 'awaiting_second_approval', approvalId}`. **Ngoại lệ (#343):** `exportTaxReport` trả `{url, expiresAt, rows}`, không có `status`.
 - CLI `npm run payouts` giữ nguyên, đi qua cùng use case, nên cũng chịu M2 (CLI không có người thứ hai: thao tác từ 10 triệu bằng CLI tạo yêu cầu S23.15).
-- `getSensitiveFileUrl` thêm `kind` `tax_export` (đường dẫn `exports/tax/…`, quyền `tax.export`).
+- `getSensitiveFileUrl` thêm `kind` `tax_export` (đường dẫn `exports/tax/…`, quyền `tax.export`). **Không làm (#343, D10):** `exportTaxReport` tự trả URL ký, không có `kind` này.
 
 ## 9. Chi phí
 

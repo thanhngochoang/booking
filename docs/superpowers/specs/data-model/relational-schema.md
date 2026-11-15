@@ -1328,6 +1328,7 @@ create table identities (                           -- 🔒 chỉ server; Firest
   gender          text check (gender in ('male','female')),
   id_number_enc   text not null,                    -- mã hoá (KMS); không bao giờ ở dạng rõ
   id_hash         text not null,                    -- HMAC có khoá bí mật
+  id_last4        text check (id_last4 ~ '^[0-9]{4}$'),   -- #343: 4 số cuối, ghi lúc xác minh; null ở bản ghi cũ; dùng cho S23.13
   method          text not null check (method in ('vneid','nfc')),
   provider        text not null,
   provider_ref    text not null,
@@ -2027,7 +2028,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
 | `account_deletions/{uid}` | `account_deletions` | #205 bản ghi yêu cầu xoá tài khoản; `uid` PK, `restoreUntil`→`restore_until`, `done[]`→`done text[]` |
 | `verifications/{uid}` | `verifications` | `steps.*`, `identitySession.*`, `identityAttempts.*`, `rejectReason.*` → cột phẳng có tiền tố; `business.*` → cột `business_*` (cùng bảng); `steps.phone` phản chiếu `user_contacts.phone_verified`; `steps.fee` → `fee_*` (#203; khoản thanh toán là dòng `payments` có `subject_type = 'verification_fee'`) |
-| `users/{uid}/private/identity` | `identities` | Chỉ server đọc/ghi; `idNumberEnc` → `id_number_enc` |
+| `users/{uid}/private/identity` | `identities` | Chỉ server đọc/ghi; `idNumberEnc` → `id_number_enc`, `idLast4` → `id_last4` (nullable, #343) |
 | `identity_hashes/{idHash}` | `identity_hashes` | Id tài liệu = `id_hash`; `uid` → `user_id` |
 | `verificationAudit/{id}` | `verification_audit` | `actorId` → `actor_id`, `otherUid` → `other_user_id` |
 | `fake_identities/{uid}` | (không có bảng) | Chỉ emulator/dev, kết quả giả của `FakeIdentityVerifier` |

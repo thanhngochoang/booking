@@ -204,7 +204,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.10 | Staff: cấp, đổi, bỏ vai trò; đặt lại xác thực hai lớp | `/staff/team` (web) | admin | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ✅ đã làm (#162) | — |
 | S23.11 | Nhật ký kiểm toán | `/staff/audit` (web) | admin | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ✅ đã làm (#162) | — |
 | S23.12 | Chuyển khoản chưa khớp (`needs_review`): gán, hoàn cho người chuyển, đóng | `/staff/transfers` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
-| S23.13 | Báo cáo thuế theo tháng, xuất CSV | `/staff/tax` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.13 | Báo cáo thuế theo tháng, xuất CSV | `/staff/tax` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ✅ đã làm (#343) | — |
 | S23.14 | Đối soát sao kê ngày (chỉ thiết kế, làm khi chọn tổ chức trung gian) | `/staff/reconciliation` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ chỉ thiết kế, chưa có mock | — |
 | S23.15 | Chờ duyệt lần hai (thao tác tiền từ 10 triệu, khôi phục xác minh) | `/staff/approvals` (web) | ai có quyền duyệt | Phase 1.5 (`2026-10-08-dashboard-web-design.md` §5.4, #162) | ✅ đã làm (#162) | — |
 | S23.16 | Tài khoản bị khoá: khoá tạm 7/30 ngày, khoá hẳn (hai người khi thợ còn booking hoặc tiền), mở khoá | `/staff/suspensions` (web) | admin · support (khoá tạm) | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
