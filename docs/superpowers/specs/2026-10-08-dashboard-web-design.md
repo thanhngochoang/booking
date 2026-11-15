@@ -246,11 +246,13 @@ audit_log/{ulid}
 
 `kind` của `getSensitiveFileUrl` (ticket sau thêm vào bảng khi cần):
 
-| `kind` | Đường dẫn | Quyền |
-|---|---|---|
-| `award_proof` | `awardProofs/{uid}/{awardId}/{file}` | `award.review` |
-| `business_doc` | `businessDocs/{uid}/{file}` (S21) | `verification.review` |
-| `dispute_evidence` | `disputeEvidence/{uid}/{disputeId}/{fileId}` (S18); chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` | `dispute.view` |
+| `kind` | `entityId` | Đường dẫn | Quyền |
+|---|---|---|---|
+| `award_proof` | `<uid>/<awardId>` | `awardProofs/{uid}/{awardId}/{file}`; chỉ ký khi đường dẫn nằm trong `awardProofs/{awardId}.files[].storagePath` (ruling 8), không thì `not_found` | `award.review` |
+| `business_doc` | `<uid>` | `businessDocs/{uid}/{file}` (S21) | `verification.review` |
+| `dispute_evidence` | `<uid>/<disputeId>` | `disputeEvidence/{uid}/{disputeId}/{fileId}` (S18); chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` | `dispute.evidence.view` (ruling 7) |
+
+`entityId` và `file` mỗi đoạn (tách bằng `/`) chỉ gồm `A-Za-z0-9_.-`, không có `..`; sai số đoạn hay ký tự thì `invalid_argument`. Dòng audit `file.view` có `entityType` = `kind` và `entityId` = đường dẫn đầy đủ.
 
 Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | reset-mfa <uid>` (Admin SDK, chạy với service account) để tạo admin đầu tiên và chữa cháy.
 
@@ -292,7 +294,7 @@ staff_approvals/{ulid}
   | S23.09 | Tổng quan staff: các hàng đợi, số việc, việc quá hạn | `/staff` | mọi staff |
   | S23.10 | Staff: cấp, đổi, bỏ vai trò; đặt lại xác thực hai lớp | `/staff/team` | admin |
   | S23.11 | Nhật ký kiểm toán | `/staff/audit` | admin |
-  | S23.15 | Chờ duyệt lần hai (§5.4; mã cấp ở spec #163) | `/staff/approvals` | ai có quyền duyệt ít nhất một `kind` |
+  | S23.15 | Chờ duyệt lần hai (§5.4; mã cấp ở spec #163) | `/staff/approvals` | ai có quyền duyệt hoặc đề xuất ít nhất một `kind` (`canApproveAny \|\| canRequestAny`) |
 
   S23.01–S23.07 có route web khi spec ticket của chúng chốt (ví dụ `/staff/payouts`). Mã mới cho màn staff còn lại lấy tiếp từ S23.12 theo thứ tự viết spec ticket.
 - Studio: use case mới **S28 · Studio trên web**; mã S28.yy do spec #167 và #169 cấp.

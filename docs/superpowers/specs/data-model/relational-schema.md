@@ -862,9 +862,39 @@ create table contact_access_log (
   granted boolean not null, at timestamptz not null default now()
 );
 create table audit_log (
-  id text primary key, actor_id text references users(id), action text not null,
-  entity_type text not null, entity_id text not null, diff jsonb, at timestamptz not null default now()
+  id text primary key,
+  actor_id text not null,                          -- uid, 'system' hoặc 'cli:<user>' (không còn khoá ngoại tới users)
+  actor_role text not null check (actor_role in ('admin','finance','support','sales','studio','system')),
+  action text not null, entity_type text not null, entity_id text not null,
+  reason text check (reason is null or char_length(reason) between 5 and 500),
+  diff jsonb, at timestamptz not null default now()
 );
+
+-- #162: vai trò staff và duyệt hai người (dashboard web). Chỉ server ghi.
+create table staff_members (
+  user_id text primary key,                        -- uid của Firebase Auth (có thể chưa có dòng trong users)
+  role text not null check (role in ('admin','finance','support','sales')),
+  granted_by text not null,                        -- uid hoặc 'cli:<user>'
+  granted_at timestamptz not null,
+  updated_at timestamptz not null
+);
+create table staff_approvals (
+  id text primary key,
+  kind text not null,                              -- khoá của APPROVAL_KINDS (packages/domain/src/staff_approvals.ts)
+  entity_type text not null, entity_id text not null,
+  amount bigint check (amount is null or amount >= 0),  -- VND nguyên
+  params jsonb not null default 'null',
+  reason text not null check (char_length(reason) between 5 and 500),
+  status text not null check (status in ('pending','approved','rejected','cancelled','expired')),
+  requested_by text not null, requested_role text not null,
+  requested_at timestamptz not null, expires_at timestamptz not null,   -- expires_at = requested_at + 24 giờ
+  decided_by text,                                 -- uid, hoặc 'system' khi hết hạn
+  decided_at timestamptz, decision_note text
+);
+-- Mỗi thực thể một yêu cầu đang chờ (thay cho tài liệu khoá staff_approval_locks của Firestore).
+create unique index ux_staff_approvals_pending on staff_approvals (entity_type, entity_id) where status = 'pending';
+create index ix_staff_approvals_status_requester on staff_approvals (status, requested_by);
+create index ix_staff_approvals_status_kind on staff_approvals (status, kind);
 create table app_config (key text primary key, value jsonb not null, version int not null default 1, updated_at timestamptz not null default now());
 ```
 
@@ -1996,6 +2026,9 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `photographers/{uid}.recruitMatchKeys[]` | `photographer_recruit_match_keys` | Mỗi khoá `a=<area>\|s=<specialty>` một dòng |
 | `organizers/{uid}.managedSpotIds[]` | (dẫn xuất từ `spots.managed_by`) | S30; ghi cùng giao dịch duyệt `spot_claims`; bảng không lưu cột riêng |
 | `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
+| `staff_members/{uid}` | `staff_members` | Chỉ server (#162); `uid`→`user_id` |
+| `staff_approvals/{id}` + `staff_approval_locks/{entityType}:{entityId}` | `staff_approvals` | Chỉ server; `params`→`jsonb`; tài liệu khoá không thành bảng, chỉ mục duy nhất từng phần `ux_staff_approvals_pending` thay nó |
+| `audit_log/{ulid}` | `audit_log` | Chỉ server; thêm `actorRole`→`actor_role`, `reason` (#162); `actorId` có thể là `system` hoặc `cli:<user>` |
 | `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
@@ -2074,7 +2107,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `organizers` → `organizer_gate_staff` → `spots` (+`spot_access_fees`) → `spot_claims` → `photographers` và bảng con → `spot_residents` → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` (+`event_ticket_types`, `entry_days`) → `event_registrations` (+`event_registration_items`), `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `organizers` → `organizer_gate_staff` → `spots` (+`spot_access_fees`) → `spot_claims` → `photographers` và bảng con → `spot_residents` → `services` → `spot_schedules` → `spot_schedule_days` → `spot_slot_offers` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `recruit_posts`(+`recruit_post_specialties`, `recruit_post_areas`) → `recruit_applications`(+`recruit_application_samples`) → `studio_members`, `studio_collaborations`, `bookings`(+con, `booking_assignments`) → `collab_jobs` → `spot_day_intervals` → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `studio_quotas`, `studio_day_load_bookings`, `recruit_counters`, `photographer_recruit_match_keys`, `staff_flags` → `events` (+`event_ticket_types`, `entry_days`) → `event_registrations` (+`event_registration_items`), `event_posts` → `support_threads` (chưa `dispute_id`), `support_thread_participants` → `disputes`, `dispute_evidence` → cập nhật `payments.dispute_id`, `support_threads.dispute_id` → `support_messages` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`, `staff_members`, `staff_approvals`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 
