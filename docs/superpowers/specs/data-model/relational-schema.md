@@ -496,6 +496,7 @@ create table payouts (
   approved_at    timestamptz,
   failure_reason text,
   hold_reason    text,
+  held_from      text,                             -- #163: trạng thái trước khi staff tạm giữ (pending|needs_approval); Firestore: heldFrom
   created_by     text references users(id),        -- nhân viên tạo lô; job tự động ghi null (Firestore: 'system:createPayouts')
   created_at     timestamptz not null default now(),
   scheduled_at   timestamptz, paid_at timestamptz,
@@ -903,6 +904,7 @@ create unique index ux_staff_approvals_pending on staff_approvals (entity_type, 
 create index ix_staff_approvals_status_requester on staff_approvals (status, requested_by);
 create index ix_staff_approvals_status_kind on staff_approvals (status, kind);
 create index ix_staff_approvals_status_kind_expires on staff_approvals (status, kind, expires_at);   -- #163: đếm chờ duyệt theo kind và quá hạn; Firestore: `(status, kind, expiresAt)`
+create index ix_staff_approvals_status_kind_requester_expires on staff_approvals (status, kind, requested_by, expires_at);   -- #163: trừ yêu cầu của chính người xem khỏi số quá hạn; Firestore: `(status, kind, requestedBy, expiresAt)`
 -- #163: `platform_config/money` (Firestore) là một dòng của app_config: key = 'money', value = {"twoPersonThreshold": 10000000}.
 -- #163: 16 hành động tiền (`payout.*`, `transfer.*`, `refund.*`, `instant.staff_cancel`, `tax.*`, `money_approval.decide`) thay `payout.manage`; hành động là mã trong code, không có bảng.
 create table app_config (key text primary key, value jsonb not null, version int not null default 1, updated_at timestamptz not null default now());

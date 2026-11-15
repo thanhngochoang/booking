@@ -14,7 +14,7 @@ Plan: `docs/superpowers/plans/2026-11-15-163-staff-money.md`. Spec: `docs/superp
 - **Duyệt hai người** (`staff_approvals.ts`): `ApprovalKindSpec` có `stillValid` tuỳ chọn và đúng một trong `run` / `execute`; `ApprovalRef`, `approvalDiffOf`, `APPROVAL_CLAIM_SECONDS = 120`, `STALE_CODES`; `StaffApproval.claimedBy`/`claimedAt`; `decideApproval` chạy nhận việc → `execute` → đóng (D2); `payout_approve` có trong `APPROVAL_KINDS`.
 - **Audit** (`audit.ts`): cổng `AuditLog` (ghi sau commit cho thao tác qua kho có sẵn, D3). Mã lỗi mới `already_paid` ở bốn chỗ (domain `errors.ts`, Functions `TRANSPORT_CODE`, root `HTTP_STATUS`, `errors.test.ts`) và `error.already_paid` trong `vi.ts`.
 - **Chi trả** (`payout_use_cases.ts`): `PayoutTx extends AuditWriter`; `requirePayoutStaff`; `approvePayout(…, reason, ref?)`, `holdPayout` (nhận `pending` và `needs_approval`), `resumePayout(…, reason)`, `executePayout`, `staffExecutePayout` (D4), `requestOrApprovePayout`, `payoutApprovalKinds`; `Payout.rerunAt`/`rerunBy`.
-- **Callable** (`firebase/functions/src/callables/money.ts`): `approvePayout`, `holdPayout`, `resumePayout`, `executePayout` (trả `{status: 'done', payoutIds}`; `payoutIds` rỗng là hợp lệ). `decideStaffApproval` và `cancelStaffApproval` chuyển sang `PAYMENT_CALLABLE_OPTIONS` (cần secret khoá tài khoản). Dựng phụ thuộc: `infra/live_money.ts` (`liveMoneyDeps`, `approvalKindsFor`), `live_staff.ts` (`liveApprovalDeps().kinds` gộp `payoutApprovalKinds`).
+- **Callable** (`firebase/functions/src/callables/money.ts`): `approvePayout`, `holdPayout`, `resumePayout`, `executePayout` (trả `{status: 'done', payoutIds, payouts: {id, status}[]}`; rỗng là hợp lệ, một lô mới có thể chưa gửi: đọc `status` từng lô). `decideStaffApproval` và `cancelStaffApproval` chuyển sang `PAYMENT_CALLABLE_OPTIONS` (cần secret khoá tài khoản). Dựng phụ thuộc: `infra/live_money.ts` (`liveMoneyDeps`, `approvalKindsFor`), `live_staff.ts` (`liveApprovalDeps().kinds` gộp `payoutApprovalKinds`).
 - **Firestore**: chỉ mục `payouts (status, processingAt)`, `(status, paidAt DESC)`, `(accountId, createdAt DESC)` và `staff_approvals (status, kind, expiresAt)`; rules đóng `platform_config/{doc}`. Bản quan hệ ở `specs/data-model/relational-schema.md` §2.4, §2.7, §3.
 - **CLI** `npm run payouts` đi qua `requestOrApprovePayout` (từ ngưỡng thì in `awaiting second approval <approvalId>`); `--reason` bắt buộc cho approve/hold/resume/execute (hold không còn nhận lý do theo vị trí); mỗi lệnh kiểm hành động riêng.
 - **Seed**: `seed-payout-an-approve` (`needs_approval`, net 3.441.000₫, `firstPayout`), `seed-payout-bai-da-big` (`needs_approval`, net 18.400.000₫, organizer), `seed-payout-an-failed` (`failed`, 2 ngày tuổi). Mục của chúng nêu payment không có trong seed.
@@ -22,7 +22,7 @@ Plan: `docs/superpowers/plans/2026-11-15-163-staff-money.md`. Spec: `docs/superp
   - Component và đọc: `components/Tabs.tsx` (D12), `MoneyReader` (`server/read/money.ts`, `controls()`), mã hoá con trỏ `encodeCursor`/`decodeCursor` (`server/read/firestore/cursor.ts`), `count()`/`doc()` trên `QueryLike`/`DbLike`, `QueueCardSpec` (`QUEUE_CARDS`: `payouts_waiting`, `money_approvals`), `entityHref`/`entityLabel` (`lib/labels.ts`), `NAV_ID_OF_CARD` (`app/(staff)/staff/layout.tsx`), nhãn `approval.kind.*`.
   - Màn S23.02 `/staff/payouts?tab=…&id=…`: reader `server/read/payouts.ts`, DTO ở `lib/dto.ts`, `lib/payout-tabs.ts`, thư mục `app/(staff)/staff/payouts/` (page, `PayoutsScreen.client`, actions).
   - Menu "Chi trả" cho admin và finance; số chờ ở thanh bên cùng nguồn với thẻ S23.09.
-- **Playwright** `apps/dashboard/e2e/payouts.spec.ts` (serial, không retry): finance duyệt khoản 3.441.000₫ → finance gửi khoản 18.400.000₫ sang duyệt lần hai → finance ở S23.15 chỉ thấy "Huỷ yêu cầu" → admin duyệt → sales gõ `/staff/payouts` nhận 403. Chạy một lần mỗi lần seed lại emulator (spec dùng hết dữ liệu seed). `roles.spec.ts` đã cập nhật menu (finance: Tổng quan, Chờ duyệt, Chi trả); `menuLabels` bỏ chữ của huy hiệu số.
+- **Playwright**: đã chạy trên emulator ngày 2026-11-15, 16 passed, 1 skipped (mfa.spec, bypass bật). `apps/dashboard/e2e/payouts.spec.ts` (serial, không retry): finance duyệt khoản 3.441.000₫ → finance gửi khoản 18.400.000₫ sang duyệt lần hai → finance ở S23.15 chỉ thấy "Huỷ yêu cầu" → admin duyệt → sales gõ `/staff/payouts` nhận 403. Chạy một lần mỗi lần seed lại emulator (spec dùng hết dữ liệu seed). `roles.spec.ts` đã cập nhật menu (finance: Tổng quan, Chờ duyệt, Chi trả); `menuLabels` bỏ chữ của huy hiệu số.
 
 ## Rulings (mỗi dòng một quyết định)
 
@@ -49,6 +49,20 @@ Quyết định áp dụng của A1 (báo cáo A1):
 
 14. Yêu cầu quá hạn thì đóng `expired`, không `execute`; từ chối khi dấu nhận việc còn mới là `conflict` (với mọi người nhận việc); cho phép tiếp quản dấu nhận việc cũ, vẫn kiểm `same_person`; `approval.decide` chỉ ghi ở bước đóng; `stillValid` sai ở bước nhận việc đóng dòng `rejected`/`stale`. Dấu nhận việc còn mới cũng chặn chính người nhận việc duyệt hoặc từ chối lại ngay (coi là `conflict`).
 
+Review cuối (fix wave #163), mỗi mục một dòng:
+
+15. **Hold → resume (1):** `Payout.heldFrom` ghi khi staff tạm giữ; lô tạm giữ từ `needs_approval`, chưa có `approvedBy`, luôn quay về `needs_approval` khi tiếp tục chi, kể cả khi lô anh em đã làm tài khoản "cleared". Lô tạm giữ từ `pending` và lô do hệ thống giữ (không có `heldFrom`) giữ luật cũ.
+16. **Duyệt gắn với tài khoản và số tiền (2):** `params` của `payout_approve` là `{payoutId, accountId, amountNet}`; callable `approvePayout` và `requestOrApprovePayout` bắt buộc `accountId` và `amountNet` mà người dùng đã xem (thiếu: `invalid_argument`, lệch: `conflict`); `approvePayout(…, ref?, expected?)`, `stillValid` và `execute` từ chối lệch (yêu cầu đóng stale); yêu cầu cũ thiếu hai trường coi là stale. Dashboard gửi hai giá trị từ chi tiết đã tải (không có thì từ hàng); `PayoutRowDto.accountId` là id mờ, không phải số tài khoản. CLI `approve` gửi giá trị đang lưu của lô (người dùng chạy `show` trước).
+17. **Cổng chi tắt (3):** `payoutGateway('off')` ném `Error('payout gateway unavailable')` (ra `internal`), không còn `not_eligible`; màn chỉ hiện chữ khoá 72 giờ khi `activeFrom` còn ở tương lai, ngược lại hiện thông báo của mã lỗi; JSDoc `execute`: mã `STALE_CODES` chỉ đến từ bước kiểm trạng thái trước mọi lần ghi, adapter không bao giờ ném chúng.
+18. **Kết quả "Chạy lại" (4):** callable trả thêm `payouts: {id, status}[]` (giữ `payoutIds`). Toast: "Đã chạy lại" khi có lô đã gửi (paid, processing, và cả failed/pending: lệnh đã chạy), "Đã tạo lô mới, chờ duyệt" khi mọi lô là `needs_approval` (lẫn `on_hold` cũng vào đây), "Đã tạo lô mới, đang tạm giữ" khi mọi lô là `on_hold`, toast thông tin cũ cho `[]`. Domain test ghim lô `needs_approval` không gửi sau lần chạy lại của lô đầu thất bại.
+19. **Hợp đồng D2 (5):** `APPROVAL_CLAIM_SECONDS` (120) > timeout callable duyệt (30), có test Functions; mép tiếp quản ở bước đóng, `reject` với dấu nhận việc cũ chạy `stillValid` (sai → `rejected`/`stale`), và luật mã stale nằm trong JSDoc `execute` và spec §5.4.
+20. **Nhả dấu nhận việc lỗi (6):** bọc try/catch, luôn ném lại lỗi gốc; dấu tự hết hạn sau 120 giây.
+21. **"Chạy lại" processing (8):** `staffExecutePayout` từ chối `processing` dưới 2 giờ (`PROCESSING_RESEND_AFTER_HOURS`, tính từ `processingAt`) bằng `conflict`; `executePayout` với actor `system` không bao giờ nhận `processing`.
+22. **Giới hạn lý do (9):** `DecisionDialog` có `maxLength` (mặc định 500); hộp Tạm giữ truyền 200; hướng dẫn và bộ đếm theo giới hạn (`decision.reason_*` có `{max}`).
+23. **Đếm tự yêu cầu (10):** thẻ `money_approvals` và huy hiệu "Chờ duyệt" không tính yêu cầu của chính người xem (`queues(role, uid)`, `QueueCardSpec.count(db, now, role, uid)`; đếm tất cả trừ đếm của mình, cả quá hạn); "cũ nhất" là yêu cầu đầu tiên không phải của mình trong 25 yêu cầu đầu (không có thì trống). Chỉ mục mới `staff_approvals (status, kind, requestedBy, expiresAt)`.
+24. **`--actor` tự khai (11):** CLI không biết ai thật sự gõ lệnh; yêu cầu và duyệt qua CLI không quy được cho một người, nên `same_person` không đáng tin với chúng. Trợ giúp CLI nêu rõ.
+25. **Hạ ngưỡng khi có yêu cầu đang chờ (12):** hạ ngưỡng hai người trong lúc một yêu cầu đang chờ cho phép duyệt trực tiếp một lô dưới ngưỡng mới thành công, và yêu cầu cũ đóng stale sau đó; S23.22 (màn ngưỡng) cần xử lý (ví dụ đóng hoặc nhắc các yêu cầu đang chờ khi đổi ngưỡng).
+
 ## Phần B và C cần biết
 
 Dùng lại, đừng viết lại:
@@ -59,7 +73,7 @@ Dùng lại, đừng viết lại:
 - **`MoneyResult`, `liveMoneyDeps`** (`infra/live_money.ts`): dựng phụ thuộc cho callable tiền; `money.ts` ở `callables/` là mẫu `run(name, gate(request, deps, '<action>'))` + `parseStaffInput`.
 - **`Tabs`** (`components/Tabs.tsx`): link `role="tab"` trong `role="tablist"`, `aria-current="page"` cho tab đang chọn; tab là query `?tab=`, trang đọc tab ở server và truyền cho màn.
 - **Con trỏ** (`encodeCursor`/`decodeCursor`): con trỏ opaque `(giá trị sắp xếp, id)`; reader quét tối đa 5 lô sau con trỏ cho đủ `pageSize` hàng hiện được (xem `server/read/firestore/payouts.ts`), `next` là tài liệu quét cuối khi còn nữa. Màn giữ cờ `loaded` để `next` lấy từ phản hồi cuối.
-- **`QueueCardSpec`** (`server/read/firestore/overview.ts`, `QUEUE_CARDS`): mỗi thẻ có `count`, `late`, `oldest`; `count` nhận thêm `role` và có thể trả `null` (bỏ thẻ). Thêm thẻ của #342/#343 (chuyển khoản chưa khớp, hoàn tiền lỗi) ở đây; thẻ lỗi hiện lỗi trong thẻ, không kéo thẻ khác; số đếm chỉ có huy hiệu khi > 0. `queues` được cache theo vai trò (`cache()`).
+- **`QueueCardSpec`** (`server/read/firestore/overview.ts`, `QUEUE_CARDS`): mỗi thẻ có `count`, `late`, `oldest`; `count` nhận thêm `role` và `uid` (người xem, để bỏ yêu cầu của chính họ) và có thể trả `null` (bỏ thẻ). Thêm thẻ của #342/#343 (chuyển khoản chưa khớp, hoàn tiền lỗi) ở đây; thẻ lỗi hiện lỗi trong thẻ, không kéo thẻ khác; số đếm chỉ có huy hiệu khi > 0. `queues` được cache theo vai trò (`cache()`).
 - **`entityHref`/`entityLabel`** (`lib/labels.ts`): trả route chi tiết hoặc `null`, dùng ở S23.15 để link sang đối tượng; thêm `payout` → `/staff/payouts?id=`; #342/#343 thêm `transfer`, `refund`.
 - **`NAV_ID_OF_CARD`** (`layout.tsx`, không export vì Next cấm export thêm từ layout): ánh xạ thẻ → mục menu cho huy hiệu thanh bên; thêm mục của #342/#343 ở đây và ở `STAFF_NAV` (`nav.ts`).
 - **`MoneyReader.controls()`**: `twoPersonThreshold` cho hộp xác nhận ("Gửi duyệt lần hai" từ ngưỡng).
@@ -72,15 +86,12 @@ Dùng lại, đừng viết lại:
 Từ review của A1:
 
 - `staff_approvals.test`: ca "execute ném lỗi khác" chỉ là vòng một phần tử; thêm kiểm dấu nhận việc về `null` sau lần từ chối đầu.
-- Nhả dấu nhận việc lỗi thì lỗi nhả thay lỗi gốc: bọc bước nhả trong try/catch và ném lại lỗi gốc.
 - `approvals.test` (dashboard): test đầu "an empty registry" nay kiểm registry production; đổi tên hoặc tách.
 - `staff_approvals.test` import trùng `../src/staff_approvals.js`.
-- Chú thích ở bước đóng về mép tiếp quản/stale (tiền đã đi nhưng dòng `rejected`/stale, đóng bị `conflict`).
 
 Từ review của A2:
 
 - JSDoc `staffExecutePayout`: dấu `rerunAt` được ghi trước `createPayouts`; lần chạy hằng ngày là đường khôi phục.
-- Chưa test đường `failed` khi lô mới là `needs_approval`/`on_hold` (trả về, không gửi).
 - `payout_approve.stillValid` đọc trong giao dịch riêng (cần chú thích).
 - Audit gửi lại `processing` có `diff` vô nghĩa `['processing','processing']`.
 
@@ -89,7 +100,6 @@ Từ review của A3:
 - Từ chối khi không có TOTP chỉ test cho approve; tham số hoá qua `HANDLERS`.
 - `liveApprovalDeps` đọc `PAYOUT_ACCOUNT_KEY` sớm, ngoài `run` (cấu hình sai ra `internal` không gắn thẻ).
 - CLI approve đọc lại payout chỉ để in trạng thái.
-- Payout seed nêu payment không có trong seed: xem log emulator một lần xem `onPayoutWritten`/`refreshEarnings` có ồn không (việc của A6; **chưa làm được**, xem dưới).
 - Test tích hợp `test/integration/money.test.ts` và rules test chưa chạy trong sandbox; CI chạy.
 
 Từ review của A4:
@@ -107,7 +117,7 @@ Từ review của A5:
 
 Từ A6:
 
-- Playwright `payouts.spec.ts` **chưa chạy được ở máy này** (không có Java cho emulator Firestore); controller hoặc CI chạy. Lần chạy đầu cần xem log emulator của seed payout.
+- Playwright `payouts.spec.ts` đã chạy trên emulator (xem "Hiện có gì"); log emulator không có lỗi function, nên mục kiểm độ ồn của seed payout đã xong.
 - `Payout.processingAt` có trong code từ trước nhưng docs chưa nêu; đã thêm vào `domain-model.md` và `relational-schema.md` cùng đợt này.
 
 ## Chữ tiếng Việt mới không có chữ trong mock (chủ sản phẩm xem lại)
@@ -123,7 +133,7 @@ Từ A6:
 | Hộp Chạy lại | Chạy lại khoản chi {amount} cho {name}? · Hệ thống gửi lại lệnh chi ngay, không đợi lần chạy tự động 10:00. |
 | Chi tiết | Tài khoản · Tên chủ tài khoản · Khớp / Chờ đối chiếu / Staff đã xác nhận · Họ tên đã xác minh · Chi được từ · Còn khoá 72 giờ, chi được từ {time} · Các khoản · Khoản · Gộp · Hoa hồng · Thuế {rate}% · Tổng · Lịch sử chi · Chưa có lần chi nào · Lý do tạm giữ · Hệ thống tạm giữ sau nhiều lần chi thất bại · Lỗi lần chạy trước |
 | Trạng thái, tải | nhãn trạng thái chi trả · Đang tải chi tiết… · Không tải được chi tiết khoản chi · Không tải được danh sách chi trả · Trạng thái chi trả (nhãn `tablist`) |
-| Toast chạy lại rỗng | Khoản này sẽ được gộp vào lần chi tự động kế tiếp |
+| Toast chạy lại | Khoản này sẽ được gộp vào lần chi tự động kế tiếp · Đã tạo lô mới, chờ duyệt · Đã tạo lô mới, đang tạm giữ |
 | `error.not_eligible` (chữ chung) | Chưa làm được: đối tượng chưa đủ điều kiện. |
 
 Ghi chú: báo cáo A1–A4 không liệt kê chữ mới; các nhãn A4 thêm (`approval.kind.payout_approve` "Duyệt lần chi đầu", `queue.card_error`, tên thẻ và mục menu "Chi trả") và `error.already_paid` (A1) cũng không có trong mock, chủ sản phẩm xem lại cùng bảng trên.
