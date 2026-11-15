@@ -243,6 +243,32 @@ void main() {
     expect(router.state.uri.toString(), '/b/b-rev/dispute?from=delivery');
   });
 
+  testWidgets('legacy reviewed status: the customer still sees and opens the original photos link (booking-be#31)', (tester) async {
+    final approvedTime = DateTime.utc(2026, 10, 15, 10, 0);
+    currentTime = approvedTime.add(const Duration(hours: 1));
+    fakeBookingRepo.bookings['b-rev'] = testBooking.copyWith(
+      status: BookingStatus.reviewed,
+      approvedAt: approvedTime,
+      checkUntil: approvedTime.add(const Duration(hours: 48)),
+      reviewedAt: approvedTime.add(const Duration(minutes: 30)),
+    );
+    fakeDeliveryRepo.seedRound('b-rev', deliveredRound);
+    fakeDeliveryRepo.seedLink('b-rev', const DeliveryLink(link: 'https://drive.google.com/real-photos', round: 1));
+
+    await tester.pumpWidget(buildApp(const DeliveryReviewScreen(bookingId: 'b-rev')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bàn giao · đã đồng ý'), findsOneWidget);
+    expect(find.text('https://drive.google.com/real-photos'), findsOneWidget);
+    expect(find.text('Đồng ý ảnh'), findsNothing);
+
+    final openButtonFinder = find.widgetWithText(AppButton, 'Mở bộ ảnh gốc');
+    await tester.scrollUntilVisible(openButtonFinder, 200);
+    await tester.tap(openButtonFinder);
+    await tester.pumpAndSettle();
+    expect(fakeLauncher.opened, [Uri.parse('https://drive.google.com/real-photos')]);
+  });
+
   Future<void> pumpApproved(
     WidgetTester tester, {
     String? disputeId,
