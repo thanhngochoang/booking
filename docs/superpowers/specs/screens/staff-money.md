@@ -35,10 +35,11 @@ Cơ chế chung `staff_approvals` và màn S23.15 nằm ở spec dashboard §5.4
 - `kind`: `payout_approve`, `transfer_assign`, `transfer_refund`, `transfer_dismiss`, `refund_manual`, `instant_staff_cancel`; người duyệt cần `money_approval.decide` (admin, finance).
 - Callable thao tác tiền (§3–§5, §5.1) tự quyết: `amount < DEFAULT_MONEY_CONTROLS.twoPersonThreshold` thì làm ngay; ngược lại tạo yêu cầu `pending` và trả `{status: 'awaiting_second_approval', approvalId}`.
 - `amount` của yêu cầu là số tiền thao tác đưa đi (thực nhận của khoản chi, số tiền hoàn, số tiền chuyển khoản).
+- **Đã làm (#163, D2):** thao tác tiền đi qua kho riêng của đối tượng nên không chạy trong giao dịch duyệt như #162: `kind` có `execute` được duyệt qua ba bước nhận việc (`claimedBy`/`claimedAt`, 120 giây) → chạy → đóng; xem spec dashboard §5.4.
 
 ## 3. S23.02 · Chi trả
 
-- **Thông tin:** `/staff/payouts` · admin, finance · chưa có. Cần #134 (trạng thái `needs_approval`, `approvePayout`, `DEFAULT_PAYOUT_POLICY`, `nameStatus`).
+- **Thông tin:** `/staff/payouts` · admin, finance · ✅ đã làm (#163). Cần #134 (trạng thái `needs_approval`, `approvePayout`, `DEFAULT_PAYOUT_POLICY`, `nameStatus`).
 - **Mục đích:** cho khoản chi đầu tiên đi, xử lý khoản bị giữ hoặc lỗi.
 - **Bố cục:** tab: **Chờ duyệt** (`needs_approval`) · **Tạm giữ** (`on_hold`) · **Thất bại** (`failed`) · **Đang xử lý lâu** (`processing` quá 2 giờ) · **Đã chi** (30 ngày gần nhất, chỉ xem).
   - Bảng: người nhận (tên, loại `individual` / `artist` / `studio`), thực nhận, số khoản, lý do (chip: "Lần chi đầu", "Tên chờ đối chiếu", "3 lần thất bại", "Khiếu nại", "Đổi tài khoản"), tạo lúc, tài khoản (ngân hàng •••• 4 số).
@@ -48,6 +49,7 @@ Cơ chế chung `staff_approvals` và màn S23.15 nằm ở spec dashboard §5.4
     - **Lịch sử chi** cho tài khoản này (5 lần gần nhất).
     - Lý do tạm giữ, lỗi lần chạy trước (`failureReason`).
   - Chân theo tab: Chờ duyệt → chính "Duyệt chi"; Tạm giữ → chính "Tiếp tục chi"; Thất bại / Đang xử lý lâu → chính "Chạy lại". Nút phụ "Tạm giữ…" ở mọi tab còn mở.
+  - **Đã làm (#163, D4):** "Tạm giữ…" chỉ có ở tab Chờ duyệt (`holdPayout` nhận `pending` và `needs_approval`, không nhận `processing` vì tiền có thể đang đi); chân nút theo trạng thái của chính khoản chi, nên khoản `pending` mở bằng `?id=` không có nút. Lô `failed` là lô đã đóng: tiền quay về khoản có thể chi, nên "Chạy lại" ở tab Thất bại (`staffExecutePayout`) đánh dấu `rerunAt`/`rerunBy`, tạo lô mới của người nhận rồi gửi từng lô `pending`; tab Thất bại ẩn lô có `rerunAt` (số đếm trên tab vẫn tính cả lô đó). Kết quả rỗng nghĩa là lô mới sẽ do lần chạy tự động kế tiếp gộp (toast thông tin). Tab là URL: `/staff/payouts?tab=…&id=…`.
 - **Dữ liệu:** `payouts` theo `(status, createdAt)`, trang 50; `payoutAccounts/{uid}/accounts/{id}` (chỉ trường đã che); `users/{uid}/private/identity.legalName`; `payouts` cùng `accountId` cho lịch sử. Không đọc `accountNumberEnc`.
 - **Tương tác:**
   - "Duyệt chi" → `DecisionDialog` "Chi {thực nhận} cho {tên} về {ngân hàng} •••• {4 số}?" + lý do → `approvePayout`. Từ 10 triệu: hộp đổi chữ thành "Gửi duyệt lần hai", kết quả là yêu cầu S23.15. Duyệt cũng đặt tài khoản `pending_review` thành `staff_confirmed` (#134 Decision 5).

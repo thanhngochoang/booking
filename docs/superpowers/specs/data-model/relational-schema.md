@@ -498,8 +498,14 @@ create table payouts (
   hold_reason    text,
   created_by     text references users(id),        -- nhân viên tạo lô; job tự động ghi null (Firestore: 'system:createPayouts')
   created_at     timestamptz not null default now(),
-  scheduled_at   timestamptz, paid_at timestamptz
+  scheduled_at   timestamptz, paid_at timestamptz,
+  processing_at  timestamptz,                      -- lúc chuyển sang processing (S23.02 "Đang xử lý lâu")
+  rerun_at       timestamptz,                      -- #163: staff đã bấm "Chạy lại" lô failed; Firestore: rerunAt
+  rerun_by       text                              -- uid, hoặc 'cli:<user>'; Firestore: rerunBy
 );
+create index ix_payouts_status_processing on payouts (status, processing_at);   -- #163: tab "Đang xử lý lâu"; Firestore: `(status, processingAt)`
+create index ix_payouts_status_paid on payouts (status, paid_at desc);          -- #163: tab "Đã chi"; Firestore: `(status, paidAt DESC)`
+create index ix_payouts_account_created on payouts (account_id, created_at desc);   -- #163: lịch sử chi của tài khoản; Firestore: `(accountId, createdAt DESC)`
 create index ix_payouts_account_history on payouts (account_id, status, created_at desc);   -- 'đã có lô đã chi/đã duyệt tới tài khoản này' và '3 lô xong gần nhất' (limit 1 và 3); Firestore: hai chỉ mục ghép của `payouts`
 create table payout_items (
   payout_id  text not null references payouts(id) on delete cascade,
@@ -889,12 +895,16 @@ create table staff_approvals (
   requested_by text not null, requested_role text not null,
   requested_at timestamptz not null, expires_at timestamptz not null,   -- expires_at = requested_at + 24 giờ
   decided_by text,                                 -- uid, hoặc 'system' khi hết hạn
-  decided_at timestamptz, decision_note text
+  decided_at timestamptz, decision_note text,
+  claimed_by text, claimed_at timestamptz          -- #163 (D2): dấu nhận việc của kind chạy bằng execute; dưới 120 giây thì duyệt lần hai và huỷ trả conflict
 );
 -- Mỗi thực thể một yêu cầu đang chờ (thay cho tài liệu khoá staff_approval_locks của Firestore).
 create unique index ux_staff_approvals_pending on staff_approvals (entity_type, entity_id) where status = 'pending';
 create index ix_staff_approvals_status_requester on staff_approvals (status, requested_by);
 create index ix_staff_approvals_status_kind on staff_approvals (status, kind);
+create index ix_staff_approvals_status_kind_expires on staff_approvals (status, kind, expires_at);   -- #163: đếm chờ duyệt theo kind và quá hạn; Firestore: `(status, kind, expiresAt)`
+-- #163: `platform_config/money` (Firestore) là một dòng của app_config: key = 'money', value = {"twoPersonThreshold": 10000000}.
+-- #163: 16 hành động tiền (`payout.*`, `transfer.*`, `refund.*`, `instant.staff_cancel`, `tax.*`, `money_approval.decide`) thay `payout.manage`; hành động là mã trong code, không có bảng.
 create table app_config (key text primary key, value jsonb not null, version int not null default 1, updated_at timestamptz not null default now());
 ```
 
@@ -2027,7 +2037,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `organizers/{uid}.managedSpotIds[]` | (dẫn xuất từ `spots.managed_by`) | S30; ghi cùng giao dịch duyệt `spot_claims`; bảng không lưu cột riêng |
 | `staff_flags/{id}` | `staff_flags` | Chỉ server; `jobIds[]` (`{bookingId}_{uid}`) → `job_ids` |
 | `staff_members/{uid}` | `staff_members` | Chỉ server (#162); `uid`→`user_id` |
-| `staff_approvals/{id}` + `staff_approval_locks/{entityType}:{entityId}` | `staff_approvals` | Chỉ server; `params`→`jsonb`; tài liệu khoá không thành bảng, chỉ mục duy nhất từng phần `ux_staff_approvals_pending` thay nó |
+| `staff_approvals/{id}` + `staff_approval_locks/{entityType}:{entityId}` | `staff_approvals` | Chỉ server; `claimedBy`/`claimedAt`→`claimed_by`/`claimed_at` (#163); `params`→`jsonb`; tài liệu khoá không thành bảng, chỉ mục duy nhất từng phần `ux_staff_approvals_pending` thay nó |
+| `platform_config/money` | `app_config` (key `money`) | Chỉ server (#163); `twoPersonThreshold` mặc định 10.000.000₫ khi thiếu tài liệu |
 | `audit_log/{ulid}` | `audit_log` | Chỉ server; thêm `actorRole`→`actor_role`, `reason` (#162); `actorId` có thể là `system` hoặc `cli:<user>` |
 | `bookings/{id}.assigneeKind`, `.assigneeAccepted`; `assignments[].offerExpiresAt/acceptedAt/declinedAt` | `bookings.assignee_kind`, `assignee_accepted`; cột cùng tên của `booking_assignments` | Booking không có `assigneeAccepted` đọc là `true` (thành viên S26) |
 | `chats/collab_{studioId}_{uid}` | `chats` (kind `collab`), `chat_members` | Studio ở `customer_id`, CTV ở `photographer_id`; `readOnlyAt`→cột |
