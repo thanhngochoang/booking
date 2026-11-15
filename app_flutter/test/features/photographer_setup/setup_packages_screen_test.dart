@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 
+import '../../support/day_pricing_world.dart' show weekendRule;
 import '../../support/photographer_world.dart';
 
 final _routes = <RouteBase>[
@@ -23,15 +23,6 @@ const _portrait = ServicePackage(
   durationMinutes: 120,
   editedCount: 40,
   deliveryDays: 3,
-  dayPrices: {
-    Weekday.mon: 1500000,
-    Weekday.tue: 1500000,
-    Weekday.wed: 1500000,
-    Weekday.thu: 1500000,
-    Weekday.fri: 1500000,
-    Weekday.sat: 1800000,
-    Weekday.sun: 1800000,
-  },
 );
 
 const _couple = ServicePackage(
@@ -101,18 +92,19 @@ void main() {
     tester,
   ) async {
     final w = await _world(seed: const [_portrait, _couple, _hidden]);
+    // A series exists, but the setup step lists the base price only.
+    w.priceRules.seed(weekendRule(serviceId: 'a'));
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
     await tester.pumpAndSettle();
     expect(find.text('Chân dung 2 giờ'), findsOneWidget);
     expect(find.text('2 giờ · 40 ảnh · giao 3 ngày'), findsOneWidget);
-    expect(find.text('T2–T6 1,5M · T7–CN 1,8M'), findsOneWidget);
+    expect(find.text('1.500.000₫'), findsOneWidget);
+    expect(find.textContaining('cuối tuần'), findsNothing);
     expect(find.text('Cặp đôi nửa ngày'), findsOneWidget);
     expect(find.text('3.200.000₫'), findsOneWidget);
     expect(find.text('Sản phẩm 10 món'), findsNothing, reason: 'hidden');
     expect(
-      find.text(
-        'Đặt giá cuối tuần, giá từng ngày hoặc giá ngày lễ trong từng gói.',
-      ),
+      find.text('Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi xong hồ sơ.'),
       findsOneWidget,
     );
     expect(_enabled(tester, 'setup-next'), isTrue);
@@ -212,7 +204,6 @@ void main() {
             durationMinutes: 480,
             editedCount: 300,
             deliveryDays: 30,
-            specialPrice: 25000000,
           ),
         ],
       );

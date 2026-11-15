@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 
+import '../../support/calendar_finders.dart';
 import '../../support/photographer_world.dart';
 
 DateTime _d(int day) => DateTime.utc(2026, 10, day);
@@ -32,7 +35,7 @@ Future<PhotographerWorld> _world() async {
   return w;
 }
 
-Finder _day(String label) => find.bySemanticsLabel(label);
+Finder _day(String label) => dayByLabel(label);
 
 void main() {
   testWidgets('shows the month with its four states and the legend', (
@@ -53,6 +56,37 @@ void main() {
         'Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.',
       ),
       findsOneWidget,
+    );
+    h.dispose();
+  });
+
+  testWidgets('every day shows its lunar day, and a tap still selects', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/work/calendar', routes: _routes));
+    await tester.pumpAndSettle();
+    String lunar(int day) => tester
+        .widget<Text>(
+          find.byKey(
+            ValueKey('app-calendar-lunar-2026-10-${'$day'.padLeft(2, '0')}'),
+          ),
+        )
+        .data!;
+    expect(lunar(10), '1/9');
+    expect(lunar(13), '4');
+    await tester.tap(_day('13 tháng 10, rảnh'));
+    await tester.pumpAndSettle();
+    expect(find.text('Thứ 3, 13/10'), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(
+            find.byKey(const ValueKey('app-calendar-day-2026-10-13')),
+          )
+          .flagsCollection
+          .isSelected,
+      Tristate.isTrue,
     );
     h.dispose();
   });

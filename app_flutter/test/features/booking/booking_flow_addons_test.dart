@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
@@ -22,6 +23,7 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 import '../../support/booking_world.dart';
 import '../../support/fake_addon_repository.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/fake_price_rule_repository.dart';
 
 void main() {
   final today = DateTime.utc(2026, 10, 3, 10, 0);
@@ -56,6 +58,7 @@ void main() {
       overrides: [
         clockProvider.overrideWithValue(() => today),
         calendarTodayProvider.overrideWithValue(today),
+        priceRuleRepositoryProvider.overrideWithValue(FakePriceRuleRepository()),
         profilePackagesProvider('p1')
             .overrideWithValue(const AsyncData([bookingPortrait2h, couple])),
         if (liveContact) ...[

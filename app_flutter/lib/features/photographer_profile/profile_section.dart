@@ -1,6 +1,6 @@
 // lib/features/photographer_profile/profile_section.dart
 import 'package:photobooking/data/content/service_summary.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// The four tabs of S03.01.
@@ -18,22 +18,22 @@ ProfileSection profileSectionFromQuery(String? value) => switch (value) {
 /// this photographer at this path and replaces it with `/chat/:chatId`.
 String inquiryPath(String photographerId) => '/u/$photographerId/ask';
 
-/// "Đặt lịch · từ …": the cheapest active package, until the server's
-/// `startingPrice` is there for every photographer. A package's price is its
-/// lowest weekday price, never its special-day price (P6).
-int? startingPriceOf(Iterable<ServiceSummary> services) {
-  int? min;
-  for (final s in services) {
-    if (!s.active) {
-      continue;
-    }
-    final lowest = priceRange(s).min;
-    if (min == null || lowest < min) {
-      min = lowest;
-    }
-  }
-  return min;
-}
+/// "Đặt lịch · từ …": the lowest price of the cheapest active package or of
+/// one of its price series that still has a next occurrence from [today] (R9,
+/// the same number as the server's `startingPrice`). Without [rules] it is the
+/// cheapest base price.
+int? startingPriceOf(
+  Iterable<ServiceSummary> services, {
+  required DateTime today,
+  List<PriceRule> rules = const [],
+}) => startingPrice(
+  [
+    for (final s in services)
+      PricedPackage(id: s.id, price: s.priceVnd, active: s.active),
+  ],
+  rules,
+  today,
+);
 
 /// Median first-reply time in words: `~45 phút`, `~2 giờ`.
 String responseLabel(int minutes, AppLocalizations l) => minutes < 60

@@ -126,15 +126,16 @@ class _EntryTicketsEditScreenState
       last = from.add(const Duration(days: entryRangeMaxDays - 1));
     }
     final current = parseDayKey(start ? _startDay : _endDay)!;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current.isBefore(first)
+    final picked = await showAppDatePicker(
+      context,
+      initial: current.isBefore(first)
           ? first
           : current.isAfter(last)
           ? last
           : current,
-      firstDate: first,
-      lastDate: last,
+      first: first,
+      last: last,
+      today: today,
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -155,11 +156,12 @@ class _EntryTicketsEditScreenState
     }
     final first = parseDayKey(_startDay)!;
     final last = parseDayKey(_endDay)!;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: first,
-      firstDate: first,
-      lastDate: last.isBefore(first) ? first : last,
+    final picked = await showAppDatePicker(
+      context,
+      initial: first,
+      first: first,
+      last: last.isBefore(first) ? first : last,
+      today: parseDayKey(_today()),
     );
     if (picked == null || !mounted) return;
     final day = dayKeyOf(picked);

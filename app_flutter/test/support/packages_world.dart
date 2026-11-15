@@ -2,60 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
-import 'package:photobooking/data/pricing/pricing_providers.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart' show Weekday;
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/features/packages/my_packages_screen.dart';
 import 'package:photobooking/features/packages/package_edit_screen.dart';
-import 'package:photobooking/features/packages/special_days_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 
+import 'fake_price_rule_repository.dart';
 import 'photographer_world.dart';
 import 'screen_host.dart';
 
-/// Monday to Friday 1,5M, Saturday and Sunday 1,8M, holidays 2,2M.
-const twoLevelPackage = ServicePackage(
+/// 1,5M on an ordinary day, 2 hours, 40 edited photos, 3 days.
+const portraitPackage = ServicePackage(
   id: 'p1',
   name: 'Chân dung 2 giờ',
   priceVnd: 1500000,
   durationMinutes: 120,
   editedCount: 40,
   deliveryDays: 3,
-  dayPrices: {
-    Weekday.mon: 1500000,
-    Weekday.tue: 1500000,
-    Weekday.wed: 1500000,
-    Weekday.thu: 1500000,
-    Weekday.fri: 1500000,
-    Weekday.sat: 1800000,
-    Weekday.sun: 1800000,
-  },
-  specialPrice: 2200000,
   order: 0,
 );
 
-/// 3,2M to 4M, a different price on most days, no special price.
-const perDayPackage = ServicePackage(
+/// 3,2M, 4 hours.
+const couplePackage = ServicePackage(
   id: 'p2',
   name: 'Cặp đôi nửa ngày',
   priceVnd: 3200000,
   durationMinutes: 240,
   editedCount: 80,
   deliveryDays: 5,
-  priceMode: PriceMode.perDay,
-  dayPrices: {
-    Weekday.mon: 3200000,
-    Weekday.tue: 3200000,
-    Weekday.wed: 3300000,
-    Weekday.thu: 3300000,
-    Weekday.fri: 3500000,
-    Weekday.sat: 4000000,
-    Weekday.sun: 3800000,
-  },
   order: 1,
 );
 
-/// One price on every day, hidden from customers.
+/// 900k, hidden from customers.
 const hiddenPackage = ServicePackage(
   id: 'p3',
   name: 'Sản phẩm 10 món',
@@ -67,13 +46,44 @@ const hiddenPackage = ServicePackage(
   active: false,
 );
 
-/// A signed-in photographer hosting S08.08 at `/me/packages` and S08.10 at
-/// `/me/special-days`, with in-memory packages, holidays and special days.
-/// `/me/packages/new` and `/me/packages/:id` show their path.
+/// "Cuối tuần" 1,8M on Saturday and Sunday.
+PriceRule weekendSeries({String serviceId = 'p1'}) => PriceRule(
+  id: 'weekend-$serviceId',
+  serviceId: serviceId,
+  price: 1800000,
+  repeat: PriceRepeat.weekly,
+  name: 'Cuối tuần',
+  weekdays: const {Weekday.sat, Weekday.sun},
+);
+
+/// "Mùa cưới" 2M every 14/11 - 22/11.
+PriceRule weddingSeries({String serviceId = 'p1'}) => PriceRule(
+  id: 'wedding-$serviceId',
+  serviceId: serviceId,
+  price: 2000000,
+  repeat: PriceRepeat.yearly,
+  name: 'Mùa cưới',
+  from: '11-14',
+  to: '11-22',
+);
+
+/// "Tết" 2,5M, lunar 23/12 - 5/1.
+PriceRule tetSeries({String serviceId = 'p1'}) => PriceRule(
+  id: 'tet-$serviceId',
+  serviceId: serviceId,
+  price: 2500000,
+  repeat: PriceRepeat.yearly,
+  lunar: true,
+  name: 'Tết',
+  from: '12-23',
+  to: '01-05',
+);
+
+/// A signed-in photographer hosting S08.08 at `/me/packages`, with in-memory
+/// packages and price series (today is Fri 6 Nov 2026, from [PhotographerWorld]).
+/// `/me/day-pricing` and the other links show their path.
 class PackagesWorld {
   final PhotographerWorld w = PhotographerWorld();
-  final holidays = FakeHolidayRepository();
-  final specialDays = FakeSpecialDayRepository();
   late GoRouter router;
 
   Future<void> init({List<ServicePackage> packages = const []}) async {
@@ -81,31 +91,16 @@ class PackagesWorld {
     for (final p in packages) {
       w.packages.seed(w.uid, p);
     }
+    rules.packages = [
+      for (final p in packages)
+        PricedPackage(id: p.id, price: p.priceVnd, active: p.active),
+    ];
   }
 
   FakeServicePackageRepository get packages => w.packages;
+  FakePriceRuleRepository get rules => w.priceRules;
 
-  /// The 2026 holidays used by the tests: Tết (Mon 16 to Sun 22 Feb) and the
-  /// Hùng Kings (Sun 26 Apr).
-  void seedHolidays2026() {
-    holidays.seed(2026, [
-      for (var d = 16; d <= 22; d++)
-        Holiday(day: '2026-02-$d', name: 'Tết Nguyên đán'),
-      const Holiday(day: '2026-04-26', name: 'Giỗ Tổ Hùng Vương'),
-    ]);
-  }
-
-  SpecialDayRange seedRange(String id, String name, String from, String to) {
-    final r = SpecialDayRange(id: id, name: name, from: from, to: to);
-    specialDays.seed(w.uid, r);
-    return r;
-  }
-
-  List<Override> get overrides => [
-    ...w.overrides,
-    holidayRepositoryProvider.overrideWithValue(holidays),
-    specialDayRepositoryProvider.overrideWithValue(specialDays),
-  ];
+  List<Override> get overrides => w.overrides;
 
   /// [editor]: `/me/packages/new` and `/me/packages/:id` are the real
   /// S08.09, and `/setup/2` is S08.01 step 2; else they show their path.
@@ -147,8 +142,8 @@ class PackagesWorld {
         GoRoute(path: '/setup/3', builder: (_, s) => Text('stub ${s.uri}')),
         GoRoute(path: '/me/addons', builder: (_, s) => Text('stub ${s.uri}')),
         GoRoute(
-          path: '/me/special-days',
-          builder: (_, _) => const SpecialDaysScreen(),
+          path: '/me/day-pricing',
+          builder: (_, s) => Text('stub ${s.uri}'),
         ),
       ],
     );

@@ -7,8 +7,6 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
-import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/features/booking/booking_day_price.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -173,28 +171,16 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
       startsAsync = starts == null ? const AsyncLoading() : AsyncData(starts);
     }
 
-    // S04.02 prices: the short price under each day that costs more or less
-    // than the weekday price, "Lễ {price}" under a special day. The holidays
-    // of the month's year are read only for a package with a special price.
-    final pricing = state.pricing;
-    final varies = pricing != null && pricesVaryByDay(pricing);
-    final monthSpecial = pricing?.specialPrice == null
-        ? noSpecialDays
-        : ref
-                  .watch(
-                    specialDaysForBookingProvider((
-                      providerId: widget.args.photographerId,
-                      year: _month.year,
-                    )),
-                  )
-                  .value ??
-              noSpecialDays;
-    final priceNotes = pricing == null
-        ? const <DateTime, CalendarNote>{}
-        : dayPriceNotes(l10n, pricing, _month, monthSpecial);
-    final dayTagText = dayTag(l10n, state);
-    final specialsMissing =
-        state.specialsFailed && day != null && state.dayPrice == null;
+    // S04.02 prices (spec R9, §5.8): the short price under each day that costs
+    // more or less than the base price, the first day of a series with its
+    // name ("Tết 2,5M"). One read of the photographer's series, priced by the
+    // same functions as the server.
+    final serviceId = state.serviceId;
+    final base = state.priceVnd;
+    final rules = state.rules;
+    final varies = state.pricesVary;
+    final ruleLine = ruleDayLine(l10n, state);
+    final rulesMissing = state.rulesFailed && day != null;
 
     Widget times(List<String> slots) {
       if (slots.isEmpty) {
@@ -327,7 +313,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                 AppSpace.s2,
               ),
               child: Text(
-                l10n.s0402_weekdayPrice(formatMoney(pricing.price, short: true)),
+                l10n.s0402_weekdayPrice(formatMoney(state.priceVnd ?? 0, short: true)),
                 key: const Key('book-weekday-price'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
@@ -375,19 +361,32 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                         }
                       }
 
+                      // Free days from today on: a past or taken day has no
+                      // price to compare, and the series name goes to the
+                      // first day that does show one.
+                      final priceNotes =
+                          state.dayPriced &&
+                              serviceId != null &&
+                              base != null &&
+                              rules != null
+                          ? dayPriceNotes(
+                              l10n,
+                              base: base,
+                              serviceId: serviceId,
+                              rules: rules,
+                              month: _month,
+                              isShown: (d) =>
+                                  !d.isBefore(today) &&
+                                  (dayStates[d] ?? DayState.free) ==
+                                      DayState.free,
+                            )
+                          : const <DateTime, CalendarNote>{};
+
                       return AvailabilityCalendar(
                         showHeader: false,
                         month: _month,
                         states: dayStates,
-                        notes: {
-                          // Free days from today on: a past or taken day has
-                          // no price to compare.
-                          for (final e in priceNotes.entries)
-                            if (!e.key.isBefore(today) &&
-                                (dayStates[e.key] ?? DayState.free) ==
-                                    DayState.free)
-                              e.key: e.value,
-                        },
+                        notes: priceNotes,
                         selected: selectedDate,
                         onSelect: (d) {
                           final s = dayStates[d] ?? DayState.free;
@@ -425,17 +424,19 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     const SizedBox(height: AppSpace.s3),
                     Text(
                       l10n.bookDayLine(
-                        '${l10n.calendarWeekdayLong(weekdayCode(selectedDate.weekday))}, ${formatDayMonth(selectedDate)}'
-                        '${dayTagText == null ? '' : ' · $dayTagText'}',
+                        // A series sets the price: "T7 21/11 · Mùa cưới ·
+                        // 2.000.000₫" (mock S04.02); else the plain day.
+                        ruleLine ??
+                            '${l10n.calendarWeekdayLong(weekdayCode(selectedDate.weekday))}, ${formatDayMonth(selectedDate)}',
                         formatDuration(duration, l10n),
                       ),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (specialsMissing)
+                    if (rulesMissing)
                       Row(
-                        key: const Key('book-specials-failed'),
+                        key: const Key('book-rules-failed'),
                         children: [
                           Expanded(
                             child: Text(
@@ -446,7 +447,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                             ),
                           ),
                           TextButton(
-                            onPressed: controller.retrySpecials,
+                            onPressed: controller.retryRules,
                             child: Text(l10n.retry),
                           ),
                         ],

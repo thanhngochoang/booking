@@ -2,12 +2,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/core/phone.dart';
+import 'package:photobooking/core/vn_time.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/data/spots/spot.dart';
 import 'package:photobooking/data/spots/spot_rules.dart';
 
@@ -132,9 +132,10 @@ class BookingFlowState {
     required this.step,
     this.serviceId,
     this.priceVnd,
-    this.pricing,
-    this.specials,
-    this.specialsFailed = false,
+    this.dayPriced = false,
+    this.rules,
+    this.rulesFailed = false,
+    this.today,
     this.durationMinutes,
     this.serviceName,
     this.day,
@@ -162,17 +163,21 @@ class BookingFlowState {
   final String? serviceId;
   final int? priceVnd;
 
-  /// What the chosen package's price depends on (its day prices and special
-  /// price); null for a slot offer, which has one fixed price (P7).
-  final PricedService? pricing;
+  /// The chosen package is priced by day: [priceVnd] is its base price and
+  /// [rules] refine it. False for a slot offer, which has one fixed price (P7).
+  final bool dayPriced;
 
-  /// The holidays of one year and the provider's special ranges, loaded once
-  /// the chosen day needs them (only a package with a `specialPrice` does).
-  final SpecialDayInfo? specials;
+  /// The price series of the photographer (one live query; [priceForDay] reads
+  /// the ones of the chosen package); null until the read answers.
+  final List<PriceRule>? rules;
 
-  /// The last read of [specials] failed: a package with a special price has
-  /// no price for the chosen day until a retry works.
-  final bool specialsFailed;
+  /// The last read of [rules] failed: the chosen day has no price until a
+  /// retry works.
+  final bool rulesFailed;
+
+  /// Today, from the app clock: series that ended no longer count in the
+  /// price range.
+  final DateTime? today;
   final int? durationMinutes;
   final String? serviceName;
   final String? day;
@@ -243,49 +248,52 @@ class BookingFlowState {
     return sum;
   }
 
-  /// The package's price on the chosen day, why, and the holiday or range
-  /// name under a special day. Null until a day is chosen, and, for a package
-  /// with a special price, until that day's year of holidays has loaded: the
-  /// flow never prices a day it cannot classify. A slot offer has none.
-  ({int amount, DayPriceKind kind, String? specialName})? get dayPrice {
-    final p = pricing;
-    final d = day;
-    if (p == null || d == null) return null;
-    var special = noSpecialDays;
-    final info = specials;
-    if (p.specialPrice != null) {
-      if (info == null || info.year != _yearOf(d)) return null;
-      special = info.days;
+  /// The package's price on the chosen day and the series that set it (null
+  /// for the base price). Null until a day is chosen and the series have
+  /// loaded: the flow never prices a day it cannot classify. A slot offer has
+  /// none.
+  DayPrice? get dayPrice {
+    final id = serviceId;
+    final base = priceVnd;
+    final list = rules;
+    final d = day == null ? null : parseDayKey(day!);
+    if (!dayPriced || id == null || base == null || list == null || d == null) {
+      return null;
     }
-    final priced = priceForDayKey(p, d, special);
-    return (
-      amount: priced.amount,
-      kind: priced.kind,
-      specialName: priced.kind == DayPriceKind.special
-          ? (info?.nameOf(d) ?? d)
-          : null,
-    );
+    return priceForDay(base, id, list, d);
   }
 
-  static int _yearOf(String day) => int.parse(day.substring(0, 4));
+  /// Lowest and highest price of the chosen package from today on (S04.01's
+  /// range); null for a slot or while no package is chosen.
+  ({int min, int max})? get bounds {
+    final id = serviceId;
+    final base = priceVnd;
+    if (!dayPriced || id == null || base == null) return null;
+    final t = today;
+    final list = rules;
+    if (t == null || list == null) return (min: base, max: base);
+    return priceBounds(base, id, list, t);
+  }
 
-  /// The price day-dependent packages cannot yet give: no day chosen, or its
-  /// special days still loading.
-  bool get dayPriceReady => pricing == null || day == null || dayPrice != null;
+  /// The price of the package depends on the day.
+  bool get pricesVary {
+    final b = bounds;
+    return b != null && b.min != b.max;
+  }
+
+  /// The price a day-priced package cannot yet give: no day chosen, or its
+  /// series still loading.
+  bool get dayPriceReady => !dayPriced || day == null || dayPrice != null;
 
   /// The package's part of the total: the chosen day's price, else the lowest
-  /// weekday price (S04.01 reads "từ {min}"); a slot's own price.
+  /// price from today on (S04.01 reads "từ {min}"); a slot's own price.
   int? get packageVnd {
-    final p = pricing;
-    if (p == null) return priceVnd;
-    return dayPrice?.amount ?? priceRange(p).min;
+    if (!dayPriced) return priceVnd;
+    return dayPrice?.amount ?? bounds?.min ?? priceVnd;
   }
 
   /// [packageVnd] is a lower bound: the price still depends on a day.
-  bool get priceIsFrom {
-    final p = pricing;
-    return p != null && dayPrice == null && pricesVaryByDay(p);
-  }
+  bool get priceIsFrom => dayPriced && dayPrice == null && pricesVary;
 
   /// Package + add-ons; null until a package is chosen.
   int? get totalVnd => packageVnd != null ? packageVnd! + addonsVnd : null;
@@ -352,11 +360,11 @@ class BookingFlowState {
     String? serviceId,
     bool clearServiceId = false,
     int? priceVnd,
-    PricedService? pricing,
-    bool clearPricing = false,
-    SpecialDayInfo? specials,
-    bool clearSpecials = false,
-    bool? specialsFailed,
+    bool? dayPriced,
+    List<PriceRule>? rules,
+    bool clearRules = false,
+    bool? rulesFailed,
+    DateTime? today,
     int? durationMinutes,
     String? serviceName,
     String? day,
@@ -388,9 +396,10 @@ class BookingFlowState {
       step: step ?? this.step,
       serviceId: clearServiceId ? null : (serviceId ?? this.serviceId),
       priceVnd: clearServiceId ? null : (priceVnd ?? this.priceVnd),
-      pricing: clearServiceId || clearPricing ? null : (pricing ?? this.pricing),
-      specials: clearSpecials ? null : (specials ?? this.specials),
-      specialsFailed: specialsFailed ?? this.specialsFailed,
+      dayPriced: clearServiceId ? false : (dayPriced ?? this.dayPriced),
+      rules: clearRules ? null : (rules ?? this.rules),
+      rulesFailed: rulesFailed ?? this.rulesFailed,
+      today: today ?? this.today,
       durationMinutes:
           clearServiceId ? null : (durationMinutes ?? this.durationMinutes),
       serviceName: clearServiceId ? null : (serviceName ?? this.serviceName),

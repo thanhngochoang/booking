@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart' show AppButton, AppColors;
 import 'package:photobooking/data/photographer/service_package.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 
 import '../../support/packages_world.dart';
@@ -18,7 +18,6 @@ Future<PackagesWorld> _world({
     world.w.today = today;
   }
   await world.init(packages: packages);
-  world.seedHolidays2026();
   return world;
 }
 
@@ -82,104 +81,43 @@ Future<void> _save(WidgetTester tester) async {
 ServicePackage _stored(PackagesWorld w) => w.packages.stored(w.w.uid).single;
 
 void main() {
-  testWidgets('a new package opens "Thêm gói" with two levels', (tester) async {
+  testWidgets('a new package opens "Thêm gói" with one price field', (
+    tester,
+  ) async {
     final w = await _world();
     await _open(tester, w, '/me/packages/new');
     expect(find.text('Thêm gói'), findsOneWidget);
-    expect(find.text('Hai mức giá'), findsOneWidget);
-    expect(find.text('Từng ngày'), findsOneWidget);
-    expect(find.text('Ngày thường · T2–T6'), findsOneWidget);
-    expect(find.text('Cuối tuần · T7–CN'), findsOneWidget);
+    expect(find.text('Giá ngày thường'), findsOneWidget);
+    expect(_key('package-price'), findsOneWidget);
+    // The old price table, special price and preview are gone.
+    expect(find.text('Hai mức giá'), findsNothing);
+    expect(find.text('Từng ngày'), findsNothing);
+    expect(_key('price-weekday'), findsNothing);
+    expect(_key('special-switch'), findsNothing);
+    expect(_key('preview-note'), findsNothing);
     expect(find.text('Lưu gói'), findsOneWidget);
     expect(find.text('Ẩn gói'), findsNothing);
-    expect(_key('price-special'), findsNothing);
+    expect(find.text('Booking đã đặt giữ giá cũ.'), findsOneWidget);
+    expect(
+      find.text('Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi lưu'),
+      findsOneWidget,
+    );
+    expect(_key('package-rules'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('typing the weekday price first fills the weekend', (
-    tester,
-  ) async {
+  testWidgets('the price field groups digits as typed', (tester) async {
     final w = await _world();
     await _open(tester, w, '/me/packages/new');
-    await _type(tester, 'price-weekday', '1500000');
-    expect(_text(tester, 'price-weekday'), '1.500.000');
-    expect(_text(tester, 'price-weekend'), '1.500.000');
-
-    await _type(tester, 'price-weekend', '1800000');
-    await _type(tester, 'price-weekday', '1600000');
-    expect(
-      _text(tester, 'price-weekend'),
-      '1.800.000',
-      reason: 'a typed weekend price stays',
-    );
+    await _type(tester, 'package-price', '1500000');
+    expect(_text(tester, 'package-price'), '1.500.000');
   });
 
-  testWidgets('two levels → per day fills 7 values', (tester) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _type(tester, 'price-weekday', '1500000');
-    await _type(tester, 'price-weekend', '1800000');
-    await tester.tap(find.text('Từng ngày'));
-    await tester.pump();
-    for (final d in ['mon', 'tue', 'wed', 'thu', 'fri']) {
-      expect(_text(tester, 'price-day-$d'), '1.500.000', reason: d);
-    }
-    for (final d in ['sat', 'sun']) {
-      expect(_text(tester, 'price-day-$d'), '1.800.000', reason: d);
-    }
-    expect(find.text('Thứ 2'), findsOneWidget);
-    expect(find.text('Chủ nhật'), findsOneWidget);
-    expect(find.text('cuối tuần'), findsNWidgets(2));
-  });
-
-  testWidgets('per day with Friday 3.5M → two levels asks and uses '
-      'Monday/Saturday', (tester) async {
-    final w = await _world(packages: [perDayPackage]);
-    await _open(tester, w, '/me/packages/p2');
-    expect(_text(tester, 'price-day-fri'), '3.500.000');
-
-    await tester.tap(find.text('Hai mức giá'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Dùng giá Thứ 2 cho ngày thường và giá Thứ 7 cho cuối tuần?'),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Giữ từng ngày'));
-    await tester.pumpAndSettle();
-    expect(_key('price-day-fri'), findsOneWidget, reason: 'still per day');
-    expect(_text(tester, 'price-day-fri'), '3.500.000');
-
-    await tester.tap(find.text('Hai mức giá'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Dùng hai mức'));
-    await tester.pumpAndSettle();
-    expect(_text(tester, 'price-weekday'), '3.200.000');
-    expect(_text(tester, 'price-weekend'), '4.000.000');
-  });
-
-  testWidgets('per day that is already two levels switches back without '
-      'asking', (tester) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _type(tester, 'price-weekday', '1500000');
-    await _type(tester, 'price-weekend', '1800000');
-    await tester.tap(find.text('Từng ngày'));
-    await tester.pump();
-    await tester.tap(find.text('Hai mức giá'));
-    await tester.pumpAndSettle();
-    expect(find.text('Dùng hai mức'), findsNothing);
-    expect(_text(tester, 'price-weekday'), '1.500.000');
-    expect(_text(tester, 'price-weekend'), '1.800.000');
-  });
-
-  testWidgets('saves two levels: price is Monday, dayPrices has 7, mode kept', (
-    tester,
-  ) async {
+  testWidgets('saves one price with the details', (tester) async {
     final w = await _world();
     await _open(tester, w, '/me/packages/new');
     await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '3200000');
-    await _type(tester, 'price-weekend', '4000000');
+    await _type(tester, 'package-price', '3200000');
     await _type(tester, 'package-edited', '80');
     await _type(tester, 'package-delivery', '5');
     await _save(tester);
@@ -189,174 +127,113 @@ void main() {
     expect(p.durationMinutes, 240);
     expect(p.editedCount, 80);
     expect(p.deliveryDays, 5);
-    expect(p.priceMode, PriceMode.twoLevels);
-    expect(p.specialPrice, isNull);
-    expect(p.dayPrices, {
-      for (final d in Weekday.values) d: d.isWeekend ? 4000000 : 3200000,
-    });
     expect(find.text('Đã thêm gói.'), findsOneWidget);
   });
 
-  testWidgets('per day saves 7 prices and reopens per day', (tester) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '3200000');
-    await tester.tap(find.text('Từng ngày'));
-    await tester.pump();
-    await _type(tester, 'price-day-fri', '3500000');
-    await _save(tester);
-    final p = _stored(w);
-    expect(p.priceMode, PriceMode.perDay);
-    expect(p.priceVnd, 3200000);
-    expect(p.dayPrices![Weekday.fri], 3500000);
-    expect(p.dayPrices![Weekday.sat], 3200000);
-
-    await tester.pumpWidget(const SizedBox());
-    await _open(tester, w, '/me/packages/${p.id}');
-    expect(_key('price-day-fri'), findsOneWidget);
-    expect(_text(tester, 'price-day-fri'), '3.500.000');
-  });
-
-  testWidgets('all seven equal saves without dayPrices', (tester) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
-    await _type(tester, 'price-weekend', '1500000');
-    await _save(tester);
-    final p = _stored(w);
-    expect(p.dayPrices, isNull);
-    expect(p.priceVnd, 1500000);
-    expect(p.priceMode, PriceMode.twoLevels);
-  });
-
-  testWidgets('per day with seven equal prices also saves a single price', (
+  testWidgets('editing changes the price and keeps the place in the list', (
     tester,
   ) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
-    await tester.tap(find.text('Từng ngày'));
-    await tester.pump();
-    await _type(tester, 'price-day-sat', '1500000');
-    await _type(tester, 'price-day-sun', '1500000');
-    await _save(tester);
-    final p = _stored(w);
-    expect(p.dayPrices, isNull);
-    expect(p.priceVnd, 1500000);
-  });
-
-  testWidgets('the special switch off saves without specialPrice', (
-    tester,
-  ) async {
-    final w = await _world(packages: [twoLevelPackage]);
+    final w = await _world(packages: [portraitPackage]);
     await _open(tester, w, '/me/packages/p1');
-    expect(tester.widget<Switch>(_key('special-switch')).value, isTrue);
-    expect(_text(tester, 'price-special'), '2.200.000');
-
-    await tester.ensureVisible(_key('special-switch'));
-    await tester.tap(_key('special-switch'));
-    await tester.pump();
-    expect(_key('price-special'), findsNothing);
-    expect(find.text('Đang tắt · ngày lễ tính như thứ đó'), findsOneWidget);
+    expect(_text(tester, 'package-price'), '1.500.000');
+    await _type(tester, 'package-price', '1600000');
     await _save(tester);
-    expect(_stored(w).specialPrice, isNull);
-    expect(_stored(w).order, 0, reason: 'its place in the list is kept');
+    expect(_stored(w).priceVnd, 1600000);
+    expect(_stored(w).order, 0);
+    expect(find.text('Đã lưu gói.'), findsOneWidget);
   });
 
-  testWidgets('the special switch on needs a price and saves it', (
+  testWidgets('an existing package shows its live series read-only', (
     tester,
   ) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
-    await tester.ensureVisible(_key('special-switch'));
-    await tester.tap(_key('special-switch'));
-    await tester.pump();
-    await _save(tester);
-    expect(find.text('Giá phải lớn hơn 0'), findsOneWidget);
-    expect(w.packages.writes, 0);
-
-    await _type(tester, 'price-special', '2200000');
-    await _save(tester);
-    expect(_stored(w).specialPrice, 2200000);
-  });
-
-  testWidgets('the special line counts holidays and own ranges and "Xem" '
-      'opens S08.10', (tester) async {
-    final w = await _world(packages: [twoLevelPackage]);
-    w.seedRange('r1', 'Mùa cưới', '2026-11-14', '2026-11-22');
-    w.seedRange('r2', 'Noel', '2026-12-24', '2026-12-25');
+    final w = await _world(packages: [portraitPackage]);
+    w.rules.seed(weddingSeries());
+    w.rules.seed(weekendSeries());
+    w.rules.seed(tetSeries());
+    // A series of another package and one that has ended do not show.
+    w.rules.seed(weekendSeries(serviceId: 'p2'));
     await _open(tester, w, '/me/packages/p1');
+    expect(_key('package-rules'), findsOneWidget);
+    expect(find.text('Cuối tuần'), findsOneWidget);
+    expect(find.text('Hằng tuần · T7, CN'), findsOneWidget);
+    expect(find.text('1,8M'), findsOneWidget);
+    expect(find.text('Mùa cưới'), findsOneWidget);
+    expect(find.text('Hằng năm · 14/11 – 22/11'), findsOneWidget);
+    expect(find.text('Tết'), findsOneWidget);
+    expect(find.text('Hằng năm · 23 Chạp – 5 Giêng (âm lịch)'), findsOneWidget);
+    expect(find.text('Giá theo ngày'), findsOneWidget);
     expect(
-      find.text('Áp cho 8 ngày lễ chung, 2 khoảng ngày của bạn · '),
-      findsOneWidget,
+      find.text('Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi lưu'),
+      findsNothing,
     );
-    await tester.ensureVisible(_key('special-see'));
-    await tester.tap(_key('special-see'));
+    // Read-only: a row has no chevron and does nothing.
+    await tester.tap(find.text('Mùa cưới'));
     await tester.pumpAndSettle();
-    expect(find.text('Ngày riêng của bạn'), findsOneWidget);
+    expect(find.text('Sửa gói'), findsOneWidget);
   });
 
-  testWidgets('preview marks 14/11 weekend 1,8M and 17/11 Lễ 2,2M', (
+  testWidgets('the series card links to S08.10 with this package', (
     tester,
   ) async {
-    final w = await _world(
-      packages: [twoLevelPackage],
-      today: DateTime.utc(2026, 11, 12),
-    );
-    w.holidays.seed(2026, const [
-      Holiday(day: '2026-11-17', name: 'Ngày hội thử'),
-    ]);
-    await _open(tester, w, '/me/packages/p1');
-    expect(find.text('T5 12 · 1,5M'), findsOneWidget);
-    expect(find.text('T7 14 · 1,8M'), findsOneWidget);
-    expect(find.text('CN 15 · 1,8M'), findsOneWidget);
-    expect(find.text('Lễ T3 17 · 2,2M'), findsOneWidget);
-    expect(find.text('T4 18 · 1,5M'), findsOneWidget);
-    expect(_key('preview-2026-11-17'), findsOneWidget);
-    expect(
-      find.text(
-        'Khách đặt T3 17/11 trả 2.200.000₫ (chưa gồm dịch vụ đi kèm). '
-        'Booking đã đặt giữ giá cũ.',
+    final w = await _world(packages: [portraitPackage, couplePackage]);
+    w.rules.seed(weekendSeries(serviceId: 'p2'));
+    await _open(tester, w, '/me/packages/p2');
+    await tester.ensureVisible(_key('package-rules-link'));
+    await tester.tap(_key('package-rules-link'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /me/day-pricing?service=p2'), findsOneWidget);
+  });
+
+  testWidgets('a package without series says where to set them', (
+    tester,
+  ) async {
+    final w = await _world(packages: [portraitPackage]);
+    w.rules.seed(
+      const PriceRule(
+        id: 'ended',
+        serviceId: 'p1',
+        price: 2000000,
+        repeat: PriceRepeat.none,
+        from: '2026-01-01',
+        to: '2026-01-02',
       ),
+    );
+    await _open(tester, w, '/me/packages/p1');
+    expect(_key('package-rules'), findsNothing);
+    expect(
+      find.text('Cuối tuần, ngày lễ: đặt ở Giá theo ngày sau khi lưu'),
       findsOneWidget,
     );
   });
 
-  testWidgets('preview follows the typed prices and the user\'s own ranges', (
+  testWidgets('from=setup has neither the series card nor the line', (
     tester,
   ) async {
-    final w = await _world(today: DateTime.utc(2026, 11, 12));
-    w.seedRange('r1', 'Mùa cưới', '2026-11-14', '2026-11-22');
-    await _open(tester, w, '/me/packages/new');
-    expect(_key('preview-note'), findsNothing, reason: 'no prices yet');
-    await _type(tester, 'price-weekday', '1500000');
-    await _type(tester, 'price-weekend', '1800000');
-    expect(find.text('T7 14 · 1,8M'), findsOneWidget);
-    await tester.ensureVisible(_key('special-switch'));
-    await tester.tap(_key('special-switch'));
-    await tester.pump();
-    await _type(tester, 'price-special', '2500000');
-    expect(find.text('Lễ T7 14 · 2,5M'), findsOneWidget);
-    expect(find.text('T6 13 · 1,5M'), findsOneWidget);
+    final w = await _world(packages: [portraitPackage]);
+    w.rules.seed(weekendSeries());
+    await _open(tester, w, '/me/packages/p1?from=setup');
+    expect(_key('package-price'), findsOneWidget);
+    expect(_key('package-rules'), findsNothing);
+    expect(_key('package-no-rules'), findsNothing);
+    expect(find.text('Booking đã đặt giữ giá cũ.'), findsOneWidget);
+    await _open(tester, w, '/me/packages/new?from=setup');
+    expect(_key('package-no-rules'), findsNothing);
   });
 
   testWidgets('errors: name length, price 0, price > 1e9', (tester) async {
     final w = await _world();
     await _open(tester, w, '/me/packages/new');
     await _type(tester, 'package-name', 'A');
-    await _type(tester, 'price-weekday', '0');
-    await _type(tester, 'price-weekend', '1000000001');
+    await _type(tester, 'package-price', '0');
     await _save(tester);
     expect(find.text('Tên 2–60 ký tự'), findsOneWidget);
     expect(find.text('Giá phải lớn hơn 0'), findsOneWidget);
-    expect(find.text('Giá tối đa 1.000.000.000₫'), findsOneWidget);
     expect(find.text('Chọn thời lượng'), findsOneWidget);
     expect(w.packages.writes, 0);
+
+    await _type(tester, 'package-price', '1000000001');
+    await _save(tester);
+    expect(find.text('Giá tối đa 1.000.000.000₫'), findsOneWidget);
 
     await _type(tester, 'package-name', 'A' * 61);
     await _save(tester);
@@ -369,35 +246,22 @@ void main() {
     );
   });
 
-  testWidgets('a per day price of 0 shows under that day', (tester) async {
-    final w = await _world();
-    await _open(tester, w, '/me/packages/new');
-    await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
-    await tester.tap(find.text('Từng ngày'));
-    await tester.pump();
-    await _type(tester, 'price-day-wed', '0');
-    await _save(tester);
-    expect(find.text('Giá phải lớn hơn 0'), findsOneWidget);
-    expect(w.packages.writes, 0);
-  });
-
   testWidgets('a failed save keeps the form and says so', (tester) async {
     final w = await _world();
     w.packages.failWrites = true;
     await _open(tester, w, '/me/packages/new');
     await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
+    await _type(tester, 'package-price', '1500000');
     await _save(tester);
     expect(find.text('Chưa lưu được gói, thử lại nhé'), findsOneWidget);
     expect(_text(tester, 'package-name'), 'Cặp đôi nửa ngày');
-    expect(_text(tester, 'price-weekday'), '1.500.000');
+    expect(_text(tester, 'package-price'), '1.500.000');
   });
 
   testWidgets('"Ẩn gói" asks, hides and leaves; "Giữ lại" keeps', (
     tester,
   ) async {
-    final w = await _world(packages: [twoLevelPackage]);
+    final w = await _world(packages: [portraitPackage]);
     await _open(tester, w, '/me/packages/p1');
     expect(find.text('Sửa gói'), findsOneWidget);
     await tester.tap(_key('package-hide'));
@@ -412,6 +276,98 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Ẩn gói'));
     await tester.pumpAndSettle();
     expect(_stored(w).active, isFalse);
+  });
+
+  group('leaving with changes', () {
+    Future<PackagesWorld> openFromList(
+      WidgetTester tester, {
+      List<ServicePackage> packages = const [portraitPackage],
+    }) async {
+      final w = await _world(packages: packages);
+      await _open(tester, w, '/me/packages');
+      await tester.tap(_key('package-p1'));
+      await tester.pumpAndSettle();
+      return w;
+    }
+
+    testWidgets('without a change back leaves at once', (tester) async {
+      await openFromList(tester);
+      expect(find.text('Sửa gói'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsNothing);
+      expect(find.text('Gói dịch vụ'), findsOneWidget);
+    });
+
+    testWidgets('after a change the sheet asks; "Tiếp tục sửa" stays', (
+      tester,
+    ) async {
+      final w = await openFromList(tester);
+      await _type(tester, 'package-price', '1600000');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsOneWidget);
+      await tester.tap(find.text('Tiếp tục sửa'));
+      await tester.pumpAndSettle();
+      expect(find.text('Sửa gói'), findsOneWidget);
+      expect(_text(tester, 'package-price'), '1.600.000');
+      expect(_stored(w).priceVnd, 1500000);
+    });
+
+    testWidgets('"Bỏ" is a red button and leaves without saving', (
+      tester,
+    ) async {
+      final w = await openFromList(tester);
+      await _type(tester, 'package-price', '1600000');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      final red = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.widgetWithText(AppButton, 'Bỏ'),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(red.style?.backgroundColor?.resolve({}), AppColors.error);
+      await tester.tap(find.widgetWithText(AppButton, 'Bỏ'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gói dịch vụ'), findsOneWidget);
+      expect(_stored(w).priceVnd, 1500000);
+    });
+
+    testWidgets('typing the old value back is no change', (tester) async {
+      await openFromList(tester);
+      await _type(tester, 'package-price', '1600000');
+      await _type(tester, 'package-price', '1500000');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsNothing);
+    });
+
+    testWidgets('a new package asks once something is typed', (tester) async {
+      final w = await _world();
+      await _open(tester, w, '/me/packages');
+      await tester.tap(_key('packages-add'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsNothing, reason: 'still empty');
+
+      await tester.tap(_key('packages-add'));
+      await tester.pumpAndSettle();
+      await _type(tester, 'package-name', 'Gia đình');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsOneWidget);
+    });
+
+    testWidgets('saving leaves without asking', (tester) async {
+      await openFromList(tester);
+      await _type(tester, 'package-price', '1600000');
+      await _save(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Bỏ thay đổi?'), findsNothing);
+      expect(find.text('Gói dịch vụ'), findsOneWidget);
+    });
   });
 
   testWidgets('a package that does not exist says so with a retry', (
@@ -431,14 +387,13 @@ void main() {
     expect(find.text('Thêm gói'), findsWidgets);
     expect(_key('package-save'), findsOneWidget);
     await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
-    await _type(tester, 'price-weekend', '1800000');
+    await _type(tester, 'package-price', '1500000');
     await _save(tester);
     await tester.pumpAndSettle();
     expect(_key('package-save'), findsNothing);
     expect(find.text('2 / 4'), findsOneWidget);
     expect(find.text('Cặp đôi nửa ngày'), findsOneWidget);
-    expect(find.text('T2–T6 1,5M · T7–CN 1,8M'), findsOneWidget);
+    expect(find.text('1.500.000₫'), findsOneWidget);
   });
 
   testWidgets('from=setup opened directly goes to /setup/2 after save', (
@@ -447,7 +402,7 @@ void main() {
     final w = await _world();
     await _open(tester, w, '/me/packages/new?from=setup');
     await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
+    await _type(tester, 'package-price', '1500000');
     await _save(tester);
     await tester.pumpAndSettle();
     expect(find.text('2 / 4'), findsOneWidget);
@@ -461,7 +416,7 @@ void main() {
     await tester.tap(_key('packages-add'));
     await tester.pumpAndSettle();
     await _fillBasics(tester);
-    await _type(tester, 'price-weekday', '1500000');
+    await _type(tester, 'package-price', '1500000');
     await _save(tester);
     await tester.pumpAndSettle();
     expect(find.text('Gói dịch vụ'), findsOneWidget);
@@ -472,7 +427,7 @@ void main() {
     final w = await _world();
     await _open(tester, w, '/me/packages/new?from=setup');
     await _fillBasics(tester, name: 'Gia đình', minutes: 180);
-    await _type(tester, 'price-weekday', '2000000');
+    await _type(tester, 'package-price', '2000000');
     final draft = SetupDraftStore(w.w.prefs).package(w.w.uid)!;
     expect(draft.name, 'Gia đình');
     expect(draft.price, '2.000.000');
@@ -481,8 +436,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await _open(tester, w, '/me/packages/new?from=setup');
     expect(_text(tester, 'package-name'), 'Gia đình');
-    expect(_text(tester, 'price-weekday'), '2.000.000');
-    expect(_text(tester, 'price-weekend'), '2.000.000');
+    expect(_text(tester, 'package-price'), '2.000.000');
 
     await _save(tester);
     expect(SetupDraftStore(w.w.prefs).package(w.w.uid), isNull);
@@ -496,25 +450,21 @@ void main() {
   });
 
   for (final b in Brightness.values) {
-    for (final perDay in [false, true]) {
-      testWidgets(
-        'fits 320dp at 1.3x text (${b.name}, ${perDay ? 'per day' : 'two'})',
-        (tester) async {
-          final w = await _world(
-            packages: [perDay ? perDayPackage : twoLevelPackage],
-          );
-          await _open(
-            tester,
-            w,
-            perDay ? '/me/packages/p2' : '/me/packages/p1',
-            brightness: b,
-            textScale: 1.3,
-            width: 320,
-            height: 640,
-          );
-          expect(tester.takeException(), isNull);
-        },
+    testWidgets('fits 320dp at 1.3x text (${b.name})', (tester) async {
+      final w = await _world(packages: [portraitPackage]);
+      w.rules.seed(weekendSeries());
+      w.rules.seed(weddingSeries());
+      w.rules.seed(tetSeries());
+      await _open(
+        tester,
+        w,
+        '/me/packages/p1',
+        brightness: b,
+        textScale: 1.3,
+        width: 320,
+        height: 640,
       );
-    }
+      expect(tester.takeException(), isNull);
+    });
   }
 }

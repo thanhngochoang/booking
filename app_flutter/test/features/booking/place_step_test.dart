@@ -10,6 +10,8 @@ import '../../support/booking_world.dart';
 import '../../support/spot_booking_fixtures.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 
+import '../../support/calendar_finders.dart';
+
 void main() {
   final now = DateTime.utc(2026, 10, 5);
   final freeDay = DateTime.utc(2026, 10, 15);
@@ -27,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // On DateTimeStep: select day 15 and first slot
-    await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('15 tháng 10, rảnh'));
     await tester.pumpAndSettle();
 
     final slotChip = find.widgetWithText(AppChip, '06:00');
@@ -145,7 +147,7 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Tiếp tục · $total'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+      await tester.tap(dayByLabel('15 tháng 10, rảnh'));
       await tester.pumpAndSettle();
       final slotChip = find.widgetWithText(AppChip, '06:00');
       await tester.ensureVisible(slotChip);

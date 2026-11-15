@@ -1,5 +1,7 @@
 # Ledger: S08 day pricing (#316)
 
+> **Đã thay thế** bởi `ledger-day-pricing-series.md` (chuỗi giá, 2026-11-06): mô hình dưới đây (`dayPrices`, `specialPrice`, ngày đặc biệt, `holidays`) đã gỡ hết.
+
 Plan: `docs/superpowers/plans/2026-11-04-s08-day-pricing.md`. Spec: `docs/superpowers/specs/2026-11-04-day-pricing-design.md`.
 
 The unit ran on two repositories, with the same branch name `plan/316-day-pricing` in each:

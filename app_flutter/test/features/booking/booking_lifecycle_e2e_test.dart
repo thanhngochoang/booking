@@ -15,6 +15,7 @@ import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_world.dart';
+import '../../support/calendar_finders.dart';
 
 /// Saturday 03/10 17:00 in Vietnam; the shoot is Monday 12/10 15:30–17:30.
 final _start = DateTime.utc(2026, 10, 3, 10);
@@ -194,7 +195,7 @@ Future<String> _customerBooks(
   await tester.tap(find.text('Gói Chân Dung'));
   await _settle(tester);
   await _tapButton(tester, 'Tiếp tục · 1.500.000₫');
-  await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+  await tester.tap(dayByLabel('12 tháng 10, rảnh'));
   await _settle(tester);
   final slot = find.widgetWithText(AppChip, '15:30');
   await tester.ensureVisible(slot);

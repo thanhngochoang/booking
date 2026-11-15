@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
@@ -26,6 +27,7 @@ import '../../support/fake_addon_repository.dart';
 import '../../support/fake_booking_repository.dart';
 import '../../support/fake_spot_repository.dart';
 import '../../support/spot_booking_fixtures.dart';
+import '../../support/fake_price_rule_repository.dart';
 
 void main() {
   final today = worldBookingToday; // 2026-10-03
@@ -53,6 +55,7 @@ void main() {
       overrides: [
         clockProvider.overrideWithValue(() => today),
         calendarTodayProvider.overrideWithValue(today),
+        priceRuleRepositoryProvider.overrideWithValue(FakePriceRuleRepository()),
         profilePackagesProvider(
           'p1',
         ).overrideWithValue(const AsyncData([bookingPackage1, bookingPackage2])),

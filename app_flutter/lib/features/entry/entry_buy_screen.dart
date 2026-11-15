@@ -55,12 +55,13 @@ class _EntryBuyScreenState extends ConsumerState<EntryBuyScreen> {
     while (!e.isOpenDay(dayKeyOf(initial)) && initial.isBefore(last)) {
       initial = initial.add(const Duration(days: 1));
     }
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: first,
-      lastDate: last,
-      selectableDayPredicate: (d) => e.isOpenDay(dayKeyOf(d)),
+    final picked = await showAppDatePicker(
+      context,
+      initial: initial,
+      first: first,
+      last: last,
+      today: first,
+      disabledDay: (d) => !e.isOpenDay(dayKeyOf(d)),
     );
     if (picked == null || !mounted) return;
     final key = dayKeyOf(picked);

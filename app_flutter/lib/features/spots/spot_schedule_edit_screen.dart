@@ -204,11 +204,12 @@ class _FormState extends ConsumerState<_Form> {
     final initial = current.isBefore(today)
         ? today
         : (current.isAfter(last) ? last : current);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(initial.year, initial.month, initial.day),
-      firstDate: DateTime(today.year, today.month, today.day),
-      lastDate: DateTime(last.year, last.month, last.day),
+    final picked = await showAppDatePicker(
+      context,
+      initial: calendarDay(initial),
+      first: calendarDay(today),
+      last: calendarDay(last),
+      today: calendarDay(today),
     );
     if (picked == null || !mounted) return;
     final key = dayKeyOf(picked);

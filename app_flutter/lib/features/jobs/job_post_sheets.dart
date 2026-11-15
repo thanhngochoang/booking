@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/jobs/job.dart';
 
+/// A picked day (UTC midnight) as the local date this sheet keeps.
+DateTime _local(DateTime d) => DateTime(d.year, d.month, d.day);
+
 String _formatDayHyphen(DateTime d) {
   final y = d.year.toString().padLeft(4, '0');
   final m = d.month.toString().padLeft(2, '0');
@@ -185,13 +188,15 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 subtitle: Text(_fixedDay != null ? formatDay(_fixedDay!) : l.jobPostWhenEmpty),
                 trailing: const AppIcon(AppIcons.calendar),
                 onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _fixedDay ?? widget.minFixedDay,
-                    firstDate: widget.minFixedDay,
-                    lastDate: widget.maxFixedDay,
+                  final picked = await showAppDatePicker(
+                    context,
+                    initial: calendarDay(_fixedDay ?? widget.minFixedDay),
+                    first: calendarDay(widget.minFixedDay),
+                    last: calendarDay(widget.maxFixedDay),
                   );
-                  if (picked != null) setState(() => _fixedDay = picked);
+                  if (picked != null) {
+                    setState(() => _fixedDay = _local(picked));
+                  }
                 },
               ),
               ListTile(
@@ -235,13 +240,15 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 subtitle: Text(_flexFrom != null ? formatDay(_flexFrom!) : l.jobPostWhenEmpty),
                 trailing: const AppIcon(AppIcons.calendar),
                 onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _flexFrom ?? widget.minFixedDay,
-                    firstDate: widget.minFixedDay,
-                    lastDate: widget.maxFixedDay,
+                  final picked = await showAppDatePicker(
+                    context,
+                    initial: calendarDay(_flexFrom ?? widget.minFixedDay),
+                    first: calendarDay(widget.minFixedDay),
+                    last: calendarDay(widget.maxFixedDay),
                   );
-                  if (picked != null) setState(() => _flexFrom = picked);
+                  if (picked != null) {
+                    setState(() => _flexFrom = _local(picked));
+                  }
                 },
               ),
               ListTile(
@@ -251,13 +258,17 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 trailing: const AppIcon(AppIcons.calendar),
                 onTap: () async {
                   final first = _flexFrom ?? widget.minFixedDay;
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _flexTo ?? first.add(const Duration(days: 7)),
-                    firstDate: first,
-                    lastDate: widget.maxFixedDay,
+                  final picked = await showAppDatePicker(
+                    context,
+                    initial: calendarDay(
+                      _flexTo ?? first.add(const Duration(days: 7)),
+                    ),
+                    first: calendarDay(first),
+                    last: calendarDay(widget.maxFixedDay),
                   );
-                  if (picked != null) setState(() => _flexTo = picked);
+                  if (picked != null) {
+                    setState(() => _flexTo = _local(picked));
+                  }
                 },
               ),
               ListTile(

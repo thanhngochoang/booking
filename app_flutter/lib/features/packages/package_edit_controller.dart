@@ -7,7 +7,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
+import 'package:photobooking/data/pricing/day_pricing.dart' show kMaxPriceVnd;
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 
 const kPackageNameMin = 2;
@@ -16,24 +16,7 @@ const kCountMax = 2000;
 const kDeliveryMaxDays = 90;
 
 /// Where an error of the editor shows.
-enum PackageEditField {
-  name,
-  duration,
-  edited,
-  delivery,
-  weekday,
-  weekend,
-  special,
-  mon,
-  tue,
-  wed,
-  thu,
-  fri,
-  sat,
-  sun,
-}
-
-PackageEditField dayField(Weekday w) => PackageEditField.values.byName(w.name);
+enum PackageEditField { name, duration, edited, delivery, price }
 
 enum PackageError {
   nameLength,
@@ -44,15 +27,6 @@ enum PackageError {
   daysInvalid,
 }
 
-/// What [PackageEditController.setMode] did.
-enum ModeChange {
-  done,
-
-  /// Going from "Từng ngày" to "Hai mức giá" while the 7 prices are not two
-  /// levels: ask first, then call `collapseToTwoLevels`.
-  needsCollapseConfirm,
-}
-
 enum SaveOutcome { saved, invalid, failed }
 
 /// Which package the editor opens: [id] null for a new one. [fromSetup] is
@@ -60,15 +34,23 @@ enum SaveOutcome { saved, invalid, failed }
 /// draft until saved.
 typedef PackageEditArgs = ({String? id, bool fromSetup});
 
-bool _priceOk(int? v) => v != null && v >= 1 && v <= kMaxPriceVnd;
-
 PackageError? _priceError(int? v) => v == null || v <= 0
     ? PackageError.priceRequired
     : v > kMaxPriceVnd
     ? PackageError.priceTooHigh
     : null;
 
-/// The package editor as typed (S08.09).
+/// What the form holds, to tell whether anything changed since it opened.
+typedef PackageValues = ({
+  String name,
+  int? durationMinutes,
+  int? editedCount,
+  int? deliveryDays,
+  int? price,
+});
+
+/// The package editor as typed (S08.09): the four details and the one price
+/// of an ordinary day.
 @immutable
 class PackageEditState {
   const PackageEditState({
@@ -76,54 +58,59 @@ class PackageEditState {
     this.durationMinutes,
     this.editedCount,
     this.deliveryDays,
-    this.mode = PriceMode.twoLevels,
-    this.weekday,
-    this.weekend,
-    this.weekendTouched = false,
-    this.perDay = const {},
-    this.specialOn = false,
-    this.specialPrice,
+    this.price,
     this.errors = const {},
     this.saving = false,
     this.active = true,
-  });
+    PackageValues? opened,
+  }) : _opened = opened; // ignore: prefer_initializing_formals
 
   final String name;
   final int? durationMinutes;
   final int? editedCount;
   final int? deliveryDays;
-  final PriceMode mode;
 
-  /// "Hai mức giá": Monday to Friday, and Saturday and Sunday. The weekend
-  /// follows the weekday price until it is typed ([weekendTouched]).
-  final int? weekday;
-  final int? weekend;
-  final bool weekendTouched;
-
-  /// "Từng ngày": one price per weekday.
-  final Map<Weekday, int?> perDay;
-  final bool specialOn;
-  final int? specialPrice;
+  /// "Giá ngày thường", whole đồng.
+  final int? price;
   final Map<PackageEditField, PackageError> errors;
   final bool saving;
 
   /// A package being edited that is shown to customers ("Ẩn gói" applies).
   final bool active;
 
+  /// The values the form opened with; null means "empty form".
+  final PackageValues? _opened;
+
+  PackageValues get _values => (
+    name: name,
+    durationMinutes: durationMinutes,
+    editedCount: editedCount,
+    deliveryDays: deliveryDays,
+    price: price,
+  );
+
+  /// Something differs from what the form opened with (a new package: anything
+  /// typed), so leaving asks "Bỏ thay đổi?".
+  bool get dirty =>
+      _values !=
+      (_opened ??
+          (
+            name: '',
+            durationMinutes: null,
+            editedCount: null,
+            deliveryDays: null,
+            price: null,
+          ));
+
   PackageEditState copyWith({
     String? name,
     Object? durationMinutes = _keep,
     Object? editedCount = _keep,
     Object? deliveryDays = _keep,
-    PriceMode? mode,
-    Object? weekday = _keep,
-    Object? weekend = _keep,
-    bool? weekendTouched,
-    Map<Weekday, int?>? perDay,
-    bool? specialOn,
-    Object? specialPrice = _keep,
+    Object? price = _keep,
     Map<PackageEditField, PackageError>? errors,
     bool? saving,
+    bool? active,
   }) => PackageEditState(
     name: name ?? this.name,
     durationMinutes: identical(durationMinutes, _keep)
@@ -135,74 +122,28 @@ class PackageEditState {
     deliveryDays: identical(deliveryDays, _keep)
         ? this.deliveryDays
         : deliveryDays as int?,
-    mode: mode ?? this.mode,
-    weekday: identical(weekday, _keep) ? this.weekday : weekday as int?,
-    weekend: identical(weekend, _keep) ? this.weekend : weekend as int?,
-    weekendTouched: weekendTouched ?? this.weekendTouched,
-    perDay: perDay ?? this.perDay,
-    specialOn: specialOn ?? this.specialOn,
-    specialPrice: identical(specialPrice, _keep)
-        ? this.specialPrice
-        : specialPrice as int?,
+    price: identical(price, _keep) ? this.price : price as int?,
     errors: errors ?? this.errors,
     saving: saving ?? this.saving,
-    active: active,
+    active: active ?? this.active,
+    opened: _opened,
   );
 
-  PackageEditState withActive(bool value) => PackageEditState(
+  /// The same form, taken as unchanged (after a successful save).
+  PackageEditState get asOpened => PackageEditState(
     name: name,
     durationMinutes: durationMinutes,
     editedCount: editedCount,
     deliveryDays: deliveryDays,
-    mode: mode,
-    weekday: weekday,
-    weekend: weekend,
-    weekendTouched: weekendTouched,
-    perDay: perDay,
-    specialOn: specialOn,
-    specialPrice: specialPrice,
+    price: price,
     errors: errors,
     saving: saving,
-    active: value,
+    active: active,
+    opened: _values,
   );
 
   PackageEditState _withoutError(PackageEditField f) =>
       errors.containsKey(f) ? copyWith(errors: {...errors}..remove(f)) : this;
-
-  /// The 7 prices as typed, or null while one is missing or out of range.
-  Map<Weekday, int>? get weekPrices {
-    if (mode == PriceMode.twoLevels) {
-      final a = weekday;
-      final b = weekend;
-      if (!_priceOk(a) || !_priceOk(b)) {
-        return null;
-      }
-      return {for (final w in Weekday.values) w: w.isWeekend ? b! : a!};
-    }
-    final out = <Weekday, int>{};
-    for (final w in Weekday.values) {
-      final v = perDay[w];
-      if (!_priceOk(v)) {
-        return null;
-      }
-      out[w] = v!;
-    }
-    return out;
-  }
-
-  /// What the 7-day preview prices; null until the prices are valid.
-  PricedService? get previewService {
-    final prices = weekPrices;
-    if (prices == null) {
-      return null;
-    }
-    final n = normalizeDayPrices(prices);
-    return _Priced(
-      price: n.price,
-      dayPrices: n.dayPrices,
-      specialPrice: specialOn && _priceOk(specialPrice) ? specialPrice : null,
-    );
-  }
 
   /// The errors, or the package to save when there are none.
   ({Map<PackageEditField, PackageError> errors, ServicePackageInput? input})
@@ -224,41 +165,21 @@ class PackageEditState {
     if (dl != null && (dl < 0 || dl > kDeliveryMaxDays)) {
       errors[PackageEditField.delivery] = PackageError.daysInvalid;
     }
-    void price(PackageEditField f, int? v) {
-      final err = _priceError(v);
-      if (err != null) {
-        errors[f] = err;
-      }
+    final priceError = _priceError(price);
+    if (priceError != null) {
+      errors[PackageEditField.price] = priceError;
     }
-
-    if (mode == PriceMode.twoLevels) {
-      price(PackageEditField.weekday, weekday);
-      price(PackageEditField.weekend, weekend);
-    } else {
-      for (final w in Weekday.values) {
-        price(dayField(w), perDay[w]);
-      }
-    }
-    if (specialOn) {
-      price(PackageEditField.special, specialPrice);
-    }
-    final prices = weekPrices;
-    if (errors.isNotEmpty || prices == null) {
+    if (errors.isNotEmpty) {
       return (errors: errors, input: null);
     }
-    final normal = normalizeDayPrices(prices);
     return (
       errors: const {},
       input: ServicePackageInput(
         name: n,
-        priceVnd: normal.price,
+        priceVnd: price!,
         durationMinutes: d!,
         editedCount: e,
         deliveryDays: dl,
-        dayPrices: normal.dayPrices,
-        specialPrice: specialOn ? specialPrice : null,
-        // One price on all days has no `dayPrices`, so no mode to keep.
-        priceMode: normal.dayPrices == null ? PriceMode.twoLevels : mode,
       ),
     );
   }
@@ -266,28 +187,15 @@ class PackageEditState {
 
 const Object _keep = Object();
 
-class _Priced extends PricedService {
-  const _Priced({required super.price, super.dayPrices, super.specialPrice});
-}
-
 /// The editor's state of an existing package.
-PackageEditState packageEditStateOf(ServicePackage p) {
-  final prices = weekPrices(p);
-  return PackageEditState(
-    name: p.name,
-    durationMinutes: p.durationMinutes,
-    editedCount: p.editedCount,
-    deliveryDays: p.deliveryDays,
-    mode: p.priceMode,
-    weekday: prices[Weekday.mon],
-    weekend: prices[Weekday.sat],
-    weekendTouched: true,
-    perDay: {for (final w in Weekday.values) w: prices[w]},
-    specialOn: p.specialPrice != null,
-    specialPrice: p.specialPrice,
-    active: p.active,
-  );
-}
+PackageEditState packageEditStateOf(ServicePackage p) => PackageEditState(
+  name: p.name,
+  durationMinutes: p.durationMinutes,
+  editedCount: p.editedCount,
+  deliveryDays: p.deliveryDays,
+  price: p.priceVnd,
+  active: p.active,
+).asOpened;
 
 /// The packages as the stream first reports them; the subscription is
 /// dropped at once.
@@ -338,14 +246,13 @@ class PackageEditController extends AsyncNotifier<PackageEditState> {
       if (draft == null) {
         return const PackageEditState();
       }
-      final weekday = parseVnd(draft.price);
+      // A device draft is typed but unsaved, so it counts as a change.
       return PackageEditState(
         name: draft.name,
         durationMinutes: draft.durationMinutes,
         editedCount: int.tryParse(draft.edited),
         deliveryDays: int.tryParse(draft.delivery),
-        weekday: weekday,
-        weekend: weekday,
+        price: parseVnd(draft.price),
       );
     }
     if (uid == null) {
@@ -389,7 +296,7 @@ class PackageEditController extends AsyncNotifier<PackageEditState> {
           uid,
           PackageDraft(
             name: s.name,
-            price: s.weekday == null ? '' : groupVnd(s.weekday!),
+            price: s.price == null ? '' : groupVnd(s.price!),
             durationMinutes: s.durationMinutes,
             edited: s.editedCount?.toString() ?? '',
             delivery: s.deliveryDays?.toString() ?? '',
@@ -413,86 +320,8 @@ class PackageEditController extends AsyncNotifier<PackageEditState> {
     clears: PackageEditField.delivery,
   );
 
-  /// The weekday price; the weekend follows it until it has been typed.
-  void setWeekday(int? v) => _edit((s) {
-    final next = s.copyWith(weekday: v);
-    return s.weekendTouched
-        ? next
-        : next.copyWith(weekend: v)._withoutError(PackageEditField.weekend);
-  }, clears: PackageEditField.weekday);
-
-  void setWeekend(int? v) => _edit(
-    (s) => s.copyWith(weekend: v, weekendTouched: true),
-    clears: PackageEditField.weekend,
-  );
-
-  void setDay(Weekday d, int? v) => _edit(
-    (s) => s.copyWith(perDay: {...s.perDay, d: v}),
-    clears: dayField(d),
-  );
-
-  /// Turns the special price on or off; [price] sets it when given.
-  void setSpecial(bool on, [int? price]) => _edit(
-    (s) => s.copyWith(specialOn: on, specialPrice: price ?? s.specialPrice),
-    clears: on ? null : PackageEditField.special,
-  );
-
-  void setSpecialPrice(int? v) => _edit(
-    (s) => s.copyWith(specialPrice: v),
-    clears: PackageEditField.special,
-  );
-
-  /// "Hai mức giá" ↔ "Từng ngày". To per day fills the 7 prices from the two;
-  /// back to two levels asks first when the 7 are not two levels.
-  ModeChange setMode(PriceMode to) {
-    final s = state.value;
-    if (s == null || s.saving || s.mode == to) {
-      return ModeChange.done;
-    }
-    if (to == PriceMode.perDay) {
-      _edit(
-        (s) => s.copyWith(
-          mode: to,
-          perDay: {
-            for (final w in Weekday.values)
-              w: w.isWeekend ? s.weekend : s.weekday,
-          },
-          errors: const {},
-        ),
-      );
-      return ModeChange.done;
-    }
-    final mon = s.perDay[Weekday.mon];
-    final weekdays = [Weekday.tue, Weekday.wed, Weekday.thu, Weekday.fri];
-    final isTwoLevels =
-        weekdays.every((d) => s.perDay[d] == mon) &&
-        s.perDay[Weekday.sat] == s.perDay[Weekday.sun];
-    if (!isTwoLevels) {
-      return ModeChange.needsCollapseConfirm;
-    }
-    _edit(
-      (s) => s.copyWith(
-        mode: to,
-        weekday: mon,
-        weekend: s.perDay[Weekday.sat],
-        weekendTouched: true,
-        errors: const {},
-      ),
-    );
-    return ModeChange.done;
-  }
-
-  /// Confirmed "Dùng hai mức": Monday for the weekdays, Saturday for the
-  /// weekend.
-  void collapseToTwoLevels() => _edit(
-    (s) => s.copyWith(
-      mode: PriceMode.twoLevels,
-      weekday: s.perDay[Weekday.mon],
-      weekend: s.perDay[Weekday.sat],
-      weekendTouched: true,
-      errors: const {},
-    ),
-  );
+  void setPrice(int? v) =>
+      _edit((s) => s.copyWith(price: v), clears: PackageEditField.price);
 
   Future<SaveOutcome> save() async {
     final s = state.value;
@@ -517,7 +346,7 @@ class PackageEditController extends AsyncNotifier<PackageEditState> {
         await repo.update(uid, id, input);
       }
       await drafts.clearPackage(uid);
-      state = AsyncData(s.copyWith(saving: false));
+      state = AsyncData(s.copyWith(saving: false).asOpened);
       return SaveOutcome.saved;
     } on Object {
       state = AsyncData(s.copyWith(saving: false));
@@ -537,7 +366,7 @@ class PackageEditController extends AsyncNotifier<PackageEditState> {
     state = AsyncData(s.copyWith(saving: true));
     try {
       await repo.hide(uid, id);
-      state = AsyncData(s.copyWith(saving: false).withActive(false));
+      state = AsyncData(s.copyWith(saving: false, active: false));
       return true;
     } on Object {
       state = AsyncData(s.copyWith(saving: false));

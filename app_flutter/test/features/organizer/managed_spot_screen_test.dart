@@ -10,6 +10,7 @@ import 'package:photobooking/data/organizer/organizer.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 
+import '../../support/calendar_finders.dart';
 import '../../support/event_world.dart' show detailOf;
 import '../../support/organizer_world.dart';
 
@@ -204,7 +205,8 @@ void main() {
       expect(find.text('Tối đa 4 khách mỗi buổi'), findsOneWidget);
 
       await tapOrganizer(tester, _key('resident-valid-until'));
-      await tapOrganizer(tester, find.text('OK'));
+      await tapOrganizer(tester, calendarCell(DateTime.utc(2026, 12, 10)));
+      await tapOrganizer(tester, find.text('Chọn'));
       expect(find.textContaining('Thoả thuận giữa bạn và thợ'), findsOneWidget);
 
       await tapOrganizer(tester, _key('resident-save'));

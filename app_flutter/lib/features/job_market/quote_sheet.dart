@@ -181,14 +181,12 @@ class _QuoteSheetState extends ConsumerState<QuoteSheet> {
     DateTime lastDate = DateTime.tryParse(job.dayTo) ?? firstDate.add(const Duration(days: 30));
     if (lastDate.isBefore(firstDate)) lastDate = firstDate;
 
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: firstDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      selectableDayPredicate: (day) {
-        return true;
-      },
+    final pickedDate = await showAppDatePicker(
+      context,
+      initial: calendarDay(firstDate),
+      first: calendarDay(firstDate),
+      last: calendarDay(lastDate),
+      today: vnToday(ref.read(clockProvider)()),
     );
 
     if (pickedDate == null || !mounted) return;

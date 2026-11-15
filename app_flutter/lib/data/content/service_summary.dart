@@ -1,9 +1,7 @@
-import 'package:photobooking/data/pricing/day_pricing.dart';
-
-/// A bookable package (`photographers/{uid}/services/{id}`). It is priced by
-/// day like the owner's `ServicePackage`: [priceVnd] is the weekday price and
-/// [dayPrices] and [specialPrice] refine it (#316).
-class ServiceSummary implements PricedService {
+/// A bookable package (`photographers/{uid}/services/{id}`). [priceVnd] is its
+/// base price; the price series of the photographer refine it per day
+/// (`price_rules`, #316).
+class ServiceSummary {
   const ServiceSummary({
     required this.id,
     required this.photographerId,
@@ -16,8 +14,6 @@ class ServiceSummary implements PricedService {
     this.deliveryDays,
     this.coverUrl,
     this.active = true,
-    this.dayPrices,
-    this.specialPrice,
   });
 
   final String id;
@@ -27,17 +23,6 @@ class ServiceSummary implements PricedService {
 
   /// Integer VND, always greater than zero.
   final int priceVnd;
-
-  @override
-  int get price => priceVnd;
-
-  /// Price per weekday; null for one price on all days.
-  @override
-  final Map<Weekday, int>? dayPrices;
-
-  /// Price on special days (holidays and the provider's own ranges).
-  @override
-  final int? specialPrice;
   final int durationMinutes;
   final int? photoCount;
   final int? editedCount;

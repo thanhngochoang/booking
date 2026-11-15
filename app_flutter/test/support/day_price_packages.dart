@@ -1,9 +1,11 @@
 import 'package:photobooking/data/content/service_summary.dart';
-import 'package:photobooking/data/pricing/day_pricing.dart';
-import 'package:photobooking/data/pricing/special_days.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 
-/// The mock's packages for `#S04.01-dayprice`: Mon-Fri 1,5M, Sat-Sun 1,8M and
-/// 2,2M on special days.
+import 'day_pricing_world.dart' show tetRule, weddingRule, weekendRule;
+
+/// The mock's packages for `#S04.01-dayprice`: Chân dung 1,5M with An's three
+/// series (see [anSeries]), Cặp đôi 3,2M with one 5M season, Kỷ yếu 6M with
+/// none.
 const dayPricePortrait = ServiceSummary(
   id: 's1',
   photographerId: 'p1',
@@ -11,19 +13,8 @@ const dayPricePortrait = ServiceSummary(
   priceVnd: 1500000,
   durationMinutes: 120,
   photoCount: 40,
-  dayPrices: {
-    Weekday.mon: 1500000,
-    Weekday.tue: 1500000,
-    Weekday.wed: 1500000,
-    Weekday.thu: 1500000,
-    Weekday.fri: 1500000,
-    Weekday.sat: 1800000,
-    Weekday.sun: 1800000,
-  },
-  specialPrice: 2200000,
 );
 
-/// A price per day: 3,2M on Monday to Friday, 4M on Saturday, 3,6M on Sunday.
 const dayPriceCouple = ServiceSummary(
   id: 's2',
   photographerId: 'p1',
@@ -31,18 +22,9 @@ const dayPriceCouple = ServiceSummary(
   priceVnd: 3200000,
   durationMinutes: 240,
   photoCount: 80,
-  dayPrices: {
-    Weekday.mon: 3200000,
-    Weekday.tue: 3200000,
-    Weekday.wed: 3200000,
-    Weekday.thu: 3200000,
-    Weekday.fri: 3200000,
-    Weekday.sat: 4000000,
-    Weekday.sun: 3600000,
-  },
 );
 
-/// One price on every day.
+/// One price on every day: no series.
 const dayPriceClass = ServiceSummary(
   id: 's3',
   photographerId: 'p1',
@@ -52,10 +34,35 @@ const dayPriceClass = ServiceSummary(
   photoCount: 120,
 );
 
-/// Tuesday 17/11/2026 is a special day of photographer `p1`.
-const dayPriceSpecialRange = SpecialDayRange(
-  id: 'sd1',
+/// An's seed series of `s1`: Cuối tuần (weekly Sat + Sun) 1,8M; Mùa cưới
+/// (yearly 14/11 – 22/11) 2M with 2026-11-15 at 1,5M; Tết Nguyên đán (yearly,
+/// lunar 23 Chạp – 5 Giêng) 2,5M.
+List<PriceRule> anSeries({String serviceId = 's1'}) => [
+  weekendRule(serviceId: serviceId),
+  weddingRule(serviceId: serviceId, exceptions: {'2026-11-15': 1500000}),
+  tetRule(serviceId: serviceId),
+];
+
+/// The 5M season of `s2` (S04.01 reads "3,2M–5M · giá theo ngày").
+PriceRule coupleSeason() => const PriceRule(
+  id: 'r-couple',
+  serviceId: 's2',
+  price: 5000000,
+  repeat: PriceRepeat.yearly,
   name: 'Mùa cưới',
-  from: '2026-11-17',
-  to: '2026-11-17',
+  from: '11-14',
+  to: '11-22',
+);
+
+/// Everything the S04.01–S04.03 tests seed.
+List<PriceRule> dayPriceRules() => [...anSeries(), coupleSeason()];
+
+/// A series without a name: 2M on 2026-11-18 only.
+PriceRule unnamedRule() => const PriceRule(
+  id: 'r-unnamed',
+  serviceId: 's1',
+  price: 2000000,
+  repeat: PriceRepeat.none,
+  from: '2026-11-18',
+  to: '2026-11-18',
 );

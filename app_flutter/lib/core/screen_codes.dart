@@ -63,7 +63,7 @@ abstract final class ScreenCodes {
   static const editAddon = 'S08.07';
   static const myPackages = 'S08.08';
   static const editPackage = 'S08.09';
-  static const specialDays = 'S08.10';
+  static const dayPricing = 'S08.10';
   // S09 Hồ sơ cá nhân & cài đặt.
   static const profile = 'S09.01';
   static const settings = 'S09.02';
@@ -224,7 +224,7 @@ abstract final class ScreenCodes {
     editAddon,
     myPackages,
     editPackage,
-    specialDays,
+    dayPricing,
     profile,
     settings,
     editProfile,

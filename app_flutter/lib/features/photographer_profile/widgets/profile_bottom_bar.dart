@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/photographer/availability_providers.dart';
+import 'package:photobooking/data/pricing/pricing_providers.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -35,7 +37,12 @@ class ProfileBottomBar extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final packages = ref.watch(profilePackagesProvider(photographerId));
-    final from = startingPriceOf(packages.value ?? const []);
+    final rules = ref.watch(providerPriceRulesProvider(photographerId));
+    final from = startingPriceOf(
+      packages.value ?? const [],
+      rules: rules.value ?? const [],
+      today: ref.watch(calendarTodayProvider),
+    );
     final none = !owner && acceptingOrders && packages.hasValue && from == null;
     final Widget bar = owner
         ? AppButton.primary(

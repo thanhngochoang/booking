@@ -16,6 +16,7 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 
 import '../../support/booking_world.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/calendar_finders.dart';
 
 /// The real S04.04 waits on a draft with a looping SignatureLoader, so a test that
 /// lands there pumps a bounded second of frames instead of `pumpAndSettle`.
@@ -53,7 +54,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // S04.02 datetime step: select day 12 (or preselected), then slot 15:30
-    await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+    await tester.tap(dayByLabel('12 tháng 10, rảnh'));
     await tester.pumpAndSettle();
 
     final slotChip = find.widgetWithText(AppChip, '15:30');
@@ -524,7 +525,7 @@ void main() {
       }
 
       await next();
-      await tester.tap(find.bySemanticsLabel('12 tháng 10, rảnh'));
+      await tester.tap(dayByLabel('12 tháng 10, rảnh'));
       await tester.pumpAndSettle();
       final slot = find.widgetWithText(AppChip, '15:30');
       await tester.ensureVisible(slot);

@@ -19,7 +19,6 @@ Widget _card({
   String? bookLabel = 'Đặt T7',
   String name = 'Minh Trí',
   int? price = 1500000,
-  int? weekendFrom,
   double width = 390,
   double textScale = 1,
   Brightness brightness = Brightness.dark,
@@ -40,7 +39,6 @@ Widget _card({
         verified: verified,
         businessVerified: businessVerified,
         startingPrice: price,
-        weekendFrom: weekendFrom,
         providerType: type,
         approvedAwards: awards,
         studioDistrict: district,
@@ -61,32 +59,19 @@ Widget _card({
 );
 
 void main() {
-  testWidgets('shows "· T7–CN từ 1,8M" when weekendFrom is set and wide enough', (
+  testWidgets('the price is "từ {startingPrice}" only, at any width or scale', (
     tester,
   ) async {
-    await tester.pumpWidget(_card(weekendFrom: 1800000));
-    expect(
-      findMeta('Chân dung · 1,2 km · 97% · 112 buổi · T7–CN từ 1,8M'),
-      findsOneWidget,
-    );
-    expect(find.text('1,5M'), findsOneWidget);
-  });
-
-  testWidgets('drops "T7–CN từ …" first when the card is narrow', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_card(weekendFrom: 1800000, width: 320));
-    expect(
-      findMeta('Chân dung · 1,2 km · 97% · 112 buổi'),
-      findsOneWidget,
-    );
-    await tester.pumpWidget(_card(weekendFrom: 1800000, textScale: 2));
-    expect(find.textContaining('T7–CN', findRichText: true), findsNothing);
-  });
-
-  testWidgets('without weekendFrom the meta line is unchanged', (tester) async {
+    // R9: the server's startingPrice already counts the price series; the
+    // meta line carries no weekend part any more.
+    for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (390.0, 2.0)]) {
+      await tester.pumpWidget(_card(width: width, textScale: scale));
+      expect(find.text('từ'), findsOneWidget);
+      expect(find.text('1,5M'), findsOneWidget);
+      expect(find.textContaining('T7–CN', findRichText: true), findsNothing);
+    }
     await tester.pumpWidget(_card());
-    expect(find.textContaining('T7–CN', findRichText: true), findsNothing);
+    expect(findMeta('Chân dung · 1,2 km · 97% · 112 buổi'), findsOneWidget);
   });
 
   testWidgets('shows name, meta line, price and availability', (tester) async {

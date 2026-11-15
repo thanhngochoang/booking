@@ -9,6 +9,7 @@ import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/pricing/price_rules.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -111,10 +112,39 @@ void main() {
     expect(
       startingPriceOf(
         discoveryServices().where((s) => s.photographerId == 'p1'),
+        today: DateTime.utc(2026, 11, 6),
       ),
       1500000,
     );
-    expect(startingPriceOf(const []), isNull);
+    expect(startingPriceOf(const [], today: DateTime.utc(2026, 11, 6)), isNull);
+    // R9: a cheaper series that still has a next occurrence lowers it, a
+    // one-off that has passed does not.
+    final services = discoveryServices().where((s) => s.photographerId == 'p1');
+    final today = DateTime.utc(2026, 11, 6);
+    PriceRule once(String from, String to, int price) => PriceRule(
+      id: 'r$from',
+      serviceId: services.first.id,
+      price: price,
+      repeat: PriceRepeat.none,
+      from: from,
+      to: to,
+    );
+    expect(
+      startingPriceOf(
+        services,
+        today: today,
+        rules: [once('2026-12-24', '2026-12-25', 900000)],
+      ),
+      900000,
+    );
+    expect(
+      startingPriceOf(
+        services,
+        today: today,
+        rules: [once('2026-10-01', '2026-10-02', 900000)],
+      ),
+      1500000,
+    );
     expect(responseLabel(45, l), '~45 phút');
     expect(responseLabel(60, l), '~1 giờ');
     expect(responseLabel(150, l), '~3 giờ');
