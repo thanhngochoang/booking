@@ -56,15 +56,24 @@ Quyết định của C3:
 17. Playwright quan sát xuất tệp bằng sự kiện `download` (URL của download là URL `data:`), không dùng `waitForURL` vì trang không điều hướng; thêm đọc tệp tải về để kiểm số định danh đầy đủ của An chỉ có trong CSV. Tháng của khoản chi seed tính trong test bằng `now − 35 ngày` theo giờ Việt Nam, như seed.
 18. `aria-label` của `<summary>` thành "Chọn tháng: {tháng}" thay vì bỏ hẳn, để giữ cả mục đích lẫn tháng đang chọn trong tên truy cập (review C2 fix 1, WCAG 2.5.3).
 
+19. **Ruling 8 (review cuối):** ô số định danh chỉ có chữ số trong CSV thuế được ghi `="<chữ số>"` để Excel giữ số 0 đầu (CCCD luôn bắt đầu bằng 0); người đọc không phải Excel sẽ thấy lớp bọc `="…"`.
+
 ## Hiện có gì
 
 - **Test**:
-  - Domain: 3309 test đạt (`tax_report.test.ts`: tách VAT/PIT, ranh giới tháng giờ Việt Nam, CSV và chống chèn công thức, `exportTaxReport` đủ nhánh, `taxPayeeOf`).
-  - Functions: 1184 đạt (`tax_export.test.ts` 16 + adapter, seed, prune; callable: support và sales `staff_forbidden`, thiếu TOTP `mfa_required`, finance và admin nhận link 300 giây, tổng CSV bằng tổng báo cáo, một dòng audit `tax.export`, `not_eligible` không đọc gì, tháng trống chỉ có dòng tiêu đề, lỗi audit không có URL).
+  - Domain: 3317 test đạt (`tax_report.test.ts`: tách VAT/PIT, ranh giới tháng giờ Việt Nam, CSV và chống chèn công thức, `exportTaxReport` đủ nhánh, `taxPayeeOf`).
+  - Functions: 1186 đạt (`tax_export.test.ts` 16 + adapter, seed, prune; callable: support và sales `staff_forbidden`, thiếu TOTP `mfa_required`, finance và admin nhận link 300 giây, tổng CSV bằng tổng báo cáo, một dòng audit `tax.export`, `not_eligible` không đọc gì, tháng trống chỉ có dòng tiêu đề, lỗi audit không có URL).
   - Dashboard: 388 đạt, lint, typecheck, `npm run build` sạch (`TaxScreen.test.tsx`, `read/tax.test.ts`, `labels-tax.test.ts`, `StaffShell-money.test.tsx`).
   - Root `npm run typecheck` sạch.
   - Chưa chạy trong sandbox: `firebase/rules-test` (test từ chối đọc `exports/tax/**`) và test tích hợp Functions (cần emulator).
-- **Playwright**: TBD by controller. `apps/dashboard/e2e/tax.spec.ts` (finance mở `/staff/tax?period=<tháng của seed-payout-an-1>`, thấy hàng của An với `•••• 4821` và không có số đầy đủ trên màn, xuất qua `DecisionDialog` có lý do, nhận download có URL `data:` và tên `bao-cao-thue-YYYY-MM.csv`, tệp có số đầy đủ; sales vào `/staff/tax` nhận trang 403) và `roles.spec.ts` (menu finance và admin có Thuế). Không cần chạy tuần tự hay seed lại: xuất chỉ thêm một dòng audit và một tệp tự xoá sau 7 ngày.
+- **Playwright**: Playwright trên emulator (MFA bypass): 22 passed, 1 skipped (mfa.spec, cố ý), gồm `tax.spec.ts` 2/2 (controller chạy 2026-11-15). `apps/dashboard/e2e/tax.spec.ts` (finance mở `/staff/tax?period=<tháng của seed-payout-an-1>`, thấy hàng của An với `•••• 4821` và không có số đầy đủ trên màn, xuất qua `DecisionDialog` có lý do, nhận download có URL `data:` và tên `bao-cao-thue-YYYY-MM.csv`, tệp có số đầy đủ dạng `"=""…"""`; sales vào `/staff/tax` nhận trang 403) và `roles.spec.ts` (menu finance và admin có Thuế). Không cần chạy tuần tự hay seed lại: xuất chỉ thêm một dòng audit và một tệp tự xoá sau 7 ngày.
+- **Sau review cuối (fix wave, booking-be 13bcd90):**
+  - Ruling 8: ô số định danh chỉ gồm chữ số được ghi `="079012344821"` (trong CSV: `"=""079012344821"""`) để Excel giữ số 0 đầu; chỉ cột số định danh và chỉ khi toàn chữ số, ô văn bản tự do vẫn qua lớp chặn công thức. Test miền cho CCCD và MST bắt đầu bằng 0; `tax.spec.ts` kiểm dạng này.
+  - `idLast4` chỉ nhận khi khớp `/^\d{4}$/` (không thì null, hiện "—"), cả lúc đọc cho báo cáo lẫn lúc ghi khi xác minh (không ghi nếu 4 ký tự cuối không phải chữ số).
+  - `exportTaxReport` chạy 60 giây; số đầy đủ giải mã song song từng đợt 10, giữ thứ tự dòng.
+  - Mã số thuế cắt khoảng trắng một cách (`approvedTaxCode` trong miền) cho cả màn và CSV; mã chỉ có khoảng trắng coi như không có.
+  - Lỗi ghi audit sau khi lưu tệp thì xoá tệp (cố gắng hết sức, chỉ log đường dẫn) rồi ném lại lỗi; `TaxFileStore.remove` là cổng mới.
+  - `seed/README.md` ghi số CCCD thử của An và `idLast4`.
 - **Seed**: `users/{AN}/private/identity` có `idNumberEnc` và `idLast4` (4821); `seed-payout-an-1` trả `now − 35 ngày`.
 
 ## Còn mở (hoãn đến review cuối hoặc ticket sau)
@@ -80,8 +89,13 @@ Từ review C1 (không sửa):
 - `cell()` (chống chèn công thức) chỉ chặn `=`, `+`, `-`, `@`; OWASP còn liệt kê tab và CR đứng đầu.
 - `periodBounds` nhận năm dưới 100 (như `0050-01`) rồi `Date.UTC` đổi thành 19xx; nên từ chối năm dưới 2000.
 - Tách VAT dùng tỉ lệ VAT của chính sách hiện hành trên `taxRateBp` đã chụp; nếu đổi chính sách thì khoản chi cũ tách sai (hiện đúng vì D10 dùng chính sách mặc định).
-- Độ dài `idLast4` (tối đa 4) chỉ là quy ước, `TaxPayee` không ép.
 - Test ranh giới đầu và cuối tháng chưa kiểm đúng thời điểm đầu (gồm) và cuối (loại); test "tháng hiện tại" chỉ kiểm `doesNotThrow`.
+
+Từ review cuối (hoãn, minor 4, 5, 6):
+
+- Ở nơi D10 từ chối, màn vẫn có nút "Xuất tệp CSV" và bấm vào chỉ thấy câu chung `error.not_eligible`; nên có thông báo riêng (ví dụ `s23_13.export_unavailable`).
+- Tháng đang mở: màn đọc báo cáo lúc tải trang còn callable dựng lại lúc bấm, nên tệp có thể có khoản chi mới hơn màn; quy tắc "tổng trên màn bằng tổng trong tệp" chỉ chắc với tháng đã đóng (ghi chú vào spec hoặc toast khi `rows` khác `report.totals.payees`).
+- `expiresAt` tính từ `now` đầu lời gọi còn bộ ký dùng `Date.now()` lúc ký, nên hạn báo sớm vài mili giây (an toàn, chỉ là thẩm mỹ).
 
 Từ review C2 và fix 1 (không sửa):
 

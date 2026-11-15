@@ -134,6 +134,7 @@ Làm khi đã chọn tổ chức trung gian (spec thanh toán §10), vì định
   - URL tệp CSV do chính callable `exportTaxReport` trả về; `getSensitiveFileUrl` không có `kind` `tax_export` (không màn nào tải lại tệp). Callable trả `not_eligible` ở nơi kho khoá dev không được phép (số định danh đầy đủ chỉ giải mã được bằng kho dev).
   - GTGT và TNCN tách từ `taxWithheld` đã chụp của khoản chi theo tỉ lệ 500:200 (`DEFAULT_PAYOUT_POLICY.individualTaxBp`); TNCN nhận phần dư làm tròn nên GTGT + TNCN luôn bằng `taxWithheld`.
   - Lỗi ghi audit thì không có URL: audit được ghi trước khi ký link.
+  - Cột số định danh: ô chỉ gồm chữ số được ghi dạng `="079012344821"` (trong CSV: `"=""079012344821"""`) để Excel giữ số 0 đầu của CCCD và mã số thuế; ô khác vẫn theo quy tắc dưới đây.
   - Ô CSV bắt đầu bằng `=`, `+`, `-`, `@` được thêm tiền tố `'` để Excel không chạy thành công thức.
   - Studio và tổ chức chưa có mã số thuế đã duyệt (`verifications/{uid}.business`) hiện "—" ở cột giấy tờ và để trống trong tệp; cá nhân hiện `•••• {4 số}` từ `idLast4`, studio và tổ chức hiện `MST •••• {4 số}`.
   - Bố cục theo mock: một chip tháng (`calendar_month`, 12 tháng gần nhất) và tỉ lệ nằm ở dòng phụ đề, không có dòng chú thích dưới bảng.
@@ -157,7 +158,7 @@ Làm khi đã chọn tổ chức trung gian (spec thanh toán §10), vì định
 | `exportTaxReport` | `{period, reason}` | — | mới (`buildTaxReport` thuần) |
 
 - Các đầu vào gắn với giá trị người đề xuất đã xem: `amount` (số tiền chuyển hoặc số tiền hoàn) cho gán, hoàn, đóng chuyển khoản và `markRefundManual`; `refundVnd` cho `staffCancelInstantRequest`; `paymentId` cho gán. Lệch so với trạng thái hiện tại là `conflict`, và yêu cầu hai người lưu đúng các giá trị này để người duyệt thứ hai duyệt đúng thứ đã xem.
-- Mọi callable: `assertStaff(request, action)` (spec dashboard §4.3), `idempotencyKey` (ULID tạo khi mở hộp), trả `{status: 'done'}` hoặc `{status: 'awaiting_second_approval', approvalId}`.
+- Mọi callable: `assertStaff(request, action)` (spec dashboard §4.3), `idempotencyKey` (ULID tạo khi mở hộp), trả `{status: 'done'}` hoặc `{status: 'awaiting_second_approval', approvalId}`. **Ngoại lệ (#343):** `exportTaxReport` trả `{url, expiresAt, rows}`, không có `status`.
 - CLI `npm run payouts` giữ nguyên, đi qua cùng use case, nên cũng chịu M2 (CLI không có người thứ hai: thao tác từ 10 triệu bằng CLI tạo yêu cầu S23.15).
 - `getSensitiveFileUrl` thêm `kind` `tax_export` (đường dẫn `exports/tax/…`, quyền `tax.export`). **Không làm (#343, D10):** `exportTaxReport` tự trả URL ký, không có `kind` này.
 
