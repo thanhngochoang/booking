@@ -295,7 +295,7 @@ migrations/<timestamp>_<cụm>_<việc>.sql
 - **Topic:** `<cụm-thực-thể>:<id>` cho một tài nguyên, `user:<uid>:<danh-sách>` cho danh sách riêng của một
   người. Ví dụ: `user:<uid>:bookings`, `user:<uid>:notifications`, `chat:<id>`, `event:<id>:seats`.
   - Mỗi plan cụm liệt kê topic của mình trong bảng "watch → topic → endpoint".
-- **Phát:** `emit(tx, topic, audience)` gọi `pg_notify('nag_events', …)` trong cùng transaction.
+- **Phát:** `emit(topic, audience)` gọi `pg_notify('nag_events', …)` trong transaction của unit of work đang chạy.
   - `audience` là một trong ba dạng: `{ uids: [...] }`, `{ resolver: '<tên>' }` (nhóm lớn như chat sự kiện;
     API tra thành viên qua `audience.ts`) hoặc `{ public: true }` (số ghế, số đếm công khai).
   - Payload dưới 7.000 byte; danh sách lớn thì dùng `resolver`.
@@ -303,8 +303,8 @@ migrations/<timestamp>_<cụm>_<việc>.sql
 
 ### 6.7 Job, lịch và thay 32 trigger
 
-- **pg-boss** chạy trong schema `pgboss`. Đẩy job bằng `enqueue(tx, '<cụm>.<việc>', data, opts)`, đi cùng
-  transaction của thay đổi.
+- **pg-boss** chạy trong schema `pgboss`. Đẩy job bằng `enqueue('<cụm>.<việc>', data, opts)`, đi cùng
+  transaction của unit of work đang chạy.
   - Handler phải chịu được việc chạy nhiều lần (at-least-once): kiểm trạng thái hoặc dùng khoá idempotency.
   - Thử lại 5 lần, backoff mũ; job hỏng thì vào hàng `failed` để staff xem.
 - **Lịch:** `boss.schedule('<cụm>.<việc>', cron, {}, { tz: 'Asia/Ho_Chi_Minh' })`, cùng nhịp với Functions
@@ -320,7 +320,7 @@ migrations/<timestamp>_<cụm>_<việc>.sql
      - thông báo, push, email, ảnh;
      - tính lại điểm, thống kê, huy hiệu;
      - đồng bộ sang cụm khác.
-     - Đẩy bằng `enqueue(tx, …)`.
+     - Đẩy bằng `enqueue(…)`.
   3. **Bỏ:** trigger chỉ để giữ một hình chiếu Firestore mà SQL truy vấn được (view hoặc truy vấn). Ghi rõ
      view hoặc truy vấn thay thế.
 - **Không có trigger PL/pgSQL nghiệp vụ.** Có job đối soát định kỳ cho mỗi số đếm được lưu, theo cột "Cách
@@ -399,6 +399,27 @@ migrations/<timestamp>_<cụm>_<việc>.sql
   (`firebase/functions/seed/README.md`), để kịch bản thử tay không đổi. Chỉ dùng giá trị thử.
 - **Cấu hình:** app đọc từ `GET /v1/config` (#323): ngân hàng, khu vực, giới hạn tải lên, danh mục, chính sách
   tiền. Không còn hằng số trùng giữa app và backend.
+
+### 6.13 Tên và chữ ký dùng chung
+
+Plan nền tảng (#172, #173, #174) **cài** các tên dưới đây; plan cụm **gọi** đúng các tên này, không tự đặt
+tên khác. Plan nền tảng được thêm tham số tuỳ chọn, nhưng không đổi tên hay nghĩa.
+
+| Nơi | Chữ ký | Plan cài |
+|---|---|---|
+| `src/platform/db/tx.ts` | `unitOfWork<T>(fn: () => Promise<T>): Promise<T>`; `joinTransaction<T>(fn: (trx: Transaction<Database>) => Promise<T>): Promise<T>` (adapter dùng trong `runTransaction`); `trackWrite(p: Promise<unknown>): void` | #172 |
+| `src/platform/db/database.ts` | `interface Database extends AccountsTables, ChatTables, …` (mỗi cụm `export interface <Cụm>Tables` trong `modules/<cụm>/tables.ts`) | #172 |
+| `src/platform/http/` | `ApiError(code, message, details?)` (giữ nguyên); `request.user: { uid: string }`; route option `config: { idempotent: true }`; `pageQuery(q): { after?: string; limit: number }` và `page<T>(items: T[], next: string \| null)`; `staffGate(action: StaffAction)` (preHandler) và `request.staff: { uid; role }` | #172 |
+| `src/modules/<cụm>/routes.ts` | `export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void` | mỗi cụm |
+| `src/platform/realtime/emit.ts` | `emit(topic: string, audience: Audience): void`; `type Audience = { uids: string[] } \| { resolver: string; key: string } \| { public: true }`; `registerAudienceResolver(name: string, fn: (key: string, trx) => Promise<string[]>): void` | #173 |
+| `src/platform/jobs/` | `enqueue<T>(name: string, data: T, opts?: { startAfter?: Date; singletonKey?: string }): void`; `export function registerJobs(r: JobRegistry): void` trong `modules/<cụm>/jobs.ts`, với `r.job(name, handler)` và `r.schedule(name, cron)` | #173 |
+| `src/platform/push/` | job `platform.push`; adapter PostgreSQL của `NotificationStore` (domain) | #173 |
+| `src/platform/media/` | `createUpload(purpose, ownerId)`, `completeUpload(fileId)`, `MediaUrlResolver.url(fileId, viewerUid): Promise<string>`; job `media.process` | #174 |
+| `packages/domain/test/contracts/<store>.contract.ts` | `export function describe<Store>Contract(make: () => Promise<<Store>>): void` | #172 (khung) và mỗi cụm |
+| App `lib/data/http/api_client.dart` | `get/post/put/patch/delete(path, {Map<String,String>? query, String? idempotencyKey})` | #172 |
+| App `lib/data/http/realtime_channel.dart` | `RealtimeChannel.on(String topic) → Stream<ChangeEvent>`; `realtimeChannelProvider` | #173 |
+| App `lib/data/http/watch_query.dart` | `Stream<T> watchQuery<T>({required List<String> topics, required Future<T> Function() fetch})` | #173 |
+| App `lib/data/backend_config.dart` | `SelfhostedRepo` thêm `accounts, chat, content, money, booking, delivery, events, instant, staff`; 4 mã cũ giữ nguyên | mỗi cụm thêm mã của mình |
 
 ## 7. Đơn vị việc, thứ tự, phụ thuộc
 
