@@ -165,4 +165,39 @@ void main() {
       );
     },
   );
+
+  test('snapshot contains the staff operations and error details', () {
+    const staffOps = [
+      'setStaffRole',
+      'resetStaffMfa',
+      'findUserForStaff',
+      'decideStaffApproval',
+      'cancelStaffApproval',
+      'getStaffMe',
+      'listStaffMembers',
+      'listAuditLog',
+      'listStaffApprovals',
+    ];
+    final operationIds = <String>{};
+    for (final pathItem in paths.values) {
+      if (pathItem is YamlMap) {
+        for (final op in pathItem.values) {
+          if (op is YamlMap && op.containsKey('operationId')) {
+            operationIds.add(op['operationId'] as String);
+          }
+        }
+      }
+    }
+    for (final op in staffOps) {
+      expect(
+        operationIds.contains(op),
+        isTrue,
+        reason: 'missing operation: $op',
+      );
+    }
+    final errorSchema = schemas['Error'] as YamlMap;
+    final errorProps = errorSchema['properties'] as YamlMap;
+    expect(errorProps.containsKey('details'), isTrue);
+  });
 }
+

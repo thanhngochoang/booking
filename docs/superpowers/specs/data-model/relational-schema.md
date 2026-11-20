@@ -39,7 +39,6 @@ create table users (
   display_name text not null default '',
   avatar_file_id text references files(id),
   role         text check (role in ('customer','photographer')),   -- null tới khi chọn
-  staff_role   text check (staff_role in ('admin','sales')),       -- phản chiếu custom claim
   city         text,
   locale       text not null default 'vi',
   account_status text check (account_status in ('active','deletion_pending')), -- #205
@@ -899,6 +898,10 @@ create table audit_log (
   reason text check (reason is null or char_length(reason) between 5 and 500),
   diff jsonb, at timestamptz not null default now()
 );
+create index ix_audit_log_at on audit_log (at desc, id desc);
+create index ix_audit_log_actor on audit_log (actor_id, at desc, id desc);
+create index ix_audit_log_entity on audit_log (entity_type, entity_id, at desc, id desc);
+create index ix_audit_log_action on audit_log (action, at desc, id desc);
 
 -- #162: vai trò staff và duyệt hai người (dashboard web). Chỉ server ghi.
 create table staff_members (
@@ -906,8 +909,26 @@ create table staff_members (
   role text not null check (role in ('admin','finance','support','sales')),
   granted_by text not null,                        -- uid hoặc 'cli:<user>'
   granted_at timestamptz not null,
-  updated_at timestamptz not null
+  updated_at timestamptz not null,
+  sessions_valid_after timestamptz not null default to_timestamp(0)   -- #48: vô hiệu phiên token cũ trước mốc này
 );
+create index ix_staff_members_role on staff_members (role);
+
+create table idempotency_keys (                    -- #48: khoá phát lại idempotent
+  user_id         text not null,
+  key             text not null,
+  status          text not null check (status in ('pending', 'completed')),
+  request_path    text not null,
+  request_hash    text not null,
+  response_status integer,
+  response_body   text,
+  response_headers jsonb,
+  created_at      timestamptz not null default now(),
+  completed_at    timestamptz,
+  primary key (user_id, key)
+);
+create index ix_idempotency_keys_created_at on idempotency_keys (created_at);
+-- #48: Lưu trữ phản hồi 48 giờ để phát lại idempotent, dọn dẹp định kỳ bởi purgeIdempotencyKeys.
 create table staff_approvals (
   id text primary key,
   kind text not null,                              -- khoá của APPROVAL_KINDS (packages/domain/src/staff_approvals.ts)
@@ -2121,7 +2142,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `users/{uid}/private/blocks` | (dẫn xuất từ `blocks`) | Chỉ mục hai chiều do server duy trì; không có bảng riêng (được tạo bởi query/trigger trên `blocks`) |
 | `reports/{id}` | `reports` | Id báo cáo; client không đọc/ghi; staff quản lý |
 | `users/{uid}/private/report_quota` | `report_quotas` | Hạn ngạch 20 báo cáo/ngày/tài khoản |
-| Custom claims (`role`, `staffRole`) | `users.role`, `users.staff_role` | Bảng là nguồn sự thật; claim chỉ là bản sao trong token |
+| Custom claims (`role`, `staffRole`) | `users.role` (claim `role`); `staff_members` (claim `staffRole` dropped; `staff_members` only, #48) | Bảng là nguồn sự thật; claim `staffRole` đã bỏ theo #48 |
 
 **Ngoại lệ đặt tên** (không tự động): `fcmTokens`→bảng `devices`; `imageUrls`→`post_images`; `members`→`chat_members`; `timeline`→`booking_events`; `unread`→`chat_members.unread_count`.
 

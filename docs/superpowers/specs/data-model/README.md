@@ -135,7 +135,11 @@ Quy tắc:
 
 | Thực thể | Đọc | Ghi |
 |----------|-----|-----|
-| `users` (hồ sơ công khai) | U | S (tên, avatar, thành phố); vai trò `role` qua use case `set_role`; `staff_role` chỉ A qua `set_staff_role` |
+| `users` (hồ sơ công khai) | U | S (tên, avatar, thành phố); vai trò `role` qua use case `set_role`; role staff qua `staff_members`, chỉ A qua `setStaffRole` (#48) |
+| `staff_members` | A (xem danh sách), S (xem quyền của mình) | A (qua `setStaffRole`) (#48) |
+| `audit_log` | A | Svc (chỉ thêm) (#48) |
+| `staff_approvals` | staff có thẩm quyền duyệt | người yêu cầu (tạo qua use case), duyệt bởi approver khác (không bao giờ là requester) (#48) |
+| `idempotency_keys` | Svc | Svc (lưu giữ 48 giờ) (#48) |
 | `user_contacts` | S | S |
 | `auth_identities`, `devices` | S | Svc/S |
 | `photographers` (công khai) | U (nếu đã `onboarding_complete`), S luôn | S (nội dung); thống kê và `verified` chỉ Svc/A |
