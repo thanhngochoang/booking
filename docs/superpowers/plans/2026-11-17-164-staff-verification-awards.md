@@ -24,7 +24,7 @@ Handovers whose rulings stand:
 | Part | Issue | Tasks | Blocked by |
 |---|---|---|---|
 | A · Staff actions, NAG waits for verification (V1), S23.07 Giải thưởng, S25.01 nudge | #164 | A1–A5 | — (#162, #135, #145 merged) |
-| B · S23.04 Xác minh: review, revoke, reinstate, audited detail | new issue `S23 · Duyệt xác minh danh tính & doanh nghiệp` | B1–B4 | Part A |
+| B · S23.04 Xác minh: review, revoke, reinstate, audited detail | #349 | B1–B4 | Part A |
 
 ## Global Constraints
 
@@ -515,7 +515,7 @@ test('approving after another reinstatement closes the request stale with no sec
 - [ ] **Step 2: Run them and see them fail.**
 - [ ] **Step 3: Implement.** The memory verification store gains the reader and a buffered `audit`.
 - [ ] **Step 4: Run the domain checks; expect PASS.**
-- [ ] **Step 5: Commit** `feat(domain): staff verification review, audited detail and reinstatement [Part B issue]`.
+- [ ] **Step 5: Commit** `feat(domain): staff verification review, audited detail and reinstatement [#349]`.
 
 ### Task B2: Verification callables, adapters, CLI, seed and indexes (Functions)
 
@@ -563,7 +563,7 @@ test('revoke with a short note prints the 20-character rule; reinstate opens a r
 - [ ] **Step 2: Run them and see them fail.**
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run the Functions checks; expect PASS.** Integration runs in CI.
-- [ ] **Step 5: Commit** `feat(functions): staff verification callables and reinstatement [Part B issue]`.
+- [ ] **Step 5: Commit** `feat(functions): staff verification callables and reinstatement [#349]`.
 
 ### Task B3: S23.04 Xác minh (dashboard)
 
@@ -680,7 +680,7 @@ test('verification_reinstate detail shows the name and revoke note; entityHref l
   - support menu: `[overview, verifications, awards, approvals]`;
   - admin menu: adds `verifications`.
 - [ ] **Step 4: Run the dashboard checks; expect PASS.**
-- [ ] **Step 5: Commit** `feat(dashboard): S23.04 verification review queue [Part B issue]`.
+- [ ] **Step 5: Commit** `feat(dashboard): S23.04 verification review queue [#349]`.
 
 ### Task B4: Playwright and docs (Part B)
 
@@ -707,4 +707,4 @@ test('finance typing /staff/verifications gets the 403 page', …);
   The second case depends on `awards.spec.ts` running first; Playwright runs spec files alphabetically. If the run order differs, approve the award in this spec instead.
 - [ ] **Step 2: Run it on the emulators; expect PASS** with the whole suite.
 - [ ] **Step 3: Update the docs.** The ledger lists D5–D10 and D13 as rulings, the new copy, and the deferred items.
-- [ ] **Step 4: Commit** in booking-be `test(dashboard): verification review end-to-end [Part B issue]` and here `docs(verification): reinstatement and S23.04 ledger [Part B issue]`.
+- [ ] **Step 4: Commit** in booking-be `test(dashboard): verification review end-to-end [#349]` and here `docs(verification): reinstatement and S23.04 ledger [#349]`.
