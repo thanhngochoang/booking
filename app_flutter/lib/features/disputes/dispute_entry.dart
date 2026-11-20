@@ -2,7 +2,7 @@
 // itself. S05.02, S11.04 and S05.06 (through `/b/:id/dispute?from=delivery`)
 // call these; the server decides (`openDispute`), these only decide what to
 // show.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';

@@ -5,7 +5,7 @@
 // the real cancel; the server refuses (`conflict`) one that changed (#202).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';

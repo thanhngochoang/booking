@@ -3,7 +3,7 @@
 // S12.01-venue (mock #S12.01-venue): "Địa điểm · bắt buộc", three required
 // options, the paid-place fee choice, the public-place commitment, the terms
 // tick and their errors under the field.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/features/event_create/venue_field.dart';

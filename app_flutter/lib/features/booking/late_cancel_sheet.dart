@@ -1,6 +1,6 @@
 // S05.08: confirmation sheet for cancelling the delivery part when the
 // provider is overdue (#207).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';

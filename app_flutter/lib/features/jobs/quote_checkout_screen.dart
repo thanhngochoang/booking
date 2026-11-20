@@ -1,7 +1,7 @@
 // lib/features/jobs/quote_checkout_screen.dart
 //
 // Screen for 100% quote payment (#S15.04-pay).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';

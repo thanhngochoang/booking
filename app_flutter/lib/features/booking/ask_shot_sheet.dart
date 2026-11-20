@@ -1,7 +1,7 @@
 // S05.02-askshot "Buổi chụp có diễn ra không?": the end + 24 h question of
 // a booking nobody scanned (Decision 10). "Có, đã chụp" → `shot`; "Không
 // diễn ra" → the booking stays held and S18.01 opens with the reason set.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';

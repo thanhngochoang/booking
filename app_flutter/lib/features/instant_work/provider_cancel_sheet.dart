@@ -3,7 +3,7 @@
 // customer always gets everything back and the photographer's reliability
 // drops (Decision 9). The money stays held for the customer's next round
 // (#202); the quote shown goes with the cancel (`conflict` if it changed).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';

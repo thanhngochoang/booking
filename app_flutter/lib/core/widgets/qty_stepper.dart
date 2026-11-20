@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/theme/app_icons.dart';
 
 /// Minus, count, plus. The count is announced through [valueLabel] (a live

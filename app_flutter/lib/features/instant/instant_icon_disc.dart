@@ -1,6 +1,6 @@
 // Mock `.empty .idill`: the 96dp disc with one icon above a Chụp ngay empty
 // or closed view's title (S13.02 empty, S13.07, S13.08 done).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 

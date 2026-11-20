@@ -1,6 +1,6 @@
 // S02.06 (`#S02.06-instant`): the Chụp ngay outline button above the result
 // count of Tìm thợ ảnh. Not the screen's primary ("Đặt" on each card is).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

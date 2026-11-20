@@ -1,5 +1,5 @@
 // lib/features/spots/slot_pick_sheet.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';

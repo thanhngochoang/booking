@@ -3,7 +3,7 @@
 // customer and one for the photographer, the waivers of a resident, the
 // switch, the money line and the two payees, the reference-only section,
 // and `createBooking.entry`.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/organizer/organizer.dart';

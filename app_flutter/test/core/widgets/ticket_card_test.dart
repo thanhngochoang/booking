@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -6,7 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 Widget _wrap(Widget child, {double width = 390, double textScale = 1.0}) {
   return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('vi'),
     home: Scaffold(

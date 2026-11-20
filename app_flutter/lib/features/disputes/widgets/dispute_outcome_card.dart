@@ -1,7 +1,7 @@
 // S18.02-resolved (#142): the staff decision in money, as each party reads
 // it, and the staff note. Amounts come from the dispute's stored outcome
 // (server-computed); nothing is recomputed here.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/disputes/dispute.dart';

@@ -3,7 +3,7 @@
 // Hosts S30.05 (`/spots/:spotId/tickets`) and S04.04 for a ticket on fakes:
 // the spot with its entry event (organizer_world fixtures), the day
 // counters, the event repository's `registerEntry`. Other screens are stubs.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';

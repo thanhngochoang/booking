@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/core/widgets/chat_bubble.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/features/chat/chat_bubble_mapping.dart';
@@ -19,7 +20,7 @@ void main() {
       late AppLocalizations l10n;
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('vi'),
           home: Builder(
@@ -148,7 +149,7 @@ void main() {
       late AppLocalizations l10n;
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('vi'),
           home: Builder(
@@ -188,7 +189,7 @@ void main() {
       late AppLocalizations l10n;
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('vi'),
           home: Builder(

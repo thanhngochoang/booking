@@ -1,6 +1,6 @@
 // S05.03: cancel a booking (customer), its photographer variant and the
 // customer's 100% cancel after a studio fault.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';

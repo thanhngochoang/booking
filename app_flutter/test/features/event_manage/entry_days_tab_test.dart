@@ -1,7 +1,7 @@
 // test/features/event_manage/entry_days_tab_test.dart
 //
 // S12.03-entry (mock #S12.03-entry): an entry event is managed per day.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/organizer/organizer.dart';

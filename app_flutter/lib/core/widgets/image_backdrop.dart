@@ -1,7 +1,7 @@
 // lib/core/widgets/image_backdrop.dart
 import 'dart:ui' show ImageFilter;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/widgets/aurora_background.dart';
 

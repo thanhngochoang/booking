@@ -1,6 +1,6 @@
 // The other party of a booking: the customer's public profile (for the
 // photographer) and the photographer's way to reach the customer.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';

@@ -4,7 +4,7 @@
 // "Hoàn thành"; it completes by itself 2 hours after `finishedAt`. In both
 // the customer can confirm at once ("Xác nhận hoàn thành", companion
 // Decision 9); a `conflict` means the clock already completed it.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

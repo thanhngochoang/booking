@@ -3,7 +3,7 @@
 // evidence, then the three-party thread with support (#204's
 // SupportThreadView). Resolved: the outcome in money, the staff note, the
 // thread read-only and "Liên hệ hỗ trợ" in the footer.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

@@ -1,7 +1,7 @@
 // test/features/event_manage/my_events_screen_test.dart
 //
 // `/events/mine` and the ordering S06.01 shares with it.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/staff_role.dart';

@@ -1,6 +1,6 @@
 // S05.02-pass, S05.02-askshot and the entry lines of S05.02; S05.03 "Giữ vé
 // vào cửa" (#223).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';

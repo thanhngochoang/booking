@@ -1,5 +1,5 @@
 // lib/features/booking/widgets/addon_pick_block.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/features/addons/addon_format.dart';

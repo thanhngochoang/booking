@@ -1,5 +1,5 @@
 // test/features/settings/settings_verify_row_test.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -133,7 +133,7 @@ Future<GoRouter> _open(
         routerConfig: router,
         builder: (context, child) => testPhotoScope(child: child!),
         locale: const Locale('vi'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),

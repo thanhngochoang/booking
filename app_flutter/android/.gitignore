@@ -14,3 +14,7 @@ key.properties
 **/*.jks
 # Shared debug key (public, standard password "android"): every machine signs debug builds alike.
 !app/debug.keystore
+
+# Gradle/Kotlin output of `flutter build apk` at the Android project root
+/build/
+/.kotlin/

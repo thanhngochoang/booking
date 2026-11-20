@@ -3,7 +3,7 @@
 // (`abandoned`), or reported absent by the photographer. Money lines use what
 // the server wrote on the request (`amountVnd − feeVnd`, `refundPercent`);
 // an unpaid request (every #140 one) has no money to speak of.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';

@@ -1,6 +1,6 @@
 // Test world for the photographer side of Chụp ngay (S14.01, S06.01 card,
 // heartbeat): a fake repository, a fake location, a clock the test moves.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

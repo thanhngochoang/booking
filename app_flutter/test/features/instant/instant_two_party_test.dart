@@ -3,7 +3,7 @@
 // ([InstantSimulator]), one clock for both. Each app has its own
 // ProviderScope; an IndexedStack shows one at a time (finders and taps only
 // see the visible one) while both keep listening.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';

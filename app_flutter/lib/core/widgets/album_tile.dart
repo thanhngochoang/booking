@@ -1,5 +1,5 @@
 // lib/core/widgets/album_tile.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/app_icons.dart';

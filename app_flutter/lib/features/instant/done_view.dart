@@ -2,7 +2,7 @@
 // clock did 2 hours after the photographer finished). The photos come within
 // 48 hours; no review entry (reviews are booking-bound until #130) and no
 // dispute link (S18, #142) here (Decision 12).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';

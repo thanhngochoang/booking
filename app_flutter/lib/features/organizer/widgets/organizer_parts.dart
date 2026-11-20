@@ -2,7 +2,7 @@
 //
 // Small pieces the S30 screens share (mock classes `.idill`, `.irow`,
 // `.lockn`, `.sec`, `.badge`).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 

@@ -2,7 +2,7 @@
 // S29.05 "Gói chia suất": cuts a schedule's window into short fixed-price
 // slots. Saved and closed through the `saveSlotOffer` / `closeSlotOffer`
 // callables only; no add-ons on a slot offer (T6).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

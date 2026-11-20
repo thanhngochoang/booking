@@ -1,5 +1,5 @@
 // lib/core/widgets/milestone_table.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';

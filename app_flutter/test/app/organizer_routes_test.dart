@@ -2,7 +2,7 @@
 //
 // The app router opens the S30 organizer screens (Task 8) and S06.06 for an
 // organizer (Task 1b) without the photographer-only redirect.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/features/entry/entry_buy_screen.dart';

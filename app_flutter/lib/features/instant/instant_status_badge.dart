@@ -1,6 +1,6 @@
 // Mock `.badge.b-ok`: a Chụp ngay request's status on the customer's views
 // ("Đã nhận", "Đang đến", "Đã đến", "Đang chụp").
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 

@@ -4,7 +4,7 @@
 // the fakes: organizer, spots, events, photographers, the gallery. Screens of
 // other tasks and plans (S21.01, S21.04, S06.06, S29.02, S30.07) are stubs
 // that print `stub <uri>`.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';

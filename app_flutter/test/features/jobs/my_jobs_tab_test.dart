@@ -1,7 +1,8 @@
 // test/features/jobs/my_jobs_tab_test.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/jobs/job.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
@@ -24,7 +25,7 @@ void main() {
           clockProvider.overrideWithValue(() => now),
         ],
         child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: MyJobsTab()),
         ),
@@ -137,7 +138,7 @@ void main() {
           clockProvider.overrideWithValue(() => now),
         ],
         child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: MyJobsTab()),
         ),

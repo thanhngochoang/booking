@@ -1,5 +1,5 @@
 // test/core/widgets/widget_host.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -14,7 +14,7 @@ Widget hostWidget(
   return MaterialApp(
     theme: brightness == Brightness.dark ? buildDarkTheme() : buildLightTheme(),
     locale: const Locale('vi'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, c) => MediaQuery(
       data: MediaQuery.of(context)

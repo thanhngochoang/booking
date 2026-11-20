@@ -1,6 +1,6 @@
 // A sentence with one part bold in tabular figures (mock `<b class="tn">`):
 // a time or an amount inside Chụp ngay copy.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class InstantBoldPart extends StatelessWidget {
   const InstantBoldPart(

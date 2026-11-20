@@ -6,7 +6,7 @@
 // `#S22.04-other`): pick a bank, type the number, the bank answers the
 // holder name. Without a paying account the sheet opens on the form. Only
 // the bank, the last 4 digits and the holder name are ever shown.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';

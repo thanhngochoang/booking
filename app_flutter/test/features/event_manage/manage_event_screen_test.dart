@@ -3,7 +3,7 @@
 // S12.03. No camera here: "Quét mã" opens S30.07 (`/scan?event=`, tested
 // in test/features/scan); every fake stream emits at once, and pumps are
 // bounded (`settle`).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';

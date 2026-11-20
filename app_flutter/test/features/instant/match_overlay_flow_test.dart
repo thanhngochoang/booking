@@ -1,7 +1,7 @@
 // S13.04 on the customer side (Decision 5): the match moment shows when the
 // flow screen sees `searching → assigned`, or opens on an assignment less
 // than 60 s old (a push tap); otherwise S13.05 at once.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';

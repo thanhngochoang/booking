@@ -4,7 +4,7 @@
 // lịch thường với người bạn chọn" goes to Tìm thợ ảnh while the request stays
 // open (Decision 13); the red cancel opens S13.08. An unpaid request (every
 // #140 one) has no money line.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

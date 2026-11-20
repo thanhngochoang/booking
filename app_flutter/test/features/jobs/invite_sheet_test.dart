@@ -1,7 +1,8 @@
 // test/features/jobs/invite_sheet_test.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/jobs/job.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
@@ -104,7 +105,7 @@ void main() {
           recommendationRepositoryProvider.overrideWithValue(_FakeRecommender(photographers)),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: InviteSheet(

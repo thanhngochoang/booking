@@ -1,7 +1,7 @@
 // test/features/skills/evidence_sheet_test.dart
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
@@ -32,7 +32,7 @@ Widget _app(
   child: MaterialApp(
     theme: brightness == Brightness.dark ? buildDarkTheme() : buildLightTheme(),
     locale: const Locale('vi'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, child) => testPhotoScope(
       child: MediaQuery(

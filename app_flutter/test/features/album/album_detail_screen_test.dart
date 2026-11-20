@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/album/album.dart';
@@ -277,7 +277,10 @@ void main() {
     await tester.tap(find.text('Chuyển xuống'));
     await tester.pumpAndSettle();
     w.router.go('/u/p1');
+    // The route change takes longer than 400 ms on Flutter 3.50, and until it
+    // ends both pages show the snack bar; 1 s is well inside its 5 s.
     await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('Hoàn tác'), findsOneWidget);
     await tester.tap(find.text('Hoàn tác'));
     await tester.pumpAndSettle();
@@ -299,6 +302,7 @@ void main() {
     await tester.pumpAndSettle();
     w2.router.go('/u/p1');
     await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 600));
     w2.albums.failWith = const AlbumError('unavailable');
     await tester.tap(find.text('Hoàn tác'));
     await tester.pumpAndSettle();

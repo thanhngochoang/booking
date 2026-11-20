@@ -1,7 +1,7 @@
 // lib/features/jobs/decline_quote_sheet.dart
 //
 // Confirmation bottom sheet to decline a quote (Task 8, S15.04).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';

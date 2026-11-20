@@ -1,5 +1,5 @@
 // S27.06 photographer view ("S27.06-me", #151 Task 9).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';

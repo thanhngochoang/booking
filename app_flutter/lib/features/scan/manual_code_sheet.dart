@@ -1,5 +1,5 @@
 // S30.07 "Nhập mã 8 ký tự": the code typed when the camera cannot read it.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/scan/scan_controller.dart';

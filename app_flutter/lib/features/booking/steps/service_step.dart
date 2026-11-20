@@ -1,5 +1,5 @@
 // lib/features/booking/steps/service_step.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/service_summary.dart';

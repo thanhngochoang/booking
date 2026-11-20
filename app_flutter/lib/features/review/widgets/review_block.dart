@@ -1,6 +1,6 @@
 // S05.05 for a studio booking (mock `#S05.05-studio`): one `.vblk` group
 // per subject, the member who shot it and the studio.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/features/review/review_controller.dart';

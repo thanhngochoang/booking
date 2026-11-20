@@ -1,5 +1,5 @@
 // test/features/job_market/quote_sheet_test.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
@@ -105,7 +105,7 @@ void main() {
         myAlbumsProvider.overrideWith((ref) => Stream.value(testAlbums)),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: QuoteSheet(job: job, initialQuote: existingQuote),

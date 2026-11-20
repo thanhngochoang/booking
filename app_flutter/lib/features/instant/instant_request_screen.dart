@@ -1,6 +1,6 @@
 // S13.01 (`#S13.01`, `#S13.01-noloc`): package, kind of shoot and a named
 // meet point at the customer's position; "Xem nhiếp ảnh gia phù hợp".
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

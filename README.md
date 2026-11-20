@@ -30,7 +30,7 @@ cd app_flutter && flutter pub get && flutter run
 | Bước | Script | Kết quả |
 |------|--------|---------|
 | Android SDK | `scripts/install-sdk.sh` | `.android-sdk/` với platform 34 + 36, build-tools 34.0.0 + 36.0.0, platform-tools. Tải zip thẳng từ dl.google.com nên không cần sdkmanager. |
-| Flutter SDK | `scripts/install-flutter.sh` | `.flutter/` bản stable mới nhất cho CPU của máy. |
+| Flutter SDK | `scripts/install-flutter.sh` | `.flutter/` đúng bản 3.50.1 (ghim trong `FLUTTER_VERSION`) cho CPU của máy. |
 | Font | `scripts/fetch-fonts.sh` | Be Vietnam Pro + Fraunces vào `app_flutter/assets/fonts/`. |
 | Môi trường | `scripts/env.sh` | `JAVA_HOME`, `ANDROID_HOME`, `PATH` (ưu tiên `scripts/bin`), `local.properties`, truststore TLS. |
 
