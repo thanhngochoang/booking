@@ -205,18 +205,20 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 
 ## 6. Kế hoạch di trú sang hệ thống riêng
 
-Làm theo bậc thang, mỗi bậc triển khai độc lập và quay lui được.
+**Thay bằng spec #170** (`../2026-11-20-phase2-backend-api-design.md`, 2026-11-20): ra mắt thẳng trên API Node.js + PostgreSQL, không chuyển dữ liệu Firestore, không chạy song song; chuyển theo cụm, thứ tự và hợp đồng chung ở spec đó. Bậc thang cũ (giữ để tra lịch sử):
 
-| Bậc | Việc | Kết quả kiểm được |
-|-----|------|--------------------|
-| 0 | Hoàn thiện lớp miền thuần và cổng; tách `lib/data/firebase/`; thêm kiểm tra luật phụ thuộc | Không còn `import` Firebase ngoài adapter |
-| 1 | Viết lược đồ quan hệ (tệp này), bộ ánh xạ hai chiều Firestore ↔ bảng cho từng thực thể, **kiểm thử hợp đồng** chạy với `Fake`, Firestore và (về sau) SQL | Cả ba cài đặt qua cùng bộ test |
-| 2 | Xuất toàn bộ Firestore ra NDJSON theo bảng (công cụ `tools/export`), nhập vào PostgreSQL thử nghiệm, so khớp số bản ghi và checksum | Bản sao đúng, id giữ nguyên |
-| 3 | Chạy song song: thay đổi Firestore được chép sang PostgreSQL (trigger/Change Streams); chỉ đọc từ PostgreSQL ở môi trường thử | Độ trễ và sai khác đo được |
-| 4 | Dựng máy chủ API cho các use case (mục 5) và `RealtimeChannel`; ứng dụng chọn adapter bằng cấu hình (cờ từ xa) theo từng thực thể | Chuyển từng cụm (nội dung → hồ sơ → booking → sự kiện → chat) |
-| 5 | Chuyển ghi sang hệ thống riêng; Firestore chuyển thành chỉ đọc rồi tắt; đổi `IdentityProvider` bằng cách nhập `auth_identities` và cấp token mới (người dùng không phải đăng ký lại) | Không còn phụ thuộc Firebase ở môi trường thật |
-
-Rủi ro cần chuẩn bị từ đầu: (a) mật khẩu Firebase Auth không xuất được dạng rõ nên cần luồng đặt lại hoặc liên kết nhà cung cấp xã hội; (b) quy tắc Firestore phải dịch sang chính sách ở lớp API/Row‑Level Security; (c) thời gian thực và ngoại tuyến của Firestore cần thay bằng bộ nhớ đệm cục bộ + đồng bộ; (d) truy vấn địa lý geohash chuyển sang chỉ mục không gian; (e) FCM giữ được nếu vẫn dùng FCM làm kênh đẩy.
+> Làm theo bậc thang, mỗi bậc triển khai độc lập và quay lui được.
+>
+> | Bậc | Việc | Kết quả kiểm được |
+> |-----|------|--------------------|
+> | 0 | Hoàn thiện lớp miền thuần và cổng; tách `lib/data/firebase/`; thêm kiểm tra luật phụ thuộc | Không còn `import` Firebase ngoài adapter |
+> | 1 | Viết lược đồ quan hệ (tệp này), bộ ánh xạ hai chiều Firestore ↔ bảng cho từng thực thể, **kiểm thử hợp đồng** chạy với `Fake`, Firestore và (về sau) SQL | Cả ba cài đặt qua cùng bộ test |
+> | 2 | Xuất toàn bộ Firestore ra NDJSON theo bảng (công cụ `tools/export`), nhập vào PostgreSQL thử nghiệm, so khớp số bản ghi và checksum | Bản sao đúng, id giữ nguyên |
+> | 3 | Chạy song song: thay đổi Firestore được chép sang PostgreSQL (trigger/Change Streams); chỉ đọc từ PostgreSQL ở môi trường thử | Độ trễ và sai khác đo được |
+> | 4 | Dựng máy chủ API cho các use case (mục 5) và `RealtimeChannel`; ứng dụng chọn adapter bằng cấu hình (cờ từ xa) theo từng thực thể | Chuyển từng cụm (nội dung → hồ sơ → booking → sự kiện → chat) |
+> | 5 | Chuyển ghi sang hệ thống riêng; Firestore chuyển thành chỉ đọc rồi tắt; đổi `IdentityProvider` bằng cách nhập `auth_identities` và cấp token mới (người dùng không phải đăng ký lại) | Không còn phụ thuộc Firebase ở môi trường thật |
+>
+> Rủi ro cần chuẩn bị từ đầu: (a) mật khẩu Firebase Auth không xuất được dạng rõ nên cần luồng đặt lại hoặc liên kết nhà cung cấp xã hội; (b) quy tắc Firestore phải dịch sang chính sách ở lớp API/Row‑Level Security; (c) thời gian thực và ngoại tuyến của Firestore cần thay bằng bộ nhớ đệm cục bộ + đồng bộ; (d) truy vấn địa lý geohash chuyển sang chỉ mục không gian; (e) FCM giữ được nếu vẫn dùng FCM làm kênh đẩy.
 
 ## 7. Tiêu chí chấp nhận
 
@@ -230,11 +232,11 @@ Rủi ro cần chuẩn bị từ đầu: (a) mật khẩu Firebase Auth không x
 
 ## 8. Câu hỏi mở
 
-1. **Hệ quản trị đích**: PostgreSQL (đề xuất, có PostGIS) hay khác? Có dùng ORM/Query builder cụ thể (Drizzle, Prisma, jOOQ…) hay không.
-2. **Ngôn ngữ máy chủ riêng**: TypeScript (dùng chung kiểu với Functions và recommender, đề xuất) hay Go/Kotlin?
-3. **Id mới**: ULID (đề xuất) hay UUIDv7? Hai loại đều sắp theo thời gian; chọn một và giữ.
-4. **Thời gian thực**: WebSocket tự quản hay dịch vụ ngoài (Ably, Pusher, Supabase Realtime) ở máy chủ riêng?
-5. **Đăng nhập**: giữ Firebase Auth riêng làm IdP (dễ nhất, vẫn "phụ thuộc Firebase" một phần) hay chuyển hẳn sang OIDC khác? Quyết định ảnh hưởng bậc 5.
+1. **Hệ quản trị đích**: PostgreSQL (đề xuất, có PostGIS) hay khác? Có dùng ORM/Query builder cụ thể (Drizzle, Prisma, jOOQ…) hay không. **Đã chốt (#170):** PostgreSQL 16 + PostGIS, Kysely.
+2. **Ngôn ngữ máy chủ riêng**: TypeScript (dùng chung kiểu với Functions và recommender, đề xuất) hay Go/Kotlin? **Đã chốt (#170):** TypeScript (Fastify), dùng chung `packages/domain`.
+3. **Id mới**: ULID (đề xuất) hay UUIDv7? Hai loại đều sắp theo thời gian; chọn một và giữ. **Đã chốt:** ULID.
+4. **Thời gian thực**: WebSocket tự quản hay dịch vụ ngoài (Ably, Pusher, Supabase Realtime) ở máy chủ riêng? **Đã chốt (#170):** SSE tự vận hành trên `LISTEN/NOTIFY`, sự kiện chỉ báo thay đổi.
+5. **Đăng nhập**: giữ Firebase Auth riêng làm IdP (dễ nhất, vẫn "phụ thuộc Firebase" một phần) hay chuyển hẳn sang OIDC khác? Quyết định ảnh hưởng bậc 5. **Đã chốt (2026-11-15):** giữ Firebase Auth làm IdP; Google chỉ còn Auth và FCM.
 6. **Thời hạn lưu**: thời hạn giữ `messages`, `recommendation_logs`, `audit_log` (đề xuất 12/6/60 tháng).
 7. **Dữ liệu từ app Java cũ** (`booking`, `albums`, `users`): có đưa vào bảng mới không (đề xuất chỉ `users` và `albums → posts`, theo spec gốc mục 5 phần Migration).
 8. Mã danh mục trùng giữa hai nhóm: `couple` là thể loại và cũng là khách phù hợp (seed ở relational-schema.md §6), trong khi `taxonomy_items.id` là khoá chính và `taxonomy/skills/items/{id}` là id tài liệu. Ứng dụng đã tra theo (`group`, `id`). Trước khi di trú cần chọn: khoá chính (`grp`, `id`) và khoá ngoại hai cột, hoặc đổi mã khách thành `couples` (cần di trú dữ liệu `audiences`).
