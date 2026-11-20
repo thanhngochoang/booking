@@ -104,4 +104,76 @@ void main() {
     expect(api.uriFor('/v1/me').toString(), 'https://h.example/api/v1/me');
     api.close();
   });
+
+  test('delete sends DELETE with the bearer token and returns null for an empty 204', () async {
+    final api = MockApi({
+      'DELETE /v1/item': (r) {
+        expect(r.method, 'DELETE');
+        expect(r.headers['authorization'], 'Bearer t0');
+        return (204, null);
+      },
+    });
+    final res = await api.api().delete('/v1/item');
+    expect(res, isNull);
+  });
+
+  test('query values are URL-encoded and appended', () async {
+    final api = MockApi({
+      'GET /v1/list': (r) {
+        expect(r.url.queryParameters, {'after': 'a b', 'limit': '20'});
+        return (200, {'items': []});
+      },
+    });
+    final res = await api.api().get(
+      '/v1/list',
+      query: {'after': 'a b', 'limit': '20'},
+    );
+    expect(res, {'items': []});
+    expect(api.requests.single.url.toString(), 'http://api.test/v1/list?after=a+b&limit=20');
+  });
+
+  test('idempotencyKey becomes the idempotency-key header, and the 401 retry sends the same key', () async {
+    final tokens = _CountingTokens();
+    final api = MockApi({
+      'POST /v1/action': (r) {
+        expect(r.headers['idempotency-key'], 'idem-123');
+        return r.headers['authorization'] == 'Bearer fresh'
+            ? (200, {'done': true})
+            : (401, apiError('unauthenticated'));
+      },
+    });
+    final res = await api.api(tokens: tokens).post(
+      '/v1/action',
+      {'x': 1},
+      idempotencyKey: 'idem-123',
+    );
+    expect(res, {'done': true});
+    expect(api.requests, hasLength(2));
+    expect(api.requests[0].headers['idempotency-key'], 'idem-123');
+    expect(api.requests[1].headers['idempotency-key'], 'idem-123');
+  });
+
+  test('a request without a key has no such header', () async {
+    final api = MockApi({
+      'POST /v1/action': (r) {
+        expect(r.headers.containsKey('idempotency-key'), isFalse);
+        return (200, {'done': true});
+      },
+    });
+    await api.api().post('/v1/action', {'x': 1});
+  });
+
+  test('delete maps an error body to ApiException(code)', () async {
+    final api = MockApi({
+      'DELETE /v1/item': (_) => (404, apiError('not_found')),
+    });
+    await expectLater(
+      api.api().delete('/v1/item'),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.code, 'code', 'not_found')
+            .having((e) => e.status, 'status', 404),
+      ),
+    );
+  });
 }

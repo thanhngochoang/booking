@@ -48,31 +48,93 @@ class ApiClient {
   final http.Client _http;
   final Duration timeout;
 
-  Future<Object?> get(String path) => _send('GET', path);
-  Future<Object?> post(String path, Map<String, Object?> body) =>
-      _send('POST', path, body);
-  Future<Object?> put(String path, Map<String, Object?> body) =>
-      _send('PUT', path, body);
-  Future<Object?> patch(String path, Map<String, Object?> body) =>
-      _send('PATCH', path, body);
+  Future<Object?> get(
+    String path, {
+    Map<String, String>? query,
+    String? idempotencyKey,
+  }) => _send('GET', path, query: query, idempotencyKey: idempotencyKey);
+
+  Future<Object?> post(
+    String path,
+    Map<String, Object?> body, {
+    Map<String, String>? query,
+    String? idempotencyKey,
+  }) => _send(
+    'POST',
+    path,
+    body: body,
+    query: query,
+    idempotencyKey: idempotencyKey,
+  );
+
+  Future<Object?> put(
+    String path,
+    Map<String, Object?> body, {
+    Map<String, String>? query,
+    String? idempotencyKey,
+  }) => _send(
+    'PUT',
+    path,
+    body: body,
+    query: query,
+    idempotencyKey: idempotencyKey,
+  );
+
+  Future<Object?> patch(
+    String path,
+    Map<String, Object?> body, {
+    Map<String, String>? query,
+    String? idempotencyKey,
+  }) => _send(
+    'PATCH',
+    path,
+    body: body,
+    query: query,
+    idempotencyKey: idempotencyKey,
+  );
+
+  Future<Object?> delete(
+    String path, {
+    Map<String, String>? query,
+    String? idempotencyKey,
+  }) => _send('DELETE', path, query: query, idempotencyKey: idempotencyKey);
 
   void close() => _http.close();
 
-  Uri uriFor(String path) {
+  Uri uriFor(String path, [Map<String, String>? query]) {
     final prefix = baseUrl.path.endsWith('/')
         ? baseUrl.path.substring(0, baseUrl.path.length - 1)
         : baseUrl.path;
-    return baseUrl.replace(path: '$prefix$path');
+    return baseUrl.replace(
+      path: '$prefix$path',
+      queryParameters: query == null || query.isEmpty ? null : query,
+    );
   }
 
   Future<Object?> _send(
     String method,
-    String path, [
+    String path, {
     Map<String, Object?>? body,
-  ]) async {
-    var res = await _once(method, path, body, forceRefresh: false);
+    Map<String, String>? query,
+    String? idempotencyKey,
+  }) async {
+    var res = await _once(
+      method,
+      path,
+      body: body,
+      query: query,
+      idempotencyKey: idempotencyKey,
+      forceRefresh: false,
+    );
     if (res.statusCode == 401) {
-      res = await _once(method, path, body, forceRefresh: true);
+      res = await _once(
+        method,
+        path,
+        body: body,
+        query: query,
+        idempotencyKey: idempotencyKey,
+        forceRefresh: true,
+      );
     }
     final status = res.statusCode;
     final text = utf8.decode(res.bodyBytes);
@@ -89,17 +151,22 @@ class ApiClient {
 
   Future<http.Response> _once(
     String method,
-    String path,
-    Map<String, Object?>? body, {
+    String path, {
+    Map<String, Object?>? body,
+    Map<String, String>? query,
+    String? idempotencyKey,
     required bool forceRefresh,
   }) async {
     final token = await tokens.token(forceRefresh: forceRefresh);
     if (token == null) {
       throw const ApiException(401, ApiException.unauthenticated);
     }
-    final req = http.Request(method, uriFor(path))
+    final req = http.Request(method, uriFor(path, query))
       ..headers['authorization'] = 'Bearer $token'
       ..headers['accept'] = 'application/json';
+    if (idempotencyKey != null) {
+      req.headers['idempotency-key'] = idempotencyKey;
+    }
     if (body != null) {
       req.headers['content-type'] = 'application/json';
       req.body = jsonEncode(body);
