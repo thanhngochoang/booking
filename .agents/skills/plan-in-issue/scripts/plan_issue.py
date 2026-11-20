@@ -17,6 +17,9 @@ Usage:
   plan_issue.py publish <issue> <plan.md> [--draft]   post or update the plan; plan-ready unless --draft
   plan_issue.py fetch <issue> [--out FILE]            print the plan (or write it outside the repo)
 
+<issue> is N (the repository in PROJECT_REPO, default thanhngochoang/booking), be#N or
+booking-be#N (thanhngochoang/booking-be), booking#N (thanhngochoang/booking); #N also works.
+
 Env: PROJECT_REPO (default thanhngochoang/booking). `gh` must be logged in; inside the
 Claude sandbox gh cannot read the keychain, so run this script with the sandbox off.
 """
@@ -28,6 +31,9 @@ import subprocess
 import sys
 
 REPO = os.environ.get("PROJECT_REPO", "thanhngochoang/booking")
+APP_REPO = "thanhngochoang/booking"
+BE_REPO = "thanhngochoang/booking-be"
+ISSUE = re.compile(r"^(?:(booking-be|booking|be)?#)?(\d+)$")
 LIMIT = 60_000  # GitHub's hard limit is 65,536; leave room for the marker line
 BEGIN, END = "<!-- plan:begin -->", "<!-- plan:end -->"
 IDX_BEGIN, IDX_END = "<!-- plan:index -->", "<!-- plan:index-end -->"
@@ -36,6 +42,27 @@ PART = "<!-- plan-part "
 TASK = re.compile(r"^#{2,4} (?:Former )?[Tt]ask\s+[A-Z]*\d+\b.*$", re.M)
 SECTION = re.compile(r"^## \S.*$", re.M)
 FENCE = re.compile(r"^\s*(```|~~~)")
+
+
+def parse_issue(text):
+    """(repository, number): `N`/`#N` -> PROJECT_REPO, `booking#N`, `be#N`, `booking-be#N`."""
+    m = ISSUE.match(str(text).strip())
+    if not m:
+        raise ValueError(f"not an issue reference: {text!r} (use N, be#N, booking#N or booking-be#N)")
+    repo = {None: REPO, "booking": APP_REPO, "be": BE_REPO, "booking-be": BE_REPO}[m.group(1)]
+    return repo, int(m.group(2))
+
+
+def issue_arg(text):
+    try:
+        return parse_issue(text)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e))
+
+
+def ref_text(repo, number):
+    """The form to type after `plan_issue.py fetch`: 42 for booking, be#42 for booking-be."""
+    return f"be#{number}" if repo == BE_REPO else str(number)
 
 
 # ── splitting (pure, no network) ─────────────────────────────────────────────
@@ -128,9 +155,9 @@ def parse_comment(body):
     return meta, content
 
 
-def plan_block(header, links):
+def plan_block(header, links, ref="<issue>"):
     index = [IDX_BEGIN, "", "**Kế hoạch trong issue này** (đọc đủ bằng "
-             "`.agents/skills/plan-in-issue/scripts/plan_issue.py fetch <issue>`):", ""]
+             f"`.agents/skills/plan-in-issue/scripts/plan_issue.py fetch {ref}`):", ""]
     for meta, url in links:
         label = meta["title"] + (f" (phần {meta['piece']}/{meta['pieces']})" if "pieces" in meta else "")
         if meta["title"] == "Phần đầu":
@@ -179,8 +206,8 @@ def api(method, path, payload=None):
     return json.loads(out) if out.strip() else None
 
 
-def issue_comments(issue):
-    out = gh("api", "--paginate", f"repos/{REPO}/issues/{issue}/comments", "--jq", ".[] | {id, body, html_url}")
+def issue_comments(repo, issue):
+    out = gh("api", "--paginate", f"repos/{repo}/issues/{issue}/comments", "--jq", ".[] | {id, body, html_url}")
     return [json.loads(line) for line in out.splitlines() if line.strip()]
 
 
@@ -203,42 +230,42 @@ def cmd_check(path):
     return header, parts
 
 
-def cmd_publish(issue, path, draft):
+def cmd_publish(repo, issue, path, draft):
     header, parts = cmd_check(path)
-    old = [(c, parse_comment(c["body"])) for c in issue_comments(issue)]
+    old = [(c, parse_comment(c["body"])) for c in issue_comments(repo, issue)]
     old = [(c, p) for c, p in old if p]
     old.sort(key=lambda cp: cp[1][0]["n"])
     links = []
     for i, (meta, content) in enumerate(parts):
         body = comment_body(meta, content)
         if i < len(old):
-            c = api("PATCH", f"repos/{REPO}/issues/comments/{old[i][0]['id']}", {"body": body})
+            c = api("PATCH", f"repos/{repo}/issues/comments/{old[i][0]['id']}", {"body": body})
         else:
-            c = api("POST", f"repos/{REPO}/issues/{issue}/comments", {"body": body})
+            c = api("POST", f"repos/{repo}/issues/{issue}/comments", {"body": body})
         links.append((meta, c["html_url"]))
     for c, _ in old[len(parts):]:
-        api("DELETE", f"repos/{REPO}/issues/comments/{c['id']}")
-    issue_json = api("GET", f"repos/{REPO}/issues/{issue}")
+        api("DELETE", f"repos/{repo}/issues/comments/{c['id']}")
+    issue_json = api("GET", f"repos/{repo}/issues/{issue}")
     outside, _ = unblock(issue_json.get("body") or "")
     outside = re.sub(r"^Plan: .*\n?", "", outside, flags=re.M).rstrip("\n")
-    new_body = (outside + "\n\n" if outside else "") + "Plan: in this issue (plan-in-issue)\n\n" + plan_block(header, links)
+    new_body = (outside + "\n\n" if outside else "") + "Plan: in this issue (plan-in-issue)\n\n" + plan_block(header, links, ref_text(repo, issue))
     if len(new_body) > 65_536:
         sys.exit(f"error: the issue body would be {len(new_body):,} chars; shorten the text above the plan")
-    api("PATCH", f"repos/{REPO}/issues/{issue}", {"body": new_body})
+    api("PATCH", f"repos/{repo}/issues/{issue}", {"body": new_body})
     if not draft:
-        gh("issue", "edit", str(issue), "--repo", REPO, "--add-label", "plan-ready", "--remove-label", "needs-plan")
+        gh("issue", "edit", str(issue), "--repo", repo, "--add-label", "plan-ready", "--remove-label", "needs-plan")
     # Read it back: what agents will fetch must be what was written.
-    if cmd_fetch(issue, None, quiet=True) != open(path, encoding="utf-8").read():
+    if cmd_fetch(repo, issue, None, quiet=True) != open(path, encoding="utf-8").read():
         sys.exit("error: the plan read back from the issue differs from the file")
-    print(f"published #{issue}: {len(parts)} comments{'' if draft else ', label plan-ready'}; read back ok")
+    print(f"published {ref_text(repo, issue) if repo == BE_REPO else '#' + str(issue)}: {len(parts)} comments{'' if draft else ', label plan-ready'}; read back ok")
 
 
-def cmd_fetch(issue, out, quiet=False):
-    issue_json = api("GET", f"repos/{REPO}/issues/{issue}")
+def cmd_fetch(repo, issue, out, quiet=False):
+    issue_json = api("GET", f"repos/{repo}/issues/{issue}")
     _, header = unblock(issue_json.get("body") or "")
-    comments = [parse_comment(c["body"]) for c in issue_comments(issue)]
+    comments = [parse_comment(c["body"]) for c in issue_comments(repo, issue)]
     if not any(comments) and not header:
-        sys.exit(f"error: #{issue} has no plan in it")
+        sys.exit(f"error: {repo}#{issue} has no plan in it")
     text = assemble(header, comments)
     if quiet:
         return text
@@ -257,19 +284,19 @@ def main():
     c = sub.add_parser("check")
     c.add_argument("plan")
     pu = sub.add_parser("publish")
-    pu.add_argument("issue", type=int)
+    pu.add_argument("issue", type=issue_arg)
     pu.add_argument("plan")
     pu.add_argument("--draft", action="store_true", help="post without the plan-ready label")
     f = sub.add_parser("fetch")
-    f.add_argument("issue", type=int)
+    f.add_argument("issue", type=issue_arg)
     f.add_argument("--out")
     a = p.parse_args()
     if a.cmd == "check":
         cmd_check(a.plan)
     elif a.cmd == "publish":
-        cmd_publish(a.issue, a.plan, a.draft)
+        cmd_publish(*a.issue, a.plan, a.draft)
     else:
-        cmd_fetch(a.issue, a.out)
+        cmd_fetch(*a.issue, a.out)
 
 
 if __name__ == "__main__":
