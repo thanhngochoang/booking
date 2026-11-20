@@ -68,7 +68,10 @@ approved ──(chủ hồ sơ sửa nội dung)──▶ pending      approved 
 
 - Điều kiện (đề xuất, câu hỏi mở 2): `providerType = individual` và **≥ 3 giải `approved`**. Server tự đặt `providerType = artist` và `artistSince`, gửi thông báo `artist_granted`. Không có đơn xin riêng.
 - Số giải đã duyệt tụt dưới ngưỡng (thu hồi, chủ hồ sơ xoá giải) → server đặt lại `individual`, gửi `artist_revoked`. Việc đăng "Chỉ Nhiếp ảnh gia" mà thợ ảnh đã báo giá trước đó vẫn giữ báo giá.
-- Hạng NAG đã gồm kiểm tra danh tính của S21.02: khi cấp hạng mà thợ ảnh chưa có tích xanh, S23.07 yêu cầu staff xác minh danh tính cùng lúc. Vì vậy tích vàng thay tích xanh.
+- **V1 (chốt 2026-11-17, #164):** hạng NAG cần **cả hai**: ≥ 3 giải `approved` **và** đã xác minh danh tính (S21.02, `photographers/{uid}.verified`).
+  - Thợ đủ 3 giải mà chưa xác minh thì chờ, vẫn là `individual`; duyệt xác minh xong server tự cấp `artist` (không cần duyệt lại giải).
+  - Thu hồi xác minh thì mất hạng NAG, các giải vẫn giữ `approved`; khôi phục xác minh thì hạng NAG tự quay lại nếu vẫn đủ 3 giải.
+  - Staff không xác minh danh tính ở S23.07: màn đó chỉ báo "Đủ điều kiện NAG, chờ xác minh danh tính" và việc xác minh làm ở S23.04. Vì vậy tích vàng thay tích xanh.
 
 ### 2.4 Màn
 

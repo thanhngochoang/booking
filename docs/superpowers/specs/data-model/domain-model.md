@@ -556,8 +556,15 @@ Chỉ một bên đưa lệnh hoàn từ `awaiting_account` sang `pending`: `cho
 ```
 Award: pending ─▶ approved | needs_info | rejected      needs_info ─(sửa)─▶ pending
        approved ─(chủ sửa)─▶ pending                    approved ─(staff thu hồi)─▶ revoked
-Photographer.providerType: individual ─(≥ 3 Award approved)─▶ artist ─(< 3)─▶ individual     (studio không đổi)
+Photographer.providerType: individual ─(≥ 3 Award approved VÀ verified)─▶ artist ─(< 3 hoặc mất verified)─▶ individual     (studio không đổi)
 ```
+
+`TierState` (miền, đọc/ghi hạng của một thợ khi tính lại): `providerType`, `approvedCount`, `verified: bool` (từ `photographers/{uid}.verified`, thiếu = false), `artistSince?`.
+Quy tắc V1 (spec 10-05 §2.3): `tierFor(current, approvedCount, verified)` = `studio` giữ nguyên; ngược lại `artist` khi `approvedCount ≥ ARTIST_THRESHOLD (3)` **và** `verified`, không thì `individual`.
+Tính lại hạng (`recomputeTier`, idempotent) chạy khi:
+1. staff duyệt giải (`reviewAward`: duyệt, từ chối, cần bổ sung, thu hồi) và khi chủ hồ sơ sửa hoặc xoá giải;
+2. xác minh danh tính làm `verified` đổi (duyệt, thu hồi, khôi phục), sau commit và lặng lẽ như `reviewAward`;
+3. lưới an toàn: trigger `onPhotographerWrite` khi `verified` của tài liệu đổi.
 
 ### Booking theo hợp đồng (đề xuất, spec 10-05 mục 4.3)
 
@@ -631,7 +638,7 @@ CollabJob.payStatus:   none ─(mốc chụp nhả cho studio)─▶ due ─(stu
 13. `Event.hashtag` duy nhất và đổi được chỉ khi chưa có đăng ký lẫn `EventPost`.
 14. Mỗi `(userId, eventId)` chỉ có một `ChatMember` còn hiệu lực dù mua nhiều vé.
 15. `Payout.amount = Σ PayoutItem.amount`; `Payout.amountNet = amount − platformFee − taxWithheld`, mỗi tổng bằng tổng của các `PayoutItem`; một `Payment` chỉ nằm trong một lô trừ khi lô trước `failed`. Lệnh chuyển gửi `amountNet`; phí cổng và phí chi do nền tảng chịu, không bao giờ trừ vào thợ.
-16. `Photographer.providerType = artist` ⇔ trước đó là `individual` và số `Award` `approved` của người đó ≥ ngưỡng (3); `studio` không bao giờ thành `artist`.
+16. `Photographer.providerType = artist` ⇔ trước đó là `individual`, số `Award` `approved` của người đó ≥ ngưỡng (3) **và** `verified = true` (V1); `studio` không bao giờ thành `artist`.
 17. Mỗi `Post` thuộc tối đa một `Album`, cùng `photographerId`; `albumPosition` liên tục từ 1 trong mỗi album; `Album.postCount` = số bài còn trong album; mỗi người ≤ 30 album, mỗi album ≤ 200 bài.
 18. (Đề xuất) `Σ Milestone.amount = Booking.terms.price`; mốc cuối nhận phần dư làm tròn; mốc `delivery` chỉ `released` khi `Booking.status = completed`.
 19. Mỗi `(jobId, photographerId)` tối đa một `Quote`; chỉ `Quote` của `JobPost.status = open` mới `submitted`/sửa được; `JobPost.awardedQuoteId` trỏ tới đúng một `Quote` `accepted`.

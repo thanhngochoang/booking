@@ -69,7 +69,13 @@ Thanh bên nhóm "Hàng đợi": Xác minh · Giải thưởng. Thẻ trên S23.
 
 ## 3. S23.07 · Duyệt giải thưởng
 
-- **Thông tin:** `/staff/awards` · admin, support · chưa có. `reviewAward` đã có (#145); đổi quyền và thêm audit (§4).
+- **Thông tin:** `/staff/awards` · admin, support · ✅ đã làm (#164). `reviewAward` đã có (#145); đổi quyền và thêm audit (§4).
+- **✅ Đã làm (#164, phần A), ghi chú:**
+  - Domain: `reviewAward(deps, caller: StaffCaller, raw)` (cổng `award.review`, ghi `audit_log` cùng giao dịch với `awardAudit`), `tierFor(…, verified)`, `TierState.verified`, `review_sla.ts` (`businessCutoff`, `awardWait`; trễ khi chờ > 72 giờ làm việc).
+  - Functions: callable `reviewAward` qua `gate()`; `recomputeTierOnVerifiedChange` trong `onPhotographerWrite`; `reviewVerification` và CLI gọi tính lại hạng khi `verified` đổi; `KIND_ACTION` của `getSensitiveFileUrl` là `award.view` và `verification.view`.
+  - Dashboard: `/staff/awards?tab=&id=` (`app/(staff)/staff/awards/`), reader `server/read/awards.ts`, `requestSensitiveFileUrl` và `requestAwardProofUrl`, `DecisionDialog` với `reasonMode: 'optional'`, thẻ `awards_pending`, mục menu Giải thưởng (admin, support); Playwright `e2e/awards.spec.ts`.
+  - App (S25.01): thợ đủ 3 giải mà chưa xác minh thấy dòng "chờ xác minh" và nút "Xác minh ngay" (`AwardTier.verified`).
+  - Ghi chú thu hồi giải: 5–500 ký tự (như mọi hành động giải); 20 ký tự tối thiểu chỉ áp cho thu hồi xác minh (phần B).
 - **Mục đích:** chỉ giải có thật mới hiện trên hồ sơ và tính vào hạng NAG; duyệt trong 3 ngày làm việc như S25.02 hứa.
 - **Bố cục:** tab **Chờ duyệt** (`pending`) · **Cần bổ sung** (`needs_info`, đang chờ thợ; chỉ xem, có tuổi) · **Đã duyệt** (để thu hồi) · **Đã từ chối**.
   - Bảng: thợ, cuộc thi, năm, kết quả (Vàng, Bạc, Đồng, Khuyến khích, Chung khảo, Triển lãm), gửi lúc, chờ bao lâu ("2 ngày làm việc"; đỏ khi quá 3).
