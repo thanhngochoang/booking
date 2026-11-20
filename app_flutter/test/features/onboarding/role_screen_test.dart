@@ -25,7 +25,7 @@ void main() {
           ],
           child: const MaterialApp(
             locale: Locale('vi'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: RoleScreen(),
           ),
@@ -66,7 +66,7 @@ void main() {
         child: MaterialApp(
           theme: b == Brightness.dark ? buildDarkTheme() : buildLightTheme(),
           locale: const Locale('vi'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, c) => MediaQuery(
             data: MediaQuery.of(context)

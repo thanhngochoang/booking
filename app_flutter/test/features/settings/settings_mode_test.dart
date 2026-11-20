@@ -128,7 +128,7 @@ Future<Widget> _app(
     child: MaterialApp.router(
       routerConfig: router,
       locale: const Locale('vi'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     ),
   );

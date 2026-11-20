@@ -65,7 +65,7 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
       child: MaterialApp(
         theme: buildDarkTheme(),
         locale: const Locale('vi'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: home,
       ),
@@ -139,7 +139,7 @@ void main() {
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('vi'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     );

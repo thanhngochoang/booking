@@ -68,7 +68,7 @@ void main() {
         deliveryRepositoryProvider.overrideWithValue(fakeRepo),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('vi'),
         home: Scaffold(body: child),

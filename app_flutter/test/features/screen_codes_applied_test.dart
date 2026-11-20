@@ -69,7 +69,7 @@ Future<void> _show(WidgetTester tester, Widget screen) async {
         visible: true,
         child: MaterialApp(
           locale: const Locale('vi'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: screen,
         ),

@@ -13,7 +13,7 @@ final _png = base64Decode(
 Widget _host(ThemeData theme, {ImageProvider? avatar}) => MaterialApp(
   theme: theme,
   locale: const Locale('vi'),
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: CtaAvatarScope(
     avatar: avatar,

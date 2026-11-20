@@ -153,11 +153,11 @@ void main() {
         child: router != null
             ? MaterialApp.router(
                 routerConfig: router,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: appLocalizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
               )
             : MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: appLocalizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(body: CustomScrollView(slivers: [sliver])),
               ),
@@ -223,7 +223,7 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               theme: buildDarkTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SizedBox(
@@ -243,7 +243,7 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               theme: buildDarkTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SizedBox(
@@ -913,7 +913,7 @@ void main() {
         tester.pumpWidget(
           MaterialApp(
             theme: buildDarkTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ReviewTile(review: review, name: 'Lan Anh'),

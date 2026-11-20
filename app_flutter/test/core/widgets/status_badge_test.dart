@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/status_badge.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -10,7 +11,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         locale: Locale('vi'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: StatusBadge(BookingStatus.accepted)),
       ),

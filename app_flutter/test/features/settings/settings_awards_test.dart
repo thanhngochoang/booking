@@ -2,16 +2,17 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
+import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
-import 'package:photobooking/data/studio/studio_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:photobooking/data/organizer/organizer_providers.dart';
 import '../../support/studio_world.dart' show FakeStudioRepository;
 import '../../support/fake_organizer_repository.dart';
 
@@ -43,7 +44,7 @@ Future<Widget> _app(UserRole role) async {
     child: MaterialApp.router(
       routerConfig: router,
       locale: const Locale('vi'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     ),
   );

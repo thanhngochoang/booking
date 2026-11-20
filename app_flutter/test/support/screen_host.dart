@@ -23,7 +23,7 @@ Widget screenApp({
           ? buildDarkTheme()
           : buildLightTheme(),
       locale: const Locale('vi'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context)
@@ -53,7 +53,7 @@ Widget screenRouterApp({
           ? buildDarkTheme()
           : buildLightTheme(),
       locale: const Locale('vi'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(

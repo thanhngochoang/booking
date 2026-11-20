@@ -105,7 +105,7 @@ void main() {
         myAlbumsProvider.overrideWith((ref) => Stream.value(testAlbums)),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: QuoteSheet(job: job, initialQuote: existingQuote),

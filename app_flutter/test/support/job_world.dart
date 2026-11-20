@@ -6,14 +6,15 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/jobs/job_providers.dart';
 import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
-import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/jobs/job_screen.dart';
 import 'package:photobooking/features/jobs/quote_checkout_screen.dart';
 import 'package:photobooking/features/jobs/quote_detail_screen.dart';
@@ -157,7 +158,7 @@ class JobWorld {
       overrides: overrides(),
       child: MaterialApp.router(
         routerConfig: router,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     );

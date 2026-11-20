@@ -134,7 +134,7 @@ Future<Widget> _app({
       routerConfig: router,
       builder: (context, child) => testPhotoScope(child: child!),
       locale: const Locale('vi'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     ),
   );

@@ -1,6 +1,3 @@
-import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'
-    hide GlobalCupertinoLocalizations, GlobalMaterialLocalizations;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -47,12 +44,7 @@ class MyApp extends StatelessWidget {
       ),
       locale: const Locale('vi'),
       supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      localizationsDelegates: appLocalizationsDelegates,
       debugShowCheckedModeBanner: false,
     );
   }

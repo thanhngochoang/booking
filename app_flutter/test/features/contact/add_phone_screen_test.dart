@@ -53,7 +53,7 @@ Future<_Harness> _harness({
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('vi'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -207,7 +207,7 @@ void main() {
         child: MaterialApp.router(
           routerConfig: router,
           locale: const Locale('vi'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       );

@@ -47,7 +47,7 @@ void main() {
           routerConfig: router,
           theme: buildDarkTheme(),
           locale: const Locale('vi'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       ),

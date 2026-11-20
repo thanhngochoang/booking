@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:photobooking/core/l10n_delegates.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/award/award_providers.dart';
@@ -15,6 +16,7 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/collab/collab_providers.dart';
 import 'package:photobooking/data/collab/collab_repository.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/organizer/organizer_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
@@ -34,7 +36,6 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
-import 'package:photobooking/data/organizer/organizer_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
@@ -152,7 +153,7 @@ Future<void> _open(
         routerConfig: router,
         builder: (context, child) => testPhotoScope(child: child!),
         locale: const Locale('vi'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),

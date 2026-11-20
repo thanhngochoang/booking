@@ -14,7 +14,7 @@ Widget hostWidget(
   return MaterialApp(
     theme: brightness == Brightness.dark ? buildDarkTheme() : buildLightTheme(),
     locale: const Locale('vi'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, c) => MediaQuery(
       data: MediaQuery.of(context)

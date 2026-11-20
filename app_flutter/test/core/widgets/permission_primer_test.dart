@@ -5,7 +5,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('vi'),
     home: Scaffold(
@@ -76,7 +76,7 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('vi'),
             home: MediaQuery(

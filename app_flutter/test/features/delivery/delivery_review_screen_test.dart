@@ -91,12 +91,12 @@ void main() {
       child: router != null
           ? MaterialApp.router(
               routerConfig: router,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               locale: const Locale('vi'),
             )
           : MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               locale: const Locale('vi'),
               home: child,

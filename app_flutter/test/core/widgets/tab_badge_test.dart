@@ -5,7 +5,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 Widget _host(int count, {String? semanticsValue}) => MaterialApp(
   locale: const Locale('vi'),
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(
     body: TabBadge(

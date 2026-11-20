@@ -5,7 +5,7 @@ import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   locale: const Locale('vi'),
   home: Scaffold(body: SizedBox(width: 390, child: child)),

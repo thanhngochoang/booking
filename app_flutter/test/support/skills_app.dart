@@ -72,7 +72,7 @@ Widget skillsApp(
           ? buildDarkTheme()
           : buildLightTheme(),
       locale: const Locale('vi'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => testPhotoScope(
         child: MediaQuery(
