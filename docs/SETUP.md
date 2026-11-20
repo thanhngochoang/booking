@@ -33,7 +33,7 @@ cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analy
 scripts/setup.sh
 ```
 
-Script tải Android SDK vào `.android-sdk/`, Flutter stable vào `.flutter/`, font vào `app_flutter/assets/fonts/`, tạo truststore cho mạng công ty (`.certs/`), chấp nhận license Android và chạy `flutter doctor`. Chạy lại an toàn: phần đã có thì bỏ qua.
+Script tải Android SDK vào `.android-sdk/`, Flutter 3.50.1 (bản ghim) vào `.flutter/`, font vào `app_flutter/assets/fonts/`, tạo truststore cho mạng công ty (`.certs/`), chấp nhận license Android và chạy `flutter doctor`. Chạy lại an toàn: phần đã có thì bỏ qua.
 
 Không gọi `flutter`/`dart` của hệ thống. Dùng `scripts/bin/flutter` và `scripts/bin/dart` (đặt `HOME=.home/`, SDK, JDK và truststore của repo), hoặc `source scripts/env.sh` trong mỗi shell mới để `PATH` trỏ tới chúng.
 
