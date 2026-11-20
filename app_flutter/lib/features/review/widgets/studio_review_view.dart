@@ -1,6 +1,6 @@
 // S05.05 for a studio booking (mock `#S05.05-studio`): the form with the
 // member and studio blocks, and both sent blocks read-only.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';

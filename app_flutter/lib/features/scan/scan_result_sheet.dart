@@ -4,7 +4,7 @@
 // "Chưa quét được, kiểm tra kết nối" keeps the code for "Thử lại".
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/passes/pass_repository.dart';

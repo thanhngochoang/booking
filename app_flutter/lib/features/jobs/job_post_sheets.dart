@@ -4,7 +4,7 @@
 // - Fixed schedule (date, start time, end time) & Flexible schedule (range, duration)
 // - Wants picker (min edited photos, delivery days)
 // - Deadline days picker (1 to 7 days)
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/jobs/job.dart';
 

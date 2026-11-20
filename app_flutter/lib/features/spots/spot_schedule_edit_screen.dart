@@ -2,7 +2,7 @@
 // S29.04 "Thêm / sửa lịch tại điểm": spot, member (studio), days ("Lặp lại"
 // or "Chọn ngày"), window, packages and a preview where the days the holder
 // cannot take are red with the reason.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

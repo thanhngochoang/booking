@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/addons/service_addon.dart';

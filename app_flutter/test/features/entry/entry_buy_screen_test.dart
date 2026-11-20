@@ -1,7 +1,7 @@
 // S30.05 `/spots/:spotId/tickets`: day chips, counters, the total, the
 // refund cutoff, registerEntry and S04.04, the sold-out refusal, and the
 // toast that leads to S11.04-entry.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_registration.dart';

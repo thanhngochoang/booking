@@ -2,7 +2,7 @@
 //
 // S11.02-venue-consent (mock #S11.02-venue-consent): the spot manager answers
 // an event that asks to take place at their spot (Decision 16).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';

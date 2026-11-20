@@ -1,7 +1,7 @@
 // lib/core/widgets/portfolio_view_toggle.dart
 import 'dart:ui' show SemanticsRole;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/app_icons.dart';

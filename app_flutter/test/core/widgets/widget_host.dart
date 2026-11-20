@@ -1,5 +1,5 @@
 // test/core/widgets/widget_host.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 

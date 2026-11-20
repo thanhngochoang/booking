@@ -4,7 +4,7 @@
 // Step 1: Specialty chips, title counter, description, reference photos grid, privacy note, Tiếp tục.
 // Step 2: Fixed vs flexible tabs, schedule picker, area picker, budget fields + chip,
 // wants picker, allowed providers chips, deadline days picker, submit.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';

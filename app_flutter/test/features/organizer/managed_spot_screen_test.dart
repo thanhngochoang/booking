@@ -2,7 +2,7 @@
 //
 // S30.03 "Quản lý điểm" and S30.03-residents (mock #S30.03,
 // #S30.03-residents).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/organizer/organizer.dart';

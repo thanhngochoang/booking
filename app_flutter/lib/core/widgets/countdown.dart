@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Seconds left at which a countdown is a live region (5 min, 1 min, 10 s and

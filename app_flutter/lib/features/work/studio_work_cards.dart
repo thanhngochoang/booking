@@ -1,6 +1,6 @@
 // S06.01's studio cards: a studio's accepted bookings (S06.01-studio) and
 // the shoots a studio gave the signed-in photographer (S06.01-member).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

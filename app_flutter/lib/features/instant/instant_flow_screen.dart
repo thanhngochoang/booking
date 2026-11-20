@@ -7,7 +7,7 @@
 // back paid, or this screen saw pending_payment turn paid (bank-app return).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

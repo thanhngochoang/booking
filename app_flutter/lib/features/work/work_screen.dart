@@ -1,7 +1,7 @@
 // S06.01: the photographer's work tab: today's shoot, new requests with a
 // live deadline, and the month's numbers; the last segment "Tuyển thợ" is
 // S27.01 (Decision 20 of #151).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';

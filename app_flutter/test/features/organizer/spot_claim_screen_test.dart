@@ -1,7 +1,7 @@
 // test/features/organizer/spot_claim_screen_test.dart
 //
 // S30.02 "Nhận quản lý điểm" (mock #S30.02).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';

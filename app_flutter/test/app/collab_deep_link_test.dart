@@ -1,7 +1,7 @@
 // A cold-start deep link keeps its query through /splash (#151 Task 9).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/app/router.dart';

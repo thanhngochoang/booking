@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/widgets/chat_bubble.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/chat/chat.dart';

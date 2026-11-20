@@ -1,5 +1,5 @@
 // test/features/events/timeline_tab_test.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_timeline.dart';

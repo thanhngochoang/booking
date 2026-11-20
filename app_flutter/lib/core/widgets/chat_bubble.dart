@@ -1,7 +1,7 @@
 // lib/core/widgets/chat_bubble.dart
 import 'dart:io' show File;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';

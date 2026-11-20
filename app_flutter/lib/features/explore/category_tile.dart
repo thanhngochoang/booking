@@ -1,5 +1,5 @@
 // lib/features/explore/category_tile.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 
 /// An Explore category tile (21:9) showing an optional cover image,

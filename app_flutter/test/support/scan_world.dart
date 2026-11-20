@@ -3,7 +3,7 @@
 // Hosts S30.07 (`/scan`) on fakes: a camera-less scanner, a scripted
 // `scanPass`, the organizer/gate rows, spots and bookings. Haptics are
 // recorded from the platform channel.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:flutter_riverpod/misc.dart' show Override;

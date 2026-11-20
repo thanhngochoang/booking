@@ -1,6 +1,6 @@
 // Parts every S05.05 form shares: the shared-photo section and the bottom
 // bar (individual booking and the studio booking's two blocks).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/review/review_controller.dart';
 import 'package:photobooking/features/review/widgets/share_photo_grid.dart';

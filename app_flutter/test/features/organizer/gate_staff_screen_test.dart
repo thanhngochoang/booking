@@ -1,7 +1,7 @@
 // test/features/organizer/gate_staff_screen_test.dart
 //
 // S30.06 "Nhân viên soát vé" (mock #S30.06) and the invitee's sheet.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/organizer/organizer.dart';

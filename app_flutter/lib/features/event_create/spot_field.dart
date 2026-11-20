@@ -1,5 +1,5 @@
 // lib/features/event_create/spot_field.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/spots/spot.dart';

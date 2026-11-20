@@ -2,7 +2,7 @@
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart' show SemanticsData;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';

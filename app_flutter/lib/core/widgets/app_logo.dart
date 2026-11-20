@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The aperture app icon as an in-app mark, with the launcher's squircle
 /// corners so it reads as the same logo the user tapped on the home screen.

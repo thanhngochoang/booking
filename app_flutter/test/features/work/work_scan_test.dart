@@ -1,7 +1,7 @@
 // S06.01-scan: "Quét mã khách" from two hours before the start, the
 // photographer's ticket line, "Đang chụp" after the scan and "Đã chụp xong"
 // only once it may be used (Decision 14).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';

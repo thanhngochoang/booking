@@ -1,6 +1,6 @@
 // S05.02: the add-ons a booking was made with and its pick-up point, under
 // the booking card. Both parties see the same snapshot lines.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';

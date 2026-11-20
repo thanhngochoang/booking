@@ -2,7 +2,7 @@
 //
 // Test harness for jobs & quotes: fake repository, signed in user,
 // router stubs, and clock.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';

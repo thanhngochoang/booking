@@ -1,6 +1,6 @@
 // The whole life of a booking across both apps: one repository shared by
 // the customer's and the photographer's worlds, pumped in turn.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/addons/service_addon.dart';

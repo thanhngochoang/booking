@@ -3,7 +3,7 @@
 // went out), the time left on the latest invite, and the waiting loader while
 // someone is still looking. Who accepts first moves the request to S13.04;
 // nobody → the server ends the round (S13.02). "Huỷ yêu cầu" opens S13.08.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';

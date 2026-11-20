@@ -4,7 +4,7 @@
 // Recommends photographers in the job's area/specialty, filters acceptingOrders
 // and allowedProviders, supports multi-selection up to remaining quota (max 5),
 // and sends invites.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';

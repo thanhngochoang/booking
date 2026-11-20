@@ -1,6 +1,6 @@
 // lib/data/jobs/job_card_data_of.dart
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/geo.dart';

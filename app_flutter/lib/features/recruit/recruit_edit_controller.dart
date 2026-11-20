@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/recruit/recruit_repository.dart';

@@ -3,7 +3,7 @@
 // window, packages, per-day bookings and slot offers. Per-day counts come
 // from the provider's bookings the work tab already listens to (Decision 21),
 // never from `spot_days`.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

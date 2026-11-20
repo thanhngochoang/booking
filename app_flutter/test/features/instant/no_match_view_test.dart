@@ -1,7 +1,7 @@
 // S13.07 (`#S13.07`): nobody accepted. The request is not over (spec
 // §2.1.9): any money stays held, nothing is refunded by itself; choose again,
 // book normally, or cancel through S13.08.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';

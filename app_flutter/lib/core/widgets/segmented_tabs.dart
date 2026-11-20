@@ -1,6 +1,6 @@
 import 'dart:ui' show SemanticsRole;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:photobooking/core/theme/app_theme.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';

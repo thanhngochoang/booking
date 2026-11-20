@@ -2,7 +2,7 @@
 //
 // Role switch for job detail screens (owner -> S15.02, others -> S16.01).
 // Replaced with full implementations in Tasks 7 and 9.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';

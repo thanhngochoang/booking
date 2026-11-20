@@ -1,5 +1,5 @@
 // S05.02: the add-on block under the booking card.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/features/booking/widgets/booking_addons_block.dart';

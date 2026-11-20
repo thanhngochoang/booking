@@ -1,6 +1,6 @@
 // S05.02-late: customer warning block and action when the provider is overdue
 // on submitting the first delivery round (#207).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
