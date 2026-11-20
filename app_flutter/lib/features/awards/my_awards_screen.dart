@@ -10,6 +10,7 @@ import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/features/awards/edit_award_sheet.dart';
 import 'package:photobooking/features/awards/my_awards_controller.dart';
+import 'package:photobooking/features/verification/verify_start_screen.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// S25.01 "Giải thưởng của tôi" at `/me/awards`: list the awards claimed,
@@ -312,10 +313,13 @@ class _TierCard extends StatelessWidget {
     final since = tier.artistSince;
     final n = tier.approvedCount;
     final left = (kAwardTierThreshold - n).clamp(0, kAwardTierThreshold);
+    final eligible = !artist && n >= kAwardTierThreshold && !tier.verified;
     final sub = artist
         ? (since == null
               ? l.s2501IsArtistNoDate
               : l.s2501IsArtist(awardDate(since)))
+        : eligible
+        ? l.s2501EligibleVerify
         : l.s2501Remaining(left);
     return GlassCard(
       key: const Key('awards-tier-card'),
@@ -367,6 +371,14 @@ class _TierCard extends StatelessWidget {
                 total: kAwardTierThreshold,
                 label: l.s2501Progress(n, kAwardTierThreshold),
               ),
+              if (eligible) ...[
+                const SizedBox(height: AppSpace.s3),
+                AppButton.outline(
+                  l.s2501VerifyNow,
+                  key: const Key('awards-verify-now'),
+                  onPressed: () => context.push(verifyStartPath),
+                ),
+              ],
             ],
           ],
         ),

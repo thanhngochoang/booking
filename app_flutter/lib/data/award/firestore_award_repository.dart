@@ -116,6 +116,7 @@ class FirestoreAwardRepository implements AwardRepository {
         providerType: ProviderType.fromCode(d['providerType']),
         approvedCount: count is num ? count.toInt() : 0,
         artistSince: since is Timestamp ? since.toDate().toUtc() : null,
+        verified: d['verified'] == true,
       );
     });
   }

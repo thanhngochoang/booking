@@ -171,6 +171,7 @@ class AwardTier {
     this.providerType = ProviderType.individual,
     this.approvedCount = 0,
     this.artistSince,
+    this.verified = false,
   });
 
   final ProviderType providerType;
@@ -179,13 +180,18 @@ class AwardTier {
   /// When the artist tier began; null unless [providerType] is artist.
   final DateTime? artistSince;
 
+  /// `photographers/{uid}.verified`: the server gives the artist tier only to
+  /// a verified photographer with enough approved awards.
+  final bool verified;
+
   @override
   bool operator ==(Object other) =>
       other is AwardTier &&
       other.providerType == providerType &&
       other.approvedCount == approvedCount &&
-      other.artistSince == artistSince;
+      other.artistSince == artistSince &&
+      other.verified == verified;
 
   @override
-  int get hashCode => Object.hash(providerType, approvedCount, artistSince);
+  int get hashCode => Object.hash(providerType, approvedCount, artistSince, verified);
 }

@@ -3590,6 +3590,13 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get s2501EligibleVerify =>
+      'Đủ 3 giải · xác minh danh tính để lên Nhiếp ảnh gia';
+
+  @override
+  String get s2501VerifyNow => 'Xác minh ngay';
+
+  @override
   String s2501IsArtist(String date) {
     return 'Bạn là Nhiếp ảnh gia · từ $date';
   }

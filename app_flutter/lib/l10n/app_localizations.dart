@@ -6304,6 +6304,18 @@ abstract class AppLocalizations {
   /// **'Còn {n} giải đã duyệt nữa để nhận tích vàng'**
   String s2501Remaining(int n);
 
+  /// No description provided for @s2501EligibleVerify.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đủ 3 giải · xác minh danh tính để lên Nhiếp ảnh gia'**
+  String get s2501EligibleVerify;
+
+  /// No description provided for @s2501VerifyNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh ngay'**
+  String get s2501VerifyNow;
+
   /// No description provided for @s2501IsArtist.
   ///
   /// In vi, this message translates to:

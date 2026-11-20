@@ -76,6 +76,7 @@ class AwardsWorld extends CreatePostWorld {
       routes: [
         GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
         GoRoute(path: '/profile', builder: stub),
+        GoRoute(path: '/verify/start', builder: stub),
       ],
     );
     return screenRouterApp(

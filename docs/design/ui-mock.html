@@ -4567,7 +4567,26 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       </div>
       <div class="foot"><div class="btn pri">Thêm giải thưởng</div></div>
     </div></div>
-    <div class="cap"><span class="n new">Mới</span><span class="n">S25.01 · Giải thưởng của tôi</span><b>Thấy rõ còn bao nhiêu nữa thì lên NAG</b><span><code>/me/awards</code>, mở từ Cài đặt (S09.02) và từ dòng nhắc ở S09.01 khi hồ sơ là Cá nhân. Thẻ trạng thái: tiến độ n / ngưỡng (đề xuất 3 giải đã duyệt, câu hỏi mở); đã là NAG thì thẻ thành "Bạn là Nhiếp ảnh gia · từ 05/10/2026". Mỗi giải có trạng thái: Chờ duyệt, Đã duyệt, Cần bổ sung (kèm lý do, chạm để sửa), Bị từ chối (kèm lý do). Chỉ giải đã duyệt hiện trên hồ sơ công khai. Studio không thấy thẻ hạng nhưng vẫn khai giải được.</span></div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S25.01 · Giải thưởng của tôi</span><b>Thấy rõ còn bao nhiêu nữa thì lên NAG</b><span><code>/me/awards</code>, mở từ Cài đặt (S09.02) và từ dòng nhắc ở S09.01 khi hồ sơ là Cá nhân. Thẻ trạng thái: tiến độ n / ngưỡng (đề xuất 3 giải đã duyệt, câu hỏi mở); đã là NAG thì thẻ thành "Bạn là Nhiếp ảnh gia · từ 05/10/2026". Mỗi giải có trạng thái: Chờ duyệt, Đã duyệt, Cần bổ sung (kèm lý do, chạm để sửa), Bị từ chối (kèm lý do). Chỉ giải đã duyệt hiện trên hồ sơ công khai. Studio không thấy thẻ hạng nhưng vẫn khai giải được. Đủ 3 giải đã duyệt mà chưa xác minh danh tính (S21.02): thẻ đổi dòng thành "Đủ 3 giải · xác minh danh tính để lên Nhiếp ảnh gia" và có nút phụ "Xác minh ngay" dưới thanh tiến độ (trạng thái bên cạnh), vì hạng NAG cần cả 3 giải lẫn xác minh.</span></div></div>
+
+<div class="step" id="S25.01-verify"><div class="phone" data-code="S25.01"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="t" style="font-size:17px">Giải thưởng</div><div class="ic"><span class="ms">info</span></div></div>
+        <div class="card hi" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px 14px">
+          <div class="row"><div class="aw-ic"><span class="ms">workspace_premium</span></div><div class="grow"><b style="font-size:13.5px">Hạng Nhiếp ảnh gia (NAG)</b><div class="meta">Đủ 3 giải · xác minh danh tính để lên Nhiếp ảnh gia</div></div><b class="tn" style="font-family:var(--display);font-size:20px">3<span class="meta x"> / 3</span></b></div>
+          <div class="cbar"><i style="width:100%"></i></div>
+          <div class="btn out" style="height:36px">Xác minh ngay</div>
+        </div>
+        <div class="sec"><b>Đã khai</b><span class="meta x" style="color:var(--ink-3)">4 giải</span></div>
+        <div class="awl"><div class="aw-ic"><span class="ms">workspace_premium</span></div><div class="t"><b>Huy chương Vàng · VIPA 2024</b><span class="badge b-ok">Đã duyệt</span> Phong cảnh</div></div>
+        <div class="awl"><div class="aw-ic"><span class="ms">workspace_premium</span></div><div class="t"><b>Top 10 · Sony World Photo 2023</b><span class="badge b-ok">Đã duyệt</span> Open · Landscape</div></div>
+        <div class="awl"><div class="aw-ic mute"><span class="ms">workspace_premium</span></div><div class="t"><b>Khuyến khích · Ảnh Đẹp VN 2022</b><span class="badge b-pen">Chờ duyệt</span> gửi 03/10</div></div>
+        <div class="awl" style="border-color:color-mix(in srgb,var(--warn) 55%,transparent)"><div class="aw-ic mute"><span class="ms">workspace_premium</span></div><div class="t"><b>Triển lãm · Hanoi Photo Fest 2021</b><span class="badge b-warn">Bổ sung</span> thiếu ảnh chứng nhận</div></div>
+      </div>
+      <div class="foot"><div class="btn pri">Thêm giải thưởng</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S25.01 · Đủ 3 giải, chưa xác minh</span><b>Đủ giải thì chỉ còn một bước: xác minh</b><span>Khi ≥ 3 giải đã duyệt và <code>verified</code> là false, thẻ hạng nói rõ lý do chưa lên NAG và có nút phụ "Xác minh ngay" mở S21.02 (<code>/verify/start</code>). Không phải nút chính: nút chính của màn vẫn là "Thêm giải thưởng". Xác minh xong, server tự cấp hạng NAG.</span></div></div>
 
     <div class="step" id="S25.02"><div class="phone" data-code="S25.02"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>

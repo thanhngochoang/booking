@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/features/verification/verify_start_screen.dart';
 
 import '../../support/awards_world.dart';
 
@@ -105,6 +106,73 @@ void main() {
     );
     expect(find.text('Bạn là Nhiếp ảnh gia · từ 05/10/2026'), findsOneWidget);
     expect(_key('awards-tier-count'), findsNothing);
+  });
+
+  testWidgets(
+    '3 approved, not verified: eligible line and Xác minh ngay opens verifyStartPath',
+    (tester) async {
+      final w = await _open(
+        tester,
+        seed: (w) {
+          for (final id in ['a1', 'a2', 'a3']) {
+            w.awardRepo.add(w.award(id));
+          }
+          w.awardRepo.setTier(const AwardTier(approvedCount: 3));
+        },
+      );
+      expect(
+        find.text('Đủ 3 giải · xác minh danh tính để lên Nhiếp ảnh gia'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Còn '), findsNothing);
+      await tester.tap(find.text('Xác minh ngay'));
+      await tester.pumpAndSettle();
+      expect(w.router.state.uri.path, verifyStartPath);
+      expect(find.text('stub /verify/start'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '3 approved and verified but tier not yet artist: no button, remaining 0 line',
+    (tester) async {
+      await _open(
+        tester,
+        seed: (w) {
+          for (final id in ['a1', 'a2', 'a3']) {
+            w.awardRepo.add(w.award(id));
+          }
+          w.awardRepo.setTier(
+            const AwardTier(approvedCount: 3, verified: true),
+          );
+        },
+      );
+      expect(find.text('Xác minh ngay'), findsNothing);
+      expect(
+        find.text('Còn 0 giải đã duyệt nữa để nhận tích vàng'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('fewer than 3 approved, not verified: no verify button', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      seed: (w) => w.awardRepo.setTier(const AwardTier(approvedCount: 2)),
+    );
+    expect(find.text('Xác minh ngay'), findsNothing);
+  });
+
+  testWidgets('studio still shows no tier card', (tester) async {
+    await _open(
+      tester,
+      seed: (w) => w.awardRepo.setTier(
+        const AwardTier(providerType: ProviderType.studio, approvedCount: 3),
+      ),
+    );
+    expect(_key('awards-tier-card'), findsNothing);
+    expect(find.text('Xác minh ngay'), findsNothing);
   });
 
   testWidgets('a studio has no tier card', (tester) async {

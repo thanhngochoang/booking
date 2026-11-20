@@ -2454,7 +2454,9 @@
       }
     }
   },
-  "s2501IsArtist": "Bạn là Nhiếp ảnh gia · từ {date}",
+  "s2501EligibleVerify": "Đủ 3 giải · xác minh danh tính để lên Nhiếp ảnh gia",
+"s2501VerifyNow": "Xác minh ngay",
+"s2501IsArtist": "Bạn là Nhiếp ảnh gia · từ {date}",
   "@s2501IsArtist": {
     "placeholders": {
       "date": {
