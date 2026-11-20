@@ -1,6 +1,6 @@
 # Phase 2 · Toàn bộ app chạy trên API Node.js + PostgreSQL (spec #170)
 
-- **Issue:** #170 (cha: #90). **Ngày:** 2026-11-20. **Trạng thái:** chờ chủ sở hữu duyệt.
+- **Issue:** #170 (cha: be#40). **Ngày:** 2026-11-20. **Trạng thái:** chờ chủ sở hữu duyệt.
 - **Thay cho:** thứ tự "ra mắt trên Firebase rồi mới chuyển" của `data-model/README.md` §6 (bậc 2, 3 và 5), và
   plan cũ `plans/2026-10-01-backend-phase2-selfhosted-postgres.md` (lát đầu tiên, đã làm xong).
 - **Đọc cùng:** `data-model/README.md` (quy ước, cổng, ma trận phân quyền §4, use case §5),
@@ -15,7 +15,7 @@ Chủ sở hữu quyết định ngày 2026-11-15:
 - "Cloud Functions chỉ chạy test khả thi, mọi logic chuyển hết về booking be, các dịch vụ của google chỉ dùng
   để gửi tin nhắn hoặc để authen";
 - "tất cả tính năng Phase 1 đều phải chạy được" khi ra mắt;
-- dashboard staff (#163–#169) xây trên API, không xây trên callable Firebase.
+- dashboard staff (#163–be#46) xây trên API, không xây trên callable Firebase.
 
 Hôm nay app chỉ gọi API ở 4 repository (hồ sơ, liên hệ khách, liên hệ thợ, link liên hệ). Mọi tính năng
 khác đọc, ghi và nghe realtime qua Firestore, Cloud Functions và Firebase Storage. Spec này nói cách chuyển
@@ -47,8 +47,8 @@ tất cả sang API, và chốt các hợp đồng dùng chung (mục 6). Nhờ 
 - Không làm offline-first. App không còn bộ đệm ngoại tuyến của Firestore; mất mạng thì hiện lỗi và thử lại
   như mọi lời gọi HTTP.
 - Không viết lại sang Rust hay Go (#99, Phase 3). Không dùng GraphQL. Không dùng Row-Level Security.
-- Không làm tính năng mới trong các plan chuyển cụm. Các tính năng Phase 2 (#191, #195, #196, #213, #327,
-  #329) là plan riêng, chạy sau cụm của chúng.
+- Không làm tính năng mới trong các plan chuyển cụm. Các tính năng Phase 2 (be#61, be#62, be#63, be#64, be#66,
+  be#67) là plan riêng, chạy sau cụm của chúng.
 
 **Phản mục tiêu (dù chạy được vẫn coi là hỏng)**
 
@@ -147,7 +147,7 @@ Firebase Auth: chỉ đăng nhập và ID token.   FCM: chỉ push.
 ```
 src/
   app.ts, server.ts, worker.ts          # worker.ts mới: đăng ký job và lịch
-  platform/                             # #172–#174: dùng chung, không chứa luật nghiệp vụ
+  platform/                             # be#48–be#50: dùng chung, không chứa luật nghiệp vụ
     db/ (database.ts gộp kiểu bảng, tx.ts, migrate.ts)
     http/ (errors.ts, auth.ts, staff-gate.ts, pagination.ts, idempotency.ts)
     realtime/ (emit.ts, sse.ts, audience.ts)
@@ -187,14 +187,14 @@ migrations/<timestamp>_<cụm>_<việc>.sql
   ngẫu nhiên 10–100 ms. Hết số lần thì trả `conflict`. Vì vậy:
   - lời gọi ra ngoài trong một use case (`PaymentGateway`, `PayoutGateway`, eKYC, OTP) phải mang khoá
     idempotency;
-  - #172 có một task rà các lời gọi ra ngoài nằm trong `runTransaction` của domain và ghi lại danh sách.
+  - be#48 có một task rà các lời gọi ra ngoài nằm trong `runTransaction` của domain và ghi lại danh sách.
 - **Lệnh ghi:** `put…`/`delete…` gửi câu lệnh ngay trên kết nối của transaction. `pg` chạy câu lệnh theo đúng
   thứ tự gửi, nên lệnh đọc sau đó thấy được dữ liệu vừa ghi. Adapter giữ các promise chưa chờ và chờ hết trước
   `COMMIT`; một lệnh ghi lỗi làm hỏng cả transaction. Ghi theo dạng `INSERT … ON CONFLICT DO UPDATE`/`DELETE`.
   Phép cộng nguyên tử viết `UPDATE … SET n = n + $1`, không đọc rồi ghi.
 - **Khoá ngoại** khai báo `DEFERRABLE INITIALLY DEFERRED`, nên thứ tự ghi không phải theo relational-schema §5.
 - **Kết nối:** API và worker nối thẳng PostgreSQL (pool của `pg`). Không đặt PgBouncer ở chế độ transaction
-  phía trước, vì nó làm hỏng `LISTEN`, pg-boss và transaction dài. Đây là ràng buộc cho #171.
+  phía trước, vì nó làm hỏng `LISTEN`, pg-boss và transaction dài. Đây là ràng buộc cho be#47.
 - **Hình dạng dữ liệu:**
   - Domain giữ hình dạng "tài liệu" của nó. Adapter tách và ghép theo các bảng của relational-schema §2,
     theo đúng ánh xạ §3.
@@ -272,8 +272,8 @@ migrations/<timestamp>_<cụm>_<việc>.sql
   - Bảng `staff_members`, `audit_log`, `staff_approvals` theo relational-schema.
   - **`staff_members` là nguồn sự thật của vai trò staff.** Đây là thay đổi so với #162, nơi vai trò đọc từ
     custom claim `staffRole` (`callables/staff.ts`). Cột `users.staff_role` (migration accounts) bị bỏ bằng một
-    migration của #172, và API không đặt custom claim nữa.
-  - **Cổng staff (#172):** staff có trong `staff_members` và đang hoạt động; token có
+    migration của be#48, và API không đặt custom claim nữa.
+  - **Cổng staff (be#48):** staff có trong `staff_members` và đang hoạt động; token có
     `firebase.sign_in_second_factor == 'totp'`; và `auth_time` của token lớn hơn
     `staff_members.sessions_valid_after`. Cột này thay cho `sessions.isActive`. Thu hồi phiên nghĩa là đặt cột
     đó bằng `now()`.
@@ -331,7 +331,7 @@ migrations/<timestamp>_<cụm>_<việc>.sql
 
 ### 6.8 Ảnh và tệp
 
-- **Lưu trữ:** kho S3-compatible. Local dùng MinIO trong Docker Compose. Nhà cung cấp thật do #171 chọn.
+- **Lưu trữ:** kho S3-compatible. Local dùng MinIO trong Docker Compose. Nhà cung cấp thật do be#47 chọn.
 - **Tải lên bằng presigned POST:**
   1. `POST /v1/files { purpose, contentType: "image/jpeg", size }` → `{ fileId, upload: { url, fields } }`.
      - Chính sách đã ký ép `Content-Type` và `content-length-range` theo bảng `ImagePurpose` của
@@ -397,28 +397,28 @@ migrations/<timestamp>_<cụm>_<việc>.sql
   `worker`, `adminer`. App chạy với `BACKEND=selfhosted BASE_URL=…` cùng Auth emulator.
 - **Seed:** mở rộng `src/tools/contract-world.ts` theo cụm, cùng tài khoản và cùng tên với seed Firebase
   (`firebase/functions/seed/README.md`), để kịch bản thử tay không đổi. Chỉ dùng giá trị thử.
-- **Cấu hình:** app đọc từ `GET /v1/config` (#323): ngân hàng, khu vực, giới hạn tải lên, danh mục, chính sách
+- **Cấu hình:** app đọc từ `GET /v1/config` (be#65): ngân hàng, khu vực, giới hạn tải lên, danh mục, chính sách
   tiền. Không còn hằng số trùng giữa app và backend.
 
 ### 6.13 Tên và chữ ký dùng chung
 
-Plan nền tảng (#172, #173, #174) **cài** các tên dưới đây; plan cụm **gọi** đúng các tên này, không tự đặt
+Plan nền tảng (be#48, be#49, be#50) **cài** các tên dưới đây; plan cụm **gọi** đúng các tên này, không tự đặt
 tên khác. Plan nền tảng được thêm tham số tuỳ chọn, nhưng không đổi tên hay nghĩa.
 
 | Nơi | Chữ ký | Plan cài |
 |---|---|---|
-| `src/platform/db/tx.ts` | `unitOfWork<T>(fn: () => Promise<T>): Promise<T>`; `joinTransaction<T>(fn: (trx: Transaction<Database>) => Promise<T>): Promise<T>` (adapter dùng trong `runTransaction`); `trackWrite(p: Promise<unknown>): void` | #172 |
-| `src/platform/db/database.ts` | `interface Database extends AccountsTables, ChatTables, …` (mỗi cụm `export interface <Cụm>Tables` trong `modules/<cụm>/tables.ts`) | #172 |
-| `src/platform/http/` | `ApiError(code, message, details?)` (giữ nguyên); `request.user: { uid: string }`; route option `config: { idempotent: true }`; `pageQuery(q): { after?: string; limit: number }` và `page<T>(items: T[], next: string \| null)`; `staffGate(action: StaffAction)` (preHandler) và `request.staff: { uid; role }` | #172 |
+| `src/platform/db/tx.ts` | `unitOfWork<T>(fn: () => Promise<T>): Promise<T>`; `joinTransaction<T>(fn: (trx: Transaction<Database>) => Promise<T>): Promise<T>` (adapter dùng trong `runTransaction`); `trackWrite(p: Promise<unknown>): void` | be#48 |
+| `src/platform/db/database.ts` | `interface Database extends AccountsTables, ChatTables, …` (mỗi cụm `export interface <Cụm>Tables` trong `modules/<cụm>/tables.ts`) | be#48 |
+| `src/platform/http/` | `ApiError(code, message, details?)` (giữ nguyên); `request.user: { uid: string }`; route option `config: { idempotent: true }`; `pageQuery(q): { after?: string; limit: number }` và `page<T>(items: T[], next: string \| null)`; `staffGate(action: StaffAction)` (preHandler) và `request.staff: { uid; role }` | be#48 |
 | `src/modules/<cụm>/routes.ts` | `export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void` | mỗi cụm |
-| `src/platform/realtime/emit.ts` | `emit(topic: string, audience: Audience): void`; `type Audience = { uids: string[] } \| { resolver: string; key: string } \| { public: true }`; `registerAudienceResolver(name: string, fn: (key: string, trx) => Promise<string[]>): void` | #173 |
-| `src/platform/jobs/` | `enqueue<T>(name: string, data: T, opts?: { startAfter?: Date; singletonKey?: string }): void`; `export function registerJobs(r: JobRegistry): void` trong `modules/<cụm>/jobs.ts`, với `r.job(name, handler)` và `r.schedule(name, cron)` | #173 |
-| `src/platform/push/` | job `platform.push`; adapter PostgreSQL của `NotificationStore` (domain) | #173 |
-| `src/platform/media/` | `createUpload(purpose, ownerId)`, `completeUpload(fileId)`, `MediaUrlResolver.url(fileId, viewerUid): Promise<string>`; job `media.process` | #174 |
-| `packages/domain/test/contracts/<store>.contract.ts` | `export function describe<Store>Contract(make: () => Promise<<Store>>): void` | #172 (khung) và mỗi cụm |
-| App `lib/data/http/api_client.dart` | `get/post/put/patch/delete(path, {Map<String,String>? query, String? idempotencyKey})` | #172 |
-| App `lib/data/http/realtime_channel.dart` | `RealtimeChannel.on(String topic) → Stream<ChangeEvent>`; `realtimeChannelProvider` | #173 |
-| App `lib/data/http/watch_query.dart` | `Stream<T> watchQuery<T>({required List<String> topics, required Future<T> Function() fetch})` | #173 |
+| `src/platform/realtime/emit.ts` | `emit(topic: string, audience: Audience): void`; `type Audience = { uids: string[] } \| { resolver: string; key: string } \| { public: true }`; `registerAudienceResolver(name: string, fn: (key: string, trx) => Promise<string[]>): void` | be#49 |
+| `src/platform/jobs/` | `enqueue<T>(name: string, data: T, opts?: { startAfter?: Date; singletonKey?: string }): void`; `export function registerJobs(r: JobRegistry): void` trong `modules/<cụm>/jobs.ts`, với `r.job(name, handler)` và `r.schedule(name, cron)` | be#49 |
+| `src/platform/push/` | job `platform.push`; adapter PostgreSQL của `NotificationStore` (domain) | be#49 |
+| `src/platform/media/` | `createUpload(purpose, ownerId)`, `completeUpload(fileId)`, `MediaUrlResolver.url(fileId, viewerUid): Promise<string>`; job `media.process` | be#50 |
+| `packages/domain/test/contracts/<store>.contract.ts` | `export function describe<Store>Contract(make: () => Promise<<Store>>): void` | be#48 (khung) và mỗi cụm |
+| App `lib/data/http/api_client.dart` | `get/post/put/patch/delete(path, {Map<String,String>? query, String? idempotencyKey})` | be#48 |
+| App `lib/data/http/realtime_channel.dart` | `RealtimeChannel.on(String topic) → Stream<ChangeEvent>`; `realtimeChannelProvider` | be#49 |
+| App `lib/data/http/watch_query.dart` | `Stream<T> watchQuery<T>({required List<String> topics, required Future<T> Function() fetch})` | be#49 |
 | App `lib/data/backend_config.dart` | `SelfhostedRepo` thêm `accounts, chat, content, money, booking, delivery, events, instant, staff`; 4 mã cũ giữ nguyên | mỗi cụm thêm mã của mình |
 
 ## 7. Đơn vị việc, thứ tự, phụ thuộc
@@ -427,25 +427,25 @@ Mỗi dòng là một issue, plan đăng vào chính issue đó. Một cụm ch�
 
 | # | Issue | Phạm vi | Bị chặn bởi |
 |---|---|---|---|
-| 1 | #172 Nền tảng API | Mục 6.1–6.5:<br>• khung `platform/`, store và transaction;<br>• quy ước migration, tách OpenAPI;<br>• lỗi, phân trang, idempotency;<br>• cổng staff, bảng staff (`staff_members`, `audit_log`, `staff_approvals` cùng duyệt hai người);<br>• `ApiClient` mở rộng;<br>• bộ khung test hợp đồng port. | — |
-| 2 | #173 Realtime, job, push | Mục 6.6, 6.7 (phần `platform/jobs`), 6.9:<br>• SSE và `emit`;<br>• pg-boss và vai trò worker;<br>• `push_tokens`, FCM, `notifications`;<br>• `RealtimeChannel`, `watchQuery` trong app. | 1 |
-| 3 | #174 Ảnh và tệp | Mục 6.8:<br>• `files`, MinIO, presigned POST;<br>• `media.process` cùng watermark (đưa luật watermark vào domain);<br>• `MediaUploader`/`MediaUrlResolver` HTTP. | 1, 2 |
-| 4 | #323 Cấu hình từ API | `GET /v1/config` và app đọc từ đó. | 1 |
-| 5 | #175 Tài khoản & hồ sơ | users, photographers, taxonomy, đã lưu và theo dõi (S19), báo cáo và chặn (S20), xoá tài khoản, xuất dữ liệu (đưa vào domain). | 2, 3 |
-| 6 | #182 Chat & thông báo | Chat 1-1 và nhóm, tin nhắn, chưa đọc, ghim; danh sách chat một endpoint; màn thông báo S17. | 5 |
-| 7 | #176 Nội dung & khám phá | Bài, album S24, giải thưởng S25, điểm chụp S29 (PostGIS), khám phá, gợi ý, huy hiệu. | 5 |
-| 8 | #177 Tiền & xác minh | Thanh toán, sổ cái treo, webhook, hoàn, tài khoản chi trả, chi trả, thu nhập, xác minh S21; registry `SubjectSettler`. | 5 |
-| 9 | #178 Booking & studio | Booking S04–S06, giá ngày S08, studio S26, tuyển thợ S27, ban quản lý và vé điểm S30, `staff_flags` (đưa vào domain), các bước `bookingClock` của booking. | 6, 7, 8 |
-| 10 | #179 Bàn giao, đánh giá, khiếu nại | Bàn giao, mở khoá link, cà chua/gạch, khiếu nại S18, hỗ trợ. | 9 |
-| 11 | #180 Sự kiện | S11, S12, vé, chat nhóm sự kiện, dòng thời gian. | 6, 8, 9 |
-| 12 | #181 Chụp ngay & đăng việc | S13–S16, khớp thợ, theo dõi đường đi, heartbeat. | 6, 8 |
-| 13 | #183 Dashboard trên API | BFF `apps/dashboard` gọi `/v1/staff/…`.<br>• Làm lại #163, #342, #343 trên API.<br>• Màn #164, #349 (xác minh, giải thưởng) cũng làm trên API. | 1, 8 |
-| 14 | #165–#169 Màn staff còn lại | Mỗi issue một plan, trên API. | 13 + cụm của màn đó |
-| 15 | #171 VPS, deploy | Compose production, Caddy, sao lưu PostgreSQL và kho ảnh, CI deploy. | 1 (song song với phần còn lại) |
-| 16 | #186 Gỡ Firebase | Mục 9: xoá Functions, rules, adapter Firestore và Storage trong app, `cloud_firestore` trong `pubspec`; app mặc định `selfhosted`. | 5–14 |
-| 17 | #191, #195, #196, #213, #327, #329 | Tính năng Phase 2, viết thẳng trên API. | cụm tương ứng |
+| 1 | be#48 Nền tảng API | Mục 6.1–6.5:<br>• khung `platform/`, store và transaction;<br>• quy ước migration, tách OpenAPI;<br>• lỗi, phân trang, idempotency;<br>• cổng staff, bảng staff (`staff_members`, `audit_log`, `staff_approvals` cùng duyệt hai người);<br>• `ApiClient` mở rộng;<br>• bộ khung test hợp đồng port. | — |
+| 2 | be#49 Realtime, job, push | Mục 6.6, 6.7 (phần `platform/jobs`), 6.9:<br>• SSE và `emit`;<br>• pg-boss và vai trò worker;<br>• `push_tokens`, FCM, `notifications`;<br>• `RealtimeChannel`, `watchQuery` trong app. | 1 |
+| 3 | be#50 Ảnh và tệp | Mục 6.8:<br>• `files`, MinIO, presigned POST;<br>• `media.process` cùng watermark (đưa luật watermark vào domain);<br>• `MediaUploader`/`MediaUrlResolver` HTTP. | 1, 2 |
+| 4 | be#65 Cấu hình từ API | `GET /v1/config` và app đọc từ đó. | 1 |
+| 5 | be#51 Tài khoản & hồ sơ | users, photographers, taxonomy, đã lưu và theo dõi (S19), báo cáo và chặn (S20), xoá tài khoản, xuất dữ liệu (đưa vào domain). | 2, 3 |
+| 6 | be#58 Chat & thông báo | Chat 1-1 và nhóm, tin nhắn, chưa đọc, ghim; danh sách chat một endpoint; màn thông báo S17. | 5 |
+| 7 | be#52 Nội dung & khám phá | Bài, album S24, giải thưởng S25, điểm chụp S29 (PostGIS), khám phá, gợi ý, huy hiệu. | 5 |
+| 8 | be#53 Tiền & xác minh | Thanh toán, sổ cái treo, webhook, hoàn, tài khoản chi trả, chi trả, thu nhập, xác minh S21; registry `SubjectSettler`. | 5 |
+| 9 | be#54 Booking & studio | Booking S04–S06, giá ngày S08, studio S26, tuyển thợ S27, ban quản lý và vé điểm S30, `staff_flags` (đưa vào domain), các bước `bookingClock` của booking. | 6, 7, 8 |
+| 10 | be#55 Bàn giao, đánh giá, khiếu nại | Bàn giao, mở khoá link, cà chua/gạch, khiếu nại S18, hỗ trợ. | 9 |
+| 11 | be#56 Sự kiện | S11, S12, vé, chat nhóm sự kiện, dòng thời gian. | 6, 8, 9 |
+| 12 | be#57 Chụp ngay & đăng việc | S13–S16, khớp thợ, theo dõi đường đi, heartbeat. | 6, 8 |
+| 13 | be#59 Dashboard trên API | BFF `apps/dashboard` gọi `/v1/staff/…`.<br>• Làm lại #163, #342, #343 trên API.<br>• Màn be#41, be#68 (xác minh, giải thưởng) cũng làm trên API. | 1, 8 |
+| 14 | be#42–be#46 Màn staff còn lại | Mỗi issue một plan, trên API. | 13 + cụm của màn đó |
+| 15 | be#47 VPS, deploy | Compose production, Caddy, sao lưu PostgreSQL và kho ảnh, CI deploy. | 1 (song song với phần còn lại) |
+| 16 | be#60 Gỡ Firebase | Mục 9: xoá Functions, rules, adapter Firestore và Storage trong app, `cloud_firestore` trong `pubspec`; app mặc định `selfhosted`. | 5–14 |
+| 17 | be#61, be#62, be#63, be#64, be#66, be#67 | Tính năng Phase 2, viết thẳng trên API. | cụm tương ứng |
 
-- **Một issue quá lớn cho một plan** (đoán: #178, #177) được tách thành nhiều plan con. Plan đầu đăng ở issue
+- **Một issue quá lớn cho một plan** (đoán: be#54, be#53) được tách thành nhiều plan con. Plan đầu đăng ở issue
   cha; các plan con là sub-issue mới, mỗi sub-issue chứa plan của nó (`plan-in-issue`).
 - **Chạy song song:** sau dòng 5, các dòng 6, 7, 8 chạy song song; sau đó 11 và 12 chạy song song với 10.
 
@@ -470,17 +470,17 @@ Mỗi dòng là một issue, plan đăng vào chính issue đó. Một cụm ch�
 
 - **Đóng băng ngay khi spec được duyệt:** không thêm tính năng chỉ chạy trên Firebase. Sửa lỗi trên Firebase
   chỉ làm khi lỗi đó chặn việc thử tay.
-- **Firebase vẫn chạy được tới #186,** để app dùng đủ tính năng trên emulator trong lúc chuyển.
+- **Firebase vẫn chạy được tới be#60,** để app dùng đủ tính năng trên emulator trong lúc chuyển.
   - Không hỗ trợ chạy lẫn, ví dụ booking ở PostgreSQL còn chat ở Firestore.
   - `SELFHOSTED_REPOS` chỉ dùng để thử một cụm cùng các cụm đứng trước nó.
-- **#186 (Gỡ Firebase)** chạy khi mọi cụm xong:
+- **be#60 (Gỡ Firebase)** chạy khi mọi cụm xong:
   - xoá `firebase/functions`, rules, chỉ mục và cấu hình emulator, trừ Auth emulator;
   - bỏ adapter Firestore và Storage trong app, cùng `cloud_firestore`, `cloud_functions`, `firebase_storage`;
   - `BACKEND` mặc định là `selfhosted`, và bỏ `Backend.firebase`;
   - giữ `firebase_core`, `firebase_auth`, `firebase_messaging`.
 - **#184, #185 và #340** đã đóng (chủ sở hữu, 2026-11-20): không còn cần khi ra mắt trên API.
-- **Dashboard tiền đã làm trên Firebase** (#163, #342, #343, merge ngày 15/11) được làm lại trên API trong #183.
-  #164 và #349 bị gỡ `plan-ready` (chủ sở hữu, 2026-11-20); plan mới của chúng viết trên API.
+- **Dashboard tiền đã làm trên Firebase** (#163, #342, #343, merge ngày 15/11) được làm lại trên API trong be#59.
+  be#41 và be#68 bị gỡ `plan-ready` (chủ sở hữu, 2026-11-20); plan mới của chúng viết trên API.
 
 ## 10. Tài liệu cần cập nhật (trong PR của spec này)
 
@@ -509,7 +509,7 @@ Mỗi dòng là một issue, plan đăng vào chính issue đó. Một cụm ch�
 - dashboard trên API;
 - plan nằm trong issue, viết song song sau spec này;
 - Firebase không có dữ liệu thật cần giữ;
-- làm lại 5 màn dashboard tiền và xác minh (#163, #342, #343, #164, #349) trên API;
+- làm lại 5 màn dashboard tiền và xác minh (#163, #342, #343, be#41, be#68) trên API;
 - đóng #184, #185, #340.
 
 **Của người viết spec (chủ sở hữu có thể sửa):**
