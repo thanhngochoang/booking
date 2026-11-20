@@ -4,7 +4,8 @@
 Gates, in order (each failing gate exits with its own code and a reason):
   1. the PR is open, targets develop, its head branch is the branch this
      machine claimed the issue on, and its title is
-     '<type>(<scope>): <summary> [#<issue>]'                    (exit 6: fix the title)
+     '<type>(<scope>): <summary> [#<n>]' ('[be#<n>]' for a booking-be unit)
+                                                                (exit 6: fix the title)
   2. the branch contains the latest origin/develop          (exit 2: rebase first)
   3. no file it changes is also changed by another machine's
      active unit (In Progress / In Review in the project),
@@ -13,23 +14,32 @@ Gates, in order (each failing gate exits with its own code and a reason):
   5. GitHub reports the PR mergeable and not blocked         (exit 2 if behind/dirty,
                                                               exit 5 if blocked by rules)
   6. app PR only: booking-be has no open PR of this unit
-     (head plan/<issue>-...): it must merge first           (exit 7: land that PR first)
+     (head plan/<n>-..., plan/be<n>-... for a booking-be unit): it must merge first
+                                                            (exit 7: land that PR first)
 Then: squash-merge (the repository allows nothing else), delete the branch (not a shared
-stack branch), set the project item Done and close the issue.
+stack branch). When the PR lives in the issue's own repository (the app PR of a booking
+issue, the booking-be PR of a booking-be issue) it also sets the project item Done and
+closes the issue.
+
+<issue> is N (booking), be#N (booking-be), booking#N or booking-be#N. A booking-be unit's
+branch is plan/be<n>-<slug> in both repositories; its app PR (if any) lives in booking,
+lands after the booking-be PR and closes nothing.
 
 With --repo thanhngochoang/booking-be (D5: a unit that changes the backend has a branch of
 the same name there) the gates run against that repository and its develop: 1, 2, 4 and 5
 as above, 3 against booking-be's plan/* branches whose issue (number from the branch name)
 is In Progress / In Review in the project. Then it merges (squash, or a merge commit with
 --merge-commit: booking-be allows both, and a PR that imports history, e.g. a subtree, must
-keep it) and deletes the branch. It does not set the item Done or close the issue: the app
-PR of the unit does, when it lands.
+keep it) and deletes the branch. For a booking issue it does not set the item Done or close
+the issue: the app PR of the unit does, when it lands. For a booking-be issue it does (the
+issue lives there).
 
 Usage:
   land.py <issue> --pr <n>               run every gate, then merge
   land.py <issue> --pr <n> --dry-run     run the gates, do not merge
   land.py <issue> --pr <n> --repo thanhngochoang/booking-be [--merge-commit] [--dry-run]
-                                         land the unit's booking-be PR (before the app PR)
+                                         land the unit's booking-be PR (before the app PR);
+                                         e.g. land.py be#42 --pr 7 --repo thanhngochoang/booking-be
   land.py overlap --branch <b> [--repo R]
                                          gate 3 only
 
@@ -47,7 +57,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import project as board  # noqa: E402  (git/gh helpers and the work queue)
 
-BACKEND_REPO = "thanhngochoang/booking-be"
+BACKEND_REPO = board.BE_REPO
 
 # Files several units may touch by design (append-only or regenerated), per
 # repository; a rebase resolves them, so they never block a merge.
@@ -91,7 +101,7 @@ class Side:
         return git("rev-parse", f"refs/remotes/{self.remote}/{board.BASE}").strip()
 
 
-TITLE = re.compile(r"^(feat|fix|refactor|perf|test|docs|chore|build|ci)\([a-z0-9-]+\): \S.{2,}\S \[#\d+\]$")
+TITLE = re.compile(r"^(feat|fix|refactor|perf|test|docs|chore|build|ci)\([a-z0-9-]+\): \S.{2,}\S \[(?:be)?#\d+\]$")
 
 
 def git(*a, check=True):
@@ -117,17 +127,20 @@ def shared_ok(path, side):
 
 
 def active_branches(side, active):
-    """(issue, branch) of the active units in `side`: in this repository the claim comment
-    names the branch; in another one (--repo) its plan/<issue>-<slug> branches count when
-    that issue is active (D5: same branch name in both repositories)."""
+    """(ref, branch) of the active units in `side`: in this repository the claim comment
+    names the branch; in another one (--repo) its plan/<n>-<slug> (booking issue) and
+    plan/be<n>-<slug> (booking-be issue) branches count when that issue is active."""
     if side.app:
-        return [(n, (board.holder(n) or {}).get("branch")) for n in active]
+        return [(r, (board.holder(r) or {}).get("branch")) for r in active]
     out = []
     prefix = f"refs/remotes/{side.remote}/"
     for ref in git("for-each-ref", "--format=%(refname)", f"{prefix}plan/").split():
-        m = re.match(r"plan/(\d+)-", ref[len(prefix):])
-        if m and int(m.group(1)) in active:
-            out.append((int(m.group(1)), ref[len(prefix):]))
+        name = ref[len(prefix):]
+        m = re.match(r"plan/(be)?(\d+)-", name)
+        if m:
+            r = board.Ref(board.BE_REPO if m.group(1) else board.REPO, int(m.group(2)))
+            if r in active:
+                out.append((r, name))
     return out
 
 
@@ -137,17 +150,17 @@ def overlap(branch, side):
     side.fetch(f"+refs/heads/plan/*:refs/remotes/{side.remote}/plan/*", check=False)
     _, _, items = board.project()
     mine = {p for p in changed(branch, side) if not shared_ok(p, side)}
-    active = {it["number"] for it in items
+    active = {it["ref"] for it in items
               if it["status"] in board.ACTIVE and it["state"] == "OPEN" and not board.is_epic(it)}
     hits, seen = {}, set()
-    for number, other in active_branches(side, active):
+    for ref, other in active_branches(side, active):
         if not other or other == branch or other in seen:
             continue
         seen.add(other)
         both = sorted(mine & changed(other, side))
         if both:
             where = other if side.app else f"{side.remote} {other}"
-            hits[f"#{number} ({(board.holder(number) or {}).get('machine', '?')}, {where})"] = both
+            hits[f"{ref} ({(board.holder(ref) or {}).get('machine', '?')}, {where})"] = both
     return hits
 
 
@@ -164,11 +177,11 @@ def cmd_overlap(a):
     print("no overlap with other machines' active branches")
 
 
-def open_backend_pr(issue):
-    """The open booking-be PR of this unit (head plan/<issue>-...), or None."""
+def open_backend_pr(ref):
+    """The open booking-be PR of this unit (head plan/<n>-... or plan/be<n>-...), or None."""
     prs = gh_json("pr", "list", "--repo", BACKEND_REPO, "--state", "open", "--limit", "200",
                   "--json", "number,headRefName,url") or []
-    return next((p for p in prs if p["headRefName"].startswith(f"plan/{issue}-")), None)
+    return next((p for p in prs if p["headRefName"].startswith(ref.branch_prefix())), None)
 
 
 def cmd_land(a):
@@ -177,17 +190,21 @@ def cmd_land(a):
         sys.exit(f"error: {board.REPO} allows squash merges only; --merge-commit is for --repo {BACKEND_REPO}")
     me = board.machine()
     side.fetch_base()
-    claim = board.holder(a.issue)
+    # The PR in the issue's own repository finishes the unit; the other one (the app PR of a
+    # booking-be unit, the booking-be PR of a booking unit) leaves it as it is. A booking-be
+    # unit's app PR lands after the booking-be PR set the issue done, so a finished claim counts.
+    finishes = side.repo == a.issue.repo
+    claim = board.holder(a.issue, include_done=not finishes)
     if not claim or claim.get("machine") != me:
-        sys.exit(f"error: #{a.issue} is not claimed by this machine ({me}); land only your own PR")
+        sys.exit(f"error: {a.issue} is not claimed by this machine ({me}); land only your own PR")
     pr = gh_json("pr", "view", a.pr, *side.gh, "--json", "state,baseRefName,headRefName,url")
     if pr["state"] != "OPEN" or pr["baseRefName"] != board.BASE or pr["headRefName"] != claim["branch"]:
         sys.exit(f"error: PR {a.pr} of {side.repo} is {pr['state']} {pr['headRefName']} -> {pr['baseRefName']}; "
                  f"expected open {claim['branch']} -> {board.BASE}")
     title = gh_json("pr", "view", a.pr, *side.gh, "--json", "title")["title"]
-    if not TITLE.match(title) or not title.endswith(f"[#{a.issue}]"):
+    if not TITLE.match(title) or not title.endswith(f"[{a.issue}]"):
         print(f"title does not follow the convention: {title!r}\n"
-              f"expected '<type>(<scope>): <summary> [#{a.issue}]' (see SKILL.md 'PR title convention'); "
+              f"expected '<type>(<scope>): <summary> [{a.issue}]' (see SKILL.md 'PR title convention'); "
               f"fix with {' '.join(['gh pr edit', a.pr, *side.gh])} --title ...")
         sys.exit(6)
     branch = claim["branch"]
@@ -241,7 +258,7 @@ def cmd_land(a):
         be = open_backend_pr(a.issue)
         if be:
             print(f"the booking-be PR of this unit is not merged yet: {be['url']} ({be['headRefName']}); "
-                  f"land it first (land.py {a.issue} --pr {be['number']} --repo {BACKEND_REPO}), "
+                  f"land it first (land.py {a.issue.arg()} --pr {be['number']} --repo {BACKEND_REPO}), "
                   "then land this PR again")
             sys.exit(7)
 
@@ -256,12 +273,12 @@ def cmd_land(a):
     if r.returncode != 0:
         print(f"merge refused: {r.stderr.strip()}")
         sys.exit(5)
-    if not side.app:
-        print(f"merged {side.repo} PR {a.pr} ({pr['url']}); #{a.issue} stays open until the app PR "
-              f"of the unit lands")
+    if not finishes:
+        print(f"merged {side.repo} PR {a.pr} ({pr['url']}); {a.issue} is finished by the unit's "
+              f"{'booking-be' if a.issue.be else 'app'} PR")
         return
     board.cmd_set(argparse.Namespace(issue=a.issue, state="done", pr=a.pr, force=False))
-    print(f"merged PR {a.pr} ({pr['url']}); #{a.issue} done")
+    print(f"merged PR {a.pr} ({pr['url']}); {a.issue} done")
 
 
 def main():
@@ -270,7 +287,8 @@ def main():
         p.add_argument("--repo", help=f"another repository, e.g. {BACKEND_REPO}")
         return cmd_overlap(p.parse_args())
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("issue", type=int); p.add_argument("--pr", required=True); p.add_argument("--dry-run", action="store_true")
+    p.add_argument("issue", type=board.ref_arg, help="N, be#N, booking#N or booking-be#N")
+    p.add_argument("--pr", required=True); p.add_argument("--dry-run", action="store_true")
     p.add_argument("--repo", help=f"land the unit's PR in another repository ({BACKEND_REPO}); "
                                   "the issue is not set Done")
     p.add_argument("--merge-commit", action="store_true",

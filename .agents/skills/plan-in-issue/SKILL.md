@@ -12,6 +12,11 @@ keeps only the plans written before that date (history, and the units still runn
 
 Specs, the data model, mocks and ledgers stay in the repo as before; only plans moved.
 
+Issues live in two repositories: app units in `thanhngochoang/booking`, backend units (Phase 2) in
+`thanhngochoang/booking-be`. Every `<issue>` argument of `plan_issue.py` is `N` (booking, or the repo in
+`PROJECT_REPO`), `be#N` (booking-be), or `booking#N` / `booking-be#N`; the index line it writes says
+how to fetch, e.g. `plan_issue.py fetch be#42`. Examples below use booking numbers.
+
 ## Writing a plan
 
 1. Write it with **superpowers:writing-plans** as usual (header, Global Constraints, Review Focus,
@@ -72,7 +77,8 @@ subagent-driven development and executing-plans read it unchanged. Write it outs
   under 60,000 and refuses an issue body that would still be too long.
 - The booking repo is **public**: plans are readable by anyone, as the old plan files were. A plan
   for a security fix or anything that describes an exploitable weakness goes in the private
-  booking-be repo's issue instead (`PROJECT_REPO=thanhngochoang/booking-be`), like the security
-  issues themselves.
+  booking-be repo's issue instead (`plan_issue.py publish be#42 …`, or `PROJECT_REPO=thanhngochoang/booking-be`),
+  like the security issues themselves; backend units live there anyway.
+- Tests (offline): `python3 -m unittest discover -s .agents/skills/plan-in-issue/scripts -p 'test_*.py'`.
 - One plan per issue. A plan that covers several units goes in the first unit's issue; the other
   issues say `Plan: in #<n>, tasks …` in their body (run-next-plan then runs only those tasks).
