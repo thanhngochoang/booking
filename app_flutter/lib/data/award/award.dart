@@ -193,5 +193,6 @@ class AwardTier {
       other.verified == verified;
 
   @override
-  int get hashCode => Object.hash(providerType, approvedCount, artistSince, verified);
+  int get hashCode =>
+      Object.hash(providerType, approvedCount, artistSince, verified);
 }
