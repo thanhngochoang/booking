@@ -15,7 +15,6 @@ if [ -x "$DEST/bin/flutter" ]; then
     echo "Flutter $FLUTTER_VERSION already in $DEST"; "$DEST/bin/flutter" --version; exit 0
   fi
   echo "Replacing Flutter ${OLD:-unknown} with $FLUTTER_VERSION"
-  rm -rf "$DEST"
 fi
 ARCH="$(uname -m)"; case "$ARCH" in arm64) A="arm64";; *) A="x64";; esac
 JSON="$(curl -sSL https://storage.googleapis.com/flutter_infra_release/releases/releases_macos.json)"
@@ -28,5 +27,6 @@ if not m:
 print(d['base_url']+'/'+m[0]['archive'])")"
 echo "Downloading $REL"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/flutter.XXXXXX")"; curl -sSL -o "$TMP/flutter.zip" "$REL"
-unzip -q "$TMP/flutter.zip" -d "$TMP" && mv "$TMP/flutter" "$DEST" && rm -rf "$TMP"
+# Remove the old SDK only once the new one is downloaded and unpacked.
+unzip -q "$TMP/flutter.zip" -d "$TMP" && rm -rf "$DEST" && mv "$TMP/flutter" "$DEST" && rm -rf "$TMP"
 "$DEST/bin/flutter" --version
