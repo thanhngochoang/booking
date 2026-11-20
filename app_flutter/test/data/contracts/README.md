@@ -1,7 +1,6 @@
 # Contract snapshot of the self-hosted backend
 
-`openapi.yaml` and `contract-world.json` are copies of `api/openapi.yaml` and
-`test/fixtures/contract-world.json` in the backend repository
+`openapi.yaml` is a copy of `api/openapi.bundled.yaml` (the merged file of `api/paths/` and `api/schemas/` since be#48) and `contract-world.json` is a copy of `test/fixtures/contract-world.json` in the backend repository
 https://github.com/thanhngochoang/booking-be (the former `services/api/` of this repo).
 
 - `test/data/http/openapi_drift_test.dart` checks the hand-written HTTP client against `openapi.yaml`.
