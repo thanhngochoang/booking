@@ -82,11 +82,11 @@ Thanh bên nhóm "Hàng đợi": Xác minh · Giải thưởng. Thẻ trên S23.
   - `DetailPane`:
     - Thông tin giải: cuộc thi, năm, hạng mục, kết quả, bài dự thi (ảnh công khai nếu có `workPostId`).
     - **Minh chứng:** tối đa 3 tệp (`SecureFileViewer`, `kind: award_proof`) và 2 link. Link mở tab mới với `rel="noopener noreferrer"`, hiện tên miền trước khi mở.
-    - **Tiến độ NAG:** "{n}/3 giải đã duyệt" và trạng thái xác minh. Khi duyệt giải này làm đủ 3: đã xác minh thì banner "Duyệt giải này sẽ cấp hạng NAG"; chưa xác minh thì "Đủ điều kiện NAG, chờ xác minh danh tính" (V1). Thợ là studio thì không có dòng này.
+    - **Tiến độ NAG:** "{n}/3 giải đã duyệt" và trạng thái xác minh (thợ đã là artist: "NAG · {n} giải" và trạng thái xác minh). Khi duyệt giải này làm đủ 3: đã xác minh thì banner "Duyệt giải này sẽ cấp hạng NAG"; chưa xác minh thì "Đủ điều kiện NAG, chờ xác minh danh tính" (V1). Thợ là studio thì không có dòng này.
     - Lịch sử của giải: các lần cần bổ sung, ghi chú staff, phản hồi của thợ.
   - Chân (tab Chờ duyệt): chính **"Duyệt"**; phụ **"Cần bổ sung…"** (ghi chú bắt buộc, gửi cho thợ), **"Từ chối…"** (đỏ trong hộp, ghi chú bắt buộc). Tab Đã duyệt: "Thu hồi…" (đỏ trong hộp, ghi chú bắt buộc).
-- **Tương tác:** mọi nút gọi `reviewAward({awardId, action, note})`; `note` 5–500 ký tự, bắt buộc trừ khi duyệt (hộp duyệt vẫn có ô lý do tuỳ chọn; spec dashboard yêu cầu lý do cho thao tác đổi trạng thái, ở đây duyệt giải là ngoại lệ có chủ ý theo spec 10-05: "lý do bắt buộc trừ khi duyệt").
-- **Dữ liệu:** `awards` theo `(status, createdAt)`; số giải đã duyệt của thợ bằng `count()`; `photographers/{uid}.verified`.
+- **Tương tác:** mọi nút gọi `reviewAward({awardId, action, note})`; `note` 5–500 ký tự, bắt buộc trừ khi duyệt (hộp duyệt vẫn có ô lý do tuỳ chọn, trống hoặc 5–500 ký tự, ghi vào nhật ký, không gửi thợ; spec dashboard yêu cầu lý do cho thao tác đổi trạng thái, ở đây duyệt giải là ngoại lệ có chủ ý theo spec 10-05: "lý do bắt buộc trừ khi duyệt").
+- **Dữ liệu:** `awards` theo `(status, updatedAt ↑)` cho Chờ duyệt, `(status, reviewedAt ↑)` cho Cần bổ sung, `(status, reviewedAt ↓)` cho Đã duyệt và Đã từ chối (trang 50, phân trang theo con trỏ); số giải đã duyệt, hạng và `verified` đọc từ `photographers/{uid}` (`approvedAwardCount`, `providerType`, `verified`), một lần đọc cho mỗi thợ trong trang; lịch sử từ `awardAudit` theo `at` giảm dần, 50 dòng.
 - **Quá hạn:** `pending` quá 3 ngày làm việc (thứ Hai–thứ Sáu, giờ Việt Nam; chưa tính ngày lễ).
 - **Chấp nhận:** duyệt giải thứ 3 của thợ đã xác minh làm `providerType = artist` ngay; của thợ chưa xác minh thì không đổi, và khi S21 được duyệt thì đổi; thu hồi giải làm tụt dưới 3 thì mất hạng (như #145); `CLI awards` vẫn chạy.
 

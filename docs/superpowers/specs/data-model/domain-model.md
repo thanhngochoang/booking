@@ -559,11 +559,11 @@ Award: pending ─▶ approved | needs_info | rejected      needs_info ─(sửa
 Photographer.providerType: individual ─(≥ 3 Award approved VÀ verified)─▶ artist ─(< 3 hoặc mất verified)─▶ individual     (studio không đổi)
 ```
 
-`TierState` (miền, đọc/ghi hạng của một thợ khi tính lại): `providerType`, `approvedCount`, `verified: bool` (từ `photographers/{uid}.verified`, thiếu = false), `artistSince?`.
+`TierState` (miền, đọc/ghi hạng của một thợ khi tính lại): `providerType`, `approvedAwardCount`, `verified: bool` (từ `photographers/{uid}.verified`, thiếu = false), `artistSince?`.
 Quy tắc V1 (spec 10-05 §2.3): `tierFor(current, approvedCount, verified)` = `studio` giữ nguyên; ngược lại `artist` khi `approvedCount ≥ ARTIST_THRESHOLD (3)` **và** `verified`, không thì `individual`.
 Tính lại hạng (`recomputeTier`, idempotent) chạy khi:
 1. staff duyệt giải (`reviewAward`: duyệt, từ chối, cần bổ sung, thu hồi) và khi chủ hồ sơ sửa hoặc xoá giải;
-2. xác minh danh tính làm `verified` đổi (duyệt, thu hồi, khôi phục), sau commit và lặng lẽ như `reviewAward`;
+2. xác minh danh tính làm `verified` đổi (duyệt, thu hồi; "khôi phục" do Phần B, #349, thêm), sau commit và lặng lẽ như `reviewAward`;
 3. lưới an toàn: trigger `onPhotographerWrite` khi `verified` của tài liệu đổi.
 
 ### Booking theo hợp đồng (đề xuất, spec 10-05 mục 4.3)

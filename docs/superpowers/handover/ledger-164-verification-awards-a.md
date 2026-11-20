@@ -13,7 +13,7 @@ Phần A (#164) cùng tên nhánh `plan/164-s23-duyet-xac-minh-giai-thuong` ở 
 - **A2 (Functions)**: callable `reviewAward` qua `gate()`; `recomputeTierOnVerifiedChange` trong `triggers/photographer_write.ts`; `reviewVerification` và CLI `tools/verifications.ts` tính lại hạng khi xác minh danh tính đổi trạng thái; `KIND_ACTION` là `award.view` / `verification.view`; chỉ mục `awards (status, updatedAt)` và `(status, reviewedAt asc/desc)`; seed: Giang (chưa xác minh, 2 giải đã duyệt, `seed-award-giang-3` chờ), Bình (`seed-award-binh-1` chờ, `-2` cần bổ sung, `-3` từ chối), Dũng (đã xác minh, 3 giải).
 - **A3 (dashboard)**: `/staff/awards?tab=&id=` (`app/(staff)/staff/awards/`), reader `server/read/awards.ts`, `requestSensitiveFileUrl`, `DecisionDialog` `reasonMode: 'optional'`, `lib/nav-badges.ts`, thẻ `awards_pending`, `lib/nag.ts`.
 - **A4 (app)**: `AwardTier.verified`; thẻ hạng S25.01 hiện "Xác minh ngay" cho thợ đủ 3 giải chưa xác minh.
-- **A5**: `apps/dashboard/e2e/awards.spec.ts` (4 ca, tuần tự); `team.spec.ts` sửa menu support thành `[Tổng quan, Giải thưởng]`. Playwright chưa chạy trong sandbox; `providerType` kiểm qua giao diện (dòng phụ "NAG · n giải" so với "n giải đã duyệt" ở tab Đã duyệt), vì không spec nào đọc emulator trực tiếp.
+- **A5**: `apps/dashboard/e2e/awards.spec.ts` (4 ca, tuần tự); `team.spec.ts` sửa menu support thành `[Tổng quan, Giải thưởng]`. Playwright đã chạy trên emulator (cổng thay thế, `MFA_DEV_BYPASS=1`): cả bộ 26 passed, 1 skipped (`mfa.spec`), `awards.spec` 4/4; `providerType` kiểm qua giao diện (dòng phụ "NAG · n giải" so với "n giải đã duyệt" ở tab Đã duyệt), vì không spec nào đọc emulator trực tiếp.
 - **Tài liệu**: V1 ở spec 10-05 §2.3, `TierState` và `tierFor` ở `domain-model.md`, §3 `staff-verification-awards.md`, ô trạng thái S23.07.
 
 ## Rulings
@@ -69,18 +69,17 @@ Từ review A2:
 
 Từ review A3 (cho đợt sửa cuối, chưa làm):
 
-- Comment cũ "revoke ≥ 20" trong `awards/actions.ts` và tài liệu của `DecisionDialog` cho `'optional'`.
-- Dòng "5/3" cho thợ NAG (đã là artist vẫn hiện `{n}/3`).
-- Lịch sử giải `limit(50)` trước khi sắp xếp.
-- Nhãn "Link" trùng lặp.
-- Chi tiết đọc `photographers/{uid}` hai lần.
+Đã làm trong đợt sửa cuối: comment "revoke ≥ 20", tài liệu `DecisionDialog`, dòng "5/3", `limit(50)` trước sắp xếp, nhãn Link, đọc `photographers/{uid}` hai lần. Còn mở:
+
 - Chưa có test ghim cổng của `requestSensitiveFileUrl`; link không phải https bị bỏ im lặng (miền chỉ lưu https).
 
 Từ review A4:
 
 - Test biến thể nút và thụt lề trong mock; `FakeAwardRepository.watchTier` mặc định vẫn suy ra `artist` ở n ≥ 3 mà không tính `verified` (test dùng `setTier`).
 
-Chưa chạy: Playwright `awards.spec.ts` (cần emulator), test tích hợp Functions, `tokens:check`.
+Test tích hợp Functions và rules chỉ chạy ở CI (Playwright đã chạy, xem A5); chưa chạy `tokens:check`.
+
+Đợt sửa cuối (final review) đã làm: I1 (ghi chú duyệt giữ lại, ruling 6), 5 Minor, các nit của A3 (comment cũ, dòng NAG của artist, thứ tự lịch sử, nhãn Link, đọc `photographers/{uid}` một lần; chỉ mục mới `awardAudit (awardId, at desc)`). Ghi chú duyệt giải: tuỳ chọn, 5–500 ký tự khi có, ghi vào `awardAudit.note` và `audit_log.reason`; `awards.reviewNote` vẫn `null` khi duyệt (ghi chú nội bộ, không gửi thợ). Hộp duyệt chặn 1–4 ký tự.
 
 ## Chữ tiếng Việt mới không có chữ trong mock
 
@@ -88,7 +87,7 @@ Dashboard (`apps/dashboard/src/messages/vi.ts`; chủ sản phẩm xem lại):
 
 | Khoá | Chữ |
 |---|---|
-| `decision.reason_hint_optional` | Không bắt buộc, tối đa {max} ký tự |
+| `decision.reason_hint_optional` | Không bắt buộc; nếu nhập thì từ {min} đến {max} ký tự (đổi trong đợt sửa cuối) |
 | `s23_07.tabs_label` | Trạng thái giải thưởng |
 | `s23_07.empty.needs_info` | Không có giải nào đang cần bổ sung |
 | `s23_07.empty.approved` | Chưa có giải nào được duyệt |
@@ -100,10 +99,11 @@ Dashboard (`apps/dashboard/src/messages/vi.ts`; chủ sản phẩm xem lại):
 | `s23_07.proof_alt` | Minh chứng {n} của giải {competition} |
 | `s23_07.no_proof` | Không có tệp minh chứng |
 | `s23_07.link` | Link |
+| `s23_07.link_open` | {host} · mở tab mới (đổi: bỏ chữ "Link" đầu, vì nhãn đã có) |
 | `s23_07.work_post` | Bài dự thi |
 | `s23_07.work_post_untitled` | Bài dự thi · ảnh công khai |
 | `s23_07.nag` | NAG |
-| `s23_07.nag_progress` | {n}/3 giải đã duyệt |
+| `s23_07.nag_progress` | {n}/3 giải đã duyệt (thợ đã là artist dùng `s23_07.who_nag`: "NAG · {n} giải", không phải khoá mới) |
 | `s23_07.nag_verified` | đã xác minh danh tính |
 | `s23_07.nag_unverified` | chưa xác minh danh tính |
 | `s23_07.review_note` | Ghi chú duyệt |
