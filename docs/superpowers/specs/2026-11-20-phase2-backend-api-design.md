@@ -1,6 +1,6 @@
 # Phase 2 · Toàn bộ app chạy trên API Node.js + PostgreSQL (spec #170)
 
-- **Issue:** #170 (cha: #90). **Ngày:** 2026-11-20. **Trạng thái:** bản nháp chờ chủ sở hữu duyệt.
+- **Issue:** #170 (cha: #90). **Ngày:** 2026-11-20. **Trạng thái:** chờ chủ sở hữu duyệt.
 - **Thay cho:** thứ tự "ra mắt trên Firebase rồi mới chuyển" của `data-model/README.md` §6 (bậc 2, 3 và 5), và
   plan cũ `plans/2026-10-01-backend-phase2-selfhosted-postgres.md` (lát đầu tiên, đã làm xong).
 - **Đọc cùng:** `data-model/README.md` (quy ước, cổng, ma trận phân quyền §4, use case §5),
@@ -40,7 +40,8 @@ tất cả sang API, và chốt các hợp đồng dùng chung (mục 6). Nhờ 
 **Không làm (trong spec này)**
 
 - Không làm công cụ chuyển dữ liệu Firestore sang PostgreSQL, không chạy song song, không so khớp
-  (#184, #185). Lý do: chưa có dữ liệu thật; dữ liệu seed được viết lại cho PostgreSQL.
+  (#184, #185, đã đóng). Chủ sở hữu xác nhận Firebase chỉ có dữ liệu seed và test (2026-11-20); dữ liệu seed
+  được viết lại cho PostgreSQL.
 - Không tích hợp nhà cung cấp thật (cổng thanh toán, chi trả, eKYC, OTP, tra mã số thuế). Các adapter giả
   hôm nay được chuyển nguyên sang API. Tích hợp thật là các issue riêng.
 - Không làm offline-first. App không còn bộ đệm ngoại tuyến của Firestore; mất mạng thì hiện lỗi và thử lại
@@ -456,8 +457,9 @@ Mỗi dòng là một issue, plan đăng vào chính issue đó. Một cụm ch�
   - bỏ adapter Firestore và Storage trong app, cùng `cloud_firestore`, `cloud_functions`, `firebase_storage`;
   - `BACKEND` mặc định là `selfhosted`, và bỏ `Backend.firebase`;
   - giữ `firebase_core`, `firebase_auth`, `firebase_messaging`.
-- **#184, #185 và #340** không còn cần thiết theo quyết định "ra mắt trên API". Đóng hay giữ là việc của chủ
-  sở hữu (mục 12).
+- **#184, #185 và #340** đã đóng (chủ sở hữu, 2026-11-20): không còn cần khi ra mắt trên API.
+- **Dashboard tiền đã làm trên Firebase** (#163, #342, #343, merge ngày 15/11) được làm lại trên API trong #183.
+  #164 và #349 bị gỡ `plan-ready` (chủ sở hữu, 2026-11-20); plan mới của chúng viết trên API.
 
 ## 10. Tài liệu cần cập nhật (trong PR của spec này)
 
@@ -484,7 +486,10 @@ Mỗi dòng là một issue, plan đăng vào chính issue đó. Một cụm ch�
 - Google chỉ còn Auth và FCM;
 - đủ tính năng Phase 1 khi ra mắt;
 - dashboard trên API;
-- plan nằm trong issue, viết song song sau spec này.
+- plan nằm trong issue, viết song song sau spec này;
+- Firebase không có dữ liệu thật cần giữ;
+- làm lại 5 màn dashboard tiền và xác minh (#163, #342, #343, #164, #349) trên API;
+- đóng #184, #185, #340.
 
 **Của người viết spec (chủ sở hữu có thể sửa):**
 - dùng lại domain qua adapter PostgreSQL (cách A);
@@ -504,4 +509,4 @@ Mỗi dòng là một issue, plan đăng vào chính issue đó. Một cụm ch�
 - thứ tự ở mục 7;
 - đóng băng Firebase, không chạy lẫn.
 
-**Câu hỏi cho chủ sở hữu:** được bổ sung sau bước đọc thử của người dựng (builder check).
+**Câu hỏi còn mở:** không còn. Ba câu hỏi sau bước đọc thử đã được trả lời ngày 2026-11-20 (xem danh sách quyết định của chủ sở hữu ở trên).
