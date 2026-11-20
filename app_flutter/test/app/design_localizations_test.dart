@@ -24,7 +24,7 @@ void main() {
       ),
     );
     expect(Localizations.localeOf(ctx).languageCode, 'vi');
-    expect(MaterialLocalizations.of(ctx).cancelButtonLabel, isNot('CANCEL'));
+    expect(MaterialLocalizations.of(ctx).cancelButtonLabel, 'Huỷ');
     expect(
       Localizations.of<CupertinoLocalizations>(ctx, CupertinoLocalizations),
       isNotNull,
