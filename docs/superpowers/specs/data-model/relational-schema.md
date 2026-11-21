@@ -24,15 +24,22 @@ begin new.updated_at = now(); return new; end $$ language plpgsql;
 create table files (
   id               text primary key,
   owner_user_id    text,                          -- fk users (thêm sau để tránh vòng)
-  storage_provider text not null,                 -- 'firebase' | 's3' | 'gcs' | 'minio'
+  storage_provider text not null,                 -- 's3' | 'external' | ('firebase' cho tệp cũ)
   storage_key      text not null,                 -- khoá trong kho, KHÔNG phải URL
   mime_type        text not null,
   size_bytes       bigint not null check (size_bytes >= 0),
   width            int, height int,
   blurhash         text,
+  purpose          text check (purpose is null or purpose in ('avatar','chat','share','delivery_sample','portfolio','document','claim_proof')),
+  status           text not null default 'ready' check (status in ('pending','processing','ready','failed')),
+  failure          text check (failure is null or failure in ('unsupported','too_large','unreadable','processing_error')),
+  thumb_key        text,
   created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
   unique (storage_provider, storage_key)
 );
+create index ix_files_owner on files (owner_user_id);
+create index ix_files_sweep on files (status, created_at) where status <> 'ready';
 
 create table users (
   id           text primary key,                  -- = uid Firebase hiện tại
@@ -1274,9 +1281,9 @@ create table booking_delivery_samples (
   id            text primary key,
   delivery_id   text not null references booking_deliveries(id) on delete cascade,
   position      smallint not null,
-  file_id       text not null,
-  path          text not null,                    -- đường dẫn ảnh watermark 1600 px
-  thumb_path    text not null,                    -- đường dẫn thumbnail 400 px
+  file_id       text not null,                    -- tham chiếu files(id) của tệp delivery_sample; path và thumb_path được thay thế hoàn toàn bởi file_id (thay đổi schema thuộc về #55)
+  path          text not null,                    -- đường dẫn ảnh watermark 1600 px (legacy)
+  thumb_path    text not null,                    -- đường dẫn thumbnail 400 px (legacy)
   width         int not null,
   height        int not null,
   unique (delivery_id, position)
@@ -2046,6 +2053,24 @@ alter table disputes
 drop index if exists ux_bookings_active_day;
 create unique index ux_bookings_active_day on bookings (photographer_id, day) where status in ('requested','accepted','upcoming','shooting');
 ```
+
+### 2.22 Ánh xạ đường dẫn Storage → `files`
+
+| Đường dẫn Firebase Storage | Bảng / Cột liên kết | Mục đích `files.purpose` | Ghi chú |
+|---|---|---|---|
+| `avatars/{uid}/{ulid}.jpg` | `users.avatar_file_id` | `avatar` | Công khai, cạnh dài 512, tối đa 512 KiB |
+| `chats/{chatId}/{uid}/{clientId}.jpg` | `messages.payload->>'fileId'` | `chat` | Riêng tư, cạnh dài 1280, tối đa 1.5 MiB |
+| `posts/{uid}/{postId}/{key}.jpg` | `post_images.file_id` | `portfolio` | Công khai, cạnh dài 2048, tối đa 3 MiB |
+| `posts/…` (ảnh thực tế) | `post_images.file_id` | `share` | Công khai, cạnh dài 1600, tối đa 2 MiB |
+| `eventCovers/{uid}/{eventId}/{ulid}.jpg` | `events.cover_file_id` | `share` | Công khai, cạnh dài 1600, tối đa 2 MiB |
+| `awardProofs/{uid}/{awardId}/{ulid}.jpg` | `award_proof_files.file_id` | `document` | Riêng tư, cạnh dài 2048, tối đa 3 MiB |
+| `disputeEvidence/{uid}/{disputeId}/{fileId}.jpg` | `dispute_evidence.file_id` | `document` | Riêng tư, cạnh dài 2048, tối đa 3 MiB |
+| `businessDocs/{uid}/{ulid}.jpg` | `verifications.business_doc_file_id` | `document` | Riêng tư, cạnh dài 2048, tối đa 3 MiB |
+| `deliveries/{bookingId}/{round}/{ulid}.jpg` | `booking_delivery_samples.file_id` | `delivery_sample` | Riêng tư, đóng dấu mờ .w.jpg và thumbnail .t.jpg, tối đa 2 MiB |
+| `claimProofs/{uid}/{ulid}.(jpg\|png\|pdf)` | `spot_claims.proof_file_ids` | `claim_proof` | Riêng tư, tối đa 10 MiB, hỗ trợ PDF/PNG/JPEG |
+| `serviceCovers/{uid}/{serviceId}/{ulid}.jpg` | `services.cover_file_id` | `portfolio` | Công khai, cạnh dài 2048, tối đa 3 MiB |
+| `photographerCovers/{uid}/{ulid}.jpg` | `photographers.cover_file_id` | `portfolio` | Công khai, cạnh dài 2048, tối đa 3 MiB |
+| `exports/{uid}/{ulid}.zip` | Tệp xuất dữ liệu / thuế | null | Dùng putObject/presignGet trực tiếp của S3Store |
 
 ## 3. Ánh xạ Firestore → bảng
 
