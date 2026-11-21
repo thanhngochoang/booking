@@ -68,13 +68,15 @@ create table auth_identities (                    -- 🔒
   unique (provider, subject)
 );
 
-create table devices (                            -- 🔒 thay users.fcmTokens
-  id        text primary key,
-  user_id   text not null references users(id) on delete cascade,
-  provider  text not null check (provider in ('fcm','apns')),
-  token     text not null unique,
-  platform  text not null check (platform in ('android','ios')),
-  last_seen_at timestamptz not null default now()
+create table push_tokens (                         -- 🔒 thay users.fcmTokens (spec §6.9, be#49)
+  user_id         text not null references users(id) on delete cascade,
+  installation_id text not null check (installation_id ~ '^[A-Za-z0-9]{8,40}$'),
+  provider        text not null check (provider in ('fcm','apns')),
+  token           text not null unique,
+  platform        text not null check (platform in ('android','ios')),
+  last_seen_at    timestamptz not null default now(),
+  created_at      timestamptz not null default now(),
+  primary key (user_id, installation_id)
 );
 
 create table account_deletions (                  -- 🔒 #205 chỉ server đọc/ghi; Firestore: account_deletions/{uid}
@@ -740,32 +742,38 @@ alter table support_threads add constraint fk_support_threads_dispute foreign ke
 alter table disputes add constraint fk_disputes_thread foreign key (thread_id) references support_threads(id);
 
 create table notifications (
-  id         text primary key,                   -- 'n_{dedupeKey}' hoặc 'g_{groupKey}' (dòng gom)
-  user_id    text not null references users(id) on delete cascade,
-  type       text not null,
-  tab        text not null check (tab in ('activity','events','system')),
-  category   text not null check (category in ('booking','jobs','instant','events','chat','badges','promo')),
-  title      text not null, body text not null,
-  target     text not null,                      -- đường dẫn app, ví dụ '/b/01J…'
-  group_key  text,
-  actors     jsonb not null default '[]',        -- ≤ 3 {id, name, avatarUrl}
-  count      int  not null default 1,
-  thumb_url  text,
-  last_event_id text,
-  recent_event_ids text[] not null default '{}',  -- dòng gộp: 20 mã sự kiện gần nhất, mới nhất trước (trùng = bản trùng)
-  booking_id text, post_id text, event_id text,
-  read_at    timestamptz,
-  created_at timestamptz not null default now()
+  id               text not null,
+  user_id          text not null references users(id) on delete cascade,
+  type             text not null,
+  tab              text not null check (tab in ('activity','events','system')),
+  category         text not null check (category in ('booking','jobs','instant','events','chat','badges','promo')),
+  title            text not null,
+  body             text not null,
+  target           text not null,                      -- đường dẫn app, ví dụ '/b/01J…'
+  group_key        text,
+  actors           jsonb not null default '[]',        -- ≤ 3 {id, name, avatarUrl}
+  count            int not null default 1,
+  thumb_url        text,
+  last_event_id    text,
+  recent_event_ids text[] not null default '{}',
+  read_at          timestamptz,
+  created_at       timestamptz not null default now(),
+  primary key (user_id, id)
 );
-create index ix_notifications_user on notifications (user_id, created_at desc);
-create index ix_notifications_tab  on notifications (user_id, tab, created_at desc);
+create index ix_notifications_user_created on notifications (user_id, created_at desc);
+create index ix_notifications_user_tab     on notifications (user_id, tab, created_at desc);
+create index ix_notifications_unread       on notifications (user_id) where read_at is null;
+create index ix_notifications_read_at      on notifications (read_at) where read_at is not null;
 
 create table notification_prefs (                  -- 🔒 một dòng mỗi người dùng
-  user_id text primary key references users(id) on delete cascade,
-  channels jsonb not null,                         -- {booking:{push,inApp}, jobs:…, instant:…, events:…, chat:…, badges:…, promo:…}
+  user_id       text primary key references users(id) on delete cascade,
+  channels      jsonb not null,                         -- {booking:{push,inApp}, jobs:…, instant:…, events:…, chat:…, badges:…, promo:…}
   quiet_enabled boolean not null default true,
-  quiet_from text not null default '22:00', quiet_to text not null default '07:00',
-  reminder_24h boolean not null default true, reminder_2h boolean not null default true
+  quiet_from    text not null default '22:00',
+  quiet_to      text not null default '07:00',
+  reminder_24h  boolean not null default true,
+  reminder_2h   boolean not null default true,
+  updated_at    timestamptz not null default now()
 );
 -- Số chưa đọc là count(*) where read_at is null, không có cột riêng; Firestore giữ users/{uid}/private/inbox.
 ```
@@ -2045,7 +2053,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 | Đường dẫn Firestore | Bảng | Ghi chú ánh xạ |
 |---------------------|------|----------------|
-| `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`devices`; `accountStatus`→`account_status`; `restoreUntil`→`restore_until` |
+| `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`push_tokens`; `accountStatus`→`account_status`; `restoreUntil`→`restore_until` |
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
 | `account_deletions/{uid}` | `account_deletions` | #205 bản ghi yêu cầu xoá tài khoản; `uid` PK, `restoreUntil`→`restore_until`, `done[]`→`done text[]` |
 | `verifications/{uid}` | `verifications` | `steps.*`, `identitySession.*`, `identityAttempts.*`, `rejectReason.*` → cột phẳng có tiền tố; `business.*` → cột `business_*` (cùng bảng); `steps.phone` phản chiếu `user_contacts.phone_verified`; `steps.fee` → `fee_*` (#203; khoản thanh toán là dòng `payments` có `subject_type = 'verification_fee'`) |
@@ -2144,7 +2152,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `users/{uid}/private/report_quota` | `report_quotas` | Hạn ngạch 20 báo cáo/ngày/tài khoản |
 | Custom claims (`role`, `staffRole`) | `users.role` (claim `role`); `staff_members` (claim `staffRole` dropped; `staff_members` only, #48) | Bảng là nguồn sự thật; claim `staffRole` đã bỏ theo #48 |
 
-**Ngoại lệ đặt tên** (không tự động): `fcmTokens`→bảng `devices`; `imageUrls`→`post_images`; `members`→`chat_members`; `timeline`→`booking_events`; `unread`→`chat_members.unread_count`.
+**Ngoại lệ đặt tên** (không tự động): `fcmTokens`→bảng `push_tokens`; `imageUrls`→`post_images`; `members`→`chat_members`; `timeline`→`booking_events`; `unread`→`chat_members.unread_count`.
 
 ## 4. Dẫn xuất và đếm
 

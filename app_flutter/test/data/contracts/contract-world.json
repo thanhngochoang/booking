@@ -22,5 +22,38 @@
     { "id": "ctr_b_completed_recent", "photographerId": "ctr_photographer", "status": "completed", "day": "2026-09-26", "completedDaysAgo": 5, "unlocked": true },
     { "id": "ctr_b_completed_old", "photographerId": "ctr_photographer", "status": "completed", "day": "2026-08-31", "completedDaysAgo": 31, "unlocked": false },
     { "id": "ctr_b_zalo_only", "photographerId": "ctr_photographer_zalo", "status": "accepted", "day": "2026-11-03", "completedDaysAgo": null, "unlocked": true }
+  ],
+  "pushTokens": [
+    {
+      "userId": "ctr_photographer",
+      "installationId": "instPhotographer01",
+      "provider": "fcm",
+      "token": "fcm-token-test-photo",
+      "platform": "android"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "ctr_notif_01",
+      "userId": "ctr_customer",
+      "type": "booking.requested",
+      "tab": "activity",
+      "category": "booking",
+      "title": "Yêu cầu đặt lịch",
+      "body": "Bạn có yêu cầu đặt lịch mới",
+      "target": "booking:ctr_b_requested",
+      "read": false
+    },
+    {
+      "id": "ctr_notif_02",
+      "userId": "ctr_customer",
+      "type": "booking.accepted",
+      "tab": "activity",
+      "category": "booking",
+      "title": "Đặt lịch được chấp nhận",
+      "body": "Nhiếp ảnh gia đã nhận lịch",
+      "target": "booking:ctr_b_accepted",
+      "read": true
+    }
   ]
 }

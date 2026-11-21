@@ -141,7 +141,7 @@ Quy tắc:
 | `staff_approvals` | staff có thẩm quyền duyệt | người yêu cầu (tạo qua use case), duyệt bởi approver khác (không bao giờ là requester) (#48) |
 | `idempotency_keys` | Svc | Svc (lưu giữ 48 giờ) (#48) |
 | `user_contacts` | S | S |
-| `auth_identities`, `devices` | S | Svc/S |
+| `auth_identities`, `push_tokens` | S | Svc/S |
 | `photographers` (công khai) | U (nếu đã `onboarding_complete`), S luôn | S (nội dung); thống kê và `verified` chỉ Svc/A |
 | `photographer_contact_channels` | U | S |
 | `photographer_contact_numbers` | S; người khác chỉ qua use case `get_contact_link` | S |

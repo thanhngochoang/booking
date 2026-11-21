@@ -45,6 +45,19 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/events:
+    get:
+      operationId: streamEvents
+      summary: Stream domain change events over Server-Sent Events (SSE)
+      responses:
+        "200":
+          description: Server-sent event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
   /v1/health:
     get:
       operationId: health
@@ -92,6 +105,47 @@ paths:
           $ref: "#/components/responses/Unauthenticated"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/me/devices/{installationId}:
+    put:
+      operationId: registerDevice
+      summary: Register or refresh a push device token
+      parameters:
+        - name: installationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9]{8,40}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDeviceRequest"
+      responses:
+        "204":
+          description: Device registered successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    delete:
+      operationId: unregisterDevice
+      summary: Unregister a push device token
+      parameters:
+        - name: installationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9]{8,40}$
+      responses:
+        "204":
+          description: Device unregistered successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
   /v1/photographers/{photographerId}/contact-channels:
     parameters:
       - $ref: "#/components/parameters/PhotographerId"
@@ -785,6 +839,16 @@ components:
             minItems: 2
             maxItems: 2
             items: {}
+    ChangeEvent:
+      type: object
+      required:
+        - topic
+        - kind
+      properties:
+        topic:
+          type: string
+        kind:
+          type: string
     ContactChannels:
       type: object
       additionalProperties: false
@@ -1057,6 +1121,28 @@ components:
         next:
           type: string
           nullable: true
+    RegisterDeviceRequest:
+      type: object
+      required:
+        - token
+        - provider
+        - platform
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        provider:
+          type: string
+          enum:
+            - fcm
+            - apns
+        platform:
+          type: string
+          enum:
+            - android
+            - ios
     SaveUserContactRequest:
       type: object
       additionalProperties: false
