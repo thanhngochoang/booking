@@ -14,6 +14,8 @@ class ApiException implements Exception {
   final int status;
   final String code;
 
+  int get statusCode => status;
+
   static const network = 'network';
   static const malformed = 'malformed';
   static const unauthenticated = 'unauthenticated';

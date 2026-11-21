@@ -23,6 +23,9 @@ abstract final class ApiPaths {
   static String device(String installationId) =>
       '/v1/me/devices/${Uri.encodeComponent(installationId)}';
   static const events = '/v1/events';
+  static const files = '/v1/files';
+  static String file(String id) => '/v1/files/${Uri.encodeComponent(id)}';
+  static String fileComplete(String id) => '${file(id)}/complete';
 }
 
 /// Every (method, contract path) the app calls; test/data/http/openapi_drift_test.dart
@@ -42,6 +45,10 @@ const apiOperations = <(String, String)>[
   ('PUT', '/v1/me/devices/{installationId}'),
   ('DELETE', '/v1/me/devices/{installationId}'),
   ('GET', '/v1/events'),
+  ('POST', '/v1/files'),
+  ('POST', '/v1/files/{fileId}/complete'),
+  ('GET', '/v1/files/{fileId}'),
+  ('DELETE', '/v1/files/{fileId}'),
 ];
 
 Never _malformed() => throw const ApiException(200, ApiException.malformed);
