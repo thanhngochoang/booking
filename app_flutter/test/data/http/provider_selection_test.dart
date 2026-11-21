@@ -7,6 +7,9 @@ import 'package:photobooking/data/backend_config.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/http_contact_link_repository.dart';
 import 'package:photobooking/data/http/api_providers.dart';
+import 'package:photobooking/data/media/http_media_uploader.dart';
+import 'package:photobooking/data/media/http_media_url_resolver.dart';
+import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/photographer/http_photographer_contact_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 import 'package:photobooking/data/user/http_user_contact_repository.dart';
@@ -67,4 +70,18 @@ void main() {
     );
     expect(config.uses(SelfhostedRepo.users), isFalse);
   });
+
+  test(
+    'SelfhostedRepo.platform selects HttpMediaUploader and HttpMediaUrlResolver',
+    () {
+      final config = BackendConfig.parse(
+        backend: 'selfhosted',
+        baseUrl: 'http://localhost:8787',
+        repos: 'platform',
+      );
+      final c = _container(config);
+      expect(c.read(mediaUploaderProvider), isA<HttpMediaUploader>());
+      expect(c.read(mediaUrlResolverProvider), isA<HttpMediaUrlResolver>());
+    },
+  );
 }

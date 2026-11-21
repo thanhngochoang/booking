@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$ROOT/scripts/bin/_jvm-env.sh"
 ADB="$ANDROID_HOME/platform-tools/adb"
 [ -x "$ADB" ] || ADB=adb
-PORTS=(9099 8080 5001 9199)
+PORTS=(9099 8080 5001 9199 9000)
 
 if [ $# -gt 0 ]; then
   SERIALS=("$1")

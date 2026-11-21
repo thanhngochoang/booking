@@ -169,6 +169,7 @@ void main() {
       'delivery_sample 1600 75 2097152 private, max-age=31536000',
       'portfolio 2048 82 3145728 public, max-age=31536000',
       'document 2048 85 3145728 private, max-age=31536000',
+      'claim_proof 2048 85 10485760 private, max-age=31536000',
     ]);
   });
 

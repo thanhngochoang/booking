@@ -8,6 +8,7 @@ class UploadedMedia {
   const UploadedMedia({
     required this.url,
     required this.storagePath,
+    this.fileId,
     this.width,
     this.height,
     this.sizeBytes,
@@ -18,6 +19,9 @@ class UploadedMedia {
 
   /// Where the object lives; kept so it can be deleted again.
   final String storagePath;
+
+  /// Phase 2 file id; present when uploaded through HttpMediaUploader.
+  final String? fileId;
 
   /// Pixel size and byte size of the uploaded (compressed) file; null when the
   /// uploader did not measure it.

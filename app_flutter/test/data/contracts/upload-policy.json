@@ -1,0 +1,60 @@
+{
+  "purposes": [
+    {
+      "code": "avatar",
+      "longSide": 512,
+      "quality": 80,
+      "maxBytes": 524288,
+      "cacheControl": "public, max-age=31536000",
+      "visibility": "public"
+    },
+    {
+      "code": "chat",
+      "longSide": 1280,
+      "quality": 75,
+      "maxBytes": 1572864,
+      "cacheControl": "private, max-age=31536000",
+      "visibility": "private"
+    },
+    {
+      "code": "share",
+      "longSide": 1600,
+      "quality": 80,
+      "maxBytes": 2097152,
+      "cacheControl": "public, max-age=31536000",
+      "visibility": "public"
+    },
+    {
+      "code": "delivery_sample",
+      "longSide": 1600,
+      "quality": 75,
+      "maxBytes": 2097152,
+      "cacheControl": "private, max-age=31536000",
+      "visibility": "private"
+    },
+    {
+      "code": "portfolio",
+      "longSide": 2048,
+      "quality": 82,
+      "maxBytes": 3145728,
+      "cacheControl": "public, max-age=31536000",
+      "visibility": "public"
+    },
+    {
+      "code": "document",
+      "longSide": 2048,
+      "quality": 85,
+      "maxBytes": 3145728,
+      "cacheControl": "private, max-age=31536000",
+      "visibility": "private"
+    },
+    {
+      "code": "claim_proof",
+      "longSide": 2048,
+      "quality": 85,
+      "maxBytes": 10485760,
+      "cacheControl": "private, max-age=31536000",
+      "visibility": "private"
+    }
+  ]
+}
