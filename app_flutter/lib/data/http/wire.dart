@@ -20,6 +20,9 @@ abstract final class ApiPaths {
   static String serviceArea(String id) => '${photographer(id)}/service-area';
   static String contactSetup(String id) => '${photographer(id)}/contact-setup';
   static const contactLinks = '/v1/contact-links';
+  static String device(String installationId) =>
+      '/v1/me/devices/${Uri.encodeComponent(installationId)}';
+  static const events = '/v1/events';
 }
 
 /// Every (method, contract path) the app calls; test/data/http/openapi_drift_test.dart
@@ -36,6 +39,9 @@ const apiOperations = <(String, String)>[
   ('GET', '/v1/photographers/{photographerId}/service-area'),
   ('PUT', '/v1/photographers/{photographerId}/contact-setup'),
   ('POST', '/v1/contact-links'),
+  ('PUT', '/v1/me/devices/{installationId}'),
+  ('DELETE', '/v1/me/devices/{installationId}'),
+  ('GET', '/v1/events'),
 ];
 
 Never _malformed() => throw const ApiException(200, ApiException.malformed);
@@ -113,4 +119,14 @@ Map<String, Object?> contactSetupBody({
   'area': area.toMap(),
   'channels': channels.toMap(),
   'numbers': numbers.toMap(),
+};
+
+Map<String, Object?> registerDeviceBody({
+  required String token,
+  required String platform,
+  String provider = 'fcm',
+}) => {
+  'token': token,
+  'provider': provider,
+  'platform': platform,
 };

@@ -34,6 +34,24 @@ void main() {
     expect(c.uses(SelfhostedRepo.photographerContact), isFalse);
   });
 
+  test('platform code is accepted in SELFHOSTED_REPOS', () {
+    final c = BackendConfig.parse(
+      backend: 'selfhosted',
+      baseUrl: 'https://api.example.vn',
+      repos: 'platform',
+    );
+    expect(c.uses(SelfhostedRepo.platform), isTrue);
+    expect(c.uses(SelfhostedRepo.users), isFalse);
+  });
+
+  test('default selfhosted selects platform', () {
+    final c = BackendConfig.parse(
+      backend: 'selfhosted',
+      baseUrl: 'https://api.example.vn',
+    );
+    expect(c.uses(SelfhostedRepo.platform), isTrue);
+  });
+
   test('bad values fail loudly at startup', () {
     expect(() => BackendConfig.parse(backend: 'supabase'), throwsArgumentError);
     expect(

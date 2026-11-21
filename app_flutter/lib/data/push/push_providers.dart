@@ -2,11 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/backend_config.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/http/api_providers.dart';
 import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
 import 'package:photobooking/data/push/device_registry.dart';
 import 'package:photobooking/data/push/firebase_push_messaging.dart';
 import 'package:photobooking/data/push/firestore_device_registry.dart';
+import 'package:photobooking/data/push/http_device_registry.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/permission_handler_notification_permission.dart';
 import 'package:photobooking/data/push/prefs_primer_store.dart';
@@ -21,9 +24,16 @@ final notificationPermissionProvider = Provider<NotificationPermissionPort>(
   (ref) => const PermissionHandlerNotificationPermission(),
 );
 
-final deviceRegistryProvider = Provider<DeviceRegistry>(
-  (ref) => FirestoreDeviceRegistry(prefs: ref.watch(sharedPreferencesProvider)),
-);
+final deviceRegistryProvider = Provider<DeviceRegistry>((ref) {
+  final config = ref.watch(backendConfigProvider);
+  if (config.uses(SelfhostedRepo.platform)) {
+    return HttpDeviceRegistry(
+      api: ref.watch(apiClientProvider),
+      prefs: ref.watch(sharedPreferencesProvider),
+    );
+  }
+  return FirestoreDeviceRegistry(prefs: ref.watch(sharedPreferencesProvider));
+});
 
 /// S17.03 policy: never at app start, 7 days after "Để sau".
 final primerPolicyProvider = Provider<PermissionPrimerPolicy>(

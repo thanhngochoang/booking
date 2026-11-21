@@ -9,7 +9,8 @@ enum SelfhostedRepo {
   users('users'),
   userContact('userContact'),
   photographerContact('photographerContact'),
-  contactLink('contactLink');
+  contactLink('contactLink'),
+  platform('platform');
 
   const SelfhostedRepo(this.code);
   final String code;

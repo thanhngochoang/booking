@@ -50,6 +50,8 @@ void main() {
         ApiPaths.serviceArea('id1'),
         ApiPaths.contactSetup('id1'),
         ApiPaths.contactLinks,
+        ApiPaths.device('id1'),
+        ApiPaths.events,
       },
       {for (final (_, p) in apiOperations) fill(p)},
     );
@@ -114,6 +116,10 @@ void main() {
       check(
         'ContactLinkRequest',
         callableData(const ContactSubject.booking('b1'), ContactChannel.zalo),
+      );
+      check(
+        'RegisterDeviceRequest',
+        registerDeviceBody(token: 't', platform: 'android'),
       );
     },
   );
