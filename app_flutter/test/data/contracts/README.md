@@ -12,3 +12,7 @@ When the backend contract changes, copy both files again and make the app follow
 `day_pricing_cases.json` is a copy of `packages/domain/test/fixtures/day_pricing_cases.json` in the same
 repository; `test/data/pricing/price_rules_test.dart` runs every section of it against the Dart port
 (`lib/core/lunar.dart`, `lib/data/pricing/price_rules.dart`). Copy it again when it changes.
+
+`upload-policy.json` is a copy of `src/modules/files/upload-policy.json` in the backend repository;
+`test/data/media/image_purpose_sync_test.dart` verifies `ImagePurpose` stays in sync with it. Copy it again
+when it changes.

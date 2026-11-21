@@ -52,6 +52,9 @@ void main() {
         ApiPaths.contactLinks,
         ApiPaths.device('id1'),
         ApiPaths.events,
+        ApiPaths.files,
+        ApiPaths.file('id1'),
+        ApiPaths.fileComplete('id1'),
       },
       {for (final (_, p) in apiOperations) fill(p)},
     );
@@ -120,6 +123,10 @@ void main() {
       check(
         'RegisterDeviceRequest',
         registerDeviceBody(token: 't', platform: 'android'),
+      );
+      check(
+        'CreateFileRequest',
+        {'purpose': 'avatar', 'contentType': 'image/jpeg', 'size': 1000},
       );
     },
   );

@@ -58,6 +58,99 @@ paths:
                 type: string
         "401":
           $ref: "#/components/responses/Unauthenticated"
+  /v1/files:
+    post:
+      operationId: createFile
+      summary: Request a presigned URL to upload a file
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFileRequest"
+      responses:
+        "200":
+          description: Presigned upload details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateFileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/files/{fileId}:
+    get:
+      operationId: getFile
+      summary: Retrieve file record by id
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: File record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteFile
+      summary: Delete a file record and its storage objects
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: File deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/files/{fileId}/complete:
+    post:
+      operationId: completeFile
+      summary: Complete upload and enqueue processing
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: Completion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteFileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/health:
     get:
       operationId: health
@@ -481,6 +574,31 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/staff/platform/file-urls:
+    post:
+      operationId: getSensitiveFileUrl
+      summary: Resolve a short-lived presigned URL for a sensitive file viewed by staff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetSensitiveFileUrlRequest"
+      responses:
+        "200":
+          description: Presigned URL and expiration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSensitiveFileUrlResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/staff/users/find:
     post:
       operationId: findUserForStaff
@@ -849,6 +967,25 @@ components:
           type: string
         kind:
           type: string
+    CompleteFileResponse:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        status:
+          $ref: "#/components/schemas/FileStatus"
+        failure:
+          type: string
+          nullable: true
+          enum:
+            - unsupported
+            - too_large
+            - unreadable
+            - processing_error
+            - null
     ContactChannels:
       type: object
       additionalProperties: false
@@ -922,6 +1059,40 @@ components:
           $ref: "#/components/schemas/ContactChannels"
         numbers:
           $ref: "#/components/schemas/ContactNumbers"
+    CreateFileRequest:
+      type: object
+      required:
+        - purpose
+        - contentType
+        - size
+      properties:
+        purpose:
+          $ref: "#/components/schemas/ImagePurpose"
+        contentType:
+          type: string
+        size:
+          type: integer
+          minimum: 1
+    CreateFileResponse:
+      type: object
+      required:
+        - fileId
+        - upload
+      properties:
+        fileId:
+          $ref: "#/components/schemas/Id"
+        upload:
+          type: object
+          required:
+            - url
+            - fields
+          properties:
+            url:
+              type: string
+            fields:
+              type: object
+              additionalProperties:
+                type: string
     DecideStaffApprovalRequest:
       type: object
       additionalProperties: false
@@ -1055,6 +1226,91 @@ components:
         - call
         - zalo
         - whatsapp
+    FileFailureCode:
+      type: string
+      nullable: true
+      enum:
+        - unsupported
+        - too_large
+        - unreadable
+        - processing_error
+        - null
+    FileResponse:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        ownerUserId:
+          type: string
+          nullable: true
+        purpose:
+          type: string
+          nullable: true
+          enum:
+            - avatar
+            - chat
+            - share
+            - delivery_sample
+            - portfolio
+            - document
+            - claim_proof
+            - null
+        storageProvider:
+          type: string
+        storageKey:
+          type: string
+        thumbKey:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/FileStatus"
+        failure:
+          type: string
+          nullable: true
+          enum:
+            - unsupported
+            - too_large
+            - unreadable
+            - processing_error
+            - null
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        blurhash:
+          type: string
+          nullable: true
+        sizeBytes:
+          type: integer
+          nullable: true
+        mimeType:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        url:
+          type: string
+          nullable: true
+        thumbUrl:
+          type: string
+          nullable: true
+        urlExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+    FileStatus:
+      type: string
+      enum:
+        - pending
+        - processing
+        - ready
+        - failed
     FindUserForStaffRequest:
       type: object
       additionalProperties: false
@@ -1090,6 +1346,30 @@ components:
             - support
             - sales
             - null
+    GetSensitiveFileUrlRequest:
+      type: object
+      required:
+        - kind
+        - entityId
+        - fileId
+      properties:
+        kind:
+          type: string
+        entityId:
+          $ref: "#/components/schemas/Id"
+        fileId:
+          $ref: "#/components/schemas/Id"
+    GetSensitiveFileUrlResponse:
+      type: object
+      required:
+        - url
+        - expiresAt
+      properties:
+        url:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
     Health:
       type: object
       required:
@@ -1109,6 +1389,16 @@ components:
     Id:
       type: string
       pattern: ^[A-Za-z0-9_-]{1,64}$
+    ImagePurpose:
+      type: string
+      enum:
+        - avatar
+        - chat
+        - share
+        - delivery_sample
+        - portfolio
+        - document
+        - claim_proof
     Page:
       type: object
       required:

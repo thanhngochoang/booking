@@ -45,6 +45,13 @@ enum ImagePurpose {
     quality: 85,
     maxBytes: 3 * 1024 * 1024,
     publicCache: false,
+  ),
+  claimProof(
+    'claim_proof',
+    longSide: 2048,
+    quality: 85,
+    maxBytes: 10 * 1024 * 1024,
+    publicCache: false,
   );
 
   const ImagePurpose(
